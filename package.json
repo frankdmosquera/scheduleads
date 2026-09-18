@@ -1,0 +1,5 @@
+{
+  "name": "scheduleads-app",
+  "private": true,
+  "workspaces": ["frontend", "backend", "packages/*"]
+}

@@ -1,0 +1,951 @@
+<title>scheduleads-app Build Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  /* ---------------------------------------------------------------
+     Starter build log. Shipped by the Blueprint scaffold into every
+     project. /overview fills the project and roadmap views from the two
+     plan docs and publishes it for the first time; /feature adds a group
+     per feature; /implement adds entries and republishes before every
+     commit. Edit this file in the repo and republish to the same URL.
+
+     Palette is a neutral cool graphite on purpose: pick this project's
+     own colours in /onboard or /overview so sibling logs never read as
+     the same page. Semantic colours follow the standing convention:
+     red = blocked on you, amber = open question, green = done or
+     approved, violet = a real fault found and repaired.
+     --------------------------------------------------------------- */
+  :root {
+    --ground: #F4F5F7;
+    --surface: #FFFFFF;
+    --surface-2: #E9EBEF;
+    --ink: #15181D;
+    --ink-2: #4A5160;
+    --ink-3: #7A8290;
+    --rule: #D6DAE1;
+    --rule-soft: #E6E9EE;
+    --accent: #3B5BDB;
+    --accent-soft: #E4E9FA;
+    --done: #1E7A4E;
+    --done-soft: #DDEEE5;
+    --pending: #8C6414;
+    --pending-soft: #F4EAD3;
+    --alert: #A6362C;
+    --alert-soft: #F7E1DE;
+    --fixed: #5B37B8;
+    --fixed-soft: #E8E2F8;
+    --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    --body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", Consolas, "SF Mono", ui-monospace, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0E1116;
+      --surface: #151A21;
+      --surface-2: #1C222B;
+      --ink: #E6EAF0;
+      --ink-2: #A3ACBB;
+      --ink-3: #737D8C;
+      --rule: #262D38;
+      --rule-soft: #1C222B;
+      --accent: #8DA3FF;
+      --accent-soft: #1A2244;
+      --done: #62C797;
+      --done-soft: #11291E;
+      --pending: #DDB266;
+      --pending-soft: #2B2211;
+      --alert: #EC9187;
+      --alert-soft: #2F1815;
+      --fixed: #B39CF3;
+      --fixed-soft: #201938;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0E1116;
+    --surface: #151A21;
+    --surface-2: #1C222B;
+    --ink: #E6EAF0;
+    --ink-2: #A3ACBB;
+    --ink-3: #737D8C;
+    --rule: #262D38;
+    --rule-soft: #1C222B;
+    --accent: #8DA3FF;
+    --accent-soft: #1A2244;
+    --done: #62C797;
+    --done-soft: #11291E;
+    --pending: #DDB266;
+    --pending-soft: #2B2211;
+    --alert: #EC9187;
+    --alert-soft: #2F1815;
+    --fixed: #B39CF3;
+    --fixed-soft: #201938;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .shell {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+    display: grid;
+    grid-template-columns: 224px minmax(0, 1fr);
+    gap: 48px;
+    align-items: start;
+  }
+
+  /* ---------- sidebar ---------- */
+
+  .side {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    padding: 34px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+
+  .brand { display: flex; flex-direction: column; gap: 6px; }
+
+  .brand-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .brand-sub {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    line-height: 1.6;
+  }
+
+  .nav-group { display: flex; flex-direction: column; gap: 2px; }
+
+  .nav-head {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding-bottom: 8px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .nav-link {
+    all: unset;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 10px;
+    align-items: baseline;
+    padding: 7px 9px 7px 6px;
+    border-radius: 5px;
+    color: var(--ink-2);
+    font-family: var(--body);
+    font-size: 14.5px;
+    line-height: 1.35;
+  }
+
+  .nav-link:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .nav-link[aria-current="page"] {
+    background: var(--accent-soft);
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .nav-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ink-3);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .nav-link[aria-current="page"] .nav-num { color: var(--accent); }
+  .nav-link[data-state="active"] .nav-num { color: var(--pending); font-weight: 700; }
+  .nav-link[data-state="done"] .nav-num { color: var(--done); font-weight: 700; }
+
+  .nav-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    justify-self: center; align-self: center;
+    background: var(--rule);
+  }
+
+  .legend { display: flex; flex-direction: column; gap: 8px; }
+
+  .legend-row {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 10px;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    line-height: 1.5;
+    color: var(--ink-3);
+  }
+
+  .legend-mark {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 9.5px; font-weight: 700; line-height: 1;
+    color: var(--ground);
+  }
+
+  .legend-mark--ask  { background: var(--alert); }
+  .legend-mark--open { background: var(--pending); }
+  .legend-mark--done { background: var(--done); }
+  .legend-mark--fix  { background: var(--fixed); }
+
+  .nav-note {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    line-height: 1.65;
+    color: var(--ink-3);
+    padding: 9px 6px 0;
+    border-top: 1px dashed var(--rule);
+    margin-top: 6px;
+  }
+
+  /* ---------- main ---------- */
+
+  main { padding: 34px 0 0; min-width: 0; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-size: 44px;
+    font-weight: 700;
+    line-height: 1.03;
+    letter-spacing: -0.02em;
+    margin: 10px 0 0;
+    text-wrap: balance;
+  }
+
+  .lede { font-size: 18px; color: var(--ink-2); margin: 16px 0 0; max-width: 64ch; }
+
+  h2 {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  h3 {
+    font-family: var(--display);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  p { margin: 0; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  code, .mono { font-family: var(--mono); font-size: 0.85em; }
+
+  code {
+    background: var(--surface-2);
+    padding: 1.5px 5px;
+    border-radius: 3px;
+    word-break: break-word;
+  }
+
+  section { margin-top: 46px; display: flex; flex-direction: column; gap: 18px; }
+  .head { display: flex; flex-direction: column; gap: 18px; }
+
+  .facts {
+    display: flex; flex-wrap: wrap;
+    gap: 8px 10px; align-items: center;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-2);
+  }
+
+  .facts .sep { color: var(--rule); }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.09em; text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+
+  .pill--done { background: var(--done-soft);    color: var(--done);    border-color: var(--done); }
+  .pill--live { background: var(--pending-soft); color: var(--pending); border-color: var(--pending); }
+  .pill--ask  { background: var(--alert-soft);   color: var(--alert);   border-color: var(--alert); }
+  .pill--plan { background: var(--surface-2);    color: var(--ink-3);   border-color: var(--rule); }
+
+  /* ---------- the three gates ----------
+     Every feature passes three gates in order: the spec is agreed, the
+     work is built and verified, and the commit is granted. Drawn as a row
+     so the state of an item is one glance, not a sentence to read. */
+
+  .gates { display: flex; gap: 7px; flex-wrap: wrap; }
+
+  .gate-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    padding: 4px 10px 4px 7px;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    color: var(--ink-3);
+    background: var(--surface);
+  }
+
+  .gate-chip::before {
+    content: "";
+    width: 9px; height: 9px;
+    border-radius: 2px;
+    border: 1.5px solid var(--rule);
+    display: block;
+  }
+
+  .gate-chip[data-state="pass"] { color: var(--done); border-color: var(--done); background: var(--done-soft); }
+  .gate-chip[data-state="pass"]::before { background: var(--done); border-color: var(--done); }
+  .gate-chip[data-state="waiting"] { color: var(--alert); border-color: var(--alert); background: var(--alert-soft); }
+  .gate-chip[data-state="waiting"]::before { border-color: var(--alert); }
+
+  /* ---------- step rail ---------- */
+
+  .rail { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; margin-top: 4px; }
+  .rail-item { display: flex; flex-direction: column; gap: 7px; }
+  .rail-bar { height: 4px; border-radius: 2px; background: var(--rule); }
+  .rail-item[data-state="done"] .rail-bar { background: var(--done); }
+  .rail-item[data-state="active"] .rail-bar { background: var(--pending); }
+
+  .rail-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .rail-item[data-state="done"] .rail-label { color: var(--done); }
+  .rail-item[data-state="active"] .rail-label { color: var(--pending); }
+
+  /* ---------- timeline ---------- */
+
+  .log { display: flex; flex-direction: column; }
+
+  .entry {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 0 15px;
+    padding-bottom: 26px;
+    position: relative;
+  }
+
+  .entry::before {
+    content: "";
+    position: absolute;
+    left: 9px; top: 24px; bottom: -6px;
+    width: 1px;
+    background: var(--rule);
+  }
+
+  .entry:last-child::before { display: none; }
+
+  /* The glyph lives inside the dot, so the timeline still reads with no
+     colour at all. Every glyph comes from data-kind; no entry writes its
+     own. */
+  .dot {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    margin-top: 4px;
+    border: 2px solid var(--ground);
+    background: var(--ink-3);
+    color: var(--ground);
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700; line-height: 1;
+    display: grid; place-items: center;
+    position: relative; z-index: 1;
+  }
+
+  .entry[data-kind="done"] .dot,
+  .entry[data-kind="change"] .dot,
+  .entry[data-kind="decided"] .dot { background: var(--done); }
+  .entry[data-kind="fix"] .dot      { background: var(--fixed); }
+  .entry[data-kind="decision"] .dot { background: var(--alert); }
+  .entry[data-kind="question"] .dot { background: var(--pending); }
+
+  .entry[data-kind="done"] .dot::before,
+  .entry[data-kind="decided"] .dot::before,
+  .entry[data-kind="change"] .dot::before { content: "\2713"; }
+  .entry[data-kind="fix"] .dot::before      { content: "\21bb"; }
+  .entry[data-kind="decision"] .dot::before { content: "!"; }
+  .entry[data-kind="question"] .dot::before { content: "?"; }
+
+  .entry-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .entry-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+  .entry-title { font-family: var(--display); font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+
+  .stamp {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .entry-text { color: var(--ink-2); font-size: 15.5px; }
+
+  .kind-tag {
+    font-family: var(--mono);
+    font-size: 9.5px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--surface-2);
+    color: var(--ink-3);
+  }
+
+  .entry[data-kind="done"] .kind-tag,
+  .entry[data-kind="change"] .kind-tag,
+  .entry[data-kind="decided"] .kind-tag { background: var(--done-soft); color: var(--done); }
+  .entry[data-kind="fix"] .kind-tag      { background: var(--fixed-soft); color: var(--fixed); }
+  .entry[data-kind="decision"] .kind-tag { background: var(--alert-soft); color: var(--alert); }
+  .entry[data-kind="question"] .kind-tag { background: var(--pending-soft); color: var(--pending); }
+
+  .log-empty {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-3);
+    padding: 16px 0;
+    border-top: 1px dashed var(--rule);
+    border-bottom: 1px dashed var(--rule);
+  }
+
+  /* ---------- callout ---------- */
+
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--alert);
+    border-radius: 4px;
+    padding: 18px 20px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  .callout--open { border-left-color: var(--pending); }
+  .callout p { color: var(--ink-2); font-size: 15.5px; }
+  .callout-title { font-family: var(--display); font-size: 17px; font-weight: 600; color: var(--ink); }
+
+  /* ---------- steps ---------- */
+
+  .steps { display: flex; flex-direction: column; }
+
+  .step {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr);
+    gap: 0 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    align-items: start;
+  }
+
+  .step:last-child { border-bottom: none; }
+
+  .box {
+    width: 17px; height: 17px;
+    border-radius: 3px;
+    border: 1.5px solid var(--rule);
+    margin-top: 4px;
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: transparent;
+  }
+
+  .step[data-done="yes"] .box { background: var(--done); border-color: var(--done); color: var(--ground); }
+
+  .step-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .step-name { font-family: var(--display); font-size: 16.5px; font-weight: 600; }
+  .step[data-done="yes"] .step-name { color: var(--ink-2); }
+  .step-text { font-size: 15px; color: var(--ink-2); }
+
+  .verify {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--ink-3);
+    padding-left: 11px;
+    border-left: 2px solid var(--rule);
+  }
+
+  .step[data-done="yes"] .verify { border-left-color: var(--done); color: var(--done); }
+
+  /* ---------- scope ---------- */
+
+  .scope { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .scope ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .scope li { font-size: 15px; color: var(--ink-2); }
+  .scope li::marker { color: var(--ink-3); }
+
+  .scope-head {
+    font-family: var(--mono);
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.11em; text-transform: uppercase;
+    margin-bottom: 11px;
+  }
+
+  .scope-in .scope-head { color: var(--done); }
+  .scope-out .scope-head { color: var(--ink-3); }
+
+  /* ---------- rows ---------- */
+
+  .rows { display: flex; flex-direction: column; }
+
+  .row {
+    display: grid;
+    grid-template-columns: 196px minmax(0, 1fr);
+    gap: 4px 20px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    font-size: 15px;
+  }
+
+  .row:last-child { border-bottom: none; }
+
+  .row-key {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding-top: 4px;
+  }
+
+  .row-val { color: var(--ink-2); min-width: 0; }
+  .row-val.placeholder { color: var(--ink-3); font-style: italic; }
+
+  /* ---------- roadmap ---------- */
+
+  .stage { display: flex; flex-direction: column; gap: 2px; }
+
+  .stage-head {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px;
+    padding-bottom: 9px; margin-bottom: 6px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .stage-name { font-family: var(--display); font-size: 18px; font-weight: 600; }
+  .stage-note { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); letter-spacing: 0.04em; }
+
+  .item {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 4px 12px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    align-items: baseline;
+  }
+
+  .item:last-child { border-bottom: none; }
+  .item-num { font-family: var(--mono); font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .item-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .item-name { font-family: var(--display); font-size: 16.5px; font-weight: 600; }
+  .item[data-state="planned"] .item-name { font-weight: 400; color: var(--ink-2); }
+  .item-text { font-size: 14.5px; color: var(--ink-2); }
+  .item-was { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); letter-spacing: 0.03em; }
+  .item[data-state="active"] .item-num { color: var(--pending); font-weight: 700; }
+  .item[data-state="done"] .item-num { color: var(--done); font-weight: 700; }
+
+  /* ---------- design option wireframes ----------
+     For a feature that compares layouts, draw the options as flat CSS
+     wireframes side by side. Prose cannot be compared at a glance. */
+
+  .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 18px; }
+
+  .opt {
+    display: flex; flex-direction: column; gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 16px;
+  }
+
+  .opt[data-match="yes"] { border-color: var(--accent); }
+  .opt-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .opt-key { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink-3); }
+  .opt[data-match="yes"] .opt-key { color: var(--accent); }
+  .opt-name { font-family: var(--display); font-size: 16px; font-weight: 600; }
+  .opt-text { font-size: 14px; color: var(--ink-2); }
+  .opt-trade { font-family: var(--mono); font-size: 11px; line-height: 1.6; color: var(--ink-3); padding-left: 10px; border-left: 2px solid var(--rule); }
+
+  .wire {
+    background: var(--ground);
+    border: 1px dashed var(--rule);
+    border-radius: 4px;
+    padding: 11px;
+    display: flex; flex-direction: column; gap: 9px;
+  }
+
+  .wire-row { display: flex; align-items: center; gap: 6px; }
+  .wire-row.between { justify-content: space-between; }
+  .wire-title { font-family: var(--display); font-size: 13px; font-weight: 700; color: var(--ink); }
+  .wire-icon { width: 13px; height: 13px; border-radius: 3px; background: var(--accent); flex: none; }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 8.5px; font-weight: 500;
+    letter-spacing: 0.05em;
+    padding: 3px 6px;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    color: var(--ink-2);
+    background: var(--surface);
+    white-space: nowrap;
+  }
+
+  .btn--solid { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .btn--danger { color: var(--alert); border-color: var(--alert); }
+  .btn--ghost { border-color: transparent; color: var(--ink-3); }
+
+  .wire-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .wire-card { height: 21px; border: 1px solid var(--rule); border-radius: 3px; background: var(--surface); }
+
+  /* ---------- notes ---------- */
+
+  .notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .notes li { font-size: 15px; color: var(--ink-2); }
+  .notes li::marker { color: var(--ink-3); }
+
+  .empty {
+    border: 1px dashed var(--rule);
+    border-radius: 5px;
+    padding: 26px 22px;
+    text-align: center;
+    color: var(--ink-3);
+    font-size: 15px;
+    display: flex; flex-direction: column; gap: 7px;
+  }
+
+  footer {
+    margin-top: 58px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--ink-3);
+    display: flex; flex-wrap: wrap;
+    gap: 6px 14px;
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+  @media (max-width: 880px) {
+    .shell { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 0 16px 60px; }
+    .side { position: static; max-height: none; padding: 24px 0 0; gap: 18px; }
+    .nav-group { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    .nav-head { width: 100%; }
+    .nav-link { grid-template-columns: auto auto; gap: 8px; border: 1px solid var(--rule); padding: 6px 11px; font-size: 13.5px; }
+    .nav-note { width: 100%; }
+    main { padding-top: 26px; }
+    h1 { font-size: 33px; }
+    .lede { font-size: 17px; }
+    .scope { grid-template-columns: 1fr; gap: 22px; }
+    .row { grid-template-columns: 1fr; }
+    .item { grid-template-columns: 28px minmax(0, 1fr); }
+    .item .pill { grid-column: 2; justify-self: start; margin-top: 4px; }
+  }
+</style>
+
+<div class="shell">
+
+  <aside class="side">
+    <div class="brand">
+      <div class="brand-name">scheduleads-app</div>
+      <div class="brand-sub">Build log<br>Not yet published</div>
+    </div>
+
+    <nav class="nav-group" aria-label="Project sections">
+      <div class="nav-head">Project</div>
+      <button class="nav-link" data-view="project"><span class="nav-dot"></span><span>The project</span></button>
+      <button class="nav-link" data-view="roadmap"><span class="nav-dot"></span><span>Roadmap</span></button>
+    </nav>
+
+    <nav class="nav-group" aria-label="Features">
+      <div class="nav-head">Features</div>
+      <div class="nav-note">A group lands here each time <code>/feature</code> specs one. Nothing has been specced yet.</div>
+    </nav>
+
+    <div class="legend" aria-label="What the markers mean">
+      <div class="nav-head">Key</div>
+      <div class="legend-row"><span class="legend-mark legend-mark--ask">!</span><span>Blocked on you &mdash; the build stops until you answer</span></div>
+      <div class="legend-row"><span class="legend-mark legend-mark--open">?</span><span>Open question &mdash; the build continues</span></div>
+      <div class="legend-row"><span class="legend-mark legend-mark--done">&#10003;</span><span>Done, or a decision you approved</span></div>
+      <div class="legend-row"><span class="legend-mark legend-mark--fix">&#8635;</span><span>A real fault found and repaired</span></div>
+    </div>
+  </aside>
+
+  <main>
+
+    <!-- ================= THE PROJECT =================
+         /overview fills every row below from project-plan.md, one row per
+         section, then removes the placeholder class. Keep the row keys;
+         they mirror the plan's eight questions so the two never drift. -->
+    <div id="view-project">
+      <header class="head">
+        <div>
+          <div class="eyebrow">The whole deal</div>
+          <h1>scheduleads-app</h1>
+        </div>
+        <p class="lede">
+          This page is the project's status board. It answers where things stand in a few seconds,
+          without reading a transcript. <code>/overview</code> writes this view and the roadmap
+          from the two plan docs; every feature adds its own group as it starts.
+        </p>
+      </header>
+
+      <section>
+        <h2>From the project plan</h2>
+        <div class="rows">
+          <div class="row">
+            <div class="row-key">1 &middot; Problem</div>
+            <div class="row-val placeholder">Written by <code>/overview</code> from <code>project-plan.md</code> section 1.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">2 &middot; Users</div>
+            <div class="row-val placeholder">Section 2.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">3 &middot; Features</div>
+            <div class="row-val placeholder">Section 3.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">4 &middot; Data</div>
+            <div class="row-val placeholder">Section 4.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">5 &middot; Tech</div>
+            <div class="row-val placeholder">Section 5.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">6 &middot; Monetize</div>
+            <div class="row-val placeholder">Section 6.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">7 &middot; UI/UX</div>
+            <div class="row-val placeholder">Section 7.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">8 &middot; Deployment</div>
+            <div class="row-val placeholder">Section 8.</div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Locked decisions</h2>
+        <div class="empty">
+          <span>No decisions locked yet.</span>
+          <span class="mono">Anything a later feature depends on staying stable gets listed here by <code>/overview</code>.</span>
+        </div>
+      </section>
+
+      <footer>
+        <span>Not yet generated</span>
+        <span>&middot;</span>
+        <span>Sources: blueprint/project-plan.md, build-plan.md, project-overview.md</span>
+      </footer>
+    </div>
+
+    <!-- ================= ROADMAP =================
+         /overview fills this from build-plan.md. One .item per build-plan
+         line, data-state planned | active | done, grouped by the plan's
+         milestone headings. -->
+    <div id="view-roadmap" hidden>
+      <header class="head">
+        <div>
+          <div class="eyebrow">Build order</div>
+          <h1>Roadmap</h1>
+        </div>
+        <p class="lede">
+          Every line of <code>build-plan.md</code>, in build order. Each becomes its own group in
+          this log the moment it starts.
+        </p>
+        <div class="facts">
+          <span class="pill pill--plan">0 planned</span>
+          <span class="sep">/</span>
+          <span class="pill pill--live">0 in progress</span>
+          <span class="sep">/</span>
+          <span class="pill pill--done">0 done</span>
+        </div>
+      </header>
+
+      <section>
+        <h2>Build plan</h2>
+        <div class="empty">
+          <span>No build plan yet.</span>
+          <span class="mono">Run <code>/overview</code> after both plan docs are written.</span>
+        </div>
+      </section>
+
+      <footer>
+        <span>Not yet generated</span>
+        <span>&middot;</span>
+        <span>Source: blueprint/build-plan.md</span>
+      </footer>
+    </div>
+
+    <!-- ================= FEATURE GROUP TEMPLATE =================
+         /feature copies this block once per feature, replaces N and the
+         name, fills the steps from the spec, and adds a nav-link for it.
+         Keep it hidden and out of the nav; it is a stencil, not a view.
+
+    <div id="view-feature-N" hidden>
+      <header class="head">
+        <div>
+          <div class="eyebrow">Feature N of M &middot; milestone</div>
+          <h1>Feature name</h1>
+        </div>
+        <div class="facts">
+          <span class="pill pill--live">In progress</span>
+          <span class="sep">/</span>
+          <span>branch <code>feature/slug</code></span>
+          <span class="sep">/</span>
+          <span>0 of K steps done</span>
+        </div>
+        <div class="gates">
+          <span class="gate-chip" data-state="pass">Gate 1 &mdash; spec agreed</span>
+          <span class="gate-chip">Gate 2 &mdash; built &amp; verified</span>
+          <span class="gate-chip">Gate 3 &mdash; commit granted</span>
+        </div>
+        <div class="rail">
+          <div class="rail-item" data-state="active"><div class="rail-bar"></div><div class="rail-label">1 Step</div></div>
+          <div class="rail-item"><div class="rail-bar"></div><div class="rail-label">2 Step</div></div>
+        </div>
+      </header>
+
+      <section>
+        <h2>Build log &middot; newest first</h2>
+        <div class="log">
+          <div class="entry" data-kind="decided">
+            <div class="dot"></div>
+            <div class="entry-body">
+              <div class="entry-top">
+                <span class="entry-title">Spec approved</span>
+                <span class="kind-tag">Decided</span>
+                <span class="stamp">Mon D</span>
+              </div>
+              <p class="entry-text">What was chosen, and why the other option lost.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Goal</h2>
+        <p>One paragraph from the spec.</p>
+      </section>
+
+      <section>
+        <h2>Build steps</h2>
+        <div class="steps">
+          <div class="step">
+            <div class="box">&#10003;</div>
+            <div class="step-body">
+              <div class="step-name">1 &middot; Step name</div>
+              <p class="step-text">What it does.</p>
+              <div class="verify">Done when: the gate, as written in the spec.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Scope</h2>
+        <div class="scope">
+          <div class="scope-in"><div class="scope-head">In</div><ul><li>...</li></ul></div>
+          <div class="scope-out"><div class="scope-head">Out</div><ul><li>...</li></ul></div>
+        </div>
+      </section>
+
+      <footer>
+        <span>Updated Mon D, YYYY</span>
+        <span>&middot;</span>
+        <span>Source: blueprint/context/current-feature.md</span>
+      </footer>
+    </div>
+    -->
+
+  </main>
+</div>
+
+<script>
+  function selectView(view) {
+    document.querySelectorAll("main > div[id^='view-']").forEach(function (el) {
+      el.hidden = el.id !== "view-" + view;
+    });
+    document.querySelectorAll(".nav-link").forEach(function (link) {
+      if (link.dataset.view === view) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
+    try { localStorage.setItem("scheduleads-app-log-view", view); } catch (e) {}
+  }
+
+  document.querySelectorAll(".nav-link").forEach(function (link) {
+    link.addEventListener("click", function () { selectView(link.dataset.view); });
+  });
+
+  var initial = "project";
+  try {
+    var saved = localStorage.getItem("scheduleads-app-log-view");
+    if (saved && document.getElementById("view-" + saved)) initial = saved;
+  } catch (e) {}
+
+  selectView(initial);
+</script>
