@@ -1,72 +1,112 @@
 # Build Plan
 
-> One of the two planning docs you provide. Write it directly, develop it through
-> any AI conversation, or optionally run `/discovery`. Keep the items high-level
-> even when `project-plan.md` is detailed; later `/feature` specs hold the depth
-> for each build item.
-
-The features that make up this project, high level and in rough build order, one
-line each, no detail (that comes per feature). Rough is fine at first, but before
-`/overview` runs this file should be shaped into a checkbox list the build loop
-can track.
-
-Keep it as a checklist. Run `/feature` with no number to spec the **next
-unchecked** item, or `/feature 3` / `/feature "login"` to pick a specific one.
-Completed features get checked off here, so the build plan doubles as your
-progress tracker. A big item gets split into sub-items (4a, 4b, etc.) when you
-spec it.
-
-## Continuing after the initial build
-
-This is a living roadmap, not a plan that freezes when the first release is
-done. Keep completed items checked, then append new unchecked features as the
-project grows. Optional milestone headings such as `## MVP` and `## Post-MVP`
-keep a longer plan readable without changing how `/feature` finds the next
+Phases have exit conditions. A phase is done when its exit condition is true,
+not when its boxes are ticked. `/feature` with no number specs the next
 unchecked item.
 
-Do not renumber completed features because their archived specs refer back to
-those numbers. Continue with the next unused number. If a new feature materially
-changes the product direction, users, data, stack, monetization, UI/UX, or
-deployment, update the relevant part of `project-plan.md` too. Then re-run
-`/overview` before spec'ing the feature.
+Items 1 to 3 correspond to the first repo's features 1 to 3 and are carried
+over with fixes, not rebuilt. Everything from 4 on is new numbering. The first
+repo's archived specs stay readable by their own numbers in its own folder.
 
-You can edit this file directly or ask the AI to start a new feature by name. If
-`/feature "team workspaces"` does not match an existing item, it will propose the
-new build-plan line and any necessary project-plan changes, wait for approval,
-refresh the overview, and then write the feature spec.
+## Phase 0. Decide
 
-Scaffolding the app (create-next-app, etc.) and prototyping the look are
-pre-build steps, not features (see the README), so don't list them here. Start
-with your first real slice of functionality.
+Exit: the commercial questions in `project-plan.md` have written answers,
+and static mockups exist for the booking modal and both login screens.
 
-A common order that works well: build the core UI with placeholder data first,
-then wire up data, auth, and integrations. Add deployment readiness only when
-the app is worth shipping or a provider config change is part of the work. Adapt
-it to your project.
+- [x] 0a. **Commercial position** - answered 2026-09-18. Booking sits in
+  the $240/mo plan. Tenant order is the agency's own site, the clinic,
+  Latam, Primo. Free/busy is proven on Frank's own Google calendar; clients
+  answer the calendar question at their onboarding
+- [ ] 0b. **Design pass** - static mockups of the booking modal in two
+  tenant themes (the agency's and the clinic's) and of the leads list and
+  settings screens, via `/prototype`. Runs first thing inside the new repo,
+  before item 1 is spec'd
 
-## Format
+## Phase 1. Foundation, carried over
 
-Use checkboxes. Each item should be a feature-sized outcome, not a loose task or
-a whole product area.
+Exit: a second organization can be created through the app with no database
+touch, sign-in lands on that organization without a workaround, and the
+free/busy check returns a real event's busy block from Frank's own connected
+Google calendar, the agency tenant's.
 
-Good:
+- [ ] 1. **Multi-tenant auth, with the org fix** - email-OTP sign-in,
+  create-organization, the superadmin role, and the auto-active organization
+  hook so sign-in resolves the org
+- [ ] 2. **Booking links and availability rules** - the two tables, the
+  public read route, the seed CLI, and the shared-package layout
+- [ ] 3. **Calendar connection** - the table, the cipher, OAuth connect and
+  disconnect, the provider seam, and the free/busy query verified against a
+  real event
 
-- [ ] 1. **Skill submission** - upload a skill package and save its metadata
-- [ ] 2. **Validation result** - run checks and show pass/fail status for a skill
-- [ ] 3. **Directory listing** - browse and filter published skills
-- [ ] 4. **Deployment readiness** - configure Render or Vercel and verify the
-  production build
+## Phase 2. The booking loop
 
-Avoid:
+Exit: a stranger books a real slot on a test page, the business receives the
+lead, the confirmation email with its `.ics` arrives, the calendar shows the
+event, and the cancel link in that email works.
 
-- Upload stuff
-- Database
-- Make it look nice
-- Auth, billing, dashboard, validation, and deploy
+- [ ] 4. **Booking creation** - validate a requested slot against the rules
+  and the live calendar, create contact, lead, and booking
+- [ ] 5. **Confirmations** - email with `.ics` to the customer and a
+  business-side notification, from Primo's template pattern
+- [ ] 6. **Self-serve cancel and reschedule** - a tokenized link in the
+  confirmation
+- [ ] 7. **SMS confirmation** - Twilio. First to cut if the phase runs long
 
-If your first pass is just rough bullets, that is okay. Run `/overview` after
-filling both planning docs; it will flag plan-shape problems and can propose a
-cleaned-up checkbox version before generating the project overview.
+## Phase 3. The widget in the agency's own site
 
-- [ ] 1. **Feature one** - description
-- [ ] 2. **Feature two** - description
+Exit: agents-web takes a real booking through this product, the lead lands
+in the agency's own login, and the site that promises "nothing rented" rents
+nothing.
+
+- [ ] 8. **The booking component** - unstyled trigger, themed modal, one
+  provider per host wrapping children, the face-and-body contract
+- [ ] 9. **Tenant zero wired: agents-web** - the agency's siteConfig holds
+  its slug, the existing contact-inquiry seam calls the API, the site's
+  theme reaches the modal. Frank is the first customer
+
+## Phase 4. The business's login
+
+Exit: the owner can see every lead and change their hours, services, and
+calendar connection without Frank touching the database.
+
+- [ ] 10. **Leads list** - new, contacted, booked, done
+- [ ] 11. **Settings** - hours, services, blackout dates, and the calendar
+  connection, replacing direct edits to `availability_rule`
+
+## Phase 5. Every client
+
+Exit: four organizations, four live sites, zero rented booking.
+
+- [ ] 12. **Face and Body** - the first client. Cal.com comes out from
+  behind the seam its decisions file built for this. Its 45 services become
+  booking links. Ask at onboarding whether the clinic keeps a Google
+  calendar; Square suggests not
+- [ ] 13. **The Latam Painters** - after its own site is finished. First
+  find out whose Calendly has been receiving its bookings. It needs a
+  siteConfig before it can be a tenant
+- [ ] 14. **Primo Painters** - last, because it is live and ranking. The
+  shared modal behind one config value is the best seam in the workspace;
+  the swap is that one value plus the provider component
+
+## Phase 6. Self-serve
+
+Exit: a business the agency did not build a site for pays and takes its first
+booking with no one at the agency involved.
+
+- [ ] 15. **Google OAuth verification** - start first. It is slow
+- [ ] 16. **Hosted booking page** - `/book/<slug>`
+- [ ] 17. **Self-serve onboarding and billing** - signup, pick a plan, Stripe
+  hosted checkout, the webhook writes `organization.plan`
+- [ ] 18. **Plan limits enforced** - the config file gates what each tier
+  can do
+
+## Named, not planned
+
+Nothing above depends on these. Each gets a phase when something does.
+
+- Crew assignment and job scheduling
+- Photo attachments on a lead
+- Embed script for a site the agency did not build
+- Microsoft, CalDAV, and ICS calendar providers
+- SEO tooling, Google Business Profile management, marketing automation
+- AI front of house
