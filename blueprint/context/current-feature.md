@@ -112,7 +112,7 @@ and merges.
   prints the code to the server console, the response body contains no code, and
   a `verification` row exists for that address.
 
-- [ ] **3. Active organization and the role guard.** Write
+- [x] **3. Active organization and the role guard.** Write
   `backend/src/lib/active-organization.ts`, ported from the first repo's
   `frontend/lib/active-organization.ts` with the Next adapters swapped for Hono
   ones: session first, then the active member, then a membership lookup as the

@@ -1184,16 +1184,17 @@
       <span class="where-arrow">&rsaquo;</span>
       <div class="where-leg" data-now="yes">
         <div class="where-key">Step now</div>
-        <div class="where-val">1.3 &middot; Active org and role guard</div>
+        <div class="where-val">1.4 &middot; The package gate</div>
       </div>
       <span class="where-spacer"></span>
       <div class="where-leg">
         <div class="where-key">Item 1 steps</div>
-        <div class="meter" title="1.1 and 1.2 done, 1.3 building, 1.4 to 1.6 to go">
+        <div class="meter" title="1.1 to 1.3 done, 1.4 building, 1.5 and 1.6 to go">
+          <i data-state="done"></i>
           <i data-state="done"></i>
           <i data-state="done"></i>
           <i data-state="active"></i>
-          <i></i><i></i><i></i>
+          <i></i><i></i>
         </div>
       </div>
     </div>
@@ -1403,7 +1404,7 @@
           <span class="gate-chip">Commit granted</span>
         </div>
             <details class="drawer" data-kind="plan" open>
-              <summary>Steps <span class="tag-drift">1.1 and 1.2 done &middot; 1.3 now &middot; 6 in this item</span></summary>
+              <summary>Steps <span class="tag-drift">1.1 to 1.3 done &middot; 1.4 now &middot; 6 in this item</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The work, cut into pieces small enough to review one at a time. Each step opens into what was planned, and once it is done, what actually happened.</p>
 <div class="item-steps">
@@ -1525,12 +1526,12 @@
               </div>
             </details>
 
-            <details class="rstep" data-state="active" open>
-              <summary><span class="sn">1.3</span><span class="sm"></span><span>Active organization and the role guard</span><span class="ss">Now</span></summary>
+            <details class="rstep" data-state="done">
+              <summary><span class="sn">1.3</span><span class="sm"></span><span>Active organization and the role guard</span><span class="ss">Done</span></summary>
               <div class="rstep-body">
                 <p class="rstep-what">The rule the whole product rests on, written once: which business you are acting for comes from your session on the server, never from anything the browser sent. Ported from the first repo, including its refusal to guess when someone belongs to two businesses.</p>
                 <details class="drawer" data-kind="plan">
-                  <summary>The plan <span class="tag-drift">3 pieces</span></summary>
+                  <summary>The plan <span class="tag-drift">as written before starting &middot; 4 pieces</span></summary>
                   <div class="drawer-body">
                     <ul class="substeps">
                     <li>session, then active member, then a membership lookup, then refuse</li>
@@ -1540,11 +1541,41 @@
                   <div class="rstep-when">Done when: signed out is refused, one membership resolves to that business, and two memberships with no active choice is refused rather than guessed at.</div>
                   </div>
                 </details>
+                <details class="drawer" data-kind="reality">
+                  <summary>What actually happened <span class="tag-drift">4 kept, 3 added</span></summary>
+                  <div class="drawer-body">
+                    <p class="drawer-what">The port went in as written. The three additions are all consequences of it being the first guarded code in the project, so it had to define things nothing had needed yet.</p>
+                    <div class="verdict">
+                      <span class="v-kept">4 as planned</span>
+                      <span class="v-added">3 added</span>
+                    </div>
+                    <ul class="substeps">
+                      <li data-outcome="kept">the guard ported from the first repo, reasoning and comments intact</li>
+                      <li data-outcome="kept">session, then active member, then a membership lookup, then refuse</li>
+                      <li data-outcome="kept">middleware putting the user, the business and the role on every request</li>
+                      <li data-outcome="kept">an owner-only guard, for the calendar in item 3 and settings in item 12</li>
+                      <li data-outcome="added">one shared refusal shape for the whole API
+                        <em class="why">The spec gave this to step 1.4, but a guard that refuses has to refuse in some shape, and inventing a second one later is how an API ends up with three. Fixed here: a code and a message, reused from now on.</em></li>
+                      <li data-outcome="added">the business typed onto the request context
+                        <em class="why">So reading it in a later route is checked by the compiler rather than remembered.</em></li>
+                      <li data-outcome="added">the role guard throws if it is mounted without the organization guard before it
+                        <em class="why">Mounted in the wrong order it would have read an empty role and quietly refused everyone, which reads like a permissions bug rather than a wiring one.</em></li>
+                    </ul>
+                    <div class="snags">
+                      <div class="snags-head">What bit</div>
+                      <ul>
+                        <li><b>Being signed in and belonging to nothing is not the same as being signed out</b>, and the first draft would have called both 401. It is now 401 only with no session, and 403 with a session but no single business to act for. The second is a real state a person can sit in, and telling them to sign in again would be useless advice.</li>
+                        <li><b>The ambiguous two-business state is harder to reach than expected.</b> Creating a business makes it active, so the test had to clear that deliberately to get there. Good news in practice, but it means the refusal path would almost never be exercised by accident, which is exactly why it is tested rather than assumed.</li>
+                      </ul>
+                    </div>
+                    <div class="rstep-when">Passed, six checks against the real database, through the actual middleware and a real sign-in: no session is 401; signed in with no business is 403; one membership resolves with the owner role; the owner-only guard lets an owner through; two memberships with no active choice is refused rather than guessed. The throwaway user and two throwaway businesses it created were deleted, and your own row counts were unchanged after.</div>
+                  </div>
+                </details>
               </div>
             </details>
 
-            <details class="rstep" data-state="planned">
-              <summary><span class="sn">1.4</span><span class="sm"></span><span>The package gate</span><span class="ss">Next</span></summary>
+            <details class="rstep" data-state="active" open>
+              <summary><span class="sn">1.4</span><span class="sm"></span><span>The package gate</span><span class="ss">Now</span></summary>
               <div class="rstep-body">
                 <p class="rstep-what">What a business has paid for, enforced in one place. Only one rung exists today, <code>agency</code>, but the gate is built now so later rungs are a config edit rather than a retrofit across 25 items.</p>
                 <details class="drawer" data-kind="plan">
@@ -1563,7 +1594,7 @@
             </details>
 
             <details class="rstep" data-state="planned">
-              <summary><span class="sn">1.5</span><span class="sm"></span><span>Sign-in and create-organization</span><span class="ss">Then</span></summary>
+              <summary><span class="sn">1.5</span><span class="sm"></span><span>Sign-in and create-organization</span><span class="ss">Next</span></summary>
               <div class="rstep-body">
                 <p class="rstep-what">The first screens anyone sees, and the first use of the mockup tokens from <code>prototypes/</code>. Enter an email, get a code, land in your business. Four states, because the three unhappy ones are where a login actually fails people.</p>
                 <details class="drawer" data-kind="plan">
@@ -1769,10 +1800,22 @@
               </div>
             </details>
             <details class="drawer" data-kind="reality">
-              <summary>Log <span class="tag-drift">7 entries, newest first</span></summary>
+              <summary>Log <span class="tag-drift">8 entries, newest first</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The same work as Steps, ordered by date instead of by piece: decisions as they were taken, questions as they came up, faults as they were found. Steps answer what is being built; this answers what happened, and when.</p>
 <div class="log">
+              <div class="entry" data-kind="done">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Step 1.3 done: the tenant boundary exists</span>
+                    <span class="kind-tag">Done</span>
+                    <span class="stamp">Sep 19</span>
+                  </div>
+                  <p class="entry-text">Which business you are acting for now comes from your session on the server and from nowhere else, and it refuses to guess when someone belongs to two. This is the rule every item from 2 to 26 inherits, so it is the one worth having tested rather than assumed.</p>
+                  <p class="entry-text">Also the first three commits on this branch: the planning baseline, the build log and its rules, and the auth work. Before that, the whole day existed only in one working tree with no remote.</p>
+                </div>
+              </div>
               <div class="entry" data-kind="fix">
                 <div class="dot"></div>
                 <div class="entry-body">
