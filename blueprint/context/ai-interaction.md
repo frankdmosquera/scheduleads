@@ -46,7 +46,7 @@ everywhere.
 Every project keeps a live build log published as an Artifact. It is not a
 nice-to-have progress log.
 
-Published at: not yet published
+Published at: https://claude.ai/artifact/R4QgeshVPpKB45BP67xQGF
 
 `/overview` publishes it the first time and writes the URL on that line. Every
 later republish passes that URL as `url`, so the link never changes.

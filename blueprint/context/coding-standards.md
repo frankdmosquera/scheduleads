@@ -1,13 +1,7 @@
 # Coding Standards
 
-> Your conventions. Edit these once to match your stack. The defaults below
-> assume Next.js + TypeScript + Tailwind + Drizzle; change or trim anything that
-> doesn't fit your project.
->
-> Run `/onboard` after installing the Blueprint. It tunes this file to the real
-> project stack, along with `AGENTS.md`, `CLAUDE.md` when present,
-> `ai-interaction.md`, `.gitignore`, and README placement. Review the result
-> before `/overview`.
+Conventions for this monorepo: a Next.js 16 frontend, a Hono API, and
+`packages/shared` between them. npm workspaces, npm as the package manager.
 
 ## TypeScript
 
@@ -27,15 +21,13 @@
 
 - Server components by default
 - Only use `'use client'` when needed (interactivity, hooks, browser APIs)
-- Use Server Actions for form submissions and simple mutations
-- Use API routes when you need:
-  - Webhooks (Stripe, GitHub, better-auth callbacks)
-  - File uploads with progress tracking
-  - Long-running operations
-  - Specific HTTP status codes or headers
-  - Endpoints for future mobile/CLI clients
-  - Third-party integrations
-- Otherwise, fetch data directly in server components
+- All data comes from the Hono API. No Next API routes and no database access
+  from `frontend`. Webhooks, OAuth callbacks and uploads are routes in
+  `backend`, not in Next
+- A Server Action is a thin proxy to the API, used only when a call must not
+  come from the browser (a secret, a rate limit)
+- A `"use server"` module may only export async functions. A constant
+  exported beside an action breaks the build
 - Dynamic routes for item/collection pages
 
 ## File Organization
@@ -51,8 +43,11 @@ the project root. In a monorepo these paths are relative to `frontend/`.
 - Import alias: `@/*` resolves to the project root, so `@/lib/utils`, not
   `@/src/lib/utils`
 
-Shared types in a monorepo live in `packages/shared`, imported from both sides
-rather than redeclared.
+`packages/shared` holds what both sides need: the Drizzle schema and
+migrations, the Zod schemas, the API contract (the Hono `AppType`) and the
+crypto. It exposes subpath exports that point at source files, no barrel,
+because the two workspaces disagree about extensions. Import from there rather
+than redeclaring a shape on either side.
 
 ## Naming
 
@@ -67,6 +62,9 @@ rather than redeclared.
 - Tailwind CSS for all styling
 - Tailwind v4: CSS-first config (`@theme` in `globals.css`), no `tailwind.config.js`
 - Use shadcn/ui components where applicable
+- shadcn here is v4 on Base UI (`@base-ui/react`, style `base-nova`), not
+  Radix. Older shadcn docs and snippets assume Radix internals and data
+  attributes; read the installed component before copying one in
 - No inline styles
 - Dark mode first, light mode as option
 
@@ -83,16 +81,26 @@ rather than redeclared.
 
 ## Data Fetching
 
-- Server components query Drizzle directly
-- Client components use Server Actions
-- Validate all inputs with Zod
-- Scope every user-owned query by the authenticated user id from the session (better-auth); never trust a client-supplied user id
+- Server components fetch from the API. Client components call it through the
+  Hono client typed by the `AppType` in `packages/shared`, or through a
+  Server Action proxy when the call must stay off the browser
+- Validate with the Zod schemas in `packages/shared` at both ends: the form
+  before it sends, the route before it touches the database
+- Every app table is organization-scoped and the scope is a security boundary.
+  `organizationId` is derived server-side from the Better Auth session, never
+  read from anything a client sends
+- Whether the booking widget calls the API from the browser or proxies through
+  the host site's Server Action is open until Phase 3 (`project-plan.md`,
+  open question 5)
 
 ## Error Handling
 
-- Use try/catch in Server Actions
-- Return `{ success, data, error }` pattern from actions
+- API routes answer with the right status and a JSON body: 400 for a Zod
+  failure, 401 or 403 for session and role
+- Server Actions catch and return the `{ success, data, error }` shape
 - Display user-friendly error messages via toast
+- A failed calendar check never reports "free". The booking fails safely with
+  a "temporarily unavailable" message and the business is told to reconnect
 
 ## Testing
 
@@ -210,10 +218,9 @@ permanent truth.
 
 - The backend owns all data access. The frontend never talks to Postgres
   directly.
-- Drizzle schema lives in `backend/src/db/schema.ts`. Migrations run through
-  `drizzle-kit`.
-- Types shared between frontend and backend live in `packages/shared`. Import
-  from there rather than redeclaring a shape on both sides.
+- Drizzle schema and migrations live in `packages/shared` and run through
+  `drizzle-kit` from `backend`. The frontend imports the types, never the
+  connection.
 - Validate request bodies with zod at the route boundary, before any database
   call.
 - Long running work does not belong in a request handler. Split it into a

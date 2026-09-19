@@ -5,33 +5,42 @@ not when its boxes are ticked. `/feature` with no number specs the next
 unchecked item.
 
 Items 1 to 3 correspond to the first repo's features 1 to 3 and are carried
-over with fixes, not rebuilt. Everything from 4 on is new numbering. The first
-repo's archived specs stay readable by their own numbers in its own folder.
+over with fixes, not rebuilt. Everything from 4 on is new numbering,
+renumbered on the evening of 2026-09-18 when the CRM items came in. Only 0a
+was done by then, so nothing archived changes. The first repo's archived
+specs stay readable by their own numbers in its own folder.
 
 ## Phase 0. Decide
 
 Exit: the commercial questions in `project-plan.md` have written answers,
-and static mockups exist for the booking modal and both login screens.
+and static mockups exist for the booking modal, the leads list, the pipeline
+board and the settings screen.
 
 - [x] 0a. **Commercial position** - answered 2026-09-18. Booking sits in
-  the $240/mo plan. Tenant order is the agency's own site, the clinic,
-  Latam, Primo. Free/busy is proven on Frank's own Google calendar; clients
-  answer the calendar question at their onboarding
+  the $240/mo plan. Free/busy is proven on Frank's own Google calendar;
+  clients answer the calendar question at their onboarding. Revised the same
+  evening: the plan is the first rung of a ladder of packages, the product
+  is a CRM, and the tenant order is the agency's own site, Primo, the
+  clinic, Latam
 - [ ] 0b. **Design pass** - static mockups of the booking modal in two
-  tenant themes (the agency's and the clinic's) and of the leads list and
-  settings screens, via `/prototype`. Runs first thing inside the new repo,
-  before item 1 is spec'd
+  tenant themes (the agency's and Primo's), the leads list, the pipeline
+  board and the settings screen, via `/prototype`. Runs first thing inside
+  the new repo, before item 1 is spec'd
 
 ## Phase 1. Foundation, carried over
 
 Exit: a second organization can be created through the app with no database
-touch, sign-in lands on that organization without a workaround, and the
-free/busy check returns a real event's busy block from Frank's own connected
-Google calendar, the agency tenant's.
+touch, sign-in lands on that organization without a workaround, a route
+behind the package gate refuses an organization whose rung does not include
+it, and the free/busy check returns a real event's busy block from Frank's
+own connected Google calendar, the agency tenant's.
 
 - [ ] 1. **Multi-tenant auth, with the org fix** - email-OTP sign-in,
-  create-organization, the superadmin role, and the auto-active organization
-  hook so sign-in resolves the org
+  create-organization, the superadmin role through the `admin` plugin, the
+  auto-active organization hook so sign-in resolves the org, and the package
+  gate: `organization.plan`, the plan-limits config with the one rung
+  `agency`, and the check every module route calls. The rule that tenant
+  code never reads across organizations starts here
 - [ ] 2. **Booking links and availability rules** - the two tables, the
   public read route, the seed CLI, and the shared-package layout
 - [ ] 3. **Calendar connection** - the table, the cipher, OAuth connect and
@@ -41,72 +50,117 @@ Google calendar, the agency tenant's.
 ## Phase 2. The booking loop
 
 Exit: a stranger books a real slot on a test page, the business receives the
-lead, the confirmation email with its `.ics` arrives, the calendar shows the
-event, and the cancel link in that email works.
+lead in its first pipeline stage, the confirmation email with its `.ics`
+arrives, the calendar shows the event, the cancel link in that email works,
+and a second resource can hold the same time as the first.
 
-- [ ] 4. **Booking creation** - validate a requested slot against the rules
-  and the live calendar, create contact, lead, and booking
-- [ ] 5. **Confirmations** - email with `.ics` to the customer and a
+- [ ] 4. **CRM spine** - `contact`, `pipeline_stage` seeded with the four
+  defaults at provisioning, `resource`, and `activity`. The tables and the
+  API routes the loop writes to. Nothing visible yet
+- [ ] 5. **Booking creation** - validate a requested slot against the rules,
+  the free resources and the live calendar; create the contact, the lead in
+  the first stage, the booking on a resource, and the timeline entry
+- [ ] 6. **Confirmations** - email with `.ics` to the customer and a
   business-side notification, from Primo's template pattern
-- [ ] 6. **Self-serve cancel and reschedule** - a tokenized link in the
+- [ ] 7. **Self-serve cancel and reschedule** - a tokenized link in the
   confirmation
-- [ ] 7. **SMS confirmation** - Twilio. First to cut if the phase runs long
+- [ ] 8. **SMS confirmation** - Twilio. First to cut if the phase runs long
 
 ## Phase 3. The widget in the agency's own site
 
 Exit: agents-web takes a real booking through this product, the lead lands
-in the agency's own login, and the site that promises "nothing rented" rents
-nothing.
+in the agency's own organization, and the site that promises "nothing
+rented" rents nothing.
 
-- [ ] 8. **The booking component** - unstyled trigger, themed modal, one
+- [ ] 9. **The booking component** - unstyled trigger, themed modal, one
   provider per host wrapping children, the face-and-body contract
-- [ ] 9. **Tenant zero wired: agents-web** - the agency's siteConfig holds
+- [ ] 10. **Tenant zero wired: agents-web** - the agency's siteConfig holds
   its slug, the existing contact-inquiry seam calls the API, the site's
   theme reaches the modal. Frank is the first customer
 
-## Phase 4. The business's login
+## Phase 4. The CRM, first release
 
-Exit: the owner can see every lead and change their hours, services, and
-calendar connection without Frank touching the database.
+Exit: the owner can see every lead, open a contact and read its timeline, and
+change hours, services, resources, blackout dates and the calendar
+connection, without Frank touching the database.
 
-- [ ] 10. **Leads list** - new, contacted, booked, done
-- [ ] 11. **Settings** - hours, services, blackout dates, and the calendar
-  connection, replacing direct edits to `availability_rule`
+- [ ] 11. **Leads list and contact page** - every lead with its stage, and
+  the contact page with its timeline
+- [ ] 12. **Settings** - hours, services, resources, blackout dates, and the
+  calendar connection, replacing direct edits to `availability_rule`
 
-## Phase 5. Every client
+## Phase 5. The first paying client
+
+Exit: Primo takes a real booking through this product, the lead is in his
+list, Calendly is gone from his site, and the ranking is untouched.
+
+- [ ] 13. **Primo Painters** - the shared modal behind one config value plus
+  the provider component; his crews become resources. Ask first what he
+  needs on day one beyond booking and the leads list
+
+## Phase 6. The CRM, second release
+
+Exit: the owner drags a lead between stages he named himself, sends an email
+from a contact, and sees the reply on that contact's timeline.
+
+- [ ] 14. **Pipeline board** - drag and drop between stages, stages renamed
+  and reordered per business. TanStack Query and dnd-kit arrive here
+- [ ] 15. **Email from the CRM** - templates sent under the business's name
+  through Resend, logged on the timeline, and the BCC capture address that
+  files replies on the contact. The inbound path is decided in this item's
+  spec
+
+## Phase 7. Every client
 
 Exit: four organizations, four live sites, zero rented booking.
 
-- [ ] 12. **Face and Body** - the first client. Cal.com comes out from
-  behind the seam its decisions file built for this. Its 45 services become
-  booking links. Ask at onboarding whether the clinic keeps a Google
-  calendar; Square suggests not
-- [ ] 13. **The Latam Painters** - after its own site is finished. First
+- [ ] 16. **Face and Body** - Cal.com comes out from behind the seam its
+  decisions file built for this. Its 45 services become booking links, its
+  practitioners become resources. Ask at onboarding whether the clinic keeps
+  a Google calendar and whether it takes deposits
+- [ ] 17. **The Latam Painters** - after its own site is finished. First
   find out whose Calendly has been receiving its bookings. It needs a
   siteConfig before it can be a tenant
-- [ ] 14. **Primo Painters** - last, because it is live and ranking. The
-  shared modal behind one config value is the best seam in the workspace;
-  the swap is that one value plus the provider component
 
-## Phase 6. Self-serve
+## Phase 8. The CRM grows
+
+Exit: Primo's crews are scheduled from the CRM, and the owner of any tenant
+reads a report page instead of asking Frank how the month went.
+
+- [ ] 18. **Crew and job scheduling** - a job is a lead that became work, on
+  a resource, across days. The internal calendar shows crews by day
+- [ ] 19. **Reports** - bookings per week, pipeline by stage, lead sources,
+  on shadcn charts
+- [ ] 20. **WhatsApp** - Meta verification, a dedicated number, approved
+  templates; sent and logged like SMS
+
+## Phase 9. Packages and self-serve
 
 Exit: a business the agency did not build a site for pays and takes its first
 booking with no one at the agency involved.
 
-- [ ] 15. **Google OAuth verification** - start first. It is slow
-- [ ] 16. **Hosted booking page** - `/book/<slug>`
-- [ ] 17. **Self-serve onboarding and billing** - signup, pick a plan, Stripe
-  hosted checkout, the webhook writes `organization.plan`
-- [ ] 18. **Plan limits enforced** - the config file gates what each tier
-  can do
+- [ ] 21. **Google OAuth verification** - calendar scopes first, then the
+  Gmail restricted scopes and their security assessment. Start as soon as
+  Phase 3 is done; it is a form and a wait, not code
+- [ ] 22. **Packages ladder and the admin area** - the rungs above `agency`
+  in the plan-limits config, what each unlocks, and the admin screens: who
+  is on what, move a client up. The gate itself exists since item 1
+- [ ] 23. **Hosted booking page** - `/book/<slug>`
+- [ ] 24. **Self-serve onboarding and billing** - signup, pick a package,
+  Stripe hosted checkout, the webhook writes `organization.plan`
+- [ ] 25. **Two-way Gmail sync** - after 21. The owner's mailbox threads land
+  on the contact timeline
 
 ## Named, not planned
 
 Nothing above depends on these. Each gets a phase when something does.
 
-- Crew assignment and job scheduling
 - Photo attachments on a lead
+- Per-resource working hours
+- Crew member sign-in
 - Embed script for a site the agency did not build
 - Microsoft, CalDAV, and ICS calendar providers
-- SEO tooling, Google Business Profile management, marketing automation
+- SEO reporting and Google Business Profile posting, as a package
+- Visitor analytics, as a package, source undecided
+- Marketing automation
 - AI front of house

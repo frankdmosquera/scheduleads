@@ -29,3 +29,6 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# Platform volume in development (STORAGE_DIR)
+data/

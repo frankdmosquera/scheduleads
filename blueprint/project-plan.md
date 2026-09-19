@@ -2,9 +2,11 @@
 
 Scheduleads, second start. Written 2026-09-18 from a full read of the
 workspace: the agency site, the three client sites, codestash, and the first
-scheduleads repo. That repo is kept, untouched, at `ai-web-agency/scheduleads`
-and on GitHub. What it proved is carried over by decision, listed under
-"Carried over" below. Nothing else is.
+scheduleads repo. Revised the same evening, after the discovery conversation
+that widened the product from a booking module to a CRM. The first repo is
+kept, untouched, at `ai-web-agency/scheduleads` and on GitHub as
+`scheduleads-archive`. What it proved is carried over by decision, listed
+under "Carried over" below. Nothing else is.
 
 ## 0. Honest starting state
 
@@ -32,6 +34,14 @@ Not the optimistic version.
 - Three real Calgary businesses are ready to consume this: two painters and a
   medical aesthetics clinic. All three currently rent booking from a third
   party or have none.
+- Primo Painters is live, ranking, and its owner is ready to take work from
+  Monday 2026-09-21. The site started ranking before he was ready, and he
+  knows. It is the first client that pays for the plan. The first draft of
+  this plan had it last.
+- Face and Body is Frank's sister's clinic. It pays cost-cover, around $50 a
+  month for the tools it uses. No launch deadline on this product's side.
+- The first draft sized the business's login at "two screens for a long
+  time." The discovery conversation retired that. Section 3.
 
 ## 1. Problem
 
@@ -48,42 +58,54 @@ the wrong hours. Nobody owns the client journey from "I found you" to "the job
 is done and paid."
 
 The first repo framed this as "replace Calendly on one painter's site." That
-framing is retired. The product is the agency's own booking module, dropped
-into every site the agency builds, with the business's leads behind a login
-the business owns.
+framing is retired. The product is a CRM for the small service businesses the
+agency builds sites for. Booking is its first module, because every lead
+starts as a visitor on a site the agency built and a booking is the first
+thing the business needs from that visitor. The pipeline, the email, the crew
+schedule and the reports grow around it. The journey from "I found you" to
+"the job is done and paid" is what the product owns.
 
 ## 2. Users
 
 - **Owner/operator.** Runs a small local service business. The person who does
   the work, not a marketing department. Non-technical, short on time. Wants
-  to know who booked, when, and what they want. Signs in to scheduleads
-  rarely and expects it to already know things.
+  to know who booked, when, what they want, and where every lead stands.
+  Signs in to scheduleads a few times a week and expects it to already know
+  things.
 - **Customer/lead.** Books on the business's own website. Never authenticates.
   Never sees the word scheduleads. Sees the business's brand and a calendar.
-- **Frank, as the agency.** Creates each organization, seeds its services and
-  hours, embeds the widget in the site he built, hands over sign-in. Platform
-  superadmin. The only person who can delete an organization.
-- **Crew member.** Later. Assigned to jobs. Not in this plan's phases.
+- **Frank, as the agency.** Two hats in one app. As a business, the agency is
+  organization number one: its own leads and bookings live in the CRM exactly
+  like a client's. As the platform, Frank creates each organization, seeds
+  its services and hours, embeds the widget in the site he built, hands over
+  sign-in, and sees who is on which package. That hat is the Better Auth
+  `admin` role and a separate admin area. The only person who can delete an
+  organization.
+- **Crew member.** Later. Assigned to jobs through the crew schedule. Not a
+  sign-in until a business asks for one.
 - **Self-serve customer.** Later. A business the agency did not build a site
-  for, who signs up and pays on their own. Phase 6.
+  for, who signs up and pays on their own. Phase 9.
 
 The four tenants, in order:
 
 | Tenant | Business | Booking today | Site status |
 |---|---|---|---|
 | agents-web | The agency itself. Tenant zero | A contact form to Resend. No calendar, no persistence. Its plans say "Calendly now, own system later" and no Calendly was ever wired | Built, not live. The offer, pricing, and the only public mention of scheduleads sit on unmerged branches |
-| face-and-body | Medical aesthetics clinic, Calgary SE. First client | Cal.com embed behind a provider-agnostic seam, chosen 2026-09-17 | In build. Six commits. Booking explicitly designed to be swapped for this product |
+| primo-painters | Painting, Calgary. Live and ranking. The first paying client | One shared Calendly modal, well engineered, single URL in siteConfig | Live on main, owner ready 2026-09-21. 58 commits ahead on a design branch |
+| face-and-body | Medical aesthetics clinic, Calgary SE. Family, cost-cover | Cal.com embed behind a provider-agnostic seam, chosen 2026-09-17 | In build. Six commits. Booking explicitly designed to be swapped for this product |
 | the-latam-painters | Painting, Calgary | Two hardcoded Calendly popups, both pointing at Primo's account | Unfinished. Phone numbers are still `1234567890` in five files. No siteConfig |
-| primo-painters | Painting, Calgary. Live and ranking. Last | One shared Calendly modal, well engineered, single URL in siteConfig | Live on main. 58 commits ahead on a design branch |
 
 ## 3. Features
 
 The build plan holds the phases. This section holds the shape.
 
-**Phase 0 decides. Phases 1 to 5 are the agency-provisioned product. Phase 6
-is self-serve. Everything after is named, not planned.**
+**Phase 0 decides. Phases 1 to 7 are the agency-provisioned product: the
+booking loop, the CRM in two releases, and every tenant wired, with the first
+paying client wired between the two CRM releases rather than after both.
+Phase 8 grows the CRM for the tenants that exist. Phase 9 is packages and
+self-serve. Everything after is named, not planned.**
 
-The product is two things that must stay separate in code:
+The product is one app with three parts that must stay separate in code:
 
 1. **The booking module.** A component a client site imports. It shows the
    business's services and availability, checks the business's real
@@ -91,15 +113,40 @@ The product is two things that must stay separate in code:
    host site and never names its provider. This is what face-and-body's
    decisions file already specifies: "pages ask to book a service; they do
    not know who answers."
-2. **The business's login.** Where the owner sees leads and bookings and
-   changes their hours. Small. Two screens for a long time.
+2. **The business's login. The CRM.** Where the owner sees leads, moves them
+   through a pipeline, reads and sends email on a contact, changes hours and
+   services, and later schedules crews and reads reports. Pipedrive and
+   Salesmate are the reference feel: a board, drag and drop, nothing that
+   needs a manual.
+3. **The admin area.** Frank's platform hat. Organizations, packages, who is
+   using what, moving a client up a package. Behind the `admin` role, in its
+   own route group, reading across organizations. Tenant code never reads
+   across organizations and never asks "is this the agency." The agency's
+   own organization gets no special case anywhere. Break that rule once and
+   the two hats bleed into each other.
+
+CRM modules, in the order they arrive:
+
+- **Leads and pipeline.** Contacts, a lead per job, stages the business
+  defines, and an activity timeline on every contact that every other module
+  writes to.
+- **Email.** Send from the CRM under the business's name, logged on the
+  timeline. Replies captured through a per-business BCC address. Two-way
+  mailbox sync is a Phase 9 item behind Google's verification.
+- **Crew and job scheduling.** Resources (a crew, a practitioner, an
+  estimator) that bookings and jobs are assigned to. The customer-facing
+  calendar books an appointment; the internal calendar puts the job on a
+  crew across days.
+- **Messaging.** SMS through Twilio in Phase 2. WhatsApp later, next to it.
+- **Reports.** Bookings, pipeline by stage, lead sources, on shadcn charts.
+- **Packages.** Section 6.
 
 Three delivery modes, in order of need:
 
 - **Imported component** in a site the agency builds. Every current tenant.
   Phases 3 and 5.
 - **Hosted page** at `/book/<slug>`. A link for an email signature or a
-  Google profile. Also the entry point for a self-serve customer. Phase 6.
+  Google profile. Also the entry point for a self-serve customer. Phase 9.
 - **Embed script** for a site the agency did not build. Named, not planned.
 
 ## 4. Data
@@ -124,31 +171,50 @@ Carried over from the first repo, verified against Railway Postgres:
 Planned, shapes locked in the first repo's overview and kept:
 
 - `contact`: name, email, phone, organization-scoped.
-- `lead`: the job details, source, tied to a contact.
-- `booking`: scheduled time, status, the calendar event id, a cancel token.
+- `lead`: the job details, source, tied to a contact, and its current stage.
+- `booking`: scheduled time, status, the calendar event id, a cancel token,
+  and the resource it is assigned to.
 
 New here:
 
 - `organization.plan` as an additional Better Auth field, defaulting to
-  `agency`, never settable from the client. Codestash's pattern. Reads as
-  "provisioned by the agency, billed on the agency's plan." Phase 6 adds paid
-  tiers beside it.
+  `agency`, never settable from the client. Codestash's pattern. Reads as the
+  package. `agency` means "provisioned by the agency, on the first rung."
+  The plan-limits config and the gate every module route checks are built
+  in Phase 1 with this one rung, so packages are never retrofitted. Section
+  6 adds rungs beside it.
+- `pipeline_stage`: per organization, ordered, named by the business. Seeded
+  with new, contacted, booked, done at provisioning. A lead points at one.
+  The first draft had these four as a fixed set; a table costs the same now
+  and a migration later.
+- `resource`: per organization. A crew, a practitioner, an estimator. Name
+  and active flag; working hours of its own come later. A booking and a job
+  point at one. Capacity is how many resources are free at a time, so a
+  clinic with three practitioners takes three bookings at 2pm and a painter
+  with one estimator takes one. An organization with no resources behaves as
+  one.
+- `activity`: the timeline. Per contact, typed: booking created, stage
+  changed, email sent, email received, note, SMS. Every module writes here;
+  the CRM screens read here.
+- `job`: later, with crew scheduling. A lead that became work, on a resource,
+  across days.
 
 Locked, carried from the first repo:
 
 - Every app table is organization-scoped and the scope is a security
   boundary. `organizationId` is derived server-side from the session, never
   read from anything a client sends.
-- `availability_rule` is org-scoped, not per booking link.
+- `availability_rule` is org-scoped, not per booking link. Per-resource hours
+  are a later addition on top of it, not a replacement.
 
 ## 5. Tech
 
-Same stack as the first repo. The research found nothing to change and three
+Same stack as the first repo. The research found nothing to change and a few
 things to add.
 
-- **Next.js 16** (`frontend`): the business's login and, in Phase 6, the
+- **Next.js 16** (`frontend`): the CRM, the admin area and, in Phase 9, the
   hosted booking page.
-- **Hono** (`backend`) on Railway: the one API the widget and the login both
+- **Hono** (`backend`) on Railway: the one API the widget and the CRM both
   call. Persistent Node, so the database pool and the calendar token refresh
   live in one process.
 - **npm workspaces**: `frontend`, `backend`, `packages/shared` holding the
@@ -162,53 +228,90 @@ things to add.
   plugin for the platform superadmin. Codestash's config is the reference,
   including the owner role with `organization:delete` removed.
 - **Resend + React Email**: confirmations, the `.ics` invite, the business
-  notification, cancel and reschedule links. Primo's `emails/contact-lead.tsx`
-  is the template pattern: hex colours not tokens, timezone pinned, a `tel:`
-  button.
+  notification, cancel and reschedule links, and in Phase 6 the email the
+  business sends from the CRM. Primo's `emails/contact-lead.tsx` is the
+  template pattern: hex colours not tokens, timezone pinned, a `tel:` button.
 - **Google Calendar API**: OAuth plus a live free/busy query at booking time.
   Carried over whole.
 - **Twilio** for SMS. Kept from the first plan, Phase 2, and the first thing
-  to cut if Phase 2 runs long.
+  to cut if Phase 2 runs long. WhatsApp can ride the same Twilio account
+  later.
+
+Frontend libraries decided here, installed at the feature that needs them,
+asked first like every dependency:
+
+- **TanStack Query** for the CRM screens. The pipeline board needs optimistic
+  drag and drop with cache invalidation, which is exactly its job.
+- **dnd-kit** for the board's drag and drop.
+- **shadcn charts** for reports. They sit on Recharts.
+- **No state manager** until a real cross-component client state shows up.
+  Zustand is the answer when it does.
 
 Added:
 
 - **A design pass before Phase 2.** Static mockups of the booking modal in
-  each tenant's theme and of the login's two screens. The Blueprint's
-  prototype step. The first repo never ran it.
+  two tenant themes, the leads list, the pipeline board and settings. The
+  Blueprint's prototype step. The first repo never ran it.
 - **Codestash's three helpers, ported not rewritten.** The
   auto-active-organization hook, `requireOrgRole`, and the plan-limits config
   file shape.
 - **A siteConfig contract for host sites.** The widget reads the tenant slug
   and theme from the host's `siteConfig.ts`. Primo, primo-v2, and
   face-and-body have one. Latam needs one before it can be a tenant.
+- **An inbound email path for the BCC capture address.** Resend inbound if it
+  covers it, otherwise Cloudflare Email Routing into the API. TODO, decided
+  at the email item.
 
 ## 6. Monetize
 
 **Motion A first: agency-provisioned.** The product ships inside the agency's
 monthly plan. Frank creates the org and bills the client as the agency. No
-signup page, no Stripe, no self-serve pricing until Phase 6. This is what the
+signup page, no Stripe, no self-serve pricing until Phase 9. This is what the
 agency's own offer notes say: "bundled into the top packages as the client's
 own CRM," and "sold on its own afterwards."
 
-**Decided 2026-09-18: booking is part of the $240/mo plan.** A client on the
-plan gets scheduleads. A client not on the plan keeps whatever booking they
-have, Calendly included. The plan is what pays for keeping each client's
-calendar connected and the product maintained; a booking tool nobody is paid
-to keep alive is a liability. The services page currently also sells booking
-as a bundled setup item and as an $800 add-on. Both come off. That is an
-agents-web change and belongs in its build plan, not this one.
+**Decided 2026-09-18: booking is part of the $240/mo plan, and the plan is
+the first rung of a ladder of packages.** A client on the plan gets
+scheduleads. A client not on any package keeps whatever booking they have,
+Calendly included. The plan is what pays for keeping each client's calendar
+connected and the product maintained; a booking tool nobody is paid to keep
+alive is a liability.
 
-**Motion B, Phase 6: self-serve.** Per-seat tiers on Stripe hosted checkout,
-following codestash's locked design: three plans, a trial tier, every limit
-in one config file, a webhook that writes `organization.plan`. The numbers
-are not codestash's numbers. They are set when a second business that the
-agency did not build a site for asks to pay.
+Each package unlocks modules: booking, the pipeline, email, crews, reports,
+and later SEO reporting and visitor analytics. `organization.plan` holds the
+rung. Moving a client up is Frank changing that value until Stripe arrives in
+Phase 9. The price of each rung above the first is not set. Primo pays the
+first rung. The clinic pays cost-cover, which is a private arrangement, not a
+rung the product knows about.
+
+The gate exists from Phase 1. One config file maps each rung to the modules
+and limits it unlocks, codestash's `plan-limits.ts` shape, and every module
+route checks it before answering. Which module sits on which rung and what
+each rung costs are edits to that file, not code, which is why they can be
+decided late without working backwards. In the CRM a locked module says
+which package includes it. For an agency-provisioned client the way up is a
+conversation with Frank; in self-serve it is Stripe.
+
+Off-page SEO is work Frank does, not work the tool does. An SEO package pays
+for the hours; the tool posts to the Google profile, tracks rankings and
+shows the client the report that proves them. If the tool is ever to do the
+work itself, that is a different product and gets its own plan.
+
+The services page currently also sells booking as a bundled setup item and as
+an $800 add-on. Both come off. That is an agents-web change and belongs in
+its build plan, not this one.
+
+**Motion B, Phase 9: self-serve.** Per-seat tiers on Stripe hosted checkout,
+following codestash's locked design: a trial tier, every limit in one config
+file, a webhook that writes `organization.plan`. The numbers are not
+codestash's numbers. They are set when a second business that the agency did
+not build a site for asks to pay.
 
 Long-term, named not planned: SEO tooling, Google Business Profile
-management, marketing automation, AI front of house. The agency's project
-plan calls these steps 3 and 4 of its revenue arc and says they are this
-product. They are not in any phase here because nothing in phases 0 to 6
-depends on them.
+management, visitor analytics, marketing automation, AI front of house. The
+agency's project plan calls these steps 3 and 4 of its revenue arc and says
+they are this product. They are not in any phase here because nothing in
+phases 0 to 9 depends on them.
 
 ## 7. UI/UX
 
@@ -227,13 +330,20 @@ call. A readiness signal with a hard ceiling so a stuck spinner is
 impossible. Primo's `calendly-provider.tsx` is the reference. The Calendly
 parts come out, the architecture stays.
 
-**The login is two screens for a long time.** A leads list with four states
-(new, contacted, booked, done) and a settings page for hours, services, and
-the calendar connection. Sign-in and create-organization already exist.
+**The login is the CRM.** A leads list, a pipeline board with drag and drop
+between stages the business names, a contact page with its timeline and an
+email composer, and a settings page for hours, services, resources and the
+calendar connection. Pipedrive and Salesmate are the reference feel. Sign-in
+and create-organization already exist. The first draft said "two screens for
+a long time"; the CRM decision replaced that.
 
-**Design happens once, before Phase 2, as static mockups.** Both screens of
-the login and the booking modal in at least two tenant themes. Until those
+**Design happens once, before Phase 2, as static mockups.** The booking modal
+in two tenant themes, the agency's and Primo's since Primo is the second
+tenant, plus the leads list, the pipeline board and settings. Until those
 exist, no feature that renders UI gets spec'd.
+
+**Reports are graphs, later.** shadcn charts on a dashboard: bookings per
+week, pipeline by stage, lead sources.
 
 ## 8. Deployment
 
@@ -244,10 +354,13 @@ exist, no feature that renders UI gets spec'd.
   from the browser or proxies through its own server action. Primo's contact
   form holds the rationale for the second: a public URL anyone can POST to
   has no auth and no rate limit. Decide when the first tenant is wired.
-- Google OAuth consent stays in Testing with test users until Phase 6.
+- Google OAuth consent stays in Testing with test users until Phase 9.
   Testing-mode refresh tokens expire after seven days, so a tenant's
   connection will need reconnecting during development. Google's app
-  verification is slow and is Phase 6's first task, not its last.
+  verification is slow and is Phase 9's first task, not its last. Gmail's
+  read and modify scopes are restricted scopes: verification plus an annual
+  third-party security assessment. That is why two-way mailbox sync sits
+  behind verification and not before it.
 - Env, names not values: `DATABASE_URL`, `BETTER_AUTH_SECRET`,
   `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
   `CALENDAR_TOKEN_KEY`, `RESEND_API_KEY`, `TWILIO_*`, `PORT`,
@@ -272,7 +385,7 @@ with the known fix applied, not a copy.
 | codestash | `use-auto-active-organization.ts`, `require-org-role.ts`, the `plan-limits.ts` shape, the `admin` plugin superadmin, the owner role without delete | Port. Rename to this repo's naming standard |
 | primo-painters | `emails/contact-lead.tsx`, the `calendly-provider.tsx` architecture, `BookNowTrigger.tsx`, the three-gate server action | Take the pattern. Remove every Calendly-specific line |
 | face-and-body | The swappable-booking contract: `Service.bookingId` as an opaque handle, pages ask to book a service and do not know who answers, the UI never names the provider | Adopt as the widget's public contract |
-| agents-web | `send-contact-inquiry-action.ts` and `contact-submission-schema.ts` | The seam the agency's own site swaps to the API at Phase 5 |
+| agents-web | `send-contact-inquiry-action.ts` and `contact-submission-schema.ts` | The seam the agency's own site swaps to the API at Phase 3 |
 
 Two things the first repo recorded that must not be relearned:
 
@@ -284,14 +397,18 @@ Two things the first repo recorded that must not be relearned:
 
 ## Decided 2026-09-18
 
-1. **Tenant order: the agency's own site first, then the clinic, then Latam,
-   then Primo.** The agency site is tenant zero because it has no client to
+1. **Tenant order: the agency's own site, then Primo, then the clinic, then
+   Latam.** The agency site is tenant zero because it has no client to
    coordinate, no ranking to risk, and it is the site that promises "nothing
-   rented" while renting. Frank is, realistically, the first customer. The
-   clinic is the first client: launching now, contract already written, 45
-   services forcing the per-service model right on day one. Latam waits on
-   its own site being finished. Primo is last because it is live and
-   ranking.
+   rented" while renting. Frank is, realistically, the first customer. Primo
+   second, revised the same evening from last: it is live, ranking, and the
+   first client that pays for the plan. The swap is one config value plus
+   the provider component, one commit to revert, and Primo keeps Calendly
+   until the loop is proven on the agency site. Primo is wired after the
+   CRM's first release, the leads list and settings, and before the pipeline
+   board and email, so the paying client never waits on the second release.
+   The clinic third: family, cost-cover, 45 services forcing the per-service
+   model with no deadline. Latam waits on its own site being finished.
 2. **Calendars.** The agency tenant uses Frank's own Google account, the one
    the first repo already connected and verified against. Phase 1 proves
    free/busy on that calendar. For clients, the calendar question is asked
@@ -300,12 +417,40 @@ Two things the first repo recorded that must not be relearned:
    Phase 1 gate for the agency tenant only, not a Phase 2 gate for the
    product.
 3. **Booking sits in the plan.** Section 6.
+4. **Scheduleads is a CRM.** Booking first, because that is where every lead
+   starts; the pipeline, email, crews and reports grow around it. Section 3.
+5. **Three tables move early.** Pipeline stages, resources and the activity
+   timeline are built in Phase 2, before anything reads them, so the CRM
+   fits later without a rewrite. Section 4.
+6. **Email is send-only plus BCC capture first.** Two-way Gmail sync is Phase
+   9, behind Google's restricted-scope verification. Section 8.
+7. **One app, two hats.** The agency is organization number one; the platform
+   is an admin area behind the admin role; tenant code never special-cases
+   the agency. Section 3.
+8. **Packages are a ladder**, `organization.plan` holds the rung, and the
+   gate that reads the ladder is built in Phase 1 with one rung so nothing is
+   retrofitted. Section 6.
+9. **WhatsApp is named next to SMS**, not a launch feature. Per-message cost
+   in Canada is small (marketing about 2.5 cents, utility under half a
+   cent); the cost is Meta verification, a dedicated number and approved
+   templates. Phase 8.
+10. **Frontend libraries.** TanStack Query, dnd-kit and shadcn charts, each
+    installed at the feature that needs it. No state manager until one is
+    needed. Section 5.
 
 ## Open questions
 
-4. **Whose Calendly has been receiving Latam's bookings?** Both buttons point
-   at Primo's account. Either Latam's bookings have been landing in Primo's
-   calendar, or Latam never had its own. Ask before Latam is onboarded, in
-   Phase 5.
-5. **Browser-to-API, or proxied through the host's server action?** Section
-   8. Decided at Phase 3, not before.
+11. **Whose Calendly has been receiving Latam's bookings?** Both buttons
+    point at Primo's account. Either Latam's bookings have been landing in
+    Primo's calendar, or Latam never had its own. Ask before Latam is
+    onboarded, in Phase 7.
+12. **Browser-to-API, or proxied through the host's server action?** Section
+    8. Decided at Phase 3, not before.
+13. **Does the clinic take deposits at booking?** Square suggests she might.
+    Asked at her onboarding, like the calendar question. If yes, payment at
+    booking becomes an item before her swap.
+14. **Which analytics source feeds the visitor package?** Search Console,
+    Vercel analytics or Plausible. Decided when that package is built.
+15. **What does Primo need on day one beyond booking and the leads list?**
+    Asked before his swap.
+16. **The inbound path for the BCC capture address.** Section 5.

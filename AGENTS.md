@@ -7,7 +7,14 @@ this file, so there is a single source of truth.
 
 ## What this is
 
-A description of your project and the problem it solves.
+Scheduleads is the agency's own booking module: a component dropped into
+every site the agency builds, one API behind it, and a small login where the
+business sees its leads and bookings and changes its hours. Customers book on
+the business's own site under the business's brand and never see the product's
+name. Four tenants, in order: the agency's own site, the Face and Body clinic,
+The Latam Painters, Primo Painters. Booking ships inside the agency's $240/mo
+plan; self-serve signup is Phase 6. The plans under `blueprint/` hold the
+detail.
 
 A monorepo: a Next.js frontend and a Hono API deployed separately, with Postgres
 behind the API through Drizzle. Two deploy units, two sets of environment
@@ -215,11 +222,17 @@ scripts - every command targets one workspace explicitly.
 - Backend dev server: `npm run dev --workspace=backend` (http://localhost:3001)
 - Frontend build: `npm run build --workspace=frontend`
 - Backend build: `npm run build --workspace=backend`
+- Frontend start (serves the build): `npm run start --workspace=frontend`
+- Backend start (runs `dist/`): `npm run start --workspace=backend`
 - Frontend lint: `npm run lint --workspace=frontend`
 
-Testing is opt-in. If this project does not already have a unit test runner, run
-`/tests` or `$tests` to add one and update this section with the real test
-commands.
+No separate typecheck script: `next build` typechecks the frontend and the
+backend build is `tsc`. `packages/shared` has no scripts; both sides consume
+it as source.
+
+No unit test runner is configured, so no test gate applies. Run `/tests` to
+add one and record the real test command here. There is no `Verify` command
+and no GitHub check yet; `/ci` sets those up when wanted.
 
 Browser testing is also opt-in. Run `/browser-tests` or `$browser-tests` to add
 or normalize a browser harness and document its exact command as `Browser

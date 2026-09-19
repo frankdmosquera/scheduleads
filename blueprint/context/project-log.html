@@ -705,7 +705,7 @@
   <aside class="side">
     <div class="brand">
       <div class="brand-name">scheduleads-app</div>
-      <div class="brand-sub">Build log<br>Not yet published</div>
+      <div class="brand-sub">Build log<br>Updated Sep 18, 2026</div>
     </div>
 
     <nav class="nav-group" aria-label="Project sections">
@@ -752,49 +752,58 @@
         <div class="rows">
           <div class="row">
             <div class="row-key">1 &middot; Problem</div>
-            <div class="row-val placeholder">Written by <code>/overview</code> from <code>project-plan.md</code> section 1.</div>
+            <div class="row-val">The agency promises "nothing rented" and every site it ships rents booking from Calendly or Cal.com. Small service businesses stitch together a booking tool, a contact form that emails into a void, a CRM they never open and a Google listing with the wrong hours. Scheduleads is the CRM that owns the journey from "I found you" to "the job is done and paid," starting with the booking.</div>
           </div>
           <div class="row">
             <div class="row-key">2 &middot; Users</div>
-            <div class="row-val placeholder">Section 2.</div>
+            <div class="row-val">The owner/operator, who wants to know who booked and where every lead stands. The customer, who books on the business's own site and never sees the product's name. Frank in two hats: organization number one, and the platform admin behind the <code>admin</code> role. Crew members and self-serve customers later. Tenants in order: agents-web, Primo Painters, Face and Body, The Latam Painters.</div>
           </div>
           <div class="row">
             <div class="row-key">3 &middot; Features</div>
-            <div class="row-val placeholder">Section 3.</div>
+            <div class="row-val">One app, three parts kept separate in code: the booking module a client site imports, the CRM login (leads, pipeline board, email, settings, later crews and reports), and the admin area. Nine phases: foundation, the booking loop, the agency site wired, CRM first release, Primo, CRM second release, every client, the CRM grows, packages and self-serve.</div>
           </div>
           <div class="row">
             <div class="row-key">4 &middot; Data</div>
-            <div class="row-val placeholder">Section 4.</div>
+            <div class="row-val">Better Auth's organization tables plus <code>booking_link</code>, <code>availability_rule</code> and <code>calendar_connection</code> carried from the first repo. <code>contact</code>, <code>lead</code> and <code>booking</code> as locked shapes. New from item 4: <code>pipeline_stage</code>, <code>resource</code> and <code>activity</code>, so stages, capacity and the timeline are tables from the start. Every table organization-scoped from the session, never the client.</div>
           </div>
           <div class="row">
             <div class="row-key">5 &middot; Tech</div>
-            <div class="row-val placeholder">Section 5.</div>
+            <div class="row-val">Next.js 16 frontend on Vercel, Hono API on Railway, Postgres with Drizzle, <code>packages/shared</code> for the schema and the API contract. Better Auth with the organization, emailOTP and admin plugins. Resend, Google Calendar free/busy, Twilio. TanStack Query, dnd-kit and shadcn charts arrive at the features that need them, asked first.</div>
           </div>
           <div class="row">
             <div class="row-key">6 &middot; Monetize</div>
-            <div class="row-val placeholder">Section 6.</div>
+            <div class="row-val">Agency-provisioned first. Booking sits in the $240/mo plan, the first rung of a ladder of packages. Each rung unlocks modules through the plan-limits config, and the gate exists from item 1 so nothing is retrofitted. Primo pays the first rung; the clinic pays cost-cover. Off-page SEO stays Frank's work; the tool reports it. Stripe self-serve is Phase 9.</div>
           </div>
           <div class="row">
             <div class="row-key">7 &middot; UI/UX</div>
-            <div class="row-val placeholder">Section 7.</div>
+            <div class="row-val">The widget is an unstyled trigger plus a modal themed by the host site, and the modal never names its provider. The login is the CRM, with Pipedrive and Salesmate as the reference feel. Static mockups come first in item 0b: the modal in the agency's and Primo's themes, the leads list, the board and settings. No UI feature is specced before they exist.</div>
           </div>
           <div class="row">
             <div class="row-key">8 &middot; Deployment</div>
-            <div class="row-val placeholder">Section 8.</div>
+            <div class="row-val">frontend to Vercel, backend and Postgres on Railway, all already provisioned. CORS allow-list from <code>WIDGET_ORIGINS</code>; browser-to-API or proxied through the host is decided in Phase 3. Google OAuth stays in Testing until Phase 9; Gmail's restricted scopes need verification plus a security assessment. Losing <code>CALENDAR_TOKEN_KEY</code> breaks every stored calendar connection.</div>
           </div>
         </div>
       </section>
 
       <section>
         <h2>Locked decisions</h2>
-        <div class="empty">
-          <span>No decisions locked yet.</span>
-          <span class="mono">Anything a later feature depends on staying stable gets listed here by <code>/overview</code>.</span>
+        <div class="notes">
+          <ul>
+            <li>Every app table is organization-scoped and the scope is a security boundary. <code>organizationId</code> comes from the session on the server, never from a client.</li>
+            <li><code>availability_rule</code> is org-scoped, not per booking link. Per-resource hours come later on top of it.</li>
+            <li><code>pipeline_stage</code>, <code>resource</code> and <code>activity</code> are tables from item 4 onward, never enums.</li>
+            <li>Tenant code never reads across organizations and never asks "is this the agency." The agency's own organization gets no special case.</li>
+            <li>The package gate reads <code>organization.plan</code> from item 1. Rungs above <code>agency</code> are a config edit, not code.</li>
+            <li>Email is send-only plus BCC capture first. Two-way Gmail sync waits for Google's restricted-scope verification.</li>
+            <li>The modal never names its provider and the host's buttons say "Book now."</li>
+            <li>No feature that renders UI gets specced before the item 0b mockups exist.</li>
+            <li>A failed calendar check never reports "free."</li>
+          </ul>
         </div>
       </section>
 
       <footer>
-        <span>Not yet generated</span>
+        <span>Generated Sep 18, 2026</span>
         <span>&middot;</span>
         <span>Sources: blueprint/project-plan.md, build-plan.md, project-overview.md</span>
       </footer>
@@ -815,24 +824,87 @@
           this log the moment it starts.
         </p>
         <div class="facts">
-          <span class="pill pill--plan">0 planned</span>
+          <span class="pill pill--plan">26 planned</span>
           <span class="sep">/</span>
           <span class="pill pill--live">0 in progress</span>
           <span class="sep">/</span>
-          <span class="pill pill--done">0 done</span>
+          <span class="pill pill--done">1 done</span>
         </div>
       </header>
 
       <section>
         <h2>Build plan</h2>
-        <div class="empty">
-          <span>No build plan yet.</span>
-          <span class="mono">Run <code>/overview</code> after both plan docs are written.</span>
+
+        <div class="stage">
+          <div class="stage-head"><span class="stage-name">Phase 0 &middot; Decide</span><span class="stage-note">Exit: written commercial answers, and mockups for the modal, leads list, board and settings</span></div>
+          <div class="item" data-state="done"><div class="item-num">0a</div><div class="item-body"><div class="item-name">Commercial position</div><p class="item-text">Booking sits in the $240/mo plan, the first rung of a ladder of packages. The product is a CRM. Tenant order: agency site, Primo, clinic, Latam.</p></div><span class="pill pill--done">Done</span></div>
+          <div class="item" data-state="planned"><div class="item-num">0b</div><div class="item-body"><div class="item-name">Design pass</div><p class="item-text">Static mockups of the booking modal in two tenant themes, the leads list, the pipeline board and settings, via /prototype. Before item 1 is specced.</p></div><span class="pill pill--plan">Planned</span></div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-head"><span class="stage-name">Phase 1 &middot; Foundation, carried over</span><span class="stage-note">Exit: a second org created through the app, sign-in lands on it, a gated route refuses the wrong rung, free/busy proven on Frank's calendar</span></div>
+          <div class="item" data-state="planned"><div class="item-num">1</div><div class="item-body"><div class="item-name">Multi-tenant auth, with the org fix</div><p class="item-text">Email-OTP sign-in, create-organization, the admin role, the auto-active organization hook, and the package gate with the one rung.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">2</div><div class="item-body"><div class="item-name">Booking links and availability rules</div><p class="item-text">The two tables, the public read route, the seed CLI, the shared-package layout.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">3</div><div class="item-body"><div class="item-name">Calendar connection</div><p class="item-text">The table, the cipher, OAuth connect and disconnect, the provider seam, free/busy verified against a real event.</p></div><span class="pill pill--plan">Planned</span></div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-head"><span class="stage-name">Phase 2 &middot; The booking loop</span><span class="stage-note">Exit: a stranger books a real slot, the lead lands in its first stage, the .ics arrives, the calendar shows it, cancel works, two resources can share a time</span></div>
+          <div class="item" data-state="planned"><div class="item-num">4</div><div class="item-body"><div class="item-name">CRM spine</div><p class="item-text">contact, pipeline_stage seeded with four defaults, resource, activity, and their routes. Nothing visible yet.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">5</div><div class="item-body"><div class="item-name">Booking creation</div><p class="item-text">Validate a slot against the rules, free resources and the live calendar; create contact, lead, booking and timeline entry.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">6</div><div class="item-body"><div class="item-name">Confirmations</div><p class="item-text">Email with .ics to the customer and a business-side notification, from Primo's template pattern.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">7</div><div class="item-body"><div class="item-name">Self-serve cancel and reschedule</div><p class="item-text">A tokenized link in the confirmation.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">8</div><div class="item-body"><div class="item-name">SMS confirmation</div><p class="item-text">Twilio. First to cut if the phase runs long.</p></div><span class="pill pill--plan">Planned</span></div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-head"><span class="stage-name">Phase 3 &middot; The widget in the agency's own site</span><span class="stage-note">Exit: agents-web takes a real booking and rents nothing</span></div>
+          <div class="item" data-state="planned"><div class="item-num">9</div><div class="item-body"><div class="item-name">The booking component</div><p class="item-text">Unstyled trigger, themed modal, one provider per host wrapping children, the face-and-body contract.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">10</div><div class="item-body"><div class="item-name">Tenant zero wired: agents-web</div><p class="item-text">The agency's siteConfig holds its slug, the contact-inquiry seam calls the API, the site's theme reaches the modal.</p></div><span class="pill pill--plan">Planned</span></div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-head"><span class="stage-name">Phase 4 &middot; The CRM, first release</span><span class="stage-note">Exit: the owner sees every lead, reads a contact's timeline, and changes hours, services, resources and the calendar without Frank</span></div>
+          <div class="item" data-state="planned"><div class="item-num">11</div><div class="item-body"><div class="item-name">Leads list and contact page</div><p class="item-text">Every lead with its stage, and the contact page with its timeline.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">12</div><div class="item-body"><div class="item-name">Settings</div><p class="item-text">Hours, services, resources, blackout dates and the calendar connection.</p></div><span class="pill pill--plan">Planned</span></div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-head"><span class="stage-name">Phase 5 &middot; The first paying client</span><span class="stage-note">Exit: Primo takes a real booking, Calendly is gone, the ranking is untouched</span></div>
+          <div class="item" data-state="planned"><div class="item-num">13</div><div class="item-body"><div class="item-name">Primo Painters</div><p class="item-text">The shared modal behind one config value plus the provider component; his crews become resources. Ask what he needs on day one first.</p></div><span class="pill pill--plan">Planned</span></div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-head"><span class="stage-name">Phase 6 &middot; The CRM, second release</span><span class="stage-note">Exit: the owner drags a lead between stages he named, sends an email, sees the reply on the timeline</span></div>
+          <div class="item" data-state="planned"><div class="item-num">14</div><div class="item-body"><div class="item-name">Pipeline board</div><p class="item-text">Drag and drop between stages, renamed and reordered per business. TanStack Query and dnd-kit arrive here.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">15</div><div class="item-body"><div class="item-name">Email from the CRM</div><p class="item-text">Templated sends under the business's name through Resend, logged on the timeline, and the BCC capture address. Inbound path decided in the spec.</p></div><span class="pill pill--plan">Planned</span></div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-head"><span class="stage-name">Phase 7 &middot; Every client</span><span class="stage-note">Exit: four organizations, four live sites, zero rented booking</span></div>
+          <div class="item" data-state="planned"><div class="item-num">16</div><div class="item-body"><div class="item-name">Face and Body</div><p class="item-text">Cal.com out from behind the seam, 45 services become booking links, practitioners become resources. Ask about her calendar and deposits at onboarding.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">17</div><div class="item-body"><div class="item-name">The Latam Painters</div><p class="item-text">After its own site is finished. Find out whose Calendly has its bookings; it needs a siteConfig first.</p></div><span class="pill pill--plan">Planned</span></div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-head"><span class="stage-name">Phase 8 &middot; The CRM grows</span><span class="stage-note">Exit: Primo's crews are scheduled from the CRM and any owner reads a report page</span></div>
+          <div class="item" data-state="planned"><div class="item-num">18</div><div class="item-body"><div class="item-name">Crew and job scheduling</div><p class="item-text">A job is a lead that became work, on a resource, across days. The internal calendar shows crews by day.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">19</div><div class="item-body"><div class="item-name">Reports</div><p class="item-text">Bookings per week, pipeline by stage, lead sources, on shadcn charts.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">20</div><div class="item-body"><div class="item-name">WhatsApp</div><p class="item-text">Meta verification, a dedicated number, approved templates; sent and logged like SMS.</p></div><span class="pill pill--plan">Planned</span></div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-head"><span class="stage-name">Phase 9 &middot; Packages and self-serve</span><span class="stage-note">Exit: a business the agency did not build a site for pays and takes its first booking on its own</span></div>
+          <div class="item" data-state="planned"><div class="item-num">21</div><div class="item-body"><div class="item-name">Google OAuth verification</div><p class="item-text">Calendar scopes first, then Gmail's restricted scopes and their security assessment. Start as soon as Phase 3 is done.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">22</div><div class="item-body"><div class="item-name">Packages ladder and the admin area</div><p class="item-text">The rungs above agency in the plan-limits config, and the admin screens: who is on what, move a client up.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">23</div><div class="item-body"><div class="item-name">Hosted booking page</div><p class="item-text">/book/&lt;slug&gt;.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">24</div><div class="item-body"><div class="item-name">Self-serve onboarding and billing</div><p class="item-text">Signup, pick a package, Stripe hosted checkout, the webhook writes organization.plan.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">25</div><div class="item-body"><div class="item-name">Two-way Gmail sync</div><p class="item-text">After 21. The owner's mailbox threads land on the contact timeline.</p></div><span class="pill pill--plan">Planned</span></div>
         </div>
       </section>
 
       <footer>
-        <span>Not yet generated</span>
+        <span>Generated Sep 18, 2026</span>
         <span>&middot;</span>
         <span>Source: blueprint/build-plan.md</span>
       </footer>
