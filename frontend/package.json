@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "tsc -p ../packages/shared/tsconfig.json",
     "dev": "next dev",
+    "prebuild": "tsc -p ../packages/shared/tsconfig.json",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
