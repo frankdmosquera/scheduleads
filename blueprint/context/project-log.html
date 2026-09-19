@@ -96,75 +96,75 @@
   }
 
   .shell {
-    max-width: 1140px;
+    max-width: 1180px;
     margin: 0 auto;
-    padding: 0 24px 80px;
-    display: grid;
-    grid-template-columns: 224px minmax(0, 1fr);
-    gap: 48px;
-    align-items: start;
+    padding: 0 22px 70px;
   }
 
-  /* ---------- sidebar ---------- */
+  /* ---------- top bar ----------
+     There is no sidebar. It cost 172px of every screen to hold a
+     three-item toggle, and this page is read at half-screen width beside
+     the app it describes, so that width was the most expensive thing on
+     it. Brand, switcher and position all live in one sticky block. */
 
-  .side {
+  .topbar {
     position: sticky;
     top: env(safe-area-inset-top, 0px);
-    padding: 34px 0;
+    z-index: 10;
+    background: var(--ground);
+    padding: 14px 0 10px;
     display: flex;
     flex-direction: column;
-    gap: 26px;
-    max-height: 100vh;
-    overflow-y: auto;
+    gap: 10px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 6px;
   }
 
-  .brand { display: flex; flex-direction: column; gap: 6px; }
+  .topbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+  }
+
+  .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 
   .brand-name {
     font-family: var(--mono);
     font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--ink);
   }
 
   .brand-sub {
     font-family: var(--mono);
-    font-size: 10.5px;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--ink-3);
-    line-height: 1.6;
-  }
-
-  .nav-group { display: flex; flex-direction: column; gap: 2px; }
-
-  .nav-head {
-    font-family: var(--mono);
     font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--ink-3);
-    padding-bottom: 8px;
-    margin-bottom: 5px;
-    border-bottom: 1px solid var(--rule);
   }
+
+  .switch { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
 
   .nav-link {
     all: unset;
     cursor: pointer;
-    display: grid;
-    grid-template-columns: 18px 1fr;
-    gap: 10px;
+    display: inline-flex;
     align-items: baseline;
-    padding: 7px 9px 7px 6px;
-    border-radius: 5px;
+    gap: 7px;
+    padding: 6px 12px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--surface);
     color: var(--ink-2);
-    font-family: var(--body);
-    font-size: 14.5px;
-    line-height: 1.35;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .nav-link:hover { background: var(--surface-2); color: var(--ink); }
@@ -172,36 +172,30 @@
 
   .nav-link[aria-current="page"] {
     background: var(--accent-soft);
-    color: var(--ink);
-    font-weight: 600;
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
-  .nav-num {
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--ink-3);
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
-
+  .nav-num { font-variant-numeric: tabular-nums; color: var(--ink-3); }
   .nav-link[aria-current="page"] .nav-num { color: var(--accent); }
-  .nav-link[data-state="active"] .nav-num { color: var(--pending); font-weight: 700; }
-  .nav-link[data-state="done"] .nav-num { color: var(--done); font-weight: 700; }
+  .nav-link[data-state="active"] .nav-num { color: var(--pending); }
+  .nav-link[data-state="done"] .nav-num { color: var(--done); }
 
-  .nav-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    justify-self: center; align-self: center;
-    background: var(--rule);
+  /* ---------- key, as a footer strip ---------- */
+
+  .keyrow {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    align-items: center;
   }
-
-  .legend { display: flex; flex-direction: column; gap: 8px; }
 
   .legend-row {
-    display: grid;
-    grid-template-columns: 18px 1fr;
-    gap: 10px;
+    display: inline-flex;
+    gap: 8px;
     align-items: center;
     font-family: var(--mono);
     font-size: 10.5px;
@@ -210,12 +204,13 @@
   }
 
   .legend-mark {
-    width: 18px; height: 18px;
+    width: 17px; height: 17px;
     border-radius: 50%;
     display: grid; place-items: center;
     font-family: var(--mono);
-    font-size: 9.5px; font-weight: 700; line-height: 1;
+    font-size: 10px; font-weight: 700; line-height: 1;
     color: var(--ground);
+    flex: none;
   }
 
   .legend-mark--ask  { background: var(--alert); }
@@ -223,19 +218,98 @@
   .legend-mark--done { background: var(--done); }
   .legend-mark--fix  { background: var(--fixed); }
 
-  .nav-note {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    line-height: 1.65;
-    color: var(--ink-3);
-    padding: 9px 6px 0;
-    border-top: 1px dashed var(--rule);
-    margin-top: 6px;
-  }
-
   /* ---------- main ---------- */
 
   main { padding: 34px 0 0; min-width: 0; }
+
+  /* ---------- position bar ----------
+     The only thing identical in every view: where the build actually is.
+     Three levels, always the same three, so "where are we" is never a
+     question the transcript has to answer. Sticky, because the answer
+     should not scroll away. */
+
+  .where {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 11px 15px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+  }
+
+  .where-leg { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+  .where-key {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .where-val {
+    font-family: var(--display);
+    font-size: 15px; font-weight: 600;
+    line-height: 1.25;
+    color: var(--ink);
+  }
+
+  .where-leg[data-now="yes"] .where-key { color: var(--pending); }
+  .where-arrow { color: var(--rule); font-size: 15px; align-self: center; }
+  .where-spacer { flex: 1 1 auto; }
+
+  .where-count {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    text-align: right;
+    line-height: 1.7;
+    white-space: nowrap;
+  }
+
+  .where-count b { color: var(--ink); font-weight: 700; }
+
+  /* ---------- substeps ----------
+     What a step actually contained. A step is one reviewable change, but
+     it is rarely one edit, and "step 1 done" hides which pieces landed. */
+
+  .substeps {
+    margin: 2px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  .substeps li {
+    position: relative;
+    padding-left: 21px;
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--ink-2);
+  }
+
+  .substeps li::before {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 13px;
+    content: "\2013";
+    color: var(--ink-3);
+    text-align: left;
+    font-weight: 400;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .substeps li[data-done="yes"] { color: var(--done); }
+  .substeps li[data-done="yes"]::before { content: "\2713"; color: var(--done); }
 
   .eyebrow {
     font-family: var(--mono);
@@ -440,7 +514,7 @@
 
   .kind-tag {
     font-family: var(--mono);
-    font-size: 9.5px; font-weight: 700;
+    font-size: 10.5px; font-weight: 700;
     letter-spacing: 0.1em; text-transform: uppercase;
     padding: 2px 7px;
     border-radius: 3px;
@@ -513,8 +587,8 @@
   .step-text { font-size: 15px; color: var(--ink-2); }
 
   .verify {
-    font-family: var(--mono);
-    font-size: 11.5px;
+    font-family: var(--body);
+    font-size: 14px;
     line-height: 1.6;
     color: var(--ink-3);
     padding-left: 11px;
@@ -582,8 +656,8 @@
 
   .item {
     display: grid;
-    grid-template-columns: 32px minmax(0, 1fr) auto;
-    gap: 4px 12px;
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    gap: 4px 10px;
     padding: 13px 0;
     border-bottom: 1px solid var(--rule-soft);
     align-items: baseline;
@@ -598,6 +672,384 @@
   .item-was { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); letter-spacing: 0.03em; }
   .item[data-state="active"] .item-num { color: var(--pending); font-weight: 700; }
   .item[data-state="done"] .item-num { color: var(--done); font-weight: 700; }
+
+  /* ---------- the whole plan, as chips ----------
+     28 items, grouped by phase, each chip carrying its own number.
+     Counts were the problem this replaces: "2 done / 1 in progress /
+     25 to go" put bare digits beside a list numbered with the same
+     digits, so "2 done" read as "item 2 is done" when item 2 has not
+     started. A chip cannot be misread: it *is* the item. */
+
+  .strip { display: flex; flex-wrap: wrap; gap: 14px 18px; }
+
+  .strip-phase { display: flex; flex-direction: column; gap: 5px; }
+
+  .strip-label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.13em; text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .strip-cells { display: flex; gap: 4px; }
+
+  .cell {
+    min-width: 27px;
+    padding: 4px 6px;
+    border-radius: 3px;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 10.5px; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .cell[data-state="done"] {
+    background: var(--done-soft);
+    border-color: var(--done);
+    color: var(--done);
+    font-weight: 700;
+  }
+
+  .cell[data-state="active"] {
+    background: var(--pending-soft);
+    border-color: var(--pending);
+    color: var(--pending);
+    font-weight: 700;
+    box-shadow: 0 0 0 2px var(--pending-soft);
+  }
+
+  .tally {
+    display: flex; flex-wrap: wrap;
+    gap: 6px 16px; align-items: baseline;
+    font-family: var(--mono);
+    font-size: 11.5px;
+  }
+
+  .tally-part { display: inline-flex; align-items: baseline; gap: 7px; }
+
+  .tally-key {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.13em; text-transform: uppercase;
+  }
+
+  .tally-part[data-state="done"]    .tally-key { color: var(--done); }
+  .tally-part[data-state="active"]  .tally-key { color: var(--pending); }
+  .tally-part[data-state="planned"] .tally-key { color: var(--ink-3); }
+  .tally-val { color: var(--ink); font-weight: 500; }
+
+  /* ---------- the six-step meter in the sticky bar ---------- */
+
+  .meter { display: flex; gap: 3px; align-items: center; }
+
+  .meter i {
+    width: 15px; height: 5px;
+    border-radius: 2px;
+    background: var(--rule);
+    display: block;
+  }
+
+  .meter i[data-state="done"] { background: var(--done); }
+  .meter i[data-state="active"] { background: var(--pending); }
+
+  /* ---------- steps, shown on the roadmap itself ----------
+     The roadmap is the map. An item that is being built shows its own
+     steps right here, with the same numbers, labels and states as the
+     feature group. Two places showing the same thing differently is
+     what made the page unreadable; the feature group is the detail of
+     what is already visible here, never a second version of it. */
+
+  .item-steps {
+    margin: 9px 0 2px;
+    display: flex; flex-direction: column;
+    border-left: 2px solid var(--rule);
+    padding-left: 10px;
+  }
+
+  /* Each step opens into its own plan. Collapsed, the roadmap stays a
+     list you can scan; open, it answers "what is 1.2 actually" without
+     sending the reader to another view. Native details, no script. */
+
+  .rstep { border-bottom: 1px solid var(--rule-soft); }
+  .rstep:last-child { border-bottom: none; }
+
+  .rstep > summary {
+    display: grid;
+    grid-template-columns: 34px 14px minmax(0, 1fr) auto;
+    gap: 11px;
+    align-items: baseline;
+    padding: 9px 0;
+    cursor: pointer;
+    list-style: none;
+    font-family: var(--body);
+    font-size: 15.5px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+
+  .rstep > summary::-webkit-details-marker { display: none; }
+  .rstep > summary:hover { color: var(--ink); }
+  .rstep > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+  .rstep .sn { font-family: var(--mono); font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .rstep .sm { text-align: center; }
+  .rstep .ss { font-family: var(--mono); text-align: right; letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; font-weight: 700; }
+
+  .rstep[data-state="done"] > summary { color: var(--done); }
+  .rstep[data-state="done"] .sm::before { content: "\2713"; }
+  .rstep[data-state="active"] > summary { color: var(--pending); }
+  .rstep[data-state="active"] .sm::before { content: "\25b8"; }
+  .rstep[data-state="planned"] .sm::before { content: "\00b7"; color: var(--rule); }
+
+  /* A closed step says there is more; an open one stops saying it. */
+  .rstep > summary .ss::after { content: " +"; color: var(--rule); }
+  .rstep[open] > summary .ss::after { content: " \2212"; }
+
+  .rstep-body {
+    padding: 4px 0 16px 16px;
+    display: flex; flex-direction: column; gap: 11px;
+  }
+
+  .rstep-what { font-size: 15.5px; line-height: 1.65; color: var(--ink-2); }
+
+  .rstep-body .substeps { margin: 0; }
+
+  .rstep-when {
+    font-family: var(--body);
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: var(--ink-2);
+    padding: 9px 12px;
+    border-left: 3px solid var(--rule);
+    background: var(--surface);
+    border: 1px solid var(--rule-soft);
+    border-left: 3px solid var(--rule);
+    border-radius: 0 4px 4px 0;
+  }
+
+  .rstep[data-state="done"] .rstep-when { border-left-color: var(--done); color: var(--done); }
+  .rstep[data-state="active"] .rstep-when { border-left-color: var(--pending); }
+
+  /* What actually happened. A step that only lists what was built reads
+     like a plan that went perfectly, and none of them do. The snags are
+     the part worth reading back in six months. */
+
+  .snags { display: flex; flex-direction: column; gap: 7px; }
+
+  .snags-head {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.13em; text-transform: uppercase;
+    color: var(--fixed);
+  }
+
+  .snags ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 7px; }
+
+  .snags li {
+    position: relative;
+    padding-left: 26px;
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+
+  .snags li::before {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 16px;
+    text-align: center;
+    content: "\21bb";
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--fixed);
+    line-height: 1.6;
+  }
+
+  .snags b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- plan vs reality ----------
+     The planned pieces, kept as planned, and marked with what actually
+     became of each. Rewriting the plan to match the outcome hides the
+     only interesting part: where the two differed and why. */
+
+  .substeps li[data-outcome] { color: var(--ink-2); }
+  .substeps li[data-outcome="kept"]    { color: var(--done); }
+  .substeps li[data-outcome="kept"]::before    { content: "\2713"; color: var(--done); font-weight: 700; }
+  .substeps li[data-outcome="changed"] { color: var(--fixed); }
+  .substeps li[data-outcome="changed"]::before { content: "\21bb"; color: var(--fixed); }
+  .substeps li[data-outcome="added"]   { color: var(--pending); }
+  .substeps li[data-outcome="added"]::before   { content: "+"; color: var(--pending); }
+  .substeps li[data-outcome="dropped"] { color: var(--ink-3); }
+  .substeps li[data-outcome="dropped"]::before { content: "\2717"; color: var(--ink-3); }
+  .substeps li[data-outcome="dropped"] > s { text-decoration-color: var(--ink-3); }
+
+  /* The reason sits under the piece, in the body face, because it is
+     the sentence actually worth reading. */
+  .substeps li .why {
+    display: block;
+    padding-left: 1px;
+    font-family: var(--body);
+    font-style: normal;
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--ink-2);
+    margin-top: 4px;
+  }
+
+  .verdict {
+    display: flex; flex-wrap: wrap; gap: 5px 8px;
+    font-family: var(--mono);
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+
+  /* ---------- plan / reality, as two drawers ----------
+     A step's plan and its outcome are different documents. Side by side
+     in one blob they blur; as two drawers you can read either alone, and
+     the summaries alone tell you whether it drifted. */
+
+  .drawer {
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  /* Open drawers are tinted so a glance shows what is expanded, which
+     matters once six of them nest three deep. */
+  /* ---------- three levels of tint ----------
+     A drawer reads at rest, under the cursor, and open, and each has to
+     look different from the one before it. Mixed from the theme's own
+     ink and green, so light and dark both work from one rule and the
+     card keeps its tint on the body, not just the bar: an open drawer
+     should look like an open card, not a heading with loose text under
+     it. Plan drawers run grey, outcome drawers green, because green
+     already means "this passed" everywhere else on the page. */
+
+  .drawer[data-kind="plan"] > summary {
+    background: color-mix(in srgb, var(--ink) 4%, var(--surface));
+  }
+  .drawer[data-kind="plan"] > summary:hover {
+    background: color-mix(in srgb, var(--ink) 10%, var(--surface));
+  }
+  .drawer[data-kind="plan"][open] {
+    background: color-mix(in srgb, var(--ink) 3%, var(--surface));
+    border-color: color-mix(in srgb, var(--ink) 18%, var(--surface));
+  }
+  .drawer[data-kind="plan"][open] > summary {
+    background: color-mix(in srgb, var(--ink) 9%, var(--surface));
+  }
+  .drawer[data-kind="plan"][open] > .drawer-body {
+    background: color-mix(in srgb, var(--ink) 2%, var(--surface));
+  }
+
+  /* Only the plan card inside a step. It sits next to the green outcome
+     card and has to hold its own against it; the outer grey drawers
+     (Steps, Why, Contracts, Notes) stay light so the page does not turn
+     into one flat slab. */
+
+  .rstep-body > .drawer[data-kind="plan"] > summary {
+    background: color-mix(in srgb, var(--ink) 9%, var(--surface));
+  }
+  .rstep-body > .drawer[data-kind="plan"] > summary:hover {
+    background: color-mix(in srgb, var(--ink) 16%, var(--surface));
+  }
+  .rstep-body > .drawer[data-kind="plan"][open] {
+    background: color-mix(in srgb, var(--ink) 8%, var(--surface));
+    border-color: color-mix(in srgb, var(--ink) 28%, var(--surface));
+  }
+  .rstep-body > .drawer[data-kind="plan"][open] > summary {
+    background: color-mix(in srgb, var(--ink) 15%, var(--surface));
+  }
+  .rstep-body > .drawer[data-kind="plan"][open] > .drawer-body {
+    background: color-mix(in srgb, var(--ink) 5%, var(--surface));
+  }
+
+  .drawer[data-kind="reality"] > summary {
+    background: color-mix(in srgb, var(--done) 9%, var(--surface));
+  }
+  .drawer[data-kind="reality"] > summary:hover {
+    background: color-mix(in srgb, var(--done) 20%, var(--surface));
+  }
+  .drawer[data-kind="reality"][open] {
+    background: color-mix(in srgb, var(--done) 7%, var(--surface));
+    border-color: color-mix(in srgb, var(--done) 40%, var(--surface));
+  }
+  .drawer[data-kind="reality"][open] > summary {
+    background: color-mix(in srgb, var(--done) 18%, var(--surface));
+  }
+  .drawer[data-kind="reality"][open] > .drawer-body {
+    background: color-mix(in srgb, var(--done) 4%, var(--surface));
+  }
+
+  .drawer + .drawer { margin-top: 8px; }
+
+  .drawer > summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    list-style: none;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .drawer > summary::-webkit-details-marker { display: none; }
+  .drawer > summary:hover { color: var(--ink); }
+  .drawer > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .drawer > summary::after { content: "+"; margin-left: auto; color: var(--ink-3); font-size: 13px; }
+  .drawer[open] > summary::after { content: "\2212"; }
+  .drawer[open] > summary { border-bottom: 1px solid var(--rule); }
+
+  .drawer-body > h3 {
+    font-family: var(--mono);
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-3);
+    margin-top: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .drawer-body > h3:first-of-type { margin-top: 0; }
+
+  .drawer-body { padding: 13px 12px; display: flex; flex-direction: column; gap: 13px; }
+
+  /* Every drawer says what it is for. Two of them, Steps and Log, cover
+     the same work from different angles, and without this the second
+     one reads as a duplicate of the first. */
+  .drawer-what {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--ink-3);
+    padding-bottom: 11px;
+    border-bottom: 1px dashed var(--rule);
+  }
+
+  .drawer[data-kind="reality"] > summary { color: var(--done); }
+  .drawer[data-kind="plan"] > summary .tag-drift {
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    color: var(--ink-3);
+  }
+
+  .verdict span { padding: 2px 7px; border-radius: 3px; border: 1px solid; }
+  .verdict .v-kept    { color: var(--done);    border-color: var(--done);    background: var(--done-soft); }
+  .verdict .v-changed { color: var(--fixed);   border-color: var(--fixed);   background: var(--fixed-soft); }
+  .verdict .v-added   { color: var(--pending); border-color: var(--pending); background: var(--pending-soft); }
+  .verdict .v-dropped { color: var(--ink-3);   border-color: var(--rule);    background: var(--surface); }
 
   /* ---------- design option wireframes ----------
      For a feature that compares layouts, draw the options as flat CSS
@@ -636,7 +1088,7 @@
 
   .btn {
     font-family: var(--mono);
-    font-size: 8.5px; font-weight: 500;
+    font-size: 9.5px; font-weight: 500;
     letter-spacing: 0.05em;
     padding: 3px 6px;
     border: 1px solid var(--rule);
@@ -684,49 +1136,68 @@
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
   @media (max-width: 880px) {
-    .shell { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 0 16px 60px; }
-    .side { position: static; max-height: none; padding: 24px 0 0; gap: 18px; }
-    .nav-group { flex-direction: row; flex-wrap: wrap; gap: 6px; }
-    .nav-head { width: 100%; }
-    .nav-link { grid-template-columns: auto auto; gap: 8px; border: 1px solid var(--rule); padding: 6px 11px; font-size: 13.5px; }
-    .nav-note { width: 100%; }
-    main { padding-top: 26px; }
+    .shell { padding: 0 16px 60px; }
+    .switch { margin-left: 0; width: 100%; }
+    .nav-link { padding: 6px 10px; font-size: 10.5px; }
     h1 { font-size: 33px; }
     .lede { font-size: 17px; }
     .scope { grid-template-columns: 1fr; gap: 22px; }
     .row { grid-template-columns: 1fr; }
     .item { grid-template-columns: 28px minmax(0, 1fr); }
     .item .pill { grid-column: 2; justify-self: start; margin-top: 4px; }
+    .where { position: static; gap: 8px 12px; }
+    .where-arrow { display: none; }
+    .where-spacer { display: none; }
+    .where-count { text-align: left; width: 100%; }
+    .strip { gap: 12px 14px; }
+    .cell { min-width: 24px; padding: 4px; font-size: 10px; }
   }
 </style>
 
 <div class="shell">
 
-  <aside class="side">
-    <div class="brand">
-      <div class="brand-name">scheduleads-app</div>
-      <div class="brand-sub">Build log<br>Updated Sep 18, 2026</div>
+  <!-- Brand, switcher and position in one sticky block. The roadmap is
+       home; the other views are two buttons away and take no width when
+       you are not in them. -->
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="brand">
+        <span class="brand-name">scheduleads-app</span>
+        <span class="brand-sub">Build log &middot; Sep 19, 2026</span>
+      </div>
+      <nav class="switch" aria-label="Views">
+        <button class="nav-link" data-view="roadmap">Roadmap</button>
+        <button class="nav-link" data-view="project">The project</button>
+      </nav>
     </div>
 
-    <nav class="nav-group" aria-label="Project sections">
-      <div class="nav-head">Project</div>
-      <button class="nav-link" data-view="project"><span class="nav-dot"></span><span>The project</span></button>
-      <button class="nav-link" data-view="roadmap"><span class="nav-dot"></span><span>Roadmap</span></button>
-    </nav>
-
-    <nav class="nav-group" aria-label="Features">
-      <div class="nav-head">Features</div>
-      <div class="nav-note">A group lands here each time <code>/feature</code> specs one. Nothing has been specced yet.</div>
-    </nav>
-
-    <div class="legend" aria-label="What the markers mean">
-      <div class="nav-head">Key</div>
-      <div class="legend-row"><span class="legend-mark legend-mark--ask">!</span><span>Blocked on you &mdash; the build stops until you answer</span></div>
-      <div class="legend-row"><span class="legend-mark legend-mark--open">?</span><span>Open question &mdash; the build continues</span></div>
-      <div class="legend-row"><span class="legend-mark legend-mark--done">&#10003;</span><span>Done, or a decision you approved</span></div>
-      <div class="legend-row"><span class="legend-mark legend-mark--fix">&#8635;</span><span>A real fault found and repaired</span></div>
+    <div class="where">
+      <div class="where-leg">
+        <div class="where-key">Phase</div>
+        <div class="where-val">1 &middot; Foundation</div>
+      </div>
+      <span class="where-arrow">&rsaquo;</span>
+      <div class="where-leg">
+        <div class="where-key">Item</div>
+        <div class="where-val">1 &middot; Multi-tenant auth</div>
+      </div>
+      <span class="where-arrow">&rsaquo;</span>
+      <div class="where-leg" data-now="yes">
+        <div class="where-key">Step now</div>
+        <div class="where-val">1.3 &middot; Active org and role guard</div>
+      </div>
+      <span class="where-spacer"></span>
+      <div class="where-leg">
+        <div class="where-key">Item 1 steps</div>
+        <div class="meter" title="1.1 and 1.2 done, 1.3 building, 1.4 to 1.6 to go">
+          <i data-state="done"></i>
+          <i data-state="done"></i>
+          <i data-state="active"></i>
+          <i></i><i></i><i></i>
+        </div>
+      </div>
     </div>
-  </aside>
+  </header>
 
   <main>
 
@@ -798,6 +1269,8 @@
             <li>The modal never names its provider and the host's buttons say "Book now."</li>
             <li>No feature that renders UI gets specced before the item 0b mockups exist.</li>
             <li>A failed calendar check never reports "free."</li>
+            <li><code>activity</code> carries both what happened and what is still owed, from item 4, so the next-step queue is never a second table bolted on.</li>
+            <li>The booking layout is a stored value on the booking link from item 9, never a hardcoded shape. The Calendly-shaped month flow is what gets built; the week strip is parked.</li>
           </ul>
         </div>
       </section>
@@ -820,15 +1293,95 @@
           <h1>Roadmap</h1>
         </div>
         <p class="lede">
-          Every line of <code>build-plan.md</code>, in build order. Each becomes its own group in
-          this log the moment it starts.
+          Twenty-eight items. Two are Phase 0 decisions rather than code, already answered. The
+          other 26 are built one at a time, each on its own branch, each split into numbered steps
+          you can see below it while it is the current one. An item is done when it works against
+          the running app, not when its boxes are ticked.
         </p>
-        <div class="facts">
-          <span class="pill pill--plan">26 planned</span>
-          <span class="sep">/</span>
-          <span class="pill pill--live">0 in progress</span>
-          <span class="sep">/</span>
-          <span class="pill pill--done">1 done</span>
+        <div class="strip">
+          <div class="strip-phase">
+            <div class="strip-label">Ph 0 &middot; Decide</div>
+            <div class="strip-cells">
+              <span class="cell" data-state="done" title="0a Commercial position - done">0a</span>
+              <span class="cell" data-state="done" title="0b Design pass - done">0b</span>
+            </div>
+          </div>
+          <div class="strip-phase">
+            <div class="strip-label">Ph 1 &middot; Foundation</div>
+            <div class="strip-cells">
+              <span class="cell" data-state="active" title="1 Multi-tenant auth - building now, step 1.2 of 6">1</span>
+              <span class="cell" title="2 Booking links and availability rules">2</span>
+              <span class="cell" title="3 Calendar connection">3</span>
+            </div>
+          </div>
+          <div class="strip-phase">
+            <div class="strip-label">Ph 2 &middot; Booking loop</div>
+            <div class="strip-cells">
+              <span class="cell" title="4 CRM spine">4</span>
+              <span class="cell" title="5 Booking creation">5</span>
+              <span class="cell" title="6 Confirmations">6</span>
+              <span class="cell" title="7 Cancel and reschedule">7</span>
+              <span class="cell" title="8 Scheduled messages">8</span>
+            </div>
+          </div>
+          <div class="strip-phase">
+            <div class="strip-label">Ph 3 &middot; Agency site</div>
+            <div class="strip-cells">
+              <span class="cell" title="9 The booking component">9</span>
+              <span class="cell" title="10 Tenant zero wired: agents-web">10</span>
+            </div>
+          </div>
+          <div class="strip-phase">
+            <div class="strip-label">Ph 4 &middot; CRM one</div>
+            <div class="strip-cells">
+              <span class="cell" title="11 Leads list and contact page">11</span>
+              <span class="cell" title="12 Settings">12</span>
+            </div>
+          </div>
+          <div class="strip-phase">
+            <div class="strip-label">Ph 5 &middot; Primo</div>
+            <div class="strip-cells">
+              <span class="cell" title="13 Primo Painters">13</span>
+            </div>
+          </div>
+          <div class="strip-phase">
+            <div class="strip-label">Ph 6 &middot; CRM two</div>
+            <div class="strip-cells">
+              <span class="cell" title="14 Pipeline board">14</span>
+              <span class="cell" title="15 Email from the CRM">15</span>
+              <span class="cell" title="16 Quotes">16</span>
+            </div>
+          </div>
+          <div class="strip-phase">
+            <div class="strip-label">Ph 7 &middot; Every client</div>
+            <div class="strip-cells">
+              <span class="cell" title="17 Face and Body">17</span>
+              <span class="cell" title="18 The Latam Painters">18</span>
+            </div>
+          </div>
+          <div class="strip-phase">
+            <div class="strip-label">Ph 8 &middot; CRM grows</div>
+            <div class="strip-cells">
+              <span class="cell" title="19 Crew and job scheduling">19</span>
+              <span class="cell" title="20 Reports">20</span>
+              <span class="cell" title="21 WhatsApp">21</span>
+            </div>
+          </div>
+          <div class="strip-phase">
+            <div class="strip-label">Ph 9 &middot; Self-serve</div>
+            <div class="strip-cells">
+              <span class="cell" title="22 Google OAuth verification">22</span>
+              <span class="cell" title="23 Packages ladder and admin area">23</span>
+              <span class="cell" title="24 Hosted booking page">24</span>
+              <span class="cell" title="25 Self-serve onboarding and billing">25</span>
+              <span class="cell" title="26 Two-way Gmail sync">26</span>
+            </div>
+          </div>
+        </div>
+        <div class="tally">
+          <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b</span></span>
+          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">1, at step 1.2 of 6</span></span>
+          <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">2 through 26</span></span>
         </div>
       </header>
 
@@ -838,35 +1391,513 @@
         <div class="stage">
           <div class="stage-head"><span class="stage-name">Phase 0 &middot; Decide</span><span class="stage-note">Exit: written commercial answers, and mockups for the modal, leads list, board and settings</span></div>
           <div class="item" data-state="done"><div class="item-num">0a</div><div class="item-body"><div class="item-name">Commercial position</div><p class="item-text">Booking sits in the $240/mo plan, the first rung of a ladder of packages. The product is a CRM. Tenant order: agency site, Primo, clinic, Latam.</p></div><span class="pill pill--done">Done</span></div>
-          <div class="item" data-state="planned"><div class="item-num">0b</div><div class="item-body"><div class="item-name">Design pass</div><p class="item-text">Static mockups of the booking modal in two tenant themes, the leads list, the pipeline board and settings, via /prototype. Before item 1 is specced.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="done"><div class="item-num">0b</div><div class="item-body"><div class="item-name">Design pass</div><p class="item-text">Ten screens in <code>prototypes/</code>, light and dark, off one <code>theme.css</code>. Booking in two layouts: a one-screen week strip in the agency's and Primo's themes, and a Calendly-shaped two-screen month flow with a persistent rail. Plus leads, pipeline, contact and timeline, settings, crew week, and a quote. Indigo accent, explicit theme toggle with no system setting.</p><p class="item-was">Phase 0 exit met. Reading Primo's own live Calendly and Pipedrive then drove six plan edits: quotes became item 16, item 8 grew a job runner and reminders, and bookings, availability and activities each gained fields. Items 16 to 25 shifted down one.</p></div><span class="pill pill--done">Done</span></div>
         </div>
 
         <div class="stage">
           <div class="stage-head"><span class="stage-name">Phase 1 &middot; Foundation, carried over</span><span class="stage-note">Exit: a second org created through the app, sign-in lands on it, a gated route refuses the wrong rung, free/busy proven on Frank's calendar</span></div>
-          <div class="item" data-state="planned"><div class="item-num">1</div><div class="item-body"><div class="item-name">Multi-tenant auth, with the org fix</div><p class="item-text">Email-OTP sign-in, create-organization, the admin role, the auto-active organization hook, and the package gate with the one rung.</p></div><span class="pill pill--plan">Planned</span></div>
-          <div class="item" data-state="planned"><div class="item-num">2</div><div class="item-body"><div class="item-name">Booking links and availability rules</div><p class="item-text">The two tables, the public read route, the seed CLI, the shared-package layout.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="active"><div class="item-num">1</div><div class="item-body"><div class="item-name">Multi-tenant auth, with the org fix</div><p class="item-text">Email-OTP sign-in, create-organization, the admin role, the auto-active organization hook, and the package gate with the one rung.</p>
+          <p class="item-text">Four businesses will eventually sign into the same app and must never see each other's leads. This item decides where the answer to "which business is this?" comes from, and the answer is: the session on the server, never the request. Everything from item 2 to item 26 inherits that decision, which is why it is first and why it is worth getting slowly right.</p>          <div class="gates">
+          <span class="gate-chip" data-state="pass">Spec agreed</span>
+          <span class="gate-chip">Built &amp; verified</span>
+          <span class="gate-chip">Commit granted</span>
+        </div>
+            <details class="drawer" data-kind="plan" open>
+              <summary>Steps <span class="tag-drift">1.1 and 1.2 done &middot; 1.3 now &middot; 6 in this item</span></summary>
+              <div class="drawer-body">
+                <p class="drawer-what">The work, cut into pieces small enough to review one at a time. Each step opens into what was planned, and once it is done, what actually happened.</p>
+<div class="item-steps">
+
+            <details class="rstep" data-state="done">
+              <summary><span class="sn">1.1</span><span class="sm"></span><span>Shared package and auth schema</span><span class="ss">Done</span></summary>
+              <div class="rstep-body">
+                <p class="rstep-what">Nothing in the repo could hold a database table yet: <code>packages/shared</code> was a stub exporting nothing. This turned it into a real package both apps compile before their own build, and put Better Auth's seven tables in it.</p>
+                <details class="drawer" data-kind="plan">
+                  <summary>The plan <span class="tag-drift">as written before starting &middot; 8 pieces</span></summary>
+                  <div class="drawer-body">
+                    <ul class="substeps">
+                      <li>subpath exports and a <code>tsc</code> build for the shared package</li>
+                      <li>the Drizzle config</li>
+                      <li>declare its four dependencies, all already in the tree</li>
+                      <li>the seven Better Auth tables, as a directory of files behind a barrel</li>
+                      <li><code>organization.plan</code>, default <code>agency</code>; every timestamp <code>timestamptz</code></li>
+                      <li>the backend compiles shared before its own build</li>
+                      <li><code>transpilePackages</code> in the Next config</li>
+                      <li>generate the first migration</li>
+                    </ul>
+                    <div class="rstep-when">Done when: both workspace builds pass, and the migration carries the plan column with its agency default.</div>
+                  </div>
+                </details>
+
+                <details class="drawer" data-kind="reality">
+                  <summary>What actually happened <span class="tag-drift">4 of 8 pieces moved</span></summary>
+                  <div class="drawer-body">
+                    <div class="verdict">
+                      <span class="v-kept">5 as planned</span>
+                      <span class="v-changed">1 changed</span>
+                      <span class="v-added">2 added</span>
+                      <span class="v-dropped">1 dropped</span>
+                    </div>
+                    <ul class="substeps">
+                      <li data-outcome="kept">subpath export <code>./db</code>, a <code>tsc</code> build, the Drizzle config</li>
+                      <li data-outcome="kept">four dependencies declared, none new to the tree</li>
+                      <li data-outcome="kept">the seven tables: user, session, account, verification, organization, member, invitation</li>
+                      <li data-outcome="kept"><code>organization.plan</code>, default <code>agency</code>; every timestamp <code>timestamptz</code></li>
+                      <li data-outcome="kept">first migration generated and committed</li>
+                      <li data-outcome="changed">one <code>schema.ts</code>, not a directory behind a barrel
+                        <em class="why">The first repo left a comment explaining why the barrel bites: it forces a relative import, and the backend wants <code>./user-schema.js</code> where the bundler wants no extension at all. One file at this size sidesteps it and stays readable.</em></li>
+                      <li data-outcome="added">shared compiles to real JavaScript, and <b>both</b> apps build it first, dev servers included
+                        <em class="why">Not in the plan, because the plan had not noticed the problem. See "what bit" below.</em></li>
+                      <li data-outcome="added">unique index on member(organizationId, userId)
+                        <em class="why">Step 1.3 refuses to act when someone belongs to two businesses. That is only sound if a duplicate membership row cannot exist, so the database enforces it rather than the code hoping.</em></li>
+                      <li data-outcome="dropped"><s>transpilePackages in the Next config</s>
+                        <em class="why">Once the package compiled to JavaScript this does nothing, and config that does nothing is worse than none. If Turbopack complains at step 1.5 it comes back, with a reason.</em></li>
+                    </ul>
+                    <div class="snags">
+                      <div class="snags-head">What bit</div>
+                      <ul>
+                        <li><b>The first repo left a landmine.</b> It exported TypeScript source straight out of the shared package. That works in dev, where <code>tsx</code> reads TypeScript, and breaks in production, where the built server tries to import a <code>.ts</code> file and Node refuses. Nobody caught it because that backend was never actually run from a build.</li>
+                        <li><b>Both builds passed and proved nothing.</b> Nothing imported the new package yet, so the green ticks were meaningless. Checking it for real, by making Node resolve the package, is what surfaced the landmine.</li>
+                      </ul>
+                    </div>
+                    <div class="rstep-when">Passed, plus Node resolving the package at runtime, which the builds alone do not prove.</div>
+                  </div>
+                </details>
+              </div>
+            </details>
+
+            <details class="rstep" data-state="done">
+              <summary><span class="sn">1.2</span><span class="sm"></span><span>Better Auth on the Hono backend</span><span class="ss">Done</span></summary>
+              <div class="rstep-body">
+                <p class="rstep-what">Stands the login up on the API. Email-OTP sign-in, organizations, and the platform admin role, all mounted on Hono rather than inside Next, so the session lives on the service that owns the data. Also closes the org fix carried from the first repo: Better Auth only remembers which organization you are in when you create or switch one, so a returning user signs in belonging to nothing.</p>
+                <details class="drawer" data-kind="plan">
+                  <summary>The plan <span class="tag-drift">as written before starting &middot; 6 pieces</span></summary>
+                  <div class="drawer-body">
+                    <ul class="substeps">
+                    <li>the pool, and the Better Auth instance with its three plugins</li>
+                    <li><code>plan</code> marked not-writable, so no request body can promote an organization</li>
+                    <li>owner role without organization delete; only the platform admin deletes one</li>
+                    <li>the session hook that stamps your organization at sign-in - the org fix</li>
+                    <li>the login-code seam: console outside production, throws inside it, never in a response body</li>
+                    <li>dashboard CORS kept separate from the public widget origins, which must never carry credentials</li>
+                  </ul>
+                  <div class="rstep-when">Done when: requesting a sign-in code prints it to the server console, the response body carries no code, and a verification row exists for that address.</div>
+                  </div>
+                </details>
+                <details class="drawer" data-kind="reality">
+                  <summary>What actually happened <span class="tag-drift">6 kept, 5 added &middot; 1 fault found</span></summary>
+                  <div class="drawer-body">
+                    <p class="drawer-what">Every planned piece landed as written. Four more were needed, and all four came from the same place: the plan assumed an empty database and a clean slate, and neither was true.</p>
+                    <div class="verdict">
+                      <span class="v-kept">6 as planned</span>
+                      <span class="v-added">5 added</span>
+                    </div>
+                    <ul class="substeps">
+                      <li data-outcome="kept">the pool, and Better Auth with its three plugins, mounted on Hono</li>
+                      <li data-outcome="kept"><code>plan</code> not writable from a request &mdash; confirmed on the built instance, not assumed</li>
+                      <li data-outcome="kept">owner can update an organization but not delete one</li>
+                      <li data-outcome="kept">the session hook that stamps your business at sign-in, and refuses to guess between two</li>
+                      <li data-outcome="kept">login code to the console outside production, a hard failure inside it, never in a response body</li>
+                      <li data-outcome="kept">dashboard origin allowed to send credentials; widget origins kept separate</li>
+                      <li data-outcome="added">a migration that adopts the first repo's tables instead of creating new ones
+                        <em class="why">The database was not empty. See below.</em></li>
+                      <li data-outcome="added">environment loading on the dev and start scripts
+                        <em class="why"><code>tsx</code> does not read a <code>.env</code> by itself, and doing it inside the entry file runs after the imports that need it. Both scripts now load the root file explicitly.</em></li>
+                      <li data-outcome="added">the schema handed to the database adapter explicitly
+                        <em class="why">It would otherwise fall back to an internal Drizzle field, where a table it cannot find fails on the first query rather than at boot.</em></li>
+                      <li data-outcome="added">login codes hashed in the database instead of stored in plain text
+                        <em class="why">Better Auth defaults <code>storeOTP</code> to <code>plain</code>. Nothing here ever reads a code back, so hashing costs nothing.</em></li>
+                      <li data-outcome="added">corrected <code>.env.example</code>, pulled forward from step 1.6
+                        <em class="why">It said the auth URL was port 3000, the app's port. Auth runs on the API at 3001, so copying that file gave you a broken config before you started.</em></li>
+                    </ul>
+                    <div class="snags">
+                      <div class="snags-head">What bit</div>
+                      <ul>
+                        <li><b>The database already had the first repo's tables in it</b>, with a real tenant: one user, one business, one booking link. The generated migration would have tried to create tables that exist and failed on the first statement. Replaced with one that adopts them: six columns added, sixteen timestamps widened, one index, nothing dropped and no row touched. The existing business picked up the <code>agency</code> plan, which is correct, since it is yours.</li>
+                        <li><b>There was a second <code>.env</code> under <code>backend/</code> that nothing read.</b> It also pointed at Railway's internal hostname, which only resolves inside Railway, so it could not have worked from here even if something had loaded it. Deleted; the root file is the only one.</li>
+                        <li><b>Login codes were being stored in the database in plain text.</b> Better Auth defaults <code>storeOTP</code> to <code>plain</code>, so for five minutes a working sign-in code sat readable in the <code>verification</code> table. Anyone able to read that table could have signed in as that person without ever seeing their email. Now <code>storeOTP: "hashed"</code>, confirmed against the real database: the stored value no longer contains the code.</li>
+                        <li><b>The first check looked like a hang and was not one.</b> It was written off as broken after passing a two minute timeout, and a faster replacement was used instead. The original finished fine, just slowly, and it happened to inspect one thing the replacement did not: whether the stored code was hashed. That is how the plain-text default above was caught. Abandoning a slow check for a faster one nearly cost a real finding.</li>
+                      </ul>
+                    </div>
+                    <div class="rstep-when">Passed, twice in a row against the real database: status 200, the code printed to the console, <code>{"success":true}</code> as the whole response body with no code in it, and one verification row written each time. Test rows cleaned up after.</div>
+                  </div>
+                </details>
+              </div>
+            </details>
+
+            <details class="rstep" data-state="active" open>
+              <summary><span class="sn">1.3</span><span class="sm"></span><span>Active organization and the role guard</span><span class="ss">Now</span></summary>
+              <div class="rstep-body">
+                <p class="rstep-what">The rule the whole product rests on, written once: which business you are acting for comes from your session on the server, never from anything the browser sent. Ported from the first repo, including its refusal to guess when someone belongs to two businesses.</p>
+                <details class="drawer" data-kind="plan">
+                  <summary>The plan <span class="tag-drift">3 pieces</span></summary>
+                  <div class="drawer-body">
+                    <ul class="substeps">
+                    <li>session, then active member, then a membership lookup, then refuse</li>
+                    <li>middleware putting the user, the organization and the role on every request</li>
+                    <li>an owner-only guard for the actions items 3 and 12 will need</li>
+                  </ul>
+                  <div class="rstep-when">Done when: signed out is refused, one membership resolves to that business, and two memberships with no active choice is refused rather than guessed at.</div>
+                  </div>
+                </details>
+              </div>
+            </details>
+
+            <details class="rstep" data-state="planned">
+              <summary><span class="sn">1.4</span><span class="sm"></span><span>The package gate</span><span class="ss">Next</span></summary>
+              <div class="rstep-body">
+                <p class="rstep-what">What a business has paid for, enforced in one place. Only one rung exists today, <code>agency</code>, but the gate is built now so later rungs are a config edit rather than a retrofit across 25 items.</p>
+                <details class="drawer" data-kind="plan">
+                  <summary>The plan <span class="tag-drift">4 pieces</span></summary>
+                  <div class="drawer-body">
+                    <ul class="substeps">
+                    <li>the rungs as pure config, with no database import, so the UI can read it too</li>
+                    <li>anything unrecognised resolves to locked, not to agency - an unknown rung is a misconfiguration and fails closed</li>
+                    <li>one refusal shape every later item reuses instead of inventing its own</li>
+                    <li>the first route behind it, returning your business, your role and your plan and nothing about anyone else's</li>
+                  </ul>
+                  <div class="rstep-when">Done when: that route returns the business on the agency plan, and the identical request is refused once the plan is set to something unrecognised.</div>
+                  </div>
+                </details>
+              </div>
+            </details>
+
+            <details class="rstep" data-state="planned">
+              <summary><span class="sn">1.5</span><span class="sm"></span><span>Sign-in and create-organization</span><span class="ss">Then</span></summary>
+              <div class="rstep-body">
+                <p class="rstep-what">The first screens anyone sees, and the first use of the mockup tokens from <code>prototypes/</code>. Enter an email, get a code, land in your business. Four states, because the three unhappy ones are where a login actually fails people.</p>
+                <details class="drawer" data-kind="plan">
+                  <summary>The plan <span class="tag-drift">5 pieces</span></summary>
+                  <div class="drawer-body">
+                    <ul class="substeps">
+                    <li>the auth client, sending credentials to the API</li>
+                    <li>theme tokens ported from the mockups into the real stylesheet</li>
+                    <li>sign-in as two steps, email then code, and create-organization</li>
+                    <li>the shell: signed in, signed out, refused by the gate, and pick-a-business</li>
+                    <li>one set of validation rules shared by both sides so they cannot drift</li>
+                  </ul>
+                  <div class="rstep-when">Done when: a new email signs in with the console code, creates a business, and lands on a page showing its name and the agency plan.</div>
+                  </div>
+                </details>
+              </div>
+            </details>
+
+            <details class="rstep" data-state="planned">
+              <summary><span class="sn">1.6</span><span class="sm"></span><span>The second organization, and the env record</span><span class="ss">Last</span></summary>
+              <div class="rstep-body">
+                <p class="rstep-what">Proves the point of the whole item: a second business, created entirely through the app with nobody touching the database, that cannot see the first one. Then writes down the environment variables and commands the next person needs.</p>
+                <details class="drawer" data-kind="plan">
+                  <summary>The plan <span class="tag-drift">4 pieces</span></summary>
+                  <div class="drawer-body">
+                    <ul class="substeps">
+                    <li>a real second tenant, created only through the app</li>
+                    <li>each session confirmed to see only its own business</li>
+                    <li>the env example corrected and the new database commands recorded</li>
+                    <li>Frank's own account promoted to the platform admin role by hand</li>
+                  </ul>
+                  <div class="rstep-when">Done when: two businesses exist, both made only through the app, and each session returns only its own. This is also the Phase 1 exit condition, minus the calendar half that item 3 proves.</div>
+                  </div>
+                </details>
+              </div>
+            </details>
+
+          </div>
+              </div>
+            </details>
+            <details class="drawer" data-kind="plan">
+              <summary>Why this item exists <span class="tag-drift">and what it locks in for items 2 to 26</span></summary>
+              <div class="drawer-body">
+                <p class="drawer-what">What this item is for, and the line between what it covers and what a later item covers instead.</p>
+<p>A second organization can be created through the app with no database touch, sign-in lands on that organization without a workaround, and a route behind the package gate refuses an organization whose rung does not include it. This is the feature that decides where the trusted actor comes from: every item from 2 to 26 reads its <code>organizationId</code> from whatever this one establishes.</p>
+<div class="scope">
+          <div class="scope-in">
+            <div class="scope-head">In</div>
+            <ul>
+              <li>Better Auth on Hono with the emailOTP, organization and admin plugins</li>
+              <li>The auth schema and first migration in <code>packages/shared</code></li>
+              <li><code>organization.plan</code>, server-set only, defaulting to <code>agency</code></li>
+              <li>The auto-active-organization fix, as a session hook plus a read-time fallback</li>
+              <li>The plan gate every module route will call, and <code>GET /me</code> behind it</li>
+              <li><code>/sign-in</code>, <code>/create-organization</code>, and the signed-in shell</li>
+            </ul>
+          </div>
+          <div class="scope-out">
+            <div class="scope-head">Out</div>
+            <ul>
+              <li>The admin area and the rungs above <code>agency</code> - item 23</li>
+              <li>Real login email through Resend - item 6 owns transactional mail</li>
+              <li>Any product table: booking links, availability, contacts, leads - items 2 and 4</li>
+              <li>The typed RPC seam - arrives with item 2's first public route</li>
+              <li>Invitations and a second member in one organization - nothing asks for it yet</li>
+            </ul>
+          </div>
+        </div>
+              </div>
+            </details>
+            <details class="drawer" data-kind="reality">
+              <summary>Decisions <span class="tag-drift">2 settled &middot; 6 options weighed, with why each loser lost</span></summary>
+              <div class="drawer-body">
+                <p class="drawer-what">Choices made once that would be expensive to reverse, each with the options that lost and the reason they lost.</p>
+
+                <h3>Where the apps live</h3>
+                <p class="rstep-what">Settled 19 Sep. One repo, two deploy units, permanently. Vercel builds <code>frontend/</code>, Railway builds <code>backend/</code>, each pointed at its folder by a Root Directory setting and ignoring the rest. Both folders stay in the repo for good: they are the addresses the platforms build from, not scaffolding. Together in source, isolated in production.</p>
+                <div class="options">
+                  <div class="opt" data-match="yes">
+                    <div class="opt-top"><span class="opt-key">Chosen</span><span class="pill pill--done">In place</span></div>
+                    <div class="opt-name">Monorepo, two deploys</div>
+                    <div class="wire">
+                      <div class="wire-row between"><span class="wire-title">one git push</span></div>
+                      <div class="wire-row"><span class="wire-icon"></span><span class="btn">frontend/</span><span class="btn btn--solid">Vercel</span></div>
+                      <div class="wire-row"><span class="wire-icon"></span><span class="btn">backend/</span><span class="btn btn--solid">Railway</span></div>
+                      <div class="wire-row"><span class="btn btn--ghost">packages/shared &mdash; compiled into both</span></div>
+                    </div>
+                    <p class="opt-text">Two isolated apps in production, one repo to work in. The API is a persistent Node process, which item 8's job runner requires.</p>
+                    <div class="opt-trade">Cost: two sets of platform variables, and a cross-subdomain session cookie. Both one-time setup.</div>
+                  </div>
+
+                  <div class="opt">
+                    <div class="opt-top"><span class="opt-key">Rejected</span><span class="pill pill--plan">Simplest</span></div>
+                    <div class="opt-name">Hono inside Next, one Vercel deploy</div>
+                    <div class="wire">
+                      <div class="wire-row between"><span class="wire-title">one git push</span></div>
+                      <div class="wire-row"><span class="wire-icon"></span><span class="btn btn--solid">Vercel</span><span class="btn">app + api</span></div>
+                      <div class="wire-row"><span class="btn btn--danger">no persistent process</span></div>
+                      <div class="wire-row"><span class="btn btn--ghost">Postgres</span></div>
+                    </div>
+                    <p class="opt-text">The shape used on an earlier unfinished project. One deploy, same-origin cookies, no CORS at all. Genuinely less work.</p>
+                    <div class="opt-trade">Why it lost: Vercel is serverless, so there is no long-lived process. Item 8 needs a job runner for reminders, follow-ups and Google token refresh, and the build plan notes nothing else creates one. That item would have forced a second service anyway, later and under pressure.</div>
+                  </div>
+
+                  <div class="opt">
+                    <div class="opt-top"><span class="opt-key">Rejected</span><span class="pill pill--plan">Also works</span></div>
+                    <div class="opt-name">Both apps on Railway</div>
+                    <div class="wire">
+                      <div class="wire-row between"><span class="wire-title">one git push</span></div>
+                      <div class="wire-row"><span class="wire-icon"></span><span class="btn btn--solid">Railway</span><span class="btn">app</span></div>
+                      <div class="wire-row"><span class="wire-icon"></span><span class="btn btn--solid">Railway</span><span class="btn">api</span></div>
+                      <div class="wire-row"><span class="btn btn--ghost">same origin possible</span></div>
+                    </div>
+                    <p class="opt-text">Persistent processes for both, and one origin behind a proxy, which removes the cookie problem entirely.</p>
+                    <div class="opt-trade">Why it lost: gives up Vercel's CDN and build pipeline for the Next app, which is already in use and is the better host for it.</div>
+                  </div>
+                </div>
+
+                <h3>Where the session lives</h3>
+<div class="options">
+
+          <div class="opt" data-match="yes">
+            <div class="opt-top">
+              <span class="opt-key">Chosen</span>
+              <span class="pill pill--done">Built</span>
+            </div>
+            <div class="opt-name">On the Hono API</div>
+            <div class="wire">
+              <div class="wire-row between"><span class="wire-title">Browser</span><span class="btn btn--ghost">one cookie</span></div>
+              <div class="wire-row"><span class="wire-icon"></span><span class="btn">app.domain</span><span class="btn btn--ghost">Vercel</span></div>
+              <div class="wire-row"><span class="wire-icon"></span><span class="btn btn--solid">api.domain</span><span class="btn btn--solid">session</span></div>
+              <div class="wire-row"><span class="btn btn--ghost">Postgres</span></div>
+            </div>
+            <p class="opt-text">The session sits on the thing that owns the data, so every authenticated route reads it directly. One API, typed front to back.</p>
+            <div class="opt-trade">Cost: the app and the API must share a registrable domain in production, so the API needs its own subdomain before the first deploy. Cookie goes SameSite=None, Secure.</div>
+          </div>
+
+          <div class="opt">
+            <div class="opt-top">
+              <span class="opt-key">Rejected</span>
+              <span class="pill pill--plan">Cheapest</span>
+            </div>
+            <div class="opt-name">Inside Next</div>
+            <div class="wire">
+              <div class="wire-row between"><span class="wire-title">Browser</span><span class="btn btn--ghost">same origin</span></div>
+              <div class="wire-row"><span class="wire-icon"></span><span class="btn btn--solid">app.domain</span><span class="btn btn--solid">session</span></div>
+              <div class="wire-row"><span class="btn btn--danger">api &mdash; blind</span></div>
+              <div class="wire-row"><span class="btn btn--ghost">Postgres</span></div>
+            </div>
+            <p class="opt-text">A near-verbatim copy of the first repo and of codestash, and the least code to write. No CORS, no cookie problem.</p>
+            <div class="opt-trade">Why it lost: the Hono API could never read a session, so every authenticated route would move into Next. That splits the one API the widget and the CRM both call, which the whole product is built around.</div>
+          </div>
+
+          <div class="opt">
+            <div class="opt-top">
+              <span class="opt-key">Rejected</span>
+              <span class="pill pill--plan">No subdomain</span>
+            </div>
+            <div class="opt-name">API behind a Next proxy</div>
+            <div class="wire">
+              <div class="wire-row between"><span class="wire-title">Browser</span><span class="btn btn--ghost">same origin</span></div>
+              <div class="wire-row"><span class="wire-icon"></span><span class="btn">app.domain</span><span class="btn btn--danger">relay</span></div>
+              <div class="wire-row"><span class="wire-icon"></span><span class="btn btn--solid">api</span><span class="btn btn--solid">session</span></div>
+              <div class="wire-row"><span class="btn btn--ghost">Postgres</span></div>
+            </div>
+            <p class="opt-text">Keeps the one API and a same-origin cookie at once, and needs no custom domain on the API at all.</p>
+            <div class="opt-trade">Why it lost: an extra hop on every auth call plus hand-rolled Set-Cookie rewriting. The fiddliest of the three to get right, to avoid a problem one subdomain removes outright.</div>
+          </div>
+
+        </div>
+              </div>
+            </details>
+            <details class="drawer" data-kind="plan">
+              <summary>Contracts <span class="tag-drift">6 that later items inherit</span></summary>
+              <div class="drawer-body">
+                <p class="drawer-what">Rules this item sets that every later item inherits. Breaking one of these later breaks work that was built assuming it.</p>
+<div class="rows">
+          <div class="row">
+            <div class="row-key">Tenant scope</div>
+            <div class="row-val">The <code>organizationId</code> comes from the session on the server and is never read from a body, query string or path. This is where that rule starts, and every later item inherits it.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">Two hats</div>
+            <div class="row-val"><code>member.role</code> is the organization owner. <code>user.role</code> is the platform admin. They are different checks and never the same one. Both are server-set: no request path may write either.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">Plan resolution</div>
+            <div class="row-val">A recognised rung returns its limits. Anything else, null included, returns the locked set - not <code>agency</code>. An unknown rung is a misconfiguration, so the gate fails closed.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">Refusals</div>
+            <div class="row-val">401 unauthenticated, 403 for a role or plan refusal, both in one JSON error shape fixed at step 4 so later items do not each invent their own.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">Cookies</div>
+            <div class="row-val">Lax in development, where the app and API differ only by port. None plus Secure across subdomains in production. The two must share a registrable domain or the session is dropped.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">Timestamps</div>
+            <div class="row-val">Every column is <code>timestamptz</code>. A booking product that stores an instant without its zone double-books.</div>
+          </div>
+        </div>
+              </div>
+            </details>
+            <details class="drawer" data-kind="reality">
+              <summary>Log <span class="tag-drift">7 entries, newest first</span></summary>
+              <div class="drawer-body">
+                <p class="drawer-what">The same work as Steps, ordered by date instead of by piece: decisions as they were taken, questions as they came up, faults as they were found. Steps answer what is being built; this answers what happened, and when.</p>
+<div class="log">
+              <div class="entry" data-kind="fix">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Login codes were stored in plain text</span>
+                    <span class="kind-tag">Fix</span>
+                    <span class="stamp">Sep 19</span>
+                  </div>
+                  <p class="entry-text">Better Auth stores the one-time code unhashed unless told otherwise, leaving a usable sign-in code readable in the database for its five minute life. Fixed and verified: the stored value is now a hash and no longer contains the code.</p>
+                  <p class="entry-text">Found by accident. A check that had been dismissed as hung finished late and turned out to inspect exactly this, which the faster replacement did not. Worth remembering before writing off a slow check again.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="done">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Step 1.2 proved against the real database</span>
+                    <span class="kind-tag">Done</span>
+                    <span class="stamp">Sep 19</span>
+                  </div>
+                  <p class="entry-text">The blocker was the database, and it is cleared. The tunnel is open, the root <code>.env</code> exists, and the schema now matches: a re-diff reports nothing to add, nothing to retype, nothing extra.</p>
+                  <p class="entry-text">The database turned out to hold the first repo's tables and one real tenant, so it was adopted rather than rebuilt. This repo also got its own migration ledger, leaving the first repo's three recorded migrations exactly where they were.</p>
+                </div>
+              </div>
+
+          <div class="entry" data-kind="done">
+            <div class="dot"></div>
+            <div class="entry-body">
+              <div class="entry-top">
+                <span class="entry-title">Step 1 &middot; packages/shared is real</span>
+                <span class="kind-tag">Done</span>
+                <span class="stamp">Sep 19</span>
+              </div>
+              <p class="entry-text">Seven Better Auth tables, <code>organization.plan</code> defaulting to <code>agency</code>, and the first migration. The shared package now compiles to <code>dist/</code> and both apps build it before their own build. Verified by both workspace builds passing and by Node actually resolving <code>@scheduleads-app/shared/db</code> at runtime, which is the check that matters: the builds alone prove nothing while nothing imports it yet.</p>
+            </div>
+          </div>
+
+          <div class="entry" data-kind="fix">
+            <div class="dot"></div>
+            <div class="entry-body">
+              <div class="entry-top">
+                <span class="entry-title">This page had gone stale</span>
+                <span class="kind-tag">Fix</span>
+                <span class="stamp">Sep 19</span>
+              </div>
+              <p class="entry-text">The spec and step 1 were reported in chat and written to <code>blueprint/</code>, but never published here, so the page still read "Phase 0" while step 1 was finished. Third time this has happened. The cause is mechanical, not forgetfulness: the <code>/feature</code> and <code>/implement</code> skills both instruct the agent <em>not</em> to read <code>ai-interaction.md</code>, which is the only file that carries the publish rule.</p>
+            </div>
+          </div>
+
+          <div class="entry" data-kind="question">
+            <div class="dot"></div>
+            <div class="entry-body">
+              <div class="entry-top">
+                <span class="entry-title">Render or Railway for the API</span>
+                <span class="kind-tag">Question</span>
+                <span class="stamp">Sep 19</span>
+              </div>
+              <p class="entry-text">The overview says Railway; you said Render. It changes nothing in steps 1 to 6, which all run on localhost. It does decide the production cookie: the app and the API have to sit under one registrable domain, so the API needs a custom subdomain before the first deploy. Answer it at <code>/release</code>.</p>
+            </div>
+          </div>
+
+          <div class="entry" data-kind="decided">
+            <div class="dot"></div>
+            <div class="entry-body">
+              <div class="entry-top">
+                <span class="entry-title">Better Auth mounts on the Hono API</span>
+                <span class="kind-tag">Decided</span>
+                <span class="stamp">Sep 19</span>
+              </div>
+              <p class="entry-text">
+                The repo and the reference projects disagreed: <code>better-auth</code> is installed in <code>backend</code>, but the first repo and codestash both run it inside Next. Three options, drawn side by side under <strong>Options considered</strong> below.
+              </p>
+            </div>
+          </div>
+
+          <div class="entry" data-kind="decided">
+            <div class="dot"></div>
+            <div class="entry-body">
+              <div class="entry-top">
+                <span class="entry-title">Spec approved, six steps</span>
+                <span class="kind-tag">Decided</span>
+                <span class="stamp">Sep 19</span>
+              </div>
+              <p class="entry-text">Item 0b was skipped rather than specced: its mockups are already in <code>prototypes/</code> and the overview says it runs through <code>/prototype</code>. The spec's own critique moved four things before it was written, listed under Notes below.</p>
+            </div>
+          </div>
+
+        </div>
+              </div>
+            </details>
+            <details class="drawer" data-kind="plan">
+              <summary>Notes <span class="tag-drift">loose ends and known gaps</span></summary>
+              <div class="drawer-body">
+                <p class="drawer-what">Things that are true right now but belong to no single step. Loose ends, known gaps, and what is deliberately not being done yet.</p>
+<ul>
+              <li><strong>Four things changed in review, before any code was written.</strong> The login code now fails loudly in production instead of being written to the server log, where it would be a password sitting in plain text. An unrecognised plan locks the account out rather than quietly falling back to the paid one. The dashboard's first route was put behind the plan check so that a refusal can actually be seen happening. And the dashboard was split from the public booking widget for cross-site permissions, because the widget must never be able to act as a signed-in user.</li>
+              <li><strong>Nothing is committed yet.</strong> Step 1.1's code, the planning documents, the reference screenshots and the mockups are all sitting uncommitted on this branch. The planning documents deserve their own commit before this item is finished, so the feature's commit stays about the feature.</li>
+              <li><strong>There are no automated tests, by choice for now.</strong> No test runner is set up, so every step is checked by hand against the running app and the two builds, and no test result is claimed anywhere on this page. When tests do arrive, the plan check and the two-businesses refusal are the first two things worth covering.</li>
+            </ul>
+              </div>
+            </details>
+          <p class="item-was">Better Auth mounts on the Hono API, not in Next as the first repo had it.</p></div><span class="pill pill--live">In progress</span></div>
+          <div class="item" data-state="planned"><div class="item-num">2</div><div class="item-body"><div class="item-name">Booking links and availability rules</div><p class="item-text">The two tables, the public read route, the seed CLI, the shared-package layout. Several windows a day, a booking horizon, statutory holidays from a country code.</p><p class="item-was">Carries a required gate: the typed front-to-back seam lands here and does not close on a claim. The frontend must call this item's route through the shared types, and the step must rename that route on purpose and confirm the frontend stops compiling. The first repo declared this seam and never used it once.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">3</div><div class="item-body"><div class="item-name">Calendar connection</div><p class="item-text">The table, the cipher, OAuth connect and disconnect, the provider seam, free/busy verified against a real event.</p></div><span class="pill pill--plan">Planned</span></div>
         </div>
 
         <div class="stage">
           <div class="stage-head"><span class="stage-name">Phase 2 &middot; The booking loop</span><span class="stage-note">Exit: a stranger books a real slot, the lead lands in its first stage, the .ics arrives, the calendar shows it, cancel works, two resources can share a time</span></div>
-          <div class="item" data-state="planned"><div class="item-num">4</div><div class="item-body"><div class="item-name">CRM spine</div><p class="item-text">contact, pipeline_stage seeded with four defaults, resource, activity, and their routes. Nothing visible yet.</p></div><span class="pill pill--plan">Planned</span></div>
-          <div class="item" data-state="planned"><div class="item-num">5</div><div class="item-body"><div class="item-name">Booking creation</div><p class="item-text">Validate a slot against the rules, free resources and the live calendar; create contact, lead, booking and timeline entry.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">4</div><div class="item-body"><div class="item-name">CRM spine</div><p class="item-text">contact, pipeline_stage seeded with four defaults, resource, and activity carrying both the timeline and the next-step queue. Nothing visible yet.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">5</div><div class="item-body"><div class="item-name">Booking creation</div><p class="item-text">Validate a slot against the rules, free resources and the live calendar; take the customer's address; create contact, lead, booking and timeline entry.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">6</div><div class="item-body"><div class="item-name">Confirmations</div><p class="item-text">Email with .ics to the customer and a business-side notification, from Primo's template pattern.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">7</div><div class="item-body"><div class="item-name">Self-serve cancel and reschedule</div><p class="item-text">A tokenized link in the confirmation.</p></div><span class="pill pill--plan">Planned</span></div>
-          <div class="item" data-state="planned"><div class="item-num">8</div><div class="item-body"><div class="item-name">SMS confirmation</div><p class="item-text">Twilio. First to cut if the phase runs long.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">8</div><div class="item-body"><div class="item-name">Scheduled messages</div><p class="item-text">The background job runner, then the confirmation text and the reminder the evening before. Primo already sends both through Calendly. Nothing else in the plan creates a runner, and reminders, follow-ups and the token refresh all need one.</p></div><span class="pill pill--plan">Planned</span></div>
         </div>
 
         <div class="stage">
           <div class="stage-head"><span class="stage-name">Phase 3 &middot; The widget in the agency's own site</span><span class="stage-note">Exit: agents-web takes a real booking and rents nothing</span></div>
-          <div class="item" data-state="planned"><div class="item-num">9</div><div class="item-body"><div class="item-name">The booking component</div><p class="item-text">Unstyled trigger, themed modal, one provider per host wrapping children, the face-and-body contract.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">9</div><div class="item-body"><div class="item-name">The booking component</div><p class="item-text">Unstyled trigger, themed modal, one provider per host wrapping children, the face-and-body contract. The layout is a stored value on the booking link, so the parked week strip can return without a rewrite.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">10</div><div class="item-body"><div class="item-name">Tenant zero wired: agents-web</div><p class="item-text">The agency's siteConfig holds its slug, the contact-inquiry seam calls the API, the site's theme reaches the modal.</p></div><span class="pill pill--plan">Planned</span></div>
         </div>
 
         <div class="stage">
           <div class="stage-head"><span class="stage-name">Phase 4 &middot; The CRM, first release</span><span class="stage-note">Exit: the owner sees every lead, reads a contact's timeline, and changes hours, services, resources and the calendar without Frank</span></div>
-          <div class="item" data-state="planned"><div class="item-num">11</div><div class="item-body"><div class="item-name">Leads list and contact page</div><p class="item-text">Every lead with its stage, and the contact page with its timeline.</p></div><span class="pill pill--plan">Planned</span></div>
-          <div class="item" data-state="planned"><div class="item-num">12</div><div class="item-body"><div class="item-name">Settings</div><p class="item-text">Hours, services, resources, blackout dates and the calendar connection.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">11</div><div class="item-body"><div class="item-name">Leads list and contact page</div><p class="item-text">Every lead with its stage, the contact page with its timeline and open next steps, and adding a lead by hand.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">12</div><div class="item-body"><div class="item-name">Settings</div><p class="item-text">Hours with several windows a day, services, resources, blackout dates, statutory holidays, the booking horizon and the calendar connection.</p></div><span class="pill pill--plan">Planned</span></div>
         </div>
 
         <div class="stage">
@@ -875,123 +1906,190 @@
         </div>
 
         <div class="stage">
-          <div class="stage-head"><span class="stage-name">Phase 6 &middot; The CRM, second release</span><span class="stage-note">Exit: the owner drags a lead between stages he named, sends an email, sees the reply on the timeline</span></div>
+          <div class="stage-head"><span class="stage-name">Phase 6 &middot; The CRM, second release</span><span class="stage-note">Exit: the owner drags a lead between stages he named, sends an email, sees the reply, and sends a quote the customer accepts</span></div>
           <div class="item" data-state="planned"><div class="item-num">14</div><div class="item-body"><div class="item-name">Pipeline board</div><p class="item-text">Drag and drop between stages, renamed and reordered per business. TanStack Query and dnd-kit arrive here.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">15</div><div class="item-body"><div class="item-name">Email from the CRM</div><p class="item-text">Templated sends under the business's name through Resend, logged on the timeline, and the BCC capture address. Inbound path decided in the spec.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">16</div><div class="item-body"><div class="item-name">Quotes</div><p class="item-text">Line items, a total, and a tokenized link the customer opens in the business's own theme to accept. Where the money is decided, and the half of &quot;found you to paid&quot; the first draft left out.</p></div><span class="pill pill--plan">Planned</span></div>
         </div>
 
         <div class="stage">
           <div class="stage-head"><span class="stage-name">Phase 7 &middot; Every client</span><span class="stage-note">Exit: four organizations, four live sites, zero rented booking</span></div>
-          <div class="item" data-state="planned"><div class="item-num">16</div><div class="item-body"><div class="item-name">Face and Body</div><p class="item-text">Cal.com out from behind the seam, 45 services become booking links, practitioners become resources. Ask about her calendar and deposits at onboarding.</p></div><span class="pill pill--plan">Planned</span></div>
-          <div class="item" data-state="planned"><div class="item-num">17</div><div class="item-body"><div class="item-name">The Latam Painters</div><p class="item-text">After its own site is finished. Find out whose Calendly has its bookings; it needs a siteConfig first.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">17</div><div class="item-body"><div class="item-name">Face and Body</div><p class="item-text">Cal.com out from behind the seam, 45 services become booking links, practitioners become resources. Ask about her calendar and deposits at onboarding.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">18</div><div class="item-body"><div class="item-name">The Latam Painters</div><p class="item-text">After its own site is finished. Find out whose Calendly has its bookings; it needs a siteConfig first.</p></div><span class="pill pill--plan">Planned</span></div>
         </div>
 
         <div class="stage">
           <div class="stage-head"><span class="stage-name">Phase 8 &middot; The CRM grows</span><span class="stage-note">Exit: Primo's crews are scheduled from the CRM and any owner reads a report page</span></div>
-          <div class="item" data-state="planned"><div class="item-num">18</div><div class="item-body"><div class="item-name">Crew and job scheduling</div><p class="item-text">A job is a lead that became work, on a resource, across days. The internal calendar shows crews by day.</p></div><span class="pill pill--plan">Planned</span></div>
-          <div class="item" data-state="planned"><div class="item-num">19</div><div class="item-body"><div class="item-name">Reports</div><p class="item-text">Bookings per week, pipeline by stage, lead sources, on shadcn charts.</p></div><span class="pill pill--plan">Planned</span></div>
-          <div class="item" data-state="planned"><div class="item-num">20</div><div class="item-body"><div class="item-name">WhatsApp</div><p class="item-text">Meta verification, a dedicated number, approved templates; sent and logged like SMS.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">19</div><div class="item-body"><div class="item-name">Crew and job scheduling</div><p class="item-text">A job is a lead that became work, on a resource, across days. The internal calendar shows crews by day.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">20</div><div class="item-body"><div class="item-name">Reports</div><p class="item-text">Bookings per week, pipeline by stage, lead sources, on shadcn charts.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">21</div><div class="item-body"><div class="item-name">WhatsApp</div><p class="item-text">Meta verification, a dedicated number, approved templates; sent and logged like SMS.</p></div><span class="pill pill--plan">Planned</span></div>
         </div>
 
         <div class="stage">
           <div class="stage-head"><span class="stage-name">Phase 9 &middot; Packages and self-serve</span><span class="stage-note">Exit: a business the agency did not build a site for pays and takes its first booking on its own</span></div>
-          <div class="item" data-state="planned"><div class="item-num">21</div><div class="item-body"><div class="item-name">Google OAuth verification</div><p class="item-text">Calendar scopes first, then Gmail's restricted scopes and their security assessment. Start as soon as Phase 3 is done.</p></div><span class="pill pill--plan">Planned</span></div>
-          <div class="item" data-state="planned"><div class="item-num">22</div><div class="item-body"><div class="item-name">Packages ladder and the admin area</div><p class="item-text">The rungs above agency in the plan-limits config, and the admin screens: who is on what, move a client up.</p></div><span class="pill pill--plan">Planned</span></div>
-          <div class="item" data-state="planned"><div class="item-num">23</div><div class="item-body"><div class="item-name">Hosted booking page</div><p class="item-text">/book/&lt;slug&gt;.</p></div><span class="pill pill--plan">Planned</span></div>
-          <div class="item" data-state="planned"><div class="item-num">24</div><div class="item-body"><div class="item-name">Self-serve onboarding and billing</div><p class="item-text">Signup, pick a package, Stripe hosted checkout, the webhook writes organization.plan.</p></div><span class="pill pill--plan">Planned</span></div>
-          <div class="item" data-state="planned"><div class="item-num">25</div><div class="item-body"><div class="item-name">Two-way Gmail sync</div><p class="item-text">After 21. The owner's mailbox threads land on the contact timeline.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">22</div><div class="item-body"><div class="item-name">Google OAuth verification</div><p class="item-text">Calendar scopes first, then Gmail's restricted scopes and their security assessment. Start as soon as Phase 3 is done.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">23</div><div class="item-body"><div class="item-name">Packages ladder and the admin area</div><p class="item-text">The rungs above agency in the plan-limits config, and the admin screens: who is on what, move a client up.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">24</div><div class="item-body"><div class="item-name">Hosted booking page</div><p class="item-text">/book/&lt;slug&gt;.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">25</div><div class="item-body"><div class="item-name">Self-serve onboarding and billing</div><p class="item-text">Signup, pick a package, Stripe hosted checkout, the webhook writes organization.plan.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">26</div><div class="item-body"><div class="item-name">Two-way Gmail sync</div><p class="item-text">After 22. The owner's mailbox threads land on the contact timeline.</p></div><span class="pill pill--plan">Planned</span></div>
         </div>
       </section>
 
       <footer>
-        <span>Generated Sep 18, 2026</span>
+        <span>Updated Sep 19, 2026</span>
         <span>&middot;</span>
         <span>Source: blueprint/build-plan.md</span>
       </footer>
     </div>
 
-    <!-- ================= FEATURE GROUP TEMPLATE =================
-         /feature copies this block once per feature, replaces N and the
-         name, fills the steps from the spec, and adds a nav-link for it.
-         Keep it hidden and out of the nav; it is a stencil, not a view.
+    <!-- ================= ITEM ROW TEMPLATE =================
+         There is no page per feature. Everything about the item being
+         built lives in its own roadmap row, as the drawers below.
+         /feature builds this when it specs an item; /implement updates
+         it at every step; /complete closes it off.
 
-    <div id="view-feature-N" hidden>
-      <header class="head">
-        <div>
-          <div class="eyebrow">Feature N of M &middot; milestone</div>
-          <h1>Feature name</h1>
-        </div>
-        <div class="facts">
-          <span class="pill pill--live">In progress</span>
-          <span class="sep">/</span>
-          <span>branch <code>feature/slug</code></span>
-          <span class="sep">/</span>
-          <span>0 of K steps done</span>
-        </div>
+         Four rules, each learned by getting it wrong first:
+
+         1. One numbering. Roadmap item N owns steps N.1 to N.k. Never
+            number a feature's steps from 1, and never put a bare count
+            beside a numbered list - "2 done" next to items 1, 2, 3
+            reads as "item 2 is done". Name the items instead.
+         2. Gates carry no numbers, for the same reason.
+         3. Update the .where bar in the topbar in the same edit as the
+            step. It is the only thing every view shares, so a stale one
+            is wrong on both.
+         4. Nothing appears in two places. A second view repeating these
+            steps is exactly what was removed; if something seems to
+            belong in both, link instead of restating.
+
+         Closed, the row is one line among 28. Open, it is the whole
+         record. Only the item being built carries drawers; planned
+         items stay a title and a sentence.
+
+    <div class="item" data-state="active">
+      <div class="item-num">N</div>
+      <div class="item-body">
+        <div class="item-name">Item name</div>
+        <p class="item-text">The one-line plan, then a short paragraph on why this item exists at all.</p>
+
         <div class="gates">
-          <span class="gate-chip" data-state="pass">Gate 1 &mdash; spec agreed</span>
-          <span class="gate-chip">Gate 2 &mdash; built &amp; verified</span>
-          <span class="gate-chip">Gate 3 &mdash; commit granted</span>
+          <span class="gate-chip" data-state="pass">Spec agreed</span>
+          <span class="gate-chip">Built &amp; verified</span>
+          <span class="gate-chip">Commit granted</span>
         </div>
-        <div class="rail">
-          <div class="rail-item" data-state="active"><div class="rail-bar"></div><div class="rail-label">1 Step</div></div>
-          <div class="rail-item"><div class="rail-bar"></div><div class="rail-label">2 Step</div></div>
-        </div>
-      </header>
 
-      <section>
-        <h2>Build log &middot; newest first</h2>
-        <div class="log">
-          <div class="entry" data-kind="decided">
-            <div class="dot"></div>
-            <div class="entry-body">
-              <div class="entry-top">
-                <span class="entry-title">Spec approved</span>
-                <span class="kind-tag">Decided</span>
-                <span class="stamp">Mon D</span>
+        <details class="drawer" data-kind="plan" open>
+          <summary>Steps <span class="tag-drift">N.1 done &middot; N.2 now &middot; k in this item</span></summary>
+          <div class="drawer-body">
+            <div class="item-steps">
+
+              <details class="rstep" data-state="done">
+                <summary><span class="sn">N.1</span><span class="sm"></span><span>Step name</span><span class="ss">Done</span></summary>
+                <div class="rstep-body">
+                  <p class="rstep-what">What this step does, and why it is a step at all.</p>
+
+                  <details class="drawer" data-kind="plan">
+                    <summary>The plan <span class="tag-drift">as written before starting &middot; n pieces</span></summary>
+                    <div class="drawer-body">
+                      <ul class="substeps"><li>a planned piece</li></ul>
+                      <div class="rstep-when">Done when: the gate, as written in the spec.</div>
+                    </div>
+                  </details>
+
+                  <details class="drawer" data-kind="reality">
+                    <summary>What actually happened <span class="tag-drift">x of n pieces moved</span></summary>
+                    <div class="drawer-body">
+                      <div class="verdict">
+                        <span class="v-kept">n as planned</span>
+                        <span class="v-changed">n changed</span>
+                        <span class="v-added">n added</span>
+                        <span class="v-dropped">n dropped</span>
+                      </div>
+                      <!-- Never rewrite the plan above to match this. Mark each
+                           planned piece with what became of it; the drift is the
+                           record. The reason goes in an em carrying class "why", which
+                           renders as a block; a bare em in one of these
+                           bullets would be promoted to a block too and split
+                           the line. Use strong or b for inline emphasis. -->
+                      <ul class="substeps">
+                        <li data-outcome="kept">done as planned</li>
+                        <li data-outcome="changed">done differently<em class="why">why</em></li>
+                        <li data-outcome="added">not planned<em class="why">what forced it</em></li>
+                        <li data-outcome="dropped"><s>abandoned</s><em class="why">why</em></li>
+                      </ul>
+                      <div class="snags">
+                        <div class="snags-head">What bit</div>
+                        <ul><li><b>The short version.</b> Then the reason. Written unprompted; a step that closes claiming it all went to plan is usually one whose problems went unrecorded.</li></ul>
+                      </div>
+                      <div class="rstep-when">The observed result.</div>
+                    </div>
+                  </details>
+                </div>
+              </details>
+
+            </div>
+          </div>
+        </details>
+
+        <details class="drawer" data-kind="plan">
+          <summary>Why this item exists <span class="tag-drift">and what it locks in</span></summary>
+          <div class="drawer-body">
+            <p>The goal, in plain words.</p>
+            <div class="scope">
+              <div class="scope-in"><div class="scope-head">In</div><ul><li>...</li></ul></div>
+              <div class="scope-out"><div class="scope-head">Out</div><ul><li>... - which item owns it instead</li></ul></div>
+            </div>
+          </div>
+        </details>
+
+        <details class="drawer" data-kind="reality">
+          <summary>Decisions <span class="tag-drift">n made, with why the rejected options lost</span></summary>
+          <div class="drawer-body">
+            <!-- When a decision compared alternatives, draw them as .options
+                 cards with .wire diagrams. Prose cannot be compared at a glance. -->
+            <div class="options"><div class="opt" data-match="yes">...</div></div>
+          </div>
+        </details>
+
+        <details class="drawer" data-kind="plan">
+          <summary>Contracts <span class="tag-drift">n that later items inherit</span></summary>
+          <div class="drawer-body"><div class="rows"><div class="row"><div class="row-key">Name</div><div class="row-val">The rule.</div></div></div></div>
+        </details>
+
+        <details class="drawer" data-kind="reality">
+          <summary>Log <span class="tag-drift">n entries, newest first</span></summary>
+          <div class="drawer-body">
+            <div class="log">
+              <div class="entry" data-kind="decided">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top"><span class="entry-title">What happened</span><span class="kind-tag">Decided</span><span class="stamp">Mon D</span></div>
+                  <p class="entry-text">And why the rejected option was rejected.</p>
+                </div>
               </div>
-              <p class="entry-text">What was chosen, and why the other option lost.</p>
             </div>
           </div>
-        </div>
-      </section>
+        </details>
 
-      <section>
-        <h2>Goal</h2>
-        <p>One paragraph from the spec.</p>
-      </section>
+        <details class="drawer" data-kind="plan">
+          <summary>Notes <span class="tag-drift">departures, additions and loose ends</span></summary>
+          <div class="drawer-body"><div class="notes"><ul><li>...</li></ul></div></div>
+        </details>
 
-      <section>
-        <h2>Build steps</h2>
-        <div class="steps">
-          <div class="step">
-            <div class="box">&#10003;</div>
-            <div class="step-body">
-              <div class="step-name">1 &middot; Step name</div>
-              <p class="step-text">What it does.</p>
-              <div class="verify">Done when: the gate, as written in the spec.</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <h2>Scope</h2>
-        <div class="scope">
-          <div class="scope-in"><div class="scope-head">In</div><ul><li>...</li></ul></div>
-          <div class="scope-out"><div class="scope-head">Out</div><ul><li>...</li></ul></div>
-        </div>
-      </section>
-
-      <footer>
-        <span>Updated Mon D, YYYY</span>
-        <span>&middot;</span>
-        <span>Source: blueprint/context/current-feature.md</span>
-      </footer>
+      </div>
+      <span class="pill pill--live">In progress</span>
     </div>
     -->
 
+    <!-- ================= FEATURE 1 ================= -->
   </main>
+
+  <div class="keyrow" aria-label="What the markers mean">
+    <span class="legend-row"><span class="legend-mark legend-mark--ask">!</span><span>Blocked on you</span></span>
+    <span class="legend-row"><span class="legend-mark legend-mark--open">?</span><span>Open question, build continues</span></span>
+    <span class="legend-row"><span class="legend-mark legend-mark--done">&#10003;</span><span>Done, or a decision you approved</span></span>
+    <span class="legend-row"><span class="legend-mark legend-mark--fix">&#8635;</span><span>A real fault found and repaired</span></span>
+  </div>
 </div>
 
 <script>
@@ -1013,7 +2111,7 @@
     link.addEventListener("click", function () { selectView(link.dataset.view); });
   });
 
-  var initial = "project";
+  var initial = "roadmap";
   try {
     var saved = localStorage.getItem("scheduleads-app-log-view");
     if (saved && document.getElementById("view-" + saved)) initial = saved;
