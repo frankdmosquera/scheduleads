@@ -1,0 +1,343 @@
+/* ===========================================================================
+   LAYOUT B - THE CALENDLY SHAPE. THROWAWAY MOCKUP CSS.
+   ===========================================================================
+
+   Shared by modal-month.html (screen 1, pick a time) and
+   modal-month-details.html (screen 2, answer the questions), because the
+   left rail and the shell are the same on both and drifting copies is the
+   thing this avoids.
+
+   WHAT MAKES IT FEEL LIKE CALENDLY, precisely:
+
+     1. A persistent left rail. Who, what, how long, where. It never moves
+        between screens, and on screen 2 it gains the chosen date and time.
+        This is most of the confidence the flow gives you: what you are
+        booking is never off screen.
+     2. Two screens, not one scroll. Pick the time, THEN answer questions.
+        Each screen asks one thing.
+     3. The month shows the shape of availability. A dot or a tint says
+        "there is room", so a service that only runs Tuesdays is obvious.
+     4. Choosing a time does not commit. The slot splits into the time and a
+        Next beside it, so the click that advances is deliberate.
+
+   Same --sa-* contract as widget.css. Not one CRM token in this file.
+   =========================================================================== */
+
+/* Proportions corrected from blueprint/reference/calendly/01-select-date-time.png,
+   Primo's own live booking page. The rail is close to half the modal, not a
+   narrow sidebar, because it carries the business's logo at a size worth
+   looking at. That is most of why the page reads as Primo's and not as a
+   booking tool's. */
+.sa-modal--book { max-width: 880px; padding: 0; }
+
+.sa-book { display: grid; grid-template-columns: 340px minmax(0, 1fr); min-height: 0; }
+
+/* ---------- the rail ---------- */
+
+.sa-rail {
+  border-right: 1px solid var(--sa-border);
+  display: flex;
+  flex-direction: column;
+  background: var(--sa-surface);
+}
+
+/* THE LOGO SLOT.
+   The real page leads with the mark, centered, on its own white band with a
+   rule under it. The host supplies the image; the widget supplies the band.
+   A business with no logo falls back to its name set in the same space, so
+   the band never collapses and the layout never shifts between tenants. */
+.sa-rail-logo {
+  padding: 26px 24px 24px;
+  border-bottom: 1px solid var(--sa-border);
+  display: grid;
+  place-items: center;
+  min-height: 132px;
+}
+
+.sa-rail-logo img { max-width: 172px; max-height: 96px; display: block; }
+
+.sa-rail-logo .sa-rail-wordmark {
+  font-size: 19px; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--sa-identity); text-align: center;
+}
+
+.sa-rail-body {
+  padding: 22px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  flex: 1;
+}
+
+.sa-rail-back {
+  all: unset; cursor: pointer;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  color: var(--sa-muted); font-size: 15px;
+  border: 1px solid var(--sa-border);
+  align-self: flex-start;
+}
+.sa-rail-back:hover { border-color: var(--sa-identity); color: var(--sa-identity); }
+
+/* person and business, not business alone. Somebody is coming to your house;
+   the page says who. */
+.sa-rail-host {
+  font-size: 14px;
+  color: var(--sa-identity);
+  font-weight: 700;
+}
+
+.sa-rail-event {
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin-top: 2px;
+}
+
+.sa-facts { display: flex; flex-direction: column; gap: 11px; margin-top: 6px; }
+
+.sa-fact {
+  display: grid;
+  grid-template-columns: 19px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  font-size: 14.5px;
+  color: var(--sa-text);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.sa-fact-i { text-align: center; opacity: 0.6; }
+
+/* location is plain copy, not a fact with an icon, on the real page */
+.sa-rail-where { font-size: 14.5px; color: var(--sa-muted); margin-top: 2px; }
+
+/* the chosen slot, only on screen 2. identity coloured because it is a
+   confirmation of state, not a thing to click. */
+.sa-fact--picked { color: var(--sa-identity); font-weight: 700; }
+
+.sa-rail-foot {
+  margin-top: auto;
+  padding-top: 18px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.sa-rail-foot a { font-size: 13px; color: var(--sa-identity); font-weight: 500; }
+.sa-rail-foot span { font-size: 12px; color: var(--sa-muted); opacity: 0.85; }
+
+/* ---------- the panel ---------- */
+
+.sa-panel { padding: 20px 22px 22px; min-width: 0; display: flex; flex-direction: column; }
+
+.sa-panel-h {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 16px;
+}
+
+.sa-pick { display: grid; grid-template-columns: minmax(0, 1fr) 182px; gap: 22px; }
+
+/* ---------- month ---------- */
+
+/* Month name sits BETWEEN the two arrows, not off to one side. The three
+   read as one control, and the eye lands on the month rather than hunting
+   for the arrows at the far edge. From the reference screenshot. */
+.sa-mhead {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.sa-mtitle { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; min-width: 150px; text-align: center; }
+
+.sa-mnav {
+  all: unset; cursor: pointer;
+  width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center;
+  color: var(--sa-identity); font-size: 17px;
+  flex: none;
+}
+.sa-mnav:hover:not([disabled]) { background: var(--sa-surface-2); }
+.sa-mnav[disabled] { color: var(--sa-disabled); cursor: not-allowed; }
+
+.sa-dow { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+.sa-dow span {
+  text-align: center;
+  font-family: var(--sa-font-mono);
+  font-size: 9.5px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--sa-muted);
+  padding-bottom: 5px;
+}
+
+.sa-month { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+
+.sa-dwrap { display: grid; place-items: center; aspect-ratio: 1; position: relative; }
+
+.sa-d {
+  all: unset;
+  cursor: default;
+  width: 82%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--sa-disabled);
+}
+
+/* An available day is a tinted disc with bold identity-coloured text. The
+   tint is what makes the month readable at a glance: you see the working
+   week without reading a single number. */
+.sa-d[data-free="yes"] {
+  cursor: pointer;
+  background: var(--sa-surface-2);
+  color: var(--sa-identity);
+  font-weight: 700;
+}
+.sa-d[data-free="yes"]:hover { filter: brightness(0.95); }
+
+.sa-d[aria-pressed="true"] {
+  background: var(--sa-identity);
+  color: var(--sa-identity-ink);
+  font-weight: 700;
+}
+
+/* today is a dot beneath, never a fill, so it cannot be mistaken for the
+   selection */
+.sa-dwrap[data-today="yes"]::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--sa-identity);
+}
+.sa-dwrap[data-today="yes"]:has(.sa-d[aria-pressed="true"])::after { background: transparent; }
+
+.sa-d[data-out="yes"] { opacity: 0.35; }
+
+.sa-tz {
+  margin-top: 16px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--sa-muted);
+}
+.sa-tz select {
+  font-family: inherit; font-size: 13px;
+  border: none; background: transparent; color: var(--sa-text);
+  cursor: pointer;
+}
+
+/* ---------- times ---------- */
+
+.sa-times { display: flex; flex-direction: column; min-width: 0; }
+
+.sa-times-h {
+  font-size: 13.5px;
+  font-weight: 600;
+  padding-bottom: 10px;
+}
+
+.sa-times-list {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 296px; overflow-y: auto;
+  padding-right: 4px;
+}
+
+.sa-t {
+  all: unset;
+  cursor: pointer;
+  text-align: center;
+  padding: 11px 0;
+  border-radius: var(--sa-radius);
+  border: 1px solid var(--sa-identity);
+  background: var(--sa-surface);
+  color: var(--sa-identity);
+  font-weight: 600;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.sa-t:hover:not([disabled]) { background: var(--sa-surface-2); }
+
+.sa-t[disabled] {
+  cursor: not-allowed;
+  color: var(--sa-disabled);
+  border-color: var(--sa-border);
+  background: var(--sa-surface-2);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  font-weight: 500;
+}
+
+/* the chosen slot splits in two: what you picked, and the deliberate Next */
+.sa-t-split { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.sa-t-chosen {
+  text-align: center;
+  padding: 11px 0;
+  border-radius: var(--sa-radius);
+  background: var(--sa-muted);
+  color: var(--sa-bg);
+  font-weight: 600;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--sa-font-mono);
+}
+
+/* Next is the ACTION token. On Primo that is amber with dark ink, which is
+   exactly the split the contract exists for: the day picker is blue, the
+   thing that moves you forward is amber. */
+.sa-t-next {
+  all: unset; cursor: pointer;
+  text-align: center;
+  padding: 11px 0;
+  border-radius: var(--sa-radius);
+  background: var(--sa-action);
+  color: var(--sa-action-ink);
+  font-weight: 700;
+  font-size: 14px;
+}
+.sa-t-next:hover { filter: brightness(0.94); }
+
+/* ---------- the questions screen ---------- */
+
+.sa-form { display: flex; flex-direction: column; gap: 15px; max-width: 420px; }
+
+.sa-req::after { content: " *"; color: var(--sa-action); }
+
+.sa-addg {
+  all: unset; cursor: pointer;
+  color: var(--sa-identity);
+  font-weight: 600;
+  font-size: 13.5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  align-self: flex-start;
+}
+
+.sa-fine { font-size: 12px; color: var(--sa-muted); line-height: 1.5; max-width: 420px; }
+.sa-fine a { color: var(--sa-identity); }
+
+.sa-submit {
+  all: unset; cursor: pointer;
+  align-self: flex-start;
+  padding: 12px 26px;
+  border-radius: 999px;
+  background: var(--sa-action);
+  color: var(--sa-action-ink);
+  font-weight: 700;
+  font-size: 15px;
+}
+.sa-submit:hover { filter: brightness(0.94); }
+
+@media (max-width: 760px) {
+  .sa-book { grid-template-columns: minmax(0, 1fr); }
+  .sa-rail { border-right: none; border-bottom: 1px solid var(--sa-border); }
+  .sa-pick { grid-template-columns: minmax(0, 1fr); }
+  .sa-times-list { max-height: none; display: grid; grid-template-columns: repeat(3, 1fr); }
+  .sa-t-split { grid-column: 1 / -1; }
+}

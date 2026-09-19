@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Booking, layout B screen 2 - your details</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="widget.css">
+<link rel="stylesheet" href="month.css">
+
+<style>
+/* =========================================================================
+   LAYOUT B, SCREEN 2 OF 2. THE QUESTIONS.
+   =========================================================================
+
+   Screen 1 is modal-month.html. Two things change between them and nothing
+   else does:
+
+     1. The rail gains the chosen date and time, in identity blue. It is a
+        confirmation of state, not a thing to click, which is why it is
+        identity and not action.
+     2. The panel swaps the calendar for the form.
+
+   The rail staying put is the point. On a one-screen layout the customer
+   scrolls the slot out of view while typing and has to scroll back to check
+   what they picked. Here it is never off screen.
+
+   WHAT THE BUSINESS ASKS HERE IS ITS OWN
+
+     Name, email and phone are ours. Everything under them is the business's
+     question list, set in Settings. Primo asks what needs painting. A clinic
+     would ask about allergies and whether it is a first visit. This is the
+     screen that makes the widget fit a trade rather than just a calendar.
+   ========================================================================= */
+
+:root {
+  --pp-ground:  #FBFAF7;
+  --pp-card:    #FFFFFF;
+  --pp-tint:    oklch(97% 0.008 262);
+  --pp-fg:      oklch(0.22 0.008 262);
+  --pp-muted:   oklch(0.50 0.010 262);
+  --pp-line:    oklch(0.22 0.008 262 / 13%);
+  --pp-blue:    #0D378D;
+  --pp-amber:   #E09A3C;
+  --pp-ink:     #17191F;
+
+  --sa-bg:            var(--pp-ground);
+  --sa-surface:       var(--pp-card);
+  --sa-surface-2:     oklch(94% 0.022 262);
+  --sa-text:          var(--pp-fg);
+  --sa-muted:         var(--pp-muted);
+  --sa-border:        var(--pp-line);
+  --sa-identity:      var(--pp-blue);
+  --sa-identity-ink:  #FFFFFF;
+  --sa-action:        var(--pp-amber);
+  --sa-action-ink:    var(--pp-ink);
+  --sa-disabled:      oklch(0.68 0.006 262);
+  --sa-radius:        8px;
+  --sa-font:          "Geist", ui-sans-serif, system-ui, sans-serif;
+  --sa-font-mono:     "Geist Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--pp-ground); color: var(--pp-fg);
+       font-family: "Geist", ui-sans-serif, system-ui, sans-serif; }
+.host-top { display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 40px; border-bottom: 1px solid var(--pp-line); background: #fff; }
+.host-logo { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; color: var(--pp-blue); }
+.host-nav { display: flex; gap: 24px; font-size: 14.5px; color: var(--pp-muted); align-items: center; }
+.host-book { background: var(--pp-amber); color: var(--pp-ink); font-weight: 700;
+             padding: 9px 18px; border-radius: 8px; font-size: 14.5px; }
+.host-hero { padding: 64px 40px; max-width: 780px; }
+.host-hero h1 { font-size: 44px; line-height: 1.07; letter-spacing: -0.03em; margin: 0 0 16px; color: var(--pp-blue); }
+.host-hero p { font-size: 18px; color: var(--pp-muted); margin: 0 0 28px; max-width: 52ch; }
+.host-cta { display: inline-block; background: var(--pp-amber); color: var(--pp-ink); font-weight: 700;
+            padding: 13px 26px; border-radius: 8px; font-size: 15.5px; }
+.host-note { font-family: "Geist Mono", monospace; font-size: 11px; color: var(--pp-muted);
+             background: var(--pp-tint); border-bottom: 1px solid var(--pp-line);
+             padding: 7px 40px; display: flex; gap: 16px; flex-wrap: wrap; }
+.host-note b { color: var(--pp-fg); }
+.host-note a { color: var(--pp-blue); }
+</style>
+</head>
+<body>
+
+<div class="host-note">
+  <b>MOCKUP</b>
+  <span>Layout B &middot; screen 2 of 2 &middot; the questions</span>
+  <span><a href="modal-month.html">&larr; screen 1</a></span>
+  <span><a href="modal-primo.html">compare layout A</a></span>
+</div>
+
+<header class="host-top">
+  <div class="host-logo">PRIMO PAINTERS</div>
+  <nav class="host-nav"><span>Interior</span><span>Exterior</span><span>Projects</span><span>Reviews</span><a class="host-book" href="#">Book now</a></nav>
+</header>
+
+<section class="host-hero">
+  <h1>Calgary interior painters you can book today.</h1>
+  <p>Clean lines, clean site, done when we said. Free estimates across Calgary and the surrounding communities.</p>
+  <a class="host-cta" href="#">Get a free estimate</a>
+</section>
+
+<div class="sa-scrim">
+  <div class="sa-modal sa-modal--book" role="dialog" aria-modal="true" aria-labelledby="sa-h">
+    <div class="sa-book">
+
+      <aside class="sa-rail">
+        <a class="sa-rail-back" href="modal-month.html" aria-label="Back to the times">&#8249;</a>
+        <div>
+          <div class="sa-rail-host">Primo Painters</div>
+          <div class="sa-rail-event">Free estimate, interior</div>
+        </div>
+        <div class="sa-facts">
+          <div class="sa-fact"><span class="sa-fact-i">&#9201;</span><span>60 min</span></div>
+          <!-- the one thing screen 1 does not have -->
+          <div class="sa-fact sa-fact--picked"><span class="sa-fact-i">&#128197;</span><span>2:00 pm &ndash; 3:00 pm<br>Wednesday 23 September 2026</span></div>
+          <div class="sa-fact"><span class="sa-fact-i">&#127760;</span><span>Mountain Time, Canada</span></div>
+          <div class="sa-fact"><span class="sa-fact-i">&#128205;</span><span>At your home, anywhere in Calgary</span></div>
+        </div>
+        <p class="sa-rail-foot">No charge, no obligation.</p>
+      </aside>
+
+      <div class="sa-panel">
+        <h2 class="sa-panel-h" id="sa-h">Enter your details</h2>
+
+        <div class="sa-form">
+
+          <div>
+            <label class="sa-flab sa-req" for="f-n">Name</label>
+            <input class="sa-f" id="f-n" value="Marta Kowalczyk">
+          </div>
+
+          <div>
+            <label class="sa-flab sa-req" for="f-e">Email</label>
+            <input class="sa-f" id="f-e" value="marta@example.com">
+          </div>
+
+          <div>
+            <label class="sa-flab sa-req" for="f-p">Phone</label>
+            <input class="sa-f" id="f-p" placeholder="(403) 555-0172">
+          </div>
+
+          <div>
+            <label class="sa-flab sa-req" for="f-a">Address of the job</label>
+            <input class="sa-f" id="f-a" placeholder="Street and community">
+          </div>
+
+          <!-- the business's own question, set in Settings -->
+          <div>
+            <label class="sa-flab" for="f-m">What needs painting?</label>
+            <textarea class="sa-f" id="f-m" rows="3" placeholder="Rooms, ceilings, trim, anything we should know before we arrive"></textarea>
+          </div>
+
+          <button class="sa-addg">+ Add another contact</button>
+
+          <p class="sa-fine">
+            By booking you agree that Primo Painters may contact you about this estimate.
+            You can cancel or move it any time from the link in your confirmation email.
+          </p>
+
+          <button class="sa-submit">Book the estimate</button>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

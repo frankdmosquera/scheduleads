@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dwayne Okafor - Scheduleads</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+
+  /* ---------- the person ---------- */
+  .person { display: flex; gap: 15px; align-items: flex-start; }
+  .person .av { width: 52px; height: 52px; font-size: 17px; }
+  .person h1 { font-size: 24px; }
+  .contact-lines { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 7px;
+                   font-size: 13.5px; color: var(--muted); font-family: var(--font-mono); }
+
+  /* ---------- timeline ----------
+     The activity table rendered. Every module writes here, so this is the one
+     place that has to stay readable no matter what gets added later. The
+     glyph sits inside the dot, so the type reads without relying on colour. */
+
+  .tl { display: flex; flex-direction: column; padding: 4px 0; }
+
+  .ev { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 0 14px;
+        padding-bottom: 20px; position: relative; }
+  .ev::before { content: ""; position: absolute; left: 12px; top: 28px; bottom: -4px;
+                width: 1px; background: var(--border); }
+  .ev:last-child { padding-bottom: 2px; }
+  .ev:last-child::before { display: none; }
+
+  .ev-dot {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--surface-2); color: var(--muted);
+    border: 1px solid var(--border);
+    font-size: 11.5px; position: relative; z-index: 1;
+  }
+
+  .ev[data-t="booking"]  .ev-dot { background: var(--won-soft);  color: var(--won);  border-color: transparent; }
+  .ev[data-t="stage"]    .ev-dot { background: var(--accent-soft);color: var(--accent);border-color: transparent; }
+  .ev[data-t="sent"]     .ev-dot { background: var(--wait-soft); color: var(--wait); border-color: transparent; }
+  .ev[data-t="received"] .ev-dot { background: var(--info-soft); color: var(--info); border-color: transparent; }
+  .ev[data-t="quote"]    .ev-dot { background: var(--wait-soft); color: var(--wait); border-color: transparent; }
+
+  .ev[data-t="booking"]  .ev-dot::before { content: "\1F5D3"; font-size: 12px; }
+  .ev[data-t="stage"]    .ev-dot::before { content: "\2192"; font-weight: 700; }
+  .ev[data-t="sent"]     .ev-dot::before { content: "\2197"; font-weight: 700; }
+  .ev[data-t="received"] .ev-dot::before { content: "\2199"; font-weight: 700; }
+  .ev[data-t="note"]     .ev-dot::before { content: "\270E"; }
+  .ev[data-t="sms"]      .ev-dot::before { content: "\2709"; }
+  .ev[data-t="quote"]    .ev-dot::before { content: "$"; font-weight: 700; }
+
+  .ev-body { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  .ev-top { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  .ev-title { font-size: 14.5px; font-weight: 600; }
+  .ev-time { font-family: var(--font-mono); font-size: 11.5px; color: var(--faint);
+             letter-spacing: 0.03em; white-space: nowrap; margin-left: auto; }
+  .ev-text { font-size: 14px; color: var(--muted); }
+
+  .quoted {
+    border-left: 2px solid var(--border);
+    padding: 2px 0 2px 12px;
+    font-size: 13.5px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* ---------- composer ---------- */
+  .comp { border-top: 1px solid var(--border); padding: 14px 18px; background: var(--surface-2); }
+  .comp-tabs { display: flex; gap: 4px; margin-bottom: 10px; }
+  .comp-tab { all: unset; cursor: pointer; padding: 5px 11px; border-radius: var(--radius-sm);
+              font-size: 13px; color: var(--muted); }
+  .comp-tab[aria-selected="true"] { background: var(--surface); color: var(--text);
+                                     font-weight: 600; box-shadow: var(--shadow-sm); }
+  .comp-row { display: flex; gap: 9px; align-items: center; margin-top: 9px; }
+
+  /* ---------- right rail ---------- */
+  .rail { display: flex; flex-direction: column; gap: 16px; }
+  .kv { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0;
+        border-bottom: 1px solid var(--border); font-size: 13.5px; }
+  .kv:last-child { border-bottom: none; }
+  .kv-k { color: var(--muted); }
+  .kv-v { font-weight: 600; text-align: right; }
+
+  .qcard { border: 1px solid var(--wait); border-radius: var(--radius); overflow: hidden; }
+  .qcard-top { background: var(--wait-soft); padding: 12px 15px; }
+  .qcard-amt { font-family: var(--font-mono); font-size: 23px; font-weight: 700;
+               letter-spacing: -0.01em; font-variant-numeric: tabular-nums; color: var(--wait); }
+  .qcard-body { padding: 13px 15px; background: var(--surface); display: flex; flex-direction: column; gap: 10px; }
+
+  @media (max-width: 1080px) { .two { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="side">
+    <div class="org">
+      <div class="org-mark">PP</div>
+      <div><div class="org-name">Primo Painters</div><div class="org-plan">Plan &middot; agency</div></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-head">Work</div>
+      <a href="leads.html"><span class="ico">&#9776;</span>Leads<span class="count">8</span></a>
+      <a href="pipeline.html"><span class="ico">&#9638;</span>Pipeline</a>
+      <a href="quote.html"><span class="ico">&#36;</span>Quotes<span class="count">3</span></a>
+      <a href="crew.html"><span class="ico">&#9635;</span>Crew</a>
+      <div class="nav-head" style="margin-top:14px">Setup</div>
+      <a href="settings.html"><span class="ico">&#9881;</span>Settings</a>
+    </nav>
+    <div class="side-foot">
+      <div class="toggle" role="group" aria-label="Theme">
+        <button data-t="light" aria-pressed="true">Light</button>
+        <button data-t="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="proto" style="margin: 0 calc(var(--gut) * -1) 0;">
+      <b>MOCKUP</b><span>Contact and timeline</span><span>Every activity type rendered once</span>
+    </div>
+
+    <div class="top">
+      <div class="person">
+        <div class="av">DO</div>
+        <div>
+          <h1>Dwayne Okafor</h1>
+          <div class="contact-lines">
+            <span>(403) 555-0164</span>
+            <span>d.okafor@example.com</span>
+            <span>Auburn Bay</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; gap:9px">
+        <button class="btn btn--sm">Log a call</button>
+        <button class="btn btn--sm">Book a time</button>
+        <button class="btn btn--primary btn--sm">Send the quote</button>
+      </div>
+    </div>
+
+    <div class="two">
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Everything that happened</h2>
+          <div style="display:flex; gap:6px">
+            <button class="btn btn--ghost btn--sm">All</button>
+            <button class="btn btn--ghost btn--sm">Email</button>
+            <button class="btn btn--ghost btn--sm">Notes</button>
+          </div>
+        </div>
+
+        <div class="card-body" style="padding-bottom: 8px">
+          <div class="tl">
+
+            <div class="ev" data-t="received">
+              <div class="ev-dot"></div>
+              <div class="ev-body">
+                <div class="ev-top"><span class="ev-title">Dwayne replied</span><span class="ev-time">today, 4:02 pm</span></div>
+                <p class="ev-text">Caught by the capture address, filed here automatically.</p>
+                <div class="quoted">"Thanks, looks good. Can you start the week of the 6th instead? Also does that include the soffits?"</div>
+              </div>
+            </div>
+
+            <div class="ev" data-t="quote">
+              <div class="ev-dot"></div>
+              <div class="ev-body">
+                <div class="ev-top"><span class="ev-title">Quote sent, $4,820</span><span class="ev-time">Mon 14, 9:14 am</span></div>
+                <p class="ev-text">Exterior repaint, 6 line items. Opened twice, not yet accepted. <a href="quote.html">View the quote</a></p>
+              </div>
+            </div>
+
+            <div class="ev" data-t="stage">
+              <div class="ev-dot"></div>
+              <div class="ev-body">
+                <div class="ev-top"><span class="ev-title">Moved to Quote out</span><span class="ev-time">Mon 14, 9:14 am</span></div>
+                <p class="ev-text">From Estimate booked. By you.</p>
+              </div>
+            </div>
+
+            <div class="ev" data-t="note">
+              <div class="ev-dot"></div>
+              <div class="ev-body">
+                <div class="ev-top"><span class="ev-title">Note</span><span class="ev-time">Fri 11, 5:40 pm</span></div>
+                <p class="ev-text">Stucco is sound, no repair needed. Two coats on the north face, it gets the weather. Wants it done before the first frost.</p>
+              </div>
+            </div>
+
+            <div class="ev" data-t="sms">
+              <div class="ev-dot"></div>
+              <div class="ev-body">
+                <div class="ev-top"><span class="ev-title">Reminder sent by text</span><span class="ev-time">Thu 10, 8:00 am</span></div>
+                <p class="ev-text">"Reminder: Primo Painters is coming tomorrow at 10:00 am for your free estimate."</p>
+              </div>
+            </div>
+
+            <div class="ev" data-t="booking">
+              <div class="ev-dot"></div>
+              <div class="ev-body">
+                <div class="ev-top"><span class="ev-title">Booked a free estimate</span><span class="ev-time">Tue 8, 7:23 pm</span></div>
+                <p class="ev-text">Friday 11 September, 10:00 am, Crew A. Booked himself from the website.</p>
+              </div>
+            </div>
+
+            <div class="ev" data-t="sent">
+              <div class="ev-dot"></div>
+              <div class="ev-body">
+                <div class="ev-top"><span class="ev-title">Confirmation sent</span><span class="ev-time">Tue 8, 7:23 pm</span></div>
+                <p class="ev-text">With the calendar invite attached. Delivered.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="comp">
+          <div class="comp-tabs" role="tablist">
+            <button class="comp-tab" role="tab" aria-selected="true">Email</button>
+            <button class="comp-tab" role="tab" aria-selected="false">Text</button>
+            <button class="comp-tab" role="tab" aria-selected="false">Note</button>
+          </div>
+          <textarea class="field" rows="2" placeholder="Reply to Dwayne. It goes out as Primo Painters and lands on this timeline."></textarea>
+          <div class="comp-row">
+            <button class="btn btn--sm">Use a template</button>
+            <span style="font-size:12.5px; color:var(--faint)">Sends from hello@primopainters.ca</span>
+            <button class="btn btn--primary btn--sm" style="margin-left:auto">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail">
+
+        <div class="qcard">
+          <div class="qcard-top">
+            <div style="font-family:var(--font-mono); font-size:10px; letter-spacing:0.13em; text-transform:uppercase; color:var(--wait)">Quote out</div>
+            <div class="qcard-amt">$4,820</div>
+          </div>
+          <div class="qcard-body">
+            <div style="font-size:13.5px; color:var(--muted)">Sent Mon 14. Opened twice, last seen 4 hours ago. Expires Fri 2 Oct.</div>
+            <div style="display:flex; gap:8px">
+              <button class="btn btn--sm" style="flex:1">Revise</button>
+              <button class="btn btn--sm" style="flex:1">Nudge</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>The job</h2></div>
+          <div class="card-body" style="padding-top:4px; padding-bottom:6px">
+            <div class="kv"><span class="kv-k">Stage</span><span class="kv-v"><span class="badge badge--wait">Quote out</span></span></div>
+            <div class="kv"><span class="kv-k">Service</span><span class="kv-v">Exterior repaint</span></div>
+            <div class="kv"><span class="kv-k">Source</span><span class="kv-v"><span class="tag">widget</span></span></div>
+            <div class="kv"><span class="kv-k">Crew</span><span class="kv-v">Crew A</span></div>
+            <div class="kv"><span class="kv-k">First seen</span><span class="kv-v mono">Tue 8 Sep</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Also on file</h2></div>
+          <div class="card-body" style="padding-top:4px; padding-bottom:6px">
+            <div class="kv"><span class="kv-k">Garage, 2024</span><span class="kv-v mono">$1,150</span></div>
+            <div class="kv"><span class="kv-k">Lifetime</span><span class="kv-v mono">$1,150</span></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+  var btns = document.querySelectorAll('.toggle button');
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.t === t)); });
+    try { localStorage.setItem('sa-theme', t); } catch (e) {}
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { setTheme(b.dataset.t); }); });
+  try { var s = localStorage.getItem('sa-theme'); if (s) setTheme(s); } catch (e) {}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings - Scheduleads</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+  .settings { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 28px; align-items: start; }
+
+  .subnav { display: flex; flex-direction: column; gap: 1px; position: sticky; top: 20px; }
+  .subnav a { padding: 7px 10px; border-radius: var(--radius-sm); color: var(--muted);
+              text-decoration: none; font-size: 14px; }
+  .subnav a:hover { background: var(--surface-2); color: var(--text); }
+  .subnav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+  .panes { display: flex; flex-direction: column; gap: 20px; }
+
+  /* ---------- hours ---------- */
+  .day { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 16px;
+         align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .day:last-child { border-bottom: none; }
+
+  .sw { display: flex; align-items: center; gap: 9px; }
+  .sw-box { width: 34px; height: 20px; border-radius: 999px; background: var(--surface-3);
+            position: relative; flex: none; transition: background .12s; }
+  .sw-box::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+                   border-radius: 50%; background: var(--surface); box-shadow: var(--shadow-sm); transition: left .12s; }
+  .sw[data-on="yes"] .sw-box { background: var(--accent); }
+  .sw[data-on="yes"] .sw-box::after { left: 16px; }
+  .sw-lab { font-size: 14px; font-weight: 500; }
+  .sw[data-on="no"] .sw-lab { color: var(--faint); }
+
+  .windows { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .win { display: flex; align-items: center; gap: 6px; background: var(--surface-2);
+         border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 9px;
+         font-family: var(--font-mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .win button { all: unset; cursor: pointer; color: var(--faint); font-size: 11px; padding-left: 2px; }
+  .win button:hover { color: var(--lost); }
+  .win-add { all: unset; cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 600; padding: 4px 6px; }
+  .closed { font-size: 13.5px; color: var(--faint); }
+
+  /* ---------- services ---------- */
+  .srow { display: grid; grid-template-columns: 26px minmax(0, 1fr) 96px 110px 76px;
+          gap: 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .srow:last-of-type { border-bottom: none; }
+  .srow-name { font-weight: 600; font-size: 14.5px; }
+  .srow-slug { font-family: var(--font-mono); font-size: 12px; color: var(--faint); margin-top: 1px; }
+
+  /* ---------- resources ---------- */
+  .res { display: flex; gap: 10px; flex-wrap: wrap; }
+  .res-c { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border);
+           border-radius: var(--radius); padding: 10px 14px 10px 11px; background: var(--surface-2); }
+  .res-dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .res-name { font-weight: 600; font-size: 14px; }
+  .res-meta { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+
+  /* ---------- blackout ---------- */
+  .bo { display: flex; gap: 8px; flex-wrap: wrap; }
+  .bo-c { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border);
+          border-radius: var(--radius-sm); padding: 6px 10px; font-size: 13.5px; background: var(--surface-2); }
+  .bo-c .mono { color: var(--muted); }
+  .bo-c button { all: unset; cursor: pointer; color: var(--faint); font-size: 11px; }
+  .bo-c button:hover { color: var(--lost); }
+
+  /* ---------- calendar connection ---------- */
+  .conn { display: flex; align-items: center; gap: 14px; padding: 15px 18px;
+          border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+  .conn + .conn { margin-top: 10px; }
+  .conn--bad { border-color: var(--lost); background: var(--lost-soft); }
+  .conn-mark { width: 38px; height: 38px; border-radius: 9px; display: grid; place-items: center;
+               font-size: 16px; flex: none; background: var(--surface-2); }
+  .conn--ok  .conn-mark { background: var(--won-soft);  color: var(--won); }
+  .conn--bad .conn-mark { background: var(--lost-soft); color: var(--lost); }
+  .conn-name { font-weight: 600; font-size: 14.5px; }
+  .conn-meta { font-size: 13px; color: var(--muted); margin-top: 1px; }
+
+  .hint { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+
+  @media (max-width: 980px) {
+    .settings { grid-template-columns: minmax(0, 1fr); }
+    .subnav { position: static; flex-direction: row; flex-wrap: wrap; }
+    .day { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    .srow { grid-template-columns: 26px minmax(0, 1fr) 76px; }
+    .srow > .s-hide { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="side">
+    <div class="org">
+      <div class="org-mark">PP</div>
+      <div><div class="org-name">Primo Painters</div><div class="org-plan">Plan &middot; agency</div></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-head">Work</div>
+      <a href="leads.html"><span class="ico">&#9776;</span>Leads<span class="count">8</span></a>
+      <a href="pipeline.html"><span class="ico">&#9638;</span>Pipeline</a>
+      <a href="quote.html"><span class="ico">&#36;</span>Quotes<span class="count">3</span></a>
+      <a href="crew.html"><span class="ico">&#9635;</span>Crew</a>
+      <div class="nav-head" style="margin-top:14px">Setup</div>
+      <a href="settings.html" aria-current="page"><span class="ico">&#9881;</span>Settings</a>
+    </nav>
+    <div class="side-foot">
+      <div class="toggle" role="group" aria-label="Theme">
+        <button data-t="light" aria-pressed="true">Light</button>
+        <button data-t="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="proto" style="margin: 0 calc(var(--gut) * -1) 0;">
+      <b>MOCKUP</b><span>Settings</span><span>Calendar connection shown healthy and broken at once</span>
+    </div>
+
+    <div class="top">
+      <div>
+        <h1>Settings</h1>
+        <p class="sub">What you change yourself. Nobody at the agency needs to touch the database for any of this.</p>
+      </div>
+      <button class="btn btn--primary">Save changes</button>
+    </div>
+
+    <div class="settings">
+
+      <nav class="subnav">
+        <a href="#hours" aria-current="page">Hours</a>
+        <a href="#services">Services</a>
+        <a href="#crews">Crews</a>
+        <a href="#closed">Days off</a>
+        <a href="#cal">Calendar</a>
+        <a href="#brand">Brand</a>
+      </nav>
+
+      <div class="panes">
+
+        <div class="card" id="hours">
+          <div class="card-head">
+            <h2>When you take bookings</h2>
+            <span class="tag">America/Edmonton</span>
+          </div>
+          <div class="card-body" style="padding-top:6px; padding-bottom:10px">
+
+            <div class="day">
+              <div class="sw" data-on="yes"><span class="sw-box"></span><span class="sw-lab">Monday</span></div>
+              <div class="windows">
+                <span class="win">8:00 am &ndash; 12:00 pm<button>&#10005;</button></span>
+                <span class="win">1:00 pm &ndash; 5:30 pm<button>&#10005;</button></span>
+                <button class="win-add">+ Add</button>
+              </div>
+            </div>
+
+            <div class="day">
+              <div class="sw" data-on="yes"><span class="sw-box"></span><span class="sw-lab">Tuesday</span></div>
+              <div class="windows">
+                <span class="win">8:00 am &ndash; 5:30 pm<button>&#10005;</button></span>
+                <button class="win-add">+ Add</button>
+              </div>
+            </div>
+
+            <div class="day">
+              <div class="sw" data-on="yes"><span class="sw-box"></span><span class="sw-lab">Wednesday</span></div>
+              <div class="windows">
+                <span class="win">8:00 am &ndash; 5:30 pm<button>&#10005;</button></span>
+                <button class="win-add">+ Add</button>
+              </div>
+            </div>
+
+            <div class="day">
+              <div class="sw" data-on="yes"><span class="sw-box"></span><span class="sw-lab">Thursday</span></div>
+              <div class="windows">
+                <span class="win">8:00 am &ndash; 5:30 pm<button>&#10005;</button></span>
+                <button class="win-add">+ Add</button>
+              </div>
+            </div>
+
+            <div class="day">
+              <div class="sw" data-on="yes"><span class="sw-box"></span><span class="sw-lab">Friday</span></div>
+              <div class="windows">
+                <span class="win">8:00 am &ndash; 3:00 pm<button>&#10005;</button></span>
+                <button class="win-add">+ Add</button>
+              </div>
+            </div>
+
+            <div class="day">
+              <div class="sw" data-on="yes"><span class="sw-box"></span><span class="sw-lab">Saturday</span></div>
+              <div class="windows">
+                <span class="win">9:00 am &ndash; 1:00 pm<button>&#10005;</button></span>
+                <button class="win-add">+ Add</button>
+              </div>
+            </div>
+
+            <div class="day">
+              <div class="sw" data-on="no"><span class="sw-box"></span><span class="sw-lab">Sunday</span></div>
+              <div class="windows"><span class="closed">Closed</span></div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:16px;
+                        padding-top:16px; border-top:1px solid var(--border)">
+              <div>
+                <label class="label">Least notice you will accept</label>
+                <input class="field" value="4 hours">
+              </div>
+              <div>
+                <label class="label">Gap between jobs</label>
+                <input class="field" value="30 minutes">
+              </div>
+            </div>
+            <p class="hint">These apply to every service. A customer can never book inside the gap or with less notice than this.</p>
+
+          </div>
+        </div>
+
+        <div class="card" id="services">
+          <div class="card-head">
+            <h2>What people can book</h2>
+            <button class="btn btn--sm">+ Add a service</button>
+          </div>
+          <div class="card-body" style="padding-top:6px; padding-bottom:10px">
+
+            <div class="srow">
+              <div class="grip" style="color:var(--faint); cursor:grab">&#8942;&#8942;</div>
+              <div><div class="srow-name">Free estimate, interior</div><div class="srow-slug">/book/primo/estimate-interior</div></div>
+              <div class="mono s-hide" style="font-size:13px; color:var(--muted)">60 min</div>
+              <div class="s-hide"><span class="badge badge--won">Live</span></div>
+              <div><button class="btn btn--ghost btn--sm">Edit</button></div>
+            </div>
+
+            <div class="srow">
+              <div class="grip" style="color:var(--faint); cursor:grab">&#8942;&#8942;</div>
+              <div><div class="srow-name">Free estimate, exterior</div><div class="srow-slug">/book/primo/estimate-exterior</div></div>
+              <div class="mono s-hide" style="font-size:13px; color:var(--muted)">90 min</div>
+              <div class="s-hide"><span class="badge badge--won">Live</span></div>
+              <div><button class="btn btn--ghost btn--sm">Edit</button></div>
+            </div>
+
+            <div class="srow">
+              <div class="grip" style="color:var(--faint); cursor:grab">&#8942;&#8942;</div>
+              <div><div class="srow-name">Cabinet consultation</div><div class="srow-slug">/book/primo/cabinets</div></div>
+              <div class="mono s-hide" style="font-size:13px; color:var(--muted)">45 min</div>
+              <div class="s-hide"><span class="badge badge--won">Live</span></div>
+              <div><button class="btn btn--ghost btn--sm">Edit</button></div>
+            </div>
+
+            <div class="srow">
+              <div class="grip" style="color:var(--faint); cursor:grab">&#8942;&#8942;</div>
+              <div><div class="srow-name">Colour consultation</div><div class="srow-slug">/book/primo/colour</div></div>
+              <div class="mono s-hide" style="font-size:13px; color:var(--muted)">30 min</div>
+              <div class="s-hide"><span class="badge">Hidden</span></div>
+              <div><button class="btn btn--ghost btn--sm">Edit</button></div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card" id="crews">
+          <div class="card-head">
+            <h2>Crews</h2>
+            <button class="btn btn--sm">+ Add a crew</button>
+          </div>
+          <div class="card-body">
+            <div class="res">
+              <div class="res-c"><span class="res-dot" style="background:var(--accent)"></span>
+                <div><div class="res-name">Crew A</div><div class="res-meta">Marco, Tev</div></div></div>
+              <div class="res-c"><span class="res-dot" style="background:var(--won)"></span>
+                <div><div class="res-name">Crew B</div><div class="res-meta">Sam, Ade, Luis</div></div></div>
+              <div class="res-c"><span class="res-dot" style="background:var(--wait)"></span>
+                <div><div class="res-name">Frank, estimates</div><div class="res-meta">on his own</div></div></div>
+            </div>
+            <p class="hint">Three crews means three bookings can hold the same hour. With no crews at all, one at a time.</p>
+          </div>
+        </div>
+
+        <div class="card" id="closed">
+          <div class="card-head">
+            <h2>Days you are closed</h2>
+            <button class="btn btn--sm">+ Add a date</button>
+          </div>
+          <div class="card-body">
+            <div class="bo">
+              <span class="bo-c"><span class="mono">12 Oct</span> Thanksgiving <button>&#10005;</button></span>
+              <span class="bo-c"><span class="mono">11 Nov</span> Remembrance Day <button>&#10005;</button></span>
+              <span class="bo-c"><span class="mono">24 Dec &ndash; 2 Jan</span> Christmas <button>&#10005;</button></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="cal">
+          <div class="card-head">
+            <h2>Calendar</h2>
+            <span class="tag">both states shown</span>
+          </div>
+          <div class="card-body">
+
+            <div class="conn conn--ok">
+              <div class="conn-mark">&#10003;</div>
+              <div style="min-width:0">
+                <div class="conn-name">Google Calendar &middot; frank@agentsweb.ca</div>
+                <div class="conn-meta">Connected. Last checked 40 seconds ago. Busy times are being read.</div>
+              </div>
+              <button class="btn btn--sm btn--danger" style="margin-left:auto">Disconnect</button>
+            </div>
+
+            <div class="conn conn--bad">
+              <div class="conn-mark">&#9888;</div>
+              <div style="min-width:0">
+                <div class="conn-name">Google Calendar &middot; office@primopainters.ca</div>
+                <div class="conn-meta">Needs reconnecting. Google stopped accepting the saved permission on Tuesday.</div>
+              </div>
+              <button class="btn btn--primary btn--sm" style="margin-left:auto">Reconnect</button>
+            </div>
+
+            <p class="hint">While a calendar is broken, bookings are refused rather than guessed. Nobody gets a slot you are already on a job for, and you get an email the first time it happens.</p>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+  var btns = document.querySelectorAll('.toggle button');
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.t === t)); });
+    try { localStorage.setItem('sa-theme', t); } catch (e) {}
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { setTheme(b.dataset.t); }); });
+  try { var s = localStorage.getItem('sa-theme'); if (s) setTheme(s); } catch (e) {}
+</script>
+
+</body>
+</html>

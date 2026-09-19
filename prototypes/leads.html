@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leads - Scheduleads</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+  .leads { border: 1px solid var(--border); border-radius: var(--radius);
+           background: var(--surface); overflow: hidden; box-shadow: var(--shadow-sm); }
+
+  .lrow {
+    display: grid;
+    grid-template-columns: 34px minmax(190px, 2fr) minmax(150px, 1.6fr) 118px 132px 92px;
+    gap: 16px;
+    align-items: center;
+    padding: 0 18px;
+    min-height: var(--row);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .lrow:last-child { border-bottom: none; }
+  .lrow:hover { background: var(--surface-2); }
+
+  .lhead {
+    min-height: 40px;
+    background: var(--surface-2);
+    cursor: default;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .lhead:hover { background: var(--surface-2); }
+
+  .who { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .who-name { font-weight: 600; font-size: 14.5px; }
+  .who-meta { font-size: 12.5px; color: var(--muted); }
+  .job { font-size: 14px; color: var(--text); }
+  .job-meta { font-size: 12.5px; color: var(--muted); }
+  .when { font-family: var(--font-mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .money { font-family: var(--font-mono); font-size: 13.5px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+  .money span { color: var(--faint); font-weight: 400; }
+
+  /* A row the calendar could not vouch for. Never silently "available". */
+  .lrow[data-flag="calendar"] { background: var(--lost-soft); }
+  .lrow[data-flag="calendar"]:hover { filter: brightness(0.985); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding-bottom: 18px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .stat-k { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.13em;
+            text-transform: uppercase; color: var(--faint); }
+  .stat-v { font-size: 25px; font-weight: 700; letter-spacing: -0.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .stat-n { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+
+  @media (max-width: 1100px) {
+    .lrow { grid-template-columns: 34px minmax(160px, 2fr) 120px 96px; }
+    .lrow > .hide { display: none; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="side">
+    <div class="org">
+      <div class="org-mark">PP</div>
+      <div>
+        <div class="org-name">Primo Painters</div>
+        <div class="org-plan">Plan &middot; agency</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-head">Work</div>
+      <a href="leads.html" aria-current="page"><span class="ico">&#9776;</span>Leads<span class="count">8</span></a>
+      <a href="pipeline.html"><span class="ico">&#9638;</span>Pipeline</a>
+      <a href="quote.html"><span class="ico">&#36;</span>Quotes<span class="count">3</span></a>
+      <a href="crew.html"><span class="ico">&#9635;</span>Crew</a>
+      <div class="nav-head" style="margin-top:14px">Setup</div>
+      <a href="settings.html"><span class="ico">&#9881;</span>Settings</a>
+    </nav>
+
+    <div class="side-foot">
+      <div class="toggle" role="group" aria-label="Theme">
+        <button data-t="light" aria-pressed="true">Light</button>
+        <button data-t="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="proto" style="margin: 0 calc(var(--gut) * -1) 0;">
+      <b>MOCKUP</b><span>Leads list</span><span>Theme toggle is explicit, no system setting</span>
+    </div>
+
+    <div class="top">
+      <div>
+        <h1>Leads</h1>
+        <p class="sub">Everyone who asked for something, and where each one stands.</p>
+      </div>
+      <div style="display:flex; gap:9px">
+        <button class="btn">Export</button>
+        <button class="btn btn--primary"><span>+</span> Add a lead</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-k">New this week</div><div class="stat-v">6</div><div class="stat-n">2 still unanswered</div></div>
+      <div class="stat"><div class="stat-k">Booked</div><div class="stat-v">4</div><div class="stat-n">next Wed 23, 2:00 pm</div></div>
+      <div class="stat"><div class="stat-k">Quotes out</div><div class="stat-v">$11,240</div><div class="stat-n">across 3 quotes</div></div>
+      <div class="stat"><div class="stat-k">Won this month</div><div class="stat-v">$8,910</div><div class="stat-n">5 jobs</div></div>
+    </div>
+
+    <div class="bar">
+      <div class="search"><span>&#9906;</span><span>Search name, phone, email or address</span></div>
+      <button class="btn btn--sm">Stage: all</button>
+      <button class="btn btn--sm">Source: all</button>
+      <button class="btn btn--sm">Newest first</button>
+    </div>
+
+    <div class="notice notice--lost" style="margin-bottom:14px">
+      <span style="color:var(--lost); font-size:16px">&#9888;</span>
+      <div>
+        <div class="notice-title">One booking could not be confirmed</div>
+        <p>Google Calendar did not answer when Tobias tried to book, so the slot was refused rather than guessed. He was told to try again and you were emailed. <a href="settings.html">Check the connection</a>.</p>
+      </div>
+    </div>
+
+    <div class="leads">
+
+      <div class="lrow lhead">
+        <div></div><div>Contact</div><div class="hide">Job</div><div class="hide">When</div><div>Stage</div><div style="text-align:right">Value</div>
+      </div>
+
+      <div class="lrow" data-flag="calendar">
+        <div class="av" style="background:var(--lost-soft); color:var(--lost)">TR</div>
+        <div class="who"><div><div class="who-name">Tobias Reinholt</div><div class="who-meta">(403) 555-0119 &middot; Cranston</div></div></div>
+        <div class="hide"><div class="job">Whole home, interior</div><div class="job-meta">Booking refused</div></div>
+        <div class="when hide">today, 4:12 pm</div>
+        <div><span class="badge badge--lost">Needs you</span></div>
+        <div class="money"><span>&mdash;</span></div>
+      </div>
+
+      <div class="lrow">
+        <div class="av">MK</div>
+        <div class="who"><div><div class="who-name">Marta Kowalczyk</div><div class="who-meta">(403) 555-0172 &middot; Tuscany</div></div></div>
+        <div class="hide"><div class="job">Free estimate, interior</div><div class="job-meta">Crew A &middot; 60 min</div></div>
+        <div class="when hide">Wed 23, 2:00 pm</div>
+        <div><span class="badge badge--won">Booked</span></div>
+        <div class="money"><span>&mdash;</span></div>
+      </div>
+
+      <div class="lrow">
+        <div class="av">DO</div>
+        <div class="who"><div><div class="who-name">Dwayne Okafor</div><div class="who-meta">(403) 555-0164 &middot; Auburn Bay</div></div></div>
+        <div class="hide"><div class="job">Exterior repaint</div><div class="job-meta">Quote sent Mon</div></div>
+        <div class="when hide">4 days ago</div>
+        <div><span class="badge badge--wait">Quote sent</span></div>
+        <div class="money">$4,820</div>
+      </div>
+
+      <div class="lrow">
+        <div class="av">PR</div>
+        <div class="who"><div><div class="who-name">Priya Raghunathan</div><div class="who-meta">(403) 555-0188 &middot; Mahogany</div></div></div>
+        <div class="hide"><div class="job">Cabinet refinishing</div><div class="job-meta">Kitchen, 22 doors</div></div>
+        <div class="when hide">yesterday</div>
+        <div><span class="badge badge--accent">New</span></div>
+        <div class="money"><span>&mdash;</span></div>
+      </div>
+
+      <div class="lrow">
+        <div class="av">CB</div>
+        <div class="who"><div><div class="who-name">Colleen Brar</div><div class="who-meta">(403) 555-0133 &middot; Signal Hill</div></div></div>
+        <div class="hide"><div class="job">Interior, 3 rooms</div><div class="job-meta">Called in</div></div>
+        <div class="when hide">Mon 14</div>
+        <div><span class="badge">Contacted</span></div>
+        <div class="money"><span>&mdash;</span></div>
+      </div>
+
+      <div class="lrow">
+        <div class="av">SL</div>
+        <div class="who"><div><div class="who-name">Stefan Lindqvist</div><div class="who-meta">(403) 555-0106 &middot; Evanston</div></div></div>
+        <div class="hide"><div class="job">Free estimate, interior</div><div class="job-meta">Crew B &middot; 60 min</div></div>
+        <div class="when hide">Thu 24, 9:00 am</div>
+        <div><span class="badge badge--won">Booked</span></div>
+        <div class="money"><span>&mdash;</span></div>
+      </div>
+
+      <div class="lrow">
+        <div class="av">AN</div>
+        <div class="who"><div><div class="who-name">Amara Nwosu</div><div class="who-meta">(403) 555-0151 &middot; Bowness</div></div></div>
+        <div class="hide"><div class="job">Fence staining</div><div class="job-meta">Accepted Fri</div></div>
+        <div class="when hide">Wed 16</div>
+        <div><span class="badge badge--won">Won</span></div>
+        <div class="money">$1,340</div>
+      </div>
+
+      <div class="lrow">
+        <div class="av">YT</div>
+        <div class="who"><div><div class="who-name">Yuki Tanaka</div><div class="who-meta">(403) 555-0197 &middot; Altadore</div></div></div>
+        <div class="hide"><div class="job">Deck refinishing</div><div class="job-meta">Went with a neighbour</div></div>
+        <div class="when hide">Thu 10</div>
+        <div><span class="badge badge--lost">Lost</span></div>
+        <div class="money"><span>$980</span></div>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+  // The toggle writes an explicit data-theme. There is no system state to
+  // fall back to, by design: the owner picks and it stays picked.
+  var btns = document.querySelectorAll('.toggle button');
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.t === t)); });
+    try { localStorage.setItem('sa-theme', t); } catch (e) {}
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { setTheme(b.dataset.t); }); });
+  try { var s = localStorage.getItem('sa-theme'); if (s) setTheme(s); } catch (e) {}
+</script>
+
+</body>
+</html>

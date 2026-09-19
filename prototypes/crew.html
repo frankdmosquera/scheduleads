@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crew week - Scheduleads</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+  /* =====================================================================
+     CREW AND JOB SCHEDULING. PHASE 8.
+     =====================================================================
+     Two phases out. Mocked on request, so the look is locked early; the
+     build order does not change because of it.
+
+     The distinction this screen exists to make: the booking calendar is
+     the CUSTOMER picking an appointment slot. This is the OWNER putting a
+     job on a crew, and a job runs for days, not minutes. Same resources
+     underneath, completely different shape on screen.
+     ===================================================================== */
+
+  .week { border: 1px solid var(--border); border-radius: var(--radius);
+          background: var(--surface); overflow: hidden; box-shadow: var(--shadow-sm); }
+
+  .wgrid { display: grid; grid-template-columns: 148px repeat(6, minmax(0, 1fr)); }
+
+  .wh { background: var(--surface-2); border-bottom: 1px solid var(--border);
+        padding: 10px 12px; text-align: center; }
+  .wh:first-child { text-align: left; }
+  .wh-d { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+          text-transform: uppercase; color: var(--faint); }
+  .wh-n { font-size: 16px; font-weight: 600; margin-top: 1px; font-variant-numeric: tabular-nums; }
+  .wh[data-today="yes"] .wh-n { color: var(--accent); }
+  .wh[data-today="yes"] .wh-d { color: var(--accent); }
+
+  .rlab { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+          padding: 14px 12px; display: flex; align-items: center; gap: 9px;
+          background: var(--surface); position: sticky; left: 0; }
+  .rlab-dot { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+  .rlab-n { font-weight: 600; font-size: 14px; }
+  .rlab-m { font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); }
+
+  .cell { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+          min-height: 82px; padding: 7px 5px; position: relative; }
+  .cell:last-child { border-right: none; }
+  .cell[data-off="yes"] { background: var(--surface-2); }
+
+  /* a job spans days by spanning grid columns */
+  .job {
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    font-size: 12.5px;
+    line-height: 1.35;
+    cursor: grab;
+    border-left: 3px solid;
+    height: 100%;
+    overflow: hidden;
+  }
+  .job-n { font-weight: 700; font-size: 13px; }
+  .job-m { opacity: 0.85; margin-top: 2px; }
+
+  .job--a { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .job--b { background: var(--won-soft);    border-color: var(--won);    color: var(--won); }
+  .job--c { background: var(--wait-soft);   border-color: var(--wait);   color: var(--wait); }
+
+  /* an estimate visit is an appointment, not a job: one slot, with a time */
+  .appt {
+    background: var(--surface-2); border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm); padding: 7px 9px; font-size: 12.5px;
+  }
+  .appt-t { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+  .appt-n { font-weight: 600; margin-top: 1px; }
+
+  .span2 { grid-column: span 2; }
+  .span3 { grid-column: span 3; }
+  .span4 { grid-column: span 4; }
+
+  .unassigned { margin-top: 18px; }
+  .u-strip { display: flex; gap: 9px; flex-wrap: wrap; }
+  .u-c { border: 1px dashed var(--border-strong); border-radius: var(--radius-sm);
+         padding: 9px 12px; background: var(--surface); cursor: grab; font-size: 13px; }
+  .u-c b { display: block; font-size: 13.5px; }
+  .u-c span { color: var(--muted); font-size: 12px; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
+            font-size: 12.5px; color: var(--muted); padding-top: 12px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px;
+              margin-right: 6px; vertical-align: -1px; }
+
+  @media (max-width: 1100px) { .wgrid { min-width: 860px; } .week { overflow-x: auto; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="side">
+    <div class="org">
+      <div class="org-mark">PP</div>
+      <div><div class="org-name">Primo Painters</div><div class="org-plan">Plan &middot; agency</div></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-head">Work</div>
+      <a href="leads.html"><span class="ico">&#9776;</span>Leads<span class="count">8</span></a>
+      <a href="pipeline.html"><span class="ico">&#9638;</span>Pipeline</a>
+      <a href="quote.html"><span class="ico">&#36;</span>Quotes<span class="count">3</span></a>
+      <a href="crew.html" aria-current="page"><span class="ico">&#9635;</span>Crew</a>
+      <div class="nav-head" style="margin-top:14px">Setup</div>
+      <a href="settings.html"><span class="ico">&#9881;</span>Settings</a>
+    </nav>
+    <div class="side-foot">
+      <div class="toggle" role="group" aria-label="Theme">
+        <button data-t="light" aria-pressed="true">Light</button>
+        <button data-t="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="proto" style="margin: 0 calc(var(--gut) * -1) 0;">
+      <b>MOCKUP</b><span>Crew week</span><span style="color:var(--wait)">PHASE 8, two phases out</span>
+    </div>
+
+    <div class="top">
+      <div>
+        <h1>Crew week</h1>
+        <p class="sub">Who is where. Drag a job to move it, drag its edge to make it longer.</p>
+      </div>
+      <div style="display:flex; gap:9px; align-items:center">
+        <button class="btn btn--sm">&#8592;</button>
+        <button class="btn btn--sm">21 &ndash; 26 September</button>
+        <button class="btn btn--sm">&#8594;</button>
+        <button class="btn btn--primary btn--sm">+ Schedule a job</button>
+      </div>
+    </div>
+
+    <div class="week">
+      <div class="wgrid">
+
+        <div class="wh"><div class="wh-d">Crew</div></div>
+        <div class="wh"><div class="wh-d">Mon</div><div class="wh-n">21</div></div>
+        <div class="wh"><div class="wh-d">Tue</div><div class="wh-n">22</div></div>
+        <div class="wh" data-today="yes"><div class="wh-d">Wed</div><div class="wh-n">23</div></div>
+        <div class="wh"><div class="wh-d">Thu</div><div class="wh-n">24</div></div>
+        <div class="wh"><div class="wh-d">Fri</div><div class="wh-n">25</div></div>
+        <div class="wh"><div class="wh-d">Sat</div><div class="wh-n">26</div></div>
+
+        <!-- Crew A -->
+        <div class="rlab">
+          <span class="rlab-dot" style="background:var(--accent)"></span>
+          <div><div class="rlab-n">Crew A</div><div class="rlab-m">Marco, Tev</div></div>
+        </div>
+        <div class="cell span3">
+          <div class="job job--a">
+            <div class="job-n">Hannah Vogel &middot; basement</div>
+            <div class="job-m">Evanston &middot; 3 days &middot; $3,900</div>
+          </div>
+        </div>
+        <div class="cell span2">
+          <div class="job job--a">
+            <div class="job-n">Gwen Delacroix &middot; 2 bedrooms</div>
+            <div class="job-m">Altadore &middot; 2 days</div>
+          </div>
+        </div>
+        <div class="cell" data-off="yes"></div>
+
+        <!-- Crew B -->
+        <div class="rlab">
+          <span class="rlab-dot" style="background:var(--won)"></span>
+          <div><div class="rlab-n">Crew B</div><div class="rlab-m">Sam, Ade, Luis</div></div>
+        </div>
+        <div class="cell span4">
+          <div class="job job--b">
+            <div class="job-n">Rashid Mansour &middot; garage and trim</div>
+            <div class="job-m">Cranston &middot; 4 days &middot; $2,520</div>
+          </div>
+        </div>
+        <div class="cell"></div>
+        <div class="cell">
+          <div class="job job--b">
+            <div class="job-n">Touch-ups</div>
+            <div class="job-m">half day</div>
+          </div>
+        </div>
+
+        <!-- Frank, estimates: appointments, not jobs -->
+        <div class="rlab">
+          <span class="rlab-dot" style="background:var(--wait)"></span>
+          <div><div class="rlab-n">Frank</div><div class="rlab-m">estimates</div></div>
+        </div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell">
+          <div class="appt"><div class="appt-t">2:00 pm</div><div class="appt-n">Marta Kowalczyk</div></div>
+        </div>
+        <div class="cell">
+          <div class="appt"><div class="appt-t">9:00 am</div><div class="appt-n">Stefan Lindqvist</div></div>
+        </div>
+        <div class="cell"></div>
+        <div class="cell" data-off="yes"></div>
+
+      </div>
+    </div>
+
+    <div class="legend">
+      <span><i style="background:var(--accent)"></i>Crew A</span>
+      <span><i style="background:var(--won)"></i>Crew B</span>
+      <span><i style="background:var(--wait)"></i>Frank</span>
+      <span style="margin-left:auto">A bar spanning days is a job. A card with a time is a booked appointment.</span>
+    </div>
+
+    <div class="unassigned">
+      <h2 style="margin-bottom:10px">Won, not scheduled yet</h2>
+      <div class="u-strip">
+        <div class="u-c"><b>Amara Nwosu &middot; fence staining</b><span>Bowness &middot; 1 day &middot; accepted Wed</span></div>
+        <div class="u-c"><b>Dwayne Okafor &middot; exterior repaint</b><span>Auburn Bay &middot; 5 days &middot; waiting on the quote</span></div>
+      </div>
+      <p style="font-size:13px; color:var(--muted); margin-top:10px">Drag either onto a crew to put it in the week. A quote that has not been accepted shows here greyed until it is.</p>
+    </div>
+
+  </main>
+
+</div>
+
+<script>
+  var btns = document.querySelectorAll('.toggle button');
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.t === t)); });
+    try { localStorage.setItem('sa-theme', t); } catch (e) {}
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { setTheme(b.dataset.t); }); });
+  try { var s = localStorage.getItem('sa-theme'); if (s) setTheme(s); } catch (e) {}
+</script>
+
+</body>
+</html>

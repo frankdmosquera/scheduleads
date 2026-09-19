@@ -137,7 +137,11 @@ CRM modules, in the order they arrive:
   estimator) that bookings and jobs are assigned to. The customer-facing
   calendar books an appointment; the internal calendar puts the job on a
   crew across days.
-- **Messaging.** SMS through Twilio in Phase 2. WhatsApp later, next to it.
+- **Quotes.** Line items and a total, sent as a link the customer opens in
+  the business's own theme and accepts. The half of "found you to paid"
+  that the first draft left out.
+- **Messaging.** The confirmation and the reminder, by text, in Phase 2.
+  WhatsApp later, next to them.
 - **Reports.** Bookings, pipeline by stage, lead sources, on shadcn charts.
 - **Packages.** Section 6.
 
@@ -162,7 +166,14 @@ Carried over from the first repo, verified against Railway Postgres:
   clinic with 45 services is 45 rows here, each with its own duration.
 - `availability_rule`: one per organization, enforced unique. Timezone,
   weekly hours as minute windows per day, minimum notice, buffer, blackout
-  dates.
+  dates, a booking horizon (how far ahead a customer may book), and a
+  country code for statutory holidays.
+  **Several windows per day is the normal case, not an edge case.** Primo's
+  own live schedule, read from his Calendly on 2026-09-18, is Sunday 9:30
+  to 17:00, Monday, Tuesday and Thursday 17:00 to 19:30, Wednesday and
+  Friday 07:30 to 08:30, Saturday 16:00 to 18:30. A working painter fits
+  estimates around jobs. Any model that assumes one window a day is wrong
+  for the first paying client.
 - `calendar_connection`: one per organization. Provider discriminator,
   encrypted credentials blob under AES-256-GCM, granted scope, status. Only
   Google is implemented. Microsoft, CalDAV, and ICS are new files behind the
@@ -173,7 +184,10 @@ Planned, shapes locked in the first repo's overview and kept:
 - `contact`: name, email, phone, organization-scoped.
 - `lead`: the job details, source, tied to a contact, and its current stage.
 - `booking`: scheduled time, status, the calendar event id, a cancel token,
-  and the resource it is assigned to.
+  the resource it is assigned to, and the location the customer gave.
+  The location is the customer's address, typed by them at booking, because
+  a trade travels to the job. Primo's Calendly calls this "ask invitee" and
+  it is a required field on his form.
 
 New here:
 
@@ -193,9 +207,20 @@ New here:
   clinic with three practitioners takes three bookings at 2pm and a painter
   with one estimator takes one. An organization with no resources behaves as
   one.
-- `activity`: the timeline. Per contact, typed: booking created, stage
-  changed, email sent, email received, note, SMS. Every module writes here;
-  the CRM screens read here.
+- `activity`: the timeline **and the next-step queue**. Per contact, typed:
+  booking created, stage changed, email sent, email received, note, SMS,
+  call, task. Every module writes here; the CRM screens read here.
+  Two kinds of row, one table. Most rows record something that already
+  happened and carry only `occurredAt`. A row may instead carry `dueAt` and
+  `doneAt`, which makes it a thing still to do: call them back Thursday,
+  chase the quote. Pipedrive treats these as one concept for good reason.
+  A CRM that only records the past is a filing cabinet; the owner opens it
+  to find out what he owes someone today.
+- `quote`: per lead. Status, currency, tax rate, the totals, an expiry, an
+  accept token, and a count of how many times the customer opened it.
+  Line items hang off it: description, quantity, unit, rate, amount, and an
+  order. Accepting is a customer action on a tokenized link, so it needs no
+  login and no account, exactly like cancelling a booking.
 - `job`: later, with crew scheduling. A lead that became work, on a resource,
   across days.
 
@@ -437,6 +462,21 @@ Two things the first repo recorded that must not be relearned:
 10. **Frontend libraries.** TanStack Query, dnd-kit and shadcn charts, each
     installed at the feature that needs it. No state manager until one is
     needed. Section 5.
+11. **The booking widget takes the Calendly shape.** Two screens, pick the
+    time then answer the questions, with a rail down the left carrying the
+    business's logo, the service, the duration and, on screen two, the
+    chosen slot. Mocked in `prototypes/modal-month.html`. The one-screen
+    week strip beside it in `prototypes/modal-primo.html` is parked, not
+    dropped: the layout is stored on the booking link from item 9, so
+    bringing it back later costs a branch rather than a rewrite. Only one
+    layout gets built now, because no tenant has asked for the other and
+    two flows is two things to keep working while one client pays.
+12. **Quotes are item 16**, in Phase 6 beside the board and the email.
+    Section 4 holds the table.
+13. **Reminders are not optional.** Primo already sends a confirmation text
+    on booking and a reminder 20 hours ahead through Calendly. Item 8 grew
+    from "SMS confirmation" to cover both, and to build the background job
+    runner they need, which nothing else in the plan created.
 
 ## Open questions
 

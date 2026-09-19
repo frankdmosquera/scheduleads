@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Booking modal - agents-web theme</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="widget.css">
+
+<style>
+/* =========================================================================
+   HOST: agents-web. THE AGENCY'S OWN SITE. TENANT ZERO.
+   =========================================================================
+
+   Everything in this <style> block belongs to the HOST, not to the widget.
+   It is what the agency's globals.css already defines, mapped onto the
+   --sa-* contract. The widget ships with none of it.
+
+   The agency has one hue doing both jobs: teal is its identity AND its
+   action. That is a legitimate mapping, and the contract has to support it
+   as readily as Primo's two-hue split. Compare with modal-primo.html.
+   ========================================================================= */
+
+:root {
+  /* agents-web's real tokens, from its globals.css */
+  --aw-ground:  oklch(0.985 0.004 95);
+  --aw-card:    oklch(1 0 0);
+  --aw-muted-s: oklch(0.95 0.006 95);
+  --aw-fg:      oklch(0.21 0.01 80);
+  --aw-muted:   oklch(0.47 0.012 85);
+  --aw-line:    oklch(0.21 0.01 80 / 12%);
+  --aw-teal:    oklch(0.52 0.1 200);
+
+  /* ---- the mapping. this is the entire integration ---- */
+  --sa-bg:            var(--aw-ground);
+  --sa-surface:       var(--aw-card);
+  --sa-surface-2:     var(--aw-muted-s);
+  --sa-text:          var(--aw-fg);
+  --sa-muted:         var(--aw-muted);
+  --sa-border:        var(--aw-line);
+  --sa-identity:      var(--aw-teal);
+  --sa-identity-ink:  oklch(0.985 0 0);
+  --sa-action:        var(--aw-teal);   /* same hue: teal is the CTA too */
+  --sa-action-ink:    oklch(0.985 0 0); /* white passes on this teal     */
+  --sa-disabled:      oklch(0.68 0.008 85);
+  --sa-radius:        0.625rem;         /* the agency's --radius         */
+  --sa-font:          "Geist", ui-sans-serif, system-ui, sans-serif;
+  --sa-font-mono:     "Geist Mono", ui-monospace, monospace;
+}
+
+/* --- a stand-in for the host page behind the modal --- */
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--aw-ground); color: var(--aw-fg);
+       font-family: "Geist", ui-sans-serif, system-ui, sans-serif; }
+.host-top { display: flex; align-items: center; justify-content: space-between;
+            padding: 18px 40px; border-bottom: 1px solid var(--aw-line); }
+.host-logo { font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+.host-logo span { color: var(--aw-teal); }
+.host-nav { display: flex; gap: 26px; font-size: 14.5px; color: var(--aw-muted); }
+.host-hero { padding: 76px 40px; max-width: 760px; }
+.host-hero h1 { font-size: 46px; line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 18px; }
+.host-hero p { font-size: 18px; color: var(--aw-muted); margin: 0 0 30px; max-width: 54ch; }
+.host-cta { display: inline-block; background: var(--aw-teal); color: #fff; font-weight: 600;
+            padding: 13px 26px; border-radius: 0.625rem; font-size: 15.5px; }
+.host-note { font-family: "Geist Mono", monospace; font-size: 11px; color: var(--aw-muted);
+             background: var(--aw-muted-s); border-bottom: 1px solid var(--aw-line);
+             padding: 7px 40px; display: flex; gap: 16px; flex-wrap: wrap; }
+.host-note b { color: var(--aw-fg); }
+</style>
+</head>
+<body>
+
+<div class="host-note">
+  <b>MOCKUP</b>
+  <span>Host: agents-web (tenant zero)</span>
+  <span>Identity and action both teal</span>
+  <span>Same modal markup as modal-primo.html</span>
+</div>
+
+<header class="host-top">
+  <div class="host-logo">Agents<span>Web</span></div>
+  <nav class="host-nav"><span>Work</span><span>Services</span><span>Pricing</span><span>About</span></nav>
+</header>
+
+<section class="host-hero">
+  <h1>Websites that bring the work in.</h1>
+  <p>Calgary sites built to rank, with the booking, the leads and the follow-up included. Everything owned, nothing rented.</p>
+  <a class="host-cta" href="#">Book a consultation</a>
+</section>
+
+<!-- ============ EVERYTHING BELOW IS THE WIDGET ============
+     Identical in modal-primo.html. Not one attribute differs. -->
+<div class="sa-scrim">
+  <div class="sa-modal" role="dialog" aria-modal="true" aria-labelledby="sa-t">
+
+    <div class="sa-head">
+      <div>
+        <h2 class="sa-title" id="sa-t">Book with Agents Web</h2>
+        <p class="sa-sub">Pick a time that suits you. You will get a confirmation by email.</p>
+      </div>
+      <button class="sa-x" aria-label="Close">&#10005;</button>
+    </div>
+
+    <div class="sa-steps">
+      <div class="sa-step" data-on="done"><span class="sa-step-n">&#10003;</span>Service</div>
+      <div class="sa-step" data-on="yes"><span class="sa-step-n">2</span>Time</div>
+      <div class="sa-step"><span class="sa-step-n">3</span>Details</div>
+    </div>
+
+    <div class="sa-body">
+
+      <div class="sa-block">
+        <div class="sa-picked">
+          <span class="sa-picked-tick">&#10003;</span>
+          <div>
+            <div class="sa-picked-name">Discovery call</div>
+            <div class="sa-picked-meta">45 min &middot; video or phone</div>
+          </div>
+          <button class="sa-change">Change</button>
+        </div>
+      </div>
+
+      <div class="sa-block">
+        <p class="sa-lab">September</p>
+        <div class="sa-days">
+          <button class="sa-day" disabled><span class="sa-day-w">Mon</span><span class="sa-day-n">21</span></button>
+          <button class="sa-day"><span class="sa-day-w">Tue</span><span class="sa-day-n">22</span></button>
+          <button class="sa-day" aria-pressed="true"><span class="sa-day-w">Wed</span><span class="sa-day-n">23</span></button>
+          <button class="sa-day"><span class="sa-day-w">Thu</span><span class="sa-day-n">24</span></button>
+          <button class="sa-day"><span class="sa-day-w">Fri</span><span class="sa-day-n">25</span></button>
+          <button class="sa-day" disabled><span class="sa-day-w">Sat</span><span class="sa-day-n">26</span></button>
+          <button class="sa-day" disabled><span class="sa-day-w">Sun</span><span class="sa-day-n">27</span></button>
+        </div>
+      </div>
+
+      <div class="sa-block">
+        <p class="sa-lab">Wednesday 23 &middot; Mountain Time</p>
+        <div class="sa-slots">
+          <button class="sa-slot">9:00</button>
+          <button class="sa-slot">9:45</button>
+          <button class="sa-slot" disabled>10:30</button>
+          <button class="sa-slot" disabled>11:15</button>
+          <button class="sa-slot" aria-pressed="true">1:00</button>
+          <button class="sa-slot">1:45</button>
+          <button class="sa-slot">2:30</button>
+          <button class="sa-slot" disabled>3:15</button>
+        </div>
+        <p class="sa-note">Struck-through times are already busy on the calendar.</p>
+      </div>
+
+      <div class="sa-block">
+        <p class="sa-lab">Your details</p>
+        <div class="sa-grid">
+          <div>
+            <label class="sa-flab" for="sa-n">Name</label>
+            <input class="sa-f" id="sa-n" placeholder="Jordan Whitfield">
+          </div>
+          <div>
+            <label class="sa-flab" for="sa-p">Phone</label>
+            <input class="sa-f" id="sa-p" placeholder="(403) 555-0148">
+          </div>
+          <div class="sa-wide">
+            <label class="sa-flab" for="sa-e">Email</label>
+            <input class="sa-f" id="sa-e" placeholder="jordan@example.com">
+          </div>
+          <div class="sa-wide">
+            <label class="sa-flab" for="sa-m">What do you need? <span style="font-weight:400">Optional</span></label>
+            <textarea class="sa-f" id="sa-m" rows="2" placeholder="A few lines about the project"></textarea>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="sa-foot">
+      <button class="sa-back">&#8592; Back</button>
+      <span class="sa-when"><b>Wed 23 Sep, 1:00 pm</b> &middot; 45 min</span>
+      <button class="sa-go">Confirm booking</button>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
