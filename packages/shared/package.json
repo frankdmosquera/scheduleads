@@ -7,6 +7,10 @@
     "./db": {
       "types": "./dist/db/schema.d.ts",
       "default": "./dist/db/schema.js"
+    },
+    "./config": {
+      "types": "./dist/config/plan-limits.d.ts",
+      "default": "./dist/config/plan-limits.js"
     }
   },
   "scripts": {

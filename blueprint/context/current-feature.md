@@ -127,7 +127,7 @@ and merges.
   with two memberships and no active organization is refused rather than
   assigned one.
 
-- [ ] **4. The package gate.** `packages/shared/src/config/plan-limits.ts` is a
+- [x] **4. The package gate.** `packages/shared/src/config/plan-limits.ts` is a
   pure config module with no database import, holding the one rung `agency` and
   the modules it unlocks. An unrecognized or null plan resolves to a locked set
   with no modules, not to `agency`: `plan` is server-set, so an unknown value is

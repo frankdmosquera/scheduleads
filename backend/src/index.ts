@@ -2,7 +2,9 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
+import { requireOrganization } from "./lib/active-organization.js";
 import { auth } from "./lib/auth.js";
+import { requireModule } from "./lib/plan-gate.js";
 
 const app = new Hono();
 
@@ -20,18 +22,41 @@ const app = new Hono();
  */
 const appOrigin = process.env.APP_ORIGIN ?? "http://localhost:3000";
 
-app.use(
-  "/api/auth/*",
-  cors({
-    origin: appOrigin,
-    allowHeaders: ["Content-Type"],
-    allowMethods: ["GET", "POST", "OPTIONS"],
-    credentials: true,
-  })
-);
+const dashboardCors = cors({
+  origin: appOrigin,
+  allowHeaders: ["Content-Type"],
+  allowMethods: ["GET", "POST", "OPTIONS"],
+  credentials: true,
+});
+
+app.use("/api/auth/*", dashboardCors);
+app.use("/me", dashboardCors);
 
 /** Better Auth owns every route beneath this path. */
 app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+
+/**
+ * What the dashboard asks for first: who is signed in, which business
+ * they are acting for, and what that business has paid for.
+ *
+ * Behind the plan gate on purpose. A business on a rung nothing
+ * recognises is misconfigured and has no working product, so the
+ * dashboard should say so plainly rather than render an empty shell.
+ *
+ * Returns nothing about any other organization. That is not a detail of
+ * this route, it is the rule the whole product rests on.
+ */
+app.get("/me", requireOrganization, requireModule("crm"), (c) => {
+  const org = c.get("org");
+  const plan = c.get("plan");
+
+  return c.json({
+    user: { id: org.userId },
+    organization: { id: org.organizationId, plan: plan.rung },
+    role: org.role,
+    limits: plan.limits,
+  });
+});
 
 /**
  * Liveness only: it answers if the process is up, and deliberately does
