@@ -164,7 +164,9 @@ Carried over from the first repo, verified against Railway Postgres:
   Several per organization sharing one availability pool. **This is the
   per-service handle face-and-body reserved as `Service.bookingId`.** A
   clinic with 45 services is 45 rows here, each with its own duration.
-- `availability_rule`: one per organization, enforced unique. Timezone,
+- `availability_rule`: unique per organization and resource. A null resource is
+  the business's own hours; a set one is that person's, and a resource without
+  its own row falls back to the organization's. Timezone,
   weekly hours as minute windows per day, minimum notice, buffer, blackout
   dates, a booking horizon (how far ahead a customer may book), and a
   country code for statutory holidays.
@@ -174,7 +176,8 @@ Carried over from the first repo, verified against Railway Postgres:
   Friday 07:30 to 08:30, Saturday 16:00 to 18:30. A working painter fits
   estimates around jobs. Any model that assumes one window a day is wrong
   for the first paying client.
-- `calendar_connection`: one per organization. Provider discriminator,
+- `calendar_connection`: unique per organization and resource, same shape as
+  `availability_rule`. Provider discriminator,
   encrypted credentials blob under AES-256-GCM, granted scope, status. Only
   Google is implemented. Microsoft, CalDAV, and ICS are new files behind the
   same interface.
@@ -201,12 +204,17 @@ New here:
   with new, contacted, booked, done at provisioning. A lead points at one.
   The first draft had these four as a fixed set; a table costs the same now
   and a migration later.
-- `resource`: per organization. A crew, a practitioner, an estimator. Name
-  and active flag; working hours of its own come later. A booking and a job
-  point at one. Capacity is how many resources are free at a time, so a
-  clinic with three practitioners takes three bookings at 2pm and a painter
-  with one estimator takes one. An organization with no resources behaves as
-  one.
+- `resource`: per organization, built in item 2 beside availability rather than
+  with the CRM spine, because it is a scheduling primitive and not a CRM one.
+  A crew, a practitioner, an estimator, a chair. Name and active flag. A
+  booking and a job point at one. Its own hours, buffer and timezone are
+  expressible from the first migration through `availability_rule`, and nothing
+  builds a screen for them until a tenant has two people.
+  Capacity is how many resources are free at a time, so a clinic with three
+  practitioners takes three bookings at 2pm and a painter with one estimator
+  takes one. An organization with no resources behaves as one.
+  **Which resources are free, not merely how many**, is what the booking check
+  answers, so the same query serves a capacity pool and a named person.
 - `activity`: the timeline **and the next-step queue**. Per contact, typed:
   booking created, stage changed, email sent, email received, note, SMS,
   call, task. Every module writes here; the CRM screens read here.
@@ -229,8 +237,11 @@ Locked, carried from the first repo:
 - Every app table is organization-scoped and the scope is a security
   boundary. `organizationId` is derived server-side from the session, never
   read from anything a client sends.
-- `availability_rule` is org-scoped, not per booking link. Per-resource hours
-  are a later addition on top of it, not a replacement.
+- `availability_rule` is scoped to an organization and optionally a resource,
+  never to a booking link. Per-resource hours are a row in the same table, not
+  a second table and not a migration. This was a contradiction in the first
+  draft: it promised per-resource hours "on top of" a table declared unique per
+  organization, which the database would have refused.
 
 ## 5. Tech
 
@@ -389,7 +400,8 @@ week, pipeline by stage, lead sources.
 - Env, names not values: `DATABASE_URL`, `BETTER_AUTH_SECRET`,
   `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
   `CALENDAR_TOKEN_KEY`, `RESEND_API_KEY`, `TWILIO_*`, `PORT`,
-  `WIDGET_ORIGINS`, `NEXT_PUBLIC_API_URL`. `CALENDAR_TOKEN_KEY` was generated
+  `WIDGET_ORIGINS`, `NEXT_PUBLIC_API_URL`, and from item 1 `APP_ORIGIN` and
+  `COOKIE_DOMAIN`. `CALENDAR_TOKEN_KEY` was generated
   once, lost when the env file was rewritten by hand, and regenerated. Losing
   it means every stored calendar connection stops decrypting.
 - A failed calendar check never reports "free." The booking fails safely
@@ -480,17 +492,17 @@ Two things the first repo recorded that must not be relearned:
 
 ## Open questions
 
-11. **Whose Calendly has been receiving Latam's bookings?** Both buttons
+14. **Whose Calendly has been receiving Latam's bookings?** Both buttons
     point at Primo's account. Either Latam's bookings have been landing in
     Primo's calendar, or Latam never had its own. Ask before Latam is
     onboarded, in Phase 7.
-12. **Browser-to-API, or proxied through the host's server action?** Section
+15. **Browser-to-API, or proxied through the host's server action?** Section
     8. Decided at Phase 3, not before.
-13. **Does the clinic take deposits at booking?** Square suggests she might.
+16. **Does the clinic take deposits at booking?** Square suggests she might.
     Asked at her onboarding, like the calendar question. If yes, payment at
     booking becomes an item before her swap.
-14. **Which analytics source feeds the visitor package?** Search Console,
+17. **Which analytics source feeds the visitor package?** Search Console,
     Vercel analytics or Plausible. Decided when that package is built.
-15. **What does Primo need on day one beyond booking and the leads list?**
+18. **What does Primo need on day one beyond booking and the leads list?**
     Asked before his swap.
-16. **The inbound path for the BCC capture address.** Section 5.
+19. **The inbound path for the BCC capture address.** Section 5.

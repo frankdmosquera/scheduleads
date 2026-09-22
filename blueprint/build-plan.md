@@ -24,7 +24,7 @@ board and the settings screen.
   evening: the plan is the first rung of a ladder of packages, the product
   is a CRM, and the tenant order is the agency's own site, Primo, the
   clinic, Latam
-- [ ] 0b. **Design pass** - static mockups of the booking modal in two
+- [x] 0b. **Design pass** - static mockups of the booking modal in two
   tenant themes (the agency's and Primo's), the leads list, the pipeline
   board and the settings screen, via `/prototype`. Runs first thing inside
   the new repo, before item 1 is spec'd
@@ -43,10 +43,15 @@ own connected Google calendar, the agency tenant's.
   gate: `organization.plan`, the plan-limits config with the one rung
   `agency`, and the check every module route calls. The rule that tenant
   code never reads across organizations starts here
-- [ ] 2. **Booking links and availability rules** - the two tables, the
-  public read route, the seed CLI, and the shared-package layout. Several
-  windows per day, a booking horizon, and statutory holidays resolved from
-  a country code.
+- [ ] 2. **Booking links, resources and availability rules** - the three
+  tables, the public read route, the seed CLI, and the shared-package layout.
+  Several windows per day, a booking horizon, and statutory holidays resolved
+  from a country code. `availability_rule` is unique per organization **and
+  resource**, with a null resource meaning the business's own hours and a set
+  one meaning that person's: a resource with its own row uses it, one without
+  falls back to the organization's. One resolution function, written here and
+  called by every later item. Null-safe uniqueness is not automatic in
+  Postgres; see the trap in `resource-model-proposal.md` section 4.
   **The typed front-to-back seam lands here, and does not close on a
   claim.** The backend exports `AppType`, the frontend calls this item's
   public route through `hc<AppType>` from `hono/client`, and the spec must
@@ -55,7 +60,10 @@ own connected Google calendar, the agency tenant's.
   consumed it once; this item is where that stops being true
 - [ ] 3. **Calendar connection** - the table, the cipher, OAuth connect and
   disconnect, the provider seam, and the free/busy query verified against a
-  real event
+  real event. Unique per organization **and resource**, same shape and same
+  reasoning as `availability_rule`: null is the business calendar, set is that
+  person's. Only the business calendar is connected in this item; nothing
+  builds a per-person connection screen until a tenant has two people
 
 ## Phase 2. The booking loop
 
@@ -65,9 +73,10 @@ arrives, the calendar shows the event, the cancel link in that email works,
 and a second resource can hold the same time as the first.
 
 - [ ] 4. **CRM spine** - `contact`, `pipeline_stage` seeded with the four
-  defaults at provisioning, `resource`, and `activity` carrying both the
-  timeline and the next-step queue. The tables and the API routes the loop
-  writes to. Nothing visible yet
+  defaults at provisioning, and `activity` carrying both the timeline and the
+  next-step queue. The tables and the API routes the loop writes to.
+  `resource` moved to item 2, because availability is defined per resource and
+  cannot reference a table that arrives two items later. Nothing visible yet
 - [ ] 5. **Booking creation** - validate a requested slot against the rules,
   the free resources and the live calendar; take the customer's address;
   create the contact, the lead in the first stage, the booking on a
@@ -187,7 +196,12 @@ booking with no one at the agency involved.
 Nothing above depends on these. Each gets a phase when something does.
 
 - Photo attachments on a lead
-- Per-resource working hours
+- Customer-facing choice of practitioner or staff member at booking
+- Which staff member can perform which service
+- No-show handling: a card on file, a fee, or a deposit held
+- Recurring appointments, weekly or every few weeks
+- Multiple locations for one business
+- Travel time between jobs, as distinct from a flat buffer
 - Crew member sign-in
 - Embed script for a site the agency did not build
 - Microsoft, CalDAV, and ICS calendar providers

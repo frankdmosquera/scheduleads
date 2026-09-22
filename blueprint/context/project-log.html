@@ -1163,7 +1163,7 @@
     <div class="topbar-row">
       <div class="brand">
         <span class="brand-name">scheduleads-app</span>
-        <span class="brand-sub">Build log &middot; Sep 19, 2026</span>
+        <span class="brand-sub">Build log &middot; Sep 22, 2026</span>
       </div>
       <nav class="switch" aria-label="Views">
         <button class="nav-link" data-view="roadmap">Roadmap</button>
@@ -1189,7 +1189,7 @@
       <span class="where-spacer"></span>
       <div class="where-leg">
         <div class="where-key">Item 1 steps</div>
-        <div class="meter" title="1.1 to 1.4 done, 1.5 building, 1.6 to go">
+        <div class="meter" title="1.1 to 1.4 done, 1.5 built but unproven, 1.6 to go">
           <i data-state="done"></i>
           <i data-state="done"></i>
           <i data-state="done"></i>
@@ -1311,8 +1311,8 @@
           <div class="strip-phase">
             <div class="strip-label">Ph 1 &middot; Foundation</div>
             <div class="strip-cells">
-              <span class="cell" data-state="active" title="1 Multi-tenant auth - building now, step 1.2 of 6">1</span>
-              <span class="cell" title="2 Booking links and availability rules">2</span>
+              <span class="cell" data-state="active" title="1 Multi-tenant auth - building now, step 1.5 of 6">1</span>
+              <span class="cell" title="2 Booking links, resources and availability rules">2</span>
               <span class="cell" title="3 Calendar connection">3</span>
             </div>
           </div>
@@ -1382,7 +1382,7 @@
         </div>
         <div class="tally">
           <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b</span></span>
-          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">1, at step 1.2 of 6</span></span>
+          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">1, at step 1.5 of 6</span></span>
           <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">2 through 26</span></span>
         </div>
       </header>
@@ -1638,6 +1638,39 @@
                   <div class="rstep-when">Done when: a new email signs in with the console code, creates a business, and lands on a page showing its name and the agency plan.</div>
                   </div>
                 </details>
+
+                <details class="drawer" data-kind="reality" open>
+                  <summary>Where it stands <span class="tag-drift">all 5 pieces written &middot; the gate not yet met</span></summary>
+                  <div class="drawer-body">
+                    <p class="drawer-what">Every piece is built and three checks pass. The step is still open because its <code>Done when</code> is a real sign-in against running servers, and that has not been run.</p>
+                    <div class="verdict">
+                      <span class="v-kept">4 as planned</span>
+                      <span class="v-changed">1 changed</span>
+                      <span class="v-added">2 added</span>
+                    </div>
+                    <ul class="substeps">
+                      <li data-outcome="kept">the auth client, sending credentials to the API</li>
+                      <li data-outcome="kept">theme tokens ported from the mockups into the real stylesheet</li>
+                      <li data-outcome="kept">sign-in as two steps, email then code, and create-organization</li>
+                      <li data-outcome="kept">the shell: signed in, signed out, refused by the gate, and pick-a-business</li>
+                      <li data-outcome="changed">one set of validation rules shared by both sides - plus the API origin guard, which had to be weakened
+                        <em class="why">The guard was written to throw when the API URL is missing in production. A <code>NEXT_PUBLIC_</code> value is inlined at build time, so the throw fired during <code>next build</code> instead: it turned every local production build into a failure on a machine with no deploy to configure. Now a localhost fallback, with the real check belonging to <code>/release</code>.</em></li>
+                      <li data-outcome="added"><code>GET /me</code> repaired to match the contract the spec already fixed
+                        <em class="why">It was returning only the user id and the organization id and plan. The spec's own contract says it returns the email, name, organization name and slug. Step 1.4's gate only asked for the plan, so the gap shipped unnoticed; this step needs the business name on screen, which is what surfaced it.</em></li>
+                      <li data-outcome="added">sign out, on every signed-in state including the two refusals
+                        <em class="why">A user landing on a refusal had no way back, and step 1.6 needs a second account tested without clearing cookies by hand.</em></li>
+                    </ul>
+                    <div class="snags">
+                      <div class="snags-head">What bit</div>
+                      <ul>
+                        <li><b>A gate that only checks part of its contract lets the rest rot.</b> Step 1.4 closed on nine checks and was genuinely proved - for the plan. Nothing looked at the four other fields the contract promises, so <code>/me</code> sat incomplete through a passing gate and a commit. The lesson is not "check harder", it is that a <code>Done when</code> narrower than the contract leaves the difference unguarded.</li>
+                        <li><b>The obvious place for an env guard is the wrong place.</b> Failing loudly on missing configuration is right, but a build-time-inlined variable cannot be guarded at runtime, because there is no runtime. Writing it the instinctive way broke the build rather than protecting the deploy.</li>
+                        <li><b>Still no test runner, and this step is where it shows.</b> Three of the four states on these screens are refusals that need a server in a particular condition to see. Proving them by hand means arranging each one, once, and keeping nothing.</li>
+                      </ul>
+                    </div>
+                    <div class="rstep-when">Passing now: both workspace builds and the frontend lint. Outstanding: the live sign-in. Blocked on the API and the Postgres tunnel being up, not on code.</div>
+                  </div>
+                </details>
               </div>
             </details>
 
@@ -1828,10 +1861,50 @@
               </div>
             </details>
             <details class="drawer" data-kind="reality">
-              <summary>Log <span class="tag-drift">10 entries, newest first</span></summary>
+              <summary>Log <span class="tag-drift">13 entries, newest first</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The same work as Steps, ordered by date instead of by piece: decisions as they were taken, questions as they came up, faults as they were found. Steps answer what is being built; this answers what happened, and when.</p>
 <div class="log">
+              <div class="entry" data-kind="decided">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">The plan now fits a shop with two staff, not just a solo operator and a painter</span>
+                    <span class="kind-tag">Decided</span>
+                    <span class="stamp">Sep 22</span>
+                  </div>
+                  <p class="entry-text">A review of the whole plan against three business shapes found one thing worth changing before item 2 is written. <code>availability_rule</code> is declared <em>one per organization, enforced unique</em>, while the locked decisions say per-resource hours are <em>a later addition on top of it</em>. Those two cannot both be true: a uniqueness constraint on the organization alone means the database refuses the second row, so per-person hours is not an addition, it is a migration of the table every booking validates against. <code>calendar_connection</code> has the same shape.</p>
+                  <p class="entry-text">It matters because the next businesses are dentists and clinics: a few services, a few people who do the work, and a customer who asks for one of them by name. It is nearly free to fix because neither table has been written yet. Three plan edits, no new features: both tables become unique per organization <strong>and resource</strong> with null meaning the business's own, and <code>resource</code> moves from item 4 to item 2 so availability can reference it. Per-resource buffers and timezones come free with it, and a business with one person behaves exactly as it does today.</p>
+                  <p class="entry-text">The expensive half is the half nobody sees. Per-person hours and calendars are plumbing; letting a customer pick a person is a dropdown on top of it. So the plumbing is worth getting right now and the visible feature can wait for a tenant who asks. The painter needs none of it: he books estimates at the business level and assigns crews internally, which is item 19 and already planned.</p>
+                  <p class="entry-text"><strong>Approved and applied the same day.</strong> Seven edits across both plan docs, plus three pieces of drift the review turned up on the way: item 0b was still unticked while its ten mockups sat in <code>prototypes/</code>, the environment list was missing two variables item 1 added, and three numbers named two different things each because the Decided and Open Questions lists had grown into each other. Open questions are now 14 to 19, and both proposal files had their references corrected in the same edit. Six things came off the plan's own to-do list and onto <em>Named, not planned</em>, including no-shows and recurring appointments, which are table stakes for a salon and irrelevant to a painter. The reasoning is kept in <code>blueprint/resource-model-proposal.md</code>, because why a uniqueness constraint has two columns is not visible from the constraint.</p>
+                  <p class="entry-text">One trap found while writing it up, which would otherwise have shipped as a silent hole: <code>unique(organization, resource)</code> with a nullable resource does <em>not</em> do what it looks like. Postgres treats nulls as distinct in a unique index, so that constraint would have allowed two business-wide rows for the same business, which is the exact thing the old constraint existed to prevent. The fix and its two options are written down; which one applies depends on the Railway Postgres version, unchecked because the tunnel was down.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="decision">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Retail is proposed as a module, and it needs a yes or a no</span>
+                    <span class="kind-tag">Decision</span>
+                    <span class="stamp">Sep 22</span>
+                  </div>
+                  <p class="entry-text">A <code>face-and-body</code> session about the clinic's product store concluded that the store does not belong in her site at all: a shop is a module of this product, and the clinic is its customer, the same seam booking already uses. Written up as <code>blueprint/store-and-retail-proposal.md</code> and committed on its own. Nothing has been applied.</p>
+                  <p class="entry-text">It proposes a Phase 10 of items 27 to 31, answers open question 12 in favour of tenant sites proxying through their own server action, and separates two Stripe jobs that look like one: item 25 is a business paying the agency, a later item is a customer paying the business, and the second is Stripe Connect with KYC and payout liability. Its own framing of retail is the useful part - table stakes in this category, so its absence loses deals and its presence wins none.</p>
+                  <p class="entry-text">Checked against the real plans rather than taken on trust: open question 12, section 8's rationale, items 16, 23 and 25, and the <code>quote</code> table's tax rate are all quoted accurately, despite that session never seeing this repo. It also carries three questions for outside the code, the first of which can delete two of the five items: whether the clinic is even allowed to resell Eminence online.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="question">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Step 1.5 is built and cannot be proved yet</span>
+                    <span class="kind-tag">Open</span>
+                    <span class="stamp">Sep 22</span>
+                  </div>
+                  <p class="entry-text">Sign-in, create-organization and the signed-in shell are written, and both workspace builds and the lint pass. The step stays open because its gate is a real sign-in, and the API and the Postgres tunnel are down. Nothing is waiting on code.</p>
+                  <p class="entry-text">Two faults surfaced getting here and both are recorded on the step. One is a repair: <code>GET /me</code> was returning four fewer fields than the contract promises, and step 1.4's narrower gate let that through a commit.</p>
+                </div>
+              </div>
               <div class="entry" data-kind="decided">
                 <div class="dot"></div>
                 <div class="entry-body">
@@ -1963,19 +2036,20 @@
                 <p class="drawer-what">Things that are true right now but belong to no single step. Loose ends, known gaps, and what is deliberately not being done yet.</p>
 <ul>
               <li><strong>Four things changed in review, before any code was written.</strong> The login code now fails loudly in production instead of being written to the server log, where it would be a password sitting in plain text. An unrecognised plan locks the account out rather than quietly falling back to the paid one. The dashboard's first route was put behind the plan check so that a refusal can actually be seen happening. And the dashboard was split from the public booking widget for cross-site permissions, because the widget must never be able to act as a signed-in user.</li>
-              <li><strong>Nothing is committed yet.</strong> Step 1.1's code, the planning documents, the reference screenshots and the mockups are all sitting uncommitted on this branch. The planning documents deserve their own commit before this item is finished, so the feature's commit stays about the feature.</li>
+              <li><strong>Five commits on this branch, and step 1.5 is not one of them.</strong> The planning baseline, this page and its rules, and steps 1.2 to 1.4 are committed, each on its own. Step 1.5's code is written and sitting uncommitted, because its gate has not been met and a commit that closes a step whose check has not run is the rule already broken.</li>
+              <li><strong>Both workspaces import <code>@scheduleads-app/shared</code> without declaring it.</strong> It resolves through the npm workspace symlink at the repo root, which is why nothing has complained. It is worth settling before the first deploy, because it depends on the host running the install at the repo root rather than inside the folder it builds. A question for <code>/release</code>, not a bug today.</li>
               <li><strong>There are no automated tests, by choice for now.</strong> No test runner is set up, so every step is checked by hand against the running app and the two builds, and no test result is claimed anywhere on this page. When tests do arrive, the plan check and the two-businesses refusal are the first two things worth covering.</li>
             </ul>
               </div>
             </details>
           <p class="item-was">Better Auth mounts on the Hono API, not in Next as the first repo had it.</p></div><span class="pill pill--live">In progress</span></div>
-          <div class="item" data-state="planned"><div class="item-num">2</div><div class="item-body"><div class="item-name">Booking links and availability rules</div><p class="item-text">The two tables, the public read route, the seed CLI, the shared-package layout. Several windows a day, a booking horizon, statutory holidays from a country code.</p><p class="item-was">Carries a required gate: the typed front-to-back seam lands here and does not close on a claim. The frontend must call this item's route through the shared types, and the step must rename that route on purpose and confirm the frontend stops compiling. The first repo declared this seam and never used it once.</p></div><span class="pill pill--plan">Planned</span></div>
-          <div class="item" data-state="planned"><div class="item-num">3</div><div class="item-body"><div class="item-name">Calendar connection</div><p class="item-text">The table, the cipher, OAuth connect and disconnect, the provider seam, free/busy verified against a real event.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">2</div><div class="item-body"><div class="item-name">Booking links, resources and availability rules</div><p class="item-text">The three tables, the public read route, the seed CLI, the shared-package layout. Several windows a day, a booking horizon, statutory holidays from a country code. Hours are unique per business <em>and per person</em>: null means the business's own, set means that person's, and someone without their own row falls back to the business.</p><p class="item-was">Carries a required gate: the typed front-to-back seam lands here and does not close on a claim. The frontend must call this item's route through the shared types, and the step must rename that route on purpose and confirm the frontend stops compiling. The first repo declared this seam and never used it once.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">3</div><div class="item-body"><div class="item-name">Calendar connection</div><p class="item-text">The table, the cipher, OAuth connect and disconnect, the provider seam, free/busy verified against a real event. Same per-person shape as the hours: one calendar per business now, room for one per person later without a migration.</p></div><span class="pill pill--plan">Planned</span></div>
         </div>
 
         <div class="stage">
           <div class="stage-head"><span class="stage-name">Phase 2 &middot; The booking loop</span><span class="stage-note">Exit: a stranger books a real slot, the lead lands in its first stage, the .ics arrives, the calendar shows it, cancel works, two resources can share a time</span></div>
-          <div class="item" data-state="planned"><div class="item-num">4</div><div class="item-body"><div class="item-name">CRM spine</div><p class="item-text">contact, pipeline_stage seeded with four defaults, resource, and activity carrying both the timeline and the next-step queue. Nothing visible yet.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">4</div><div class="item-body"><div class="item-name">CRM spine</div><p class="item-text">contact, pipeline_stage seeded with four defaults, and activity carrying both the timeline and the next-step queue. Nothing visible yet.</p><p class="item-was">resource moved out of here to item 2 on Sep 22: availability is defined per resource and cannot reference a table that arrives two items later.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">5</div><div class="item-body"><div class="item-name">Booking creation</div><p class="item-text">Validate a slot against the rules, free resources and the live calendar; take the customer's address; create contact, lead, booking and timeline entry.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">6</div><div class="item-body"><div class="item-name">Confirmations</div><p class="item-text">Email with .ics to the customer and a business-side notification, from Primo's template pattern.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">7</div><div class="item-body"><div class="item-name">Self-serve cancel and reschedule</div><p class="item-text">A tokenized link in the confirmation.</p></div><span class="pill pill--plan">Planned</span></div>
@@ -2030,7 +2104,7 @@
       </section>
 
       <footer>
-        <span>Updated Sep 19, 2026</span>
+        <span>Updated Sep 22, 2026</span>
         <span>&middot;</span>
         <span>Source: blueprint/build-plan.md</span>
       </footer>

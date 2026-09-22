@@ -34,10 +34,14 @@ It also produced an answer to an open question this plan already carries.
 
 ---
 
-## 2. It answers open question 12
+## 2. It answers open question 15
 
-> 12. **Browser-to-API, or proxied through the host's server action?**
+> 15. **Browser-to-API, or proxied through the host's server action?**
 > Section 8. Decided at Phase 3, not before.
+
+*(Numbered 12 when this was written. The Open questions list was renumbered to
+14 to 19 on 2026-09-22, because it collided with the Decided list at 11, 12 and
+13.)*
 
 **Proposed answer: proxied through the host site's own server action.**
 
@@ -215,15 +219,15 @@ Nothing to remove. Retail was never listed there. It graduates in as new work.
   changes, exactly as item 23 was designed to work.
 ```
 
-### 6d. `project-plan.md`, answering open question 12
+### 6d. `project-plan.md`, answering open question 15
 
-Move item 12 out of Open questions and into a dated decided section:
+Move question 15 out of Open questions and into a dated decided section:
 
 ```markdown
 ## Decided 2026-09-22
 
 1. **Host sites proxy through their own server action.** Answers open
-   question 12. Section 8 already carried the rationale and leaned this way;
+   question 15. Section 8 already carried the rationale and leaned this way;
    the store conversation reached it independently. The browser never holds a
    credential, the API stays private, and CORS stops being load-bearing for
    proxied tenants. Open only for the booking widget in item 9, if that item
