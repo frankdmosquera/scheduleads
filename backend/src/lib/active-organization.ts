@@ -94,8 +94,22 @@ export async function getActiveOrganization(
   };
 }
 
+/**
+ * Who is signed in, as distinct from which business they are acting for.
+ *
+ * Two context variables rather than one widened `org`, because they
+ * answer two different questions and later items want them apart: an
+ * audit trail records the person, a lead record belongs to the business.
+ */
+export type SessionUser = {
+  id: string;
+  email: string;
+  name: string;
+};
+
 declare module "hono" {
   interface ContextVariableMap {
+    user: SessionUser;
     org: ActiveOrganization;
   }
 }
@@ -124,6 +138,14 @@ export const requireOrganization = createMiddleware(async (c, next) => {
     );
   }
 
+  c.set("user", {
+    id: session.user.id,
+    email: session.user.email,
+    // An account created by email code has no name: Better Auth stores
+    // `name: name || ""` on that path. The dashboard shows the email
+    // until something asks for a name, rather than inventing one.
+    name: session.user.name ?? "",
+  });
   c.set("org", active);
   await next();
 });

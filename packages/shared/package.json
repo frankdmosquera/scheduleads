@@ -11,6 +11,10 @@
     "./config": {
       "types": "./dist/config/plan-limits.d.ts",
       "default": "./dist/config/plan-limits.js"
+    },
+    "./validation": {
+      "types": "./dist/validation/auth.d.ts",
+      "default": "./dist/validation/auth.js"
     }
   },
   "scripts": {
