@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Booking modal - Primo Painters theme</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="widget.css">
+
+<style>
+/* =========================================================================
+   HOST: primo-painters. LIVE, RANKING, THE FIRST PAYING CLIENT.
+   =========================================================================
+
+   Same widget.css as modal-agency.html. Same classes, same structure, same
+   attributes. Only two things differ between the files: this token block,
+   and the copy (business name, service, slots) which comes from the tenant's
+   own rows in the database.
+
+   THIS IS THE FILE THAT JUSTIFIES THE CONTRACT.
+
+   Primo's theme file is explicit that his amber is a surface and never type:
+
+     amber on his ground   2.27:1   FAIL
+     dark text on amber    7.69:1   passes
+     white text on amber   2.37:1   FAIL, do not use
+
+   A contract with a single "brand colour" would have forced one of two bad
+   outcomes here: a blue Confirm button that disappears into his nav and
+   headings, or amber text somewhere and a real accessibility regression on
+   a site that is already live and ranking.
+
+   The action/identity split makes both correct at once. Blue marks where
+   you are, amber marks what to click, and --sa-action-ink carries the dark
+   ink that amber requires. That is why the ink is its own token and is
+   never assumed to be white.
+   ========================================================================= */
+
+:root {
+  /* Primo's real palette, from his globals.css header block */
+  --pp-ground:  #FBFAF7;               /* warm paper, not white         */
+  --pp-card:    #FFFFFF;               /* cards lift off the ground     */
+  --pp-tint:    oklch(97% 0.008 262);  /* his --services-bg             */
+  --pp-fg:      oklch(0.22 0.008 262);
+  --pp-muted:   oklch(0.50 0.010 262);
+  --pp-line:    oklch(0.22 0.008 262 / 13%);
+  --pp-blue:    #0D378D;               /* identity. the logo            */
+  --pp-amber:   #E09A3C;               /* action. the one thing to click*/
+  --pp-ink:     #17191F;               /* the dark ink amber requires   */
+
+  /* ---- the mapping. this is the entire integration ---- */
+  --sa-bg:            var(--pp-ground);
+  --sa-surface:       var(--pp-card);
+  --sa-surface-2:     var(--pp-tint);
+  --sa-text:          var(--pp-fg);
+  --sa-muted:         var(--pp-muted);
+  --sa-border:        var(--pp-line);
+  --sa-identity:      var(--pp-blue);   /* structure, selection, focus   */
+  --sa-identity-ink:  #FFFFFF;          /* white on this blue is 10.78:1 */
+  --sa-action:        var(--pp-amber);  /* the CTA surface               */
+  --sa-action-ink:    var(--pp-ink);    /* 7.69:1. NOT white.            */
+  --sa-disabled:      oklch(0.66 0.006 262);
+  --sa-radius:        8px;              /* tighter than the agency's     */
+  --sa-font:          "Geist", ui-sans-serif, system-ui, sans-serif;
+  --sa-font-mono:     "Geist Mono", ui-monospace, monospace;
+}
+
+/* --- a stand-in for the host page behind the modal --- */
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--pp-ground); color: var(--pp-fg);
+       font-family: "Geist", ui-sans-serif, system-ui, sans-serif; }
+.host-top { display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 40px; border-bottom: 1px solid var(--pp-line); background: #fff; }
+.host-logo { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; color: var(--pp-blue); }
+.host-nav { display: flex; gap: 24px; font-size: 14.5px; color: var(--pp-muted); align-items: center; }
+.host-book { background: var(--pp-amber); color: var(--pp-ink); font-weight: 700;
+             padding: 9px 18px; border-radius: 8px; font-size: 14.5px; }
+.host-hero { padding: 70px 40px; max-width: 780px; }
+.host-hero h1 { font-size: 46px; line-height: 1.07; letter-spacing: -0.03em; margin: 0 0 16px; color: var(--pp-blue); }
+.host-hero p { font-size: 18px; color: var(--pp-muted); margin: 0 0 28px; max-width: 52ch; }
+.host-cta { display: inline-block; background: var(--pp-amber); color: var(--pp-ink); font-weight: 700;
+            padding: 13px 26px; border-radius: 8px; font-size: 15.5px; }
+.host-trust { display: flex; gap: 20px; margin-top: 26px; font-size: 13.5px; color: #2F6B4F; font-weight: 600; }
+.host-note { font-family: "Geist Mono", monospace; font-size: 11px; color: var(--pp-muted);
+             background: var(--pp-tint); border-bottom: 1px solid var(--pp-line);
+             padding: 7px 40px; display: flex; gap: 16px; flex-wrap: wrap; }
+.host-note b { color: var(--pp-fg); }
+</style>
+</head>
+<body>
+
+<div class="host-note">
+  <b>MOCKUP</b>
+  <span>Host: primo-painters (live, ranking)</span>
+  <span>Identity blue, action amber, ink dark</span>
+  <span>Same widget.css as modal-agency.html</span>
+</div>
+
+<header class="host-top">
+  <div class="host-logo">PRIMO PAINTERS</div>
+  <nav class="host-nav"><span>Interior</span><span>Exterior</span><span>Projects</span><span>Reviews</span><a class="host-book" href="#">Book now</a></nav>
+</header>
+
+<section class="host-hero">
+  <h1>Calgary interior painters you can book today.</h1>
+  <p>Clean lines, clean site, done when we said. Free estimates across Calgary and the surrounding communities.</p>
+  <a class="host-cta" href="#">Get a free estimate</a>
+  <div class="host-trust"><span>&#9733; 4.9 on Google</span><span>&#10003; Free estimates</span><span>&#10003; Fully insured</span></div>
+</section>
+
+<!-- ============ EVERYTHING BELOW IS THE WIDGET ============
+     Same classes, same structure, same attributes as modal-agency.html.
+     Only the copy differs, and that comes from Primo's own rows. -->
+<div class="sa-scrim">
+  <div class="sa-modal" role="dialog" aria-modal="true" aria-labelledby="sa-t">
+
+    <div class="sa-head">
+      <div>
+        <h2 class="sa-title" id="sa-t">Book with Primo Painters</h2>
+        <p class="sa-sub">Pick a time that suits you. You will get a confirmation by email.</p>
+      </div>
+      <button class="sa-x" aria-label="Close">&#10005;</button>
+    </div>
+
+    <div class="sa-steps">
+      <div class="sa-step" data-on="done"><span class="sa-step-n">&#10003;</span>Service</div>
+      <div class="sa-step" data-on="yes"><span class="sa-step-n">2</span>Time</div>
+      <div class="sa-step"><span class="sa-step-n">3</span>Details</div>
+    </div>
+
+    <div class="sa-body">
+
+      <div class="sa-block">
+        <div class="sa-picked">
+          <span class="sa-picked-tick">&#10003;</span>
+          <div>
+            <div class="sa-picked-name">Free estimate, interior</div>
+            <div class="sa-picked-meta">60 min &middot; at your home</div>
+          </div>
+          <button class="sa-change">Change</button>
+        </div>
+      </div>
+
+      <div class="sa-block">
+        <p class="sa-lab">September</p>
+        <div class="sa-days">
+          <button class="sa-day" disabled><span class="sa-day-w">Mon</span><span class="sa-day-n">21</span></button>
+          <button class="sa-day"><span class="sa-day-w">Tue</span><span class="sa-day-n">22</span></button>
+          <button class="sa-day" aria-pressed="true"><span class="sa-day-w">Wed</span><span class="sa-day-n">23</span></button>
+          <button class="sa-day"><span class="sa-day-w">Thu</span><span class="sa-day-n">24</span></button>
+          <button class="sa-day"><span class="sa-day-w">Fri</span><span class="sa-day-n">25</span></button>
+          <button class="sa-day"><span class="sa-day-w">Sat</span><span class="sa-day-n">26</span></button>
+          <button class="sa-day" disabled><span class="sa-day-w">Sun</span><span class="sa-day-n">27</span></button>
+        </div>
+      </div>
+
+      <div class="sa-block">
+        <p class="sa-lab">Wednesday 23 &middot; Mountain Time</p>
+        <div class="sa-slots">
+          <button class="sa-slot">8:00</button>
+          <button class="sa-slot" disabled>9:30</button>
+          <button class="sa-slot" disabled>11:00</button>
+          <button class="sa-slot">12:30</button>
+          <button class="sa-slot" aria-pressed="true">2:00</button>
+          <button class="sa-slot">3:30</button>
+          <button class="sa-slot" disabled>5:00</button>
+          <button class="sa-slot">6:30</button>
+        </div>
+        <p class="sa-note">Struck-through times are already busy on the calendar.</p>
+      </div>
+
+      <div class="sa-block">
+        <p class="sa-lab">Your details</p>
+        <div class="sa-grid">
+          <div>
+            <label class="sa-flab" for="sa-n">Name</label>
+            <input class="sa-f" id="sa-n" placeholder="Marta Kowalczyk">
+          </div>
+          <div>
+            <label class="sa-flab" for="sa-p">Phone</label>
+            <input class="sa-f" id="sa-p" placeholder="(403) 555-0172">
+          </div>
+          <div class="sa-wide">
+            <label class="sa-flab" for="sa-e">Email</label>
+            <input class="sa-f" id="sa-e" placeholder="marta@example.com">
+          </div>
+          <div class="sa-wide">
+            <label class="sa-flab" for="sa-m">What needs painting? <span style="font-weight:400">Optional</span></label>
+            <textarea class="sa-f" id="sa-m" rows="2" placeholder="Rooms, ceilings, trim, anything we should know"></textarea>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="sa-foot">
+      <button class="sa-back">&#8592; Back</button>
+      <span class="sa-when"><b>Wed 23 Sep, 2:00 pm</b> &middot; 60 min</span>
+      <button class="sa-go">Confirm booking</button>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

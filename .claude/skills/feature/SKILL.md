@@ -55,11 +55,16 @@ Gather the smallest packet that can answer what must be built:
 Finish context gathering in at most four tool rounds after this skill starts:
 target and overview matches, one batched repository inspection, applicable
 standards only if needed, and Verify. Combine or skip rounds when possible. Do
-not inspect skill directories, `ai-interaction.md`, findings, review records,
-history, or templates during normal planned-feature work. Do not create scratch
-code or run implementation probes while writing a spec. Put a check in the
-relevant build step when a repository detail cannot be confirmed from existing
-evidence.
+not inspect skill directories, findings, review records, history, or templates
+during normal planned-feature work. Do not create scratch code or run
+implementation probes while writing a spec. Put a check in the relevant build
+step when a repository detail cannot be confirmed from existing evidence.
+
+Two exceptions to that economy, both about the published build log:
+`blueprint/context/project-log.html`, which this skill writes a feature group
+into before reporting the spec, and `ai-interaction.md`, read when you need that
+page's marker and layout conventions. The rule and the URL are in `AGENTS.md`,
+which is always loaded. Neither read counts against the four rounds.
 
 The plans and overview define product intent. The repository defines current
 reality. Do not invent presets, defaults, limits, permissions, money rules,
@@ -167,6 +172,25 @@ If a prerequisite is absent, incomplete, untracked, or unverified, say which one
 the evidence shows. Do not bury repair inside this feature. Stop with the exact
 `/fix` or user decision required.
 
-Otherwise write the tightened spec, update activity to `ready`, and stop for
-review. Lead with a short note naming what the critique changed, or say that it
-found no material change. Never implement from this skill.
+Otherwise write the tightened spec, then **publish the spec to the build log
+before reporting it in chat.** A spec that exists only in `current-feature.md`
+has not been shown to the user.
+
+Everything goes in the item's own row on the roadmap in
+`blueprint/context/project-log.html`. There is no per-feature view; do not
+create one. Flip the item to `active`, mark its chip in the plan strip, update
+the tally, and build its row from the stencil at the bottom of that file: the
+gates, then collapsed `<details>` drawers for **Steps** (open), **Why this item
+exists**, **Decisions**, **Contracts**, **Log** and **Notes**.
+
+Steps are numbered N.1 to N.k inside the Steps drawer, each opening into what it
+does and why, its concrete pieces, and its `Done when`. Leave the first step
+`open`. Never leave bare step titles: a reader who opens only the roadmap must
+learn what each step actually is. Record every decision with why the rejected
+options lost, in the Decisions drawer, as option cards when they compare
+alternatives. Then republish to the URL in the project's `AGENTS.md`, passing it
+as `url`.
+
+Then update activity to `ready`, and stop for review. Lead with a short note
+naming what the critique changed, or say that it found no material change.
+Never implement from this skill.

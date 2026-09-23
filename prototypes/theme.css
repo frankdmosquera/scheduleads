@@ -1,0 +1,188 @@
+/* ===========================================================================
+   SCHEDULEADS - THE THEME
+   ===========================================================================
+
+   This file is the durable output of /prototype. Everything else under
+   prototypes/ is reference and gets discarded at the first UI feature's
+   /complete. These tokens port into frontend/app/globals.css as @theme.
+
+   TWO THEMES, ONE SWITCH, NO MEDIA QUERY
+
+     :root                      light. The default.
+     :root[data-theme="dark"]   dark. Set by the toggle.
+
+   Deliberately no @media (prefers-color-scheme). The owner picks, the app
+   remembers, and the choice does not change under him because the sun went
+   down or his laptop flipped at 6pm. A CRM he checks between jobs should
+   look the same every time he opens it. That means the toggle must always
+   write an explicit data-theme; there is no "system" third state to fall
+   back to.
+
+   WHY INDIGO
+
+     The CRM runs four tenants at once and must never read as any one of
+     them. The agency site is teal, Primo is blue with amber, the clinic will
+     bring its own. Indigo sits far enough from all of them that the product
+     keeps its own identity on screen, and close enough to the blue family
+     that it still reads as software rather than decoration.
+
+     One accent. Everything that is not a primary action or a focus ring is
+     grey or a status colour.
+
+   STATUS IS NOT ACCENT
+
+     --won, --wait, --lost carry meaning and only meaning. Never use them for
+     emphasis, never use --accent for status. A green badge means booked, not
+     "this is nice".
+
+   THE GREYS ARE WARM ON PURPOSE
+
+     Hue 95 at very low chroma, not pure neutral. Both host sites this
+     product sits beside use a warm ground (agents-web oklch(0.985 0.004 95),
+     Primo #FBFAF7), and a cold grey CRM next to them looks like a different
+     company's software. Costs nothing, and it is most of the difference
+     between designed and default.
+
+   =========================================================================== */
+
+:root {
+  /* --- surfaces ------------------------------------------------------- */
+  --bg: oklch(0.985 0.003 95);          /* the page                        */
+  --surface: oklch(1 0 0);              /* cards, rows, the modal          */
+  --surface-2: oklch(0.962 0.004 95);   /* inputs, table heads, board lanes*/
+  --surface-3: oklch(0.935 0.005 95);   /* hover, pressed, drag ghost      */
+  --border: oklch(0.24 0.01 85 / 12%);  /* every rule and divider          */
+  --border-strong: oklch(0.24 0.01 85 / 22%);
+
+  /* --- text ----------------------------------------------------------- */
+  --text: oklch(0.24 0.012 80);         /* primary copy, headings          */
+  --muted: oklch(0.50 0.012 85);        /* secondary, labels, meta         */
+  --faint: oklch(0.66 0.010 85);        /* hints, placeholders, disabled   */
+
+  /* --- accent --------------------------------------------------------- */
+  --accent: oklch(0.48 0.17 274);       /* primary action, focus, active   */
+  --accent-hover: oklch(0.43 0.17 274);
+  --accent-ink: oklch(0.99 0 0);        /* text ON accent                  */
+  --accent-soft: oklch(0.955 0.025 274);/* wash behind selection           */
+  --accent-line: oklch(0.48 0.17 274 / 38%);
+
+  /* --- status. meaning only, never emphasis --------------------------- */
+  --won: oklch(0.52 0.13 155);          /* booked, accepted, won           */
+  --won-soft: oklch(0.955 0.035 155);
+  --wait: oklch(0.58 0.12 75);          /* awaiting, pending, sent         */
+  --wait-soft: oklch(0.955 0.04 75);
+  --lost: oklch(0.55 0.17 22);          /* lost, declined, failed          */
+  --lost-soft: oklch(0.955 0.03 22);
+  --info: oklch(0.52 0.10 235);         /* neutral system note             */
+  --info-soft: oklch(0.955 0.025 235);
+
+  /* --- type ----------------------------------------------------------- */
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Consolas, monospace;
+
+  /* Mono is not decoration here. It carries anything the eye compares down
+     a column: times, money, durations, ids. Tabular figures make a list of
+     prices scannable; proportional figures do not. */
+
+  /* --- scale ---------------------------------------------------------- */
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 14px;
+
+  --row: 56px;                          /* list row height. roomy on purpose */
+  --gut: 24px;                          /* the standard gutter               */
+
+  --shadow-sm: 0 1px 2px oklch(0.24 0.01 85 / 7%);
+  --shadow-md: 0 2px 4px oklch(0.24 0.01 85 / 6%), 0 8px 24px oklch(0.24 0.01 85 / 8%);
+  --shadow-lg: 0 8px 16px oklch(0.24 0.01 85 / 8%), 0 24px 56px oklch(0.24 0.01 85 / 14%);
+}
+
+/* ---------------------------------------------------------------------------
+   DARK
+
+   Not the light theme inverted. The surfaces carry a trace of the accent hue
+   (274) rather than being neutral charcoal, so the dark CRM reads as the same
+   product rather than a generic dark mode. The accent lifts to 0.68 lightness
+   because indigo-600 on a dark ground is a smudge, and its ink goes dark.
+
+   Status colours lift too. A 0.52 green on a 0.19 ground is unreadable.
+   --------------------------------------------------------------------------- */
+
+:root[data-theme="dark"] {
+  --bg: oklch(0.185 0.008 274);
+  --surface: oklch(0.225 0.010 274);
+  --surface-2: oklch(0.265 0.012 274);
+  --surface-3: oklch(0.310 0.014 274);
+  --border: oklch(1 0 0 / 11%);
+  --border-strong: oklch(1 0 0 / 20%);
+
+  --text: oklch(0.955 0.004 274);
+  --muted: oklch(0.715 0.012 274);
+  --faint: oklch(0.545 0.012 274);
+
+  --accent: oklch(0.68 0.15 274);
+  --accent-hover: oklch(0.74 0.15 274);
+  --accent-ink: oklch(0.17 0.02 274);
+  --accent-soft: oklch(0.30 0.055 274);
+  --accent-line: oklch(0.68 0.15 274 / 45%);
+
+  --won: oklch(0.72 0.14 155);
+  --won-soft: oklch(0.29 0.05 155);
+  --wait: oklch(0.78 0.13 75);
+  --wait-soft: oklch(0.31 0.05 75);
+  --lost: oklch(0.70 0.15 22);
+  --lost-soft: oklch(0.30 0.06 22);
+  --info: oklch(0.72 0.11 235);
+  --info-soft: oklch(0.28 0.045 235);
+
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 40%);
+  --shadow-md: 0 2px 4px oklch(0 0 0 / 34%), 0 8px 24px oklch(0 0 0 / 40%);
+  --shadow-lg: 0 8px 16px oklch(0 0 0 / 40%), 0 24px 56px oklch(0 0 0 / 52%);
+}
+
+/* ===========================================================================
+   THE WIDGET TOKEN CONTRACT
+   ===========================================================================
+
+   The booking modal has NO theme of its own. It is imported into a client's
+   site and must look like that site, not like this CRM. So it reads a small,
+   fixed set of tokens that the host defines, and nothing else. Every value
+   below is a fallback for a host that defines nothing; a real host overrides
+   them in its own stylesheet.
+
+   This block is the contract. It is the part of this file that matters most,
+   because it is what makes one component work on four different brands.
+
+   THE ACTION/IDENTITY SPLIT IS NOT DECORATION
+
+     Primo's palette has a blue identity and an amber action, and its theme
+     file is explicit that amber fails contrast as text (2.27:1) and passes
+     as a surface carrying dark ink (7.69:1). A contract with one "brand
+     colour" would force his Book button to be blue, or force amber into
+     type and break his accessibility. Two tokens, each with its own ink,
+     is what lets the same markup be correct on both hosts.
+
+   --sa-action-ink is therefore mandatory for any host overriding
+   --sa-action. It is not assumed to be white.
+   =========================================================================== */
+
+:root {
+  --sa-bg: var(--bg);                   /* the modal's own ground          */
+  --sa-surface: var(--surface);         /* panels inside it, slot chips    */
+  --sa-surface-2: var(--surface-2);
+  --sa-text: var(--text);
+  --sa-muted: var(--muted);
+  --sa-border: var(--border);
+
+  --sa-identity: var(--accent);         /* structural: headings, links, the
+                                           selected state. Primo's blue.    */
+  --sa-identity-ink: var(--accent-ink);
+
+  --sa-action: var(--accent);           /* the one button you want clicked  */
+  --sa-action-ink: var(--accent-ink);   /* MANDATORY. never assumed white.  */
+
+  --sa-disabled: var(--faint);          /* a slot the calendar says is busy */
+  --sa-radius: var(--radius);
+  --sa-font: var(--font-sans);
+  --sa-font-mono: var(--font-mono);
+}

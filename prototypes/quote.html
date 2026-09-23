@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quote - Scheduleads</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+  /* =====================================================================
+     THE QUOTE. NOT IN THE BUILD PLAN YET.
+     =====================================================================
+     Mocked because the project plan promises the journey "to the job is
+     done and paid" and the 25 planned items stop at "booked". For a painter
+     the quote is the step where the money is decided, and it is currently
+     the point at which he leaves the CRM and picks up a notebook.
+
+     Two halves on one screen on purpose: what the owner builds on the left,
+     what the customer opens on the right. They are one object seen from two
+     sides, and the right half is a HOST-THEMED surface, so it reads the
+     --sa-* contract exactly like the booking modal does.
+     ===================================================================== */
+
+  .split { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 20px; align-items: start; }
+
+  /* ---------- builder ---------- */
+  .li {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) 74px 92px 96px 28px;
+    gap: 12px; align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .li:last-of-type { border-bottom: none; }
+
+  .li-head {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.13em; text-transform: uppercase; color: var(--faint);
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+
+  .grip { color: var(--faint); cursor: grab; text-align: center; font-size: 13px; }
+  .li-name { font-weight: 600; font-size: 14.5px; }
+  .li-note { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+  .num { font-family: var(--font-mono); font-size: 13.5px; text-align: right;
+         font-variant-numeric: tabular-nums; }
+  .num--total { font-weight: 700; }
+  .li-x { all: unset; cursor: pointer; text-align: center; color: var(--faint); font-size: 13px; }
+  .li-x:hover { color: var(--lost); }
+
+  .add-li {
+    all: unset; cursor: pointer; display: block; width: 100%; text-align: center;
+    padding: 10px 0; margin-top: 12px; border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-sm); color: var(--muted); font-size: 13.5px;
+  }
+  .add-li:hover { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+
+  .totals { margin-left: auto; width: 268px; padding-top: 14px; }
+  .tr { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+  .tr span:first-child { color: var(--muted); }
+  .tr--grand { border-top: 1px solid var(--border-strong); margin-top: 7px; padding-top: 12px;
+               font-size: 19px; font-weight: 700; }
+  .tr--grand span:first-child { color: var(--text); }
+
+  /* ---------- the customer's view ----------
+     Host-themed. Primo's tokens, so the quote looks like it came from him,
+     not from us. Same rule as the booking modal. */
+  .cust {
+    --sa-bg: #FBFAF7;
+    --sa-surface: #FFFFFF;
+    --sa-text: oklch(0.22 0.008 262);
+    --sa-muted: oklch(0.50 0.010 262);
+    --sa-border: oklch(0.22 0.008 262 / 13%);
+    --sa-identity: #0D378D;
+    --sa-identity-ink: #FFFFFF;
+    --sa-action: #E09A3C;
+    --sa-action-ink: #17191F;
+    --sa-radius: 8px;
+
+    background: var(--sa-bg);
+    color: var(--sa-text);
+    border: 1px solid var(--sa-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    position: sticky;
+    top: 20px;
+  }
+
+  .cust-bar {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--faint);
+    padding: 7px 16px; background: var(--surface-2); border-bottom: 1px solid var(--border);
+  }
+  .cust-head { padding: 20px 20px 16px; border-bottom: 1px solid var(--sa-border); background: var(--sa-surface); }
+  .cust-brand { font-weight: 800; font-size: 15px; color: var(--sa-identity); letter-spacing: -0.01em; }
+  .cust-h { font-size: 19px; font-weight: 700; margin: 12px 0 3px; letter-spacing: -0.01em; }
+  .cust-sub { font-size: 13.5px; color: var(--sa-muted); }
+  .cust-body { padding: 16px 20px; }
+
+  .cl { display: flex; justify-content: space-between; gap: 14px; padding: 9px 0;
+        border-bottom: 1px solid var(--sa-border); font-size: 14px; }
+  .cl:last-child { border-bottom: none; }
+  .cl-n { color: var(--sa-muted); font-size: 12.5px; }
+  .cl-v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .cust-total { display: flex; justify-content: space-between; align-items: baseline;
+                padding: 14px 20px; background: var(--sa-surface); border-top: 1px solid var(--sa-border); }
+  .cust-total-v { font-family: var(--font-mono); font-size: 25px; font-weight: 700;
+                  font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+  .cust-act { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 9px;
+              background: var(--sa-surface); border-top: 1px solid var(--sa-border); }
+
+  .cust-yes {
+    all: unset; cursor: pointer; text-align: center;
+    background: var(--sa-action); color: var(--sa-action-ink);
+    font-weight: 700; font-size: 15px; padding: 12px 0; border-radius: var(--sa-radius);
+  }
+  .cust-no {
+    all: unset; cursor: pointer; text-align: center;
+    color: var(--sa-muted); font-size: 13.5px; padding: 7px 0;
+  }
+  .cust-fine { font-size: 12px; color: var(--sa-muted); text-align: center; line-height: 1.5; }
+
+  @media (max-width: 1140px) { .split { grid-template-columns: minmax(0, 1fr); } .cust { position: static; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="side">
+    <div class="org">
+      <div class="org-mark">PP</div>
+      <div><div class="org-name">Primo Painters</div><div class="org-plan">Plan &middot; agency</div></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-head">Work</div>
+      <a href="leads.html"><span class="ico">&#9776;</span>Leads<span class="count">8</span></a>
+      <a href="pipeline.html"><span class="ico">&#9638;</span>Pipeline</a>
+      <a href="quote.html" aria-current="page"><span class="ico">&#36;</span>Quotes<span class="count">3</span></a>
+      <a href="crew.html"><span class="ico">&#9635;</span>Crew</a>
+      <div class="nav-head" style="margin-top:14px">Setup</div>
+      <a href="settings.html"><span class="ico">&#9881;</span>Settings</a>
+    </nav>
+    <div class="side-foot">
+      <div class="toggle" role="group" aria-label="Theme">
+        <button data-t="light" aria-pressed="true">Light</button>
+        <button data-t="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="proto" style="margin: 0 calc(var(--gut) * -1) 0;">
+      <b>MOCKUP</b><span>Quote</span><span style="color:var(--wait)">NOT IN THE BUILD PLAN YET</span><span>Needs a real item before it gets built</span>
+    </div>
+
+    <div class="top">
+      <div>
+        <h1>Quote for Dwayne Okafor</h1>
+        <p class="sub">Exterior repaint, Auburn Bay &middot; <a href="contact.html">back to the contact</a></p>
+      </div>
+      <div style="display:flex; gap:9px; align-items:center">
+        <span class="badge badge--wait">Sent Mon 14</span>
+        <button class="btn btn--sm">Preview</button>
+        <button class="btn btn--primary btn--sm">Send the revision</button>
+      </div>
+    </div>
+
+    <div class="split">
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Line items</h2>
+          <button class="btn btn--ghost btn--sm">Load a template</button>
+        </div>
+        <div class="card-body">
+
+          <div class="li li-head">
+            <div></div><div>Item</div><div class="num">Qty</div><div class="num">Rate</div><div class="num">Amount</div><div></div>
+          </div>
+
+          <div class="li">
+            <div class="grip">&#8942;&#8942;</div>
+            <div><div class="li-name">Pressure wash, whole exterior</div><div class="li-note">Includes soffits and eaves</div></div>
+            <div class="num">1</div><div class="num">$420.00</div><div class="num num--total">$420.00</div>
+            <button class="li-x">&#10005;</button>
+          </div>
+
+          <div class="li">
+            <div class="grip">&#8942;&#8942;</div>
+            <div><div class="li-name">Prep, scrape and prime</div><div class="li-note">Trim, fascia and window surrounds</div></div>
+            <div class="num">16 hr</div><div class="num">$65.00</div><div class="num num--total">$1,040.00</div>
+            <button class="li-x">&#10005;</button>
+          </div>
+
+          <div class="li">
+            <div class="grip">&#8942;&#8942;</div>
+            <div><div class="li-name">Body, two coats</div><div class="li-note">North face gets the weather, two coats throughout</div></div>
+            <div class="num">2,180 sf</div><div class="num">$0.78</div><div class="num num--total">$1,700.40</div>
+            <button class="li-x">&#10005;</button>
+          </div>
+
+          <div class="li">
+            <div class="grip">&#8942;&#8942;</div>
+            <div><div class="li-name">Trim and fascia</div><div class="li-note">Satin, colour to be confirmed</div></div>
+            <div class="num">1</div><div class="num">$690.00</div><div class="num num--total">$690.00</div>
+            <button class="li-x">&#10005;</button>
+          </div>
+
+          <div class="li">
+            <div class="grip">&#8942;&#8942;</div>
+            <div><div class="li-name">Front and back doors</div><div class="li-note">Removed, sprayed, rehung</div></div>
+            <div class="num">2</div><div class="num">$180.00</div><div class="num num--total">$360.00</div>
+            <button class="li-x">&#10005;</button>
+          </div>
+
+          <div class="li">
+            <div class="grip">&#8942;&#8942;</div>
+            <div><div class="li-name">Materials and disposal</div><div class="li-note">Sherwin-Williams Duration, exterior</div></div>
+            <div class="num">1</div><div class="num">$380.00</div><div class="num num--total">$380.00</div>
+            <button class="li-x">&#10005;</button>
+          </div>
+
+          <button class="add-li">+ Add a line</button>
+
+          <div class="totals">
+            <div class="tr"><span>Subtotal</span><span class="mono">$4,590.40</span></div>
+            <div class="tr"><span>GST 5%</span><span class="mono">$229.52</span></div>
+            <div class="tr tr--grand"><span>Total</span><span class="mono">$4,819.92</span></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="cust">
+        <div class="cust-bar">What Dwayne opens &middot; Primo's theme, not ours</div>
+
+        <div class="cust-head">
+          <div class="cust-brand">PRIMO PAINTERS</div>
+          <h3 class="cust-h">Your exterior repaint</h3>
+          <div class="cust-sub">Prepared 14 September for Dwayne Okafor, Auburn Bay. Valid until 2 October.</div>
+        </div>
+
+        <div class="cust-body">
+          <div class="cl"><div><div>Pressure wash</div><div class="cl-n">Whole exterior, soffits, eaves</div></div><div class="cl-v">$420.00</div></div>
+          <div class="cl"><div><div>Prep, scrape and prime</div><div class="cl-n">16 hours</div></div><div class="cl-v">$1,040.00</div></div>
+          <div class="cl"><div><div>Body, two coats</div><div class="cl-n">2,180 sq ft</div></div><div class="cl-v">$1,700.40</div></div>
+          <div class="cl"><div><div>Trim and fascia</div><div class="cl-n">Satin</div></div><div class="cl-v">$690.00</div></div>
+          <div class="cl"><div><div>Front and back doors</div><div class="cl-n">Sprayed off site</div></div><div class="cl-v">$360.00</div></div>
+          <div class="cl"><div><div>Materials and disposal</div><div class="cl-n">Duration exterior</div></div><div class="cl-v">$380.00</div></div>
+        </div>
+
+        <div class="cust-total"><span>Total, GST included</span><span class="cust-total-v">$4,819.92</span></div>
+
+        <div class="cust-act">
+          <button class="cust-yes">Accept this quote</button>
+          <button class="cust-no">Ask a question instead</button>
+          <p class="cust-fine">Accepting books your job and sends you a confirmation. Nothing is charged today.</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+  var btns = document.querySelectorAll('.toggle button');
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.t === t)); });
+    try { localStorage.setItem('sa-theme', t); } catch (e) {}
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { setTheme(b.dataset.t); }); });
+  try { var s = localStorage.getItem('sa-theme'); if (s) setTheme(s); } catch (e) {}
+</script>
+
+</body>
+</html>

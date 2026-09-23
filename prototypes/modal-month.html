@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Booking, layout B screen 1 - pick a time</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="widget.css">
+<link rel="stylesheet" href="month.css">
+
+<style>
+/* =========================================================================
+   LAYOUT B, SCREEN 1 OF 2. THE CALENDLY SHAPE.
+   =========================================================================
+
+   Screen 2 is modal-month-details.html. They are one flow: pick the time,
+   then answer the questions. Never both on one scroll.
+
+   Same host and the same --sa-* token block as modal-primo.html, so putting
+   this beside layout A compares arrangement and nothing else.
+
+   THE TOKEN SPLIT EARNS ITS KEEP AGAIN HERE
+
+     The month's available days are tinted with IDENTITY (Primo's blue) and
+     the Next button that advances the flow is ACTION (his amber, dark ink).
+     Two different jobs, two different tokens, on one screen. A single brand
+     colour would have made the whole calendar and the commit button the same
+     hue, and the eye would have nothing to land on.
+   ========================================================================= */
+
+:root {
+  --pp-ground:  #FBFAF7;
+  --pp-card:    #FFFFFF;
+  --pp-tint:    oklch(97% 0.008 262);
+  --pp-fg:      oklch(0.22 0.008 262);
+  --pp-muted:   oklch(0.50 0.010 262);
+  --pp-line:    oklch(0.22 0.008 262 / 13%);
+  --pp-blue:    #0D378D;
+  --pp-amber:   #E09A3C;
+  --pp-ink:     #17191F;
+
+  --sa-bg:            var(--pp-ground);
+  --sa-surface:       var(--pp-card);
+  --sa-surface-2:     oklch(94% 0.022 262);   /* the available-day tint     */
+  --sa-text:          var(--pp-fg);
+  --sa-muted:         var(--pp-muted);
+  --sa-border:        var(--pp-line);
+  --sa-identity:      var(--pp-blue);
+  --sa-identity-ink:  #FFFFFF;
+  --sa-action:        var(--pp-amber);
+  --sa-action-ink:    var(--pp-ink);
+  --sa-disabled:      oklch(0.68 0.006 262);
+  --sa-radius:        8px;
+  --sa-font:          "Geist", ui-sans-serif, system-ui, sans-serif;
+  --sa-font-mono:     "Geist Mono", ui-monospace, monospace;
+}
+
+/* --- a stand-in for the host page behind the modal --- */
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--pp-ground); color: var(--pp-fg);
+       font-family: "Geist", ui-sans-serif, system-ui, sans-serif; }
+.host-top { display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 40px; border-bottom: 1px solid var(--pp-line); background: #fff; }
+.host-logo { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; color: var(--pp-blue); }
+.host-nav { display: flex; gap: 24px; font-size: 14.5px; color: var(--pp-muted); align-items: center; }
+.host-book { background: var(--pp-amber); color: var(--pp-ink); font-weight: 700;
+             padding: 9px 18px; border-radius: 8px; font-size: 14.5px; }
+.host-hero { padding: 64px 40px; max-width: 780px; }
+.host-hero h1 { font-size: 44px; line-height: 1.07; letter-spacing: -0.03em; margin: 0 0 16px; color: var(--pp-blue); }
+.host-hero p { font-size: 18px; color: var(--pp-muted); margin: 0 0 28px; max-width: 52ch; }
+.host-cta { display: inline-block; background: var(--pp-amber); color: var(--pp-ink); font-weight: 700;
+            padding: 13px 26px; border-radius: 8px; font-size: 15.5px; }
+.host-note { font-family: "Geist Mono", monospace; font-size: 11px; color: var(--pp-muted);
+             background: var(--pp-tint); border-bottom: 1px solid var(--pp-line);
+             padding: 7px 40px; display: flex; gap: 16px; flex-wrap: wrap; }
+.host-note b { color: var(--pp-fg); }
+.host-note a { color: var(--pp-blue); }
+</style>
+</head>
+<body>
+
+<div class="host-note">
+  <b>MOCKUP</b>
+  <span>Layout B &middot; screen 1 of 2 &middot; pick a time</span>
+  <span><a href="modal-month-details.html">screen 2 &rarr;</a></span>
+  <span><a href="modal-primo.html">compare layout A</a></span>
+</div>
+
+<header class="host-top">
+  <div class="host-logo">PRIMO PAINTERS</div>
+  <nav class="host-nav"><span>Interior</span><span>Exterior</span><span>Projects</span><span>Reviews</span><a class="host-book" href="#">Book now</a></nav>
+</header>
+
+<section class="host-hero">
+  <h1>Calgary interior painters you can book today.</h1>
+  <p>Clean lines, clean site, done when we said. Free estimates across Calgary and the surrounding communities.</p>
+  <a class="host-cta" href="#">Get a free estimate</a>
+</section>
+
+<div class="sa-scrim">
+  <div class="sa-modal sa-modal--book" role="dialog" aria-modal="true" aria-labelledby="sa-h">
+    <div class="sa-book">
+
+      <!-- the rail. identical on screen 2, plus the chosen slot. -->
+      <aside class="sa-rail">
+        <button class="sa-rail-back" aria-label="Back to services">&#8249;</button>
+        <div>
+          <div class="sa-rail-host">Primo Painters</div>
+          <div class="sa-rail-event">Free estimate, interior</div>
+        </div>
+        <div class="sa-facts">
+          <div class="sa-fact"><span class="sa-fact-i">&#9201;</span><span>60 min</span></div>
+          <div class="sa-fact"><span class="sa-fact-i">&#128205;</span><span>At your home, anywhere in Calgary</span></div>
+        </div>
+        <p class="sa-rail-foot">No charge, no obligation.</p>
+      </aside>
+
+      <div class="sa-panel">
+        <h2 class="sa-panel-h" id="sa-h">Select a date &amp; time</h2>
+
+        <div class="sa-pick">
+
+          <div>
+            <div class="sa-mhead">
+              <span class="sa-mtitle">September 2026</span>
+              <div class="sa-mnav">
+                <button disabled aria-label="Previous month">&#8249;</button>
+                <button aria-label="Next month">&#8250;</button>
+              </div>
+            </div>
+
+            <div class="sa-dow">
+              <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span>
+              <span>Fri</span><span>Sat</span><span>Sun</span>
+            </div>
+
+            <div class="sa-month">
+              <span></span>
+              <div class="sa-dwrap"><button class="sa-d" disabled>1</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>2</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>3</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>4</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>5</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>6</button></div>
+
+              <div class="sa-dwrap"><button class="sa-d" disabled>7</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>8</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>9</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>10</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>11</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>12</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>13</button></div>
+
+              <div class="sa-dwrap"><button class="sa-d" disabled>14</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>15</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>16</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>17</button></div>
+              <div class="sa-dwrap" data-today="yes"><button class="sa-d" data-free="yes">18</button></div>
+              <div class="sa-dwrap"><button class="sa-d" data-free="yes">19</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>20</button></div>
+
+              <div class="sa-dwrap"><button class="sa-d" data-free="yes">21</button></div>
+              <div class="sa-dwrap"><button class="sa-d" data-free="yes">22</button></div>
+              <div class="sa-dwrap"><button class="sa-d" data-free="yes" aria-pressed="true">23</button></div>
+              <div class="sa-dwrap"><button class="sa-d" data-free="yes">24</button></div>
+              <div class="sa-dwrap"><button class="sa-d" data-free="yes">25</button></div>
+              <div class="sa-dwrap"><button class="sa-d" data-free="yes">26</button></div>
+              <div class="sa-dwrap"><button class="sa-d" disabled>27</button></div>
+
+              <div class="sa-dwrap"><button class="sa-d" data-free="yes">28</button></div>
+              <div class="sa-dwrap"><button class="sa-d" data-free="yes">29</button></div>
+              <div class="sa-dwrap"><button class="sa-d" data-free="yes">30</button></div>
+              <div class="sa-dwrap"><button class="sa-d" data-out="yes" disabled>1</button></div>
+              <div class="sa-dwrap"><button class="sa-d" data-out="yes" disabled>2</button></div>
+              <div class="sa-dwrap"><button class="sa-d" data-out="yes" disabled>3</button></div>
+              <div class="sa-dwrap"><button class="sa-d" data-out="yes" disabled>4</button></div>
+            </div>
+
+            <div class="sa-tz">
+              <span>&#127760;</span>
+              <select>
+                <option>Mountain Time, Canada (1:47 pm)</option>
+                <option>Pacific Time, Canada (12:47 pm)</option>
+                <option>Central Time, Canada (2:47 pm)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="sa-times">
+            <div class="sa-times-h">Wednesday 23 September</div>
+            <div class="sa-times-list">
+              <button class="sa-t">8:00 am</button>
+              <button class="sa-t" disabled>9:30 am</button>
+              <button class="sa-t" disabled>11:00 am</button>
+              <button class="sa-t">12:30 pm</button>
+
+              <!-- the chosen slot: what you picked, and a deliberate Next -->
+              <div class="sa-t-split">
+                <div class="sa-t-chosen">2:00 pm</div>
+                <a class="sa-t-next" href="modal-month-details.html">Next</a>
+              </div>
+
+              <button class="sa-t">3:30 pm</button>
+              <button class="sa-t" disabled>5:00 pm</button>
+              <button class="sa-t">6:30 pm</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

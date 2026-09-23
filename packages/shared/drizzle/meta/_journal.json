@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789835371470,
+      "tag": "0000_adopt_repo_one_tables",
+      "breakpoints": true
+    }
+  ]
+}

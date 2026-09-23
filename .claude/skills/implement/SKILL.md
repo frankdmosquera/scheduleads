@@ -33,6 +33,11 @@ contains the product contract and applicable conventions. Read one targeted
 section only when the spec explicitly depends on a missing detail. Read findings
 and review state once at the final handoff.
 
+This economy does not extend to the published build log. Its rule and URL are in
+`AGENTS.md`, which is always loaded, so skipping `ai-interaction.md` is no
+excuse for skipping the publish in step 6 of the build loop. Read
+`ai-interaction.md` when you need the page's markers or layout conventions.
+
 Inspect the implementation surface in one targeted, batched read before editing.
 Use one additional read batch only when an exact dependency remains unknown and
 blocks the next change. Do not list or survey the repository, inspect unrelated
@@ -72,6 +77,28 @@ For each step:
    error handling, accidental scope, and unrelated changes.
 5. Check the step box only after its code and focused check pass. Mark a repaired
    finding `fixed`, never `closed`.
+6. **Publish the build log before reporting the step in chat.** Everything for
+   this item lives in its own row on the roadmap in
+   `blueprint/context/project-log.html`; there is no per-feature view, so do not
+   create one. In that row: add the entry at the top of the **Log** drawer,
+   update the step's `<details>` inside the **Steps** drawer with its state and
+   its `Done when` result, close the finished step and open the next one, update
+   the gates and the step count, and move the sticky `.where` bar in the topbar
+   to the new current step. Then republish to the URL in the project's
+   `AGENTS.md`, passing it as `url`.
+   Never rewrite a closing step's planned pieces to match what happened. Mark
+   each one `kept`, `changed`, `added` or `dropped` with the reason for
+   anything that is not `kept`, and update the verdict counts. The drift is the
+   record; a plan silently edited into agreement with its outcome is not one.
+   The same row also says what bit: the wrong assumption, the inherited trap,
+   the check that proved nothing, the spec instruction that turned out wrong.
+   Write them unprompted and short. A step that closes claiming everything went
+   to plan is almost always a step whose problems went unrecorded. This is not optional
+   and not deferred to the end of the feature: the chat message reporting a step
+   describes what is already live. A checkpoint commit that closes a step
+   without this having happened is the rule already broken. Log decisions with
+   why the rejected option lost, open questions, and any real fault found and
+   repaired, not only completed steps.
 
 With `verification.logicTests: required`, any logic-bearing step stops and
 points to `/tests` when no test runner is configured. Its focused logic tests

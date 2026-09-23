@@ -45,9 +45,14 @@ the project root. In a monorepo these paths are relative to `frontend/`.
 
 `packages/shared` holds what both sides need: the Drizzle schema and
 migrations, the Zod schemas, the API contract (the Hono `AppType`) and the
-crypto. It exposes subpath exports that point at source files, no barrel,
-because the two workspaces disagree about extensions. Import from there rather
-than redeclaring a shape on either side.
+crypto. It compiles to `dist/` and its subpath exports point there, not at
+source. The two workspaces disagree about extensions - the backend's NodeNext
+resolution wants `./file.js` where the frontend's bundler wants none - and
+building the package sidesteps that instead of forcing one of them to bend.
+Both apps build it first through their own `predev` and `prebuild` hooks, so
+neither ever consumes it as TypeScript. Do not add an export that points at
+`src/`; it breaks both builds. Import from the package rather than redeclaring
+a shape on either side.
 
 ## Naming
 
@@ -66,7 +71,10 @@ than redeclaring a shape on either side.
   Radix. Older shadcn docs and snippets assume Radix internals and data
   attributes; read the installed component before copying one in
 - No inline styles
-- Dark mode first, light mode as option
+- Light by default, dark through an explicit `data-theme="dark"` on `<html>`.
+  No `prefers-color-scheme` and no third "system" state: the owner picks and
+  the choice sticks. This follows the mockups in `prototypes/`, and
+  `frontend/app/globals.css` explains it at the top
 
 ## Database
 
@@ -178,12 +186,23 @@ code and assuming it works.
 
 ## Comments
 
-Write code that explains itself; comment only what the code cannot say.
-Over-commenting is a common AI tell, so resist it.
+Write code that explains itself; comment only what the code cannot say. The
+test is not length, it is whether a reader could recover the sentence from the
+code alone. A comment restating the code is noise however short; a paragraph
+carrying a decision, a refused alternative or a trap is worth its space.
+
+This project deliberately keeps the reasoning next to the thing decided, and
+several files open with a block explaining why they exist and what was
+rejected. That is wanted. What is not wanted is narration of obvious code.
 
 - Comment the **why**, not the **what**. Delete any comment that restates the code.
-- No banner/header blocks, section dividers, or step-by-step narration of obvious
-  code. A file does not need a comment announcing each region.
+- A file-level block explaining a module's reason for existing, the option that
+  was rejected and the trap it avoids is encouraged. A comment announcing each
+  region of a file, or narrating the next three obvious lines, is not.
+- When a decision rests on how a dependency actually behaves, cite the file and
+  line you read it in. "Read off better-auth 1.7.5 `routes.mjs:103`" is worth
+  more than the same claim unsourced, and it tells the next upgrade what to
+  re-check.
 - A comment earns its place only when it captures something the code can't: a
   non-obvious decision, a gotcha or workaround, why a value is what it is, or a
   link to a spec or issue.

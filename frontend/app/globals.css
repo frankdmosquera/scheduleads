@@ -2,14 +2,58 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* ===========================================================================
+   THE THEME, PORTED FROM prototypes/theme.css
+   ===========================================================================
+
+   Two layers, in this order:
+
+   1. The Scheduleads tokens, copied from the mockups. These are the real
+      decisions: the indigo accent, the warm greys, the status colours.
+   2. shadcn's own names, defined as aliases of layer 1. The components in
+      components/ui/ are written against --primary, --border, --muted and
+      friends, so mapping rather than replacing keeps them working while
+      the palette becomes this product's.
+
+   Redefining layer 1 under [data-theme="dark"] is enough: layer 2 is all
+   var() references, so it follows automatically.
+
+   NO MEDIA QUERY, ON PURPOSE. theme.css is explicit that there is no
+   prefers-color-scheme here and no "system" third state. The owner picks,
+   the app remembers, and the choice does not flip under him because the
+   sun went down. Light is the default because :root is light; dark needs
+   data-theme="dark" written onto <html>.
+
+   Nothing writes that attribute yet - the toggle is shell chrome no step
+   of feature 1 asks for - so dark is currently reachable only by hand.
+   The tokens are here so the screen that adds the toggle has nothing to
+   decide.
+
+   The --sa-* widget token contract in theme.css is deliberately NOT here.
+   It is the booking widget's interface to a host site's colours, and the
+   widget arrives with build-plan item 2. Porting it now would define
+   tokens nothing reads.
+   =========================================================================== */
+
+@custom-variant dark (&:is([data-theme="dark"] *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+
+  /* The fonts are loaded by next/font in app/layout.tsx, which sets
+     --font-geist-sans and --font-geist-mono on <html>. Pointing at those
+     directly: the scaffolded version read `var(--font-sans)` from inside
+     its own definition of --font-sans, which is circular and resolves to
+     nothing.
+
+     Mono is not decoration. theme.css reserves it for anything the eye
+     compares down a column - times, money, durations, ids - because
+     tabular figures make a list scannable and proportional ones do not. */
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,6 +83,11 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* theme.css asks for 10 / 6 / 14. Derived from one --radius rather than
+     declared three times, because @theme already emits --radius-sm and
+     --radius-lg into :root and two definitions of the same name is a
+     collision waiting to be debugged. 10 * 0.6 = 6, and --radius-xl = 14. */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -46,75 +95,153 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Status is not accent. --won, --wait and --lost carry meaning and only
+     meaning: a green badge means booked, not "this is nice". */
+  --color-won: var(--won);
+  --color-won-soft: var(--won-soft);
+  --color-wait: var(--wait);
+  --color-wait-soft: var(--wait-soft);
+  --color-lost: var(--lost);
+  --color-lost-soft: var(--lost-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border-strong: var(--border-strong);
+  --color-faint: var(--faint);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* --- surfaces ------------------------------------------------------- */
+  --bg: oklch(0.985 0.003 95);          /* the page                        */
+  --surface: oklch(1 0 0);              /* cards, rows, the modal          */
+  --surface-2: oklch(0.962 0.004 95);   /* inputs, table heads, board lanes*/
+  --surface-3: oklch(0.935 0.005 95);   /* hover, pressed, drag ghost      */
+  --border: oklch(0.24 0.01 85 / 12%);  /* every rule and divider          */
+  --border-strong: oklch(0.24 0.01 85 / 22%);
+
+  /* --- text ----------------------------------------------------------- */
+  --text: oklch(0.24 0.012 80);         /* primary copy, headings          */
+  --muted-ink: oklch(0.50 0.012 85);    /* secondary, labels, meta         */
+  --faint: oklch(0.66 0.010 85);        /* hints, placeholders, disabled   */
+
+  /* --- accent --------------------------------------------------------- */
+  --accent-base: oklch(0.48 0.17 274);  /* primary action, focus, active   */
+  --accent-hover: oklch(0.43 0.17 274);
+  --accent-ink: oklch(0.99 0 0);        /* text ON accent                  */
+  --accent-soft: oklch(0.955 0.025 274);/* wash behind selection           */
+  --accent-line: oklch(0.48 0.17 274 / 38%);
+
+  /* --- status. meaning only, never emphasis --------------------------- */
+  --won: oklch(0.52 0.13 155);          /* booked, accepted, won           */
+  --won-soft: oklch(0.955 0.035 155);
+  --wait: oklch(0.58 0.12 75);          /* awaiting, pending, sent         */
+  --wait-soft: oklch(0.955 0.04 75);
+  --lost: oklch(0.55 0.17 22);          /* lost, declined, failed          */
+  --lost-soft: oklch(0.955 0.03 22);
+  --info: oklch(0.52 0.10 235);         /* neutral system note             */
+  --info-soft: oklch(0.955 0.025 235);
+
+  /* --- scale ---------------------------------------------------------- */
+  --radius: 10px;
+  --row: 56px;                          /* list row height. roomy on purpose */
+  --gut: 24px;                          /* the standard gutter               */
+
+  --shadow-sm: 0 1px 2px oklch(0.24 0.01 85 / 7%);
+  --shadow-md: 0 2px 4px oklch(0.24 0.01 85 / 6%), 0 8px 24px oklch(0.24 0.01 85 / 8%);
+  --shadow-lg: 0 8px 16px oklch(0.24 0.01 85 / 8%), 0 24px 56px oklch(0.24 0.01 85 / 14%);
+
+  /* --- shadcn's names, as aliases of the tokens above ------------------
+
+     Three of theme.css's names collide with shadcn's: --accent, --muted
+     and --border. shadcn means something different by the first two
+     (--accent is a hover wash, --muted a grey surface), so the theme
+     values are held as --accent-base and --muted-ink above and mapped
+     here. --border means the same thing on both sides, so it is shared.
+     -------------------------------------------------------------------- */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+
+  /* The one button you want clicked. Indigo, with its own ink: never
+     assume white on an accent, which is the trap theme.css calls out for
+     Primo's amber. */
+  --primary: var(--accent-base);
+  --primary-foreground: var(--accent-ink);
+
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--muted-ink);
+  --accent: var(--surface-3);
+  --accent-foreground: var(--text);
+  --destructive: var(--lost);
+  --input: var(--border);
+  --ring: var(--accent-base);
+
+  --chart-1: var(--accent-base);
+  --chart-2: var(--won);
+  --chart-3: var(--wait);
+  --chart-4: var(--lost);
+  --chart-5: var(--info);
+
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--accent-base);
+  --sidebar-primary-foreground: var(--accent-ink);
+  --sidebar-accent: var(--accent-soft);
+  --sidebar-accent-foreground: var(--accent-base);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--accent-base);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* ---------------------------------------------------------------------------
+   DARK
+
+   Not the light theme inverted. The surfaces carry a trace of the accent hue
+   (274) rather than being neutral charcoal, so the dark CRM reads as the same
+   product rather than a generic dark mode. The accent lifts to 0.68 lightness
+   because indigo-600 on a dark ground is a smudge, and its ink goes dark.
+
+   Status colours lift too. A 0.52 green on a 0.19 ground is unreadable.
+   --------------------------------------------------------------------------- */
+
+:root[data-theme="dark"] {
+  --bg: oklch(0.185 0.008 274);
+  --surface: oklch(0.225 0.010 274);
+  --surface-2: oklch(0.265 0.012 274);
+  --surface-3: oklch(0.310 0.014 274);
+  --border: oklch(1 0 0 / 11%);
+  --border-strong: oklch(1 0 0 / 20%);
+
+  --text: oklch(0.955 0.004 274);
+  --muted-ink: oklch(0.715 0.012 274);
+  --faint: oklch(0.545 0.012 274);
+
+  --accent-base: oklch(0.68 0.15 274);
+  --accent-hover: oklch(0.74 0.15 274);
+  --accent-ink: oklch(0.17 0.02 274);
+  --accent-soft: oklch(0.30 0.055 274);
+  --accent-line: oklch(0.68 0.15 274 / 45%);
+
+  --won: oklch(0.72 0.14 155);
+  --won-soft: oklch(0.29 0.05 155);
+  --wait: oklch(0.78 0.13 75);
+  --wait-soft: oklch(0.31 0.05 75);
+  --lost: oklch(0.70 0.15 22);
+  --lost-soft: oklch(0.30 0.06 22);
+  --info: oklch(0.72 0.11 235);
+  --info-soft: oklch(0.28 0.045 235);
+
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 40%);
+  --shadow-md: 0 2px 4px oklch(0 0 0 / 34%), 0 8px 24px oklch(0 0 0 / 40%);
+  --shadow-lg: 0 8px 16px oklch(0 0 0 / 40%), 0 24px 56px oklch(0 0 0 / 52%);
 }
 
 @layer base {

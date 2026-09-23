@@ -30,6 +30,57 @@ because the directory isn't empty.
 
 The workflow is defined by the local skills and context files below.
 
+## Settled architecture
+
+**Decided by Frank, 2026-09-19. Do not reopen these without him raising them
+first.** They are written here, in the file every session and every tool loads,
+precisely so nobody has to explain them again. If you think one is wrong, say
+so and give the reason; do not quietly build against a different shape.
+
+**One repo, two deploy units, permanently.** This is a monorepo, never a
+monolith and never a source of extraction:
+
+```
+scheduleads-app/          one git repo, one branch, one push
+  frontend/               Vercel builds this      -> the app
+  backend/                Railway builds this     -> the API
+  packages/shared/        both compile it in
+```
+
+Each platform is pointed at one folder through its **Root Directory** setting
+and ignores everything else. Both folders stay in the repo for good: they are
+the addresses the platforms build from, not development scaffolding. Deployed,
+the two are completely isolated apps on separate machines with separate URLs.
+Together in source, separate in production. Nothing is ever moved out.
+
+**Better Auth runs on the backend, not inside Next.** The session lives on the
+service that owns the data, so every authenticated route reads it directly.
+`better-auth` is a `backend` dependency; the frontend gets the same package
+later for `createAuthClient` only, which is a typed fetch wrapper. The secret
+and the database never reach Vercel.
+
+The load-bearing reason, so it is not relitigated on style: item 8 needs a
+background job runner for reminders, follow-ups and Google token refresh, and
+the build plan notes nothing else creates one. Vercel is serverless and has no
+persistent process, so an API living inside Next could not host it. Splitting
+later would cost a migration; splitting now costs one subdomain.
+
+**Type safety front to back is Hono RPC**, not tRPC: the backend exports
+`AppType`, the frontend uses `hc<AppType>` from `hono/client`, which ships with
+Hono. No extra dependency, no codegen. It is not wired yet and that is
+deliberate - feature 1's only frontend-to-backend traffic goes through the
+Better Auth client, which is already typed. It arrives at item 2 with the first
+real route, and must be **proved** there by breaking a route on purpose and
+confirming the frontend stops compiling. The first repo declared `AppType` and
+never consumed it once; do not inherit that claim unproven.
+
+**Environment variables.** One gitignored `.env` at the repo root in
+development, because both `backend` and `packages/shared` read it. In
+production there is no `.env` anywhere: Railway and Vercel inject their own.
+The frontend gets exactly one variable, `NEXT_PUBLIC_API_URL`, which is public
+by definition. Never put a secret in a `NEXT_PUBLIC_*` name, and never add a
+`backend/.env` - nothing loads it.
+
 ## Read these when relevant
 
 - `blueprint/config.json` - deterministic project workflow settings
@@ -130,7 +181,102 @@ Deployment is also explicit. `/release` can prepare local Render or Vercel confi
 and run readiness checks, but it must stop before deploy, remote service changes,
 push, or publish unless the user gives a separate yes in the current chat.
 
+## The published build log (Artifact)
+
+**Published at: https://claude.ai/artifact/R4QgeshVPpKB45BP67xQGF**
+
+Source: `blueprint/context/project-log.html`, tracked in the repo. The Artifact
+is that file published. It does not update itself and nothing regenerates it.
+Editing the file and republishing it to that URL is the only thing that moves
+it.
+
+Frank reads three places: the code, this page, and the chat. He does not read
+the files under `blueprint/`. A decision, risk or open question that lives only
+in `current-feature.md` has not been communicated to him. He opens the page
+first and reads status off it in seconds, so a stale page is worse than a
+missing update: he arrives holding a wrong model and plans from it.
+
+**The rule.** No build step is reported in chat, and no commit closes one, until
+the page is republished in the same turn. Order, every time:
+
+1. the step's own check passes
+2. tick the box in `blueprint/context/current-feature.md`
+3. add the entry at the top of that feature's timeline in
+   `project-log.html` and republish, passing the URL above as `url`
+4. offer or make the checkpoint commit
+5. only then report the step in chat
+
+`/feature` publishes the feature's group when it writes a spec, including each
+decision and why the rejected option was rejected. `/implement` publishes at
+every step. `/complete` publishes before the final commit.
+
+**The roadmap has to stand alone.** Someone reading only the Roadmap view, and
+opening nothing else, should know what is being built and what each step of it
+actually does. A step title is not that: "1.2 Better Auth on the Hono backend"
+names a thing without saying anything about it. So the item being built carries
+its steps inline on the roadmap, each one a `<details>` that opens into the same
+plan the chat got - what it does and why, its concrete pieces, and its
+`Done when`. Collapsed it stays a list you can scan; the current step is left
+`open`.
+
+**One item, one place.** There is no separate page per feature. Everything about
+the item being built lives in its own row on the roadmap, as collapsed
+`<details>` drawers under its title: **Steps** (open, the numbered steps with
+their plans and outcomes), **Why this item exists**, **Decisions**,
+**Contracts**, **Log**, **Notes**. Closed, the row is one line in a list of 28.
+Open, it is the whole record without leaving the page.
+
+The page therefore has two views and two buttons: **Roadmap**, which is home and
+what loads, and **The project**, the eight planning answers. It used to have a
+third view per feature, which meant the same steps were maintained in two places
+and silently drifted. Never reintroduce that. If something seems to belong in
+two places, one of them links to the other rather than restating it.
+
+**Plan first, then plan against reality.** A step is published with its plan
+before the work starts: what it does and why, its concrete pieces, its
+`Done when`. When it closes, that plan is **not rewritten to match what
+happened** - rewriting it hides the only interesting part. Each planned piece
+instead gets marked with what became of it, and the reason when it is not
+`kept`:
+
+| Mark | Means |
+|---|---|
+| `kept` | done as planned |
+| `changed` | done differently, with why |
+| `added` | not planned, with what forced it |
+| `dropped` | planned and abandoned, with why |
+
+A short verdict row carries the counts, so a reader sees the size of the drift
+before reading any of it.
+
+**And it says what bit.** Listing what got built reads like a plan that went
+perfectly, and none of them do. A closing step records the wrong assumption, the
+trap inherited from an older repo, the check that proved nothing, the spec
+instruction that turned out wrong. Short, with the reason, no drama and no
+padding. Keep these separate from the piece-level marks above: the marks say
+what changed, this says what it cost to find out. These are the part worth
+reading back in six months, and they are written whether or not anyone asks.
+
+**One numbering, everywhere.** Roadmap item N owns steps N.1 to N.k, so a step
+number always says which item it belongs to. Never number a feature's steps from
+1, and never put a bare count beside a numbered list: "2 done" next to items
+numbered 1, 2, 3 reads as "item 2 is done". Name the items instead, as in
+"Done 0a, 0b / Building 1 / To go 2 through 26".
+
+Republish by passing that URL as `url`. Publishing the path without it creates a
+separate artifact and orphans the real one.
+
+Fuller conventions, markers and page shape live in
+`blueprint/context/ai-interaction.md`. This section is duplicated here on
+purpose: the `feature` and `implement` skills both instruct the agent not to
+read that file, which is how the page went stale three times. Everything above
+has to survive without it.
+
 ## Dashboard activity
+
+This is **not** the build log above, and nothing in this project renders it. It
+is one line of machine state for a host that may display the running command.
+Writing it never substitutes for publishing the Artifact.
 
 The dashboard can show the active or most recent substantial Blueprint command
 from `blueprint/.state/run.json`. This file is generated local state, ignored by
@@ -226,9 +372,44 @@ scripts - every command targets one workspace explicitly.
 - Backend start (runs `dist/`): `npm run start --workspace=backend`
 - Frontend lint: `npm run lint --workspace=frontend`
 
+The frontend must get port 3000. The API trusts only that origin, and when
+another app already holds 3000, Next moves to 3001 without asking, collides
+with the API, and the sign-in page ends up sending its auth calls to itself.
+Starting the frontend also rebuilds `packages/shared`, which restarts the
+API's watcher, and that restart is the moment the port can be lost. Check that
+the frontend reports 3000 before signing in.
+
+Database, all from `packages/shared`, which owns the schema and the migration
+ledger:
+
+- Generate a migration from the schema: `npm run db:generate --workspace=@scheduleads-app/shared`
+- Apply pending migrations: `npm run db:migrate --workspace=@scheduleads-app/shared`
+- Seed the two development accounts: `npm run db:seed --workspace=@scheduleads-app/shared`
+- Browse the data: `npm run db:studio --workspace=@scheduleads-app/shared`
+
+Development runs against a local PostgreSQL 18, the same major version as
+Railway, in a database named `scheduleads_dev` on 127.0.0.1:5432, and `.env`
+points `DATABASE_URL` there. `db:migrate` builds a fresh one and `db:seed`
+makes it usable: it creates `admin@example.com`, the platform admin, and
+`owner@example.com`, an ordinary owner, each owning one business. Signup is
+closed, so without the seed a new database has no way in. Login codes print in
+the API's console. The seed refuses any database that is not on this machine
+or whose name does not end in `_dev`.
+
+Railway is reached only on purpose: open the tunnel with
+`railway connect Postgres --tunnel-only --port 5433`, leave it running, and
+switch the Railway `DATABASE_URL` line in `.env` back on. The tunnel also
+listens on localhost, which is why the seed checks the database name as well
+as the host.
+
+`drizzle.config.ts` loads the root `.env`. `db:generate` needs no database.
+Never generate a migration from `backend` or `frontend`: two workspaces
+generating against one database is how a migration ledger forks.
+
 No separate typecheck script: `next build` typechecks the frontend and the
-backend build is `tsc`. `packages/shared` has no scripts; both sides consume
-it as source.
+backend build is `tsc`. `packages/shared` compiles to `dist/` and both apps
+build it first through their own `predev` and `prebuild` hooks, so neither
+consumes it as TypeScript source.
 
 No unit test runner is configured, so no test gate applies. Run `/tests` to
 add one and record the real test command here. There is no `Verify` command

@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash 8aee16d5c79b79794afc8c6c37b64c290d97db0e55398c0cb7601b8c999e1ccb -->
+<!-- blueprint:source-hash 3e673de208c0c76379bb2db8e268cd25e1689db3d634bee28d7084c289c0f899 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -37,7 +37,8 @@ the-latam-painters (after its site is finished).
 
 ## Features
 
-Build-plan order. Items 1 to 3 are ports of the first repo's features 1 to 3.
+Build-plan order, 26 items. Items 1 to 3 are ports of the first repo's
+features 1 to 3.
 The headline feature is 5, booking creation: the first moment a stranger's
 booking becomes the business's lead.
 
@@ -47,7 +48,9 @@ booking becomes the business's lead.
    create-organization, the `admin` role, the auto-active-organization hook,
    and the package gate with the one rung `agency`.
 2. **Booking links and availability rules** - the two tables, the public read
-   route, the seed CLI, the shared-package layout.
+   route, the seed CLI, the shared-package layout. Also the typed RPC seam:
+   the backend exports `AppType`, the frontend consumes it with `hc<AppType>`,
+   proved by renaming a route and watching the frontend fail to compile.
 3. **Calendar connection** - encrypted Google OAuth, connect and disconnect,
    the provider seam, free/busy verified against a real event.
 4. **CRM spine** - `contact`, `pipeline_stage`, `resource`, `activity` and
@@ -57,33 +60,39 @@ booking becomes the business's lead.
 6. **Confirmations** - `.ics` email to the customer, notification to the
    business.
 7. **Self-serve cancel and reschedule** - tokenized link in the confirmation.
-8. **SMS confirmation** - Twilio. First to cut if Phase 2 runs long.
+8. **Scheduled messages** - the background job runner, the confirmation text
+   and the reminder the evening before. The runner is the load-bearing half:
+   nothing else in the plan creates one, and reminders, follow-ups and the
+   calendar token refresh all need it.
 9. **The booking component** - unstyled trigger, themed modal, one provider
-   per host, the face-and-body contract.
+   per host, the face-and-body contract, layout stored on the booking link.
 10. **Tenant zero wired: agents-web** - siteConfig slug, the contact seam
     calls the API, the site's theme reaches the modal.
 11. **Leads list and contact page** - every lead with its stage, the contact's
-    timeline.
-12. **Settings** - hours, services, resources, blackout dates, calendar.
+    timeline and open next steps, and adding a lead by hand.
+12. **Settings** - hours with several windows a day, services, resources,
+    blackout dates, statutory holidays, the booking horizon, the calendar.
 13. **Primo Painters** - the first paying client swaps Calendly for the modal.
 14. **Pipeline board** - drag and drop between stages the business names.
 15. **Email from the CRM** - templated sends via Resend, logged; BCC capture
     files replies on the contact.
-16. **Face and Body** - Cal.com out, 45 services in, practitioners as
+16. **Quotes** - line items, a total, and a tokenized link the customer opens
+    in the business's own theme to accept.
+17. **Face and Body** - Cal.com out, 45 services in, practitioners as
     resources.
-17. **The Latam Painters** - after its site is finished and its siteConfig
+18. **The Latam Painters** - after its site is finished and its siteConfig
     exists.
-18. **Crew and job scheduling** - jobs on resources across days.
-19. **Reports** - bookings per week, pipeline by stage, lead sources.
-20. **WhatsApp** - Meta verification, a number, approved templates.
-21. **Google OAuth verification** - calendar scopes, then Gmail's restricted
+19. **Crew and job scheduling** - jobs on resources across days.
+20. **Reports** - bookings per week, pipeline by stage, lead sources.
+21. **WhatsApp** - Meta verification, a number, approved templates.
+22. **Google OAuth verification** - calendar scopes, then Gmail's restricted
     scopes.
-22. **Packages ladder and the admin area** - rungs above `agency`, who is on
+23. **Packages ladder and the admin area** - rungs above `agency`, who is on
     what, move a client up.
-23. **Hosted booking page** - `/book/<slug>`.
-24. **Self-serve onboarding and billing** - Stripe hosted checkout, webhook
+24. **Hosted booking page** - `/book/<slug>`.
+25. **Self-serve onboarding and billing** - Stripe hosted checkout, webhook
     writes `organization.plan`.
-25. **Two-way Gmail sync** - after 21.
+26. **Two-way Gmail sync** - after 22.
 
 ## Data model
 
@@ -115,8 +124,12 @@ One per organization, enforced unique. Shared by every booking link.
 
 - `id`, `organizationId` (FK, unique)
 - `timezone` (IANA text)
-- `weeklyHours` (json: weekday to a list of `{ startMinute, endMinute }`)
+- `weeklyHours` (json: weekday to a list of `{ startMinute, endMinute }`).
+  Several windows a day is the normal case. Primo's live schedule is Sunday
+  daytime, three evenings, two early mornings and Saturday afternoon.
 - `minNoticeMinutes` (int), `bufferMinutes` (int)
+- `horizonDays` (int) - how far ahead a customer may book
+- `holidayCountry` (text, nullable) - statutory holidays resolved from it
 - `blackoutDates` (date[])
 
 ### calendar_connection
@@ -166,26 +179,50 @@ at a time; an organization with none behaves as one.
 - `resourceId` (FK resource, nullable until resources exist)
 - `startsAt`, `endsAt` (timestamptz)
 - `status` (text: `confirmed`, `cancelled`, `rescheduled`)
+- `location` (text) - the customer's own address, typed at booking. A trade
+  travels to the job, so this is required, not optional.
 - `calendarEventId` (text, nullable), `cancelToken` (text, unique)
 - `createdAt`
 
 ### activity
 
-The timeline. Every module writes here; the CRM screens read here.
+The timeline **and the next-step queue**. Every module writes here; the CRM
+screens read here. Two kinds of row in one table: most record something that
+already happened, while a row carrying `dueAt` is something still to do.
 
 - `id`, `organizationId` (FK), `contactId` (FK contact)
 - `type` (text: `booking_created`, `stage_changed`, `email_sent`,
-  `email_received`, `note`, `sms_sent`)
-- `payload` (json), `actorUserId` (FK user, nullable), `createdAt`
+  `email_received`, `note`, `sms_sent`, `call`, `task`)
+- `payload` (json), `actorUserId` (FK user, nullable)
+- `occurredAt` (timestamptz, nullable) - set on a thing that happened
+- `dueAt`, `doneAt` (timestamptz, nullable) - set on a thing still to do
+- `createdAt`
 
-### job (Phase 8)
+### quote (item 16)
+
+- `id`, `organizationId` (FK), `leadId` (FK lead)
+- `status` (text: `draft`, `sent`, `accepted`, `declined`, `expired`)
+- `currency` (text), `taxRate` (numeric), `subtotal`, `tax`, `total` (numeric)
+- `expiresOn` (date), `acceptToken` (text, unique), `openedCount` (int)
+- `sentAt`, `acceptedAt`, `createdAt`
+
+### quote_item
+
+- `id`, `quoteId` (FK quote), `position` (int)
+- `description` (text), `note` (text, nullable)
+- `quantity` (numeric), `unit` (text), `rate` (numeric), `amount` (numeric)
+
+### job (Phase 9)
 
 - `id`, `organizationId`, `leadId`, `resourceId`, `startsOn`, `endsOn`, `status`
 
 > **Locked.** Organization scope on every table. `availability_rule` is
 > org-scoped, not per booking link; per-resource hours come later on top of it.
 > Stages, resources and the timeline are tables from item 4 onward so later
-> modules never migrate an enum.
+> modules never migrate an enum. `activity` carries both what happened and
+> what is still owed, from item 4, so the next-step queue is never a second
+> table bolted on. The booking layout is a stored value on the booking link
+> from item 9, never a hardcoded shape.
 
 ## Tech stack
 
@@ -195,9 +232,10 @@ The timeline. Every module writes here; the CRM screens read here.
   Persistent Node: database pool and calendar token refresh live here.
 - **npm workspaces** - `frontend`, `backend`, `packages/shared` (Drizzle
   schema, migrations, Zod schemas, the Hono `AppType`, the crypto). Subpath
-  exports to source, no barrel.
-- **PostgreSQL + Drizzle** on Railway. Local access through the SSH tunnel;
-  when port 5433 listens but every query resets, kill the stale `ssh.exe`.
+  exports to the compiled `dist/`, no barrel.
+- **PostgreSQL + Drizzle** on Railway. Development uses a local PostgreSQL 18
+  seeded by `db:seed`; Railway only through its tunnel, on purpose. When port
+  5433 listens but every query resets, restart the tunnel.
 - **Better Auth** - `organization`, `emailOTP`, `admin` plugins. Codestash's
   config is the reference, owner role without `organization:delete`.
 - **Resend + React Email** - confirmations, `.ics`, notifications, CRM sends.
@@ -227,10 +265,16 @@ only reports it. Self-serve with Stripe hosted checkout and a webhook writing
 
 The widget is unstyled behaviour plus a themed modal: the trigger brings the
 action, the host site brings the look, and the modal never names its provider.
+The widget takes the Calendly shape: two screens, pick the time then answer
+the questions, with a rail carrying the business's logo, the service and the
+duration, gaining the chosen slot on screen two. The one-screen week strip is
+parked behind the stored layout value, not dropped.
+
 The login is the CRM with Pipedrive and Salesmate as the reference feel.
-Mockups come first, in item 0b. Frank's reference links (templates, blocks,
-Salesmate, Pipedrive, the Business Calendar app he schedules with) live in
-`blueprint/reference/links.md`.
+Mockups are done, in `prototypes/`, off one `theme.css`: deep indigo accent,
+roomy light default, an explicit light/dark toggle with no system setting.
+Reference links live in `blueprint/reference/links.md` and screenshots of
+Primo's live Calendly and of Pipedrive in `blueprint/reference/`.
 
 Frontend routes, final names decided at `/feature`:
 
@@ -275,12 +319,14 @@ API shape (`backend`), public routes keyed by organization slug:
 
 Carried from the plans, each with the moment it gets answered:
 
-- Whose Calendly has been receiving Latam's bookings. Before item 17.
+- Whose Calendly has been receiving Latam's bookings. Before item 18.
 - Browser-to-API or proxied through the host's server action. Phase 3.
-- Whether the clinic takes deposits at booking. At her onboarding, before 16.
+- Whether the clinic takes deposits at booking. At her onboarding, before 17.
 - Which analytics source feeds the visitor package. When that package exists.
 - What Primo needs on day one beyond booking and the leads list. Before 13.
 - The inbound path for the BCC capture address. Item 15's spec.
+- Which job runner carries item 8. A table-backed poller in the Hono process
+  is the cheap answer on Railway; decided in that item's spec.
 
 Plan-shape notes, not conflicts:
 
@@ -288,3 +334,6 @@ Plan-shape notes, not conflicts:
   Phase 0 exit gate and runs through `/prototype`; `/feature` should skip it.
 - Item 4 is data and routes only. It is deliberate: item 5 reads it the next
   day.
+- Item 8 carries a runner as well as two messages. It is the one item whose
+  hidden half other items depend on, so it should not be cut when Phase 2
+  runs long. Cut the WhatsApp item instead; it is already in Phase 8.

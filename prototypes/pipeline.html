@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline - Scheduleads</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+  .board { display: grid; grid-template-columns: repeat(5, minmax(210px, 1fr)); gap: 12px; align-items: start; }
+
+  .lane { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; }
+
+  .lane-top { display: flex; align-items: center; gap: 8px; padding: 2px 4px 11px; }
+  .lane-name { font-weight: 600; font-size: 13.5px; }
+  .lane-n { font-family: var(--font-mono); font-size: 11px; color: var(--faint);
+            background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 0 7px; }
+  .lane-sum { margin-left: auto; font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+              color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  /* The lane's own colour is a 3px cap, not a filled column. Five filled
+     columns would make the board read as five different apps. */
+  .lane-cap { height: 3px; border-radius: 2px; background: var(--faint); margin: -4px 0 10px; }
+  .lane[data-k="new"]    .lane-cap { background: var(--accent); }
+  .lane[data-k="talk"]   .lane-cap { background: var(--info); }
+  .lane[data-k="booked"] .lane-cap { background: var(--won); }
+  .lane[data-k="quote"]  .lane-cap { background: var(--wait); }
+  .lane[data-k="done"]   .lane-cap { background: var(--faint); }
+
+  .cards { display: flex; flex-direction: column; gap: 8px; min-height: 40px; }
+
+  .c {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 11px 12px;
+    box-shadow: var(--shadow-sm);
+    cursor: grab;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .c:hover { border-color: var(--border-strong); }
+
+  .c-top { display: flex; align-items: flex-start; gap: 8px; }
+  .c-name { font-weight: 600; font-size: 14px; line-height: 1.3; }
+  .c-job { font-size: 12.5px; color: var(--muted); }
+  .c-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .c-money { font-family: var(--font-mono); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .c-when { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); margin-left: auto; }
+
+  /* mid-drag: the card lifts and tilts, the hole it left stays visible */
+  .c--drag {
+    box-shadow: var(--shadow-lg);
+    transform: rotate(-1.6deg) scale(1.02);
+    border-color: var(--accent);
+    cursor: grabbing;
+    position: relative;
+    z-index: 3;
+  }
+
+  .ghost {
+    border: 1.5px dashed var(--accent-line);
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    min-height: 74px;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .hole { border: 1.5px dashed var(--border-strong); border-radius: var(--radius-sm); min-height: 74px; opacity: 0.55; }
+
+  .lane-add {
+    all: unset; cursor: pointer; display: block; text-align: center;
+    padding: 8px 0; margin-top: 8px; border-radius: var(--radius-sm);
+    font-size: 13px; color: var(--faint); border: 1px dashed var(--border-strong);
+  }
+  .lane-add:hover { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+
+  @media (max-width: 1240px) {
+    .board { grid-auto-flow: column; grid-auto-columns: 236px; grid-template-columns: none;
+             overflow-x: auto; padding-bottom: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="side">
+    <div class="org">
+      <div class="org-mark">PP</div>
+      <div><div class="org-name">Primo Painters</div><div class="org-plan">Plan &middot; agency</div></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-head">Work</div>
+      <a href="leads.html"><span class="ico">&#9776;</span>Leads<span class="count">8</span></a>
+      <a href="pipeline.html" aria-current="page"><span class="ico">&#9638;</span>Pipeline</a>
+      <a href="quote.html"><span class="ico">&#36;</span>Quotes<span class="count">3</span></a>
+      <a href="crew.html"><span class="ico">&#9635;</span>Crew</a>
+      <div class="nav-head" style="margin-top:14px">Setup</div>
+      <a href="settings.html"><span class="ico">&#9881;</span>Settings</a>
+    </nav>
+    <div class="side-foot">
+      <div class="toggle" role="group" aria-label="Theme">
+        <button data-t="light" aria-pressed="true">Light</button>
+        <button data-t="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="proto" style="margin: 0 calc(var(--gut) * -1) 0;">
+      <b>MOCKUP</b><span>Pipeline board, mid-drag</span><span>Stages are named by the business, not by us</span>
+    </div>
+
+    <div class="top">
+      <div>
+        <h1>Pipeline</h1>
+        <p class="sub">Drag a card to move it. These five stages are Primo's own names.</p>
+      </div>
+      <div style="display:flex; gap:9px">
+        <button class="btn btn--sm">Edit stages</button>
+        <button class="btn btn--primary btn--sm">+ Add a lead</button>
+      </div>
+    </div>
+
+    <div class="board">
+
+      <div class="lane" data-k="new">
+        <div class="lane-cap"></div>
+        <div class="lane-top"><span class="lane-name">New</span><span class="lane-n">2</span></div>
+        <div class="cards">
+          <div class="c">
+            <div class="c-top"><div class="av" style="width:26px;height:26px;font-size:10.5px">PR</div>
+              <div><div class="c-name">Priya Raghunathan</div><div class="c-job">Cabinet refinishing</div></div></div>
+            <div class="c-foot"><span class="tag">widget</span><span class="c-when">yesterday</span></div>
+          </div>
+          <div class="hole"></div>
+        </div>
+        <button class="lane-add">+ Add</button>
+      </div>
+
+      <div class="lane" data-k="talk">
+        <div class="lane-cap"></div>
+        <div class="lane-top"><span class="lane-name">Spoke to them</span><span class="lane-n">2</span></div>
+        <div class="cards">
+          <div class="ghost">Drop here</div>
+          <div class="c">
+            <div class="c-top"><div class="av" style="width:26px;height:26px;font-size:10.5px">CB</div>
+              <div><div class="c-name">Colleen Brar</div><div class="c-job">Interior, 3 rooms</div></div></div>
+            <div class="c-foot"><span class="tag">phone</span><span class="c-when">Mon 14</span></div>
+          </div>
+        </div>
+        <button class="lane-add">+ Add</button>
+      </div>
+
+      <div class="lane" data-k="booked">
+        <div class="lane-cap"></div>
+        <div class="lane-top"><span class="lane-name">Estimate booked</span><span class="lane-n">2</span></div>
+        <div class="cards">
+          <div class="c">
+            <div class="c-top"><div class="av" style="width:26px;height:26px;font-size:10.5px">MK</div>
+              <div><div class="c-name">Marta Kowalczyk</div><div class="c-job">Free estimate, interior</div></div></div>
+            <div class="c-foot"><span class="badge badge--won badge--plain" style="font-size:10.5px">Crew A</span><span class="c-when">Wed 23, 2:00 pm</span></div>
+          </div>
+          <div class="c">
+            <div class="c-top"><div class="av" style="width:26px;height:26px;font-size:10.5px">SL</div>
+              <div><div class="c-name">Stefan Lindqvist</div><div class="c-job">Free estimate, interior</div></div></div>
+            <div class="c-foot"><span class="badge badge--won badge--plain" style="font-size:10.5px">Crew B</span><span class="c-when">Thu 24, 9:00 am</span></div>
+          </div>
+        </div>
+        <button class="lane-add">+ Add</button>
+      </div>
+
+      <div class="lane" data-k="quote">
+        <div class="lane-cap"></div>
+        <div class="lane-top"><span class="lane-name">Quote out</span><span class="lane-n">3</span><span class="lane-sum">$11,240</span></div>
+        <div class="cards">
+          <!-- the card in the hand -->
+          <div class="c c--drag">
+            <div class="c-top"><div class="av" style="width:26px;height:26px;font-size:10.5px">DO</div>
+              <div><div class="c-name">Dwayne Okafor</div><div class="c-job">Exterior repaint</div></div></div>
+            <div class="c-foot"><span class="c-money">$4,820</span><span class="badge badge--wait badge--plain" style="font-size:10.5px">sent Mon</span></div>
+          </div>
+          <div class="c">
+            <div class="c-top"><div class="av" style="width:26px;height:26px;font-size:10.5px">HV</div>
+              <div><div class="c-name">Hannah Vogel</div><div class="c-job">Basement, full</div></div></div>
+            <div class="c-foot"><span class="c-money">$3,900</span><span class="c-when">4 days</span></div>
+          </div>
+          <div class="c">
+            <div class="c-top"><div class="av" style="width:26px;height:26px;font-size:10.5px">RM</div>
+              <div><div class="c-name">Rashid Mansour</div><div class="c-job">Garage and trim</div></div></div>
+            <div class="c-foot"><span class="c-money">$2,520</span><span class="c-when">6 days</span></div>
+          </div>
+        </div>
+        <button class="lane-add">+ Add</button>
+      </div>
+
+      <div class="lane" data-k="done">
+        <div class="lane-cap"></div>
+        <div class="lane-top"><span class="lane-name">Done &amp; paid</span><span class="lane-n">2</span><span class="lane-sum">$8,910</span></div>
+        <div class="cards">
+          <div class="c">
+            <div class="c-top"><div class="av" style="width:26px;height:26px;font-size:10.5px">AN</div>
+              <div><div class="c-name">Amara Nwosu</div><div class="c-job">Fence staining</div></div></div>
+            <div class="c-foot"><span class="c-money">$1,340</span><span class="c-when">Wed 16</span></div>
+          </div>
+          <div class="c">
+            <div class="c-top"><div class="av" style="width:26px;height:26px;font-size:10.5px">GD</div>
+              <div><div class="c-name">Gwen Delacroix</div><div class="c-job">Two bedrooms</div></div></div>
+            <div class="c-foot"><span class="c-money">$1,180</span><span class="c-when">Tue 15</span></div>
+          </div>
+        </div>
+        <button class="lane-add">+ Add</button>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+  var btns = document.querySelectorAll('.toggle button');
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.t === t)); });
+    try { localStorage.setItem('sa-theme', t); } catch (e) {}
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { setTheme(b.dataset.t); }); });
+  try { var s = localStorage.getItem('sa-theme'); if (s) setTheme(s); } catch (e) {}
+</script>
+
+</body>
+</html>

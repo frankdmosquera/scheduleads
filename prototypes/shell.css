@@ -1,0 +1,369 @@
+/* ===========================================================================
+   MOCKUP CHROME - THROWAWAY
+   ===========================================================================
+
+   The sidebar, buttons, badges and tables the six CRM mockups share. This
+   file exists so the shell is not copy-pasted into six HTML files and then
+   drift apart; it is NOT the deliverable and does not get ported anywhere.
+   The real app builds these with shadcn components.
+
+   theme.css is the deliverable. This is scaffolding around it.
+
+   Every value here comes from a theme.css token. If you find a hex code in
+   this file, it is a bug.
+   =========================================================================== */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-underline-offset: 2px; }
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- app shell ---------- */
+
+.app {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.side {
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.org {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.org:hover { background: var(--surface-2); }
+
+.org-mark {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 13px;
+  flex: none;
+}
+
+.org-name { font-weight: 600; font-size: 14.5px; line-height: 1.2; }
+.org-plan { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+
+.nav { display: flex; flex-direction: column; gap: 1px; }
+
+.nav-head {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding: 0 8px 8px;
+}
+
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 9px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14.5px;
+}
+
+.nav a:hover { background: var(--surface-2); color: var(--text); }
+
+.nav a[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.nav .ico { width: 16px; text-align: center; opacity: 0.85; flex: none; }
+.nav .count { margin-left: auto; font-family: var(--font-mono); font-size: 11.5px; color: var(--faint); }
+
+.side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+
+/* the toggle. explicit, two states, no system option */
+.toggle {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.toggle button {
+  all: unset;
+  flex: 1;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.toggle button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+}
+
+/* ---------- main ---------- */
+
+main { min-width: 0; padding: 0 var(--gut) 72px; }
+
+.top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 30px 0 22px;
+}
+
+h1 { font-size: 27px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+.sub { color: var(--muted); font-size: 14.5px; margin: 5px 0 0; }
+
+h2 {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin: 0;
+}
+
+/* ---------- buttons ---------- */
+
+.btn {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:hover { background: var(--surface-2); }
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.btn--primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn--ghost { border-color: transparent; background: transparent; color: var(--muted); }
+.btn--ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn--sm { padding: 5px 10px; font-size: 13px; }
+.btn--danger { color: var(--lost); border-color: var(--lost-soft); }
+
+/* ---------- badges ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2.5px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.badge--won  { background: var(--won-soft);  color: var(--won); }
+.badge--wait { background: var(--wait-soft); color: var(--wait); }
+.badge--lost { background: var(--lost-soft); color: var(--lost); }
+.badge--info { background: var(--info-soft); color: var(--info); }
+.badge--accent { background: var(--accent-soft); color: var(--accent); }
+
+.badge::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.badge--plain::before { display: none; }
+
+/* source tags read as metadata, not status */
+.tag {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--faint);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+/* ---------- card ---------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-body { padding: 18px; }
+
+/* ---------- avatar ---------- */
+
+.av {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--muted);
+  display: grid; place-items: center;
+  font-size: 12.5px; font-weight: 700;
+  flex: none;
+}
+
+/* ---------- toolbar ---------- */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+}
+
+.search {
+  flex: 1;
+  min-width: 190px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  color: var(--faint);
+  font-size: 14px;
+}
+
+.field {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 11px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  width: 100%;
+}
+
+.field::placeholder { color: var(--faint); }
+.field:focus { outline: 2px solid var(--accent-line); outline-offset: 1px; border-color: var(--accent); }
+
+.label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* ---------- notice ---------- */
+
+.notice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 13px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--wait);
+  background: var(--surface);
+  font-size: 14px;
+}
+
+.notice--lost { border-left-color: var(--lost); }
+.notice-title { font-weight: 600; margin-bottom: 2px; }
+.notice p { margin: 0; color: var(--muted); }
+
+/* ---------- the mockup banner ---------- */
+
+.proto {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--faint);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  padding: 7px var(--gut);
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.proto b { color: var(--muted); font-weight: 600; }
+
+@media (max-width: 1000px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; height: auto; flex-direction: row; align-items: center; flex-wrap: wrap; }
+  .side-foot { margin: 0; }
+  .nav { flex-direction: row; flex-wrap: wrap; }
+  .nav-head { display: none; }
+}

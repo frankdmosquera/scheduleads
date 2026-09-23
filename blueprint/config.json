@@ -13,10 +13,13 @@
     "logicTests": "when-configured",
     "uiEvidence": "when-available"
   },
+  "review": {
+    "independentExecution": "automatic"
+  },
   "qualityGates": {
     "regular": {
-      "audit": "manual",
-      "independentReview": "manual",
+      "audit": "always",
+      "independentReview": "always",
       "check": "manual",
       "tryGuide": "manual"
     },
