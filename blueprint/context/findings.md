@@ -7,7 +7,7 @@
 > finding is `open` or `fixed`, then archives resolved findings with the work
 > and resets this file.
 
-### F-01 [P1] fixed - Migration 0000 has no snapshot, so the next `db:generate` recreates all seven tables
+### F-01 [P1] closed - Migration 0000 has no snapshot, so the next `db:generate` recreates all seven tables
 
 **File:** packages/shared/drizzle/meta/_journal.json:1
 **Found:** 2026-09-22 by /audit (scope: current; lens: quality)
@@ -50,7 +50,19 @@ tables, `organization.plan` with its `'agency'` default, and the
 emitted seven bare `CREATE TABLE` statements. No stray migration file was
 produced.
 
-### F-02 [P2] fixed - The one shared refusal shape cannot be reused, so two of four refusal sites hand-roll it
+Closed 2026-09-23 by the second independent review, which tested the claim
+rather than accepting it. `packages/shared/drizzle/meta/0000_snapshot.json` is
+present, 15,341 bytes, `prevId` all zeros, version 7. Ran the real
+`npm run db:generate --workspace=@scheduleads-app/shared`: exit 0, output
+"No schema changes, nothing to migrate", and drizzle-kit's own summary confirms
+the snapshot it read describes the current schema (`organization 7 columns`,
+`member 5 columns 1 indexes`). Recorded the SHA-256 of all three files under
+`drizzle/` before and after the run; none changed and no new file appeared, so
+the generate really is a no-op rather than a quiet write. The repair holds. A
+separate and distinct gap in the same ledger is recorded as F-06: a correct
+snapshot still does not let the ledger create the schema from nothing.
+
+### F-02 [P2] closed - The one shared refusal shape cannot be reused, so two of four refusal sites hand-roll it
 
 **File:** backend/src/lib/active-organization.ts:41
 **Found:** 2026-09-22 by /audit (scope: current; lens: quality)
@@ -86,6 +98,21 @@ flipping a live organization to an unrecognised plan returns 403
 `plan_required` with the shared shape, then 200 again once restored. The
 shared-package move stays out of scope, as the finding suggests.
 
+Closed 2026-09-23 by the second independent review. `refuse` is exported at
+`active-organization.ts:58`, `RefusalCode` is a named four-member union at lines
+34 to 42, and a search for a bare `error:` object literal across `backend/src`
+returns only the `Refusal` type declaration and the helper's own body, so no
+call site builds the object by hand any more. All four refusal sites go through
+the helper: `index.ts:74`, `active-organization.ts:144`,
+`active-organization.ts:192` and `plan-gate.ts:50`. The backend build passes and
+unauthenticated `GET /me` against the running API answers 401 with the shared
+shape. One caveat recorded rather than reopened: the shape covers this API's own
+routes only. Better Auth owns `/api/auth/*` and answers with its own message and
+code shape, confirmed live against `/api/auth/organization/list`, so the
+description at `frontend/lib/api.ts:40` of a shape the API "reuses everywhere"
+overstates its reach. Harmless today, because `/me` is the only route that
+helper parses.
+
 ### F-03 [P2] open - `GET /me` resolves the session three times and reads the same organization row twice
 
 **File:** backend/src/lib/active-organization.ts:130
@@ -115,9 +142,17 @@ membership query already in that file instead of going through
 `auth.api.getActiveMember`. Separately, let `requireModule` select `plan`,
 `name` and `slug` in its one query and put the row on the context for the
 handler to read.
-**Resolution:**
+**Resolution:** Re-confirmed 2026-09-23 by the second independent review and
+left `open`, unchanged. All of it is still there: the three session resolutions
+at `active-organization.ts:142`, `active-organization.ts:80` and inside
+`auth.api.getActiveMember`, no `session.cookieCache` in `auth.ts`, and the
+organization row read twice at `plan-gate.ts:39` and `index.ts:62`. The repair
+commit deliberately left it, recording that the cookie cache keeps a revoked
+session alive for the cache window and is therefore a decision rather than a
+cleanup. That reasoning is sound, and the suggested fix above needs no cookie
+cache to work. P2, so it does not block the merge.
 
-### F-04 [P3] fixed - The spec ticks step 1 including `transpilePackages`, which was deliberately dropped
+### F-04 [P3] closed - The spec ticks step 1 including `transpilePackages`, which was deliberately dropped
 
 **File:** blueprint/context/current-feature.md:96
 **Found:** 2026-09-22 by /audit (scope: current; lens: quality)
@@ -143,3 +178,312 @@ nothing), that `frontend/next.config.ts` is therefore untouched scaffold, and
 that the build log carried it at the time while the preamble did not. Note
 this changes the spec bytes, so the review receipt's spec hash no longer
 matches and a fresh review is required regardless.
+
+Closed 2026-09-23 by the second independent review. The third bullet is present
+at `current-feature.md:22-27` and says all of that. Confirmed the state it
+describes rather than the claim: `frontend/next.config.ts` is seven lines of
+untouched scaffold with no `transpilePackages`, and both workspace builds pass
+without it, so the dropped setting genuinely does nothing. The specific gap this
+finding named is gone. Two other spec-to-reality gaps survived the amendment and
+are recorded separately as F-10 rather than keeping this entry open.
+
+### F-05 [P1] fixed - Any email address can create an account and unlimited tenants on the `agency` rung
+
+**File:** backend/src/lib/auth.ts:110
+**Found:** 2026-09-23 by /audit (scope: current; lens: security)
+**Why it matters:** This feature's stated Goal is that it "decides where the
+trusted actor comes from" and that "the boundary it draws is the one the product
+keeps". The boundary it draws admits anyone.
+
+Three permissive defaults are left untouched, each read off the installed
+better-auth 1.7.5 rather than assumed:
+
+- `emailOTP` is configured without `disableSignUp`. `routes.mjs:102` computes
+  `shouldSendOTP` as `type === "sign-in" && !opts.disableSignUp`, and
+  `routes.mjs:412` refuses account creation only when `disableSignUp` is set. So
+  a `sign-in` code is issued for an address that has no account, and verifying
+  it creates the user.
+- The `organization` plugin is configured without
+  `allowUserToCreateOrganization`. `crud-org.mjs:56` resolves an undefined
+  option to `true`, so every authenticated user may create an organization.
+- `organizationLimit` is also unset. `crud-org.mjs:61` evaluates the whole cap
+  expression to `false` when the option is absent, so there is no per-user
+  ceiling either.
+
+New organizations take `plan: "agency"` from the `defaultValue` at
+`auth.ts:135`, and `plan-limits.ts:31` gives `agency` both `booking` and `crm`.
+The reachable path is therefore: a stranger requests a code for any address they
+control, verifies it, gets a user row, then posts to
+`/api/auth/organization/create` as many times as they like, each one a tenant on
+the paid rung.
+
+That contradicts a written product decision, not a matter of taste.
+`project-overview.md:254` says "Agency-provisioned first ... Frank creates the
+organization and bills as the agency"; `project-overview.md:32` puts the
+self-serve customer in Phase 9; `build-plan.md:189` is item 25, "Self-serve
+onboarding and billing - signup, pick a package". `AGENTS.md:16` says the same
+thing with a different phase number. Nothing anywhere asks for open signup now.
+
+**The timing is the dangerous part.** It is not exploitable in production today,
+because `send-login-code.ts:30` throws in production, so no code is ever issued
+there and nobody can sign in at all. It becomes exploitable the moment
+build-plan item 6 swaps Resend into that seam, with no other change. Item 6's
+charter is transactional email; nobody working it will be looking at signup
+policy, and the spec itself describes that step as the send seam being
+"swapped". A guard that has to be remembered during an unrelated item is a guard
+that will not be there.
+
+**Suggested fix:** Two options on the `betterAuth` call in
+`backend/src/lib/auth.ts`, one line each. On `emailOTP`, set
+`disableSignUp: true` if only existing users should ever sign in. On
+`organization`, set `allowUserToCreateOrganization` to a function that returns
+true only for the platform admin until item 25 relaxes it, and set
+`organizationLimit` to a real number. Whichever is chosen, say so at the
+declaration, because the next reader will assume the permissive default was
+deliberate. If Frank decides the risk window is acceptable and the guard belongs
+to item 6 or item 25, that is his call to record as `accepted` with the reason;
+it should not be closed silently.
+
+**Resolution:** Fixed 2026-09-22 in `3030ef0`, partially, and the rest
+deliberately deferred rather than silently dropped. The finding named three
+permissive defaults; they did not all deserve the same answer.
+
+- `allowUserToCreateOrganization` is now a function returning true only when
+  `user.role === "admin"`, at `backend/src/lib/auth.ts:136`, with the reason
+  written at the declaration as the finding asked. This is the half that was
+  actually a hole: it is what stood between a stranger and an unlimited supply
+  of `agency`-rung tenants. The commit records a live proof, signed in as a
+  non-admin through the app and posting to `organization/create`: 403
+  `YOU_ARE_NOT_ALLOWED_TO_CREATE_A_NEW_ORGANIZATION`, organization count
+  unchanged afterwards.
+- `disableSignUp` is now set, 2026-09-23, a day after the first half. It was
+  briefly left open on the argument that a client being onboarded needs to
+  sign in and has no user row yet. That is true in general and was wrong here:
+  it assumed someone was mid-onboarding, and nobody is. Every user who needs
+  to sign in today already exists, so the door had no legitimate user at all,
+  while it did have a cost - this API could be made to send mail to any
+  address a stranger named, which is what item 6 turns real by putting Resend
+  behind the send seam. Existing users are unaffected, verified against
+  `routes.mjs:103`, which short-circuits only when `findUserByEmail` comes
+  back empty. The deliberate consequence is that a new client now cannot get
+  in at all without the agency, which is what build-plan item 3b exists to
+  provide.
+- `organizationLimit` is still unset and is now moot. It caps organizations
+  per user, and the only user who may create one is the platform admin, so the
+  cap would only ever restrain Frank. Left off deliberately; if item 25 ever
+  reopens creation to ordinary users it has to come back in the same edit.
+
+Verified beyond the commit's own claim, against the installed better-auth
+1.7.5 source rather than its docs. `crud-org.mjs:57` resolves the option and
+refuses when it returns false. Two bypasses were checked and neither is
+reachable over HTTP: a signed-in non-admin cannot impersonate by putting
+`userId` in the body, because `user` is taken from the session and the
+permission check runs against them (`crud-org.mjs:48-55`); and the
+`isSystemAction` escape at `crud-org.mjs:57-58`, which does skip the check,
+sits behind `if (!session && (ctx.request || ctx.headers)) throw UNAUTHORIZED`
+at `crud-org.mjs:47`, and both of those are always present on an HTTP call.
+That escape exists for direct server-side `auth.api` calls with no headers,
+which nothing in this codebase makes today. Worth carrying into item 3b: it is
+the sanctioned provisioning path, and it is also the one place a later
+server-side caller could create an organization without the admin check, so
+that item should say so where it uses it.
+
+Not re-proved at runtime in this pass: the dev API was not running and
+bringing it up needs the Railway SSH tunnel. The live 403 recorded above is
+the builder's, from the fix commit. An independent review pass should re-run
+it before moving this to `closed`.
+
+### F-06 [P2] open - The migration ledger can only alter tables, so `db:migrate` fails on any fresh database
+
+**File:** packages/shared/drizzle/0000_adopt_repo_one_tables.sql:15
+**Found:** 2026-09-23 by /audit (scope: current; lens: quality)
+**Why it matters:** Migration 0000 is entirely `ALTER TABLE` plus one
+`CREATE UNIQUE INDEX`. There is no `CREATE TABLE` anywhere under
+`packages/shared/drizzle/`. Postgres applies `ADD COLUMN IF NOT EXISTS` to the
+column, never to the table, so line 15's `ALTER TABLE "user" ADD COLUMN IF NOT
+EXISTS "role" text` errors with `relation "user" does not exist` against an
+empty database, and the migration aborts on its first statement.
+
+Adopting the first repo's tables instead of recreating them was the right call
+for the one database that exists, and F-01's snapshot now makes the ledger diff
+correctly going forward. This is the other half of the same gap: the ledger can
+evolve that database but can never produce it. There is no sanctioned substitute
+either, because `coding-standards.md` forbids `drizzle-kit push` against
+anything but a local scratch database.
+
+`AGENTS.md:379` records `db:migrate` as how this project applies schema, and
+this fires the first time anyone stands up a staging database, a CI database, or
+a replacement Railway instance. Deployment is the next thing after this feature:
+the spec's own Open questions leave Render versus Railway to `/release`.
+
+Not reproduced against a real empty database, because this review may not create
+one or modify any row. The conclusion is read off the SQL and Postgres's
+documented behaviour for `ADD COLUMN IF NOT EXISTS`, which is unambiguous.
+
+**Suggested fix:** Nothing in migration 0000 should change; it is applied. Add
+`0001` as the bootstrap instead, generated from the current schema into a
+throwaway folder so it is the seven `CREATE TABLE IF NOT EXISTS` statements plus
+their constraints, then hand-checked so it is a no-op against the live database
+and a full create against an empty one. Confirm both directions before
+committing, and say at the top of the file that it exists because 0000 adopts
+rather than creates.
+
+**Resolution:**
+
+### F-07 [P2] open - `/me` refuses any rung that lacks `crm` and tells the user their plan is unrecognized
+
+**File:** backend/src/index.ts:53
+**Found:** 2026-09-23 by /audit (scope: current; lens: quality)
+**Why it matters:** The rule the code says it implements and the rule it
+implements are different rules.
+
+Stated in three places: `index.ts:46` says "A business on a rung nothing
+recognises is misconfigured and has no working product"; the spec's Notes for
+the AI say "An organization on an unrecognized rung is misconfigured ... so the
+dashboard refuses rather than rendering empty"; and the dashboard copy at
+`frontend/app/page.tsx:77` tells the user "Your business is on a plan this
+dashboard does not recognise".
+
+Implemented: `requireModule("crm")`, which refuses whenever the resolved limits
+do not include `crm`, recognized or not.
+
+Today the two coincide, because `agency` is the only rung and it carries both
+modules. Build-plan item 23 is "the rungs above `agency` in the plan-limits
+config, what each unlocks", and `project-overview.md:255` says "each rung
+unlocks modules through the plan-limits config". The first rung that unlocks
+`booking` without `crm`, which is the obvious shape of a cheaper booking-only
+tier, locks that tenant out of the dashboard entirely and shows them a sentence
+that is false: their plan is recognized, it just does not include the CRM.
+`index.ts:53` is also the middleware stack item 2 onward copies, so the
+conflation propagates rather than staying here.
+
+**Suggested fix:** Decide which rule is wanted and make one of the two match.
+Either gate `/me` on the rung being recognized rather than on a module, letting
+the dashboard render whatever the plan does include, or keep the `crm` gate and
+rewrite the three comments and the user-facing sentence to say what it actually
+does. In either case the frontend refusal should render the API's own message,
+which it already receives at `api.ts:84`, rather than asserting a cause.
+
+**Resolution:**
+
+### F-08 [P2] open - `APP_ORIGIN` and `BETTER_AUTH_URL` fall back to localhost in production instead of refusing to boot
+
+**File:** backend/src/index.ts:27
+**Found:** 2026-09-23 by /audit (scope: current; lens: security)
+**Why it matters:** `backend/src/index.ts:27` and `backend/src/lib/auth.ts:36`
+both default `APP_ORIGIN` to `http://localhost:3000`, and `auth.ts:74` defaults
+`BETTER_AUTH_URL` to `http://localhost:3001`. That value becomes the single
+credentialed CORS origin (`index.ts:29-34`) and Better Auth's only trusted
+origin (`auth.ts:89`). A production deploy that misses the variable therefore
+grants `http://localhost:3000` the right to send credentials to the live API,
+which is narrow but real: anything the victim runs on that port could call the
+API with their session attached.
+
+The same two files throw for `BETTER_AUTH_SECRET` (`auth.ts:27`) and
+`DATABASE_URL` (`database.ts:16`), so the pattern here is inconsistent as well
+as fail-open. `frontend/lib/auth-client.ts:29-42` argues carefully for its own
+fallback, and that argument is specific to `NEXT_PUBLIC_*` values being inlined
+at build time. Neither backend variable is inlined; both are read at runtime,
+where a throw is a failed boot rather than a failed local build.
+
+Recorded honestly: the blast radius is limited, because a production deploy
+missing `APP_ORIGIN` is also a broken deploy. `trustedOrigins` would reject the
+real dashboard origin, so the app would not work and the mistake would be
+noticed. The finding is the direction of the failure, not a live exposure. CORS
+itself is correctly scoped today: a request carrying an unlisted Origin gets no
+`Access-Control-Allow-Origin` header back, verified against the running API.
+
+**Suggested fix:** Throw for both when `NODE_ENV === "production"`, beside the
+two checks that already do, and keep the localhost default for development only.
+`/release` owns deployment readiness and is a natural second place to check them,
+but a check in the code is what makes the boot fail rather than the review.
+
+**Resolution:**
+
+### F-09 [P2] open - `coding-standards.md` now contradicts the shipped code in three places
+
+**File:** blueprint/context/coding-standards.md:52
+**Found:** 2026-09-23 by /audit (scope: current; lens: quality)
+**Why it matters:** `AGENTS.md` lists this file as "read before changing code".
+Feature 1 made three of its statements false and none was updated, so the next
+agent that obeys it will undo a deliberate decision.
+
+- The `packages/shared` paragraph says the package "exposes subpath exports that
+  point at source files, no barrel". They point at `dist/`
+  (`packages/shared/package.json:6-19`), and `AGENTS.md:387` now states the
+  opposite of the standard: "`packages/shared` compiles to `dist/` and both apps
+  build it first". An agent following the standard would add a source-pointing
+  export and break both builds.
+- Styling says "Dark mode first, light mode as option". `frontend/app/globals.css`
+  ports the mockups' explicit decision, which is light by default with dark
+  reachable only through `data-theme="dark"`, and says so at length.
+- Comments says "No banner/header blocks, section dividers, or step-by-step
+  narration" and "Over-commenting is a common AI tell, so resist it". Every new
+  file in this feature opens with a header block, `globals.css` uses long rules
+  of equals signs as section dividers, and `backend/src/lib/send-login-code.ts`
+  is 17 lines of comment above 18 lines of code.
+
+The comments are not the problem: they carry the reasoning this project
+deliberately keeps, and the spec's Notes for the AI ask for exactly that. The
+problem is a standards file that forbids what the project has decided to do,
+which is the two-levels-contradicting failure the workspace `CLAUDE.md` says
+must never happen.
+
+**Suggested fix:** Edit `coding-standards.md` to match what shipped, not the
+other way round. Correct the `packages/shared` sentence to `dist/`, replace
+"Dark mode first" with the explicit-toggle decision the mockups actually make,
+and narrow the Comments section so it forbids comments that restate the code
+while permitting the file-level why-blocks this codebase is built on.
+
+**Resolution:**
+
+### F-10 [P3] open - The spec still lists step 1 pieces that never shipped, and its own deviation count is now wrong
+
+**File:** blueprint/context/current-feature.md:8
+**Found:** 2026-09-23 by /audit (scope: current; lens: quality)
+**Why it matters:** F-04's repair added the missing `transpilePackages` bullet
+and stopped there. Two gaps of the same kind survive in the same preamble, and
+the repair introduced a third.
+
+- Line 8 still reads "Two things in this spec turned out to be wrong" above
+  three bullets. The count was not updated when the third was added, and
+  `AGENTS.md` is explicit that a bare count beside a list is how a reader is
+  misled.
+- Step 1 (line 98) lists `./db/schema` among the subpath exports and (line 103)
+  says to write the tables "under `src/db/schema/auth-schema/`"; Files / areas
+  (line 206) lists `packages/shared/src/db/schema/auth-schema/*` and
+  `src/db/index.ts`. What shipped is a single `packages/shared/src/db/schema.ts`
+  with no `db/index.ts`, and the third export is `./validation`, which step 1
+  never names. `schema.ts:19-23` explains the one-file decision well; the
+  preamble does not record it.
+
+Same consequence F-04 named: the spec is what `/complete` archives and what the
+review hash pins, so it is the copy that outlives the build log's current state.
+
+**Suggested fix:** Change "Two things" to "Three things", or drop the count and
+let the bullets speak. Add one bullet naming the one-file schema and the
+`./validation` export in place of `./db/schema`, pointing at the reason already
+written in `schema.ts`.
+
+**Resolution:**
+
+### F-11 [P3] open - `.env.example` claims every variable it lists is read today, and two are not
+
+**File:** .env.example:8
+**Found:** 2026-09-23 by /audit (scope: current; lens: quality)
+**Why it matters:** Line 8 states "Every variable listed here is read by code
+that exists today", and justifies it: "A variable in an example file that nothing
+reads teaches the next person to configure something that does nothing". Two of
+the entries then say the opposite about themselves. `WIDGET_ORIGINS` at line 56
+says "Arrives with build-plan item 2; nothing reads it yet", and
+`RESEND_API_KEY` at line 61 is claimed by item 6. Both are genuinely unread:
+nothing under `backend/src` references either name.
+
+Each entry is honest on its own, which is why this is small. The header is not,
+and it is the line a reader trusts before reading the rest.
+
+**Suggested fix:** One clause on line 8: every variable is either read today or
+says which build-plan item claims it. That keeps the rule the header exists to
+state while describing the file as it actually is.
+
+**Resolution:**

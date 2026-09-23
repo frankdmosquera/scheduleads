@@ -75,14 +75,17 @@ else.
   business the agency created for them, and there is no invitation flow
   anywhere in the code. Better Auth ships both pieces already -
   `admin.createUser` and the organization plugin's `addMember` - so this is
-  an admin path over machinery that already exists. Closing signup
-  (`disableSignUp`) belongs in this same item and cannot come first: a
-  first-time client has no user row, so closing signup ahead of provisioning
-  locks out the very people being onboarded. **Due before the first
-  production deploy**, which is also the first moment the open door costs
-  anything. `send-login-code.ts` throws in production today, so nobody can
-  sign in there at all until a mail transport exists, and that transport is
-  what turns an open signup into an outbound-mail abuse surface. Found while
+  an admin path over machinery that already exists. Note that
+  `organization/create` skips the platform-admin check for direct server-side
+  `auth.api` calls carrying a `userId` and no headers, which is the sanctioned
+  provisioning path and also the one place a later server-side caller could
+  create a business without that check; say so where this item uses it.
+  **Now a hard blocker rather than a deadline.** This item originally carried
+  closing signup as its second half; signup was closed on 2026-09-23 instead,
+  while item 1 was still open, because the door had no legitimate user. So a
+  new client can no longer sign in at all, and nothing except this item can
+  let them. Nobody new reaches the product until it ships, which makes it a
+  prerequisite for Phase 5 and for any client-facing deploy. Found while
   reviewing item 1, not planned before it
 
 ## Phase 2. The booking loop

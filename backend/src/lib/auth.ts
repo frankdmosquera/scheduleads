@@ -124,14 +124,16 @@ export const auth = betterAuth({
        * the org and bills the client as the agency. No signup page, no
        * Stripe, no self-serve pricing until Phase 9."
        *
-       * Signing in stays open on purpose, and the two are different
-       * questions. A client you are onboarding has to be able to sign in
-       * when you tell them to; `disableSignUp` would block that. Someone
-       * who signs in uninvited gets a user row, no organization, and sees
-       * nothing - the tenant boundary already refuses them.
+       * This is one of two doors and they were closed a day apart. Until
+       * 2026-09-23 signing in stayed open, on the argument that a client
+       * being onboarded needs to sign in and has no user row yet; a
+       * stranger through that door got a user row, no organization, and
+       * saw nothing, because the tenant boundary already refused them.
+       * `disableSignUp` on the emailOTP plugin below now closes that door
+       * too, so the pair should be read together rather than separately.
        *
-       * Self-serve signup is build-plan item 25, and this is the line it
-       * changes when it arrives.
+       * Self-serve signup is build-plan item 25, and this is one of the two
+       * lines it changes when it arrives. The other is `disableSignUp`.
        */
       allowUserToCreateOrganization: async (user) =>
         (user as { role?: string | null }).role === "admin",
@@ -163,6 +165,36 @@ export const auth = betterAuth({
     }),
 
     emailOTP({
+      /**
+       * Nobody signs themselves up. There is no such thing as a legitimate
+       * stranger here: a business reaches this product by buying a site
+       * from the agency, so every account is one the agency deliberately
+       * created. Better Auth defaults this to open, which meant any address
+       * that could receive mail could mint a user row.
+       *
+       * Left open until 2026-09-23 on the argument that a client being
+       * onboarded needs to sign in and has no user row yet. True, but it
+       * assumed someone was mid-onboarding. Nobody is, and every user who
+       * needs to sign in today already exists, so the door had no
+       * legitimate user at all.
+       *
+       * What this changes, read off better-auth 1.7.5 rather than assumed.
+       * An address that already has a user row still receives its code and
+       * signs in exactly as before: `routes.mjs:103` only short-circuits
+       * when `findUserByEmail` comes back empty. An address that does not
+       * gets `{ success: true }` and no mail, which also means this API can
+       * no longer be made to send mail to an address a stranger chose - the
+       * real cost once item 6 puts Resend behind the send seam. Verifying a
+       * code for an unknown address fails with INVALID_OTP
+       * (`routes.mjs:412`) instead of creating the user.
+       *
+       * The deliberate consequence: a new client cannot get in by
+       * themselves at all, which is the point. Build-plan item 3b provides
+       * the path that lets the agency create them, and until it exists a
+       * new user row is a manual database act.
+       */
+      disableSignUp: true,
+
       /**
        * Better Auth stores the code in plain text by default. That leaves a
        * working login code readable in the database for its whole five

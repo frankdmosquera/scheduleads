@@ -60,6 +60,16 @@ export default function SignInPage() {
       return;
     }
 
+    // An address with no account reaches this line too, and that is not a
+    // bug. Signup is disabled on the server, so better-auth answers an
+    // unknown address with { success: true } and sends nothing; the screen
+    // then says a code is on its way and no code ever arrives. Deliberate:
+    // telling the visitor the account does not exist would turn this form
+    // into a way to test whether any given address is a customer. Do not
+    // "fix" it by branching on whether the account exists. The only
+    // legitimate way in is the agency creating the account, which is
+    // build-plan item 3b.
+    //
     // Hold the normalised address, not what was typed. Better Auth
     // lowercases before looking the account up, so sending the raw
     // string on step two can fail a lookup that step one succeeded at.
