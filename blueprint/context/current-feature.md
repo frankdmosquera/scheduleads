@@ -141,7 +141,7 @@ and merges.
   unrecognized value directly in the database makes the identical request return
   403 with the stable error shape.
 
-- [ ] **5. Sign-in and create-organization on the frontend.** Add `better-auth`
+- [x] **5. Sign-in and create-organization on the frontend.** Add `better-auth`
   to the `frontend` workspace at the version already resolved for the backend.
   `frontend/lib/auth-client.ts` builds the client against
   `NEXT_PUBLIC_API_URL` with `organizationClient()`, `emailOTPClient()` and

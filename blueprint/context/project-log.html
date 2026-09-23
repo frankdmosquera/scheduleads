@@ -1184,18 +1184,18 @@
       <span class="where-arrow">&rsaquo;</span>
       <div class="where-leg" data-now="yes">
         <div class="where-key">Step now</div>
-        <div class="where-val">1.5 &middot; Sign-in and create-organization</div>
+        <div class="where-val">1.6 &middot; The second organization, and the env record</div>
       </div>
       <span class="where-spacer"></span>
       <div class="where-leg">
         <div class="where-key">Item 1 steps</div>
-        <div class="meter" title="1.1 to 1.4 done, 1.5 built but unproven, 1.6 to go">
+        <div class="meter" title="1.1 to 1.5 done, 1.6 now">
+          <i data-state="done"></i>
           <i data-state="done"></i>
           <i data-state="done"></i>
           <i data-state="done"></i>
           <i data-state="done"></i>
           <i data-state="active"></i>
-          <i></i>
         </div>
       </div>
     </div>
@@ -1311,7 +1311,7 @@
           <div class="strip-phase">
             <div class="strip-label">Ph 1 &middot; Foundation</div>
             <div class="strip-cells">
-              <span class="cell" data-state="active" title="1 Multi-tenant auth - building now, step 1.5 of 6">1</span>
+              <span class="cell" data-state="active" title="1 Multi-tenant auth - building now, step 1.6 of 6">1</span>
               <span class="cell" title="2 Booking links, resources and availability rules">2</span>
               <span class="cell" title="3 Calendar connection">3</span>
             </div>
@@ -1382,7 +1382,7 @@
         </div>
         <div class="tally">
           <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b</span></span>
-          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">1, at step 1.5 of 6</span></span>
+          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">1, at step 1.6 of 6</span></span>
           <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">2 through 26</span></span>
         </div>
       </header>
@@ -1405,7 +1405,7 @@
           <span class="gate-chip">Commit granted</span>
         </div>
             <details class="drawer" data-kind="plan" open>
-              <summary>Steps <span class="tag-drift">1.1 to 1.4 done &middot; 1.5 now &middot; 6 in this item</span></summary>
+              <summary>Steps <span class="tag-drift">1.1 to 1.5 done &middot; 1.6 now &middot; 6 in this item</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The work, cut into pieces small enough to review one at a time. Each step opens into what was planned, and once it is done, what actually happened.</p>
 <div class="item-steps">
@@ -1621,8 +1621,8 @@
               </div>
             </details>
 
-            <details class="rstep" data-state="active" open>
-              <summary><span class="sn">1.5</span><span class="sm"></span><span>Sign-in and create-organization</span><span class="ss">Now</span></summary>
+            <details class="rstep" data-state="done">
+              <summary><span class="sn">1.5</span><span class="sm"></span><span>Sign-in and create-organization</span><span class="ss">Done</span></summary>
               <div class="rstep-body">
                 <p class="rstep-what">The first screens anyone sees, and the first use of the mockup tokens from <code>prototypes/</code>. Enter an email, get a code, land in your business. Four states, because the three unhappy ones are where a login actually fails people.</p>
                 <details class="drawer" data-kind="plan">
@@ -1639,10 +1639,10 @@
                   </div>
                 </details>
 
-                <details class="drawer" data-kind="reality" open>
-                  <summary>Where it stands <span class="tag-drift">all 5 pieces written &middot; the gate not yet met</span></summary>
+                <details class="drawer" data-kind="reality">
+                  <summary>What actually happened <span class="tag-drift">3 of 5 pieces moved &middot; 1 fault found</span></summary>
                   <div class="drawer-body">
-                    <p class="drawer-what">Every piece is built and three checks pass. The step is still open because its <code>Done when</code> is a real sign-in against running servers, and that has not been run.</p>
+                    <p class="drawer-what">All five pieces landed and the gate passed against the running app: a new address signed in, created a business, and landed on it. The two additions were both forced, and one of them was a fault in already-committed work.</p>
                     <div class="verdict">
                       <span class="v-kept">4 as planned</span>
                       <span class="v-changed">1 changed</span>
@@ -1664,20 +1664,24 @@
                       <div class="snags-head">What bit</div>
                       <ul>
                         <li><b>A gate that only checks part of its contract lets the rest rot.</b> Step 1.4 closed on nine checks and was genuinely proved - for the plan. Nothing looked at the four other fields the contract promises, so <code>/me</code> sat incomplete through a passing gate and a commit. The lesson is not "check harder", it is that a <code>Done when</code> narrower than the contract leaves the difference unguarded.</li>
+                        <li><b>The org fix had never actually run, three steps after it was written.</b> Step 1.2 built the session hook and closed on "a code was sent", which does not touch it. Creating a business sets the active business by a different path entirely, so even signing up did not exercise it. It was only proved here, by signing out and back in as a user who already had exactly one business, and watching the new session come back stamped with nothing having called create or switch. It works. It could equally have been broken for three steps, and the read-time fallback from step 1.3 would have hidden that completely.</li>
                         <li><b>The obvious place for an env guard is the wrong place.</b> Failing loudly on missing configuration is right, but a build-time-inlined variable cannot be guarded at runtime, because there is no runtime. Writing it the instinctive way broke the build rather than protecting the deploy.</li>
-                        <li><b>Still no test runner, and this step is where it shows.</b> Three of the four states on these screens are refusals that need a server in a particular condition to see. Proving them by hand means arranging each one, once, and keeping nothing.</li>
+                        <li><b>A five minute code and a human in the loop is not a test.</b> The gate needs a login code that only exists in the API's console, and it expired twice waiting for it to be read and pasted back. Fixed by calling the same Better Auth endpoint from a one-off script instead: the code prints where the checker can see it, and it verifies through the running server anyway because the row is in the shared database. Step 1.6 needs two more sign-ins and now costs nothing.</li>
+                        <li><b>The tunnel failure did not look like the one that was written down.</b> The spec warns that the tunnel presents as "port 5433 listening but every query resets". This was the other shape: nothing listening at all, surfacing as a <code>DrizzleQueryError</code> wrapping <code>ECONNREFUSED</code>, with a full insert statement on top that reads like a schema problem. The cause was one line at the bottom.</li>
+                        <li><b>Still no test runner, and this step is where it shows.</b> Three of the four states on these screens are refusals that need a server in a particular condition to see. Only two were exercised live here; the plan refusal and the two-business case were not re-proved, having been proved at steps 1.4 and 1.3 by scripts that no longer exist.</li>
                       </ul>
                     </div>
-                    <div class="rstep-when">Passing now: both workspace builds and the frontend lint. Outstanding: the live sign-in. Blocked on the API and the Postgres tunnel being up, not on code.</div>
+                    <div class="rstep-when">Passed against the running app. A new address signed in with the console code, arrived at create-organization, created "Ana's Hair &amp; Co." with its address derived to <code>ana-s-hair-co</code>, and landed on a page showing the business, the <code>agency</code> plan, the owner role and both modules. Both workspace builds and the frontend lint pass. Two organizations now exist and the second was created entirely through the app. Signing out and back in lands directly on the business, which is the org fix.</div>
                   </div>
                 </details>
               </div>
             </details>
 
-            <details class="rstep" data-state="planned">
-              <summary><span class="sn">1.6</span><span class="sm"></span><span>The second organization, and the env record</span><span class="ss">Next</span></summary>
+            <details class="rstep" data-state="active" open>
+              <summary><span class="sn">1.6</span><span class="sm"></span><span>The second organization, and the env record</span><span class="ss">Now</span></summary>
               <div class="rstep-body">
                 <p class="rstep-what">Proves the point of the whole item: a second business, created entirely through the app with nobody touching the database, that cannot see the first one. Then writes down the environment variables and commands the next person needs.</p>
+                <p class="rstep-what"><strong>Half of this arrived early.</strong> Proving step 1.5 required creating a business through the app, so the second tenant already exists: "Ana's Hair &amp; Co." beside the first repo's "The Latam Painters", both on the <code>agency</code> plan. What is left is the part that was never touched: confirming each session returns only its own business, correcting the env example, recording the database commands, and promoting Frank's own account to the platform admin role by hand. His account currently has no role at all.</p>
                 <details class="drawer" data-kind="plan">
                   <summary>The plan <span class="tag-drift">4 pieces</span></summary>
                   <div class="drawer-body">
@@ -1861,7 +1865,7 @@
               </div>
             </details>
             <details class="drawer" data-kind="reality">
-              <summary>Log <span class="tag-drift">13 entries, newest first</span></summary>
+              <summary>Log <span class="tag-drift">14 entries, newest first</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The same work as Steps, ordered by date instead of by piece: decisions as they were taken, questions as they came up, faults as they were found. Steps answer what is being built; this answers what happened, and when.</p>
 <div class="log">
@@ -1893,16 +1897,29 @@
                   <p class="entry-text">Checked against the real plans rather than taken on trust: open question 12, section 8's rationale, items 16, 23 and 25, and the <code>quote</code> table's tax rate are all quoted accurately, despite that session never seeing this repo. It also carries three questions for outside the code, the first of which can delete two of the five items: whether the clinic is even allowed to resell Eminence online.</p>
                 </div>
               </div>
-              <div class="entry" data-kind="question">
+              <div class="entry" data-kind="done">
                 <div class="dot"></div>
                 <div class="entry-body">
                   <div class="entry-top">
-                    <span class="entry-title">Step 1.5 is built and cannot be proved yet</span>
-                    <span class="kind-tag">Open</span>
+                    <span class="entry-title">Step 1.5 done: a second business exists, made entirely through the app</span>
+                    <span class="kind-tag">Done</span>
                     <span class="stamp">Sep 22</span>
                   </div>
-                  <p class="entry-text">Sign-in, create-organization and the signed-in shell are written, and both workspace builds and the lint pass. The step stays open because its gate is a real sign-in, and the API and the Postgres tunnel are down. Nothing is waiting on code.</p>
-                  <p class="entry-text">Two faults surfaced getting here and both are recorded on the step. One is a repair: <code>GET /me</code> was returning four fewer fields than the contract promises, and step 1.4's narrower gate let that through a commit.</p>
+                  <p class="entry-text">A new email signed in with the console code, arrived at create-organization, and created "Ana's Hair &amp; Co." with its address derived to <code>ana-s-hair-co</code> rather than typed. It landed on a page showing the business, the <code>agency</code> plan, the owner role and both modules, and nothing belonging to the other tenant. There are now two organizations in the database and nobody touched it to make the second one.</p>
+                  <p class="entry-text"><strong>The org fix ran for the first time, three steps after it was written.</strong> Step 1.2 built the session hook and closed on "a code was sent", which never touches it, and creating a business sets the active business by a different path, so even signing up did not exercise it. Signing out and back in as a user who already had exactly one business did: the new session came back stamped, with nothing having called create or switch. It works. It could equally have been broken since step 1.2 and the read-time fallback would have hidden it completely.</p>
+                  <p class="entry-text">Two faults are recorded on the step. One is a repair to already-committed work: <code>GET /me</code> was returning four fewer fields than the contract promises, and step 1.4's narrower gate let that through a green check and a commit.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="fix">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">A login code that only a human can read is not a test</span>
+                    <span class="kind-tag">Fix</span>
+                    <span class="stamp">Sep 22</span>
+                  </div>
+                  <p class="entry-text">Step 1.5's gate needs a six digit code that exists only in the API's console and lives five minutes. It expired twice waiting to be read off a terminal and pasted back, which is not a flaw in the product but does make the gate unrepeatable.</p>
+                  <p class="entry-text">Fixed by calling the same Better Auth endpoint from a one-off script rather than through the browser. The code prints where the checker can see it, and it still verifies through the running server, because the row lives in the shared database rather than in the process that made it. Step 1.6 needs two more sign-ins and they now cost nothing. It is also the first piece of evidence for the test runner decision already on this page.</p>
                 </div>
               </div>
               <div class="entry" data-kind="decided">
@@ -2036,7 +2053,8 @@
                 <p class="drawer-what">Things that are true right now but belong to no single step. Loose ends, known gaps, and what is deliberately not being done yet.</p>
 <ul>
               <li><strong>Four things changed in review, before any code was written.</strong> The login code now fails loudly in production instead of being written to the server log, where it would be a password sitting in plain text. An unrecognised plan locks the account out rather than quietly falling back to the paid one. The dashboard's first route was put behind the plan check so that a refusal can actually be seen happening. And the dashboard was split from the public booking widget for cross-site permissions, because the widget must never be able to act as a signed-in user.</li>
-              <li><strong>Seven commits on this branch, and step 1.5's code is now one of them.</strong> The planning baseline, this page and its rules, steps 1.2 to 1.4, the retail proposal, the resource-model plan edits, and step 1.5's code, each on its own. That last one is a checkpoint and not a closure: its message says plainly that the live sign-in has not been run and that only the two builds and the lint pass. The step stays open here until it has been. Plan work was kept in its own commit so the feature's history stays about the feature.</li>
+              <li><strong>Seven commits on this branch, and step 1.5's gate has since passed.</strong> The planning baseline, this page and its rules, steps 1.2 to 1.4, the retail proposal, the resource-model plan edits, and step 1.5's code, each on its own. Step 1.5's commit message says the live sign-in had not been run, which was true when it was written and is no longer; the gate passed afterwards and this page records the result. Plan work was kept in its own commit so the feature's history stays about the feature.</li>
+              <li><strong>There is a test tenant in the database.</strong> "Ana's Hair &amp; Co." under <code>step15@example.com</code> was created to prove step 1.5 and is real data, not a throwaway that got cleaned up. It can stay as the second tenant step 1.6 needs, or be deleted and remade deliberately. Earlier steps deleted their throwaway rows; this one was kept on purpose because the step required a business that survives.</li>
               <li><strong>Both workspaces import <code>@scheduleads-app/shared</code> without declaring it.</strong> It resolves through the npm workspace symlink at the repo root, which is why nothing has complained. It is worth settling before the first deploy, because it depends on the host running the install at the repo root rather than inside the folder it builds. A question for <code>/release</code>, not a bug today.</li>
               <li><strong>There are no automated tests, by choice for now.</strong> No test runner is set up, so every step is checked by hand against the running app and the two builds, and no test result is claimed anywhere on this page. When tests do arrive, the plan check and the two-businesses refusal are the first two things worth covering.</li>
             </ul>
