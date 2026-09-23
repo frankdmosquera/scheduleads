@@ -19,6 +19,12 @@ rather than quietly corrected:
   with a direct SQL update instead, which is the same act without a browser
   and can be shown in a transcript. The point of the instruction is that the
   promotion happens by hand and not through a request path, which holds.
+- Step 1 lists `transpilePackages` in the Next config among its pieces, and it
+  was deliberately dropped: once `packages/shared` compiled to JavaScript the
+  setting did nothing, and config that does nothing is worse than none.
+  `frontend/next.config.ts` is therefore untouched scaffold. The build log
+  recorded this at the time; this preamble did not, which is the gap an
+  independent review found as F-04.
 
 `user.role` was then **proved** unsettable rather than asserted: a sign-in
 body carrying `role: "admin"` is refused with 400 `FIELD_NOT_ALLOWED`.

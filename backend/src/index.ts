@@ -6,7 +6,7 @@ import { cors } from "hono/cors";
 import { organization } from "@scheduleads-app/shared/db";
 
 import { db } from "./database.js";
-import { requireOrganization } from "./lib/active-organization.js";
+import { refuse, requireOrganization } from "./lib/active-organization.js";
 import { auth } from "./lib/auth.js";
 import { requireModule } from "./lib/plan-gate.js";
 
@@ -71,12 +71,10 @@ app.get("/me", requireOrganization, requireModule("crm"), async (c) => {
     // situation as having no active organization, so it gets the same
     // refusal rather than a 500 or a half-filled body.
     return c.json(
-      {
-        error: {
-          code: "no_active_organization" as const,
-          message: "Choose which business you are working in before continuing.",
-        },
-      },
+      refuse(
+        "no_active_organization",
+        "Choose which business you are working in before continuing."
+      ),
       403
     );
   }

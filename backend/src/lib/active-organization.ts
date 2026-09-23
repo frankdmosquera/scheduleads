@@ -31,14 +31,31 @@ export type ActiveOrganization = {
  * The refusal shape every guard and gate in this API shares. Fixed here so
  * later items reuse one contract instead of each inventing their own.
  */
+export type RefusalCode =
+  /** No session at all. */
+  | "unauthenticated"
+  /** A session, but no single business to act for. Not the same as signed out. */
+  | "no_active_organization"
+  /** Signed in and scoped, but the role is not allowed to do this. */
+  | "forbidden"
+  /** Signed in and scoped, but the business's plan does not include it. */
+  | "plan_required";
+
 export type Refusal = {
   error: {
-    code: "unauthenticated" | "no_active_organization" | "forbidden";
+    code: RefusalCode;
     message: string;
   };
 };
 
-const refuse = (code: Refusal["error"]["code"], message: string): Refusal => ({
+/**
+ * The one way to build a refusal. Exported because a contract only two of
+ * four call sites can reach is documentation, not a contract: the spec said
+ * to fix the shape once and reuse it, and an unexported helper meant the
+ * gate and the first route each hand-rolled the object instead. Items 2 to
+ * 26 copy whatever they find here, so there is one thing to find.
+ */
+export const refuse = (code: RefusalCode, message: string): Refusal => ({
   error: { code, message },
 });
 

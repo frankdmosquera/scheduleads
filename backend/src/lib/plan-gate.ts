@@ -5,6 +5,7 @@ import { getPlanLimits, type Module, type PlanLimits } from "@scheduleads-app/sh
 import { organization } from "@scheduleads-app/shared/db";
 
 import { db } from "../database.js";
+import { refuse } from "./active-organization.js";
 
 /**
  * The package gate: refuses a request whose business has not paid for the
@@ -46,12 +47,10 @@ export const requireModule = (module: Module) =>
 
     if (!limits.modules.includes(module)) {
       return c.json(
-        {
-          error: {
-            code: "plan_required" as const,
-            message: `This organization's plan does not include ${module}.`,
-          },
-        },
+        refuse(
+          "plan_required",
+          `This organization's plan does not include ${module}.`
+        ),
         403
       );
     }
