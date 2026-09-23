@@ -1184,7 +1184,7 @@
       <span class="where-arrow">&rsaquo;</span>
       <div class="where-leg" data-now="yes">
         <div class="where-key">Now</div>
-        <div class="where-val">Review &middot; repairs in, fresh review next</div>
+        <div class="where-val">Review &middot; your walkthrough passed, independent review next</div>
       </div>
       <span class="where-spacer"></span>
       <div class="where-leg">
@@ -1274,6 +1274,7 @@
             <li><code>activity</code> carries both what happened and what is still owed, from item 4, so the next-step queue is never a second table bolted on.</li>
             <li>The booking layout is a stored value on the booking link from item 9, never a hardcoded shape. The Calendly-shaped month flow is what gets built; the week strip is parked.</li>
             <li>Every account is one the agency created. Signup is closed and only the platform admin creates a business; item 3b provisions clients, and item 25 is where self-serve reopens.</li>
+            <li>Development never uses real data. It runs on a local database built from the migrations and filled by <code>db:seed</code>; only migrations ever reach Railway.</li>
           </ul>
         </div>
       </section>
@@ -1312,7 +1313,7 @@
           <div class="strip-phase">
             <div class="strip-label">Ph 1 &middot; Foundation</div>
             <div class="strip-cells">
-              <span class="cell" data-state="active" title="1 Multi-tenant auth - built, review repairs in, re-review before merge">1</span>
+              <span class="cell" data-state="active" title="1 Multi-tenant auth - built, walkthrough passed, independent review before merge">1</span>
               <span class="cell" title="2 Booking links, resources and availability rules">2</span>
               <span class="cell" title="3 Calendar connection">3</span>
               <span class="cell" title="3b Client access: provisioning">3b</span>
@@ -1407,7 +1408,7 @@
           <span class="gate-chip" data-state="waiting">Commit granted</span>
         </div>
             <details class="drawer" data-kind="plan" open>
-              <summary>Steps <span class="tag-drift">all six done &middot; review repairs in, re-review next</span></summary>
+              <summary>Steps <span class="tag-drift">all six done &middot; your walkthrough passed, independent review next</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The work, cut into pieces small enough to review one at a time. Each step opens into what was planned, and once it is done, what actually happened.</p>
 <div class="item-steps">
@@ -1751,6 +1752,7 @@
               <li>The plan gate every module route will call, and <code>GET /me</code> behind it</li>
               <li><code>/sign-in</code>, <code>/create-organization</code>, and the signed-in shell</li>
               <li>Both signup doors closed. Not planned: it arrived as the repair for the second review's only blocker</li>
+              <li>A local development database and <code>db:seed</code>. Also not planned: closing signup left a fresh database with no way in</li>
             </ul>
           </div>
           <div class="scope-out">
@@ -1767,7 +1769,7 @@
               </div>
             </details>
             <details class="drawer" data-kind="reality">
-              <summary>Decisions <span class="tag-drift">4 settled &middot; 11 options weighed, with why each loser lost</span></summary>
+              <summary>Decisions <span class="tag-drift">5 settled &middot; 14 options weighed, with why each loser lost</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">Choices made once that would be expensive to reverse, each with the options that lost and the reason they lost.</p>
 
@@ -1910,6 +1912,46 @@
                   </div>
                 </div>
 
+                <h3>Where development's database lives</h3>
+                <p class="rstep-what">Settled 23 Sep. Until then every query during development went through a tunnel to Railway, into the database that holds a real tenant. Moved to a database on your laptop. Only the shape of the database, carried by the migration files, ever reaches Railway; data never moves in either direction.</p>
+                <div class="options">
+                  <div class="opt" data-match="yes">
+                    <div class="opt-top"><span class="opt-key">Chosen</span><span class="pill pill--done">In place</span></div>
+                    <div class="opt-name">Local PostgreSQL 18</div>
+                    <div class="wire">
+                      <div class="wire-row between"><span class="wire-title">your laptop</span></div>
+                      <div class="wire-row"><span class="wire-icon"></span><span class="btn">app + API</span><span class="btn btn--solid">scheduleads_dev</span></div>
+                      <div class="wire-row"><span class="btn btn--ghost">fake accounts from db:seed</span></div>
+                    </div>
+                    <p class="opt-text">Same major version as Railway, installed as a Windows service, built by <code>db:migrate</code> and made usable by <code>db:seed</code>. Nothing to keep open, and wiping it costs nothing.</p>
+                    <div class="opt-trade">Cost: one install, and a seed that later items extend as they add tables. Item 2's planned seed CLI now has somewhere to live.</div>
+                  </div>
+
+                  <div class="opt">
+                    <div class="opt-top"><span class="opt-key">Rejected</span><span class="pill pill--plan">What it was</span></div>
+                    <div class="opt-name">Railway, through the tunnel</div>
+                    <div class="wire">
+                      <div class="wire-row between"><span class="wire-title">your laptop</span></div>
+                      <div class="wire-row"><span class="btn">app + API</span><span class="btn btn--danger">tunnel on 5433</span></div>
+                      <div class="wire-row"><span class="wire-icon"></span><span class="btn btn--solid">Railway, real tenant</span></div>
+                    </div>
+                    <p class="opt-text">No install, and it was the database the first repo left behind, so it was simply adopted on day one.</p>
+                    <div class="opt-trade">Why it lost: every mistake while building lands on real client data, and the tunnel has to be open and has to stay up. Nobody put the choice on the table when it was made; it was found by asking on 23 Sep.</div>
+                  </div>
+
+                  <div class="opt">
+                    <div class="opt-top"><span class="opt-key">Rejected</span><span class="pill pill--plan">Used once</span></div>
+                    <div class="opt-name">PGlite, Postgres inside Node</div>
+                    <div class="wire">
+                      <div class="wire-row between"><span class="wire-title">one process</span></div>
+                      <div class="wire-row"><span class="btn btn--solid">Postgres in memory</span></div>
+                      <div class="wire-row"><span class="btn btn--danger">no server the API can reach</span></div>
+                    </div>
+                    <p class="opt-text">Real Postgres compiled to run inside Node. It proved the F-06 migration fix from a scratch folder with nothing installed.</p>
+                    <div class="opt-trade">Why it lost: it lives inside one process, so the API cannot connect to it as a normal server without more tooling. Right for a one-off test, wrong for daily work.</div>
+                  </div>
+                </div>
+
                 <h3>What the dashboard's front door checks</h3>
                 <p class="rstep-what">Settled 23 Sep. <code>GET /me</code> asked for the <code>crm</code> module while its comments, the spec and the refusal screen all said it only refused an unrecognised plan. With one plan the two rules agreed; the first cheaper plan would have split them.</p>
                 <div class="options">
@@ -1940,7 +1982,7 @@
               </div>
             </details>
             <details class="drawer" data-kind="plan">
-              <summary>Contracts <span class="tag-drift">7 that later items inherit</span></summary>
+              <summary>Contracts <span class="tag-drift">8 that later items inherit</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">Rules this item sets that every later item inherits. Breaking one of these later breaks work that was built assuming it.</p>
 <div class="rows">
@@ -1969,6 +2011,10 @@
             <div class="row-val">Lax in development, where the app and API differ only by port. None plus Secure across subdomains in production. The two must share a registrable domain or the session is dropped.</div>
           </div>
           <div class="row">
+            <div class="row-key">Development data</div>
+            <div class="row-val">Development never uses real data. It runs against a local database built by <code>db:migrate</code> and filled by <code>db:seed</code>, and an item that adds a table extends the seed with it. Only migrations cross to Railway, applied on purpose; data never moves in either direction.</div>
+          </div>
+          <div class="row">
             <div class="row-key">Timestamps</div>
             <div class="row-val">Every column is <code>timestamptz</code>. A booking product that stores an instant without its zone double-books.</div>
           </div>
@@ -1976,10 +2022,35 @@
               </div>
             </details>
             <details class="drawer" data-kind="reality">
-              <summary>Log <span class="tag-drift">28 entries, newest first</span></summary>
+              <summary>Log <span class="tag-drift">30 entries, newest first</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The same work as Steps, ordered by date instead of by piece: decisions as they were taken, questions as they came up, faults as they were found. Steps answer what is being built; this answers what happened, and when.</p>
 <div class="log">
+              <div class="entry" data-kind="done">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Your own walkthrough passed</span>
+                    <span class="kind-tag">Done</span>
+                    <span class="stamp">Sep 23</span>
+                  </div>
+                  <p class="entry-text">You walked the running app yourself against the local database, before any fresh review. An address with no account was told a code was on its way and got none. <code>owner@example.com</code> was refused creating a business, and the database still held exactly two afterwards. Both owners landed on their own business with every field showing. With Test Salon's plan set to <code>bogus</code>, the same owner got "This account needs attention" with the new <code>plan_unrecognised</code> message, and the plan was put back after.</p>
+                  <p class="entry-text">That is every repair a browser can show, seen with your own eyes: the blocking one, the dashboard query clean-up, and the front door in both directions. The results are written into the findings as evidence for the independent review. They do not close anything; only that review can.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="decided">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Development moved to a local database</span>
+                    <span class="kind-tag">Decided</span>
+                    <span class="stamp">Sep 23</span>
+                  </div>
+                  <p class="entry-text">Every query during development used to go through a tunnel to Railway, into the database holding a real tenant. You asked why, and there was no good answer: it was adopted on day one and never put to you as a choice. Now PostgreSQL 18, the same version Railway runs, is installed on your laptop. <code>db:migrate</code> built <code>scheduleads_dev</code> from empty, the first real use of this morning's F-06 fix, and it matched <code>schema.ts</code> exactly. A new <code>db:seed</code> creates one platform admin and one ordinary owner, each with a business, because closed signup would otherwise leave a fresh database with no way in. It refuses any database not on this machine or not named <code>*_dev</code>.</p>
+                  <p class="entry-text"><strong>What bit on the way there, all at once:</strong> another project's dev server held port 3000, so this frontend quietly moved to 3001, the API's port, and sent its sign-in calls to itself. Starting the frontend restarts the API, which is when the port was lost. The tunnel was believed open and was not, which is what "That code could not be sent" meant each time. A pgAdmin edit that looked saved was not. None of it was a fault in item 1, and it looked exactly like one. The port trap is now written into <code>AGENTS.md</code>.</p>
+                  <p class="entry-text">The docs said the tunnel was how development works in six places, and two plan documents still said the shared package exports source files, the same stale claim fixed in the standards earlier today. All corrected.</p>
+                </div>
+              </div>
               <div class="entry" data-kind="fix">
                 <div class="dot"></div>
                 <div class="entry-body">
@@ -2332,10 +2403,10 @@
                 <p class="drawer-what">Things that are true right now but belong to no single step. Loose ends, known gaps, and what is deliberately not being done yet.</p>
 <ul>
               <li><strong>Four things changed in review, before any code was written.</strong> The login code now fails loudly in production instead of being written to the server log, where it would be a password sitting in plain text. An unrecognised plan locks the account out rather than quietly falling back to the paid one. The dashboard's first route was put behind the plan check so that a refusal can actually be seen happening. And the dashboard was split from the public booking widget for cross-site permissions, because the widget must never be able to act as a signed-in user.</li>
-              <li><strong>Every finding is repaired, and most are not closed yet.</strong> Two review rounds raised eleven. The second review closed three after testing them; the other eight are repaired and committed, but only a fresh review can close them, and <code>/complete</code> will not merge while the blocking one is open. That review needs the SSH tunnel and both dev servers, because three repairs have not been seen against the running app: a non-admin still refused when creating a business, an unknown plan now answered with <code>plan_unrecognised</code>, and <code>/me</code> returning exactly what it did before.</li>
+              <li><strong>Every finding is repaired, and most are not closed yet.</strong> Two review rounds raised eleven. The second review closed three after testing them; the other eight are repaired and committed, and only a fresh review can close them. <code>/complete</code> will not merge while the blocking one is open. Every repair a browser can show has now been seen live in your own walkthrough, and that evidence is in the findings for the reviewer.</li>
               <li><strong>The live database has never been compared with <code>schema.ts</code>.</strong> The first repo built it. A constraint with a different name or an extra column would pass every check so far, including the empty-database test. Pulling its real shape into a scratch folder and diffing it belongs in the same tunnel session as the review.</li>
-              <li><strong>Nobody new can sign in until item 3b.</strong> Deliberate. Adding a person before then means writing their account into the database by hand.</li>
-              <li><strong>A local Postgres for development is agreed in principle.</strong> Every query during development goes through the tunnel to a database holding a real tenant. It only became possible once the migrations could build a database from empty. A proposal comes after this item merges, naming the exact package, before anything is installed.</li>
+              <li><strong>On Railway, nobody new can sign in until item 3b.</strong> Deliberate. A local database gets its accounts from <code>db:seed</code> instead: <code>admin@example.com</code> and <code>owner@example.com</code>, with login codes in the API's console.</li>
+              <li><strong>Development runs on your laptop now.</strong> PostgreSQL 18 as a Windows service, database <code>scheduleads_dev</code>, rebuilt at will with <code>db:migrate</code> and <code>db:seed</code>. The Railway line in <code>.env</code> is switched off, and the tunnel is only for touching real data on purpose, such as applying a migration there.</li>
               <li><strong>There is a test tenant in the database.</strong> "Ana's Hair &amp; Co." under <code>step15@example.com</code> was created to prove step 1.5 and is real data, not a throwaway that got cleaned up. It can stay as the second tenant step 1.6 needs, or be deleted and remade deliberately. Earlier steps deleted their throwaway rows; this one was kept on purpose because the step required a business that survives.</li>
               <li><strong>Both workspaces import <code>@scheduleads-app/shared</code> without declaring it.</strong> It resolves through the npm workspace symlink at the repo root, which is why nothing has complained. It is worth settling before the first deploy, because it depends on the host running the install at the repo root rather than inside the folder it builds. A question for <code>/release</code>, not a bug today.</li>
               <li><strong>There are no automated tests, by choice for now.</strong> No test runner is set up, so every step is checked by hand against the running app and the two builds, and no test result is claimed anywhere on this page. When tests do arrive, the plan check and the two-businesses refusal are the first two things worth covering.</li>

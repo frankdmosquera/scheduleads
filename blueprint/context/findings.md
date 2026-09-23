@@ -188,6 +188,8 @@ rather than being assumed. Not proved against the running API: the `/me`
 body should be byte-for-byte what it was, and the independent review is the
 place to confirm that with a signed-in session, alongside F-05 and F-07.
 
+Seen live on 2026-09-23 by Frank, walking the running app himself against the local development database (`scheduleads_dev`, PostgreSQL 18.6, seeded by `db:seed`), before any fresh review. Recorded as evidence for that review, not as a closure. `/me` returned every field for both seeded owners: the business name and slug, the plan, the owner role, and both modules, which is the body this finding's repair was required to leave unchanged.
+
 ### F-04 [P3] closed - The spec ticks step 1 including `transpilePackages`, which was deliberately dropped
 
 **File:** blueprint/context/current-feature.md:96
@@ -329,6 +331,8 @@ bringing it up needs the Railway SSH tunnel. The live 403 recorded above is
 the builder's, from the fix commit. An independent review pass should re-run
 it before moving this to `closed`.
 
+Seen live on 2026-09-23 by Frank, walking the running app himself against the local development database (`scheduleads_dev`, PostgreSQL 18.6, seeded by `db:seed`), before any fresh review. Recorded as evidence for that review, not as a closure. Signed in as `owner@example.com`, an ordinary owner, and submitted `/create-organization`: refused with "You are not allowed to create a new organization". The business count was read from the database afterwards and was still two, so the refusal left nothing behind. The other half held too: `nobody-sep23@example.com`, an address with no account, was told a code was on its way, none was generated, and any code returned "Invalid OTP".
+
 ### F-06 [P2] fixed - The migration ledger can only alter tables, so `db:migrate` fails on any fresh database
 
 **File:** packages/shared/drizzle/0000_adopt_repo_one_tables.sql:15
@@ -420,6 +424,8 @@ constraint name or an extra column there would not show up in any check above.
 Comparing it takes the SSH tunnel, a `drizzle-kit pull` into a scratch folder
 and a diff, and it belongs with the review run that already needs the tunnel.
 
+Proved again on 2026-09-23 by real use rather than a test. The local development database was created empty on PostgreSQL 18.6 and built with the ordinary `npm run db:migrate`. It then matched `schema.ts` applied directly: 60 columns, 57 constraints, 11 indexes, with one row in the ledger. Railway was confirmed to run `postgres-ssl:18` from its own deployment metadata, so the version caveat above is closed: both the PGlite test and this build ran on the production major version. Whether the live Railway database matches `schema.ts` is still unchecked.
+
 ### F-07 [P2] fixed - `/me` refuses any rung that lacks `crm` and tells the user their plan is unrecognized
 
 **File:** backend/src/index.ts:53
@@ -496,6 +502,8 @@ API in this pass: that needs the SSH tunnel and a signed-in session, and
 flipping a live organization's plan to prove the 403. The independent review
 that closes F-05 needs the same setup and should re-run the plan flip here,
 now expecting `plan_unrecognised` rather than `plan_required`.
+
+Seen live on 2026-09-23 by Frank, walking the running app himself against the local development database (`scheduleads_dev`, PostgreSQL 18.6, seeded by `db:seed`), before any fresh review. Recorded as evidence for that review, not as a closure. Both seeded owners, on `agency`, got through the front door. With Test Salon's plan set to `bogus` in the database, the same owner got "This account needs attention" carrying the API's `plan_unrecognised` message, "This business is on a plan the product does not recognise." Restored to `agency` afterwards and confirmed from the database.
 
 ### F-08 [P2] fixed - `APP_ORIGIN` and `BETTER_AUTH_URL` fall back to localhost in production instead of refusing to boot
 
