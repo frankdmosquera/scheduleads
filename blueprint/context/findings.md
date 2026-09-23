@@ -329,7 +329,7 @@ bringing it up needs the Railway SSH tunnel. The live 403 recorded above is
 the builder's, from the fix commit. An independent review pass should re-run
 it before moving this to `closed`.
 
-### F-06 [P2] open - The migration ledger can only alter tables, so `db:migrate` fails on any fresh database
+### F-06 [P2] fixed - The migration ledger can only alter tables, so `db:migrate` fails on any fresh database
 
 **File:** packages/shared/drizzle/0000_adopt_repo_one_tables.sql:15
 **Found:** 2026-09-23 by /audit (scope: current; lens: quality)
@@ -364,7 +364,61 @@ and a full create against an empty one. Confirm both directions before
 committing, and say at the top of the file that it exists because 0000 adopts
 rather than creates.
 
-**Resolution:**
+**Resolution:** Fixed 2026-09-23, and **not** as suggested, because the
+suggested fix does not work. Drizzle applies pending migrations in journal order
+inside one transaction (`drizzle-orm/pg-core/dialect.js`, `migrate()`, which
+`drizzle-kit migrate` reaches through `postgres-js/migrator.js`). On an empty
+database `0000` runs first and aborts on its first `ALTER TABLE`, so a
+bootstrap numbered `0001` would never be reached. The finding's diagnosis was
+right and its repair would have failed exactly the way the diagnosis describes.
+
+The `CREATE TABLE IF NOT EXISTS` block went into the top of `0000` instead,
+which means editing an applied migration, contrary to the finding's "nothing in
+migration 0000 should change". Safe here for three reasons, each read off the
+installed drizzle-orm 0.45.2 rather than assumed, and each written into the
+file's own header:
+
+- The migrator skips any migration whose journal `when` is not later than the
+  newest `created_at` in the ledger, so the live database never runs `0000`
+  again.
+- It stores each file's hash and never compares it afterwards, so the edit trips
+  nothing.
+- Every added statement is `IF NOT EXISTS`, so even a re-run against the live
+  database would change nothing.
+
+The seven tables were generated from `schema.ts` with `drizzle-kit generate`
+into a scratch folder, not typed by hand, and a script confirmed every column
+and constraint of the new block matches that reference. Foreign keys are inline
+rather than drizzle's separate `ADD CONSTRAINT`, since an inline constraint is
+skipped along with its `CREATE` when the table exists and `ADD CONSTRAINT` has
+no `IF NOT EXISTS`. Drizzle's own constraint names are kept, so later generated
+migrations can refer to them. `db:generate` still reports no changes.
+
+Proved against a real empty database, not read off the SQL. PGlite, which is
+Postgres 18.3 compiled to WebAssembly, was installed into a scratch folder only,
+with drizzle-orm pinned to this project's 0.45.2 so the migrator under test is
+the one `db:migrate` runs. The project's dependencies are unchanged. Each case
+used a fresh in-memory database, with the real migrations folder, ledger table
+and schema from `drizzle.config.ts`:
+
+1. Empty database: migrates cleanly, and the result is identical to `schema.ts`
+   applied directly: 7 tables, 60 columns, 57 constraints, 11 indexes, compared
+   from `information_schema`, `pg_constraint` and `pg_indexes`. The ledger
+   holds one row.
+2. Run again: a no-op. Ledger still one row, schema unchanged.
+3. The **original** `0000` on an empty database fails with `relation "user" does
+   not exist`, as this finding said, and the rolled-back transaction leaves no
+   tables behind. This is the case that shows the test can fail at all.
+4. Tables already present and an empty ledger: `0000` runs cleanly over them and
+   changes nothing, so every statement in it is safe over existing tables.
+
+Two limits, stated rather than hidden. Production's Postgres version is not
+known here and PGlite is 18.3; nothing in this file is version-sensitive, but
+that is a claim, not a test. And no test can say whether the **live** database
+matches `schema.ts`, because it was built by the first repo. A different
+constraint name or an extra column there would not show up in any check above.
+Comparing it takes the SSH tunnel, a `drizzle-kit pull` into a scratch folder
+and a diff, and it belongs with the review run that already needs the tunnel.
 
 ### F-07 [P2] fixed - `/me` refuses any rung that lacks `crm` and tells the user their plan is unrecognized
 
