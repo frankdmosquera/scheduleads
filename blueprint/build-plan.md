@@ -39,7 +39,7 @@ own connected Google calendar, the agency tenant's. A client user the
 agency provisioned can also sign in and reach that business and nothing
 else.
 
-- [ ] 1. **Multi-tenant auth, with the org fix** - email-OTP sign-in,
+- [x] 1. **Multi-tenant auth, with the org fix** - email-OTP sign-in,
   create-organization, the superadmin role through the `admin` plugin, the
   auto-active organization hook so sign-in resolves the org, and the package
   gate: `organization.plan`, the plan-limits config with the one rung

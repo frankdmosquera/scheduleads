@@ -1184,7 +1184,7 @@
       <span class="where-arrow">&rsaquo;</span>
       <div class="where-leg" data-now="yes">
         <div class="where-key">Now</div>
-        <div class="where-val">Review &middot; your walkthrough passed, independent review next</div>
+        <div class="where-val">Item 1 done &middot; item 2 is next</div>
       </div>
       <span class="where-spacer"></span>
       <div class="where-leg">
@@ -1313,7 +1313,7 @@
           <div class="strip-phase">
             <div class="strip-label">Ph 1 &middot; Foundation</div>
             <div class="strip-cells">
-              <span class="cell" data-state="active" title="1 Multi-tenant auth - built, walkthrough passed, independent review before merge">1</span>
+              <span class="cell" data-state="done" title="1 Multi-tenant auth - done">1</span>
               <span class="cell" title="2 Booking links, resources and availability rules">2</span>
               <span class="cell" title="3 Calendar connection">3</span>
               <span class="cell" title="3b Client access: provisioning">3b</span>
@@ -1384,8 +1384,8 @@
           </div>
         </div>
         <div class="tally">
-          <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b</span></span>
-          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">1, in review</span></span>
+          <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b, 1</span></span>
+          <span class="tally-part" data-state="active"><span class="tally-key">Next</span><span class="tally-val">2</span></span>
           <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">2, 3, 3b, then 4 through 26</span></span>
         </div>
       </header>
@@ -1401,14 +1401,14 @@
 
         <div class="stage">
           <div class="stage-head"><span class="stage-name">Phase 1 &middot; Foundation, carried over</span><span class="stage-note">Exit: a second org created through the app, sign-in lands on it, a gated route refuses the wrong rung, free/busy proven on Frank's calendar, a client the agency provisioned reaches only their own business</span></div>
-          <div class="item" data-state="active"><div class="item-num">1</div><div class="item-body"><div class="item-name">Multi-tenant auth, with the org fix</div><p class="item-text">Email-OTP sign-in, create-organization, the admin role, the auto-active organization hook, and the package gate with the one rung.</p>
+          <div class="item" data-state="done"><div class="item-num">1</div><div class="item-body"><div class="item-name">Multi-tenant auth, with the org fix</div><p class="item-text">Email-OTP sign-in, create-organization, the admin role, the auto-active organization hook, and the package gate with the one rung.</p>
           <p class="item-text">Four businesses will eventually sign into the same app and must never see each other's leads. This item decides where the answer to "which business is this?" comes from, and the answer is: the session on the server, never the request. Everything from item 2 to item 26 inherits that decision, which is why it is first and why it is worth getting slowly right.</p>          <div class="gates">
           <span class="gate-chip" data-state="pass">Spec agreed</span>
           <span class="gate-chip" data-state="pass">Built &amp; verified</span>
-          <span class="gate-chip" data-state="waiting">Commit granted</span>
+          <span class="gate-chip" data-state="pass">Commit granted</span>
         </div>
             <details class="drawer" data-kind="plan" open>
-              <summary>Steps <span class="tag-drift">all six done &middot; your walkthrough passed, independent review next</span></summary>
+              <summary>Steps <span class="tag-drift">all six done &middot; reviewed and completed</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The work, cut into pieces small enough to review one at a time. Each step opens into what was planned, and once it is done, what actually happened.</p>
 <div class="item-steps">
@@ -2022,10 +2022,23 @@
               </div>
             </details>
             <details class="drawer" data-kind="reality">
-              <summary>Log <span class="tag-drift">30 entries, newest first</span></summary>
+              <summary>Log <span class="tag-drift">31 entries, newest first</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The same work as Steps, ordered by date instead of by piece: decisions as they were taken, questions as they came up, faults as they were found. Steps answer what is being built; this answers what happened, and when.</p>
 <div class="log">
+              <div class="entry" data-kind="done">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Item 1 complete</span>
+                    <span class="kind-tag">Done</span>
+                    <span class="stamp">Sep 23</span>
+                  </div>
+                  <p class="entry-text"><strong>What shipped:</strong> email-code sign-in on the Hono API, with signup closed and only the platform admin able to create a business. Each business is scoped by the session and never by the request, and a returning user lands on their business without a workaround. A plan check in two layers fails closed. The dashboard shell has its five states. The shared package compiles to <code>dist/</code>, and a migration ledger builds an empty database as well as adopting the old one. Development now runs on a local database with a seed.</p>
+                  <p class="entry-text"><strong>The third independent review passed.</strong> A fresh reviewer with none of the build conversation closed all eight repaired findings, found no blockers, and recorded five small new ones: F-12 at P2 and F-13 to F-16 at P3. They stay open in the live ledger for the items that touch those files. You chose to fix only blockers now, so this was the last round.</p>
+                  <p class="entry-text">Archived with its walkthrough, its eleven resolved findings as <code>1/F-01</code> to <code>1/F-11</code>, and the review receipt, plus a walkthrough PDF beside it. Two things <code>/complete</code> would normally do were deliberately not done. <code>prototypes/</code> was kept, because item 1 took only the colour tokens from it and the mockups are still the design reference for items 9 to 16. The overview's plan fingerprint was not rewritten, because the overview really is behind the plans and rewriting it would hide that; <code>/overview</code> refreshes it.</p>
+                </div>
+              </div>
               <div class="entry" data-kind="done">
                 <div class="dot"></div>
                 <div class="entry-body">
@@ -2403,7 +2416,9 @@
                 <p class="drawer-what">Things that are true right now but belong to no single step. Loose ends, known gaps, and what is deliberately not being done yet.</p>
 <ul>
               <li><strong>Four things changed in review, before any code was written.</strong> The login code now fails loudly in production instead of being written to the server log, where it would be a password sitting in plain text. An unrecognised plan locks the account out rather than quietly falling back to the paid one. The dashboard's first route was put behind the plan check so that a refusal can actually be seen happening. And the dashboard was split from the public booking widget for cross-site permissions, because the widget must never be able to act as a signed-in user.</li>
-              <li><strong>Every finding is repaired, and most are not closed yet.</strong> Two review rounds raised eleven. The second review closed three after testing them; the other eight are repaired and committed, and only a fresh review can close them. <code>/complete</code> will not merge while the blocking one is open. Every repair a browser can show has now been seen live in your own walkthrough, and that evidence is in the findings for the reviewer.</li>
+              <li><strong>Five small findings carry forward.</strong> F-12 (P2) and F-13 to F-16 (P3) from the final review stay open in the live ledger. None blocks anything; each belongs to whichever later item touches its file. The eleven resolved findings are archived with item 1.</li>
+              <li><strong>The overview is behind the plans.</strong> Five plan commits since it was written, including item 3b and the per-resource hours. <code>/status</code> will keep saying so until <code>/overview</code> refreshes it.</li>
+              <li><strong><code>prototypes/</code> stays.</strong> Item 1 took only the colour tokens. The mockups are the design reference for the booking modal, leads, pipeline, settings and quotes.</li>
               <li><strong>The live database has never been compared with <code>schema.ts</code>.</strong> The first repo built it. A constraint with a different name or an extra column would pass every check so far, including the empty-database test. Pulling its real shape into a scratch folder and diffing it belongs in the same tunnel session as the review.</li>
               <li><strong>On Railway, nobody new can sign in until item 3b.</strong> Deliberate. A local database gets its accounts from <code>db:seed</code> instead: <code>admin@example.com</code> and <code>owner@example.com</code>, with login codes in the API's console.</li>
               <li><strong>Development runs on your laptop now.</strong> PostgreSQL 18 as a Windows service, database <code>scheduleads_dev</code>, rebuilt at will with <code>db:migrate</code> and <code>db:seed</code>. The Railway line in <code>.env</code> is switched off, and the tunnel is only for touching real data on purpose, such as applying a migration there.</li>
@@ -2413,7 +2428,7 @@
             </ul>
               </div>
             </details>
-          <p class="item-was">Better Auth mounts on the Hono API, not in Next as the first repo had it.</p></div><span class="pill pill--live">In progress</span></div>
+          <p class="item-was">Better Auth mounts on the Hono API, not in Next as the first repo had it. Archived at <code>blueprint/history/features/01-multi-tenant-auth-with-the-org-fix.md</code>.</p></div><span class="pill pill--done">Done</span></div>
           <div class="item" data-state="planned"><div class="item-num">2</div><div class="item-body"><div class="item-name">Booking links, resources and availability rules</div><p class="item-text">The three tables, the public read route, the seed CLI, the shared-package layout. Several windows a day, a booking horizon, statutory holidays from a country code. Hours are unique per business <em>and per person</em>: null means the business's own, set means that person's, and someone without their own row falls back to the business.</p><p class="item-was">Carries a required gate: the typed front-to-back seam lands here and does not close on a claim. The frontend must call this item's route through the shared types, and the step must rename that route on purpose and confirm the frontend stops compiling. The first repo declared this seam and never used it once.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">3</div><div class="item-body"><div class="item-name">Calendar connection</div><p class="item-text">The table, the cipher, OAuth connect and disconnect, the provider seam, free/busy verified against a real event. Same per-person shape as the hours: one calendar per business now, room for one per person later without a migration.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">3b</div><div class="item-body"><div class="item-name">Client access: provisioning</div><p class="item-text">The agency creates a client's account and puts them in the business it made for them, using pieces Better Auth already ships. Nobody new can get in until this exists.</p><p class="item-was">Added Sep 23 while reviewing item 1. Nothing in the plan had ever answered how a client reaches their own business, and every test had run as the admin. It started as two halves, provisioning and closing signup; signup was closed early, which left this as a hard prerequisite for Phase 5.</p></div><span class="pill pill--plan">Planned</span></div>
