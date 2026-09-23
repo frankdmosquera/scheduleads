@@ -407,7 +407,7 @@ flipping a live organization's plan to prove the 403. The independent review
 that closes F-05 needs the same setup and should re-run the plan flip here,
 now expecting `plan_unrecognised` rather than `plan_required`.
 
-### F-08 [P2] open - `APP_ORIGIN` and `BETTER_AUTH_URL` fall back to localhost in production instead of refusing to boot
+### F-08 [P2] fixed - `APP_ORIGIN` and `BETTER_AUTH_URL` fall back to localhost in production instead of refusing to boot
 
 **File:** backend/src/index.ts:27
 **Found:** 2026-09-23 by /audit (scope: current; lens: security)
@@ -439,7 +439,33 @@ two checks that already do, and keep the localhost default for development only.
 `/release` owns deployment readiness and is a natural second place to check them,
 but a check in the code is what makes the boot fail rather than the review.
 
-**Resolution:**
+**Resolution:** Fixed 2026-09-23 as suggested. Both variables now go
+through one helper in `backend/src/lib/auth.ts`, `settingWithDevDefault`, which
+returns the value when set, the localhost default in development, and throws in
+production. That matches the two checks the same files already made for
+`BETTER_AUTH_SECRET` and `DATABASE_URL`, so the pattern is consistent as well
+as closed. The reasoning, including why the frontend's `NEXT_PUBLIC_API_URL`
+keeps its fallback while these do not, is written at the helper.
+
+Went one step past the suggestion. `APP_ORIGIN` was read twice, at
+`index.ts:27` and `auth.ts:36`, each with its own copy of the default. It is
+now read once, exported from `auth.ts`, and imported by `index.ts` for CORS,
+so the credentialed CORS origin and Better Auth's trusted origin cannot drift
+apart. An empty string counts as unset, because `APP_ORIGIN=` left blank in a
+platform's env editor is a mistake rather than an origin.
+
+Proved by running the compiled module, not inferred from the diff. Imported
+`backend/dist/lib/auth.js` directly with no `.env` loaded, a dummy secret and a
+database URL pointing nowhere, under five environments:
+
+- production with neither set: refused, naming `APP_ORIGIN`
+- production with only `APP_ORIGIN`: refused, naming `BETTER_AUTH_URL`
+- production with `APP_ORIGIN` set to the empty string: refused, naming it
+- production with both set: booted, `appOrigin` the configured value
+- development with neither set: booted, `appOrigin` `http://localhost:3000`
+
+`/release` remains a natural second place to check these, but the boot now
+fails without it, which is the direction the finding asked for.
 
 ### F-09 [P2] fixed - `coding-standards.md` now contradicts the shipped code in three places
 

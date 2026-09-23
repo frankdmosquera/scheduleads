@@ -32,8 +32,44 @@ if (!process.env.BETTER_AUTH_SECRET) {
 
 const isProduction = process.env.NODE_ENV === "production";
 
-/** Where the dashboard is served from. The only origin allowed to hold a session. */
-const appOrigin = process.env.APP_ORIGIN ?? "http://localhost:3000";
+/**
+ * A setting whose localhost default is allowed in development only.
+ *
+ * Both callers below used to fall back to localhost everywhere. In
+ * production that is not a harmless default: APP_ORIGIN becomes the one
+ * origin allowed to send credentials and Better Auth's only trusted origin,
+ * so a deploy that missed it would grant http://localhost:3000 - anything
+ * the visitor happens to run on that port - the right to call the live API
+ * with their session attached. BETTER_AUTH_SECRET above and DATABASE_URL in
+ * `database.ts` already refuse to boot without a value; these now match.
+ *
+ * The frontend's NEXT_PUBLIC_API_URL deliberately keeps its fallback, and
+ * its reason does not carry over. That value is inlined at build time, so a
+ * throw there fires during a local production build. These are read when
+ * the process starts, where a throw is a failed boot, which is the point.
+ *
+ * An empty string counts as unset: `APP_ORIGIN=` in a dashboard's env editor
+ * is a mistake, not an origin.
+ */
+function settingWithDevDefault(name: string, developmentDefault: string): string {
+  const value = process.env[name];
+  if (value) return value;
+
+  if (isProduction) {
+    throw new Error(
+      `${name} is not set. It defaults to localhost in development only; production must name the real origin.`
+    );
+  }
+
+  return developmentDefault;
+}
+
+/**
+ * Where the dashboard is served from. The only origin allowed to hold a
+ * session. Exported because `index.ts` needs it for CORS, and reading the
+ * variable in two files meant two fallbacks that could drift apart.
+ */
+export const appOrigin = settingWithDevDefault("APP_ORIGIN", "http://localhost:3000");
 
 /**
  * Organization roles.
@@ -71,7 +107,7 @@ export const auth = betterAuth({
    * cookie URLs from it, and inferring it from the incoming request is
    * unreliable once this sits behind a proxy.
    */
-  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3001",
+  baseURL: settingWithDevDefault("BETTER_AUTH_URL", "http://localhost:3001"),
   basePath: "/api/auth",
 
   /**

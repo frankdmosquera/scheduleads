@@ -7,7 +7,7 @@ import { organization } from "@scheduleads-app/shared/db";
 
 import { db } from "./database.js";
 import { refuse, requireOrganization } from "./lib/active-organization.js";
-import { auth } from "./lib/auth.js";
+import { appOrigin, auth } from "./lib/auth.js";
 import { requireKnownPlan } from "./lib/plan-gate.js";
 
 const app = new Hono();
@@ -23,8 +23,10 @@ const app = new Hono();
  * credentials: a site that could attach the owner's session cookie to a
  * request could act as the owner. Merging the two lists is how that
  * happens by accident, so they never touch.
+ *
+ * `appOrigin` comes from `auth.ts`, which also makes it Better Auth's one
+ * trusted origin and refuses to boot in production without it.
  */
-const appOrigin = process.env.APP_ORIGIN ?? "http://localhost:3000";
 
 const dashboardCors = cors({
   origin: appOrigin,
