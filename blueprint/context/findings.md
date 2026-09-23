@@ -400,7 +400,7 @@ but a check in the code is what makes the boot fail rather than the review.
 
 **Resolution:**
 
-### F-09 [P2] open - `coding-standards.md` now contradicts the shipped code in three places
+### F-09 [P2] fixed - `coding-standards.md` now contradicts the shipped code in three places
 
 **File:** blueprint/context/coding-standards.md:52
 **Found:** 2026-09-23 by /audit (scope: current; lens: quality)
@@ -435,9 +435,32 @@ other way round. Correct the `packages/shared` sentence to `dist/`, replace
 and narrow the Comments section so it forbids comments that restate the code
 while permitting the file-level why-blocks this codebase is built on.
 
-**Resolution:**
+**Resolution:** Fixed 2026-09-23, editing the standards to match what
+shipped rather than the other way round, which is the direction the finding
+asked for. All three statements were confirmed false before being touched.
 
-### F-10 [P3] open - The spec still lists step 1 pieces that never shipped, and its own deviation count is now wrong
+- The `packages/shared` paragraph said the subpath exports "point at source
+  files, no barrel". They point at `dist/` (`package.json:8-13`). Rewritten to
+  say so, to keep the extensions reason that made it true once, and to add the
+  warning the old text invited: an export pointing at `src/` breaks both builds.
+- "Dark mode first, light mode as option" is the opposite of what shipped.
+  `globals.css:117` defines light on `:root` and `globals.css:215` puts dark
+  behind `[data-theme="dark"]`, with no `prefers-color-scheme` anywhere and no
+  third "system" state. Replaced with the decision the mockups actually make.
+- The Comments section forbade "banner/header blocks" and warned that
+  over-commenting is an AI tell, while every file this feature added opens with
+  a why-block. Narrowed rather than deleted: restating the code is still
+  forbidden, region-announcing comments and narration are still forbidden, and
+  file-level blocks carrying a decision or a rejected alternative are now
+  explicitly encouraged. Added the citation habit this feature used throughout,
+  naming the dependency file and line a behaviour was read from.
+
+The comments were never the problem and none were removed. The problem was a
+file `AGENTS.md` tells the next agent to read before changing code, telling
+them to undo deliberate decisions, which is the two-levels-contradicting
+failure the workspace `CLAUDE.md` forbids.
+
+### F-10 [P3] fixed - The spec still lists step 1 pieces that never shipped, and its own deviation count is now wrong
 
 **File:** blueprint/context/current-feature.md:8
 **Found:** 2026-09-23 by /audit (scope: current; lens: quality)
@@ -465,9 +488,23 @@ let the bullets speak. Add one bullet naming the one-file schema and the
 `./validation` export in place of `./db/schema`, pointing at the reason already
 written in `schema.ts`.
 
-**Resolution:**
+**Resolution:** Fixed 2026-09-23, both halves.
 
-### F-11 [P3] open - `.env.example` claims every variable it lists is read today, and two are not
+The count is gone rather than corrected. `AGENTS.md` is explicit that a bare
+count beside a list misleads, and this one had already gone stale once; a
+number that has to be maintained in step with a list it sits above will go
+stale again. The preamble now says what it is and why it carries no number.
+
+The missing deviation is recorded as a fourth bullet: step 1 named
+`./db/schema` among the exports and told the builder to write the tables under
+`src/db/schema/auth-schema/`, with Files / areas listing that directory and
+`src/db/index.ts`. What exists is one file, `packages/shared/src/db/schema.ts`,
+no barrel, no `db/index.ts`, and a third export of `./validation` that step 1
+never mentions. Confirmed against the tree rather than assumed: `src/` holds
+exactly three files. The bullet points at the argument already written at
+`schema.ts:19-23` instead of restating it.
+
+### F-11 [P3] fixed - `.env.example` claims every variable it lists is read today, and two are not
 
 **File:** .env.example:8
 **Found:** 2026-09-23 by /audit (scope: current; lens: quality)
@@ -486,4 +523,10 @@ and it is the line a reader trusts before reading the rest.
 says which build-plan item claims it. That keeps the rule the header exists to
 state while describing the file as it actually is.
 
-**Resolution:**
+**Resolution:** Fixed 2026-09-23 with the one clause the finding
+suggested. The header now says every variable is either read by code that
+exists today or names the build-plan item that claims it, and names the two of
+the second kind, `WIDGET_ORIGINS` and `RESEND_API_KEY`, so a reader meeting
+them further down is not surprised. The rule the header exists to state
+survives; it now describes the file as it actually is. The ImageKit, S3 and
+volume sentence is untouched, because that part was always true.

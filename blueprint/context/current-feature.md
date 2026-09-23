@@ -5,8 +5,9 @@
 **Branch:** `feature/multi-tenant-auth-with-the-org-fix`
 
 **Status:** verified, 2026-09-22. All six steps observed against the running
-app. Two things in this spec turned out to be wrong and are recorded here
-rather than quietly corrected:
+app. The following turned out to be wrong in this spec and are recorded here
+rather than quietly corrected. No count is given on purpose: the list has been
+added to twice, and a stale number beside it misleads worse than no number.
 
 - Step 6's `Done when` asks for "two organizations, **both** created only
   through the app". Only one could be: the database arrived holding the first
@@ -25,6 +26,15 @@ rather than quietly corrected:
   `frontend/next.config.ts` is therefore untouched scaffold. The build log
   recorded this at the time; this preamble did not, which is the gap an
   independent review found as F-04.
+- Step 1 describes a schema layout that never shipped. It lists `./db/schema`
+  among the subpath exports and says to write the tables "under
+  `src/db/schema/auth-schema/`", and Files / areas lists that directory plus
+  `src/db/index.ts`. What exists is one file, `packages/shared/src/db/schema.ts`,
+  with no barrel and no `db/index.ts`, and the third export is `./validation`,
+  which step 1 never names. The one-file decision is argued at `schema.ts:19-23`:
+  a barrel forces a relative import, and the two workspaces disagree about
+  extensions. Recorded here as F-10, after F-04's repair fixed one gap of this
+  kind and left this one.
 
 `user.role` was then **proved** unsettable rather than asserted: a sign-in
 body carrying `role: "admin"` is refused with 400 `FIELD_NOT_ALLOWED`.
