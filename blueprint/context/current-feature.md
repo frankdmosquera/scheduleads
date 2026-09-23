@@ -86,6 +86,13 @@ mockups that do exist.
   had no legitimate user. Together they mean every account in this product is
   one the agency deliberately created, which is what the project plan already
   said and the code did not.
+- A local development database and `db:seed`. Also not in the original scope,
+  and forced by the item twice over. The F-06 repair made a database buildable
+  from empty for the first time, and closing signup made a freshly built one
+  impossible to get into. `packages/shared/scripts/seed-dev.ts` creates one
+  platform admin and one ordinary owner, each with a business, and refuses any
+  database not on this machine or not named `*_dev`. Development moved off the
+  Railway tunnel onto a local PostgreSQL 18 the same day.
 
 ## Out of scope
 
@@ -295,8 +302,9 @@ No browser test command exists, so no browser coverage is claimed.
   `node_modules/next/dist/docs/` before writing framework code.
 - Do not assert Better Auth endpoint paths from memory. Read them off the
   installed version's types when wiring step 5.
-- Local Postgres goes through the SSH tunnel. When port 5433 listens but every
-  query resets, kill the stale `ssh.exe`.
+- Development runs against a local PostgreSQL 18, `scheduleads_dev`, since
+  2026-09-23. Railway is reached through its tunnel only on purpose; when port
+  5433 listens but every query resets, restart the tunnel.
 - The gate on `GET /me` is deliberate. An organization on an unrecognized rung
   is misconfigured and has no working product, so the dashboard refuses rather
   than rendering empty. `/me` mounts `requireKnownPlan` only; item 2's first

@@ -232,9 +232,10 @@ already happened, while a row carrying `dueAt` is something still to do.
   Persistent Node: database pool and calendar token refresh live here.
 - **npm workspaces** - `frontend`, `backend`, `packages/shared` (Drizzle
   schema, migrations, Zod schemas, the Hono `AppType`, the crypto). Subpath
-  exports to source, no barrel.
-- **PostgreSQL + Drizzle** on Railway. Local access through the SSH tunnel;
-  when port 5433 listens but every query resets, kill the stale `ssh.exe`.
+  exports to the compiled `dist/`, no barrel.
+- **PostgreSQL + Drizzle** on Railway. Development uses a local PostgreSQL 18
+  seeded by `db:seed`; Railway only through its tunnel, on purpose. When port
+  5433 listens but every query resets, restart the tunnel.
 - **Better Auth** - `organization`, `emailOTP`, `admin` plugins. Codestash's
   config is the reference, owner role without `organization:delete`.
 - **Resend + React Email** - confirmations, `.ics`, notifications, CRM sends.

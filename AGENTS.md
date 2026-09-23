@@ -372,17 +372,39 @@ scripts - every command targets one workspace explicitly.
 - Backend start (runs `dist/`): `npm run start --workspace=backend`
 - Frontend lint: `npm run lint --workspace=frontend`
 
+The frontend must get port 3000. The API trusts only that origin, and when
+another app already holds 3000, Next moves to 3001 without asking, collides
+with the API, and the sign-in page ends up sending its auth calls to itself.
+Starting the frontend also rebuilds `packages/shared`, which restarts the
+API's watcher, and that restart is the moment the port can be lost. Check that
+the frontend reports 3000 before signing in.
+
 Database, all from `packages/shared`, which owns the schema and the migration
 ledger:
 
 - Generate a migration from the schema: `npm run db:generate --workspace=@scheduleads-app/shared`
 - Apply pending migrations: `npm run db:migrate --workspace=@scheduleads-app/shared`
+- Seed the two development accounts: `npm run db:seed --workspace=@scheduleads-app/shared`
 - Browse the data: `npm run db:studio --workspace=@scheduleads-app/shared`
 
-All three need `DATABASE_URL` and, locally, the Railway SSH tunnel on
-127.0.0.1:5433. `drizzle.config.ts` loads the root `.env`. Never generate a
-migration from `backend` or `frontend`: two workspaces generating against one
-database is how a migration ledger forks.
+Development runs against a local PostgreSQL 18, the same major version as
+Railway, in a database named `scheduleads_dev` on 127.0.0.1:5432, and `.env`
+points `DATABASE_URL` there. `db:migrate` builds a fresh one and `db:seed`
+makes it usable: it creates `admin@example.com`, the platform admin, and
+`owner@example.com`, an ordinary owner, each owning one business. Signup is
+closed, so without the seed a new database has no way in. Login codes print in
+the API's console. The seed refuses any database that is not on this machine
+or whose name does not end in `_dev`.
+
+Railway is reached only on purpose: open the tunnel with
+`railway connect Postgres --tunnel-only --port 5433`, leave it running, and
+switch the Railway `DATABASE_URL` line in `.env` back on. The tunnel also
+listens on localhost, which is why the seed checks the database name as well
+as the host.
+
+`drizzle.config.ts` loads the root `.env`. `db:generate` needs no database.
+Never generate a migration from `backend` or `frontend`: two workspaces
+generating against one database is how a migration ledger forks.
 
 No separate typecheck script: `next build` typechecks the frontend and the
 backend build is `tsc`. `packages/shared` compiles to `dist/` and both apps

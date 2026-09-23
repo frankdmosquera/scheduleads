@@ -16,15 +16,15 @@ import * as schema from "@scheduleads-app/shared/db";
 if (!process.env.DATABASE_URL) {
   throw new Error(
     "DATABASE_URL is not set. Copy .env.example to .env at the repo root. " +
-      "Locally it must point at the Railway SSH tunnel on 127.0.0.1:5433, " +
-      "not postgres.railway.internal. When 5433 listens but every query " +
-      "resets, kill the stale ssh.exe and reopen the tunnel."
+      "In development it points at the local scheduleads_dev database on " +
+      "127.0.0.1:5432; see Commands in AGENTS.md. Never postgres.railway.internal, " +
+      "which only resolves inside Railway."
   );
 }
 
 const client = postgres(process.env.DATABASE_URL, {
   // Better Auth issues several short queries per request. A small pool is
-  // plenty and keeps the tunnel from being held open by idle sockets.
+  // plenty for one long-lived process.
   max: 10,
 });
 

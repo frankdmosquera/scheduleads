@@ -255,11 +255,15 @@ things to add.
   live in one process.
 - **npm workspaces**: `frontend`, `backend`, `packages/shared` holding the
   Drizzle schema, migrations, the crypto, and the API contract. Subpath
-  exports point at source files, no barrel, because the workspaces disagree
-  about extensions. Proven in the first repo.
-- **PostgreSQL + Drizzle** on Railway, reached locally through the SSH
-  tunnel. The tunnel dies. It presents as port 5433 listening and every query
-  resetting. Kill the stale `ssh.exe`, restart it.
+  exports point at the compiled `dist/`, no barrel, because the workspaces
+  disagree about extensions, and both apps build the package first. The first
+  repo exported source instead, which only worked until a built server tried
+  to import a `.ts` file.
+- **PostgreSQL + Drizzle** on Railway. Development runs against a local
+  PostgreSQL 18, the same major version, built from the migrations and seeded
+  with `db:seed`, so no real data is ever needed to work. Railway is reached
+  through its tunnel only on purpose. The tunnel dies. It presents as port 5433
+  listening and every query resetting. Restart it.
 - **Better Auth**: `organization` plugin, `emailOTP`, and, new, the `admin`
   plugin for the platform superadmin. Codestash's config is the reference,
   including the owner role with `organization:delete` removed.
