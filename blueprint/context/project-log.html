@@ -1163,7 +1163,7 @@
     <div class="topbar-row">
       <div class="brand">
         <span class="brand-name">scheduleads-app</span>
-        <span class="brand-sub">Build log &middot; Sep 22, 2026</span>
+        <span class="brand-sub">Build log &middot; Sep 23, 2026</span>
       </div>
       <nav class="switch" aria-label="Views">
         <button class="nav-link" data-view="roadmap">Roadmap</button>
@@ -1183,8 +1183,8 @@
       </div>
       <span class="where-arrow">&rsaquo;</span>
       <div class="where-leg" data-now="yes">
-        <div class="where-key">Step now</div>
-        <div class="where-val">1.6 &middot; Done. Item 1 ready for /complete</div>
+        <div class="where-key">Now</div>
+        <div class="where-val">Review &middot; repairs in, fresh review next</div>
       </div>
       <span class="where-spacer"></span>
       <div class="where-leg">
@@ -1273,6 +1273,7 @@
             <li>A failed calendar check never reports "free."</li>
             <li><code>activity</code> carries both what happened and what is still owed, from item 4, so the next-step queue is never a second table bolted on.</li>
             <li>The booking layout is a stored value on the booking link from item 9, never a hardcoded shape. The Calendly-shaped month flow is what gets built; the week strip is parked.</li>
+            <li>Every account is one the agency created. Signup is closed and only the platform admin creates a business; item 3b provisions clients, and item 25 is where self-serve reopens.</li>
           </ul>
         </div>
       </section>
@@ -1295,8 +1296,8 @@
           <h1>Roadmap</h1>
         </div>
         <p class="lede">
-          Twenty-eight items. Two are Phase 0 decisions rather than code, already answered. The
-          other 26 are built one at a time, each on its own branch, each split into numbered steps
+          Twenty-nine items. Two are Phase 0 decisions rather than code, already answered. The
+          other 27 are built one at a time, each on its own branch, each split into numbered steps
           you can see below it while it is the current one. An item is done when it works against
           the running app, not when its boxes are ticked.
         </p>
@@ -1311,9 +1312,10 @@
           <div class="strip-phase">
             <div class="strip-label">Ph 1 &middot; Foundation</div>
             <div class="strip-cells">
-              <span class="cell" data-state="active" title="1 Multi-tenant auth - all six steps done, ready to merge">1</span>
+              <span class="cell" data-state="active" title="1 Multi-tenant auth - built, review repairs in, re-review before merge">1</span>
               <span class="cell" title="2 Booking links, resources and availability rules">2</span>
               <span class="cell" title="3 Calendar connection">3</span>
+              <span class="cell" title="3b Client access: provisioning">3b</span>
             </div>
           </div>
           <div class="strip-phase">
@@ -1382,8 +1384,8 @@
         </div>
         <div class="tally">
           <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b</span></span>
-          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">1, all six steps done</span></span>
-          <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">2 through 26</span></span>
+          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">1, in review</span></span>
+          <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">2, 3, 3b, then 4 through 26</span></span>
         </div>
       </header>
 
@@ -1397,7 +1399,7 @@
         </div>
 
         <div class="stage">
-          <div class="stage-head"><span class="stage-name">Phase 1 &middot; Foundation, carried over</span><span class="stage-note">Exit: a second org created through the app, sign-in lands on it, a gated route refuses the wrong rung, free/busy proven on Frank's calendar</span></div>
+          <div class="stage-head"><span class="stage-name">Phase 1 &middot; Foundation, carried over</span><span class="stage-note">Exit: a second org created through the app, sign-in lands on it, a gated route refuses the wrong rung, free/busy proven on Frank's calendar, a client the agency provisioned reaches only their own business</span></div>
           <div class="item" data-state="active"><div class="item-num">1</div><div class="item-body"><div class="item-name">Multi-tenant auth, with the org fix</div><p class="item-text">Email-OTP sign-in, create-organization, the admin role, the auto-active organization hook, and the package gate with the one rung.</p>
           <p class="item-text">Four businesses will eventually sign into the same app and must never see each other's leads. This item decides where the answer to "which business is this?" comes from, and the answer is: the session on the server, never the request. Everything from item 2 to item 26 inherits that decision, which is why it is first and why it is worth getting slowly right.</p>          <div class="gates">
           <span class="gate-chip" data-state="pass">Spec agreed</span>
@@ -1405,7 +1407,7 @@
           <span class="gate-chip" data-state="waiting">Commit granted</span>
         </div>
             <details class="drawer" data-kind="plan" open>
-              <summary>Steps <span class="tag-drift">all six done &middot; ready for /complete</span></summary>
+              <summary>Steps <span class="tag-drift">all six done &middot; review repairs in, re-review next</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The work, cut into pieces small enough to review one at a time. Each step opens into what was planned, and once it is done, what actually happened.</p>
 <div class="item-steps">
@@ -1748,6 +1750,7 @@
               <li>The auto-active-organization fix, as a session hook plus a read-time fallback</li>
               <li>The plan gate every module route will call, and <code>GET /me</code> behind it</li>
               <li><code>/sign-in</code>, <code>/create-organization</code>, and the signed-in shell</li>
+              <li>Both signup doors closed. Not planned: it arrived as the repair for the second review's only blocker</li>
             </ul>
           </div>
           <div class="scope-out">
@@ -1757,14 +1760,14 @@
               <li>Real login email through Resend - item 6 owns transactional mail</li>
               <li>Any product table: booking links, availability, contacts, leads - items 2 and 4</li>
               <li>The typed RPC seam - arrives with item 2's first public route</li>
-              <li>Invitations and a second member in one organization - nothing asks for it yet</li>
+              <li>Any way for a client to get into the business the agency made for them - item 3b, added after this item's review found nothing planned it</li>
             </ul>
           </div>
         </div>
               </div>
             </details>
             <details class="drawer" data-kind="reality">
-              <summary>Decisions <span class="tag-drift">2 settled &middot; 6 options weighed, with why each loser lost</span></summary>
+              <summary>Decisions <span class="tag-drift">4 settled &middot; 11 options weighed, with why each loser lost</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">Choices made once that would be expensive to reverse, each with the options that lost and the reason they lost.</p>
 
@@ -1863,10 +1866,81 @@
           </div>
 
         </div>
+
+                <h3>Who can get an account</h3>
+                <p class="rstep-what">Settled 23 Sep, in two halves a day apart. Every account in the product is one the agency created on purpose. A business reaches this product by buying a site, so there is no such thing as a legitimate stranger signing up. Better Auth ships with both doors open; both are now shut, and the only way in is item 3b's provisioning until item 25 reopens self-serve.</p>
+                <div class="options">
+                  <div class="opt" data-match="yes">
+                    <div class="opt-top"><span class="opt-key">Chosen</span><span class="pill pill--done">In place</span></div>
+                    <div class="opt-name">The agency creates every account</div>
+                    <div class="wire">
+                      <div class="wire-row between"><span class="wire-title">a stranger</span></div>
+                      <div class="wire-row"><span class="btn btn--danger">sign up</span><span class="btn btn--ghost">closed</span></div>
+                      <div class="wire-row"><span class="btn btn--danger">create a business</span><span class="btn btn--ghost">admin only</span></div>
+                      <div class="wire-row"><span class="wire-icon"></span><span class="btn btn--solid">agency provisions</span><span class="btn">item 3b</span></div>
+                    </div>
+                    <p class="opt-text">Anyone who already has an account signs in as before. An unknown address is told a code is on its way and none is sent, so the form cannot be used to test whether an address is a customer.</p>
+                    <div class="opt-trade">Cost: nobody new can get in until item 3b ships, so it is now a hard prerequisite for Primo rather than a nice-to-have.</div>
+                  </div>
+
+                  <div class="opt">
+                    <div class="opt-top"><span class="opt-key">Rejected</span><span class="pill pill--plan">Lived one day</span></div>
+                    <div class="opt-name">Admin-only businesses, open signup</div>
+                    <div class="wire">
+                      <div class="wire-row between"><span class="wire-title">a stranger</span></div>
+                      <div class="wire-row"><span class="btn btn--solid">sign up</span><span class="btn btn--ghost">open</span></div>
+                      <div class="wire-row"><span class="btn btn--danger">create a business</span><span class="btn btn--ghost">admin only</span></div>
+                      <div class="wire-row"><span class="btn btn--ghost">an account that sees nothing</span></div>
+                    </div>
+                    <p class="opt-text">Kept signup open on the argument that a client being onboarded has no account yet and must be able to sign in. True in general.</p>
+                    <div class="opt-trade">Why it lost: nobody was being onboarded, so the door had no legitimate user. What it did have was a cost the moment item 6 adds real email: junk accounts, and an API that sends mail to any address a stranger types in.</div>
+                  </div>
+
+                  <div class="opt">
+                    <div class="opt-top"><span class="opt-key">Rejected</span><span class="pill pill--plan">Better Auth default</span></div>
+                    <div class="opt-name">Both doors open</div>
+                    <div class="wire">
+                      <div class="wire-row between"><span class="wire-title">a stranger</span></div>
+                      <div class="wire-row"><span class="btn btn--solid">sign up</span><span class="btn btn--ghost">open</span></div>
+                      <div class="wire-row"><span class="btn btn--solid">create a business</span><span class="btn btn--ghost">unlimited</span></div>
+                      <div class="wire-row"><span class="btn btn--danger">each one on agency, $240/mo</span></div>
+                    </div>
+                    <p class="opt-text">What shipped through step 1.6, because nobody had changed the defaults. Never exploitable in production, where login codes cannot be sent yet.</p>
+                    <div class="opt-trade">Why it lost: a free paid account for anyone who asks, against a written plan that says the agency provisions every business. Raised as F-05, the second review's only blocker.</div>
+                  </div>
+                </div>
+
+                <h3>What the dashboard's front door checks</h3>
+                <p class="rstep-what">Settled 23 Sep. <code>GET /me</code> asked for the <code>crm</code> module while its comments, the spec and the refusal screen all said it only refused an unrecognised plan. With one plan the two rules agreed; the first cheaper plan would have split them.</p>
+                <div class="options">
+                  <div class="opt" data-match="yes">
+                    <div class="opt-top"><span class="opt-key">Chosen</span><span class="pill pill--done">Built</span></div>
+                    <div class="opt-name">Any real plan gets in</div>
+                    <div class="wire">
+                      <div class="wire-row between"><span class="wire-title">GET /me</span></div>
+                      <div class="wire-row"><span class="btn btn--solid">is the plan real?</span><span class="btn btn--ghost">front door</span></div>
+                      <div class="wire-row"><span class="btn">is the module included?</span><span class="btn btn--ghost">each page</span></div>
+                    </div>
+                    <p class="opt-text">Two checks instead of one. The front door asks only whether the plan exists; each module's own route asks whether the plan includes it. An unknown plan and a missing module now answer with different codes.</p>
+                    <div class="opt-trade">Cost: module routes mount one more check, in a fixed order. Each check refuses to run if the one before it is missing, so a wrong order fails on the first request.</div>
+                  </div>
+
+                  <div class="opt">
+                    <div class="opt-top"><span class="opt-key">Rejected</span><span class="pill pill--plan">Smallest diff</span></div>
+                    <div class="opt-name">Keep the CRM check, fix the wording</div>
+                    <div class="wire">
+                      <div class="wire-row between"><span class="wire-title">GET /me</span></div>
+                      <div class="wire-row"><span class="btn btn--solid">includes crm?</span><span class="btn btn--ghost">front door</span></div>
+                      <div class="wire-row"><span class="btn btn--danger">booking-only plan: locked out</span></div>
+                    </div>
+                    <p class="opt-text">Rewrite three comments and one sentence so they describe what the code actually does.</p>
+                    <div class="opt-trade">Why it lost: the obvious cheaper tier is booking without the CRM, and it would have been locked out of the whole dashboard. Item 23 builds that ladder.</div>
+                  </div>
+                </div>
               </div>
             </details>
             <details class="drawer" data-kind="plan">
-              <summary>Contracts <span class="tag-drift">6 that later items inherit</span></summary>
+              <summary>Contracts <span class="tag-drift">7 that later items inherit</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">Rules this item sets that every later item inherits. Breaking one of these later breaks work that was built assuming it.</p>
 <div class="rows">
@@ -1879,12 +1953,16 @@
             <div class="row-val"><code>member.role</code> is the organization owner. <code>user.role</code> is the platform admin. They are different checks and never the same one. Both are server-set: no request path may write either.</div>
           </div>
           <div class="row">
+            <div class="row-key">Who gets in</div>
+            <div class="row-val">Every account is one the agency created. Signup is closed and only the platform admin creates a business. A new person gets in only through item 3b's provisioning, until item 25 reopens self-serve. Loosening either is a decision, never a default.</div>
+          </div>
+          <div class="row">
             <div class="row-key">Plan resolution</div>
-            <div class="row-val">A recognised rung returns its limits. Anything else, null included, returns the locked set - not <code>agency</code>. An unknown rung is a misconfiguration, so the gate fails closed.</div>
+            <div class="row-val">A recognised rung returns its limits. Anything else, null included, returns the locked set - not <code>agency</code>. An unknown rung is a misconfiguration, so the gate fails closed. Checked in two layers, always in this order: <code>requireKnownPlan</code> refuses a rung that does not exist, then <code>requireModule</code> refuses one that exists but lacks the module. The dashboard's front door mounts only the first.</div>
           </div>
           <div class="row">
             <div class="row-key">Refusals</div>
-            <div class="row-val">401 unauthenticated, 403 for a role or plan refusal, both in one JSON error shape fixed at step 4 so later items do not each invent their own.</div>
+            <div class="row-val">401 unauthenticated, 403 for a role or plan refusal, all in one JSON error shape fixed at step 1.3 so later items do not each invent their own. An unknown plan (<code>plan_unrecognised</code>) and a plan without the module (<code>plan_required</code>) are different codes, because telling a real customer their plan does not exist is a false statement about their account.</div>
           </div>
           <div class="row">
             <div class="row-key">Cookies</div>
@@ -1898,10 +1976,138 @@
               </div>
             </details>
             <details class="drawer" data-kind="reality">
-              <summary>Log <span class="tag-drift">17 entries, newest first</span></summary>
+              <summary>Log <span class="tag-drift">28 entries, newest first</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The same work as Steps, ordered by date instead of by piece: decisions as they were taken, questions as they came up, faults as they were found. Steps answer what is being built; this answers what happened, and when.</p>
 <div class="log">
+              <div class="entry" data-kind="fix">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">The migrations could not build a database from empty</span>
+                    <span class="kind-tag">Fix</span>
+                    <span class="stamp">Sep 23</span>
+                  </div>
+                  <p class="entry-text">Migration <code>0000</code> adopted the first repo's tables, so all it did was alter them. Pointed at an empty database it failed on its first line, which meant no staging, CI or replacement database could ever be built from the ledger, and a deploy is the next thing after this item. It now creates the seven tables first, only if they are missing, then does what it always did. Your live database skips that file entirely, so nothing changes there.</p>
+                  <p class="entry-text"><strong>The reviewer's own fix would not have worked.</strong> It suggested adding the creates as a second migration. Drizzle runs pending migrations in order inside one transaction, so the first one fails before the second is ever reached. Caught by reading the migrator rather than trusting the suggestion.</p>
+                  <p class="entry-text">Proved on a real empty Postgres 18.3, run in memory through PGlite from a scratch folder with this project's own Drizzle version, so the project's dependencies did not change. The result matches <code>schema.ts</code> column for column, a second run changes nothing, and the original file fails exactly as the finding said, which shows the test can fail at all. Still open: whether the live database, built by the first repo, actually matches <code>schema.ts</code>. That needs the tunnel.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="fix">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Every dashboard load ran six database queries for three</span>
+                    <span class="kind-tag">Fix</span>
+                    <span class="stamp">Sep 23</span>
+                  </div>
+                  <p class="entry-text">The session was looked up three times per request and the business row twice. Now once each: the session is passed along instead of re-read, and the plan check hands the business name on so the route does not fetch it again. This is the stack every later route mounts, so the waste would have multiplied. The session cache stays off: it would save more, but a signed-out session would keep working until the cache expired.</p>
+                  <p class="entry-text"><strong>The count was wrong before it was right.</strong> It went out in chat as "five, when two would do". Reading how Better Auth actually looks up a session gave six down to three. Not yet proved against the running app that <code>/me</code> returns exactly what it did before.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="fix">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Production would have trusted localhost</span>
+                    <span class="kind-tag">Fix</span>
+                    <span class="stamp">Sep 23</span>
+                  </div>
+                  <p class="entry-text">If a deploy forgot to set the dashboard's address, the API fell back to <code>http://localhost:3000</code> and trusted it with signed-in requests: anything a visitor happened to run on that port. Production now refuses to start without it, and without the API's own address, the same way it already refused without the database or the secret. Proved by starting the compiled server under five configurations. The dashboard address is also read in one place now, where it used to be read in two with a default each.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="fix">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">The dashboard's front door was checking the wrong thing</span>
+                    <span class="kind-tag">Fix</span>
+                    <span class="stamp">Sep 23</span>
+                  </div>
+                  <p class="entry-text">It let a business in only if its plan included the CRM, while everything around it said it refused only an unknown plan. Your call was to let any real plan in and have each module check itself; the options are under Decisions.</p>
+                  <p class="entry-text"><strong>Found on the way:</strong> the plan lookup used JavaScript's <code>in</code>, which also matches built-in names. A plan hand-set to <code>constructor</code> or <code>toString</code> would have crashed the check with a 500 instead of refusing with a 403. Fixed in the same line and tested against the compiled code. The new refusal has not yet been seen against the running app.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="fix">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Three documents contradicted the code</span>
+                    <span class="kind-tag">Fix</span>
+                    <span class="stamp">Sep 23</span>
+                  </div>
+                  <p class="entry-text">The coding standards told the next agent to point the shared package at source files, to design dark mode first, and not to write the explanatory comments this codebase is built on. All three were false, and the file is the one agents are told to read before changing code. The spec said "two things turned out wrong" above three of them and still described a schema layout that never shipped. The env example said every variable is used today, above two that say they are not. Each now matches the code. No code changed.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="decided">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Nobody signs themselves up</span>
+                    <span class="kind-tag">Decided</span>
+                    <span class="stamp">Sep 23</span>
+                  </div>
+                  <p class="entry-text">The day before, only creating a business had been closed. Signup stayed open so a client being onboarded could get in. Asking who actually needs to sign in today settled it: nobody new, and everyone who does already has an account. So signup is closed too. Existing accounts sign in exactly as before. A new address is told a code is on its way and none is sent, which is deliberate: answering "no such account" would let anyone test whether an address is a customer.</p>
+                  <p class="entry-text"><strong>The cost is real and intended:</strong> nobody new can get in until item 3b ships, which makes it a hard prerequisite for Primo.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="decided">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">A client had no way into their own business</span>
+                    <span class="kind-tag">Decided</span>
+                    <span class="stamp">Sep 23</span>
+                  </div>
+                  <p class="entry-text">Restricting business creation to the platform admin exposed a gap the plan never had an answer to. The agency creates Primo's business, so the agency owns it. Primo then signs in as a different person with no membership and lands on an empty "pick a business" screen. There is no invitation flow in the code, and no build-plan item ever planned one. It stayed invisible because every test ran as the admin.</p>
+                  <p class="entry-text">Added as item 3b in Phase 1: the agency creates the client's account and puts them in their business, using pieces Better Auth already ships. Also parked, not planned: a tryout requested from agents-web. It would arrive as a lead in the agency's own CRM rather than as open signup, and a trial would be its own cheaper plan, never open creation on <code>agency</code>.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="fix">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Anyone could create a paid business</span>
+                    <span class="kind-tag">Fix</span>
+                    <span class="stamp">Sep 22</span>
+                  </div>
+                  <p class="entry-text">Better Auth lets any signed-in user create unlimited businesses by default, each on the <code>agency</code> plan with everything unlocked: a free $240/mo account for anyone who asked, against a plan that says the agency provisions every business. Now only the platform admin can. Proved live: a non-admin got a 403 and the business count did not move. Never reachable in production, where login codes cannot be sent yet. The other half of the finding, signup itself, was closed the next day.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="fix">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Second independent review: changes requested</span>
+                    <span class="kind-tag">Review</span>
+                    <span class="stamp">Sep 22</span>
+                  </div>
+                  <p class="entry-text">A fresh reviewer with no memory of the build ran every lens over the whole branch. It confirmed the first round's three repairs by re-running them rather than reading the notes, and found seven new problems. One blocked the merge: anyone could create a paid business. Each has its own entry above.</p>
+                  <p class="entry-text">It also traced the tenant boundary through Better Auth's own source and found it sound. No route lets one business read another's data; the hole was strangers creating businesses of their own, not reaching anyone else's.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="fix">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">First independent review: the next migration would have recreated every table</span>
+                    <span class="kind-tag">Review</span>
+                    <span class="stamp">Sep 22</span>
+                  </div>
+                  <p class="entry-text">The first review of item 1 found four problems. The serious one: the migration ledger had no snapshot, so the next <code>db:generate</code>, at the very start of item 2, would have produced seven <code>CREATE TABLE</code> statements for tables that already exist, in a file that looked completely ordinary. Fixed, and proved by running the real command. The shared refusal shape was also documented as shared but not reusable, and the spec left out one deliberate change. The fourth, repeated database reads, was left for later and fixed in the second round.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="decided">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Every feature now needs an independent review before it merges</span>
+                    <span class="kind-tag">Decided</span>
+                    <span class="stamp">Sep 22</span>
+                  </div>
+                  <p class="entry-text">Your call, after noticing nothing on this project had ever been audited: six steps, no findings, no reviews. <code>/complete</code> now refuses to merge without a passing review tied to the exact commit. The case for it was already on this page: <code>GET /me</code> shipped four fields short through a green check, and the session hook sat unproven for three steps. The two review rounds that followed found eleven problems between them.</p>
+                </div>
+              </div>
               <div class="entry" data-kind="decision">
                 <div class="dot"></div>
                 <div class="entry-body">
@@ -2126,7 +2332,10 @@
                 <p class="drawer-what">Things that are true right now but belong to no single step. Loose ends, known gaps, and what is deliberately not being done yet.</p>
 <ul>
               <li><strong>Four things changed in review, before any code was written.</strong> The login code now fails loudly in production instead of being written to the server log, where it would be a password sitting in plain text. An unrecognised plan locks the account out rather than quietly falling back to the paid one. The dashboard's first route was put behind the plan check so that a refusal can actually be seen happening. And the dashboard was split from the public booking widget for cross-site permissions, because the widget must never be able to act as a signed-in user.</li>
-              <li><strong>Eight commits on this branch, and item 1's work is finished.</strong> The planning baseline, this page and its rules, steps 1.2 to 1.4, the retail proposal, the resource-model plan edits, step 1.5's code, and step 1.5's closure. Step 1.5's own commit message says the live sign-in had not been run, which was true when written and is no longer; the gate passed afterwards and this page records the result. Plan work was kept in its own commits so the feature's history stays about the feature. Step 1.6's changes are not committed yet, and <code>/complete</code> owns the final commit and the merge.</li>
+              <li><strong>Every finding is repaired, and most are not closed yet.</strong> Two review rounds raised eleven. The second review closed three after testing them; the other eight are repaired and committed, but only a fresh review can close them, and <code>/complete</code> will not merge while the blocking one is open. That review needs the SSH tunnel and both dev servers, because three repairs have not been seen against the running app: a non-admin still refused when creating a business, an unknown plan now answered with <code>plan_unrecognised</code>, and <code>/me</code> returning exactly what it did before.</li>
+              <li><strong>The live database has never been compared with <code>schema.ts</code>.</strong> The first repo built it. A constraint with a different name or an extra column would pass every check so far, including the empty-database test. Pulling its real shape into a scratch folder and diffing it belongs in the same tunnel session as the review.</li>
+              <li><strong>Nobody new can sign in until item 3b.</strong> Deliberate. Adding a person before then means writing their account into the database by hand.</li>
+              <li><strong>A local Postgres for development is agreed in principle.</strong> Every query during development goes through the tunnel to a database holding a real tenant. It only became possible once the migrations could build a database from empty. A proposal comes after this item merges, naming the exact package, before anything is installed.</li>
               <li><strong>There is a test tenant in the database.</strong> "Ana's Hair &amp; Co." under <code>step15@example.com</code> was created to prove step 1.5 and is real data, not a throwaway that got cleaned up. It can stay as the second tenant step 1.6 needs, or be deleted and remade deliberately. Earlier steps deleted their throwaway rows; this one was kept on purpose because the step required a business that survives.</li>
               <li><strong>Both workspaces import <code>@scheduleads-app/shared</code> without declaring it.</strong> It resolves through the npm workspace symlink at the repo root, which is why nothing has complained. It is worth settling before the first deploy, because it depends on the host running the install at the repo root rather than inside the folder it builds. A question for <code>/release</code>, not a bug today.</li>
               <li><strong>There are no automated tests, by choice for now.</strong> No test runner is set up, so every step is checked by hand against the running app and the two builds, and no test result is claimed anywhere on this page. When tests do arrive, the plan check and the two-businesses refusal are the first two things worth covering.</li>
@@ -2136,6 +2345,7 @@
           <p class="item-was">Better Auth mounts on the Hono API, not in Next as the first repo had it.</p></div><span class="pill pill--live">In progress</span></div>
           <div class="item" data-state="planned"><div class="item-num">2</div><div class="item-body"><div class="item-name">Booking links, resources and availability rules</div><p class="item-text">The three tables, the public read route, the seed CLI, the shared-package layout. Several windows a day, a booking horizon, statutory holidays from a country code. Hours are unique per business <em>and per person</em>: null means the business's own, set means that person's, and someone without their own row falls back to the business.</p><p class="item-was">Carries a required gate: the typed front-to-back seam lands here and does not close on a claim. The frontend must call this item's route through the shared types, and the step must rename that route on purpose and confirm the frontend stops compiling. The first repo declared this seam and never used it once.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">3</div><div class="item-body"><div class="item-name">Calendar connection</div><p class="item-text">The table, the cipher, OAuth connect and disconnect, the provider seam, free/busy verified against a real event. Same per-person shape as the hours: one calendar per business now, room for one per person later without a migration.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">3b</div><div class="item-body"><div class="item-name">Client access: provisioning</div><p class="item-text">The agency creates a client's account and puts them in the business it made for them, using pieces Better Auth already ships. Nobody new can get in until this exists.</p><p class="item-was">Added Sep 23 while reviewing item 1. Nothing in the plan had ever answered how a client reaches their own business, and every test had run as the admin. It started as two halves, provisioning and closing signup; signup was closed early, which left this as a hard prerequisite for Phase 5.</p></div><span class="pill pill--plan">Planned</span></div>
         </div>
 
         <div class="stage">
@@ -2195,7 +2405,7 @@
       </section>
 
       <footer>
-        <span>Updated Sep 22, 2026</span>
+        <span>Updated Sep 23, 2026</span>
         <span>&middot;</span>
         <span>Source: blueprint/build-plan.md</span>
       </footer>
