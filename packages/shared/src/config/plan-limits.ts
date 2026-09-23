@@ -46,14 +46,25 @@ export type Rung = keyof typeof PLAN_LIMITS;
 export const LOCKED: PlanLimits = { modules: [] };
 
 /**
+ * Whether a raw plan string names a rung this file defines.
+ *
+ * `Object.hasOwn`, not `in`. The `in` operator walks the prototype, so
+ * `"toString" in PLAN_LIMITS` and `"constructor" in PLAN_LIMITS` are both
+ * true and resolve to functions with no `modules`. A plan hand-edited to
+ * either would have crashed the gate with a 500 instead of failing closed
+ * with a 403. Only reachable through a manual database write, but this is
+ * the function whose whole job is failing safely.
+ */
+export function isKnownRung(plan: string | null | undefined): plan is Rung {
+  return typeof plan === "string" && Object.hasOwn(PLAN_LIMITS, plan);
+}
+
+/**
  * The one place a raw plan string becomes real limits. Nothing else reads
  * `organization.plan` directly.
  */
 export function getPlanLimits(plan: string | null | undefined): PlanLimits {
-  if (plan && plan in PLAN_LIMITS) {
-    return PLAN_LIMITS[plan as Rung];
-  }
-  return LOCKED;
+  return isKnownRung(plan) ? PLAN_LIMITS[plan] : LOCKED;
 }
 
 /** Whether a rung reaches a given module. */

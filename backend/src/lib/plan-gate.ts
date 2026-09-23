@@ -1,51 +1,106 @@
 import { eq } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
 
-import { getPlanLimits, type Module, type PlanLimits } from "@scheduleads-app/shared/config";
+import {
+  getPlanLimits,
+  isKnownRung,
+  type Module,
+  type PlanLimits,
+  type Rung,
+} from "@scheduleads-app/shared/config";
 import { organization } from "@scheduleads-app/shared/db";
 
 import { db } from "../database.js";
 import { refuse } from "./active-organization.js";
 
 /**
- * The package gate: refuses a request whose business has not paid for the
- * part of the product it is reaching for.
+ * The package gate, in two layers.
  *
- * Mounted after `requireOrganization`, which resolves who is calling. This
- * only answers what they may reach.
+ * `requireKnownPlan` asks whether the business is on a rung the config
+ * defines at all. `requireModule` then asks whether that rung includes the
+ * part of the product being reached for.
+ *
+ * They were one check until 2026-09-23, and merging them hid a real
+ * difference. `/me` asked for `crm` while every comment around it, and the
+ * dashboard's own refusal screen, said it refused only an unrecognised
+ * plan. With one rung carrying both modules the two rules happened to
+ * agree. The first booking-only rung would have locked that business out of
+ * the whole dashboard and told it, falsely, that its plan was unrecognised.
+ *
+ * Mount order: `requireOrganization`, then `requireKnownPlan`, then any
+ * `requireModule`. The dashboard's front door mounts the first two; a
+ * module route mounts all three. Each throws if the one before it is
+ * missing, so a wrong order fails at the first request, not silently.
  *
  * `organization.plan` is read here and nowhere else in the API. Every
- * decision about it goes through `getPlanLimits`, so an unrecognised value
+ * decision about it goes through `plan-limits.ts`, so an unrecognised value
  * fails closed in one place rather than being interpreted differently by
  * each caller.
  */
 
 declare module "hono" {
   interface ContextVariableMap {
-    plan: { rung: string; limits: PlanLimits };
+    plan: { rung: Rung; limits: PlanLimits };
   }
 }
 
+export const requireKnownPlan = createMiddleware(async (c, next) => {
+  const org = c.get("org");
+
+  if (!org) {
+    throw new Error(
+      "requireKnownPlan ran without requireOrganization before it. Mount them in that order."
+    );
+  }
+
+  const [row] = await db
+    .select({ plan: organization.plan })
+    .from(organization)
+    .where(eq(organization.id, org.organizationId))
+    .limit(1);
+
+  // The session points at a business that is no longer there. That is not a
+  // plan problem, and answering with a plan refusal would tell the user the
+  // wrong thing, so it gets the same answer as having no business at all.
+  if (!row) {
+    return c.json(
+      refuse(
+        "no_active_organization",
+        "Choose which business you are working in before continuing."
+      ),
+      403
+    );
+  }
+
+  if (!isKnownRung(row.plan)) {
+    return c.json(
+      refuse(
+        "plan_unrecognised",
+        "This business is on a plan the product does not recognise."
+      ),
+      403
+    );
+  }
+
+  c.set("plan", { rung: row.plan, limits: getPlanLimits(row.plan) });
+  await next();
+});
+
+/**
+ * Narrows to one module within an already-recognised rung. Reads what
+ * `requireKnownPlan` put on the context, so it costs no query of its own.
+ */
 export const requireModule = (module: Module) =>
   createMiddleware(async (c, next) => {
-    const org = c.get("org");
+    const plan = c.get("plan");
 
-    if (!org) {
+    if (!plan) {
       throw new Error(
-        "requireModule ran without requireOrganization before it. Mount them in that order."
+        "requireModule ran without requireKnownPlan before it. Mount them in that order."
       );
     }
 
-    const [row] = await db
-      .select({ plan: organization.plan })
-      .from(organization)
-      .where(eq(organization.id, org.organizationId))
-      .limit(1);
-
-    const rung = row?.plan ?? null;
-    const limits = getPlanLimits(rung);
-
-    if (!limits.modules.includes(module)) {
+    if (!plan.limits.modules.includes(module)) {
       return c.json(
         refuse(
           "plan_required",
@@ -55,6 +110,5 @@ export const requireModule = (module: Module) =>
       );
     }
 
-    c.set("plan", { rung: rung ?? "unknown", limits });
     await next();
   });

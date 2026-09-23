@@ -78,12 +78,18 @@ export async function fetchMe(): Promise<MeResult> {
 
     if (code === "no_active_organization") return { state: "no-organization" };
 
-    return {
-      state: "plan-refused",
-      message:
-        body.error?.message ??
-        "This business's plan does not include the dashboard.",
-    };
+    // Named rather than assumed. `/me` refuses a plan only when the rung is
+    // unrecognised, and the screen this maps to says exactly that, so any
+    // other 403 falls through to the unexpected-status answer below rather
+    // than being shown a cause that is not the real one.
+    if (code === "plan_unrecognised") {
+      return {
+        state: "plan-refused",
+        message:
+          body.error?.message ??
+          "This business is on a plan the product does not recognise.",
+      };
+    }
   }
 
   // An unexpected status is not quietly treated as one of the known

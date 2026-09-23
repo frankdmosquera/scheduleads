@@ -299,8 +299,10 @@ No browser test command exists, so no browser coverage is claimed.
   query resets, kill the stale `ssh.exe`.
 - The gate on `GET /me` is deliberate. An organization on an unrecognized rung
   is misconfigured and has no working product, so the dashboard refuses rather
-  than rendering empty. Item 2 mounts the same middleware on the first real
-  module route.
+  than rendering empty. `/me` mounts `requireKnownPlan` only; item 2's first
+  real module route mounts `requireKnownPlan` and then `requireModule`. The
+  two layers were one until F-07 showed `/me` enforcing a module check while
+  this note described a recognition check.
 
 ## Open questions
 

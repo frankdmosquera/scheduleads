@@ -330,7 +330,7 @@ rather than creates.
 
 **Resolution:**
 
-### F-07 [P2] open - `/me` refuses any rung that lacks `crm` and tells the user their plan is unrecognized
+### F-07 [P2] fixed - `/me` refuses any rung that lacks `crm` and tells the user their plan is unrecognized
 
 **File:** backend/src/index.ts:53
 **Found:** 2026-09-23 by /audit (scope: current; lens: quality)
@@ -364,7 +364,48 @@ rewrite the three comments and the user-facing sentence to say what it actually
 does. In either case the frontend refusal should render the API's own message,
 which it already receives at `api.ts:84`, rather than asserting a cause.
 
-**Resolution:**
+**Resolution:** Fixed 2026-09-23, choosing the first of the finding's two
+options: the dashboard's front door asks only that the rung be recognised, and
+each module's own route checks what the rung unlocks. Frank's call. The other
+option, keeping the `crm` check and rewording the comments, would have locked
+out the first booking-only tier entirely, and a price ladder is the next thing
+item 23 builds.
+
+The gate is now two layers in `backend/src/lib/plan-gate.ts`.
+`requireKnownPlan` reads the rung and refuses one the config does not define.
+`requireModule` reads what the first put on the context and refuses a rung that
+lacks the module, costing no query of its own. `/me` mounts only the first.
+Each throws if the layer before it is missing, the pattern `requireOrgRole`
+already used.
+
+Three things came with it, each so that a refusal never asserts the wrong cause:
+
+- A new refusal code, `plan_unrecognised`, kept apart from `plan_required`.
+  They mean different things to a customer, and the dashboard's refusal screen
+  was already claiming the first while the code sent the second.
+- A missing organization row now answers `no_active_organization` from the
+  gate, where it used to fall through to a plan refusal. The session pointing at
+  a deleted business is not a plan problem.
+- `frontend/lib/api.ts` now branches on `plan_unrecognised` by name. Any other
+  403 falls through to the unexpected-status answer instead of being shown the
+  "plan not recognised" screen, which is what the finding's last sentence
+  asked for.
+
+Found alongside, and fixed in the same edit because it was the same line:
+`getPlanLimits` tested `plan in PLAN_LIMITS`, and `in` walks the prototype.
+`"constructor"`, `"toString"` and `"__proto__"` all passed it and resolved to
+functions with no `modules`, so a plan hand-edited to any of them would have
+crashed the gate with a 500 rather than failing closed with a 403. Now
+`Object.hasOwn`, behind a new exported `isKnownRung`. Tested against the
+compiled `dist/`, not the types: `agency` is known with both modules, and
+`toString`, `constructor`, `__proto__`, `enterprise`, the empty string, null
+and undefined all resolve to unknown and no modules.
+
+Backend build, frontend build and lint pass. Not proved against the running
+API in this pass: that needs the SSH tunnel and a signed-in session, and
+flipping a live organization's plan to prove the 403. The independent review
+that closes F-05 needs the same setup and should re-run the plan flip here,
+now expecting `plan_unrecognised` rather than `plan_required`.
 
 ### F-08 [P2] open - `APP_ORIGIN` and `BETTER_AUTH_URL` fall back to localhost in production instead of refusing to boot
 

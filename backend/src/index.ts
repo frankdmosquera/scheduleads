@@ -8,7 +8,7 @@ import { organization } from "@scheduleads-app/shared/db";
 import { db } from "./database.js";
 import { refuse, requireOrganization } from "./lib/active-organization.js";
 import { auth } from "./lib/auth.js";
-import { requireModule } from "./lib/plan-gate.js";
+import { requireKnownPlan } from "./lib/plan-gate.js";
 
 const app = new Hono();
 
@@ -47,10 +47,16 @@ app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
  * recognises is misconfigured and has no working product, so the
  * dashboard should say so plainly rather than render an empty shell.
  *
+ * It asks only that the rung be recognised, not for any module. This is
+ * the front door to every module, so a business on any real rung gets
+ * in and each module's own route checks what the rung unlocks. Until
+ * 2026-09-23 it asked for `crm`, which enforced a different rule from
+ * the one written here; see `plan-gate.ts`.
+ *
  * Returns nothing about any other organization. That is not a detail of
  * this route, it is the rule the whole product rests on.
  */
-app.get("/me", requireOrganization, requireModule("crm"), async (c) => {
+app.get("/me", requireOrganization, requireKnownPlan, async (c) => {
   const user = c.get("user");
   const org = c.get("org");
   const plan = c.get("plan");

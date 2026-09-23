@@ -38,7 +38,14 @@ export type RefusalCode =
   | "no_active_organization"
   /** Signed in and scoped, but the role is not allowed to do this. */
   | "forbidden"
-  /** Signed in and scoped, but the business's plan does not include it. */
+  /**
+   * Signed in and scoped, but the business is on a rung the config does not
+   * define. A misconfiguration, never a cheaper tier, so it is kept apart
+   * from `plan_required`: telling a real customer their plan is unknown when
+   * it merely excludes a module is a false statement about their account.
+   */
+  | "plan_unrecognised"
+  /** Signed in, scoped, on a real rung, but that rung does not include it. */
   | "plan_required";
 
 export type Refusal = {
