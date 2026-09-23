@@ -112,6 +112,29 @@ export const auth = betterAuth({
       ac,
       roles: { owner, admin: orgAdmin, member: orgMember },
       creatorRole: "owner",
+
+      /**
+       * Only the platform admin creates a business.
+       *
+       * Better Auth defaults this to `true`, which means any address that
+       * can sign in can also create unlimited organizations, each landing
+       * on `plan: "agency"` with both modules unlocked. That is a free
+       * $240/mo account for anyone who asks, and it contradicts the
+       * project plan outright: "Agency-provisioned first. Frank creates
+       * the org and bills the client as the agency. No signup page, no
+       * Stripe, no self-serve pricing until Phase 9."
+       *
+       * Signing in stays open on purpose, and the two are different
+       * questions. A client you are onboarding has to be able to sign in
+       * when you tell them to; `disableSignUp` would block that. Someone
+       * who signs in uninvited gets a user row, no organization, and sees
+       * nothing - the tenant boundary already refuses them.
+       *
+       * Self-serve signup is build-plan item 25, and this is the line it
+       * changes when it arrives.
+       */
+      allowUserToCreateOrganization: async (user) =>
+        (user as { role?: string | null }).role === "admin",
       schema: {
         organization: {
           additionalFields: {
