@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
 
 import { member } from "@scheduleads-app/shared/db";
@@ -67,12 +67,29 @@ export const refuse = (code: RefusalCode, message: string): Refusal => ({
 });
 
 /**
+ * The session as Better Auth resolves it, carrying the organization
+ * plugin's `activeOrganizationId`.
+ */
+type AuthSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+
+/**
  * Resolves the active organization from the session alone.
+ *
+ * Takes the session, not the request headers. It used to take the headers,
+ * resolve the session again itself, and then call Better Auth's
+ * `getActiveMember`, which resolves it a third time inside its own
+ * middleware. With no cookie cache each of those is a database read, on the
+ * route every dashboard load starts with. The caller has the session
+ * already, so it hands it over.
  *
  * Three attempts, in order:
  *
- * 1. Better Auth's active member, when the session carries an active
- *    organization.
+ * 1. The member row for the session's active organization, when it has one.
+ *    This is what `getActiveMember` did, read off better-auth 1.7.5
+ *    `crud-members.mjs:396-402`: one lookup filtered on the user **and** the
+ *    organization. Both filters matter. Filtering on the organization alone
+ *    would trust that `activeOrganizationId` was checked when it was set,
+ *    and this is the line where that trust is verified instead.
  * 2. A membership lookup, for the returning user whose session never had
  *    one stamped. The session-create hook in `auth.ts` covers new sessions,
  *    but this stays as the backstop for any session created before it
@@ -82,24 +99,29 @@ export const refuse = (code: RefusalCode, message: string): Refusal => ({
  *    refused and the frontend asks them.
  */
 export async function getActiveOrganization(
-  headers: Headers
+  session: AuthSession
 ): Promise<ActiveOrganization | null> {
-  const session = await auth.api.getSession({ headers });
-  if (!session) return null;
+  const activeOrganizationId = session.session.activeOrganizationId;
 
-  try {
-    const active = await auth.api.getActiveMember({ headers });
+  if (activeOrganizationId) {
+    const [active] = await db
+      .select({ organizationId: member.organizationId, role: member.role })
+      .from(member)
+      .where(
+        and(
+          eq(member.userId, session.user.id),
+          eq(member.organizationId, activeOrganizationId)
+        )
+      )
+      .limit(1);
+
     if (active) {
-      return {
-        userId: session.user.id,
-        organizationId: active.organizationId,
-        role: active.role,
-      };
+      return { userId: session.user.id, ...active };
     }
-  } catch {
-    // Better Auth throws rather than returning null when the session has
-    // no active organization, so the absence has to be caught rather than
-    // tested for. Falls through to the membership lookup.
+
+    // The session names a business this user no longer belongs to. Not
+    // trusted: falls through to the membership lookup, as the Better Auth
+    // call this replaces did by throwing MEMBER_NOT_FOUND.
   }
 
   const memberships = await db
@@ -151,7 +173,7 @@ export const requireOrganization = createMiddleware(async (c, next) => {
     return c.json(refuse("unauthenticated", "Sign in to continue."), 401);
   }
 
-  const active = await getActiveOrganization(c.req.raw.headers);
+  const active = await getActiveOrganization(session);
   if (!active) {
     return c.json(
       refuse(

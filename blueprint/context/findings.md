@@ -113,7 +113,7 @@ description at `frontend/lib/api.ts:40` of a shape the API "reuses everywhere"
 overstates its reach. Harmless today, because `/me` is the only route that
 helper parses.
 
-### F-03 [P2] open - `GET /me` resolves the session three times and reads the same organization row twice
+### F-03 [P2] fixed - `GET /me` resolves the session three times and reads the same organization row twice
 
 **File:** backend/src/lib/active-organization.ts:130
 **Found:** 2026-09-22 by /audit (scope: current; lens: performance)
@@ -151,6 +151,42 @@ commit deliberately left it, recording that the cookie cache keeps a revoked
 session alive for the cache window and is therefore a decision rather than a
 cleanup. That reasoning is sound, and the suggested fix above needs no cookie
 cache to work. P2, so it does not block the merge.
+
+Fixed 2026-09-23 as the finding suggested, and without the cookie cache, whose
+revocation window stays a separate decision. `/me` goes from six database
+queries to three. Counted off the code and the installed better-auth 1.7.5,
+where one session resolution is one query: `findSession` in
+`internal-adapter.mjs` is a single `findOne` joining `user`, with no secondary
+storage configured to change that.
+
+- Before: three session resolutions (`requireOrganization`,
+  `getActiveOrganization`, and `getActiveMember`'s own middleware), its member
+  lookup, and the organization row twice. Six.
+- After: one session resolution, one member lookup, one organization read.
+  Three.
+
+`getActiveOrganization` now takes the session its caller already resolved,
+not the headers. `auth.api.getActiveMember` is replaced by the lookup it
+performed, read off `crud-members.mjs:396-402`: the member row filtered on the
+session's user **and** its active organization, with a missing row falling
+through to the membership lookup just as its MEMBER_NOT_FOUND did. Both
+filters are kept on purpose and the reason is written where they sit.
+`getActiveOrganization` had one caller, so the signature change reaches
+nothing else.
+
+`requireKnownPlan` selects `plan`, `name` and `slug` in its one query and hands
+the name and slug on as `organizationDetails`. The raw plan string is not
+handed on, so `plan-gate.ts` stays the only place it is read. The `/me`
+handler makes no query of its own now, and its missing-row branch is gone
+because the gate already refuses that case, since F-07, with
+`no_active_organization`. `index.ts` sheds its `db`, `eq`, `organization` and
+`refuse` imports.
+
+Backend build passes under strict mode, which also confirms
+`session.session.activeOrganizationId` exists on the inferred session type
+rather than being assumed. Not proved against the running API: the `/me`
+body should be byte-for-byte what it was, and the independent review is the
+place to confirm that with a signed-in session, alongside F-05 and F-07.
 
 ### F-04 [P3] closed - The spec ticks step 1 including `transpilePackages`, which was deliberately dropped
 

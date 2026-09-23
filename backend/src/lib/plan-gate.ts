@@ -36,11 +36,17 @@ import { refuse } from "./active-organization.js";
  * decision about it goes through `plan-limits.ts`, so an unrecognised value
  * fails closed in one place rather than being interpreted differently by
  * each caller.
+ *
+ * `requireKnownPlan` also carries the organization's name and slug on to
+ * the context. It is reading that row anyway, and `/me` used to read the
+ * same row a second time to get them. The raw plan string is deliberately
+ * not among what it hands on: only the resolved rung and limits leave here.
  */
 
 declare module "hono" {
   interface ContextVariableMap {
     plan: { rung: Rung; limits: PlanLimits };
+    organizationDetails: { name: string; slug: string };
   }
 }
 
@@ -54,7 +60,11 @@ export const requireKnownPlan = createMiddleware(async (c, next) => {
   }
 
   const [row] = await db
-    .select({ plan: organization.plan })
+    .select({
+      plan: organization.plan,
+      name: organization.name,
+      slug: organization.slug,
+    })
     .from(organization)
     .where(eq(organization.id, org.organizationId))
     .limit(1);
@@ -83,6 +93,7 @@ export const requireKnownPlan = createMiddleware(async (c, next) => {
   }
 
   c.set("plan", { rung: row.plan, limits: getPlanLimits(row.plan) });
+  c.set("organizationDetails", { name: row.name, slug: row.slug });
   await next();
 });
 

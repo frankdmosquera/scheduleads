@@ -1,12 +1,8 @@
 import { serve } from "@hono/node-server";
-import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
-import { organization } from "@scheduleads-app/shared/db";
-
-import { db } from "./database.js";
-import { refuse, requireOrganization } from "./lib/active-organization.js";
+import { requireOrganization } from "./lib/active-organization.js";
 import { appOrigin, auth } from "./lib/auth.js";
 import { requireKnownPlan } from "./lib/plan-gate.js";
 
@@ -59,40 +55,21 @@ app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
  * this route, it is the rule the whole product rests on.
  */
 app.get("/me", requireOrganization, requireKnownPlan, async (c) => {
+  // Everything here was loaded by the middleware above, scoped by the id
+  // the session resolved to, so the handler makes no query of its own. A
+  // business that vanished since sign-in is refused by the gate before this
+  // runs, which is why there is no missing-row branch here any more.
   const user = c.get("user");
   const org = c.get("org");
+  const details = c.get("organizationDetails");
   const plan = c.get("plan");
-
-  // The gate already read `plan` off this row; it does not carry the rest
-  // of the organization because its job is the rung and nothing else.
-  // Scoped by the id the session resolved to, never by anything a caller
-  // could supply.
-  const [row] = await db
-    .select({ name: organization.name, slug: organization.slug })
-    .from(organization)
-    .where(eq(organization.id, org.organizationId))
-    .limit(1);
-
-  if (!row) {
-    // The session points at an organization that is no longer there. The
-    // caller is signed in but acting for nothing, which is the same
-    // situation as having no active organization, so it gets the same
-    // refusal rather than a 500 or a half-filled body.
-    return c.json(
-      refuse(
-        "no_active_organization",
-        "Choose which business you are working in before continuing."
-      ),
-      403
-    );
-  }
 
   return c.json({
     user: { id: user.id, email: user.email, name: user.name },
     organization: {
       id: org.organizationId,
-      name: row.name,
-      slug: row.slug,
+      name: details.name,
+      slug: details.slug,
       plan: plan.rung,
     },
     role: org.role,
