@@ -1184,18 +1184,18 @@
       <span class="where-arrow">&rsaquo;</span>
       <div class="where-leg" data-now="yes">
         <div class="where-key">Step now</div>
-        <div class="where-val">1.6 &middot; The second organization, and the env record</div>
+        <div class="where-val">1.6 &middot; Done. Item 1 ready for /complete</div>
       </div>
       <span class="where-spacer"></span>
       <div class="where-leg">
         <div class="where-key">Item 1 steps</div>
-        <div class="meter" title="1.1 to 1.5 done, 1.6 now">
+        <div class="meter" title="all six steps done">
           <i data-state="done"></i>
           <i data-state="done"></i>
           <i data-state="done"></i>
           <i data-state="done"></i>
           <i data-state="done"></i>
-          <i data-state="active"></i>
+          <i data-state="done"></i>
         </div>
       </div>
     </div>
@@ -1311,7 +1311,7 @@
           <div class="strip-phase">
             <div class="strip-label">Ph 1 &middot; Foundation</div>
             <div class="strip-cells">
-              <span class="cell" data-state="active" title="1 Multi-tenant auth - building now, step 1.6 of 6">1</span>
+              <span class="cell" data-state="active" title="1 Multi-tenant auth - all six steps done, ready to merge">1</span>
               <span class="cell" title="2 Booking links, resources and availability rules">2</span>
               <span class="cell" title="3 Calendar connection">3</span>
             </div>
@@ -1382,7 +1382,7 @@
         </div>
         <div class="tally">
           <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b</span></span>
-          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">1, at step 1.6 of 6</span></span>
+          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">1, all six steps done</span></span>
           <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">2 through 26</span></span>
         </div>
       </header>
@@ -1401,11 +1401,11 @@
           <div class="item" data-state="active"><div class="item-num">1</div><div class="item-body"><div class="item-name">Multi-tenant auth, with the org fix</div><p class="item-text">Email-OTP sign-in, create-organization, the admin role, the auto-active organization hook, and the package gate with the one rung.</p>
           <p class="item-text">Four businesses will eventually sign into the same app and must never see each other's leads. This item decides where the answer to "which business is this?" comes from, and the answer is: the session on the server, never the request. Everything from item 2 to item 26 inherits that decision, which is why it is first and why it is worth getting slowly right.</p>          <div class="gates">
           <span class="gate-chip" data-state="pass">Spec agreed</span>
-          <span class="gate-chip">Built &amp; verified</span>
-          <span class="gate-chip">Commit granted</span>
+          <span class="gate-chip" data-state="pass">Built &amp; verified</span>
+          <span class="gate-chip" data-state="waiting">Commit granted</span>
         </div>
             <details class="drawer" data-kind="plan" open>
-              <summary>Steps <span class="tag-drift">1.1 to 1.5 done &middot; 1.6 now &middot; 6 in this item</span></summary>
+              <summary>Steps <span class="tag-drift">all six done &middot; ready for /complete</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The work, cut into pieces small enough to review one at a time. Each step opens into what was planned, and once it is done, what actually happened.</p>
 <div class="item-steps">
@@ -1677,8 +1677,8 @@
               </div>
             </details>
 
-            <details class="rstep" data-state="active" open>
-              <summary><span class="sn">1.6</span><span class="sm"></span><span>The second organization, and the env record</span><span class="ss">Now</span></summary>
+            <details class="rstep" data-state="done" open>
+              <summary><span class="sn">1.6</span><span class="sm"></span><span>The second organization, and the env record</span><span class="ss">Done</span></summary>
               <div class="rstep-body">
                 <p class="rstep-what">Proves the point of the whole item: a second business, created entirely through the app with nobody touching the database, that cannot see the first one. Then writes down the environment variables and commands the next person needs.</p>
                 <p class="rstep-what"><strong>Half of this arrived early.</strong> Proving step 1.5 required creating a business through the app, so the second tenant already exists: "Ana's Hair &amp; Co." beside the first repo's "The Latam Painters", both on the <code>agency</code> plan. What is left is the part that was never touched: confirming each session returns only its own business, correcting the env example, recording the database commands, and promoting Frank's own account to the platform admin role by hand. His account currently has no role at all.</p>
@@ -1692,6 +1692,39 @@
                     <li>Frank's own account promoted to the platform admin role by hand</li>
                   </ul>
                   <div class="rstep-when">Done when: two businesses exist, both made only through the app, and each session returns only its own. This is also the Phase 1 exit condition, minus the calendar half that item 3 proves.</div>
+                  </div>
+                </details>
+
+                <details class="drawer" data-kind="reality" open>
+                  <summary>What actually happened <span class="tag-drift">2 of 4 pieces moved &middot; 1 gate could not be met as written</span></summary>
+                  <div class="drawer-body">
+                    <p class="drawer-what">The isolation proof is the part that mattered and it passed cleanly. The gate's own wording turned out to be unmeetable, for a reason nobody could have known when it was written.</p>
+                    <div class="verdict">
+                      <span class="v-kept">2 as planned</span>
+                      <span class="v-changed">2 changed</span>
+                      <span class="v-added">2 added</span>
+                    </div>
+                    <ul class="substeps">
+                      <li data-outcome="changed">a real second tenant, created only through the app - but only <b>one</b> of the two could be
+                        <em class="why">The gate asks for two businesses "both created only through the app". The database arrived holding the first repo's tenant, adopted at step 1.2 rather than created here, so the second one is the only one that can satisfy that. Deleting a real tenant to satisfy the wording would have been worse than recording the gap. The intent, that onboarding needs no database touch, is proved.</em></li>
+                      <li data-outcome="kept">each session confirmed to see only its own business</li>
+                      <li data-outcome="kept">the env example corrected and the database commands recorded</li>
+                      <li data-outcome="changed">the platform admin role promoted by hand, with SQL rather than <code>drizzle-kit studio</code>
+                        <em class="why">The same act without a browser, and it can be shown in a transcript. The instruction's point is that promotion happens by hand and never through a request path, which holds.</em></li>
+                      <li data-outcome="added">that claim proved rather than noted
+                        <em class="why">The step said to "note" that no request path can set the role. Noting a security property is how it stops being true later. It was tested instead, on the one path that accepts arbitrary extra fields.</em></li>
+                      <li data-outcome="added">three env blocks removed rather than two
+                        <em class="why">The step named ImageKit and S3. The platform volume path sits in the same position, read by nothing, and leaving one orphan beside its removed siblings is worse than being consistent.</em></li>
+                    </ul>
+                    <div class="snags">
+                      <div class="snags-head">What bit</div>
+                      <ul>
+                        <li><b>The two server-set fields fail in opposite ways, and the code claimed they were the same.</b> A sign-in carrying <code>role: "admin"</code> is refused outright, 400, field not allowed. A create carrying <code>plan: "enterprise"</code> is <em>not</em> refused: it returns 200 and silently substitutes the default. The difference is that <code>plan</code> has a default to substitute and <code>role</code> does not. Both are safe, but only one is visible to whoever tried, so a 200 on create is not evidence the value was taken. Two comments in the auth config said "ignored" for both and were half wrong; corrected at the declarations.</li>
+                        <li><b>A gate can be written before the facts that make it impossible are known.</b> Nothing was wrong with asking for two app-created businesses, until step 1.2 found the database already had a real tenant in it. The honest move is to record the gap, not to quietly rewrite the gate or delete a tenant to fit it.</li>
+                        <li><b>The env example was teaching people to configure nothing.</b> Five variables for images, object storage and a volume, none read by a single line of code, inherited from the scaffolder. Also corrected: the file still said the frontend would get its env "later, at step 1.5", and <code>NEXT_PUBLIC_API_URL</code> is now documented with the trap that Next only reads env files from inside <code>frontend/</code>, so putting it in the root file does nothing.</li>
+                      </ul>
+                    </div>
+                    <div class="rstep-when">Passed. Two businesses on the <code>agency</code> plan; <code>GET /me</code> for each session returns only its own, with different organization ids and nothing crossing. Signing in as the first repo's existing owner landed straight on his business, so the session hook stamps an adopted account too, not just a freshly made one. His account is now the platform admin, and a request that tries to set that field is refused. Both workspace builds pass.</div>
                   </div>
                 </details>
               </div>
@@ -1865,20 +1898,35 @@
               </div>
             </details>
             <details class="drawer" data-kind="reality">
-              <summary>Log <span class="tag-drift">14 entries, newest first</span></summary>
+              <summary>Log <span class="tag-drift">17 entries, newest first</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The same work as Steps, ordered by date instead of by piece: decisions as they were taken, questions as they came up, faults as they were found. Steps answer what is being built; this answers what happened, and when.</p>
 <div class="log">
+              <div class="entry" data-kind="decision">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">A login and a bookable person are not the same row</span>
+                    <span class="kind-tag">Decision</span>
+                    <span class="stamp">Sep 22</span>
+                  </div>
+                  <p class="entry-text">Came out of asking how a shop with several staff works. An organization already holds many users, each with their own email: those are Better Auth's <code>member</code> rows and the tables have existed since step 1.1, with only the invite flow unbuilt. A bookable person is <code>resource</code>, which item 2 builds, and its planned columns are a name and an active flag with no email and no login. They are already two tables. What was missing is the link, and it should be a <strong>nullable <code>resource.userId</code></strong>.</p>
+                  <p class="entry-text">Nullable in both directions, and each direction earns its keep. <strong>Bookable with no login</strong> is an onboarding argument: if being bookable required an account, adding a fourth barber would mean emailing an invite and waiting for them to accept before taking a single booking. Square and Fresha both let an owner add a staff member as a name and invite them later, or never. A chair and a painting crew are bookable and will never log in at all. <strong>A login that is not bookable</strong> is the receptionist, the bookkeeper, and Frank wearing the agency hat: access without being on anyone's calendar.</p>
+                  <p class="entry-text">It also settles the per-seat gap this review turned up. Section 6 of the project plan promises per-seat pricing, and a seat is a <em>login</em>, not a chair: a shop with four chairs and one login is one seat. Had <code>resource</code> and <code>user</code> been one row, the product would have been billing for furniture. Nothing to build now: the column is additive and lands whenever a staff login is first wanted.</p>
+                </div>
+              </div>
               <div class="entry" data-kind="decided">
                 <div class="dot"></div>
                 <div class="entry-body">
                   <div class="entry-top">
-                    <span class="entry-title">The plan now fits a shop with two staff, not just a solo operator and a painter</span>
+                    <span class="entry-title">The plan now fits a shop with staff, not just a solo operator and a painter</span>
                     <span class="kind-tag">Decided</span>
                     <span class="stamp">Sep 22</span>
                   </div>
                   <p class="entry-text">A review of the whole plan against three business shapes found one thing worth changing before item 2 is written. <code>availability_rule</code> is declared <em>one per organization, enforced unique</em>, while the locked decisions say per-resource hours are <em>a later addition on top of it</em>. Those two cannot both be true: a uniqueness constraint on the organization alone means the database refuses the second row, so per-person hours is not an addition, it is a migration of the table every booking validates against. <code>calendar_connection</code> has the same shape.</p>
                   <p class="entry-text">It matters because the next businesses are dentists and clinics: a few services, a few people who do the work, and a customer who asks for one of them by name. It is nearly free to fix because neither table has been written yet. Three plan edits, no new features: both tables become unique per organization <strong>and resource</strong> with null meaning the business's own, and <code>resource</code> moves from item 4 to item 2 so availability can reference it. Per-resource buffers and timezones come free with it, and a business with one person behaves exactly as it does today.</p>
+                  <p class="entry-text"><strong>There is no limit of two.</strong> One row per person, one hours row per person, one calendar row per person, so four barbers is four of each and forty is forty. The threshold is one to many; beyond that it is rows, not structure. The only 2 in the code is <code>limit(2)</code> in the membership lookup, which asks whether a <em>person</em> belongs to exactly one <em>business</em> and needs two rows to know it is more than one. Different axis entirely. Checking several calendars is also one request, not one per person, because Google's free/busy endpoint takes a list.</p>
+                  <p class="entry-text">The customer-facing shape, when it is built: service, then person, then time. <strong>"Any available" has to sit in the list beside the names</strong> - it is the system picking rather than the customer, on one screen off the same data, and without it every customer is forced to have an opinion about who does the work. Two things stay additive but stop being optional around the third or fourth chair: which staff can perform which service, which is almost never "everyone" past two people, and fairness in how "any available" distributes the work.</p>
                   <p class="entry-text">The expensive half is the half nobody sees. Per-person hours and calendars are plumbing; letting a customer pick a person is a dropdown on top of it. So the plumbing is worth getting right now and the visible feature can wait for a tenant who asks. The painter needs none of it: he books estimates at the business level and assigns crews internally, which is item 19 and already planned.</p>
                   <p class="entry-text"><strong>Approved and applied the same day.</strong> Seven edits across both plan docs, plus three pieces of drift the review turned up on the way: item 0b was still unticked while its ten mockups sat in <code>prototypes/</code>, the environment list was missing two variables item 1 added, and three numbers named two different things each because the Decided and Open Questions lists had grown into each other. Open questions are now 14 to 19, and both proposal files had their references corrected in the same edit. Six things came off the plan's own to-do list and onto <em>Named, not planned</em>, including no-shows and recurring appointments, which are table stakes for a salon and irrelevant to a painter. The reasoning is kept in <code>blueprint/resource-model-proposal.md</code>, because why a uniqueness constraint has two columns is not visible from the constraint.</p>
                   <p class="entry-text">One trap found while writing it up, which would otherwise have shipped as a silent hole: <code>unique(organization, resource)</code> with a nullable resource does <em>not</em> do what it looks like. Postgres treats nulls as distinct in a unique index, so that constraint would have allowed two business-wide rows for the same business, which is the exact thing the old constraint existed to prevent. The fix and its two options are written down; which one applies depends on the Railway Postgres version, unchecked because the tunnel was down.</p>
@@ -1895,6 +1943,31 @@
                   <p class="entry-text">A <code>face-and-body</code> session about the clinic's product store concluded that the store does not belong in her site at all: a shop is a module of this product, and the clinic is its customer, the same seam booking already uses. Written up as <code>blueprint/store-and-retail-proposal.md</code> and committed on its own. Nothing has been applied.</p>
                   <p class="entry-text">It proposes a Phase 10 of items 27 to 31, answers open question 12 in favour of tenant sites proxying through their own server action, and separates two Stripe jobs that look like one: item 25 is a business paying the agency, a later item is a customer paying the business, and the second is Stripe Connect with KYC and payout liability. Its own framing of retail is the useful part - table stakes in this category, so its absence loses deals and its presence wins none.</p>
                   <p class="entry-text">Checked against the real plans rather than taken on trust: open question 12, section 8's rationale, items 16, 23 and 25, and the <code>quote</code> table's tax rate are all quoted accurately, despite that session never seeing this repo. It also carries three questions for outside the code, the first of which can delete two of the five items: whether the clinic is even allowed to resell Eminence online.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="done">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Step 1.6 done: two businesses, neither able to see the other</span>
+                    <span class="kind-tag">Done</span>
+                    <span class="stamp">Sep 22</span>
+                  </div>
+                  <p class="entry-text">Signed in as each owner in turn. <code>GET /me</code> returned a different business each time, with different ids and nothing belonging to the other one. Signing in as the first repo's existing owner also landed him straight on his business, which proves the session hook works on an account that was adopted rather than created here. His account is now the platform admin, set by hand against the database, and a request that tries to set that field is refused with a 400.</p>
+                  <p class="entry-text">The gate could not be met exactly as written, and that is recorded rather than smoothed over: it asks for two businesses "both created only through the app", and only one of them can be, because the database arrived holding the first repo's tenant. Deleting a real business to satisfy the wording would have been the wrong trade. What the gate is for, that onboarding needs no database touch, is proved by the one that was created here.</p>
+                  <p class="entry-text"><strong>All six steps of item 1 are done.</strong> That is also the Phase 1 exit condition met, apart from the calendar half that item 3 proves. Next is <code>/complete</code>: the final safety pass, the archive, and the merge.</p>
+                </div>
+              </div>
+              <div class="entry" data-kind="fix">
+                <div class="dot"></div>
+                <div class="entry-body">
+                  <div class="entry-top">
+                    <span class="entry-title">Two server-set fields, described as identical, behaving oppositely</span>
+                    <span class="kind-tag">Fix</span>
+                    <span class="stamp">Sep 22</span>
+                  </div>
+                  <p class="entry-text">The plan and the platform role are both marked unwritable from a request, and the auth config said both were "ignored" if sent. Testing found they are not the same. A sign-in carrying a role is <em>refused</em>, 400, field not allowed. A create carrying a plan is <em>accepted</em>, returns 200, and silently substitutes the default. The difference is that the plan has a default to fall back on and the role does not.</p>
+                  <p class="entry-text">Both are safe. Only one is visible to whoever tried it, which is the part worth knowing: a 200 on create is not evidence the value was taken. Found only because the step said to "note" that the role is unsettable and it was tested instead. Both comments corrected where the fields are declared.</p>
                 </div>
               </div>
               <div class="entry" data-kind="done">
@@ -2053,7 +2126,7 @@
                 <p class="drawer-what">Things that are true right now but belong to no single step. Loose ends, known gaps, and what is deliberately not being done yet.</p>
 <ul>
               <li><strong>Four things changed in review, before any code was written.</strong> The login code now fails loudly in production instead of being written to the server log, where it would be a password sitting in plain text. An unrecognised plan locks the account out rather than quietly falling back to the paid one. The dashboard's first route was put behind the plan check so that a refusal can actually be seen happening. And the dashboard was split from the public booking widget for cross-site permissions, because the widget must never be able to act as a signed-in user.</li>
-              <li><strong>Seven commits on this branch, and step 1.5's gate has since passed.</strong> The planning baseline, this page and its rules, steps 1.2 to 1.4, the retail proposal, the resource-model plan edits, and step 1.5's code, each on its own. Step 1.5's commit message says the live sign-in had not been run, which was true when it was written and is no longer; the gate passed afterwards and this page records the result. Plan work was kept in its own commit so the feature's history stays about the feature.</li>
+              <li><strong>Eight commits on this branch, and item 1's work is finished.</strong> The planning baseline, this page and its rules, steps 1.2 to 1.4, the retail proposal, the resource-model plan edits, step 1.5's code, and step 1.5's closure. Step 1.5's own commit message says the live sign-in had not been run, which was true when written and is no longer; the gate passed afterwards and this page records the result. Plan work was kept in its own commits so the feature's history stays about the feature. Step 1.6's changes are not committed yet, and <code>/complete</code> owns the final commit and the merge.</li>
               <li><strong>There is a test tenant in the database.</strong> "Ana's Hair &amp; Co." under <code>step15@example.com</code> was created to prove step 1.5 and is real data, not a throwaway that got cleaned up. It can stay as the second tenant step 1.6 needs, or be deleted and remade deliberately. Earlier steps deleted their throwaway rows; this one was kept on purpose because the step required a business that survives.</li>
               <li><strong>Both workspaces import <code>@scheduleads-app/shared</code> without declaring it.</strong> It resolves through the npm workspace symlink at the repo root, which is why nothing has complained. It is worth settling before the first deploy, because it depends on the host running the install at the repo root rather than inside the folder it builds. A question for <code>/release</code>, not a bug today.</li>
               <li><strong>There are no automated tests, by choice for now.</strong> No test runner is set up, so every step is checked by hand against the running app and the two builds, and no test result is claimed anywhere on this page. When tests do arrive, the plan check and the two-businesses refusal are the first two things worth covering.</li>

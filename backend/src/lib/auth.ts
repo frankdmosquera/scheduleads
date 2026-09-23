@@ -92,8 +92,16 @@ export const auth = betterAuth({
     additionalFields: {
       /**
        * The platform admin hat, from the `admin` plugin. Server-set only:
-       * the plugin already declares it `input: false`, so no request body
-       * can write it. Promotion is a manual database edit until item 23.
+       * `input: false`, so no request body can write it. Promotion is a
+       * manual database edit until item 23.
+       *
+       * Proved at step 1.6, not assumed: a sign-in body carrying
+       * `role: "admin"` is refused outright with 400 FIELD_NOT_ALLOWED.
+       * It has no `defaultValue`, and `parseInputData` in
+       * `better-auth/dist/db/schema.mjs` throws for an `input: false`
+       * field with a truthy value unless a default exists to substitute.
+       * That is the opposite of how `plan` below behaves, so do not
+       * assume the two fail the same way.
        */
       role: { type: "string", required: false, input: false },
     },
@@ -109,9 +117,16 @@ export const auth = betterAuth({
           additionalFields: {
             /**
              * The package rung. `input: false` is the whole security
-             * story: a create or update body carrying `plan: "enterprise"`
-             * is ignored rather than honoured. Until Stripe arrives in
+             * story: no request body can set it. Until Stripe arrives in
              * Phase 9 the only writer is Frank, by hand.
+             *
+             * It fails differently from `user.role` above, because it
+             * carries a `defaultValue`. On create, a body sending
+             * `plan: "enterprise"` is silently replaced with `agency`
+             * rather than refused; on update it throws. Both are safe,
+             * but only the second is visible to whoever tried it, so do
+             * not read a create that returned 200 as proof the value
+             * was accepted.
              */
             plan: {
               type: "string",

@@ -372,9 +372,22 @@ scripts - every command targets one workspace explicitly.
 - Backend start (runs `dist/`): `npm run start --workspace=backend`
 - Frontend lint: `npm run lint --workspace=frontend`
 
+Database, all from `packages/shared`, which owns the schema and the migration
+ledger:
+
+- Generate a migration from the schema: `npm run db:generate --workspace=@scheduleads-app/shared`
+- Apply pending migrations: `npm run db:migrate --workspace=@scheduleads-app/shared`
+- Browse the data: `npm run db:studio --workspace=@scheduleads-app/shared`
+
+All three need `DATABASE_URL` and, locally, the Railway SSH tunnel on
+127.0.0.1:5433. `drizzle.config.ts` loads the root `.env`. Never generate a
+migration from `backend` or `frontend`: two workspaces generating against one
+database is how a migration ledger forks.
+
 No separate typecheck script: `next build` typechecks the frontend and the
-backend build is `tsc`. `packages/shared` has no scripts; both sides consume
-it as source.
+backend build is `tsc`. `packages/shared` compiles to `dist/` and both apps
+build it first through their own `predev` and `prebuild` hooks, so neither
+consumes it as TypeScript source.
 
 No unit test runner is configured, so no test gate applies. Run `/tests` to
 add one and record the real test command here. There is no `Verify` command

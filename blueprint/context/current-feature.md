@@ -4,6 +4,28 @@
 
 **Branch:** `feature/multi-tenant-auth-with-the-org-fix`
 
+**Status:** verified, 2026-09-22. All six steps observed against the running
+app. Two things in this spec turned out to be wrong and are recorded here
+rather than quietly corrected:
+
+- Step 6's `Done when` asks for "two organizations, **both** created only
+  through the app". Only one could be: the database arrived holding the first
+  repo's tenant, "The Latam Painters", adopted at step 1.2 rather than
+  created here. The intent was that onboarding a tenant needs no database
+  touch, and that is proved by the second one, "Ana's Hair & Co.". Deleting a
+  real tenant to satisfy the letter of the gate would have been worse than
+  recording the gap.
+- Step 6 says to promote the admin role "through `drizzle-kit studio`". Done
+  with a direct SQL update instead, which is the same act without a browser
+  and can be shown in a transcript. The point of the instruction is that the
+  promotion happens by hand and not through a request path, which holds.
+
+`user.role` was then **proved** unsettable rather than asserted: a sign-in
+body carrying `role: "admin"` is refused with 400 `FIELD_NOT_ALLOWED`.
+`organization.plan` is safe too but fails differently, being silently
+replaced by its default on create. Both are documented at the declarations in
+`backend/src/lib/auth.ts`.
+
 ## Goal
 
 A second organization can be created through the app with no database touch,
@@ -157,7 +179,7 @@ and merges.
   arrives at `/create-organization`, creates an organization, and lands on a
   signed-in page showing that organization's name and the `agency` plan.
 
-- [ ] **6. The second organization, and the env and command record.** Create a
+- [x] **6. The second organization, and the env and command record.** Create a
   second organization as a second user, entirely through the app. Confirm each
   session sees only its own. Update `.env.example`: `BETTER_AUTH_URL` becomes
   the API origin rather than `http://localhost:3000`, and
