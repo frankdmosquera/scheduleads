@@ -35,7 +35,9 @@ Exit: a second organization can be created through the app with no database
 touch, sign-in lands on that organization without a workaround, a route
 behind the package gate refuses an organization whose rung does not include
 it, and the free/busy check returns a real event's busy block from Frank's
-own connected Google calendar, the agency tenant's.
+own connected Google calendar, the agency tenant's. A client user the
+agency provisioned can also sign in and reach that business and nothing
+else.
 
 - [ ] 1. **Multi-tenant auth, with the org fix** - email-OTP sign-in,
   create-organization, the superadmin role through the `admin` plugin, the
@@ -64,6 +66,24 @@ own connected Google calendar, the agency tenant's.
   reasoning as `availability_rule`: null is the business calendar, set is that
   person's. Only the business calendar is connected in this item; nothing
   builds a per-person connection screen until a tenant has two people
+
+- [ ] 3b. **Client access: provisioning, and closing signup** - the two
+  halves of one door, which have to land together. Today any address that
+  can receive mail may verify a code and get a user row, while only the
+  platform admin may create a business. So an onboarded client ends up with
+  a login and nothing to log in to: no path puts a client user inside the
+  business the agency created for them, and there is no invitation flow
+  anywhere in the code. Better Auth ships both pieces already -
+  `admin.createUser` and the organization plugin's `addMember` - so this is
+  an admin path over machinery that already exists. Closing signup
+  (`disableSignUp`) belongs in this same item and cannot come first: a
+  first-time client has no user row, so closing signup ahead of provisioning
+  locks out the very people being onboarded. **Due before the first
+  production deploy**, which is also the first moment the open door costs
+  anything. `send-login-code.ts` throws in production today, so nobody can
+  sign in there at all until a mail transport exists, and that transport is
+  what turns an open signup into an outbound-mail abuse surface. Found while
+  reviewing item 1, not planned before it
 
 ## Phase 2. The booking loop
 
@@ -209,3 +229,11 @@ Nothing above depends on these. Each gets a phase when something does.
 - Visitor analytics, as a package, source undecided
 - Marketing automation
 - AI front of house
+- Tryout access requested from agents-web. Deliberately not self-serve
+  signup: agents-web is tenant zero (item 10), so the request arrives as a
+  lead in the agency's own CRM and the agency provisions from there through
+  item 3b's path. If it ever ships, a trial is a new rung in item 23's
+  ladder with its own module set, never open creation on `agency`. The
+  "template site to play with" half is a far larger thing than the dashboard
+  half, because that is the agency's actual deliverable rather than a
+  feature of this product. Raised 2026-09-23; not the original plan

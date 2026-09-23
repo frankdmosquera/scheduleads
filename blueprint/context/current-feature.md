@@ -81,8 +81,19 @@ mockups that do exist.
 - The Hono RPC `AppType` seam. Feature 1's only frontend-to-backend calls go
   through the Better Auth client, which carries its own types. The RPC contract
   arrives with item 2's first public read route.
-- Invitations and a second member in one organization. No item asks for it yet;
-  the schema supports it because Better Auth ships the table.
+- Invitations, a second member in one organization, and any path at all that
+  puts a client user inside a business. Build-plan item 3b owns all of it,
+  added 2026-09-23 while reviewing this feature. The schema supports it
+  because Better Auth ships the table.
+- Closing signup. Any address that can receive mail may still verify a code
+  and get a user row. What it may no longer do, since `3030ef0`, is create a
+  business: those are two separate doors and only the second one was a hole.
+  A stranger through the first door holds a user row, no membership, and can
+  read nothing, which the second independent review traced against
+  better-auth's own source rather than its docs. Signup closes in item 3b
+  alongside provisioning and cannot close before it, because a first-time
+  client has no user row either. Harmless until the first production deploy:
+  `send-login-code.ts` throws in production, so no code is ever issued there.
 - Google OAuth verification. Item 22.
 
 ## Build loop
