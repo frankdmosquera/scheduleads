@@ -21,7 +21,7 @@ board and the settings screen.
 - [x] 0a. **Commercial position** - answered 2026-09-18. Booking sits in
   the $240/mo plan. Free/busy is proven on Frank's own Google calendar;
   clients answer the calendar question at their onboarding. Revised the same
-  evening: the plan is the first rung of a ladder of packages, the product
+  evening: the plan is the first tier of a ladder of packages, the product
   is a CRM, and the tenant order is the agency's own site, Primo, the
   clinic, Latam
 - [x] 0b. **Design pass** - static mockups of the booking modal in two
@@ -33,7 +33,7 @@ board and the settings screen.
 
 Exit: a second organization can be created through the app with no database
 touch, sign-in lands on that organization without a workaround, a route
-behind the package gate refuses an organization whose rung does not include
+behind the subscription middleware refuses an organization whose tier does not include
 it, and the free/busy check returns a real event's busy block from Frank's
 own connected Google calendar, the agency tenant's. A client user the
 agency provisioned can also sign in and reach that business and nothing
@@ -41,8 +41,8 @@ else.
 
 - [x] 1. **Multi-tenant auth, with the org fix** - email-OTP sign-in,
   create-organization, the superadmin role through the `admin` plugin, the
-  auto-active organization hook so sign-in resolves the org, and the package
-  gate: `organization.plan`, the plan-limits config with the one rung
+  auto-active organization hook so sign-in resolves the org, and the subscription
+  middleware: `organization.plan`, the subscription-limits config with the one tier
   `agency`, and the check every module route calls. The rule that tenant
   code never reads across organizations starts here
 - [ ] 2. **Booking links, resources and availability rules** - the three
@@ -205,9 +205,10 @@ booking with no one at the agency involved.
 - [ ] 22. **Google OAuth verification** - calendar scopes first, then the
   Gmail restricted scopes and their security assessment. Start as soon as
   Phase 3 is done; it is a form and a wait, not code
-- [ ] 23. **Packages ladder and the admin area** - the rungs above `agency`
-  in the plan-limits config, what each unlocks, and the admin screens: who
-  is on what, move a client up. The gate itself exists since item 1
+- [ ] 23. **Packages ladder and the admin area** - the tiers above `agency`
+  in the subscription-limits config, what each unlocks, and the admin
+  screens: who is on what, move a client up. The subscription middleware
+  itself exists since item 1
 - [ ] 24. **Hosted booking page** - `/book/<slug>`
 - [ ] 25. **Self-serve onboarding and billing** - signup, pick a package,
   Stripe hosted checkout, the webhook writes `organization.plan`
@@ -226,6 +227,12 @@ Nothing above depends on these. Each gets a phase when something does.
 - Multiple locations for one business
 - Travel time between jobs, as distinct from a flat buffer
 - Crew member sign-in
+- Custom roles per business (Better Auth's dynamic access control). Frank
+  creates them for a business from item 23's admin area first; owners
+  design their own only once self-serve exists (item 25). Capped per
+  business with `maximumRolesPerOrganization`. Kept cheap to switch on by
+  the permission-check rule in `coding-standards.md`: code asks
+  `hasPermission`, never `role === "owner"`
 - Embed script for a site the agency did not build
 - Microsoft, CalDAV, and ICS calendar providers
 - SEO reporting and Google Business Profile posting, as a package
@@ -235,7 +242,7 @@ Nothing above depends on these. Each gets a phase when something does.
 - Tryout access requested from agents-web. Deliberately not self-serve
   signup: agents-web is tenant zero (item 10), so the request arrives as a
   lead in the agency's own CRM and the agency provisions from there through
-  item 3b's path. If it ever ships, a trial is a new rung in item 23's
+  item 3b's path. If it ever ships, a trial is a new tier in item 23's
   ladder with its own module set, never open creation on `agency`. The
   "template site to play with" half is a far larger thing than the dashboard
   half, because that is the agency's actual deliverable rather than a

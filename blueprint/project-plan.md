@@ -196,10 +196,10 @@ New here:
 
 - `organization.plan` as an additional Better Auth field, defaulting to
   `agency`, never settable from the client. Codestash's pattern. Reads as the
-  package. `agency` means "provisioned by the agency, on the first rung."
-  The plan-limits config and the gate every module route checks are built
-  in Phase 1 with this one rung, so packages are never retrofitted. Section
-  6 adds rungs beside it.
+  package. `agency` means "provisioned by the agency, on the first tier."
+  The subscription-limits config and the subscription middleware every module route checks are built
+  in Phase 1 with this one tier, so packages are never retrofitted. Section
+  6 adds tiers beside it.
 - `pipeline_stage`: per organization, ordered, named by the business. Seeded
   with new, contacted, booked, done at provisioning. A lead points at one.
   The first draft had these four as a fixed set; a table costs the same now
@@ -293,8 +293,8 @@ Added:
   two tenant themes, the leads list, the pipeline board and settings. The
   Blueprint's prototype step. The first repo never ran it.
 - **Codestash's three helpers, ported not rewritten.** The
-  auto-active-organization hook, `requireOrgRole`, and the plan-limits config
-  file shape.
+  auto-active-organization hook, `requireOrgRole`, and the config file shape
+  for subscription limits (codestash calls it `plan-limits.ts`).
 - **A siteConfig contract for host sites.** The widget reads the tenant slug
   and theme from the host's `siteConfig.ts`. Primo, primo-v2, and
   face-and-body have one. Latam needs one before it can be a tenant.
@@ -311,7 +311,7 @@ agency's own offer notes say: "bundled into the top packages as the client's
 own CRM," and "sold on its own afterwards."
 
 **Decided 2026-09-18: booking is part of the $240/mo plan, and the plan is
-the first rung of a ladder of packages.** A client on the plan gets
+the first tier of a ladder of packages.** A client on the plan gets
 scheduleads. A client not on any package keeps whatever booking they have,
 Calendly included. The plan is what pays for keeping each client's calendar
 connected and the product maintained; a booking tool nobody is paid to keep
@@ -319,15 +319,15 @@ alive is a liability.
 
 Each package unlocks modules: booking, the pipeline, email, crews, reports,
 and later SEO reporting and visitor analytics. `organization.plan` holds the
-rung. Moving a client up is Frank changing that value until Stripe arrives in
-Phase 9. The price of each rung above the first is not set. Primo pays the
-first rung. The clinic pays cost-cover, which is a private arrangement, not a
-rung the product knows about.
+tier. Moving a client up is Frank changing that value until Stripe arrives in
+Phase 9. The price of each tier above the first is not set. Primo pays the
+first tier. The clinic pays cost-cover, which is a private arrangement, not a
+tier the product knows about.
 
-The gate exists from Phase 1. One config file maps each rung to the modules
+The subscription middleware exists from Phase 1. One config file maps each tier to the modules
 and limits it unlocks, codestash's `plan-limits.ts` shape, and every module
-route checks it before answering. Which module sits on which rung and what
-each rung costs are edits to that file, not code, which is why they can be
+route checks it before answering. Which module sits on which tier and what
+each tier costs are edits to that file, not code, which is why they can be
 decided late without working backwards. In the CRM a locked module says
 which package includes it. For an agency-provisioned client the way up is a
 conversation with Frank; in self-serve it is Stripe.
@@ -468,8 +468,8 @@ Two things the first repo recorded that must not be relearned:
 7. **One app, two hats.** The agency is organization number one; the platform
    is an admin area behind the admin role; tenant code never special-cases
    the agency. Section 3.
-8. **Packages are a ladder**, `organization.plan` holds the rung, and the
-   gate that reads the ladder is built in Phase 1 with one rung so nothing is
+8. **Packages are a ladder**, `organization.plan` holds the tier, and the
+   subscription middleware that reads the ladder is built in Phase 1 with one tier so nothing is
    retrofitted. Section 6.
 9. **WhatsApp is named next to SMS**, not a launch feature. Per-message cost
    in Canada is small (marketing about 2.5 cents, utility under half a

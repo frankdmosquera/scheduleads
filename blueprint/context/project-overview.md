@@ -46,7 +46,7 @@ booking becomes the business's lead.
   list, the board and settings. Runs through `/prototype`, not `/feature`.
 1. **Multi-tenant auth, with the org fix** - email-OTP sign-in,
    create-organization, the `admin` role, the auto-active-organization hook,
-   and the package gate with the one rung `agency`.
+   and the subscription middleware with the one tier `agency`.
 2. **Booking links and availability rules** - the two tables, the public read
    route, the seed CLI, the shared-package layout. Also the typed RPC seam:
    the backend exports `AppType`, the frontend consumes it with `hc<AppType>`,
@@ -87,7 +87,7 @@ booking becomes the business's lead.
 21. **WhatsApp** - Meta verification, a number, approved templates.
 22. **Google OAuth verification** - calendar scopes, then Gmail's restricted
     scopes.
-23. **Packages ladder and the admin area** - rungs above `agency`, who is on
+23. **Packages ladder and the admin area** - tiers above `agency`, who is on
     what, move a client up.
 24. **Hosted booking page** - `/book/<slug>`.
 25. **Self-serve onboarding and billing** - Stripe hosted checkout, webhook
@@ -106,8 +106,8 @@ from a client. All ids are text (Better Auth style); timestamps are `timestamptz
 `invitation`. Managed by the `organization`, `emailOTP` and `admin` plugins.
 One added field:
 
-- `organization.plan` (text, default `agency`) - the package rung. Server-set
-  only. Read by the plan-limits gate on every module route.
+- `organization.plan` (text, default `agency`) - the package tier. Server-set
+  only. Read by the subscription middleware on every module route.
 
 ### booking_link
 
@@ -254,9 +254,9 @@ agents-web's contact-inquiry seam.
 
 Agency-provisioned first. The product ships inside the agency's monthly plan;
 Frank creates the organization and bills as the agency. The $240/mo plan is
-the first rung of a ladder of packages; each rung unlocks modules through the
-plan-limits config, and moving a client up is Frank changing
-`organization.plan` until Stripe arrives in Phase 9. Primo pays the first rung;
+the first tier of a ladder of packages; each tier unlocks modules through the
+subscription-limits config, and moving a client up is Frank changing
+`organization.plan` until Stripe arrives in Phase 9. Primo pays the first tier;
 the clinic pays cost-cover privately. Off-page SEO stays Frank's work; the tool
 only reports it. Self-serve with Stripe hosted checkout and a webhook writing
 `organization.plan` is Phase 9.
