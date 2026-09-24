@@ -2,38 +2,10 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* ===========================================================================
-   THE THEME, PORTED FROM prototypes/theme.css
-   ===========================================================================
-
-   Two layers, in this order:
-
-   1. The Scheduleads tokens, copied from the mockups. These are the real
-      decisions: the indigo accent, the warm greys, the status colours.
-   2. shadcn's own names, defined as aliases of layer 1. The components in
-      components/ui/ are written against --primary, --border, --muted and
-      friends, so mapping rather than replacing keeps them working while
-      the palette becomes this product's.
-
-   Redefining layer 1 under [data-theme="dark"] is enough: layer 2 is all
-   var() references, so it follows automatically.
-
-   NO MEDIA QUERY, ON PURPOSE. theme.css is explicit that there is no
-   prefers-color-scheme here and no "system" third state. The owner picks,
-   the app remembers, and the choice does not flip under him because the
-   sun went down. Light is the default because :root is light; dark needs
-   data-theme="dark" written onto <html>.
-
-   Nothing writes that attribute yet - the toggle is shell chrome no step
-   of feature 1 asks for - so dark is currently reachable only by hand.
-   The tokens are here so the screen that adds the toggle has nothing to
-   decide.
-
-   The --sa-* widget token contract in theme.css is deliberately NOT here.
-   It is the booking widget's interface to a host site's colours, and the
-   widget arrives with build-plan item 2. Porting it now would define
-   tokens nothing reads.
-   =========================================================================== */
+/* Frontend: the theme, ported from prototypes/theme.css. Two layers: the Scheduleads
+   tokens (the real colours), then shadcn's names as aliases of them, so components/ui
+   keeps working. Dark mode is only data-theme="dark" on <html>: no prefers-color-scheme,
+   no "system" setting, on purpose. Nothing sets it yet. */
 
 @custom-variant dark (&:is([data-theme="dark"] *));
 
@@ -41,15 +13,8 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* The fonts are loaded by next/font in app/layout.tsx, which sets
-     --font-geist-sans and --font-geist-mono on <html>. Pointing at those
-     directly: the scaffolded version read `var(--font-sans)` from inside
-     its own definition of --font-sans, which is circular and resolves to
-     nothing.
-
-     Mono is not decoration. theme.css reserves it for anything the eye
-     compares down a column - times, money, durations, ids - because
-     tabular figures make a list scannable and proportional ones do not. */
+  /* Fonts are loaded in app/layout.tsx, which sets --font-geist-sans/-mono on <html>.
+     Mono is for anything compared down a column: times, money, ids. */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
@@ -84,10 +49,7 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
 
-  /* theme.css asks for 10 / 6 / 14. Derived from one --radius rather than
-     declared three times, because @theme already emits --radius-sm and
-     --radius-lg into :root and two definitions of the same name is a
-     collision waiting to be debugged. 10 * 0.6 = 6, and --radius-xl = 14. */
+  /* Every radius derives from --radius (10px): sm 6, lg 10, xl 14, as theme.css asks. */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -96,8 +58,7 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  /* Status is not accent. --won, --wait and --lost carry meaning and only
-     meaning: a green badge means booked, not "this is nice". */
+  /* Status colours carry meaning only: green means booked, never "this is nice". */
   --color-won: var(--won);
   --color-won-soft: var(--won-soft);
   --color-wait: var(--wait);
@@ -155,13 +116,8 @@
   --shadow-lg: 0 8px 16px oklch(0.24 0.01 85 / 8%), 0 24px 56px oklch(0.24 0.01 85 / 14%);
 
   /* --- shadcn's names, as aliases of the tokens above ------------------
-
-     Three of theme.css's names collide with shadcn's: --accent, --muted
-     and --border. shadcn means something different by the first two
-     (--accent is a hover wash, --muted a grey surface), so the theme
-     values are held as --accent-base and --muted-ink above and mapped
-     here. --border means the same thing on both sides, so it is shared.
-     -------------------------------------------------------------------- */
+     --accent and --muted mean different things in shadcn, so the theme's values live in
+     --accent-base and --muted-ink above. --border means the same on both sides. */
   --background: var(--bg);
   --foreground: var(--text);
   --card: var(--surface);
@@ -169,9 +125,7 @@
   --popover: var(--surface);
   --popover-foreground: var(--text);
 
-  /* The one button you want clicked. Indigo, with its own ink: never
-     assume white on an accent, which is the trap theme.css calls out for
-     Primo's amber. */
+  /* The main action colour, with its own text colour: never assume white on an accent. */
   --primary: var(--accent-base);
   --primary-foreground: var(--accent-ink);
 
@@ -201,16 +155,8 @@
   --sidebar-ring: var(--accent-base);
 }
 
-/* ---------------------------------------------------------------------------
-   DARK
-
-   Not the light theme inverted. The surfaces carry a trace of the accent hue
-   (274) rather than being neutral charcoal, so the dark CRM reads as the same
-   product rather than a generic dark mode. The accent lifts to 0.68 lightness
-   because indigo-600 on a dark ground is a smudge, and its ink goes dark.
-
-   Status colours lift too. A 0.52 green on a 0.19 ground is unreadable.
-   --------------------------------------------------------------------------- */
+/* Dark: not the light theme inverted. Surfaces keep a hint of the indigo, and the accent
+   and status colours get lighter so they stay readable on a dark background. */
 
 :root[data-theme="dark"] {
   --bg: oklch(0.185 0.008 274);

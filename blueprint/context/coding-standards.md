@@ -70,6 +70,15 @@ a shape on either side.
   (`const ac = createAccessControl(...)` is `accessControl` here), and no bare
   `api` in `frontend`: that word is the backend. The frontend's side is
   `lib/api-client.ts`
+- The thing you import carries the full meaning, however long the name gets,
+  and its file is named after it. Zod schemas end in `ValidationSchema` and are
+  one object per form (`signInEmailValidationSchema` in
+  `sign-in-email-validation-schema.ts`). Frank reads the import and knows what
+  it is without opening anything
+- `packages/shared/src` is organised by kind, then area, then one file per
+  export: `zod-validation/auth/sign-in-email-validation-schema.ts`. Each kind
+  folder is one import (`@scheduleads-app/shared/zod-validation`, through its
+  `index.ts`). The Drizzle tables are `db/drizzle-schema.ts`
 
 ## Styling
 
@@ -124,7 +133,7 @@ a shape on either side.
     push (server-sent events) only when a real need appears
 - Every signed-in API response carries `Cache-Control: no-store`, so no
   browser or proxy keeps one business's data. New dashboard routes mount the
-  same `dashboardNoStore` middleware as `/me` in `backend/src/index.ts`
+  same `dashboardNoStore` middleware as `/me` in `backend/src/server.ts`
 - Validate with the Zod schemas in `packages/shared` at both ends: the form
   before it sends, the route before it touches the database
 - Every app table is organization-scoped and the scope is a security boundary.
@@ -229,14 +238,21 @@ test is not length, it is whether a reader could recover the sentence from the
 code alone. A comment restating the code is noise however short; a paragraph
 carrying a decision, a refused alternative or a trap is worth its space.
 
-This project deliberately keeps the reasoning next to the thing decided, and
-several files open with a block explaining why they exist and what was
-rejected. That is wanted. What is not wanted is narration of obvious code.
+This project deliberately keeps the reasoning next to the thing decided: the
+comment sits at the line it explains. What is not wanted is narration of
+obvious code, or a long block at the top that explains lines far below it.
 
+- **Put a comment where it belongs, not at the top.** Frank reads code top to
+  bottom and wants the explanation beside the line it explains: directly above
+  it for anything longer than a few words, or at the end of the line
+  (`if (!row) { // the business was deleted`) for a short note. A long block at
+  the top of a file or function that explains lines far below it is the style
+  to avoid; move each part next to its line instead.
 - Comment the **why**, not the **what**. Delete any comment that restates the code.
-- A file-level block explaining a module's reason for existing, the option that
-  was rejected and the trap it avoids is encouraged. A comment announcing each
-  region of a file, or narrating the next three obvious lines, is not.
+- A file-level comment stays short: a few lines on why the module exists. The
+  option that was rejected and the trap it avoids go beside the line they are
+  about. A comment announcing each region of a file, or narrating the next
+  three obvious lines, is not wanted.
 - When a decision rests on how a dependency actually behaves, cite the file and
   line you read it in. "Read off better-auth 1.7.5 `routes.mjs:103`" is worth
   more than the same claim unsourced, and it tells the next upgrade what to

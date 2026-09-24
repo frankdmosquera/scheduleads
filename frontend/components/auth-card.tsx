@@ -1,17 +1,11 @@
+// Frontend components: the centred card, input and notice shared by sign-in,
+// create-organization and every refusal screen.
+
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-/**
- * The centred card that sign-in, create-organization and every refusal
- * screen sit in.
- *
- * One component rather than three copies of the same markup. There is no
- * mockup for any of these screens in `prototypes/` - the ten that exist
- * are all signed-in CRM views - so this is deliberately plain: the
- * ported tokens, a card, and nothing invented on top of them.
- */
-
+// Deliberately plain: prototypes/ has no mockup for these screens.
 export function AuthCard({
   title,
   lede,
@@ -39,13 +33,6 @@ export function AuthCard({
   );
 }
 
-/**
- * A labelled input with its error message.
- *
- * The error is wired to the input through `aria-describedby` and
- * `aria-invalid` rather than only being painted red, so it reaches a
- * screen reader and not just a sighted user.
- */
 export function Field({
   id,
   label,
@@ -61,6 +48,7 @@ export function Field({
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
+  // Links the error and hint to the input, so a screen reader announces them too.
   const describedBy =
     [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(" ") || undefined;
 
@@ -98,12 +86,7 @@ export function Field({
   );
 }
 
-/**
- * A refusal the user can act on.
- *
- * Every unhappy state on these screens renders through this, so they
- * read the same way: what happened, then the one thing to do about it.
- */
+// Every unhappy state renders through this, so they all read the same way.
 export function Notice({
   tone = "error",
   children,

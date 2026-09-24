@@ -1,34 +1,6 @@
-/**
- * Puts two usable accounts into an empty local database.
- *
- * Why it has to exist: signup is closed (`disableSignUp` in the API's
- * `auth-server.ts`) and only the platform admin may create a business. That is
- * right for the product, and it also means a freshly migrated database has
- * no way in at all. Nobody can sign up, and nobody exists to sign in. Until
- * build-plan item 3b gives the agency a real way to provision people, this
- * is how a development database gets its first accounts.
- *
- * What it creates, once, however many times it runs:
- *
- * - admin@example.com: the platform admin, owning "Agency (dev)".
- * - owner@example.com: an ordinary owner of "Test Salon (dev)", which is
- *   the account that proves a non-admin cannot create a business.
- *
- * The addresses are fake on purpose. Login codes print to the API's
- * console in development, so no mailbox is needed, and no real person's
- * data belongs in a development database.
- *
- * It refuses to run anywhere but a local development database, and the
- * check is two conditions rather than one. A loopback host is not enough:
- * the Railway tunnel also listens on 127.0.0.1 (port 5433), so a host
- * check alone would happily seed the real database through it. The
- * database name must also end in `_dev`. Railway's is `railway`.
- *
- * Run with `npm run db:seed --workspace=@scheduleads-app/shared`. It
- * builds the package first, because the schema is imported from `dist/`
- * like every other consumer imports it. Node runs this file's TypeScript
- * directly (type stripping, Node 23.6 and later), so it adds no tool.
- */
+// Shared script: puts two dev accounts into an empty local database. Signup is closed,
+// so without this a fresh database has no way in. Safe to run repeatedly.
+// Run: npm run db:seed --workspace=@scheduleads-app/shared
 
 import { randomUUID } from "node:crypto";
 
@@ -41,6 +13,8 @@ import { member, organization, user } from "@scheduleads-app/shared/db";
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
+// Two conditions, not one: the Railway tunnel ALSO listens on 127.0.0.1, so a host check
+// alone would seed the real database. The name must end in _dev too (Railway's is "railway").
 function assertLocalDevelopmentDatabase(url: string | undefined): string {
   if (!url) {
     throw new Error("DATABASE_URL is not set. It is read from the root .env.");
@@ -60,6 +34,8 @@ function assertLocalDevelopmentDatabase(url: string | undefined): string {
   return database;
 }
 
+// Fake addresses on purpose: login codes print in the API console, so no mailbox is needed.
+// owner@example.com is the non-admin that proves an owner cannot create a business.
 const ACCOUNTS = [
   {
     email: "admin@example.com",
@@ -107,8 +83,7 @@ try {
 
       const organizationId = existingOrg?.id ?? randomUUID();
       if (!existingOrg) {
-        // `plan` is left to its column default, `agency`, the same way a
-        // business created through the app gets it.
+        // plan is left to its default, "agency", as for a business created in the app.
         await tx.insert(organization).values({
           id: organizationId,
           name: account.business.name,

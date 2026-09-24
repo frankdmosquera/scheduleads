@@ -1,3 +1,5 @@
+// Frontend: the root layout wrapping every page. Loads the fonts (as CSS variables) and the global styles.
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";

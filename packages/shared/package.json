@@ -5,16 +5,16 @@
   "type": "module",
   "exports": {
     "./db": {
-      "types": "./dist/db/schema.d.ts",
-      "default": "./dist/db/schema.js"
+      "types": "./dist/db/drizzle-schema.d.ts",
+      "default": "./dist/db/drizzle-schema.js"
     },
-    "./config": {
-      "types": "./dist/config/subscription-limits.d.ts",
-      "default": "./dist/config/subscription-limits.js"
+    "./subscriptions": {
+      "types": "./dist/subscriptions/subscription-limits.d.ts",
+      "default": "./dist/subscriptions/subscription-limits.js"
     },
-    "./validation": {
-      "types": "./dist/validation/auth.d.ts",
-      "default": "./dist/validation/auth.js"
+    "./zod-validation": {
+      "types": "./dist/zod-validation/index.d.ts",
+      "default": "./dist/zod-validation/index.js"
     }
   },
   "scripts": {

@@ -1,3 +1,6 @@
+// Backend: the Better Auth setup (sign-in, businesses, roles, platform admin).
+// Holds the secret and the database, so nothing in frontend/ may import it.
+
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin, emailOTP, organization } from "better-auth/plugins";
@@ -10,19 +13,6 @@ import { member } from "@scheduleads-app/shared/db";
 import { db } from "../database.js";
 import { sendLoginCode } from "./send-login-code.js";
 
-/**
- * Better Auth, mounted on the API rather than inside Next.
- *
- * The first repo ran it inside the Next app, and codestash still does.
- * Here the session lives on the service that owns the data, so every
- * authenticated route reads it directly instead of the API being blind
- * to who is calling. The cost is a cross-origin cookie in production,
- * handled at the bottom of this file.
- *
- * This module holds BETTER_AUTH_SECRET and the database. Nothing in the
- * frontend workspace may import it.
- */
-
 if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error(
     "BETTER_AUTH_SECRET is not set. Copy .env.example to .env at the repo root and fill it in."
@@ -31,25 +21,9 @@ if (!process.env.BETTER_AUTH_SECRET) {
 
 const isProduction = process.env.NODE_ENV === "production";
 
-/**
- * A setting whose localhost default is allowed in development only.
- *
- * Both callers below used to fall back to localhost everywhere. In
- * production that is not a harmless default: APP_ORIGIN becomes the one
- * origin allowed to send credentials and Better Auth's only trusted origin,
- * so a deploy that missed it would grant http://localhost:3000 - anything
- * the visitor happens to run on that port - the right to call the live API
- * with their session attached. BETTER_AUTH_SECRET above and DATABASE_URL in
- * `database.ts` already refuse to boot without a value; these now match.
- *
- * The frontend's NEXT_PUBLIC_API_URL deliberately keeps its fallback, and
- * its reason does not carry over. That value is inlined at build time, so a
- * throw there fires during a local production build. These are read when
- * the process starts, where a throw is a failed boot, which is the point.
- *
- * An empty string counts as unset: `APP_ORIGIN=` in a dashboard's env editor
- * is a mistake, not an origin.
- */
+// A setting that may default to localhost in development only. In production a missing
+// value stops the server from starting, rather than quietly trusting localhost.
+// An empty string counts as missing.
 function settingWithDevDefault(name: string, developmentDefault: string): string {
   const value = process.env[name];
   if (value) return value;
@@ -63,39 +37,22 @@ function settingWithDevDefault(name: string, developmentDefault: string): string
   return developmentDefault;
 }
 
-/**
- * Where the dashboard is served from. The only origin allowed to hold a
- * session. Exported because `index.ts` needs it for CORS, and reading the
- * variable in two files meant two fallbacks that could drift apart.
- */
+// The dashboard's address: the only site allowed to hold a session. Read once here and
+// exported, so server.ts's CORS rule can never drift from Better Auth's.
 export const appOrigin = settingWithDevDefault("APP_ORIGIN", "http://localhost:3000");
 
-/**
- * Every action a business role can be granted. The roles below pick
- * from this list and cannot name anything outside it.
- *
- * Written out rather than imported as Better Auth's `defaultStatements`,
- * which also carries `team` and `ac` rows. Neither is used here (no
- * teams, no roles edited at runtime), and the `ac` row read as if it
- * referred to the access control object built from it.
- */
+// Every action a business role can be granted. Written out instead of importing Better
+// Auth's defaultStatements, which adds `team` and `ac` rows we don't use.
 const customStatements = {
   organization: ["update", "delete"],
   member: ["create", "update", "delete"],
   invitation: ["create", "cancel"],
 } as const;
 
-/**
- * Organization roles.
- *
- * The one change from Better Auth's defaults: `owner` does not get
- * `organization: ["delete"]`. A business owner can rename and configure
- * their organization but cannot destroy it, because deleting one takes
- * its leads, bookings and calendar connection with it. Only the platform
- * admin deletes an organization, and item 23 builds the screen for it.
- */
 const accessControl = createAccessControl(customStatements);
 
+// No organization "delete": deleting a business destroys its leads and bookings, so only
+// the platform admin can (item 23 builds that screen).
 const owner = accessControl.newRole({
   organization: ["update"],
   member: ["create", "update", "delete"],
@@ -116,43 +73,20 @@ const orgMember = accessControl.newRole({
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
-  /**
-   * The API's own origin, not the app's. Better Auth builds callback and
-   * cookie URLs from it, and inferring it from the incoming request is
-   * unreliable once this sits behind a proxy.
-   */
+  // The API's own address (not the dashboard's). Better Auth builds cookie and callback
+  // URLs from it.
   baseURL: settingWithDevDefault("BETTER_AUTH_URL", "http://localhost:3001"),
   basePath: "/api/auth",
 
-  /**
-   * The schema is passed explicitly. The adapter would otherwise fall
-   * back to `db._.fullSchema`, an internal Drizzle field, and a table it
-   * cannot find fails at the first query rather than at boot.
-   */
+  // Schema passed explicitly, so a missing table fails at boot, not at the first query.
   database: drizzleAdapter(db, { provider: "pg", schema }),
 
-  /**
-   * The dashboard is a different origin from this API in every
-   * environment: a different port locally, a different subdomain in
-   * production. Without this, Better Auth rejects its requests.
-   */
-  trustedOrigins: [appOrigin],
+  trustedOrigins: [appOrigin], // the dashboard is always a different origin from the API
 
   user: {
     additionalFields: {
-      /**
-       * The platform admin hat, from the `admin` plugin. Server-set only:
-       * `input: false`, so no request body can write it. Promotion is a
-       * manual database edit until item 23.
-       *
-       * Proved at step 1.6, not assumed: a sign-in body carrying
-       * `role: "admin"` is refused outright with 400 FIELD_NOT_ALLOWED.
-       * It has no `defaultValue`, and `parseInputData` in
-       * `better-auth/dist/db/schema.mjs` throws for an `input: false`
-       * field with a truthy value unless a default exists to substitute.
-       * That is the opposite of how `plan` below behaves, so do not
-       * assume the two fail the same way.
-       */
+      // The platform admin role (Frank). input: false: no request can set it; it is set by
+      // hand in the database until item 23. A request that tries gets a 400.
       role: { type: "string", required: false, input: false },
     },
   },
@@ -163,46 +97,17 @@ export const auth = betterAuth({
       roles: { owner, admin: orgAdmin, member: orgMember },
       creatorRole: "owner",
 
-      /**
-       * Only the platform admin creates a business.
-       *
-       * Better Auth defaults this to `true`, which means any address that
-       * can sign in can also create unlimited organizations, each landing
-       * on `plan: "agency"` with both modules unlocked. That is a free
-       * $240/mo account for anyone who asks, and it contradicts the
-       * project plan outright: "Agency-provisioned first. Frank creates
-       * the org and bills the client as the agency. No signup page, no
-       * Stripe, no self-serve pricing until Phase 9."
-       *
-       * This is one of two doors and they were closed a day apart. Until
-       * 2026-09-23 signing in stayed open, on the argument that a client
-       * being onboarded needs to sign in and has no user row yet; a
-       * stranger through that door got a user row, no organization, and
-       * saw nothing, because the tenant boundary already refused them.
-       * `disableSignUp` on the emailOTP plugin below now closes that door
-       * too, so the pair should be read together rather than separately.
-       *
-       * Self-serve signup is build-plan item 25, and this is one of the two
-       * lines it changes when it arrives. The other is `disableSignUp`.
-       */
+      // Only the platform admin creates a business. Better Auth's default lets anyone
+      // signed in create unlimited businesses on the paid plan. Item 25 (self-serve)
+      // changes this line and disableSignUp below, together.
       allowUserToCreateOrganization: async (user) =>
         (user as { role?: string | null }).role === "admin",
       schema: {
         organization: {
           additionalFields: {
-            /**
-             * The package tier. `input: false` is the whole security
-             * story: no request body can set it. Until Stripe arrives in
-             * Phase 9 the only writer is Frank, by hand.
-             *
-             * It fails differently from `user.role` above, because it
-             * carries a `defaultValue`. On create, a body sending
-             * `plan: "enterprise"` is silently replaced with `agency`
-             * rather than refused; on update it throws. Both are safe,
-             * but only the second is visible to whoever tried it, so do
-             * not read a create that returned 200 as proof the value
-             * was accepted.
-             */
+            // The subscription tier. input: false: no request can set it; only Frank, by
+            // hand, until Stripe (Phase 9). Unlike user.role, a create that sends a plan
+            // is not refused: it silently gets "agency". So a 200 is not proof it took.
             plan: {
               type: "string",
               required: false,
@@ -215,73 +120,28 @@ export const auth = betterAuth({
     }),
 
     emailOTP({
-      /**
-       * Nobody signs themselves up. There is no such thing as a legitimate
-       * stranger here: a business reaches this product by buying a site
-       * from the agency, so every account is one the agency deliberately
-       * created. Better Auth defaults this to open, which meant any address
-       * that could receive mail could mint a user row.
-       *
-       * Left open until 2026-09-23 on the argument that a client being
-       * onboarded needs to sign in and has no user row yet. True, but it
-       * assumed someone was mid-onboarding. Nobody is, and every user who
-       * needs to sign in today already exists, so the door had no
-       * legitimate user at all.
-       *
-       * What this changes, read off better-auth 1.7.5 rather than assumed.
-       * An address that already has a user row still receives its code and
-       * signs in exactly as before: `routes.mjs:103` only short-circuits
-       * when `findUserByEmail` comes back empty. An address that does not
-       * gets `{ success: true }` and no mail, which also means this API can
-       * no longer be made to send mail to an address a stranger chose - the
-       * real cost once item 6 puts Resend behind the send seam. Verifying a
-       * code for an unknown address fails with INVALID_OTP
-       * (`routes.mjs:412`) instead of creating the user.
-       *
-       * The deliberate consequence: a new client cannot get in by
-       * themselves at all, which is the point. Build-plan item 3b provides
-       * the path that lets the agency create them, and until it exists a
-       * new user row is a manual database act.
-       */
+      // Nobody signs themselves up: every account is one the agency created (item 3b).
+      // An existing address gets its code as normal; an unknown one is told a code is on
+      // its way and gets nothing, so the form can't be used to test who is a customer.
       disableSignUp: true,
 
-      /**
-       * Better Auth stores the code in plain text by default. That leaves a
-       * working login code readable in the database for its whole five
-       * minute life, so anyone who can read the table can sign in as that
-       * person without ever seeing their email.
-       *
-       * Nothing here ever needs to read the code back - it is generated,
-       * sent, and compared - so hashing costs nothing. The only feature it
-       * rules out is resending the identical code, and the default there is
-       * to rotate anyway.
-       */
+      // Better Auth stores codes in plain text by default, readable in the database for
+      // five minutes. Hashed, a leaked table gives no one a way in.
       storeOTP: "hashed",
       async sendVerificationOTP({ email, otp, type }) {
         await sendLoginCode({ email, otp, type });
       },
     }),
 
-    admin(),
+    admin(), // the platform admin layer (Frank), above every business
   ],
 
   databaseHooks: {
     session: {
       create: {
-        /**
-         * The org fix, carried from the first repo.
-         *
-         * Better Auth only stamps `activeOrganizationId` when an
-         * organization is created or explicitly switched to, so a
-         * returning user who simply signs in belongs to nothing and every
-         * org-scoped route refuses them. Stamping it at session creation
-         * closes that.
-         *
-         * With two or more memberships and no prior choice it is left
-         * unset on purpose. Picking one would be guessing which tenant
-         * the user meant, and tenant scope is a security boundary, not a
-         * convenience. The frontend asks them instead.
-         */
+        // Runs just before a login session is saved. Better Auth only picks a business
+        // when one is created or switched to, so without this a returning owner would
+        // sign in belonging to nothing. Pre-selects only when there is exactly one.
         before: async (session) => {
           // Only pre-selects. It never decides access: every business the
           // user belongs to is still listed and reachable from the home page.
@@ -290,6 +150,7 @@ export const auth = betterAuth({
             .from(member)
             .where(eq(member.userId, session.userId));
 
+          // Two or more: pick nothing rather than guess. The home page asks.
           const belongsToExactlyOneBusiness = memberships.length === 1;
           if (!belongsToExactlyOneBusiness) return;
 
@@ -307,17 +168,8 @@ export const auth = betterAuth({
   },
 
   advanced: {
-    /**
-     * Local development is two ports on localhost, which is cross-origin
-     * but same-site, so a Lax cookie works and nothing needs HTTPS.
-     *
-     * Production is app.<domain> talking to api.<domain>. That is
-     * cross-site to a browser unless the cookie is scoped to the shared
-     * parent domain, which is what COOKIE_DOMAIN is for. Without it the
-     * session cookie is set and then silently dropped on every
-     * subsequent request.
-     */
     useSecureCookies: isProduction,
+    // Production only: share the login cookie between app.<domain> and api.<domain>.
     crossSubDomainCookies: process.env.COOKIE_DOMAIN
       ? { enabled: true, domain: process.env.COOKIE_DOMAIN }
       : undefined,

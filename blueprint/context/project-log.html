@@ -1184,7 +1184,7 @@
       <span class="where-arrow">&rsaquo;</span>
       <div class="where-leg" data-now="yes">
         <div class="where-key">Now</div>
-        <div class="where-val">Item 1 done &middot; item 2 is next</div>
+        <div class="where-val">Your walkthrough, then item 2</div>
       </div>
       <span class="where-spacer"></span>
       <div class="where-leg">
@@ -1245,7 +1245,7 @@
           </div>
           <div class="row">
             <div class="row-key">6 &middot; Monetize</div>
-            <div class="row-val">Agency-provisioned first. Booking sits in the $240/mo plan, the first rung of a ladder of packages. Each rung unlocks modules through the plan-limits config, and the gate exists from item 1 so nothing is retrofitted. Primo pays the first rung; the clinic pays cost-cover. Off-page SEO stays Frank's work; the tool reports it. Stripe self-serve is Phase 9.</div>
+            <div class="row-val">Agency-provisioned first. Booking sits in the $240/mo plan, the first tier of a ladder of packages. Each tier unlocks modules through the subscription-limits config, and the subscription middleware exists from item 1 so nothing is retrofitted. Primo pays the first tier; the clinic pays cost-cover. Off-page SEO stays Frank's work; the tool reports it. Stripe self-serve is Phase 9.</div>
           </div>
           <div class="row">
             <div class="row-key">7 &middot; UI/UX</div>
@@ -1266,7 +1266,7 @@
             <li><code>availability_rule</code> is org-scoped, not per booking link. Per-resource hours come later on top of it.</li>
             <li><code>pipeline_stage</code>, <code>resource</code> and <code>activity</code> are tables from item 4 onward, never enums.</li>
             <li>Tenant code never reads across organizations and never asks "is this the agency." The agency's own organization gets no special case.</li>
-            <li>The package gate reads <code>organization.plan</code> from item 1. Rungs above <code>agency</code> are a config edit, not code.</li>
+            <li>The subscription middleware reads <code>organization.plan</code> from item 1. Tiers above <code>agency</code> are a config edit, not code.</li>
             <li>Email is send-only plus BCC capture first. Two-way Gmail sync waits for Google's restricted-scope verification.</li>
             <li>The modal never names its provider and the host's buttons say "Book now."</li>
             <li>No feature that renders UI gets specced before the item 0b mockups exist.</li>
@@ -1275,7 +1275,39 @@
             <li>The booking layout is a stored value on the booking link from item 9, never a hardcoded shape. The Calendly-shaped month flow is what gets built; the week strip is parked.</li>
             <li>Every account is one the agency created. Signup is closed and only the platform admin creates a business; item 3b provisions clients, and item 25 is where self-serve reopens.</li>
             <li>Development never uses real data. It runs on a local database built from the migrations and filled by <code>db:seed</code>; only migrations ever reach Railway.</li>
+            <li>Every build step gets its own review before the next one starts: <code>/audit</code> on that step's changes, then the independent review. Blockers are fixed or accepted by you first. <code>/complete</code> keeps a short final check. Decided Sep 24, because item 1's single review of six steps at the end was slow, and faults found late had been built on. Written into <code>AGENTS.md</code>.</li>
           </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>Private data and caching</h2>
+        <p class="drawer-what">Settled during your folder walkthrough on Sep 23. The rule: one person's data is never kept anywhere another person could see it. Written here so it can be reread, not relearned.</p>
+        <div class="rows">
+          <div class="row">
+            <div class="row-key">The risk</div>
+            <div class="row-val">Browsers save copies of what servers send, so Back feels instant. On a shared front-desk computer, the next person could press Back after sign-out and see the previous owner's business, without the server ever being asked. Two ways it can happen: the browser reuses a saved API answer, or it restores a frozen snapshot of the whole page.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">Browser cache</div>
+            <div class="row-val">Every signed-in API answer carries <code>Cache-Control: no-store</code>: "never keep a copy". Set once by the <code>dashboardNoStore</code> middleware in <code>backend/src/server.ts</code>, which stamps the header <em>after</em> <code>await next()</code>, on the finished response. That forces the browser to really ask the server, which refuses someone who is signed out. Done and proved.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">Page snapshot</div>
+            <div class="row-val">The header above cannot stop a frozen page coming back, because the page comes from Next, not from the API. Sign-out must leave nothing behind: clear React Query's cache and leave with <code>window.location.replace("/sign-in")</code> so Back has no dashboard to return to. Not yet tested. That is W16, run with the parked end-to-end sign-in check.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">React Query cache</div>
+            <div class="row-val">Lives in the dashboard's memory and belongs to our own code. Shows cached data instantly and checks the server at the same moment. Cleared on sign-out and on switching business. Settings for it are in the coding standards, under Data Fetching.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">Next's server cache</div>
+            <div class="row-val">Not used. The dashboard is an app behind a login, so it fetches in the browser and never on the Next server. A server-side fetch can run once at build time and bake one moment's data into the page, which is the static-site trap.</div>
+          </div>
+          <div class="row">
+            <div class="row-key">Full-stack Next, for reference</div>
+            <div class="row-val">Private pages that read the session are protected automatically. API route handlers are on you: return <code>Cache-Control: no-store</code> yourself. Server Actions need nothing, because they are always POST and a POST answer is never cached. <code>headers()</code> in <code>next.config.ts</code> is only for special cases, such as a static page that must not be kept.</div>
+          </div>
         </div>
       </section>
 
@@ -1387,6 +1419,18 @@
           <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b, 1</span></span>
           <span class="tally-part" data-state="active"><span class="tally-key">Next</span><span class="tally-val">2</span></span>
           <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">2, 3, 3b, then 4 through 26</span></span>
+        </div>
+        <div class="callout callout--open">
+          <div class="callout-title">Left open from your walkthrough, before item 2</div>
+          <p>Your folder-by-folder review on Sep 23 and 24 closed most of what it found. These four are parked on purpose:</p>
+          <div class="notes">
+            <ul>
+              <li><strong>W16. The Back button after sign-out.</strong> Sign in, sign out, press Back, and confirm no business data shows. If it does: <code>no-store</code> on the dashboard pages, and a sign-out that leaves nothing behind. Run it together with the end-to-end sign-in check that never happened after the renames.</li>
+              <li><strong>W21. The backend package is named <code>api</code>.</strong> Rename it to <code>backend</code>, or give all three packages the <code>@scheduleads-app/</code> prefix like <code>shared</code>.</li>
+              <li><strong>W23. Forms and pages the standard way.</strong> shadcn <code>Input</code>, <code>Label</code> and <code>Card</code> (needs your yes to add), react-hook-form with <code>zodResolver</code> on sign-in and create-organization, and each page split into a server-rendered frame plus a small interactive form. Looks and behaves the same.</li>
+              <li><strong>W26. A <code>Table</code> suffix on the Drizzle tables?</strong> <code>user</code> becomes <code>userTable</code> and so on. Better Auth finds tables by name, so it needs a small name map in <code>auth-server.ts</code>. Yes or no.</li>
+            </ul>
+          </div>
         </div>
       </header>
 
@@ -2483,7 +2527,7 @@
         <div class="stage">
           <div class="stage-head"><span class="stage-name">Phase 9 &middot; Packages and self-serve</span><span class="stage-note">Exit: a business the agency did not build a site for pays and takes its first booking on its own</span></div>
           <div class="item" data-state="planned"><div class="item-num">22</div><div class="item-body"><div class="item-name">Google OAuth verification</div><p class="item-text">Calendar scopes first, then Gmail's restricted scopes and their security assessment. Start as soon as Phase 3 is done.</p></div><span class="pill pill--plan">Planned</span></div>
-          <div class="item" data-state="planned"><div class="item-num">23</div><div class="item-body"><div class="item-name">Packages ladder and the admin area</div><p class="item-text">The rungs above agency in the plan-limits config, and the admin screens: who is on what, move a client up.</p></div><span class="pill pill--plan">Planned</span></div>
+          <div class="item" data-state="planned"><div class="item-num">23</div><div class="item-body"><div class="item-name">Packages ladder and the admin area</div><p class="item-text">The tiers above agency in the subscription-limits config, and the admin screens: who is on what, move a client up. Custom roles per business are parked beside it, under Named, not planned.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">24</div><div class="item-body"><div class="item-name">Hosted booking page</div><p class="item-text">/book/&lt;slug&gt;.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">25</div><div class="item-body"><div class="item-name">Self-serve onboarding and billing</div><p class="item-text">Signup, pick a package, Stripe hosted checkout, the webhook writes organization.plan.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" data-state="planned"><div class="item-num">26</div><div class="item-body"><div class="item-name">Two-way Gmail sync</div><p class="item-text">After 22. The owner's mailbox threads land on the contact timeline.</p></div><span class="pill pill--plan">Planned</span></div>

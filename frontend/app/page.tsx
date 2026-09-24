@@ -1,3 +1,6 @@
+// Frontend page / : the signed-in dashboard. Reads GET /me once and shows one screen per
+// answer (loading, signed out, pick a business, plan refused, API down, or the dashboard).
+
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -8,42 +11,18 @@ import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { fetchMe, type MeResultType } from "@/lib/api-client";
 
-/**
- * The signed-in shell, and the only screen that reads `GET /me`.
- *
- * `/me` is the dashboard's bootstrap: who is signed in, which business
- * they are acting for, and what that business has paid for. It answers
- * in one of four ways and each gets its own screen, because collapsing
- * them into one error page leaves the user looking at "something went
- * wrong" when the actual answer is "sign in", "pick a business" or
- * "this account is misconfigured".
- *
- * Every field on this page comes from that one response. Nothing here
- * asks the API for an organization by id, because the id is the
- * session's to decide - see the comment in the API's
- * `active-organization.ts`, which is where that rule starts.
- */
-
 export type OrganizationType = { id: string; name: string; slug: string };
 
 export default function DashboardPage() {
   const router = useRouter();
   const [result, setResult] = useState<MeResultType | null>(null);
 
-  /**
-   * Bumped to ask for `/me` again: after a business is picked, or when
-   * the user retries a call that could not reach the API.
-   *
-   * The effect below sets state from inside the promise callback rather
-   * than calling an async helper directly. That is not style - the React
-   * Compiler's lint rule rejects the direct call, and the `live` flag it
-   * forces is what stops a late response writing state into a component
-   * that has already navigated away.
-   */
+  // Bump to ask /me again: after picking a business, or on "Try again".
   const [reloads, setReloads] = useState(0);
   const reload = () => setReloads((n) => n + 1);
 
   useEffect(() => {
+    // `live` stops a late answer from updating a page the user already left.
     let live = true;
 
     fetchMe().then((next) => {
@@ -99,13 +78,7 @@ export default function DashboardPage() {
   }
 }
 
-/**
- * State two: no session at all.
- *
- * A redirect rather than a screen with a link, because there is nothing
- * on this page a signed-out visitor can do. Rendered as an effect so the
- * push happens after mount rather than during render.
- */
+// Signed out: redirect straight to sign-in (in an effect, so it runs after render).
 function SignedOut() {
   const router = useRouter();
 
@@ -120,18 +93,8 @@ function SignedOut() {
   );
 }
 
-/**
- * State four: signed in, but the session resolves to no one business.
- *
- * Two different situations arrive here, and they need opposite screens:
- *
- * - No memberships at all. A brand new account. It is sent straight to
- *   create-organization; asking someone to pick from an empty list is
- *   not a question.
- * - Two or more memberships and no active choice. The API refuses to
- *   guess which tenant was meant, which is the whole point of the rule,
- *   so the choice comes back here to be made explicitly.
- */
+// Signed in, but no single business picked. Two cases: no businesses at all (go create
+// one), or several (the API won't guess, so the user picks here).
 function PickOrganization({ onPicked }: { onPicked: () => void }) {
   const router = useRouter();
   const [organizations, setOrganizations] = useState<OrganizationType[] | null>(null);
@@ -151,6 +114,7 @@ function PickOrganization({ onPicked }: { onPicked: () => void }) {
       }
 
       const list = data ?? [];
+      // A brand-new account: nothing to pick from, so go create a business.
       if (list.length === 0) {
         router.replace("/create-organization");
         return;
@@ -218,7 +182,7 @@ function PickOrganization({ onPicked }: { onPicked: () => void }) {
   );
 }
 
-/** State one: everything resolved. The business, its plan, and who you are. */
+// Everything resolved: the business, its plan, and who you are.
 function SignedIn({
   me,
   onSignedOut,
@@ -276,7 +240,7 @@ function Row({ label, value, mono }: { label: string; value: string; mono?: bool
   );
 }
 
-/** The business's initial, as the mockups' sidebar draws it. */
+// The business's first letter, as the mockups' sidebar draws it.
 function OrgMark({ name }: { name: string }) {
   return (
     <span className="grid size-9 flex-none place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
@@ -285,14 +249,7 @@ function OrgMark({ name }: { name: string }) {
   );
 }
 
-/**
- * Sign out.
- *
- * Present on every signed-in state, including the two refusals, because
- * a user stuck on one of those has no other way back. It is also how a
- * second account gets tested without clearing cookies by hand, which
- * build-plan step 1.6 needs.
- */
+// On every signed-in screen, including the refusals, so nobody is ever stuck.
 function SignOutLink({ onSignedOut }: { onSignedOut?: () => void }) {
   const router = useRouter();
 

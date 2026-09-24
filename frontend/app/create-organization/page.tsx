@@ -1,29 +1,15 @@
+// Frontend page /create-organization: a signed-in user names a new business.
+
 "use client";
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { organizationNameSchema, toSlug } from "@scheduleads-app/shared/validation";
+import { createOrganizationValidationSchema, toSlug } from "@scheduleads-app/shared/zod-validation";
 
 import { AuthCard, Field, Notice } from "@/components/auth-card";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
-
-/**
- * The first business a signed-in user creates.
- *
- * One field. The slug is derived rather than asked for, because it is
- * unique across every tenant and letting the first business choose it
- * hands them a name a later one might want. `organization.plan` is not
- * on this form and cannot be: it is declared `input: false` on the
- * server, so a body carrying it is ignored rather than honoured. Every
- * new business starts on `agency`.
- *
- * Better Auth sets the new organization active on the session as part of
- * creating it, so there is no separate switch call afterwards. Read off
- * the installed 1.7.5 - `crud-org.mjs` calls `setActiveOrganization`
- * unless `keepCurrentActiveOrganization` is passed, and it is not.
- */
 
 export default function CreateOrganizationPage() {
   const router = useRouter();
@@ -34,9 +20,7 @@ export default function CreateOrganizationPage() {
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(true);
 
-  // Creating an organization needs a session. Without this check an
-  // unauthenticated visitor gets a form that can only ever fail, which
-  // tells them nothing about what to do instead.
+  // Signed out: go to sign-in, rather than show a form that can only fail.
   useEffect(() => {
     let live = true;
 
@@ -54,31 +38,32 @@ export default function CreateOrganizationPage() {
     };
   }, [router]);
 
-  const slug = toSlug(name);
+  const slug = toSlug(name); // built from the name, never typed (see toSlug)
 
   async function create(event: React.FormEvent) {
     event.preventDefault();
     setFieldError(null);
     setRefusal(null);
 
-    const parsed = organizationNameSchema.safeParse(name);
+    const parsed = createOrganizationValidationSchema.safeParse({ name });
     if (!parsed.success) {
       setFieldError(parsed.error.issues[0]?.message ?? "Enter the name of your business.");
       return;
     }
 
-    const derived = toSlug(parsed.data);
+    const derived = toSlug(parsed.data.name);
     if (!derived) {
-      // A name of nothing but punctuation or emoji derives to an empty
-      // slug, which the server would reject with a message about a field
-      // this form never showed.
+      // Only punctuation or emoji: the slug would be empty and the server's error
+      // would mention a field this form never showed.
       setFieldError("Use at least a couple of letters or numbers.");
       return;
     }
 
     setBusy(true);
+    // Better Auth also makes the new business the active one, so no switch call is needed.
+    // No plan is sent: the server always starts a new business on "agency".
     const { error } = await authClient.organization.create({
-      name: parsed.data,
+      name: parsed.data.name,
       slug: derived,
     });
     setBusy(false);

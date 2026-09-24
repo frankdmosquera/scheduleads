@@ -106,6 +106,29 @@ are not configurable.
 
 ## Workflow
 
+### A review after every step, not only at the end
+
+**Decided by Frank, 2026-09-24.** This overrides the Blueprint default, where
+the audit and the independent review run once per work item at `/complete`.
+
+After each build step (N.1, N.2, ...) passes its own `Done when`, and before
+the next step starts:
+
+1. Run `/audit` scoped to that step's changes.
+2. Run the independent review on the same changes.
+3. Blocking findings (P0/P1) are fixed, or Frank explicitly accepts them with a
+   reason, before the next step begins. P2/P3 are counted, recorded and carried.
+4. If a review shows a spec or plan file is wrong, correct it now, before the
+   next step builds on it.
+
+`/complete` still runs its own final review, but over steps that were each
+already reviewed, so it is a short integration check rather than one review of
+a whole feature at once.
+
+Why: item 1 had six steps and one review at the end. Reviewing a feature that
+size in one go was slow and painful, and faults found late had been built on
+for several steps.
+
 Build one feature, fix, or rollback at a time, behind review gates. Each step's instructions
 are plain markdown skills any capable agent can read and follow. The workflow is
 exposed through tool-specific adapters:

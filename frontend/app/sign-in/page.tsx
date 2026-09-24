@@ -1,27 +1,20 @@
+// Frontend page /sign-in: email, then the 6-digit code sent to it. No passwords anywhere.
+// Sign-in only: signup is closed, so only accounts the agency created can get in.
+
 "use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { emailSchema, loginCodeSchema, OTP_LENGTH } from "@scheduleads-app/shared/validation";
+import {
+  OTP_LENGTH,
+  signInCodeValidationSchema,
+  signInEmailValidationSchema,
+} from "@scheduleads-app/shared/zod-validation";
 
 import { AuthCard, Field, Notice } from "@/components/auth-card";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
-
-/**
- * Sign in, in two steps: the email, then the code that was sent to it.
- *
- * There is no password anywhere in this product. A business owner
- * checking leads between jobs does not want another password, and one
- * that is never stored cannot be leaked. Better Auth's emailOTP plugin
- * creates the account on first successful code, so this one screen is
- * both sign-in and sign-up; there is no separate registration page and
- * no "no account?" dead end.
- *
- * Outside production the code is printed to the API's console rather
- * than emailed. Real delivery is build-plan item 6.
- */
 
 export type StepType = "email" | "code";
 
@@ -40,17 +33,17 @@ export default function SignInPage() {
     setFieldError(null);
     setRefusal(null);
 
-    // The same schema the API validates against, so the form cannot
-    // accept something the server will then reject without explanation.
-    const parsed = emailSchema.safeParse(email);
+    // Same rules as the API, so the form never accepts what the server would reject.
+    const parsed = signInEmailValidationSchema.safeParse({ email });
     if (!parsed.success) {
       setFieldError(parsed.error.issues[0]?.message ?? "Enter a valid email address.");
       return;
     }
 
     setBusy(true);
+    // In development the code prints in the API's console; real email is item 6.
     const { error } = await authClient.emailOtp.sendVerificationOtp({
-      email: parsed.data,
+      email: parsed.data.email,
       type: "sign-in",
     });
     setBusy(false);
@@ -60,20 +53,9 @@ export default function SignInPage() {
       return;
     }
 
-    // An address with no account reaches this line too, and that is not a
-    // bug. Signup is disabled on the server, so better-auth answers an
-    // unknown address with { success: true } and sends nothing; the screen
-    // then says a code is on its way and no code ever arrives. Deliberate:
-    // telling the visitor the account does not exist would turn this form
-    // into a way to test whether any given address is a customer. Do not
-    // "fix" it by branching on whether the account exists. The only
-    // legitimate way in is the agency creating the account, which is
-    // build-plan item 3b.
-    //
-    // Hold the normalised address, not what was typed. Better Auth
-    // lowercases before looking the account up, so sending the raw
-    // string on step two can fail a lookup that step one succeeded at.
-    setEmail(parsed.data);
+    // An unknown address also lands here and simply never gets a code. On purpose: saying
+    // "no such account" would let anyone test who is a customer. Don't "fix" this.
+    setEmail(parsed.data.email); // keep the lowercased address, the one Better Auth looks up
     setCode("");
     setStep("code");
   }
@@ -83,7 +65,7 @@ export default function SignInPage() {
     setFieldError(null);
     setRefusal(null);
 
-    const parsed = loginCodeSchema.safeParse(code);
+    const parsed = signInCodeValidationSchema.safeParse({ code });
     if (!parsed.success) {
       setFieldError(parsed.error.issues[0]?.message ?? "Enter the code from your email.");
       return;
@@ -92,21 +74,17 @@ export default function SignInPage() {
     setBusy(true);
     const { error } = await authClient.signIn.emailOtp({
       email,
-      otp: parsed.data,
+      otp: parsed.data.code,
     });
     setBusy(false);
 
     if (error) {
-      // Better Auth answers a wrong code and an unknown account with the
-      // same refusal on purpose, so this message must not speculate
-      // about which it was.
+      // A wrong code and an unknown account get the same answer on purpose; don't guess which.
       setRefusal(error.message ?? "That code is not right. Request a new one.");
       return;
     }
 
-    // Where the session lands is the dashboard's decision, not this
-    // screen's: it reads /me and sends the user on from there, including
-    // to create-organization when they have no business yet.
+    // The home page reads /me and decides where the user goes from there.
     router.push("/");
     router.refresh();
   }

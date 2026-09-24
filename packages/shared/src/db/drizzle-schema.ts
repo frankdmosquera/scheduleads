@@ -1,34 +1,9 @@
+// Shared: the database tables, imported by the backend as @scheduleads-app/shared/db.
+// Lives here so only one place can generate migrations. Better Auth's tables match its
+// emailOTP, organization and admin plugins exactly; check its schema before changing them.
+// Every timestamp keeps its time zone: a booking product that loses it double-books.
+
 import { boolean, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
-
-/**
- * The database schema, shared by every workspace that talks to Postgres, and
- * reached as `@scheduleads-app/shared/db`.
- *
- * It lives here rather than in `backend/` because the database belongs to
- * neither app: the Hono API owns every write today, but migrations and types
- * are read from both sides. A schema owned by one workspace would let two of
- * them generate migrations from different definitions against one database.
- *
- * One file, not a directory of seven. The first repo learned that a barrel
- * re-export forces a relative import, and the two workspaces disagree about
- * extensions: the backend's NodeNext resolution demands `./user-schema.js`
- * while the frontend's bundler wants none. This package compiles to `dist/`
- * before either consumer reads it, which sidesteps that, but a single file
- * sidesteps it and stays readable at this size.
- *
- * Each app builds its own connection: pooling and lifetime differ between a
- * Next.js server and a long-lived Node process.
- */
-
-/**
- * Better Auth's own tables for this project's exact plugin set: `emailOTP`,
- * `organization` and `admin`, on better-auth 1.7.5. The `admin` columns were
- * read off `node_modules/better-auth/dist/plugins/admin/schema.mjs` rather
- * than written from memory. Re-read it before changing anything here.
- *
- * Timestamps are `timestamptz` throughout. A booking product that stores an
- * instant without its zone is a booking product that double-books.
- */
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -39,14 +14,8 @@ export const user = pgTable("user", {
   createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).notNull().defaultNow(),
 
-  /**
-   * The `admin` plugin's platform role, and Frank's second hat. Nothing in
-   * the product reads it yet; the admin area is item 23.
-   *
-   * Better Auth marks this `input: false`, so no request body can set it. It
-   * is promoted by hand against the database and nowhere else. Do not add a
-   * route, form or server action that writes it.
-   */
+  // The platform admin role (Frank). Set by hand in the database only: never add a
+  // route, form or action that writes it.
   role: text("role"),
   banned: boolean("banned").default(false),
   banReason: text("banReason"),
@@ -65,18 +34,11 @@ export const session = pgTable("session", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
 
-  /**
-   * The tenant this session is acting for, and the single source of the
-   * `organizationId` every org-scoped query uses.
-   *
-   * Better Auth only stamps it when an organization is created or explicitly
-   * switched to, which is the org fix this feature exists to close: see the
-   * session-create hook in `backend/src/lib/auth-server.ts`.
-   */
+  // The business this session acts for: the source of every organizationId the API uses.
+  // Filled at sign-in by the session hook in backend/src/lib/auth-server.ts.
   activeOrganizationId: text("activeOrganizationId"),
 
-  /** `admin` plugin. Set while a platform admin is impersonating. */
-  impersonatedBy: text("impersonatedBy"),
+  impersonatedBy: text("impersonatedBy"), // set while the platform admin impersonates someone
 });
 
 export const account = pgTable("account", {
@@ -92,8 +54,7 @@ export const account = pgTable("account", {
   accessTokenExpiresAt: timestamp("accessTokenExpiresAt", { withTimezone: true }),
   refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt", { withTimezone: true }),
   scope: text("scope"),
-  /** Unused: sign-in is email-OTP only, so no password is ever set. */
-  password: text("password"),
+  password: text("password"), // unused: sign-in is by email code only
   createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -115,18 +76,8 @@ export const organization = pgTable("organization", {
   createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
   metadata: text("metadata"),
 
-  /**
-   * The package tier. `agency` is the only one that exists until item 23
-   * adds the ladder above it.
-   *
-   * Server-set only: it is declared `input: false` on the Better Auth
-   * organization plugin, so no create or update body can carry it. Until
-   * Stripe arrives in Phase 9 the only writer is Frank, by hand.
-   *
-   * Anything this column holds that `subscription-limits` does not recognise
-   * resolves to the locked set, not to `agency`. An unknown tier is a
-   * misconfiguration, and the subscription middleware fails closed.
-   */
+  // The subscription tier. No request can set it (input: false in auth-server.ts); only
+  // Frank, by hand, until Stripe. A value subscription-limits.ts doesn't know unlocks nothing.
   plan: text("plan").notNull().default("agency"),
 });
 
@@ -140,18 +91,14 @@ export const member = pgTable(
     userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    /**
-     * Better Auth's default set: owner | admin | member. Only `owner` carries
-     * meaning today, and it is the organization owner, not the platform admin
-     * on `user.role`. The two are different hats and never the same check.
-     */
+    // The role IN this business (owner | admin | member). Not the platform admin role on
+    // user.role: two different things, never the same check.
     role: text("role").notNull().default("member"),
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    // One membership row per user per organization. Without this the
-    // "exactly one membership" fallback in active-organization.ts could be
-    // fooled by a duplicate into thinking a single-tenant user is ambiguous.
+    // One membership per person per business. A duplicate would make someone with one
+    // business look like they have two, and the API would refuse to pick.
     uniqueIndex("member_organization_user_unique").on(table.organizationId, table.userId),
   ]
 );
