@@ -15,7 +15,7 @@ contract in `AGENTS.md`.
 Where this sits in the workflow:
 
     completed feature + git history  ->  [rollback]  ->  /implement  ->  /check  ->  /complete
-    (archive + squashed commit)           (risk review     (reverse       (prove)     (log + merge)
+    (archive + merge commit)              (risk review     (reverse       (prove)     (log + merge)
                                            + spec)          product diff)
 
 This skill plans a rollback. It does not change product code, create a branch,
@@ -65,22 +65,38 @@ Use the archive path to locate the commit that added it:
 
     git log --diff-filter=A --format="%H %s" HEAD -- <archive-path>
 
-Use the newest matching commit reachable from the current branch. Confirm the
-archive was added by that commit and its subject and diff are consistent with the
-requested feature. If the target is a merge commit, stop before Step 2 and before
-writing or changing `blueprint/context/current-feature.md`. Do not record a
-target parent or choose a mainline. Publish `blocked` to
-`blueprint/.state/run.json`, explain that Blueprint cannot safely infer which
-merge parent represents the pre-feature state, and include the exact `/rollback`
-command the user can rerun after choosing a safe remediation or mainline
-strategy. `/implement` retains its merge-target stop as defense in depth. If the
-archive was never committed, explain that git cannot reconstruct a safe rollback
-from it.
+Use the newest matching commit reachable from the current branch; call it the
+archive commit. Confirm the archive was added by that commit and its subject is
+consistent with the requested feature. Then resolve the target, which is the
+commit that brought the whole feature into the default branch:
+
+- **Merged with a merge commit** (the normal case). The archive commit sits on
+  the feature branch, not on the default branch's first-parent line. The target
+  is the first merge commit on that line that contains it:
+
+      git rev-list --first-parent --merges --reverse --ancestry-path <archive-commit>..HEAD
+
+  Take the first result. The target parent is that merge's first parent
+  (`<target>^1`), which is the default branch just before the feature landed,
+  so the diff from parent to target is the whole feature. Confirm the archive
+  commit is reachable from the target's second parent.
+- **Squashed** (older features, such as those completed before merge commits
+  were adopted). The archive commit is itself on the first-parent line and has
+  one parent. The target is the archive commit and the target parent is its
+  only parent.
+
+Stop before Step 2, without writing `blueprint/context/current-feature.md`, when
+neither case matches exactly: a merge whose first parent is not on the default
+branch's first-parent line, an octopus merge, or an archive commit reachable
+through more than one merge. Publish `blocked` to `blueprint/.state/run.json`,
+name what did not match, and include the exact `/rollback` command to rerun
+after the user chooses a strategy. If the archive was never committed, explain
+that git cannot reconstruct a safe rollback from it.
 
 ## Step 2 - separate product changes from Blueprint history
 
-Inspect the target commit and build the product-path set from the files it
-changed. Exclude these protected workflow paths:
+Build the product-path set from the files changed between the target parent and
+the target (`git diff --name-only <target-parent> <target>`). Exclude these protected workflow paths:
 
 - `.agents/**`
 - `.claude/**`

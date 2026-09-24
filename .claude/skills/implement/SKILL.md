@@ -54,6 +54,18 @@ switch to that exact branch and never implement on the default branch. On
 resume, start at the first unchecked build step and use git status plus the
 checked boxes to distinguish finished work from unfinished work.
 
+Resolve the backup before the first step. Run `git remote get-url origin`. With
+no remote, stop and say plainly that nothing in this project is on GitHub, and
+that the user creates the empty repo on github.com (the `gh` CLI may not be
+installed). Continue without one only on the user's explicit say-so.
+
+When `workflow.checkpointCommits` is `enabled`, ask once per work item, before
+the first step: commit each step on `<branch>` when it passes (after its review,
+when `workflow.stepReview` is `every`) and push `<branch>` to GitHub after every
+commit? A yes covers this branch and this work item only. It never covers
+`main`, a merge, a force push, or any other branch. On resume, ask again unless
+the yes is already in the current chat.
+
 If the spec says `Type: Rollback`, read and follow
 `reference/rollback-implementation.md` before changing product files. Do not load
 that reference for a feature or fix.
@@ -99,6 +111,12 @@ For each step:
    without this having happened is the rule already broken. Log decisions with
    why the rejected option lost, open questions, and any real fault found and
    repaired, not only completed steps.
+7. **Commit and push the step** when the once-per-item yes was given. One
+   commit per step, its message carrying the step number, for example
+   `feat: 2.3 availability rules api`. Then push the branch and end the step
+   report with a sync line comparing `git rev-parse <branch>` with
+   `git ls-remote origin <branch>`. Without that yes, offer the commit instead.
+   Never commit mid-step or after every edit: a step is the unit.
 
 With `verification.logicTests: required`, any logic-bearing step stops and
 points to `/tests` when no test runner is configured. Its focused logic tests
@@ -107,14 +125,31 @@ required`, a UI done-when cannot pass on build output alone. Capture the
 configured browser evidence, or stop and ask the user to start the required
 server when live evidence cannot run automatically.
 
-With `workflow.stepReview: feature`, continue through passing steps and present
-one final review packet. With `workflow.stepReview: every`, stop after each step
-with the diff, a short explanation, evidence, and a manual try path when one
-exists. Continue only after approval.
+With `workflow.stepReview: feature`, continue through passing steps, committing
+and pushing each one, and present one final review packet. The audit and
+independent review run once, over the whole work item, before `/complete`. This
+suits small projects.
 
-Checkpoint commits are offered only when `workflow.checkpointCommits` is
-`enabled` and the current review gate was approved. Never commit without current
-approval. `/complete` owns the final work-level commit and merge.
+With `workflow.stepReview: every`, each step gets its own review before the
+next one starts. This suits large projects, where a fault found late has been
+built on for several steps:
+
+1. Commit and push the step. The commit is the immutable checkpoint the review
+   reads.
+2. Run `/audit` scoped to that step's changes, then the independent review on
+   the same changes.
+3. P0 and P1 findings are fixed, or the user explicitly accepts them with a
+   reason, before the next step. Commit review fixes as one follow-up commit,
+   for example `fix: 2.3 review findings`, and push. P2 and P3 are recorded and
+   carried.
+4. If the review shows the spec or plan is wrong, correct it now.
+5. Stop with the diff, a short explanation, evidence, the review outcome, and a
+   manual try path when one exists. Continue only after approval.
+
+`/complete` still runs its own final review, but over steps that were each
+reviewed, so it is a short integration check.
+
+`/complete` owns the final work-level commit and the merge.
 
 Do not create a separate tool round merely to narrate a passing internal step.
 Keep the durable checkbox current and continue. Split a step when its diff is too
@@ -205,8 +240,9 @@ named area. If the feature spans too many distinct areas for one useful pass,
 name the sections first and let the user choose where to begin. Remain read-only
 unless the user separately requests changes.
 
-Never create an ordinary step, product, or work-level commit from this skill.
-The sole exception is exactly one immutable independent-review checkpoint after
-showing its exact candidate and receiving current explicit commit approval.
-Configuration never supplies that approval. Never merge, push, deploy, publish,
-or start unrelated work from this skill.
+Commit only the step commits and review-fix commits described above, and only
+under the once-per-item yes given in the current chat, plus the immutable
+independent-review checkpoint after showing its exact candidate and receiving
+explicit commit approval. Configuration never supplies approval. Push only the
+work branch. Never merge, push `main`, force push, deploy, publish, or start
+unrelated work from this skill.

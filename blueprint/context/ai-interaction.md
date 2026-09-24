@@ -227,9 +227,10 @@ enable checkpoint prompts by itself. The previous workflow uses
    `blueprint/context/review.md` to their stubs.
 11. **Feature commit** - `/complete` stages everything on the branch (step work
    plus the logging changes) into one conventional feature commit.
-12. **Squash-merge** - `/complete` squash-merges the branch to main (explicit yes)
-    and deletes it, so the feature lands as one commit. Then it must ask
-    separately before pushing main; merge approval does not approve a push.
+12. **Merge** - `/complete` asks one question naming the merge, the tag and the
+    push. On a yes it merges the branch into main locally with a merge commit
+    (`--no-ff`, never a squash), tags a feature `item-NN-done`, pushes main and
+    the tag, and keeps the branch. Every step commit stays in main's history.
 13. **Release prep (optional)** - run `/release render` or `/release vercel`
     after a completed feature or milestone when you want local provider config,
     env var review, build/start checks, and a smoke-test path. `/release` must
@@ -257,8 +258,8 @@ publish, destructive actions, or hiding failing checks.
 Continuous Mode also exists only as an explicit opt-in command: `/continuous`
 or `$continuous`. Do not suggest it as the default next action. Its explicit
 invocation authorizes the local per-feature lifecycle defined by that skill:
-configured checkpoint commits, one local default-branch commit per completed
-feature, local squash merges, branch deletion, and repetition through the
+configured checkpoint commits, one local merge commit and tag per completed
+feature, kept branches, and repetition through the
 configured limit or end of the build plan. It never authorizes push, deploy,
 publish, send, remote changes, destructive actions, finding waivers, or product
 decisions.
@@ -267,22 +268,26 @@ decisions.
 
 Per feature, in this order:
 
-1. **New branch** off `main`, using the prefixes in `blueprint/config.json`.
-2. **A commit on every build step** - not one commit at the end. Requires
-   `workflow.checkpointCommits: "enabled"`.
-3. **At least one push to GitHub** before the feature is closed.
-4. **Squash-merge to `main`.**
-5. **The next feature starts from a fresh branch** off the updated `main`.
-6. **Keep the merged branch.**
+The laptop does all the work and GitHub receives it. GitHub never merges or
+changes anything on its own, so the two stay a mirror.
 
-**Never delete a branch**, on this or any other project. This overrides the
-default branch-deletion behaviour in `/complete` and Continuous Mode.
+1. **New branch** off `main` per feature, using the prefixes in
+   `blueprint/config.json`. Steps are commits on it, never branches.
+2. **One commit per build step, pushed right after.** Requires
+   `workflow.checkpointCommits: "enabled"` and the once-per-item yes that
+   `/implement` asks for.
+3. **Merge into `main` locally with a merge commit**, never a squash, then tag
+   and push `main`. `/complete` does this on one explicit yes.
+4. **The next feature starts from a fresh branch** off the updated `main`.
+5. **Keep the merged branch.** Never delete a branch, on this or any project.
 
-**Every project has a GitHub remote.** Blueprint runs `git init` but never
-creates one, so its projects start without a remote and silently skip step 3.
-If `git remote -v` is empty, say so at the start of the session, not after a
-feature is finished. Creating the repo and pushing still need explicit approval
-each time - merge approval is not push approval.
+On a second machine, pull before starting. That is the only time GitHub gives
+anything back.
+
+**Every project has a GitHub remote.** `/implement` stops before the first
+step when `git remote get-url origin` fails. Squash merges were dropped on
+2026-09-24: feature 1 was squashed, so its steps live only on its branch, now
+pushed as `feature/multi-tenant-auth-with-the-org-fix`.
 
 ## Commits
 

@@ -9,9 +9,11 @@ Before the first rollback step:
 
 1. Read `Target commit` and `Target parent`. Stop unless both values match
    `^[0-9a-f]{40}$`.
-2. Resolve the archive's introducing commit and verify it has exactly one parent.
-   Stop on a merge target. Confirm the resolved commit exactly equals `Target
-   commit` and the resolved parent exactly equals `Target parent`.
+2. Resolve the target again the way `/rollback` Step 1 does. For a merge
+   target, confirm it has exactly two parents and that `Target parent` equals
+   its first parent. For a squashed target, confirm it has exactly one parent.
+   Confirm the resolved commit exactly equals `Target commit` and the resolved
+   parent exactly equals `Target parent`. Stop on any mismatch.
 3. Confirm the target is an ancestor of `HEAD` and the approved rollback spec is
    the only dirty path. Stop on drift.
 4. Preview the target's product diff while excluding `.agents/**`,
