@@ -85,8 +85,7 @@ export default function CreateOrganizationPage() {
 
     if (error) {
       setRefusal(
-        error.message ??
-          "That business could not be created. Try a slightly different name."
+        error.message ?? "That business could not be created. Try a slightly different name."
       );
       return;
     }

@@ -1,10 +1,4 @@
-import {
-  boolean,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 /**
  * The database schema, shared by every workspace that talks to Postgres, and
@@ -136,30 +130,31 @@ export const organization = pgTable("organization", {
   plan: text("plan").notNull().default("agency"),
 });
 
-export const member = pgTable("member", {
-  id: text("id").primaryKey(),
-  organizationId: text("organizationId")
-    .notNull()
-    .references(() => organization.id, { onDelete: "cascade" }),
-  userId: text("userId")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  /**
-   * Better Auth's default set: owner | admin | member. Only `owner` carries
-   * meaning today, and it is the organization owner, not the platform admin
-   * on `user.role`. The two are different hats and never the same check.
-   */
-  role: text("role").notNull().default("member"),
-  createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [
-  // One membership row per user per organization. Without this the
-  // "exactly one membership" fallback in active-organization.ts could be
-  // fooled by a duplicate into thinking a single-tenant user is ambiguous.
-  uniqueIndex("member_organization_user_unique").on(
-    table.organizationId,
-    table.userId
-  ),
-]);
+export const member = pgTable(
+  "member",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    /**
+     * Better Auth's default set: owner | admin | member. Only `owner` carries
+     * meaning today, and it is the organization owner, not the platform admin
+     * on `user.role`. The two are different hats and never the same check.
+     */
+    role: text("role").notNull().default("member"),
+    createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // One membership row per user per organization. Without this the
+    // "exactly one membership" fallback in active-organization.ts could be
+    // fooled by a duplicate into thinking a single-tenant user is ambiguous.
+    uniqueIndex("member_organization_user_unique").on(table.organizationId, table.userId),
+  ]
+);
 
 export const invitation = pgTable("invitation", {
   id: text("id").primaryKey(),

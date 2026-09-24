@@ -131,7 +131,11 @@ try {
         });
       }
 
-      const made = [!existingUser && "account", !existingOrg && "business", !existingMember && "membership"].filter(Boolean);
+      const made = [
+        !existingUser && "account",
+        !existingOrg && "business",
+        !existingMember && "membership",
+      ].filter(Boolean);
       console.log(
         `${account.email.padEnd(20)} ${account.role === "admin" ? "platform admin" : "ordinary owner"}, ` +
           `owns "${account.business.name}"  ${made.length ? "(created " + made.join(", ") + ")" : "(already there)"}`
@@ -139,7 +143,9 @@ try {
     }
   });
 
-  console.log(`\nSeeded ${database}. Sign in at http://localhost:3000/sign-in; codes print in the API console.`);
+  console.log(
+    `\nSeeded ${database}. Sign in at http://localhost:3000/sign-in; codes print in the API console.`
+  );
 } finally {
   await client.end();
 }

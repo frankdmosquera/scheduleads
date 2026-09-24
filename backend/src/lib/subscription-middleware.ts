@@ -84,10 +84,7 @@ export const requireKnownSubscription = createMiddleware(async (c, next) => {
 
   if (!isKnownTier(row.plan)) {
     return c.json(
-      refuse(
-        "plan_unrecognised",
-        "This business is on a plan the product does not recognise."
-      ),
+      refuse("plan_unrecognised", "This business is on a plan the product does not recognise."),
       403
     );
   }
@@ -113,10 +110,7 @@ export const requireModule = (module: ModuleType) =>
 
     if (!subscription.limits.modules.includes(module)) {
       return c.json(
-        refuse(
-          "plan_required",
-          `This organization's plan does not include ${module}.`
-        ),
+        refuse("plan_required", `This organization's plan does not include ${module}.`),
         403
       );
     }

@@ -68,9 +68,6 @@ export function getSubscriptionLimits(plan: string | null | undefined): Subscrip
 }
 
 /** Whether a tier reaches a given module. */
-export function subscriptionIncludes(
-  plan: string | null | undefined,
-  module: ModuleType
-): boolean {
+export function subscriptionIncludes(plan: string | null | undefined, module: ModuleType): boolean {
   return getSubscriptionLimits(plan).modules.includes(module);
 }

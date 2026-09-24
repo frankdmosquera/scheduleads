@@ -79,8 +79,7 @@ export default function DashboardPage() {
         >
           <Notice>{result.message}</Notice>
           <p className="mt-4 text-sm text-muted-foreground">
-            Nothing is lost. Get in touch and we will put the account back on
-            the right plan.
+            Nothing is lost. Get in touch and we will put the account back on the right plan.
           </p>
         </AuthCard>
       );
@@ -182,9 +181,7 @@ function PickOrganization({ onPicked }: { onPicked: () => void }) {
   if (!organizations) {
     return (
       <AuthCard title="One moment">
-        <p className="text-sm text-muted-foreground">
-          Looking up your businesses…
-        </p>
+        <p className="text-sm text-muted-foreground">Looking up your businesses…</p>
       </AuthCard>
     );
   }
@@ -239,9 +236,7 @@ function SignedIn({
               <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">
                 {me.organization.name}
               </h1>
-              <p className="font-mono text-xs text-muted-foreground">
-                {me.organization.plan}
-              </p>
+              <p className="font-mono text-xs text-muted-foreground">{me.organization.plan}</p>
             </div>
           </div>
 
@@ -249,25 +244,16 @@ function SignedIn({
             <Row label="Signed in as" value={me.user.name || me.user.email} />
             <Row label="Your role" value={me.role} />
             <Row label="Address" value={me.organization.slug} mono />
-            <Row
-              label="Plan"
-              value={me.organization.plan}
-              mono
-            />
+            <Row label="Plan" value={me.organization.plan} mono />
             <Row
               label="Included"
-              value={
-                me.limits.modules.length > 0
-                  ? me.limits.modules.join(", ")
-                  : "nothing"
-              }
+              value={me.limits.modules.length > 0 ? me.limits.modules.join(", ") : "nothing"}
             />
           </dl>
 
           <p className="mt-6 text-sm leading-6 text-muted-foreground">
-            Every figure above came from one call to the API, scoped to this
-            business by your session. Leads, bookings and the calendar arrive
-            with the next build-plan items.
+            Every figure above came from one call to the API, scoped to this business by your
+            session. Leads, bookings and the calendar arrive with the next build-plan items.
           </p>
         </div>
 
@@ -279,25 +265,11 @@ function SignedIn({
   );
 }
 
-function Row({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
+function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="grid grid-cols-[10rem_minmax(0,1fr)] gap-4 bg-card px-4 py-3">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd
-        className={
-          mono
-            ? "truncate font-mono text-foreground"
-            : "truncate text-foreground"
-        }
-      >
+      <dd className={mono ? "truncate font-mono text-foreground" : "truncate text-foreground"}>
         {value}
       </dd>
     </div>

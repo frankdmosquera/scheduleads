@@ -1,9 +1,5 @@
 import { createAuthClient } from "better-auth/react";
-import {
-  adminClient,
-  emailOTPClient,
-  organizationClient,
-} from "better-auth/client/plugins";
+import { adminClient, emailOTPClient, organizationClient } from "better-auth/client/plugins";
 
 /**
  * The frontend's half of Better Auth.
@@ -40,9 +36,10 @@ import {
  * localhost, every call fails, and the dashboard renders its
  * "cannot reach the API" state with the URL it tried in the console.
  */
-export const API_URL = (
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"
-).replace(/\/+$/, "");
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001").replace(
+  /\/+$/,
+  ""
+);
 
 export const authClient = createAuthClient({
   /**

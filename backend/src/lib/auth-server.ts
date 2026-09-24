@@ -25,7 +25,7 @@ import { sendLoginCode } from "./send-login-code.js";
 
 if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error(
-    "BETTER_AUTH_SECRET is not set. Copy .env.example to .env at the repo root and fill it in.",
+    "BETTER_AUTH_SECRET is not set. Copy .env.example to .env at the repo root and fill it in."
   );
 }
 
@@ -50,16 +50,13 @@ const isProduction = process.env.NODE_ENV === "production";
  * An empty string counts as unset: `APP_ORIGIN=` in a dashboard's env editor
  * is a mistake, not an origin.
  */
-function settingWithDevDefault(
-  name: string,
-  developmentDefault: string,
-): string {
+function settingWithDevDefault(name: string, developmentDefault: string): string {
   const value = process.env[name];
   if (value) return value;
 
   if (isProduction) {
     throw new Error(
-      `${name} is not set. It defaults to localhost in development only; production must name the real origin.`,
+      `${name} is not set. It defaults to localhost in development only; production must name the real origin.`
     );
   }
 
@@ -71,10 +68,7 @@ function settingWithDevDefault(
  * session. Exported because `index.ts` needs it for CORS, and reading the
  * variable in two files meant two fallbacks that could drift apart.
  */
-export const appOrigin = settingWithDevDefault(
-  "APP_ORIGIN",
-  "http://localhost:3000",
-);
+export const appOrigin = settingWithDevDefault("APP_ORIGIN", "http://localhost:3000");
 
 /**
  * Every action a business role can be granted. The roles below pick

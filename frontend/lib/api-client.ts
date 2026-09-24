@@ -86,8 +86,7 @@ export async function fetchMe(): Promise<MeResultType> {
       return {
         state: "plan-refused",
         message:
-          body.error?.message ??
-          "This business is on a plan the product does not recognise.",
+          body.error?.message ?? "This business is on a plan the product does not recognise.",
       };
     }
   }

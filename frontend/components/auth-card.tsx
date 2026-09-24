@@ -27,18 +27,12 @@ export function AuthCard({
     <main className="flex flex-1 items-center justify-center px-6 py-16">
       <div className="w-full max-w-sm">
         <div className="rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-md)]">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            {title}
-          </h1>
-          {lede ? (
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">{lede}</p>
-          ) : null}
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>
+          {lede ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{lede}</p> : null}
           <div className="mt-6">{children}</div>
         </div>
         {footer ? (
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            {footer}
-          </div>
+          <div className="mt-4 text-center text-sm text-muted-foreground">{footer}</div>
         ) : null}
       </div>
     </main>
@@ -68,15 +62,11 @@ export function Field({
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const describedBy =
-    [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(" ") ||
-    undefined;
+    [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(" ") || undefined;
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label
-        htmlFor={id}
-        className="text-sm font-medium text-foreground"
-      >
+      <label htmlFor={id} className="text-sm font-medium text-foreground">
         {label}
       </label>
       <input

@@ -108,10 +108,7 @@ export async function getActiveOrganization(
       .select({ organizationId: member.organizationId, role: member.role })
       .from(member)
       .where(
-        and(
-          eq(member.userId, session.user.id),
-          eq(member.organizationId, activeOrganizationId)
-        )
+        and(eq(member.userId, session.user.id), eq(member.organizationId, activeOrganizationId))
       )
       .limit(1);
 
@@ -219,10 +216,7 @@ export const requireOrgRole = (...allowed: string[]) =>
 
     if (!allowed.includes(org.role)) {
       return c.json(
-        refuse(
-          "forbidden",
-          `This action needs the ${allowed.join(" or ")} role.`
-        ),
+        refuse("forbidden", `This action needs the ${allowed.join(" or ")} role.`),
         403
       );
     }
