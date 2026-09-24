@@ -215,7 +215,7 @@ Nothing to remove. Retail was never listed there. It graduates in as new work.
 - `activity` gains a `sale_created` type. A purchase and a booking land on
   one timeline, which is the entire reason retail lives in this product
   rather than in a separate store.
-- `plan-limits`: `Module` gains `"retail"`. One edit to the config, no route
+- `plan-limits`: `ModuleType` gains `"retail"`. One edit to the config, no route
   changes, exactly as item 23 was designed to work.
 ```
 

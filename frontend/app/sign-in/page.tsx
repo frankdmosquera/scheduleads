@@ -23,12 +23,12 @@ import { authClient } from "@/lib/auth-client";
  * than emailed. Real delivery is build-plan item 6.
  */
 
-type Step = "email" | "code";
+export type StepType = "email" | "code";
 
 export default function SignInPage() {
   const router = useRouter();
 
-  const [step, setStep] = useState<Step>("email");
+  const [step, setStep] = useState<StepType>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [fieldError, setFieldError] = useState<string | null>(null);

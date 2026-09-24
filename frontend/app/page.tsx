@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { AuthCard, Notice } from "@/components/auth-card";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
-import { fetchMe, type MeResult } from "@/lib/api";
+import { fetchMe, type MeResultType } from "@/lib/api-client";
 
 /**
  * The signed-in shell, and the only screen that reads `GET /me`.
@@ -24,11 +24,11 @@ import { fetchMe, type MeResult } from "@/lib/api";
  * `active-organization.ts`, which is where that rule starts.
  */
 
-type Organization = { id: string; name: string; slug: string };
+export type OrganizationType = { id: string; name: string; slug: string };
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [result, setResult] = useState<MeResult | null>(null);
+  const [result, setResult] = useState<MeResultType | null>(null);
 
   /**
    * Bumped to ask for `/me` again: after a business is picked, or when
@@ -135,7 +135,7 @@ function SignedOut() {
  */
 function PickOrganization({ onPicked }: { onPicked: () => void }) {
   const router = useRouter();
-  const [organizations, setOrganizations] = useState<Organization[] | null>(null);
+  const [organizations, setOrganizations] = useState<OrganizationType[] | null>(null);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -226,7 +226,7 @@ function SignedIn({
   me,
   onSignedOut,
 }: {
-  me: Extract<MeResult, { state: "ok" }>["me"];
+  me: Extract<MeResultType, { state: "ok" }>["me"];
   onSignedOut: () => void;
 }) {
   return (

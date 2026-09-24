@@ -1,4 +1,4 @@
-import type { PlanLimits } from "@scheduleads-app/shared/config";
+import type { SubscriptionLimitsType } from "@scheduleads-app/shared/config";
 
 import { API_URL } from "./auth-client";
 
@@ -13,11 +13,11 @@ import { API_URL } from "./auth-client";
  * honest about being unproven, and a fake `AppType` export would not be.
  */
 
-export type Me = {
+export type MeType = {
   user: { id: string; email: string; name: string };
   organization: { id: string; name: string; slug: string; plan: string };
   role: string;
-  limits: PlanLimits;
+  limits: SubscriptionLimitsType;
 };
 
 /**
@@ -29,8 +29,8 @@ export type Me = {
  * Collapsing them into one error page is how a user ends up staring at
  * "something went wrong" with no idea which of those it was.
  */
-export type MeResult =
-  | { state: "ok"; me: Me }
+export type MeResultType =
+  | { state: "ok"; me: MeType }
   | { state: "signed-out" }
   | { state: "no-organization" }
   | { state: "plan-refused"; message: string }
@@ -43,11 +43,11 @@ export type MeResult =
  * else the API adds later falls through to the generic refusal rather
  * than needing this list kept in step with it.
  */
-type Refusal = {
+export type RefusalType = {
   error?: { code?: string; message?: string };
 };
 
-export async function fetchMe(): Promise<MeResult> {
+export async function fetchMe(): Promise<MeResultType> {
   let response: Response;
 
   try {
@@ -67,18 +67,18 @@ export async function fetchMe(): Promise<MeResult> {
   }
 
   if (response.ok) {
-    return { state: "ok", me: (await response.json()) as Me };
+    return { state: "ok", me: (await response.json()) as MeType };
   }
 
   if (response.status === 401) return { state: "signed-out" };
 
   if (response.status === 403) {
-    const body = (await response.json().catch(() => ({}))) as Refusal;
+    const body = (await response.json().catch(() => ({}))) as RefusalType;
     const code = body.error?.code;
 
     if (code === "no_active_organization") return { state: "no-organization" };
 
-    // Named rather than assumed. `/me` refuses a plan only when the rung is
+    // Named rather than assumed. `/me` refuses a plan only when the tier is
     // unrecognised, and the screen this maps to says exactly that, so any
     // other 403 falls through to the unexpected-status answer below rather
     // than being shown a cause that is not the real one.

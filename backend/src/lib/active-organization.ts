@@ -4,7 +4,7 @@ import { createMiddleware } from "hono/factory";
 import { member } from "@scheduleads-app/shared/db";
 
 import { db } from "../database.js";
-import { auth } from "./auth.js";
+import { auth } from "./auth-server.js";
 
 /**
  * Which business the caller is acting for, and their role in it.
@@ -21,17 +21,17 @@ import { auth } from "./auth.js";
  * derived server side or it does not exist.
  */
 
-export type ActiveOrganization = {
+export type ActiveOrganizationType = {
   userId: string;
   organizationId: string;
   role: string;
 };
 
 /**
- * The refusal shape every guard and gate in this API shares. Fixed here so
+ * The refusal shape every middleware in this API shares. Fixed here so
  * later items reuse one contract instead of each inventing their own.
  */
-export type RefusalCode =
+export type RefusalCodeType =
   /** No session at all. */
   | "unauthenticated"
   /** A session, but no single business to act for. Not the same as signed out. */
@@ -39,18 +39,18 @@ export type RefusalCode =
   /** Signed in and scoped, but the role is not allowed to do this. */
   | "forbidden"
   /**
-   * Signed in and scoped, but the business is on a rung the config does not
+   * Signed in and scoped, but the business is on a tier the config does not
    * define. A misconfiguration, never a cheaper tier, so it is kept apart
    * from `plan_required`: telling a real customer their plan is unknown when
    * it merely excludes a module is a false statement about their account.
    */
   | "plan_unrecognised"
-  /** Signed in, scoped, on a real rung, but that rung does not include it. */
+  /** Signed in, scoped, on a real tier, but that tier does not include it. */
   | "plan_required";
 
-export type Refusal = {
+export type RefusalType = {
   error: {
-    code: RefusalCode;
+    code: RefusalCodeType;
     message: string;
   };
 };
@@ -59,10 +59,10 @@ export type Refusal = {
  * The one way to build a refusal. Exported because a contract only two of
  * four call sites can reach is documentation, not a contract: the spec said
  * to fix the shape once and reuse it, and an unexported helper meant the
- * gate and the first route each hand-rolled the object instead. Items 2 to
+ * subscription middleware and the first route each hand-rolled the object instead. Items 2 to
  * 26 copy whatever they find here, so there is one thing to find.
  */
-export const refuse = (code: RefusalCode, message: string): Refusal => ({
+export const refuse = (code: RefusalCodeType, message: string): RefusalType => ({
   error: { code, message },
 });
 
@@ -70,7 +70,7 @@ export const refuse = (code: RefusalCode, message: string): Refusal => ({
  * The session as Better Auth resolves it, carrying the organization
  * plugin's `activeOrganizationId`.
  */
-type AuthSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+export type AuthSessionType = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 
 /**
  * Resolves the active organization from the session alone.
@@ -91,7 +91,7 @@ type AuthSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
  *    would trust that `activeOrganizationId` was checked when it was set,
  *    and this is the line where that trust is verified instead.
  * 2. A membership lookup, for the returning user whose session never had
- *    one stamped. The session-create hook in `auth.ts` covers new sessions,
+ *    one stamped. The session-create hook in `auth-server.ts` covers new sessions,
  *    but this stays as the backstop for any session created before it
  *    existed, and for paths that bypass the hook.
  * 3. Nothing. With two or more memberships and no active choice, picking
@@ -99,8 +99,8 @@ type AuthSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
  *    refused and the frontend asks them.
  */
 export async function getActiveOrganization(
-  session: AuthSession
-): Promise<ActiveOrganization | null> {
+  session: AuthSessionType
+): Promise<ActiveOrganizationType | null> {
   const activeOrganizationId = session.session.activeOrganizationId;
 
   if (activeOrganizationId) {
@@ -147,7 +147,7 @@ export async function getActiveOrganization(
  * answer two different questions and later items want them apart: an
  * audit trail records the person, a lead record belongs to the business.
  */
-export type SessionUser = {
+export type SessionUserType = {
   id: string;
   email: string;
   name: string;
@@ -155,8 +155,8 @@ export type SessionUser = {
 
 declare module "hono" {
   interface ContextVariableMap {
-    user: SessionUser;
-    org: ActiveOrganization;
+    user: SessionUserType;
+    org: ActiveOrganizationType;
   }
 }
 

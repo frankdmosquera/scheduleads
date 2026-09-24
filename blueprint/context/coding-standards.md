@@ -38,7 +38,8 @@ the project root. In a monorepo these paths are relative to `frontend/`.
 - Components: `components/[feature]/ComponentName.tsx`
 - Pages: `app/[route]/page.tsx`
 - Server Actions: `actions/[feature].ts`
-- Types: `types/[feature].ts`
+- Types: no `types/` folder. A type lives in the file that uses it and is
+  exported from there; a type both apps need lives in `packages/shared`
 - Lib/Utils: `lib/[utility].ts`
 - Import alias: `@/*` resolves to the project root, so `@/lib/utils`, not
   `@/src/lib/utils`
@@ -60,7 +61,15 @@ a shape on either side.
 - Files: Match component name or kebab-case
 - Functions: camelCase
 - Constants: SCREAMING_SNAKE_CASE
-- Types/Interfaces: PascalCase (no prefix)
+- Types/Interfaces: PascalCase ending in `Type`, and always exported
+  (`SubscriptionLimitsType`, `RefusalType`), so an import shows it is a type. A name
+  that already ends in `Type` keeps it (`LoginCodeType`, the Hono `AppType`).
+  The one exception is a library interface we augment, such as Hono's
+  `ContextVariableMap`, which only works under its own name
+- Names say what a thing is. Do not copy abbreviations from library docs
+  (`const ac = createAccessControl(...)` is `accessControl` here), and no bare
+  `api` in `frontend`: that word is the backend. The frontend's side is
+  `lib/api-client.ts`
 
 ## Styling
 
@@ -89,9 +98,33 @@ a shape on either side.
 
 ## Data Fetching
 
-- Server components fetch from the API. Client components call it through the
-  Hono client typed by the `AppType` in `packages/shared`, or through a
-  Server Action proxy when the call must stay off the browser
+- The dashboard is an app behind a login, not a public site: nothing in it
+  needs SEO. Data is fetched in the browser, from client components, through
+  the Hono client typed by the `AppType` in `packages/shared`, and React Query
+  owns caching and refetching once it arrives. A Server Action proxy is used
+  only when a call must stay off the browser
+- No data fetching in server components, and no Next caching features
+  (`"use cache"`, `revalidate`, `force-static`, `fetch` cache options). Next
+  only serves the page shell. A server-side fetch can be run once at
+  `next build` and baked into the page, which is the static-site trap
+- React Query settings, decided 2026-09-23 before it is installed:
+  - Leads, clients and bookings keep `staleTime: 0` (the default): cached
+    data shows instantly and a check starts at the same moment, on every
+    screen open and tab focus. Show a small "updating…" indicator from
+    `isFetching` so a change a moment later reads as a refresh, not a fault
+  - Those lists also poll every 60 s, only while visible. New rows get a
+    brief highlight; a list that turns out busy gets a "N new, show" bar
+  - Settings and hours never go stale (`staleTime: Infinity`) and refetch
+    only when invalidated after a save
+  - Every save invalidates what it changed. An open form keeps its own copy
+    and is never overwritten by a refresh
+  - The business id is part of every query key, and the whole cache is
+    cleared on sign-out and on business switch
+  - Raise `staleTime` only if request volume becomes a real problem. Live
+    push (server-sent events) only when a real need appears
+- Every signed-in API response carries `Cache-Control: no-store`, so no
+  browser or proxy keeps one business's data. New dashboard routes mount the
+  same `dashboardNoStore` middleware as `/me` in `backend/src/index.ts`
 - Validate with the Zod schemas in `packages/shared` at both ends: the form
   before it sends, the route before it touches the database
 - Every app table is organization-scoped and the scope is a security boundary.
@@ -183,6 +216,11 @@ code and assuming it works.
 - No commented-out code unless specified
 - No unused imports or variables
 - Keep functions under 50 lines when possible
+- Formatting is Prettier, configured once in the repo's `.prettierrc` (100
+  character lines, double quotes, semicolons, ES5 trailing commas). Frank's
+  VS Code formats on save with it, so hand edits follow the same file. A
+  block deliberately arranged by hand gets `// prettier-ignore` on the line
+  above it rather than being fought on every save
 
 ## Comments
 
@@ -238,8 +276,10 @@ permanent truth.
 - The backend owns all data access. The frontend never talks to Postgres
   directly.
 - Drizzle schema and migrations live in `packages/shared` and run through
-  `drizzle-kit` from `backend`. The frontend imports the types, never the
-  connection.
+  `drizzle-kit` from `packages/shared` only, never from `backend` or
+  `frontend` (see Commands in `AGENTS.md`). Two workspaces generating against
+  one database is how a migration ledger forks. The frontend imports the
+  types, never the connection.
 - Validate request bodies with zod at the route boundary, before any database
   call.
 - Long running work does not belong in a request handler. Split it into a
@@ -250,3 +290,15 @@ permanent truth.
   reads it, a generated PDF, an export, a cache, it goes to the platform volume
   under `STORAGE_DIR`. That is a local folder in development and a mounted
   volume in production, so the same code works in both.
+- Ask what a person may do, never what their business role is. A route or
+  screen that depends on a business role calls Better Auth's organization
+  `hasPermission` (for example `{ member: ["delete"] }`) and never compares
+  `role === "owner"`. The roles and what they grant are defined once, in
+  `customStatements` and the `newRole` blocks in `backend/src/lib/auth-server.ts`.
+  This keeps Better Auth's dynamic access control (roles a business defines
+  for itself) a clean switch to turn on later: a hard-coded role name would
+  silently ignore every custom role.
+  The one exception is the platform admin, `user.role === "admin"` (see
+  `allowUserToCreateOrganization`). That is Frank's role above every
+  business, it belongs to the `admin` plugin, and dynamic roles never
+  apply to it.

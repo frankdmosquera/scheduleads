@@ -86,7 +86,7 @@ reason in the spec preamble and build log so the next form knows which pattern
 is the standard.
 **Resolution:**
 
-### F-15 [P3] open - `coding-standards.md` still says migrations run through drizzle-kit from `backend`
+### F-15 [P3] fixed - `coding-standards.md` still says migrations run through drizzle-kit from `backend`
 
 **File:** blueprint/context/coding-standards.md:240
 **Found:** 2026-09-23 by /audit (scope: current; lens: quality)
@@ -100,7 +100,9 @@ would recreate the fork `AGENTS.md` warns about.
 
 **Suggested fix:** Rewrite the sentence to say migrations are generated and
 applied from `packages/shared` with the commands in `AGENTS.md`.
-**Resolution:**
+**Resolution:** 2026-09-23, during Frank's folder walkthrough. The Backend section now says
+migrations run through `drizzle-kit` from `packages/shared` only, never from `backend` or
+`frontend`, and points at Commands in `AGENTS.md`. Awaiting re-review.
 
 ### F-16 [P3] open - Better Auth endpoints already open two paths the spec reserves for later items
 

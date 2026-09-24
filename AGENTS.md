@@ -361,8 +361,16 @@ checks do not make the Blueprint unusable.
 
 ## Commands
 
-npm workspaces monorepo (`frontend`, `backend`, `packages/*`), no root-level
-scripts - every command targets one workspace explicitly.
+npm workspaces monorepo (`frontend`, `backend`, `packages/*`). Every app
+command targets one workspace explicitly. The only root-level scripts are the
+formatter, which covers the whole repo:
+
+- Format every code file: `npm run format`
+- Check formatting without changing anything: `npm run format:check`
+
+Prettier is a root dev dependency, configured in `.prettierrc`. `.prettierignore`
+keeps it to code: docs, the build log page, the Blueprint skills and generated
+files are never reformatted.
 
 - Frontend dev server: `npm run dev --workspace=frontend` (http://localhost:3000)
 - Backend dev server: `npm run dev --workspace=backend` (http://localhost:3001)

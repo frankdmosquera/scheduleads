@@ -77,7 +77,7 @@ export const session = pgTable("session", {
    *
    * Better Auth only stamps it when an organization is created or explicitly
    * switched to, which is the org fix this feature exists to close: see the
-   * session-create hook in `backend/src/lib/auth.ts`.
+   * session-create hook in `backend/src/lib/auth-server.ts`.
    */
   activeOrganizationId: text("activeOrganizationId"),
 
@@ -122,16 +122,16 @@ export const organization = pgTable("organization", {
   metadata: text("metadata"),
 
   /**
-   * The package rung. `agency` is the only one that exists until item 23
+   * The package tier. `agency` is the only one that exists until item 23
    * adds the ladder above it.
    *
    * Server-set only: it is declared `input: false` on the Better Auth
    * organization plugin, so no create or update body can carry it. Until
    * Stripe arrives in Phase 9 the only writer is Frank, by hand.
    *
-   * Anything this column holds that `plan-limits` does not recognise
-   * resolves to the locked set, not to `agency`. An unknown rung is a
-   * misconfiguration, and the gate fails closed.
+   * Anything this column holds that `subscription-limits` does not recognise
+   * resolves to the locked set, not to `agency`. An unknown tier is a
+   * misconfiguration, and the subscription middleware fails closed.
    */
   plan: text("plan").notNull().default("agency"),
 });

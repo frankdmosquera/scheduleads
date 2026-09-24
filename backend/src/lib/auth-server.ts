@@ -2,7 +2,6 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin, emailOTP, organization } from "better-auth/plugins";
 import { createAccessControl } from "better-auth/plugins/access";
-import { defaultStatements } from "better-auth/plugins/organization/access";
 import { eq } from "drizzle-orm";
 
 import * as schema from "@scheduleads-app/shared/db";
@@ -26,7 +25,7 @@ import { sendLoginCode } from "./send-login-code.js";
 
 if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error(
-    "BETTER_AUTH_SECRET is not set. Copy .env.example to .env at the repo root and fill it in."
+    "BETTER_AUTH_SECRET is not set. Copy .env.example to .env at the repo root and fill it in.",
   );
 }
 
@@ -51,13 +50,16 @@ const isProduction = process.env.NODE_ENV === "production";
  * An empty string counts as unset: `APP_ORIGIN=` in a dashboard's env editor
  * is a mistake, not an origin.
  */
-function settingWithDevDefault(name: string, developmentDefault: string): string {
+function settingWithDevDefault(
+  name: string,
+  developmentDefault: string,
+): string {
   const value = process.env[name];
   if (value) return value;
 
   if (isProduction) {
     throw new Error(
-      `${name} is not set. It defaults to localhost in development only; production must name the real origin.`
+      `${name} is not set. It defaults to localhost in development only; production must name the real origin.`,
     );
   }
 
@@ -69,7 +71,25 @@ function settingWithDevDefault(name: string, developmentDefault: string): string
  * session. Exported because `index.ts` needs it for CORS, and reading the
  * variable in two files meant two fallbacks that could drift apart.
  */
-export const appOrigin = settingWithDevDefault("APP_ORIGIN", "http://localhost:3000");
+export const appOrigin = settingWithDevDefault(
+  "APP_ORIGIN",
+  "http://localhost:3000",
+);
+
+/**
+ * Every action a business role can be granted. The roles below pick
+ * from this list and cannot name anything outside it.
+ *
+ * Written out rather than imported as Better Auth's `defaultStatements`,
+ * which also carries `team` and `ac` rows. Neither is used here (no
+ * teams, no roles edited at runtime), and the `ac` row read as if it
+ * referred to the access control object built from it.
+ */
+const customStatements = {
+  organization: ["update", "delete"],
+  member: ["create", "update", "delete"],
+  invitation: ["create", "cancel"],
+} as const;
 
 /**
  * Organization roles.
@@ -80,21 +100,21 @@ export const appOrigin = settingWithDevDefault("APP_ORIGIN", "http://localhost:3
  * its leads, bookings and calendar connection with it. Only the platform
  * admin deletes an organization, and item 23 builds the screen for it.
  */
-const ac = createAccessControl(defaultStatements);
+const accessControl = createAccessControl(customStatements);
 
-const owner = ac.newRole({
+const owner = accessControl.newRole({
   organization: ["update"],
   member: ["create", "update", "delete"],
   invitation: ["create", "cancel"],
 });
 
-const orgAdmin = ac.newRole({
+const orgAdmin = accessControl.newRole({
   organization: ["update"],
   member: ["create", "update", "delete"],
   invitation: ["create", "cancel"],
 });
 
-const orgMember = ac.newRole({
+const orgMember = accessControl.newRole({
   organization: [],
   member: [],
   invitation: [],
@@ -145,7 +165,7 @@ export const auth = betterAuth({
 
   plugins: [
     organization({
-      ac,
+      ac: accessControl,
       roles: { owner, admin: orgAdmin, member: orgMember },
       creatorRole: "owner",
 
@@ -177,7 +197,7 @@ export const auth = betterAuth({
         organization: {
           additionalFields: {
             /**
-             * The package rung. `input: false` is the whole security
+             * The package tier. `input: false` is the whole security
              * story: no request body can set it. Until Stripe arrives in
              * Phase 9 the only writer is Frank, by hand.
              *
@@ -269,16 +289,23 @@ export const auth = betterAuth({
          * convenience. The frontend asks them instead.
          */
         before: async (session) => {
+          // Only pre-selects. It never decides access: every business the
+          // user belongs to is still listed and reachable from the home page.
           const memberships = await db
             .select({ organizationId: member.organizationId })
             .from(member)
-            .where(eq(member.userId, session.userId))
-            .limit(2);
+            .where(eq(member.userId, session.userId));
 
-          if (memberships.length !== 1) return;
+          const belongsToExactlyOneBusiness = memberships.length === 1;
+          if (!belongsToExactlyOneBusiness) return;
+
+          const onlyBusinessId = memberships[0].organizationId;
 
           return {
-            data: { ...session, activeOrganizationId: memberships[0].organizationId },
+            data: {
+              ...session,
+              activeOrganizationId: onlyBusinessId,
+            },
           };
         },
       },
@@ -301,9 +328,9 @@ export const auth = betterAuth({
       ? { enabled: true, domain: process.env.COOKIE_DOMAIN }
       : undefined,
     defaultCookieAttributes: isProduction
-      ? { sameSite: "none", secure: true, partitioned: true }
-      : { sameSite: "lax", secure: false },
+      ? { sameSite: "none", secure: true, partitioned: true } // A: production
+      : { sameSite: "lax", secure: false }, // B: development
   },
 });
 
-export type Auth = typeof auth;
+export type AuthType = typeof auth;

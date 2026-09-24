@@ -9,8 +9,8 @@
       "default": "./dist/db/schema.js"
     },
     "./config": {
-      "types": "./dist/config/plan-limits.d.ts",
-      "default": "./dist/config/plan-limits.js"
+      "types": "./dist/config/subscription-limits.d.ts",
+      "default": "./dist/config/subscription-limits.js"
     },
     "./validation": {
       "types": "./dist/validation/auth.d.ts",

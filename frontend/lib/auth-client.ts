@@ -11,7 +11,7 @@ import {
  * This is a typed fetch wrapper and nothing more. The session, the
  * secret and the database all live on the Hono API; the only thing that
  * crosses to the browser is a cookie the browser cannot read. Never
- * import `backend/src/lib/auth.ts` from this workspace - that module
+ * import `backend/src/lib/auth-server.ts` from this workspace - that module
  * holds BETTER_AUTH_SECRET and the pool, and pulling it in would ship
  * both to Vercel.
  *

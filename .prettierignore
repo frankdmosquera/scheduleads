@@ -1,0 +1,16 @@
+# Prettier formats code only. Docs, the published build log page, the
+# Blueprint skills and generated files keep the layout they were written in.
+blueprint/
+prototypes/
+.claude/
+.agents/
+**/*.md
+**/*.html
+
+# Generated
+**/node_modules/
+**/dist/
+**/.next/
+packages/shared/drizzle/
+frontend/next-env.d.ts
+package-lock.json

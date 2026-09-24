@@ -2,7 +2,7 @@
  * Puts two usable accounts into an empty local database.
  *
  * Why it has to exist: signup is closed (`disableSignUp` in the API's
- * `auth.ts`) and only the platform admin may create a business. That is
+ * `auth-server.ts`) and only the platform admin may create a business. That is
  * right for the product, and it also means a freshly migrated database has
  * no way in at all. Nobody can sign up, and nobody exists to sign in. Until
  * build-plan item 3b gives the agency a real way to provision people, this

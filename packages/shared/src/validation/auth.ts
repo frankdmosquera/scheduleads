@@ -9,7 +9,7 @@ import { z } from "zod";
  * see a reason for; a form that rejects what the server accepts hides
  * working input. One definition, imported twice.
  *
- * Pure Zod, no database import, for the same reason `plan-limits.ts` is
+ * Pure Zod, no database import, for the same reason `subscription-limits.ts` is
  * pure: a browser bundle has to be able to import it.
  */
 
