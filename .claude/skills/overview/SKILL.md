@@ -232,7 +232,7 @@ Before asking, record the resolved default branch and its exact tip:
    `Finalize the Blueprint baseline locally? (Recommended)`
    State that accepting creates one local commit. When running on a dedicated
    setup branch, it also fast-forwards the unchanged default branch to that
-   commit, returns to the default branch, and deletes the setup branch. It never
+   commit and returns to the default branch, keeping the setup branch. It never
    pushes.
 
 If the user accepts, stage only the reviewed candidate, show the staged paths
@@ -246,9 +246,9 @@ chore: establish Blueprint project baseline
 For a dedicated setup branch, verify before committing that the default tip is
 still the one shown in the prompt. After the commit, require a clean working
 tree, switch to the default branch, run `git merge --ff-only <setup-branch>`, and
-delete the setup branch locally. The single approval above covers only these
+keep the setup branch. The single approval above covers only these
 named local actions. If the default moved or any check fails, stop without
-merging or deleting. Then confirm the final branch and working tree and recommend
+merging. Then confirm the final branch and working tree and recommend
 `/feature`.
 
 If the user declines, leave the repository untouched and explain what remains.

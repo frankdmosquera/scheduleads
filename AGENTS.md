@@ -129,6 +129,33 @@ Why: item 1 had six steps and one review at the end. Reviewing a feature that
 size in one go was slow and painful, and faults found late had been built on
 for several steps.
 
+This is `workflow.stepReview: "every"` in `blueprint/config.json`, and
+`/implement` carries it out. A small project sets `"feature"` instead and
+reviews once per feature.
+
+### Git: the laptop does the work, GitHub mirrors it
+
+**Decided by Frank, 2026-09-24.** Written here because the same rules used to
+live only in `ai-interaction.md`, which `/feature` and `/implement` are told
+not to read. That is how this repo went a week with no GitHub remote at all.
+
+- **GitHub is the main copy.** The repo is `frankdmosquera/scheduleads`. On
+  any machine, pull before starting. A missing remote or unpushed commits get
+  said out loud at the start of a session.
+- **One branch per feature**, off `main`. Steps are commits on it, never
+  branches. Small chores go on whichever feature branch is open.
+- **One commit per step, pushed straight after.** The step number goes in the
+  message: `feat: 2.3 availability rules api`. `/implement` asks once per
+  feature whether it may; the yes covers that branch only.
+- **Merging is Frank's call, every time.** `/complete` merges locally with a
+  merge commit (`--no-ff`), never a squash, tags `item-NN-done`, and pushes
+  `main` and the tag, all on one explicit yes. The branch is kept.
+- **Every step and merge ends with a sync line** comparing the local and GitHub
+  commit, so "it's pushed" is checked, never assumed.
+
+Feature 1 predates this and was squashed. Its steps are not in `main`; they are
+on `feature/multi-tenant-auth-with-the-org-fix`, which is pushed and kept.
+
 Build one feature, fix, or rollback at a time, behind review gates. Each step's instructions
 are plain markdown skills any capable agent can read and follow. The workflow is
 exposed through tool-specific adapters:
@@ -195,7 +222,7 @@ repair confirmed P0/P1 findings when its audit gate runs. It stops before
 
 Optional explicit-only skill: `continuous` can resume or select the next planned
 feature and repeat the complete local feature lifecycle through the configured
-limit or end of the build plan. It creates one branch and one local main commit
+limit or end of the build plan. It creates one branch and one local merge commit
 per feature, applies the Continuous quality gates, archives and merges serially,
 and stops on decisions or failed safety gates. It never pushes, deploys,
 publishes, sends, or performs destructive actions.
@@ -226,7 +253,7 @@ the page is republished in the same turn. Order, every time:
 2. tick the box in `blueprint/context/current-feature.md`
 3. add the entry at the top of that feature's timeline in
    `project-log.html` and republish, passing the URL above as `url`
-4. offer or make the checkpoint commit
+4. commit the step and push it (see Git above)
 5. only then report the step in chat
 
 `/feature` publishes the feature's group when it writes a spec, including each

@@ -29,9 +29,11 @@ A direct Continuous request authorizes these local actions for this run:
 - create configured checkpoint commits on those branches
 - create required immutable independent-review checkpoints
 - create the final local feature commit
-- squash-merge a completed feature into the local default branch
-- delete the merged local feature branch
+- merge a completed feature into the local default branch with a merge commit,
+  and tag it `item-NN-done`
 - repeat with the next unchecked build-plan item
+
+Feature branches are kept, never deleted.
 
 It does not authorize push, deploy, publish, send, remote changes, destructive
 actions, database resets, irreversible migrations, finding acceptance, failed
@@ -246,13 +248,15 @@ For the finished feature:
 5. If a try guide was generated, add a concise `## Manual try guide` section to
    that feature archive so the opt-in work survives the loop.
 6. Commit remaining branch work with one conventional feature-level message.
-7. Switch to the local default branch, squash-merge the feature branch, and
-   create one conventional commit containing product work, tests, and Blueprint
-   history.
-8. Delete the merged local feature branch.
+7. Switch to the local default branch and merge the feature branch with a merge
+   commit (`git merge --no-ff <branch> -m "feat: <title>"`), never a squash,
+   so every step commit stays in its history. Tag it `item-NN-done`.
+8. Keep the feature branch.
 9. Confirm the default branch is clean before selecting the next feature.
 
-Never merge a partial or failing feature. Never push the default branch.
+Never merge a partial or failing feature. Never push the default branch. The
+final report says how many commits and tags exist only on this machine, so the
+user can push them.
 
 Count the feature toward `continuous.maxFeatures` only after its local main
 commit succeeds.
@@ -269,8 +273,9 @@ ledger.
 
 For a confirmed P0 or P1 introduced by this run, automatic repair may use one
 dedicated configured fix branch and the same repair-attempt limit only when no
-product decision or scope expansion is required. Spec, verify, archive, locally
-squash-merge, and delete that fix branch like normal Blueprint fix work. Re-audit
+product decision or scope expansion is required. Spec, verify, archive, and
+locally merge that fix branch with a merge commit like normal Blueprint fix
+work, keeping the branch. Re-audit
 the repair before closing the finding.
 
 Otherwise stop with the finding open. Do not hide it, widen into general
