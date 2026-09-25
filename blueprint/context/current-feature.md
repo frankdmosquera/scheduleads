@@ -108,7 +108,7 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
 
 ## Build steps
 
-- [ ] **2.1 The three tables, the first person, and their validation.**
+- [x] **2.1 The three tables, the first person, and their validation.**
   Add `resource`, `booking_link` and `availability_rule` to
   `packages/shared/src/db/drizzle-schema.ts` exactly as in Data / contracts,
   with a comment beside the two uniqueness indexes saying why they are two

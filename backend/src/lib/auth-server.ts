@@ -1,6 +1,8 @@
 // Backend: the Better Auth setup (sign-in, businesses, roles, platform admin).
 // Holds the secret and the database, so nothing in frontend/ may import it.
 
+import { randomUUID } from "node:crypto";
+
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin, emailOTP, organization } from "better-auth/plugins";
@@ -8,7 +10,7 @@ import { createAccessControl } from "better-auth/plugins/access";
 import { eq } from "drizzle-orm";
 
 import * as schema from "@scheduleads-app/shared/db";
-import { member } from "@scheduleads-app/shared/db";
+import { member, resource } from "@scheduleads-app/shared/db";
 
 import { db } from "../database.js";
 import { sendLoginCode } from "./send-login-code.js";
@@ -102,6 +104,22 @@ export const auth = betterAuth({
       // changes this line and disableSignUp below, together.
       allowUserToCreateOrganization: async (user) =>
         (user as { role?: string | null }).role === "admin",
+
+      organizationHooks: {
+        // Every business gets its first person, so the database always has someone to
+        // hold a booking. Named after the business, never after whoever clicked create:
+        // today that is the platform admin. The owner renames it in settings (feature 12).
+        // Runs after the business is saved, not in its transaction; if it fails, the
+        // business has no person and cannot take a booking, which fails safe.
+        afterCreateOrganization: async ({ organization: createdOrganization }) => {
+          await db.insert(resource).values({
+            id: randomUUID(),
+            organizationId: createdOrganization.id,
+            name: createdOrganization.name,
+            kind: "person",
+          });
+        },
+      },
       schema: {
         organization: {
           additionalFields: {

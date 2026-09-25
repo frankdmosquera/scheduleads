@@ -1173,6 +1173,38 @@
     .strip { gap: 12px 14px; }
     .cell { min-width: 24px; padding: 4px; font-size: 10px; }
   }
+
+  /* ---------- the code drawer ----------
+     Every closing step shows its real code, file by file. Coloured like VS Code's
+     Dark 2026, the theme Frank uses, so the page reads like his editor in both page
+     themes. New lines get a green bar, removed lines a red one; no + or - signs. */
+
+  .drawer[data-kind="code"] > summary { background: color-mix(in srgb, #3994BC 12%, var(--surface)); color: var(--ink-2); }
+  .drawer[data-kind="code"] > summary:hover { background: color-mix(in srgb, #3994BC 22%, var(--surface)); }
+  .drawer[data-kind="code"][open] { border-color: color-mix(in srgb, #3994BC 45%, var(--surface)); }
+  .codefile { border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; background: var(--surface); }
+  .codefile + .codefile { margin-top: 6px; }
+  .codefile > summary { cursor: pointer; list-style: none; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 8px 12px; font-size: 13px; }
+  .codefile > summary::-webkit-details-marker { display: none; }
+  .codefile > summary::after { content: "+"; margin-left: auto; font-family: var(--mono); color: var(--ink-3); }
+  .codefile[open] > summary::after { content: "\2212"; }
+  .codefile > summary code { background: none; padding: 0; }
+  .codefile > summary .tag-drift { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+  .codefile-body { padding: 10px; display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--rule); }
+  .code-label { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+  pre.code { margin: 0; padding: 10px 0; background: #121314; color: #c9d1d9; border: 1px solid #2A2B2C; border-radius: 8px; overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.6; tab-size: 2; }
+  pre.code code { background: none; padding: 0; font-size: inherit; word-break: normal; white-space: pre; display: block; min-width: max-content; }
+  pre.code .ln { display: block; padding-right: 14px; border-left: 3px solid transparent; }
+  pre.code .ln .n { display: inline-block; width: 3.4em; padding-right: 1.1em; text-align: right; color: #858889; user-select: none; }
+  pre.code .ln.added { background: rgba(52, 125, 57, 0.18); border-left-color: #72C892; }
+  pre.code .ln.removed { background: rgba(201, 60, 55, 0.18); border-left-color: #F28772; }
+  pre.code .token.comment, pre.code .token.prolog { color: #8b949e; }
+  pre.code .token.keyword, pre.code .token.operator, pre.code .token.important { color: #ff7b72; }
+  pre.code .token.string, pre.code .token.template-string, pre.code .token.regex, pre.code .token.char { color: #a5d6ff; }
+  pre.code .token.function { color: #d2a8ff; }
+  pre.code .token.class-name, pre.code .token.builtin { color: #ffa657; }
+  pre.code .token.number, pre.code .token.boolean, pre.code .token.constant, pre.code .token.property { color: #79c0ff; }
+  pre.code .token.punctuation { color: #c9d1d9; }
 </style>
 
 <!-- One bar, one row, across the whole window: the two views, then every
@@ -1194,10 +1226,10 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.1 approved, building</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.1 built, in review</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
-                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="next" title="2.1 The three tables, the first person, and their validation - next">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" title="2.2 The one function that resolves hours">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" title="2.3 The seeds">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" title="2.4 The public routes">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
+                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="active" title="2.1 The three tables, the first person, and their validation - built, in review">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" title="2.2 The one function that resolves hours">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" title="2.3 The seeds">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" title="2.4 The public routes">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
                 <a class="cell" href="#item-3" data-goto="item-3" title="3 Calendar connection">3</a>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
@@ -2667,13 +2699,13 @@
               </div>
 
               <details class="drawer" data-kind="plan" open>
-                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 approved &middot; 2.1 to 2.6</span></summary>
+                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 built, in review &middot; 2.1 to 2.6</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
                   <div class="item-steps">
 
-                    <details class="rstep" id="step-2-1" data-state="planned" open>
-                      <summary><span class="sn">2.1</span><span class="sm"></span><span>The three tables, the first person, and their validation</span><span class="ss">Next</span></summary>
+                    <details class="rstep" id="step-2-1" data-state="active" open>
+                      <summary><span class="sn">2.1</span><span class="sm"></span><span>The three tables, the first person, and their validation</span><span class="ss">Built · in review</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what">Adds <code>resource</code>, <code>booking_link</code> and <code>availability_rule</code> to the database, and gives every business its first person. The hard part is the rule's uniqueness: one row for the business, one per person, and the database, not the code, refusing a second one. A plain unique constraint looks right and silently allows two business rows, because Postgres treats empty values as all different. The database also refuses business settings on a person's row, so nothing gets copied and nothing drifts.</p>
                         <p class="rstep-what">Where these three tables sit in the whole system is drawn once, under <strong>How it all fits together</strong> at the top of the roadmap.</p>
@@ -2693,6 +2725,592 @@
                             <p class="rstep-what"><strong>Approved by you, Sep 25,</strong> point by point: the three tables and the four refusals (each one a line of hours, never a login or an email); the first person starts with the business's name and the owner decides the final name in settings, feature 12; and these five checks as the proof.</p>
                           </div>
                         </details>
+
+                        <details class="drawer" data-kind="reality" open>
+                          <summary>What actually happened <span class="tag-drift">7 kept, 3 added &middot; review next</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">Every planned piece went in as written. The three additions are small, and each one closes a gap the plan left open.</p>
+                            <div class="verdict">
+                              <span class="v-kept">7 as planned</span>
+                              <span class="v-added">3 added</span>
+                            </div>
+                            <ul class="substeps">
+                              <li data-outcome="kept">the three tables, every timestamp with its time zone, everything deleted with its business</li>
+                              <li data-outcome="kept">a resource is a person or a place; a booking link carries its length and both buffers, the database refusing a length of zero or a negative buffer</li>
+                              <li data-outcome="kept">two indexes for the hours, with the comment saying why one would be broken</li>
+                              <li data-outcome="kept">one check keeping business settings off a person's row</li>
+                              <li data-outcome="kept">the composite key, so hours can never name another business's person</li>
+                              <li data-outcome="kept">the three hours checks in <code>packages/shared</code>: several windows a day, no overlaps, a real time zone, a real date, a country and province</li>
+                              <li data-outcome="kept">one migration plus the backfill: both dev businesses got exactly one first person, named after the business; and the Better Auth hook for every new business</li>
+                              <li data-outcome="added">21 saved tests for the hours checks
+                                <em class="why">The test runner went in today, before this step. Proved they can fail: with the overlap rule switched off for a moment, the overlap test failed by name.</em></li>
+                              <li data-outcome="added">the database also refuses a province without its country
+                                <em class="why">The spec had this in the hours checks only. A seed script writes straight to the database, so the database should refuse it too.</em></li>
+                              <li data-outcome="added"><code>updatedAt</code> refreshes on every change
+                                <em class="why">Without it the column would say "created" forever, and a later screen showing "last changed" would lie.</em></li>
+                            </ul>
+                            <div class="snags">
+                              <div class="snags-head">What bit</div>
+                              <ul>
+                                <li><b>The migration printed what looked like two errors.</b> Both were notices from Drizzle's own ledger ("already exists, skipping"). Nothing failed, and a second run changed nothing. It is written down here so the next migration is not read as broken.</li>
+                                <li><b>"A new business gets its person" was proved in-process, not over the network.</b> The check signed in as the dev platform admin and created a business through Better Auth's own create, which passes the platform-admin check and fires the hook. It did not go through a browser or the running API. The browser path gets its own proof in 2.5, when the dashboard lists this data.</li>
+                              </ul>
+                            </div>
+                            <div class="rstep-when">Passed. The migration SQL shows both indexes, the key, the checks and the backfill. Each dev business has exactly one person. A new business got "Check 2.1 Painters (person)" and was deleted after. By hand, the four forbidden rows were each refused by their own rule (<code>availability_rule_business_unique</code>, <code>availability_rule_resource_unique</code>, <code>availability_rule_resource_fk</code>, <code>availability_rule_row_kind_check</code>) while two normal rows went in, all rolled back after. 21 tests pass. Both builds pass.</div>
+                          </div>
+                        </details>
+<details class="drawer" data-kind="code">
+  <summary>What changed in the code <span class="tag-drift">8 files &middot; +484 &minus;2 lines</span></summary>
+  <div class="drawer-body">
+    <p class="drawer-what">The real code of this step, file by file, coloured like VS Code's Dark 2026. A green bar marks a new line, a red bar a removed one; a changed file shows the old block above the new. Only this project's own code: generated files and packages are left out.</p>
+<details class="codefile"><summary><code>packages/shared/src/db/drizzle-schema.ts</code> <span class="tag-drift">changed &middot; +148 &minus;1</span></summary><div class="codefile-body">
+<div class="code-label">Before &middot; line 3</div><pre class="code" data-lang="typescript" data-start="3" data-mark="6" data-kind="removed"><code>// emailOTP, organization and admin plugins exactly; check its schema before changing them.
+// Every timestamp keeps its time zone: a booking product that loses it double-books.
+
+import { boolean, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),</code></pre>
+<div class="code-label">After &middot; line 3</div><pre class="code" data-lang="typescript" data-start="3" data-mark="6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21" data-kind="added"><code>// emailOTP, organization and admin plugins exactly; check its schema before changing them.
+// Every timestamp keeps its time zone: a booking product that loses it double-books.
+
+import { sql } from "drizzle-orm";
+import {
+  boolean,
+  check,
+  foreignKey,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
+
+import type { DateHoursType } from "../zod-validation/availability/date-hours-validation-schema.js";
+import type { WeeklyHoursType } from "../zod-validation/availability/weekly-hours-validation-schema.js";
+
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),</code></pre>
+<div class="code-label">Added &middot; line 132</div><pre class="code" data-lang="typescript" data-start="132" data-mark="135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266" data-kind="added"><code>    .notNull()
+    .references(() =&gt; user.id, { onDelete: "cascade" }),
+});
+
+// One person or one place (a room, a chair) that does or hosts the work. Never a group:
+// a crew is a saved list of people (feature 19), so a job makes each of them busy.
+// Every business has at least one, its first person, made by migration 0001 for the
+// businesses that existed then and by a hook in auth-server.ts for every new one.
+export const resource = pgTable(
+  "resource",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() =&gt; organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(), // the first person starts with the business's name; the owner renames it (feature 12)
+    kind: text("kind").notNull().default("person"),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() =&gt; new Date()),
+  },
+  (table) =&gt; [
+    check("resource_kind_check", sql`${table.kind} in ('person', 'place')`),
+    // Exists only so availability_rule can point at (business, person) together.
+    unique("resource_organization_id_unique").on(table.organizationId, table.id),
+  ]
+);
+
+// A service a customer can book: its length and the buffers around it. The handle a
+// host site stores as Service.bookingId.
+export const bookingLink = pgTable(
+  "booking_link",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() =&gt; organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    description: text("description"),
+    durationMinutes: integer("durationMinutes").notNull(),
+    bufferBeforeMinutes: integer("bufferBeforeMinutes").notNull().default(0),
+    bufferAfterMinutes: integer("bufferAfterMinutes").notNull().default(0),
+    active: boolean("active").notNull().default(true), // inactive reads as absent publicly
+    createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() =&gt; new Date()),
+  },
+  (table) =&gt; [
+    uniqueIndex("booking_link_organization_slug_unique").on(table.organizationId, table.slug),
+    check("booking_link_duration_check", sql`${table.durationMinutes} &gt; 0`),
+    check(
+      "booking_link_buffers_check",
+      sql`${table.bufferBeforeMinutes} &gt;= 0 and ${table.bufferAfterMinutes} &gt;= 0`
+    ),
+  ]
+);
+
+// Bookable hours: when customers can book online, not opening hours and not time at
+// work. A null resourceId is the business's own row; a set one is that person's.
+export const availabilityRule = pgTable(
+  "availability_rule",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() =&gt; organization.id, { onDelete: "cascade" }),
+    resourceId: text("resourceId"),
+    weeklyHours: jsonb("weeklyHours").$type&lt;WeeklyHoursType&gt;(), // a person's null = follow the business's week
+    dateHours: jsonb("dateHours").$type&lt;DateHoursType&gt;().notNull().default([]),
+
+    // Business row only, set once per business: the check below refuses them on a person's row.
+    timezone: text("timezone"), // IANA name; every minute and date is local to it
+    minimumNoticeMinutes: integer("minimumNoticeMinutes"),
+    horizonDays: integer("horizonDays"), // how far ahead customers can book; no default, a writer sets it
+    closedDates: jsonb("closedDates").$type&lt;string[]&gt;(), // YYYY-MM-DD
+    holidayCountry: text("holidayCountry"), // ISO 3166-1, e.g. CA; null = no holidays
+    holidayRegion: text("holidayRegion"), // the province, e.g. AB
+
+    createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() =&gt; new Date()),
+  },
+  (table) =&gt; [
+    // Two indexes, not one. A single unique(organizationId, resourceId) looks right and
+    // is broken: Postgres treats nulls as all different, so it would allow two business
+    // rows. The partial index guards the business row, the other one each person's row.
+    uniqueIndex("availability_rule_business_unique")
+      .on(table.organizationId)
+      .where(sql`${table.resourceId} is null`),
+    uniqueIndex("availability_rule_resource_unique").on(table.organizationId, table.resourceId),
+
+    // A rule can only name a person of its own business. A null resourceId skips the check.
+    foreignKey({
+      name: "availability_rule_resource_fk",
+      columns: [table.organizationId, table.resourceId],
+      foreignColumns: [resource.organizationId, resource.id],
+    }).onDelete("cascade"),
+
+    // The two kinds of row. The business's row carries every business-wide setting; a
+    // person's row carries none of them, so there is nothing to copy and nothing to drift.
+    check(
+      "availability_rule_row_kind_check",
+      sql`(
+        ${table.resourceId} is null
+        and ${table.weeklyHours} is not null
+        and ${table.timezone} is not null
+        and ${table.minimumNoticeMinutes} is not null
+        and ${table.horizonDays} is not null
+        and ${table.closedDates} is not null
+      ) or (
+        ${table.resourceId} is not null
+        and ${table.timezone} is null
+        and ${table.minimumNoticeMinutes} is null
+        and ${table.horizonDays} is null
+        and ${table.closedDates} is null
+        and ${table.holidayCountry} is null
+        and ${table.holidayRegion} is null
+      )`
+    ),
+    check("availability_rule_notice_check", sql`${table.minimumNoticeMinutes} &gt;= 0`),
+    check("availability_rule_horizon_check", sql`${table.horizonDays} &gt; 0`),
+    check(
+      "availability_rule_region_needs_country_check",
+      sql`${table.holidayRegion} is null or ${table.holidayCountry} is not null`
+    ),
+  ]
+);</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/drizzle/0001_booking_links_resources_availability.sql</code> <span class="tag-drift">new &middot; 75 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="sql" data-start="1" data-mark="all" data-kind="added"><code>CREATE TABLE "availability_rule" (
+	"id" text PRIMARY KEY NOT NULL,
+	"organizationId" text NOT NULL,
+	"resourceId" text,
+	"weeklyHours" jsonb,
+	"dateHours" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"timezone" text,
+	"minimumNoticeMinutes" integer,
+	"horizonDays" integer,
+	"closedDates" jsonb,
+	"holidayCountry" text,
+	"holidayRegion" text,
+	"createdAt" timestamp with time zone DEFAULT now() NOT NULL,
+	"updatedAt" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "availability_rule_row_kind_check" CHECK ((
+        "availability_rule"."resourceId" is null
+        and "availability_rule"."weeklyHours" is not null
+        and "availability_rule"."timezone" is not null
+        and "availability_rule"."minimumNoticeMinutes" is not null
+        and "availability_rule"."horizonDays" is not null
+        and "availability_rule"."closedDates" is not null
+      ) or (
+        "availability_rule"."resourceId" is not null
+        and "availability_rule"."timezone" is null
+        and "availability_rule"."minimumNoticeMinutes" is null
+        and "availability_rule"."horizonDays" is null
+        and "availability_rule"."closedDates" is null
+        and "availability_rule"."holidayCountry" is null
+        and "availability_rule"."holidayRegion" is null
+      )),
+	CONSTRAINT "availability_rule_notice_check" CHECK ("availability_rule"."minimumNoticeMinutes" &gt;= 0),
+	CONSTRAINT "availability_rule_horizon_check" CHECK ("availability_rule"."horizonDays" &gt; 0),
+	CONSTRAINT "availability_rule_region_needs_country_check" CHECK ("availability_rule"."holidayRegion" is null or "availability_rule"."holidayCountry" is not null)
+);
+--&gt; statement-breakpoint
+CREATE TABLE "booking_link" (
+	"id" text PRIMARY KEY NOT NULL,
+	"organizationId" text NOT NULL,
+	"name" text NOT NULL,
+	"slug" text NOT NULL,
+	"description" text,
+	"durationMinutes" integer NOT NULL,
+	"bufferBeforeMinutes" integer DEFAULT 0 NOT NULL,
+	"bufferAfterMinutes" integer DEFAULT 0 NOT NULL,
+	"active" boolean DEFAULT true NOT NULL,
+	"createdAt" timestamp with time zone DEFAULT now() NOT NULL,
+	"updatedAt" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "booking_link_duration_check" CHECK ("booking_link"."durationMinutes" &gt; 0),
+	CONSTRAINT "booking_link_buffers_check" CHECK ("booking_link"."bufferBeforeMinutes" &gt;= 0 and "booking_link"."bufferAfterMinutes" &gt;= 0)
+);
+--&gt; statement-breakpoint
+CREATE TABLE "resource" (
+	"id" text PRIMARY KEY NOT NULL,
+	"organizationId" text NOT NULL,
+	"name" text NOT NULL,
+	"kind" text DEFAULT 'person' NOT NULL,
+	"active" boolean DEFAULT true NOT NULL,
+	"createdAt" timestamp with time zone DEFAULT now() NOT NULL,
+	"updatedAt" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "resource_organization_id_unique" UNIQUE("organizationId","id"),
+	CONSTRAINT "resource_kind_check" CHECK ("resource"."kind" in ('person', 'place'))
+);
+--&gt; statement-breakpoint
+ALTER TABLE "availability_rule" ADD CONSTRAINT "availability_rule_organizationId_organization_id_fk" FOREIGN KEY ("organizationId") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--&gt; statement-breakpoint
+ALTER TABLE "availability_rule" ADD CONSTRAINT "availability_rule_resource_fk" FOREIGN KEY ("organizationId","resourceId") REFERENCES "public"."resource"("organizationId","id") ON DELETE cascade ON UPDATE no action;--&gt; statement-breakpoint
+ALTER TABLE "booking_link" ADD CONSTRAINT "booking_link_organizationId_organization_id_fk" FOREIGN KEY ("organizationId") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--&gt; statement-breakpoint
+ALTER TABLE "resource" ADD CONSTRAINT "resource_organizationId_organization_id_fk" FOREIGN KEY ("organizationId") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--&gt; statement-breakpoint
+CREATE UNIQUE INDEX "availability_rule_business_unique" ON "availability_rule" USING btree ("organizationId") WHERE "availability_rule"."resourceId" is null;--&gt; statement-breakpoint
+CREATE UNIQUE INDEX "availability_rule_resource_unique" ON "availability_rule" USING btree ("organizationId","resourceId");--&gt; statement-breakpoint
+CREATE UNIQUE INDEX "booking_link_organization_slug_unique" ON "booking_link" USING btree ("organizationId","slug");--&gt; statement-breakpoint
+-- Added by hand: every business that already exists gets its first person, named after the business. New businesses get theirs from the afterCreateOrganization hook in backend/src/lib/auth-server.ts.
+INSERT INTO "resource" ("id", "organizationId", "name", "kind")
+SELECT gen_random_uuid()::text, "organization"."id", "organization"."name", 'person'
+FROM "organization"
+WHERE NOT EXISTS (SELECT 1 FROM "resource" WHERE "resource"."organizationId" = "organization"."id");</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/weekly-hours-validation-schema.ts</code> <span class="tag-drift">new &middot; 45 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Shared Zod schema: a week of bookable hours, the windows customers can book online.
+// Minutes count from midnight in the business's time zone, so 570 is 9:30.
+
+import { z } from "zod";
+
+const MINUTES_IN_A_DAY = 1440;
+
+export const timeWindowValidationSchema = z
+  .object({
+    startMinute: z.int().min(0).max(MINUTES_IN_A_DAY),
+    endMinute: z.int().min(0).max(MINUTES_IN_A_DAY),
+  })
+  .strict()
+  .refine((window) =&gt; window.endMinute &gt; window.startMinute, {
+    message: "A window has to end after it starts.",
+  });
+
+// A day's windows, in any order. Touching is fine (9-12 then 12-5); overlapping is not,
+// because nobody could say which window a 11:00 booking belongs to.
+export const dayWindowsValidationSchema = z.array(timeWindowValidationSchema).refine(
+  (windows) =&gt; {
+    const sorted = [...windows].sort((a, b) =&gt; a.startMinute - b.startMinute);
+    return sorted.every(
+      (window, index) =&gt; index === 0 || window.startMinute &gt;= sorted[index - 1].endMinute
+    );
+  },
+  { message: "Two windows on the same day overlap." }
+);
+
+// A missing or empty day is closed. Unknown keys are refused, so a typo like "tues"
+// fails loudly instead of silently closing Tuesday.
+export const weeklyHoursValidationSchema = z
+  .object({
+    mon: dayWindowsValidationSchema.optional(),
+    tue: dayWindowsValidationSchema.optional(),
+    wed: dayWindowsValidationSchema.optional(),
+    thu: dayWindowsValidationSchema.optional(),
+    fri: dayWindowsValidationSchema.optional(),
+    sat: dayWindowsValidationSchema.optional(),
+    sun: dayWindowsValidationSchema.optional(),
+  })
+  .strict();
+
+export type TimeWindowType = z.infer&lt;typeof timeWindowValidationSchema&gt;;
+export type WeeklyHoursType = z.infer&lt;typeof weeklyHoursValidationSchema&gt;;</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/date-hours-validation-schema.ts</code> <span class="tag-drift">new &middot; 21 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Shared Zod schema: one-off dates, hours on a single date without touching the week.
+// A one-off date replaces that date's hours, and opens it if it is closed or a holiday.
+
+import { z } from "zod";
+
+import { dayWindowsValidationSchema } from "./weekly-hours-validation-schema.js";
+
+export const dateHoursValidationSchema = z
+  .array(
+    z
+      .object({
+        date: z.iso.date(), // YYYY-MM-DD, a real calendar date
+        windows: dayWindowsValidationSchema.min(1, "A one-off date needs at least one window."),
+      })
+      .strict()
+  )
+  .refine((entries) =&gt; new Set(entries.map((entry) =&gt; entry.date)).size === entries.length, {
+    message: "The same date is listed twice.",
+  });
+
+export type DateHoursType = z.infer&lt;typeof dateHoursValidationSchema&gt;;</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/availability-rule-validation-schema.ts</code> <span class="tag-drift">new &middot; 65 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Shared Zod schema: one row of bookable hours, either the business's or one person's.
+// Mirrors the database check on availability_rule, so a bad row is refused before it
+// reaches the database, with a readable message instead of a constraint name.
+
+import { z } from "zod";
+
+import { dateHoursValidationSchema } from "./date-hours-validation-schema.js";
+import { weeklyHoursValidationSchema } from "./weekly-hours-validation-schema.js";
+
+function isRealTimezone(timezone: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: timezone }); // throws on an unknown zone
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// The business's row. Everything set once per business lives here and only here.
+export const businessAvailabilityRuleValidationSchema = z
+  .object({
+    resourceId: z.null(),
+    weeklyHours: weeklyHoursValidationSchema,
+    dateHours: dateHoursValidationSchema.default([]),
+    timezone: z.string().refine(isRealTimezone, { message: "That is not a time zone." }),
+    minimumNoticeMinutes: z.int().min(0),
+    horizonDays: z.int().min(1),
+    closedDates: z.array(z.iso.date()).refine((dates) =&gt; new Set(dates).size === dates.length, {
+      message: "The same closed date is listed twice.",
+    }),
+    holidayCountry: z
+      .string()
+      .regex(/^[A-Z]{2}$/, "Use the two-letter country code, like CA.")
+      .nullable()
+      .default(null),
+    holidayRegion: z
+      .string()
+      .regex(/^[A-Z0-9]{1,3}$/, "Use the province code, like AB.")
+      .nullable()
+      .default(null),
+  })
+  .strict()
+  .refine((rule) =&gt; rule.holidayRegion === null || rule.holidayCountry !== null, {
+    message: "A province needs its country.",
+    path: ["holidayRegion"],
+  });
+
+// A person's row: only their own week (null = follow the business's) and their one-off
+// dates. strict() refuses a time zone or notice here, like the database does.
+export const personAvailabilityRuleValidationSchema = z
+  .object({
+    resourceId: z.string().min(1),
+    weeklyHours: weeklyHoursValidationSchema.nullable().default(null),
+    dateHours: dateHoursValidationSchema.default([]),
+  })
+  .strict();
+
+export const availabilityRuleValidationSchema = z.union([
+  businessAvailabilityRuleValidationSchema,
+  personAvailabilityRuleValidationSchema,
+]);
+
+export type BusinessAvailabilityRuleType = z.infer&lt;typeof businessAvailabilityRuleValidationSchema&gt;;
+export type PersonAvailabilityRuleType = z.infer&lt;typeof personAvailabilityRuleValidationSchema&gt;;
+export type AvailabilityRuleType = z.infer&lt;typeof availabilityRuleValidationSchema&gt;;</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/src/zod-validation/index.ts</code> <span class="tag-drift">changed &middot; +3 &minus;0</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 5</div><pre class="code" data-lang="typescript" data-start="5" data-mark="8,9,10" data-kind="added"><code>export * from "./auth/sign-in-code-validation-schema.js";
+export * from "./organization/create-organization-validation-schema.js";
+export * from "./organization/to-slug.js";
+export * from "./availability/weekly-hours-validation-schema.js";
+export * from "./availability/date-hours-validation-schema.js";
+export * from "./availability/availability-rule-validation-schema.js";</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/availability-validation-schemas.test.ts</code> <span class="tag-drift">new &middot; 108 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>import { describe, expect, test } from "vitest";
+
+import { availabilityRuleValidationSchema } from "./availability-rule-validation-schema.js";
+import { dateHoursValidationSchema } from "./date-hours-validation-schema.js";
+import { weeklyHoursValidationSchema } from "./weekly-hours-validation-schema.js";
+
+const nineToFive = { startMinute: 540, endMinute: 1020 };
+
+const primoBusinessRow = {
+  resourceId: null,
+  weeklyHours: { mon: [nineToFive] },
+  timezone: "America/Edmonton",
+  minimumNoticeMinutes: 240,
+  horizonDays: 60,
+  closedDates: ["2026-12-25"],
+  holidayCountry: "CA",
+  holidayRegion: "AB",
+};
+
+describe("weeklyHoursValidationSchema", () =&gt; {
+  test("accepts several windows a day, in any order, touching included", () =&gt; {
+    const week = {
+      mon: [
+        { startMinute: 1020, endMinute: 1170 },
+        { startMinute: 540, endMinute: 720 },
+        { startMinute: 720, endMinute: 780 },
+      ],
+      sun: [],
+    };
+    expect(weeklyHoursValidationSchema.safeParse(week).success).toBe(true);
+  });
+
+  test("refuses two windows that overlap on the same day", () =&gt; {
+    const week = { tue: [nineToFive, { startMinute: 960, endMinute: 1080 }] };
+    expect(weeklyHoursValidationSchema.safeParse(week).success).toBe(false);
+  });
+
+  test("refuses a window that ends before it starts", () =&gt; {
+    const week = { wed: [{ startMinute: 600, endMinute: 540 }] };
+    expect(weeklyHoursValidationSchema.safeParse(week).success).toBe(false);
+  });
+
+  test("refuses a minute past the end of the day", () =&gt; {
+    const week = { thu: [{ startMinute: 1400, endMinute: 1441 }] };
+    expect(weeklyHoursValidationSchema.safeParse(week).success).toBe(false);
+  });
+
+  test("refuses a misspelled day instead of quietly closing it", () =&gt; {
+    expect(weeklyHoursValidationSchema.safeParse({ tues: [nineToFive] }).success).toBe(false);
+  });
+});
+
+describe("dateHoursValidationSchema", () =&gt; {
+  test("accepts a one-off date with its windows", () =&gt; {
+    const dates = [{ date: "2026-10-13", windows: [nineToFive] }];
+    expect(dateHoursValidationSchema.safeParse(dates).success).toBe(true);
+  });
+
+  test("refuses the same date twice", () =&gt; {
+    const dates = [
+      { date: "2026-10-13", windows: [nineToFive] },
+      { date: "2026-10-13", windows: [{ startMinute: 1080, endMinute: 1140 }] },
+    ];
+    expect(dateHoursValidationSchema.safeParse(dates).success).toBe(false);
+  });
+
+  test("refuses a date that does not exist", () =&gt; {
+    const dates = [{ date: "2026-02-30", windows: [nineToFive] }];
+    expect(dateHoursValidationSchema.safeParse(dates).success).toBe(false);
+  });
+
+  test("refuses a one-off date with no windows", () =&gt; {
+    expect(dateHoursValidationSchema.safeParse([{ date: "2026-10-13", windows: [] }]).success).toBe(
+      false
+    );
+  });
+});
+
+describe("availabilityRuleValidationSchema", () =&gt; {
+  test("accepts Primo's business row", () =&gt; {
+    expect(availabilityRuleValidationSchema.safeParse(primoBusinessRow).success).toBe(true);
+  });
+
+  test("accepts a person who follows the business's week, with one one-off date", () =&gt; {
+    const juan = { resourceId: "juan", dateHours: [{ date: "2026-10-13", windows: [nineToFive] }] };
+    expect(availabilityRuleValidationSchema.safeParse(juan).success).toBe(true);
+  });
+
+  test("refuses a time zone on a person's row", () =&gt; {
+    const juan = { resourceId: "juan", weeklyHours: null, timezone: "Asia/Tokyo" };
+    expect(availabilityRuleValidationSchema.safeParse(juan).success).toBe(false);
+  });
+
+  test("refuses a business row with no week", () =&gt; {
+    const { weeklyHours: _weeklyHours, ...withoutWeek } = primoBusinessRow;
+    expect(availabilityRuleValidationSchema.safeParse(withoutWeek).success).toBe(false);
+  });
+
+  test("refuses a time zone that does not exist", () =&gt; {
+    const row = { ...primoBusinessRow, timezone: "America/Nowhere" };
+    expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
+  });
+
+  test("refuses a province without its country", () =&gt; {
+    const row = { ...primoBusinessRow, holidayCountry: null };
+    expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
+  });
+});</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/src/lib/auth-server.ts</code> <span class="tag-drift">changed &middot; +19 &minus;1</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 1</div><pre class="code" data-lang="typescript" data-start="1" data-mark="4,5" data-kind="added"><code>// Backend: the Better Auth setup (sign-in, businesses, roles, platform admin).
+// Holds the secret and the database, so nothing in frontend/ may import it.
+
+import { randomUUID } from "node:crypto";
+
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { admin, emailOTP, organization } from "better-auth/plugins";</code></pre>
+<div class="code-label">Before &middot; line 8</div><pre class="code" data-lang="typescript" data-start="8" data-mark="11" data-kind="removed"><code>import { eq } from "drizzle-orm";
+
+import * as schema from "@scheduleads-app/shared/db";
+import { member } from "@scheduleads-app/shared/db";
+
+import { db } from "../database.js";
+import { sendLoginCode } from "./send-login-code.js";</code></pre>
+<div class="code-label">After &middot; line 10</div><pre class="code" data-lang="typescript" data-start="10" data-mark="13" data-kind="added"><code>import { eq } from "drizzle-orm";
+
+import * as schema from "@scheduleads-app/shared/db";
+import { member, resource } from "@scheduleads-app/shared/db";
+
+import { db } from "../database.js";
+import { sendLoginCode } from "./send-login-code.js";</code></pre>
+<div class="code-label">Added &middot; line 104</div><pre class="code" data-lang="typescript" data-start="104" data-mark="107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122" data-kind="added"><code>      // changes this line and disableSignUp below, together.
+      allowUserToCreateOrganization: async (user) =&gt;
+        (user as { role?: string | null }).role === "admin",
+
+      organizationHooks: {
+        // Every business gets its first person, so the database always has someone to
+        // hold a booking. Named after the business, never after whoever clicked create:
+        // today that is the platform admin. The owner renames it in settings (feature 12).
+        // Runs after the business is saved, not in its transaction; if it fails, the
+        // business has no person and cannot take a booking, which fails safe.
+        afterCreateOrganization: async ({ organization: createdOrganization }) =&gt; {
+          await db.insert(resource).values({
+            id: randomUUID(),
+            organizationId: createdOrganization.id,
+            name: createdOrganization.name,
+            kind: "person",
+          });
+        },
+      },
+      schema: {
+        organization: {
+          additionalFields: {</code></pre>
+</div></details>
+    <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/commits/feature/booking-links-resources-and-availability-rules">The full diff on GitHub</a></p>
+  </div>
+</details>
+
                       </div>
                     </details>
 
@@ -3005,9 +3623,17 @@
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">5 entries, newest first</span></summary>
+                <summary>Log <span class="tag-drift">6 entries, newest first</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.1 built: the three tables and every business's first person</span><span class="kind-tag">Done</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">The database now has services, people and places, and bookable hours, and refuses the four things you approved it should refuse. Both dev businesses got their first person from the migration, and a business made through Better Auth got one from the hook. 21 tests check the hours rules.</p>
+                        <p class="entry-text"><strong>New on this page:</strong> the step carries its first <em>What changed in the code</em> drawer, 8 files, the real code in your editor's colours. Next is the audit and the independent review of this step, before 2.2's plan.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">
@@ -3288,6 +3914,57 @@
     <span class="legend-row"><span class="legend-mark legend-mark--fix">&#8635;</span><span>A real fault found and repaired</span></span>
   </div>
 </div>
+
+<script>window.Prism = { manual: true };</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+<script>
+  // The code drawer: colours each block with Prism, then splits it into numbered lines
+  // with the file's real line numbers and a green or red bar on the lines that changed.
+  // If Prism cannot load, the code still shows, numbered and barred, just uncoloured.
+  (function () {
+    function escapeHtml(text) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    // Prism's spans can cross a line break (a long comment); close them at each break and
+    // reopen them on the next line, so every line is valid HTML on its own.
+    function splitLines(html) {
+      var lines = [], open = [], current = "", match;
+      var pattern = /(<span[^>]*>)|(<\/span>)|(\n)|([^<\n]+)/g;
+      while ((match = pattern.exec(html))) {
+        if (match[1]) { open.push(match[1]); current += match[1]; }
+        else if (match[2]) { open.pop(); current += match[2]; }
+        else if (match[3]) { current += new Array(open.length + 1).join("</span>"); lines.push(current); current = open.join(""); }
+        else { current += match[4]; }
+      }
+      lines.push(current);
+      return lines;
+    }
+    function markedLines(mark) {
+      var marked = {};
+      (mark || "").split(",").forEach(function (part) {
+        var bounds = part.split("-").map(Number);
+        for (var n = bounds[0]; n <= (bounds[1] || bounds[0]); n++) marked[n] = true;
+      });
+      return marked;
+    }
+    document.querySelectorAll("pre.code").forEach(function (pre) {
+      var code = pre.querySelector("code");
+      var source = code.textContent;
+      var grammar = window.Prism && window.Prism.languages && window.Prism.languages[pre.dataset.lang];
+      var html = grammar ? window.Prism.highlight(source, grammar, pre.dataset.lang) : escapeHtml(source);
+      var start = Number(pre.dataset.start) || 1;
+      var all = pre.dataset.mark === "all";
+      var marked = all ? {} : markedLines(pre.dataset.mark);
+      code.innerHTML = splitLines(html).map(function (line, index) {
+        var number = start + index;
+        var barred = all || marked[number] ? " " + pre.dataset.kind : "";
+        return '<span class="ln' + barred + '"><span class="n">' + number + "</span>" + (line || " ") + "</span>";
+      }).join("");
+    });
+  })();
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>

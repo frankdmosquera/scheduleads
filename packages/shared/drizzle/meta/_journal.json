@@ -8,6 +8,13 @@
       "when": 1789835371470,
       "tag": "0000_adopt_repo_one_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790379268720,
+      "tag": "0001_booking_links_resources_availability",
+      "breakpoints": true
     }
   ]
 }
