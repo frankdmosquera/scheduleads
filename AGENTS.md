@@ -133,6 +133,29 @@ This is `workflow.stepReview: "every"` in `blueprint/config.json`, and
 `/implement` carries it out. A small project sets `"feature"` instead and
 reviews once per feature.
 
+### How to present reviews and steps
+
+**Decided by Frank, 2026-09-25.** Applies to audits, reviews, walkthroughs, and
+every build step (planning it, reporting it, going through its findings). One
+point at a time, every reply in this shape:
+
+1. **Where we are**, one line: the feature and its state, and which point is open.
+2. **The point**, told as a plain story from the business ("does the booking
+   show on Primo's phone?"), not as architecture.
+3. **One small diagram** for that point. Often it is the only part read.
+4. **Two or three short lines.** No long prose.
+5. **What's left**: a short table of the open points only. Settled points drop
+   off the table but are still tracked and applied.
+6. **One yes or no question.**
+
+Words: issues are `#N`, features "feature N" (never "item N", which means the
+same thing), steps "step N.M". Never a bare number. Never ask again about
+something already agreed. A note for a later feature is said as "only a note
+for later, we stay on feature N".
+
+Why: long answers and several points at once lost Frank; one contained point,
+a little graph and what's left is what he can decide on.
+
 ### Git: the laptop does the work, GitHub mirrors it
 
 **Decided by Frank, 2026-09-24.** Written here because the same rules used to

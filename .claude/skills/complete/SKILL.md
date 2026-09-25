@@ -254,7 +254,9 @@ feature's commit. Skip this if the feature didn't consume prototypes.
 Before the commit, not after. In `blueprint/context/project-log.html`: close
 this feature's group off, with every step box ticked, all three gates passed,
 the status pill moved to done, and a final timeline entry naming what shipped.
-Flip the item to `done` in the roadmap view and update its three counts.
+Flip the item to `done` in the roadmap view and update its three counts. In
+the top bar, fold its step chips away so only its chip remains, marked
+`done`, and close its row's fold so it reads as one line.
 Republish to the URL in the project's `AGENTS.md`, passing it as `url`.
 
 The republished file is part of this feature's commit in Step 2, so the repo

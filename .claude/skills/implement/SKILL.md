@@ -95,9 +95,10 @@ For each step:
    create one. In that row: add the entry at the top of the **Log** drawer,
    update the step's `<details>` inside the **Steps** drawer with its state and
    its `Done when` result, close the finished step and open the next one, update
-   the gates and the step count, and move the sticky `.where` bar in the topbar
-   to the new current step. Then republish to the URL in the project's
-   `AGENTS.md`, passing it as `url`.
+   the gates and the step count, and update the top bar: in the item's opened
+   chip group, mark the finished step's chip `done` and the next one `next`,
+   and rewrite the now note above them. Then republish to the URL in the
+   project's `AGENTS.md`, passing it as `url`.
    Never rewrite a closing step's planned pieces to match what happened. Mark
    each one `kept`, `changed`, `added` or `dropped` with the reason for
    anything that is not `kept`, and update the verdict counts. The drift is the

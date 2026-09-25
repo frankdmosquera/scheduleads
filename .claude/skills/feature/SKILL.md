@@ -178,8 +178,11 @@ has not been shown to the user.
 
 Everything goes in the item's own row on the roadmap in
 `blueprint/context/project-log.html`. There is no per-feature view; do not
-create one. Flip the item to `active`, mark its chip in the plan strip, update
-the tally, and build its row from the stencil at the bottom of that file: the
+create one. Flip the item to `active`, and in the top bar open its chip into
+its step chips (N.1 to N.k, the first marked `next`, each jumping to
+`step-N-k`) with a now note above them. Update the tally, and build its row
+from the stencil at the bottom of that file, with `id="item-N"` on the row and
+`id="step-N-k"` on each step: the
 gates, then collapsed `<details>` drawers for **Steps** (open), **Why this item
 exists**, **Decisions**, **Contracts**, **Log** and **Notes**.
 
