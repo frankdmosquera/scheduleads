@@ -1194,7 +1194,7 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: spec, your review</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.1 approved, building</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
                 <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="next" title="2.1 The three tables, the first person, and their validation - next">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" title="2.2 The one function that resolves hours">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" title="2.3 The seeds">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" title="2.4 The public routes">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
@@ -1604,7 +1604,7 @@
             <div class="row"><div class="row-key">Deposits or payment at booking</div><div class="row-val">The clinic would notice first. An open question, answered at her onboarding before feature 17.</div></div>
             <div class="row"><div class="row-key">No-shows</div><div class="row-val">Any salon. Named in the plan, not planned.</div></div>
             <div class="row"><div class="row-key">Recurring appointments</div><div class="row-val">Salons and clinics. Named in the plan, not planned.</div></div>
-            <div class="row"><div class="row-key">The customer's own time zone</div><div class="row-val">Online services. An open question carried from the first repo.</div></div>
+            <div class="row"><div class="row-key">The customer's own time zone</div><div class="row-val">Online services. An open question carried from the first repo. Your rule, Sep 25: no clash even when someone makes a mistake. A Calendly booking once showed one time here and another there, and you arrived an hour late. The business keeps one clock; the booking screen (feature 9) shows each customer the same moment on their own clock, labelled.</div></div>
             <div class="row"><div class="row-key">More than one location</div><div class="row-val">Growing clients. Not in the plan.</div></div>
             <div class="row"><div class="row-key">Travel time between addresses</div><div class="row-val">Primo. Not in the plan; a service's buffer after covers it roughly.</div></div>
             <div class="row"><div class="row-key">A repeat customer's usual person</div><div class="row-val">Salons. Not in the plan; it can be added without changing anything.</div></div>
@@ -2667,7 +2667,7 @@
               </div>
 
               <details class="drawer" data-kind="plan" open>
-                <summary>Steps <span class="tag-drift">spec rewritten Sep 25 to version 8 &middot; waiting on your review &middot; 2.1 to 2.6</span></summary>
+                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 approved &middot; 2.1 to 2.6</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
                   <div class="item-steps">
@@ -2689,7 +2689,8 @@
                               <li>Validation schemas in <code>packages/shared</code> for a week, a one-off date and a whole rule: several windows a day, no overlaps, a real time zone, a country and province</li>
                               <li>One migration, generated from <code>packages/shared</code>, plus the line that gives every existing business its first person; then a Better Auth hook does the same for every new business</li>
                             </ul>
-                            <div class="rstep-when">Done when: the migration's SQL shows the two indexes, the key, the check and the backfill; it applies to the local database and every business then has exactly one person; a business created through the API gets its person; and by hand the database refuses a second business row, a second rule for one person, a rule naming another business's person, and a person's rule carrying a time zone.</div>
+                            <div class="rstep-when">Done when: the migration's SQL shows the two indexes, the key, the check and the backfill; it applies to the local database and every business then has exactly one person; a business created through the API gets its person; and by hand the database refuses a second business row, a second rule for one person, a rule naming another business's person, and a person's rule carrying a time zone. The saved tests for the three hours checks pass (added Sep 25 with the test runner).</div>
+                            <p class="rstep-what"><strong>Approved by you, Sep 25,</strong> point by point: the three tables and the four refusals (each one a line of hours, never a login or an email); the first person starts with the business's name and the owner decides the final name in settings, feature 12; and these five checks as the proof.</p>
                           </div>
                         </details>
                       </div>
@@ -2853,7 +2854,7 @@
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Decisions <span class="tag-drift">5 made, with why the rejected options lost &middot; 3 waiting on you</span></summary>
+                <summary>Decisions <span class="tag-drift">5 made, with why the rejected options lost &middot; 2 waiting on you</span></summary>
                 <div class="drawer-body">
                   <h3>Where each booking setting lives</h3>
                   <p class="rstep-what">Decided Sep 25, from version 8. Each setting has one home, so changing it once changes it for everyone it belongs to.</p>
@@ -2940,7 +2941,7 @@
                   <div class="notes"><ul>
                     <li><strong>? 1. Add <code>hono</code> to the frontend?</strong> <code>hono/client</code> is inside the <code>hono</code> package the backend already uses. No new library enters the repo, but the frontend must declare it. Needed by 2.5.</li>
                     <li><strong>? 2. Where do holidays come from?</strong> Recommended: the <code>date-holidays</code> package, which covers Canada by province, including Alberta's Family Day, and Easter-based dates. The alternative is a hand-written table per province, maintained forever. Needed by 2.6.</li>
-                    <li><strong>? 3. Run <code>/tests</code> before 2.1?</strong> This page records a decision from Sep 19: a test runner goes in before item 2. It has not happened. It would add a runner (a new dev dependency, so your yes) and turn on the test gate. Recommended yes: the hours fallback and the rule validation are pure logic a test proves in milliseconds, where a hand check proves it once. Skipping it still works; every step has a real check.</li>
+                    <li><strong>&#10003; 3. Tests before 2.1: answered yes, Sep 25.</strong> The Sep 19 decision stood; the install was the only thing that needed your yes. Vitest is in, and 2.1, 2.2 and 2.6 each add their tests. See the log.</li>
                   </ul></div>
                 </div>
               </details>
@@ -3004,9 +3005,26 @@
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">3 entries, newest first</span></summary>
+                <summary>Log <span class="tag-drift">5 entries, newest first</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">The spec is approved one step at a time</span><span class="kind-tag">Decided</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">Asked to approve the whole spec, you pointed out that would mean a yes to six steps you had not been through. So feature 2 is approved in pieces: one look at the whole feature, as the picture of how the six steps feed each other (under <strong>Why this item exists</strong>), then each step's plan gone through together and given its own yes just before it is built. If a later step shows an earlier one was wrong, both are amended then. Written into <code>AGENTS.md</code>, beside the review after every step.</p>
+                        <p class="entry-text"><strong>The two questions left</strong> are asked at their own steps: <code>hono</code> at 2.5, the holiday source at 2.6. Next: going through 2.1's plan.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Tests are in, and every step will show its code</span><span class="kind-tag">Decided</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text"><strong>Tests.</strong> Vitest went into <code>packages/shared</code> before 2.1, as decided on Sep 19. The first test covers the subscription limits: six checks, all passing in under a second. To prove a test can fail at all, the old <code>in</code> bug from feature 1 was put back for a moment; the test caught it by name, and the file was restored. The backend gets Vitest in 2.2 with its first test. From here, a step that adds logic adds its tests, and every step reruns all of them. The review after each step stays as it was; tests are a second, separate check inside it.</p>
+                        <p class="entry-text"><strong>Every step shows its code.</strong> A closing step now carries a <em>What changed in the code</em> drawer: the real code of each changed file, old above new, thin green and red bars instead of <code>+</code> and <code>-</code>, coloured like VS Code's Dark 2026, which you tried four other themes against and kept. Only this project's own code, never packages or generated files. Written into <code>AGENTS.md</code>.</p>
+                        <p class="entry-text"><strong>What bit:</strong> the spec review started by walking the steps, and its first question re-asked decision 25, already settled and already in the spec. The review is now only what the spec leaves open: two questions left, <code>hono</code> and the holiday source.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">

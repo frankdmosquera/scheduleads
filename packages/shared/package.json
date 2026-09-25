@@ -20,6 +20,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsc && node --env-file-if-exists=../../.env scripts/seed-dev.ts",
@@ -32,6 +34,7 @@
   "devDependencies": {
     "drizzle-kit": "^0.31.10",
     "postgres": "^3.4.9",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
   }
 }

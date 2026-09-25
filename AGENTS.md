@@ -133,6 +133,23 @@ This is `workflow.stepReview: "every"` in `blueprint/config.json`, and
 `/implement` carries it out. A small project sets `"feature"` instead and
 reviews once per feature.
 
+### A spec is approved one step at a time
+
+**Decided by Frank, 2026-09-25.** This overrides the Blueprint default, where
+the whole spec is approved once before any step is built.
+
+1. Before the first step, Frank sees the whole feature once, as one picture
+   of what each step is for and how the steps feed each other. That is the
+   only whole-feature pass. It is not a yes to every line of the spec.
+2. Each step's plan (what it does, its pieces, its `Done when`) is gone
+   through with him and gets its own yes just before it is built.
+3. If a later step shows an earlier one was wrong, the spec and that step
+   are amended then, before anything else builds on it.
+
+Why: a yes to a whole spec meant approving pages he had not been through,
+and going over six steps at once is the "too many things at a time" that
+loses him. Every yes should be on something he has seen.
+
 ### How to present reviews and steps
 
 **Decided by Frank, 2026-09-25.** Applies to audits, reviews, walkthroughs, and
@@ -330,6 +347,24 @@ padding. Keep these separate from the piece-level marks above: the marks say
 what changed, this says what it cost to find out. These are the part worth
 reading back in six months, and they are written whether or not anyone asks.
 
+**And it shows the code.** Decided by Frank, 2026-09-25: the project is big
+and he wants full control, so every closing step carries a closed drawer,
+**What changed in the code**, holding one closed drawer per changed file. The
+real code, as it reads in the editor, never a summary line: a new file is
+shown whole; a changed file shows the old block, then the new one, with a few
+lines around them. Real line numbers from the file. New lines get a thin green
+bar on the left and removed lines a thin red one; no `+` or `-` signs, because
+he reads code, not diffs. Coloured by Prism, loaded by the page from `cdnjs`,
+with the token colours and `#121314` background of VS Code's **Dark 2026**,
+the theme Frank uses, so the page and his editor match. Ends with a link to the
+step's commit on GitHub for the full diff.
+
+Only the project's own code goes in the drawer: what sits in `frontend/`,
+`backend/` and `packages/shared/`, tests included, and the SQL of a migration.
+Never `node_modules`, `package-lock.json`, `dist/`, Drizzle's snapshot JSON or
+anything else generated. A changed dependency is one line naming the package,
+not the manifest.
+
 **One numbering, everywhere.** Roadmap item N owns steps N.1 to N.k, so a step
 number always says which item it belongs to. Never number a feature's steps from
 1, and never put a bare count beside a numbered list: "2 done" next to items
@@ -492,9 +527,20 @@ backend build is `tsc`. `packages/shared` compiles to `dist/` and both apps
 build it first through their own `predev` and `prebuild` hooks, so neither
 consumes it as TypeScript source.
 
-No unit test runner is configured, so no test gate applies. Run `/tests` to
-add one and record the real test command here. There is no `Verify` command
-and no GitHub check yet; `/ci` sets those up when wanted.
+Unit tests run on Vitest, a dev dependency of the workspace that holds the
+code under test. Test files sit beside the code as `*.test.ts` and are
+excluded from `tsc`, so they never reach `dist/`. The test gate applies: a
+step that adds logic adds its tests, and every step reruns them.
+
+- Shared package tests: `npm run test --workspace=@scheduleads-app/shared`
+- Shared package tests, rerunning on save: `npm run test:watch --workspace=@scheduleads-app/shared`
+
+The backend gets the same `test` and `test:watch` scripts, and Vitest as a dev
+dependency, in step 2.2 with its first test, so no workspace ever carries a
+test command that finds nothing to run.
+
+There is no `Verify` command and no GitHub check yet; `/ci` sets those up when
+wanted.
 
 Browser testing is also opt-in. Run `/browser-tests` or `$browser-tests` to add
 or normalize a browser harness and document its exact command as `Browser

@@ -4,7 +4,11 @@
 
 **Branch:** `feature/booking-links-resources-and-availability-rules`
 
-**Status:** draft. Rewritten 2026-09-25 to match version 8 of the booking
+**Status:** approved step by step (decided 2026-09-25; see `AGENTS.md`,
+"A spec is approved one step at a time"). The whole-feature picture is
+agreed; each step's plan gets Frank's yes just before it is built. 2.1
+approved.
+Rewritten 2026-09-25 to match version 8 of the booking
 model, which Frank approved that day (the build log's "How it all fits
 together", and `project-plan.md` decisions 20 to 29). Where this spec and an
 older note disagree, version 8 wins.
@@ -129,8 +133,13 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   through the API as the platform admin gives it its person; and by hand in
   `psql`, four inserts are refused: a second business row for one
   organization, a second rule for one resource, a rule naming another
-  organization's resource, and a person's rule carrying a time zone. Both
-  builds pass.
+  organization's resource, and a person's rule carrying a time zone. The
+  Vitest tests for the three validation schemas pass (added 2026-09-25, when
+  the test runner went in). Both builds pass.
+  **Approved by Frank, 2026-09-25**, point by point: the three tables and
+  the four refusals; the first person starts with the business's name and
+  the owner decides the final name (renamed in settings, feature 12); these
+  checks as the proof.
 
 - [ ] **2.2 The resolution function.**
   `backend/src/lib/resolve-availability.ts` exports `resolveAvailability(
@@ -387,16 +396,16 @@ or anything about members, users or people.
 
 ## Testing
 
-No unit test runner is configured today, so as written no test gate applies.
-But the build log records a decision from Sep 19, "a test runner goes in
-before item 2", so this item's logic (the rule validation, the resolution
-rules, holidays) lands with a harness already there. That is Open question
-3. If `/tests` runs first, 2.1, 2.2 and 2.6 gain focused tests and their
-`Done when` includes them. 2.2 now carries seven rules, which is the
-strongest case yet for tests. Otherwise each step is proved by its own
-`Done when`: real SQL against `scheduleads_dev`, real HTTP against the
-running API, a real browser for CORS (curl does not enforce it), and the
-deliberate broken build for the typed seam. Final gate:
+Vitest went in on 2026-09-25, before 2.1, as the Sep 19 decision said
+("a test runner goes in before item 2"); Frank approved the install. The
+test gate applies. 2.1 adds tests for the three validation schemas, 2.2 for
+every resolution rule (it carries seven), and 2.6 for the holiday dates;
+each step's `Done when` includes its tests passing, and every step reruns
+all of them. 2.2 also gives the backend Vitest and its `test` scripts,
+with its first test. What a unit test cannot prove is still proved by hand:
+real SQL against `scheduleads_dev`, real HTTP against the running API, a
+real browser for CORS (curl does not enforce it), and the deliberate broken
+build for the typed seam. Final gate: the tests,
 `npm run build --workspace=backend`, `npm run build --workspace=frontend`,
 `npm run lint --workspace=frontend`.
 
@@ -456,9 +465,7 @@ deliberate broken build for the typed seam. Final gate:
    including Family Day in Alberta, and Easter-based dates, and it is
    maintained. The alternative is a hand-written table per province,
    maintained forever. Needed by 2.6.
-3. **Run `/tests` before 2.1?** The build log's Sep 19 decision says a test
-   runner goes in before item 2, and it has not happened. `/tests` would add
-   a runner (a new dev dependency, so your yes) and turn on the test gate.
-   Recommended: yes, because the resolution rules and the rule validation
-   are pure logic that a test proves in milliseconds and a hand check proves
-   once. Skipping it is workable; every step still has a real check.
+3. **Answered 2026-09-25: yes.** `/tests` ran before 2.1 and installed
+   Vitest in `packages/shared`, with a first test on the subscription
+   limits that was shown to fail when the old `in` bug is put back. See
+   Testing.
