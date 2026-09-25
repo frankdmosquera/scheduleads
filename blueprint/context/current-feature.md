@@ -4,44 +4,65 @@
 
 **Branch:** `feature/booking-links-resources-and-availability-rules`
 
-**Status:** draft
+**Status:** draft. Rewritten 2026-09-25 to match version 8 of the booking
+model, which Frank approved that day (the build log's "How it all fits
+together", and `project-plan.md` decisions 20 to 29). Where this spec and an
+older note disagree, version 8 wins.
 
 ## Goal
 
 Give every business the three scheduling primitives the rest of the product
-reads: its booking links (one per service), its resources (the people who do
-the work), and its availability (when it can be booked). Serve them on a
-public, read-only route a stranger's browser can call, resolve availability
-through one function every later item reuses, and make the frontend call the
-API through `hc<AppType>` so a broken contract stops the build instead of
-failing at runtime.
+reads: its booking links (one per service), its resources (the people and
+places that do or host the work), and its bookable hours (when customers can
+book). Serve them on a public, read-only route a stranger's browser can call,
+resolve bookable hours through one function every later item reuses, and
+make the frontend call the API through `hc<AppType>` so a broken contract
+stops the build instead of failing at runtime.
 
 ## In scope
 
 - Three tables in `packages/shared`: `resource`, `booking_link`,
   `availability_rule`, with one migration.
-- `availability_rule` unique per organization **and** resource. A null
-  `resourceId` is the business's own hours; a set one is that person's. The
-  null-safe uniqueness is enforced by the database, not by code (see
-  Data / contracts).
+- A resource is **one person or one place** (a room, a chair), never a
+  group, and a column says which.
+- **Every business has a first person, made automatically**: for every
+  business that already exists, in the migration; for every new one, in a
+  Better Auth hook. It is the business owner, named after the business.
+- A booking link carries its length and **a buffer before and a buffer
+  after**, any number including zero.
+- `availability_rule` holds **bookable hours**: when customers can book
+  online, not opening hours and not time at work. Unique per organization
+  **and** resource. A null `resourceId` is the business's own row; a set one
+  is that person's. The null-safe uniqueness is enforced by the database,
+  not by code (see Data / contracts).
+- A person's week is their own if they have one, otherwise the business's.
+  A person can have **one-off dates** (hours on one date) without copying
+  the week.
+- **Set once per business, on the business's row only**: time zone, minimum
+  notice, how far ahead customers can book, closed dates, and the country
+  and province for statutory holidays. The database refuses them on a
+  person's row, so there is nothing to copy and nothing to drift.
+- **Closures are for everyone, openings beat them**: a closed date or
+  holiday closes online booking for everyone, whatever their own week says;
+  a one-off date on it opens it again, for that person, or for everyone when
+  it is the business's.
 - A resource's rule can only point at a resource of the **same**
   organization, enforced by a composite foreign key.
-- Several windows per day, minimum notice, buffer, a booking horizon,
-  blackout dates, and statutory holidays resolved from a country code.
-- Zod validation schemas for a weekly-hours value and a whole rule, in
-  `packages/shared`, used by every writer (the seeds now, settings in item 12).
-- `resolveAvailability`: the one function that picks the rule for an
-  organization and optional resource (the resource's own row, else the
-  organization's) and returns its effective values, including the closed
-  dates within the horizon.
+- Zod validation schemas for a weekly-hours value, a one-off date and a
+  whole rule, in `packages/shared`, used by every writer (the seeds now,
+  settings in item 12).
+- `resolveAvailability`: the one function that works out, for a business and
+  optionally one person, the week, the one-off dates, the closed dates
+  within the horizon, and the business's settings.
 - Two public routes, keyed by organization slug:
   `GET /public/:slug/booking-links` and
   `GET /public/:slug/booking-links/:bookingLinkId`.
 - A public CORS rule for those routes, separate from the dashboard's, that
   never allows credentials, with origins from `WIDGET_ORIGINS`.
-- The seed CLI: seeds a booking link and availability rule for an existing
+- The seed CLI: seeds a booking link and the business's row for an existing
   organization by slug. Plus the dev seed extended so both dev businesses
-  have bookable data, including one resource with its own hours.
+  have bookable data, including a person with their own week, a person with
+  only a one-off date, and a place.
 - The typed seam: the backend exports `AppType`, the frontend builds its
   client with `hc<AppType>` from `hono/client`, `fetchMe` moves onto it (its
   hand-written types go), and the dashboard home lists the business's active
@@ -53,6 +74,15 @@ failing at runtime.
 
 - Computing bookable slots, and `GET /public/:slug/availability`. Items 5
   and 9.
+- Who does what (skills and rooms), the commitments table, standby and off,
+  and the customer picking a person. Item 5; the owner ticks and sets them
+  in items 12 and 12b.
+- Linking a person to a login. Nothing in this item reads the link; the
+  first item that does (item 3's per-person Google, or item 12b's calendars)
+  adds it as one nullable column.
+- Switching single holidays off, and the one-click close and open screens.
+  Item 12. Here every holiday of the province is on, and closed dates and
+  one-off dates are written by the seeds.
 - Any write route or settings screen for links, resources or hours. Item 12.
   Until then the seed CLI is the only writer.
 - Calendar connection and free/busy. Item 3.
@@ -74,50 +104,76 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
 
 ## Build steps
 
-- [ ] **2.1 The three tables and their validation schemas.**
+- [ ] **2.1 The three tables, the first person, and their validation.**
   Add `resource`, `booking_link` and `availability_rule` to
   `packages/shared/src/db/drizzle-schema.ts` exactly as in Data / contracts,
-  with a comment on the two uniqueness indexes saying why they are two (a
-  future reader will otherwise "simplify" them into the broken single
-  constraint). Add `weeklyHoursValidationSchema` and
-  `availabilityRuleValidationSchema` under
+  with a comment beside the two uniqueness indexes saying why they are two
+  (a future reader will otherwise "simplify" them into the broken single
+  constraint), and one beside the check that keeps business settings off a
+  person's row. Add `weeklyHoursValidationSchema`,
+  `dateHoursValidationSchema` and `availabilityRuleValidationSchema` under
   `packages/shared/src/zod-validation/availability/`, exported through the
-  existing `index.ts`. Generate the migration from `packages/shared` and read
-  the SQL before applying it.
+  existing `index.ts`. Generate the migration from `packages/shared`, add by
+  hand the one statement that gives every existing organization its first
+  person (kind `person`, named after the organization), and read the SQL
+  before applying it. Then add `organizationHooks.afterCreateOrganization`
+  to the organization plugin in `backend/src/lib/auth-server.ts`, creating
+  the same first person for every new business. It runs after the business
+  is saved, not in the same transaction, which fails safe: a business
+  without a person cannot take a booking.
   **Done when:** `db:generate` produces one migration whose SQL contains the
   partial unique index `WHERE "resourceId" IS NULL`, the composite unique
-  index, and the composite foreign key; `db:migrate` applies it to
-  `scheduleads_dev`; and by hand in `psql`, three inserts are refused: a
-  second org-wide rule for one organization, a second rule for one resource,
-  and a rule naming another organization's resource. Both builds pass.
+  index, the composite foreign key, the check on business-only columns, and
+  the backfill; `db:migrate` applies it to `scheduleads_dev` and every
+  existing organization then has exactly one resource; creating a business
+  through the API as the platform admin gives it its person; and by hand in
+  `psql`, four inserts are refused: a second business row for one
+  organization, a second rule for one resource, a rule naming another
+  organization's resource, and a person's rule carrying a time zone. Both
+  builds pass.
 
 - [ ] **2.2 The resolution function.**
   `backend/src/lib/resolve-availability.ts` exports `resolveAvailability(
-  organizationId, resourceId | null, now)`. It reads the resource's own rule
-  when `resourceId` is set and that row exists, otherwise the organization's
-  row, and returns `ResolvedAvailabilityType` (Data / contracts) or `null`
-  when the organization has no rule. Both queries filter on
-  `organizationId` first. `closedDates` in this step is the blackout dates
-  inside the horizon; 2.6 adds holidays. `now` is a parameter so the horizon
-  is testable.
-  **Done when:** called from a throwaway `tsx` one-liner against seeded rows,
-  it returns the resource's own rule for a resource that has one, the
-  organization's rule for a resource that has none, `null` for an
-  organization with no rule, and `null` when given a resource id that
-  belongs to another organization. Backend build passes.
+  organizationId, resourceId | null, now)`. It reads the business's row and,
+  when `resourceId` is set and that person has a row, the person's row. Both
+  queries filter on `organizationId` first. It returns
+  `ResolvedAvailabilityType` (Data / contracts), or `null` when the
+  organization has no business row. The rules, in one place:
+  - **Week:** the person's own, if their row has one; otherwise the
+    business's.
+  - **One-off dates:** the person's own. A person following the business's
+    week also gets the business's one-off dates; on the same date, the
+    person's own wins.
+  - **Closed dates:** the business's closed dates (and holidays, from 2.6)
+    inside the horizon, minus every date that has a one-off date for this
+    person or for the business. A business opening a closed day opens it
+    for everyone, each on their own hours.
+  - **Time zone, notice, horizon:** always the business's.
+  `now` is a parameter so the horizon is testable.
+  **Done when:** called from a throwaway `tsx` one-liner against seeded
+  rows, it returns: a person's own week for a person who has one; the
+  business's week for a person with no row; the business's week plus their
+  date for a person with only a one-off date; a business closed date as
+  closed for a person with their own week; a closed date opened by one
+  person's one-off date as open for that person and still closed for
+  another; `null` for an organization with no business row; and `null`
+  when given a resource id that belongs to another organization. Backend
+  build passes.
 
 - [ ] **2.3 The seeds.**
   Extend `packages/shared/scripts/seed-dev.ts` so, idempotently,
-  `agency-dev` gets an org-wide rule shaped like Primo's live schedule
-  (several windows a day, Sunday open) and two booking links, and
-  `test-salon-dev` gets an org-wide rule, one resource with its own rule,
-  and one resource without. Add `packages/shared/scripts/seed-booking-link.ts`
-  and a `db:seed-booking-link` script: creates a booking link and, only if
-  none exists, the org-wide rule, for an existing organization found by
-  `--slug`, all in one transaction, rule validated by
-  `availabilityRuleValidationSchema`. It refuses any database that is not
-  local and `_dev` unless `--allow-remote` is passed, because this is also
-  how a real tenant gets hours until item 12.
+  `agency-dev` gets a business row shaped like Primo's live schedule
+  (several windows a day, Sunday open) and two booking links with buffers,
+  and `test-salon-dev` gets a business row, a person with their own week, a
+  person with no week and one one-off date, and a place (a room). The first
+  person every business already has from 2.1 is used, never duplicated. Add
+  `packages/shared/scripts/seed-booking-link.ts` and a
+  `db:seed-booking-link` script: creates a booking link and, only if none
+  exists, the business row, for an existing organization found by `--slug`,
+  all in one transaction, validated by `availabilityRuleValidationSchema`.
+  It refuses any database that is not local and `_dev` unless
+  `--allow-remote` is passed, because this is also how a real tenant gets
+  hours until item 12.
   **Done when:** `db:seed` run twice leaves the same row counts; the CLI adds
   a link to `agency-dev` and prints its id; the CLI refuses an unknown slug
   by listing real ones; and pointed at a non-`_dev` URL without
@@ -135,9 +191,10 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   **Done when:** with the API running, `curl` shows the documented shape for
   both routes with no `organizationId` anywhere; an unknown slug, an unknown
   link, an inactive link, another business's link under this slug, and a
-  business with no rule all return the identical `404` body; a browser
-  `fetch` from an allowed origin succeeds and from a disallowed origin is
-  blocked; and the response never carries `Access-Control-Allow-Credentials`.
+  business with no business row all return the identical `404` body; a
+  browser `fetch` from an allowed origin succeeds and from a disallowed
+  origin is blocked; and the response never carries
+  `Access-Control-Allow-Credentials`.
 
 - [ ] **2.5 The typed seam, proved.**
   Declarations for `AppType` are emitted by the backend build and exposed as
@@ -156,26 +213,30 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   the step's log. Lint passes.
 
 - [ ] **2.6 Statutory holidays.**
-  Resolve `holidayCountry` (ISO 3166-1 alpha-2) into the public holidays
-  that fall inside the horizon, in the rule's timezone, and add them to
-  `closedDates` in `resolveAvailability`. How the dates are produced depends
-  on Open question 2. Seed `agency-dev` with `US` and `test-salon-dev` with
-  `CO`.
-  **Done when:** the public detail route for a `CO` business lists a
-  holiday that Colombia moves to a Monday (for example Saint Joseph's day)
-  on the moved date, a `US` business lists Thanksgiving on the fourth
-  Thursday of November, and a business with no country lists only its
-  blackout dates. Both builds pass.
+  Resolve `holidayCountry` (ISO 3166-1 alpha-2) and `holidayRegion` (the
+  province, from ISO 3166-2) into the public holidays that fall inside the
+  horizon, in the business's time zone, and add them to the closed dates in
+  `resolveAvailability`, where a one-off date opens them like any closed
+  date. Canada's holidays differ by province, which is why the province is
+  stored. How the dates are produced depends on Open question 2. Seed both
+  dev businesses with `CA` / `AB`, like every real tenant.
+  **Done when:** the public detail route for an Alberta business lists
+  Family Day on the third Monday of February and Canada Day on July 1; the
+  function called for a `CA` / `QC` business leaves Family Day out; a
+  one-off date on Canada Day removes it from that person's closed dates; and
+  a business with no country lists only its own closed dates. Both builds
+  pass.
 
 ## Files / areas
 
 - `packages/shared/src/db/drizzle-schema.ts` - three tables
-- `packages/shared/drizzle/` - one generated migration
-- `packages/shared/src/zod-validation/availability/` - two validation schemas,
-  exported from `zod-validation/index.ts`
+- `packages/shared/drizzle/` - one generated migration, plus the backfill
+- `packages/shared/src/zod-validation/availability/` - three validation
+  schemas, exported from `zod-validation/index.ts`
 - `packages/shared/scripts/seed-dev.ts`, new `seed-booking-link.ts`,
   `packages/shared/package.json` script
-- `backend/src/app.ts` (new), `backend/src/server.ts` (reduced),
+- `backend/src/lib/auth-server.ts` (the first-person hook),
+  `backend/src/app.ts` (new), `backend/src/server.ts` (reduced),
   `backend/src/routes/public-booking-links.ts`,
   `backend/src/lib/resolve-availability.ts`, `backend/package.json`,
   `backend/tsconfig.json`
@@ -188,20 +249,21 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
 Ids are text from `randomUUID()`, as in `seed-dev.ts`. Timestamps are
 `timestamptz`. Every table cascades on organization delete.
 
-**`resource`** - a crew, a practitioner, an estimator.
+**`resource`** - one person or one place, never a group.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | `id` | text PK | |
 | `organizationId` | text, not null | FK `organization.id` |
-| `name` | text, not null | |
+| `name` | text, not null | the first person is named after the business |
+| `kind` | text, not null, default `person` | check: `person` or `place` |
 | `active` | boolean, not null, default true | |
 | `createdAt`, `updatedAt` | timestamptz, not null, default now | |
 
 Unique `(organizationId, id)`, which exists only so `availability_rule` can
 reference both columns.
 
-**`booking_link`** - an event type; the handle a host site stores as
+**`booking_link`** - a service; the handle a host site stores as
 `Service.bookingId`.
 
 | Column | Type | Notes |
@@ -212,37 +274,51 @@ reference both columns.
 | `slug` | text, not null | unique per organization, same rule as the org slug |
 | `description` | text, nullable | |
 | `durationMinutes` | integer, not null | check `> 0` |
+| `bufferBeforeMinutes` | integer, not null, default 0 | check `>= 0` |
+| `bufferAfterMinutes` | integer, not null, default 0 | check `>= 0` |
 | `active` | boolean, not null, default true | inactive reads as absent publicly |
 | `createdAt`, `updatedAt` | timestamptz, not null, default now | |
 
-**`availability_rule`**
+Nothing reads the buffers until item 5, which keeps them inside a booking's
+stored time.
+
+**`availability_rule`** - bookable hours.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | `id` | text PK | |
 | `organizationId` | text, not null | FK `organization.id` |
-| `resourceId` | text, nullable | null = the business's own hours |
-| `timezone` | text, not null | IANA name; every minute below is local to it |
-| `weeklyHours` | jsonb, not null | shape below |
-| `minimumNoticeMinutes` | integer, not null | check `>= 0` |
-| `bufferMinutes` | integer, not null | check `>= 0` |
-| `horizonDays` | integer, not null | check `> 0`; no default, a writer sets it |
-| `holidayCountry` | text, nullable | ISO 3166-1 alpha-2; null = no holidays |
-| `blackoutDates` | jsonb, not null, default `[]` | `YYYY-MM-DD`, local to `timezone` |
+| `resourceId` | text, nullable | null = the business's row |
+| `weeklyHours` | jsonb, nullable | required on the business's row; null on a person's row = follows the business's week |
+| `dateHours` | jsonb, not null, default `[]` | one-off dates, shape below |
+| `timezone` | text | business's row only; IANA name; every minute and date is local to it |
+| `minimumNoticeMinutes` | integer | business's row only; check `>= 0` |
+| `horizonDays` | integer | business's row only; check `> 0`; no default, a writer sets it |
+| `closedDates` | jsonb | business's row only; `YYYY-MM-DD` list |
+| `holidayCountry` | text, nullable | business's row only; ISO 3166-1 alpha-2; null = no holidays |
+| `holidayRegion` | text, nullable | business's row only; the province, e.g. `AB`; needs a country |
 | `createdAt`, `updatedAt` | timestamptz, not null, default now | |
+
+One check keeps the two kinds of row honest: when `resourceId` is null,
+`weeklyHours`, `timezone`, `minimumNoticeMinutes`, `horizonDays` and
+`closedDates` are all set; when it is set, `timezone`,
+`minimumNoticeMinutes`, `horizonDays`, `closedDates`, `holidayCountry` and
+`holidayRegion` are all null. A person's row therefore holds only their own
+week and their one-off dates, and changing a business setting changes it
+for everyone.
 
 Uniqueness, both indexes required (`resource-model-proposal.md` section 4):
 a partial unique index on `(organizationId) WHERE "resourceId" IS NULL` for
-the org-wide row, and a unique index on `(organizationId, resourceId)` for
-per-resource rows. A single `unique(organizationId, resourceId)` would allow
-two org-wide rows, because Postgres treats NULLs as distinct.
+the business's row, and a unique index on `(organizationId, resourceId)`
+for per-person rows. A single `unique(organizationId, resourceId)` would
+allow two business rows, because Postgres treats NULLs as distinct.
 Foreign key `(organizationId, resourceId)` -> `resource(organizationId, id)`,
 cascading, so a rule can never name another business's resource.
 
 `weeklyHours` - keys `mon` to `sun`, each an array of
 `{ startMinute, endMinute }`, integers `0` to `1440`, `endMinute >
-startMinute`, windows within a day not overlapping. A missing or empty day is
-closed.
+startMinute`, windows within a day not overlapping. A missing or empty day
+is closed.
 
 ```json
 { "sun": [{ "startMinute": 570, "endMinute": 1020 }],
@@ -250,20 +326,30 @@ closed.
   "wed": [{ "startMinute": 450, "endMinute": 510 }] }
 ```
 
-Validation also requires `timezone` accepted by `Intl.DateTimeFormat` and
-`holidayCountry` matching `^[A-Z]{2}$`.
+`dateHours` - one-off dates. Each entry is a date and its windows, same
+window rules as a weekday, at least one window. It replaces that date's
+hours, and it opens that date if it is closed or a holiday. Dates unique
+within a row.
+
+```json
+[{ "date": "2026-10-13", "windows": [{ "startMinute": 540, "endMinute": 780 }] }]
+```
+
+Validation also requires `timezone` accepted by `Intl.DateTimeFormat`,
+`holidayCountry` matching `^[A-Z]{2}$`, and `holidayRegion` matching
+`^[A-Z0-9]{1,3}$` and only with a country.
 
 **`ResolvedAvailabilityType`** (from `resolveAvailability`)
 
 ```ts
 {
-  source: "resource" | "organization"; // which row answered
+  source: "resource" | "organization"; // whose week answered
   timezone: string;
   weeklyHours: WeeklyHoursType;
+  dateHours: DateHoursType; // the one-off dates that apply, inside the horizon
   minimumNoticeMinutes: number;
-  bufferMinutes: number;
   horizonDays: number;
-  closedDates: string[]; // blackouts and holidays within the horizon, sorted, unique
+  closedDates: string[]; // closed dates and holidays inside the horizon, minus opened ones; sorted, unique
 }
 ```
 
@@ -271,7 +357,8 @@ Validation also requires `timezone` accepted by `Intl.DateTimeFormat` and
 
 ```json
 { "bookingLinks": [{ "id": "...", "slug": "estimate", "name": "Painting estimate",
-                     "description": "...", "durationMinutes": 60 }] }
+                     "description": "...", "durationMinutes": 30,
+                     "bufferBeforeMinutes": 0, "bufferAfterMinutes": 15 }] }
 ```
 
 Active links only, ordered by name. An existing business with no active links
@@ -281,44 +368,56 @@ returns `{ "bookingLinks": [] }`.
 
 ```json
 { "bookingLink": { "id": "...", "slug": "...", "name": "...", "description": null,
-                   "durationMinutes": 60 },
-  "availability": { "timezone": "America/Denver", "weeklyHours": { },
-                    "minimumNoticeMinutes": 240, "bufferMinutes": 15,
-                    "horizonDays": 60, "closedDates": ["2026-12-25"] } }
+                   "durationMinutes": 30, "bufferBeforeMinutes": 0, "bufferAfterMinutes": 15 },
+  "availability": { "timezone": "America/Edmonton", "weeklyHours": { }, "dateHours": [],
+                    "minimumNoticeMinutes": 240, "horizonDays": 60,
+                    "closedDates": ["2026-12-25"] } }
 ```
 
-The availability is the organization's own (`resourceId` null); resource
-choice arrives with bookings.
+The availability is the business's own (`resourceId` null); choosing a
+person arrives with bookings in item 5.
 
 Errors on both: `404 { "error": { "code": "not_found", "message": "..." } }`,
 identical for an unknown slug, unknown or inactive link, a link of another
-business, and a business with no rule, so a stranger cannot tell them apart.
-`400` with the same shape for a malformed slug or id. This extends the
-existing `refuse` shape and `RefusalCodeType` rather than adding a second
-error shape. Neither route ever returns `organizationId`, `source`, or
-anything about members or users.
+business, and a business with no business row, so a stranger cannot tell
+them apart. `400` with the same shape for a malformed slug or id. This
+extends the existing `refuse` shape and `RefusalCodeType` rather than adding
+a second error shape. Neither route ever returns `organizationId`, `source`,
+or anything about members, users or people.
 
 ## Testing
 
 No unit test runner is configured today, so as written no test gate applies.
 But the build log records a decision from Sep 19, "a test runner goes in
 before item 2", so this item's logic (the rule validation, the resolution
-fallback, holidays) lands with a harness already there. That is Open
-question 3. If `/tests` runs first, 2.1, 2.2 and 2.6 gain focused tests and
-their `Done when` includes them. Otherwise each step is proved by its own
-`Done when`: real SQL against
-`scheduleads_dev`, real HTTP against the running API, a real browser for
-CORS (curl does not enforce it), and the deliberate broken build for the
-typed seam. Final gate: `npm run build --workspace=backend`,
-`npm run build --workspace=frontend`, `npm run lint --workspace=frontend`.
+rules, holidays) lands with a harness already there. That is Open question
+3. If `/tests` runs first, 2.1, 2.2 and 2.6 gain focused tests and their
+`Done when` includes them. 2.2 now carries seven rules, which is the
+strongest case yet for tests. Otherwise each step is proved by its own
+`Done when`: real SQL against `scheduleads_dev`, real HTTP against the
+running API, a real browser for CORS (curl does not enforce it), and the
+deliberate broken build for the typed seam. Final gate:
+`npm run build --workspace=backend`, `npm run build --workspace=frontend`,
+`npm run lint --workspace=frontend`.
 
 ## Notes for the AI
 
-- **Plans over overview.** `project-overview.md` still says "the two tables",
-  puts `resource` in item 4, and calls `availability_rule` one per
-  organization. The build plan and project plan moved `resource` here and made
-  the rule unique per organization and resource on 2026-09-22; the overview
-  body was not regenerated. Build to the plans. `/overview` should be rerun.
+- **Version 8 is the source.** The booking model was approved on
+  2026-09-25 after three audits; its decisions are `project-plan.md` 20 to
+  29 and the build log's "How it all fits together". Do not reopen them;
+  if something here seems to contradict them, say so and stop.
+- **Bookable hours are not opening hours.** They say when customers can
+  book online. The owner can still place work outside them (item 12b), and
+  a job never hides anyone from customers.
+- **Plans over overview.** `project-overview.md` still says "the two
+  tables", puts `resource` in item 4, and calls `availability_rule` one per
+  organization. Build to the plans. `/overview` should be rerun.
+- **The first person and the business owner.** The first person is the
+  business owner. When the platform admin creates a client's business, item
+  3b creates it under the client's email so the client is its business
+  owner; today `creatorRole: "owner"` would make the platform admin the
+  owner instead. This item does not link the person to any login (Out of
+  scope), so it cannot link the wrong one.
 - **`AppType` cannot live in `packages/shared`.** It is derived from the Hono
   app instance, so shared would have to import backend and invert the
   dependency. The first repo learned this; the frontend takes a type-only
@@ -331,8 +430,10 @@ typed seam. Final gate: `npm run build --workspace=backend`,
   branch `main`): `backend/src/routes/booking-links.ts`, the contract in
   `packages/shared/src/api/booking-link-contract.ts`, and
   `backend/scripts/seed-booking-link.ts`. What changed: slug-keyed routes,
-  `startMinute`/`endMinute`, a resource dimension, horizon and holidays,
-  `timestamptz`, this repo's `refuse` error shape and naming.
+  `startMinute`/`endMinute`, a resource dimension, one-off dates, business
+  settings only on the business's row, buffers on the service, horizon and
+  province holidays, `timestamptz`, this repo's `refuse` error shape and
+  naming.
 - **Tenant scope.** The public routes take the slug from the path because a
   stranger has no session; that is the one place an organization comes from
   the URL, and it is read-only. Look up the org by slug, then every other
@@ -351,14 +452,13 @@ typed seam. Final gate: `npm run build --workspace=backend`,
    from it, so it must be declared there, at the same version. No new
    library enters the repo. Needed by 2.5.
 2. **Where do statutory holidays come from?**
-   Recommended: the `date-holidays` package. It covers the US and Colombia,
-   including Colombia's Emiliani rule that moves most holidays to a Monday,
-   and Easter-based dates, and it is maintained. The alternative is a
-   hand-written table per country, which is small for the US and genuinely
-   tricky for Colombia, and must be maintained forever. Needed by 2.6.
+   Recommended: the `date-holidays` package. It covers Canada by province,
+   including Family Day in Alberta, and Easter-based dates, and it is
+   maintained. The alternative is a hand-written table per province,
+   maintained forever. Needed by 2.6.
 3. **Run `/tests` before 2.1?** The build log's Sep 19 decision says a test
    runner goes in before item 2, and it has not happened. `/tests` would add
    a runner (a new dev dependency, so your yes) and turn on the test gate.
-   Recommended: yes, because the resolution fallback and the rule validation
+   Recommended: yes, because the resolution rules and the rule validation
    are pure logic that a test proves in milliseconds and a hand check proves
    once. Skipping it is workable; every step still has a real check.

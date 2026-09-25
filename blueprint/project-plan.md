@@ -133,10 +133,14 @@ CRM modules, in the order they arrive:
 - **Email.** Send from the CRM under the business's name, logged on the
   timeline. Replies captured through a per-business BCC address. Two-way
   mailbox sync is a Phase 9 item behind Google's verification.
-- **Crew and job scheduling.** Resources (a crew, a practitioner, an
-  estimator) that bookings and jobs are assigned to. The customer-facing
-  calendar books an appointment; the internal calendar puts the job on a
-  crew across days.
+- **Crew and job scheduling.** Resources (a practitioner, an estimator, a
+  room) that bookings and jobs are assigned to: one person or one place
+  each, never a group. A crew is a saved list of people. Two ideas that
+  share only people's time: **booking** is the customer picking a time
+  online, the Calendly idea; **the scheduler** is the owner's own calendar,
+  the Calendar30 idea, where every person and place has a calendar and the
+  owner puts jobs, phone estimates and time off on it by hand. The whole
+  model is version 8 in the build log, approved 2026-09-25.
 - **Quotes.** Line items and a total, sent as a link the customer opens in
   the business's own theme and accepts. The half of "found you to paid"
   that the first draft left out.
@@ -164,20 +168,29 @@ Carried over from the first repo, verified against Railway Postgres:
   Several per organization sharing one availability pool. **This is the
   per-service handle face-and-body reserved as `Service.bookingId`.** A
   clinic with 45 services is 45 rows here, each with its own duration.
-- `availability_rule`: unique per organization and resource. A null resource is
-  the business's own hours; a set one is that person's, and a resource without
-  its own row falls back to the organization's. Timezone,
-  weekly hours as minute windows per day, minimum notice, buffer, blackout
-  dates, a booking horizon (how far ahead a customer may book), and a
-  country code for statutory holidays.
+  Each also carries a buffer before and a buffer after, any number
+  including zero, because every service is different (version 8).
+- `availability_rule`: **bookable hours**, meaning when customers can book
+  online, not opening hours and not time at work. Unique per organization
+  and resource. A null resource is the business's own week; a set one is
+  that person's, and a resource without its own week uses the business's.
+  Weekly hours as minute windows per day, plus one-off dates (hours on one
+  date), which a person can have without copying the week. The business's
+  row alone carries what is set once for everyone: the time zone, minimum
+  notice, how far ahead a customer may book, closed dates, and the country
+  and province for statutory holidays. A closed day or holiday closes online
+  booking for everyone; a one-off date opens it again, for one person or the
+  whole business. Buffers moved to `booking_link`.
   **Several windows per day is the normal case, not an edge case.** Primo's
   own live schedule, read from his Calendly on 2026-09-18, is Sunday 9:30
   to 17:00, Monday, Tuesday and Thursday 17:00 to 19:30, Wednesday and
   Friday 07:30 to 08:30, Saturday 16:00 to 18:30. A working painter fits
   estimates around jobs. Any model that assumes one window a day is wrong
   for the first paying client.
-- `calendar_connection`: unique per organization and resource, same shape as
-  `availability_rule`. Provider discriminator,
+- `calendar_connection`: one per person, never one for the business: a
+  calendar for the business cannot say which worker is busy. The first is
+  the business owner's; each is optional. It reads busy times and writes
+  each booking, one connection asking for both. Provider discriminator,
   encrypted credentials blob under AES-256-GCM, granted scope, status. Only
   Google is implemented. Microsoft, CalDAV, and ICS are new files behind the
   same interface.
@@ -187,7 +200,9 @@ Planned, shapes locked in the first repo's overview and kept:
 - `contact`: name, email, phone, organization-scoped.
 - `lead`: the job details, source, tied to a contact, and its current stage.
 - `booking`: scheduled time, status, the calendar event id, a cancel token,
-  the resource it is assigned to, and the location the customer gave.
+  the people it holds (and a place when the service needs one), and the
+  location the customer gave. Made online by a customer or by the owner
+  (a phone estimate, a walk-in); both are the same booking.
   The location is the customer's address, typed by them at booking, because
   a trade travels to the job. Primo's Calendly calls this "ask invitee" and
   it is a required field on his form.
@@ -206,13 +221,16 @@ New here:
   and a migration later.
 - `resource`: per organization, built in item 2 beside availability rather than
   with the CRM spine, because it is a scheduling primitive and not a CRM one.
-  A crew, a practitioner, an estimator, a chair. Name and active flag. A
-  booking and a job point at one. Its own hours, buffer and timezone are
-  expressible from the first migration through `availability_rule`, and nothing
-  builds a screen for them until a tenant has two people.
+  One person or one place: a practitioner, an estimator, a room, a chair,
+  never a group, and it says which. Name and active flag. A crew is a saved
+  list of people, not a resource. Its own week of bookable hours is
+  expressible from the first migration through `availability_rule`, and
+  nothing builds a screen for it until a tenant has two people.
   Capacity is how many resources are free at a time, so a clinic with three
   practitioners takes three bookings at 2pm and a painter with one estimator
-  takes one. An organization with no resources behaves as one.
+  takes one. **Every business has at least one person, made automatically**,
+  its business owner, because the database refuses overlapping bookings per
+  person and a booking with nobody to hold it would slip past that.
   **Which resources are free, not merely how many**, is what the booking check
   answers, so the same query serves a capacity pool and a named person.
 - `activity`: the timeline **and the next-step queue**. Per contact, typed:
@@ -229,8 +247,15 @@ New here:
   Line items hang off it: description, quantity, unit, rate, amount, and an
   order. Accepting is a customer action on a tokenized link, so it needs no
   login and no account, exactly like cancelling a booking.
-- `job`: later, with crew scheduling. A lead that became work, on a resource,
-  across days.
+- `commitment`: item 5. One row per person or place for every booking and
+  every stretch of time off, with a booking's buffers inside its time. The
+  database refuses two overlapping active rows for the same person or place,
+  so two customers can never both take 3pm and no code path can forget the
+  check. Cancelled rows stop blocking.
+- `job`: later, with crew scheduling. A lead that became work, from an
+  accepted quote or added by hand, made of visits, one per day, each with
+  its own people. A job never hides anyone from customers; how its visits
+  sit beside `commitment` is decided in item 19.
 
 Locked, carried from the first repo:
 
@@ -272,7 +297,9 @@ things to add.
   business sends from the CRM. Primo's `emails/contact-lead.tsx` is the
   template pattern: hex colours not tokens, timezone pinned, a `tel:` button.
 - **Google Calendar API**: OAuth plus a live free/busy query at booking time.
-  Carried over whole.
+  Carried over whole. Version 8 adds writing each booking into the booked
+  person's calendar, which needs the "add and edit events" permission as
+  well, asked for in the same connection.
 - **Twilio** for SMS. Kept from the first plan, Phase 2, and the first thing
   to cut if Phase 2 runs long. WhatsApp can ride the same Twilio account
   later.
@@ -394,10 +421,13 @@ week, pipeline by stage, lead sources.
   from the browser or proxies through its own server action. Primo's contact
   form holds the rationale for the second: a public URL anyone can POST to
   has no auth and no rate limit. Decide when the first tenant is wired.
-- Google OAuth consent stays in Testing with test users until Phase 9.
-  Testing-mode refresh tokens expire after seven days, so a tenant's
-  connection will need reconnecting during development. Google's app
-  verification is slow and is Phase 9's first task, not its last. Gmail's
+- Google OAuth consent stays in Testing with test users while only the
+  agency's own calendar is connected. Testing-mode refresh tokens expire
+  after seven days, so a connection needs reconnecting during development.
+  Google's app verification for the calendar permissions is slow and is
+  finished before item 13, Primo, even though item 22 sits in Phase 9: a
+  paying client whose connection dropped every week would see his booking
+  page empty until he reconnected. Decided 2026-09-25. Gmail's
   read and modify scopes are restricted scopes: verification plus an annual
   third-party security assessment. That is why two-way mailbox sync sits
   behind verification and not before it.
@@ -461,8 +491,9 @@ Two things the first repo recorded that must not be relearned:
 4. **Scheduleads is a CRM.** Booking first, because that is where every lead
    starts; the pipeline, email, crews and reports grow around it. Section 3.
 5. **Three tables move early.** Pipeline stages, resources and the activity
-   timeline are built in Phase 2, before anything reads them, so the CRM
-   fits later without a rewrite. Section 4.
+   timeline are built before anything reads them, so the CRM fits later
+   without a rewrite: resources in item 2, beside availability (moved
+   2026-09-22), the other two in Phase 2. Section 4.
 6. **Email is send-only plus BCC capture first.** Two-way Gmail sync is Phase
    9, behind Google's restricted-scope verification. Section 8.
 7. **One app, two hats.** The agency is organization number one; the platform
@@ -510,3 +541,45 @@ Two things the first repo recorded that must not be relearned:
 18. **What does Primo need on day one beyond booking and the leads list?**
     Asked before his swap.
 19. **The inbound path for the BCC capture address.** Section 5.
+
+## Decided 2026-09-25: the booking model
+
+Version 8 of "How it all fits together" in the build log, approved after
+three audits on Sep 24 and 25. It is the plan for booking and scheduling;
+anything here or in `build-plan.md` that contradicted it was changed the
+same day. Numbered on from the open questions, one sequence.
+
+20. **Two ideas, never merged.** Booking is the customer picking a time
+    online (the Calendly idea). The scheduler is the owner's own calendar
+    (the Calendar30 idea). They share one thing: people's time.
+21. **People are the centre.** A resource is one person or one place, never
+    a group; a crew is a saved list of people. Every business gets its first
+    person automatically, its business owner.
+22. **Business owner and platform admin are different words.** When the
+    platform admin creates a client's business, it is created under the
+    client's email, which becomes its business owner and its first person.
+    The platform admin reaches every business through the admin area and is
+    never a client business's owner. Tryouts, later, follow the same rule.
+23. **Bookable hours** are when customers can book online: not opening
+    hours, not time at work. The owner decides who is bookable, and a job
+    never hides anyone from customers. The owner himself places work any
+    time someone is not off and not already busy.
+24. **Closures are for everyone, openings beat them.** One click closes a
+    day for online booking for everyone, whatever anyone's own hours say;
+    bookings made before the click are shown, and the owner keeps or
+    cancels them. A one-click opening beats a holiday or closed day, for one
+    person or the whole business. Holidays go by country and province, the
+    whole year on by default, each one switchable.
+25. **Set once per business:** time zone, minimum notice, how far ahead
+    customers can book. **Set per service:** length and the buffers before
+    and after. **Set per person:** the week of bookable hours and one-off
+    dates.
+26. **Who does what** is skills and rooms, checked at booking (item 5) and
+    ticked in settings (item 12). Nobody ticked means anyone can do it.
+27. **One commitments table**, where the database refuses overlaps per
+    person or place. No double booking, the owner included.
+28. **Every person and place has a calendar in the app** (item 12b), where
+    the owner adds a phone estimate or walk-in (a real booking) or time off.
+29. **Google belongs to people.** Optional, one calendar per person, the
+    first the business owner's, read for busy times and written with each
+    booking. Not a two-way sync. Google's approval is finished before item 13.
