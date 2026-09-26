@@ -23,19 +23,19 @@ app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 app.get("/me", requireOrganizationMiddleware, requireKnownSubscriptionMiddleware, async (c) => {
   // All loaded by the middleware above, so this route makes no query of its own.
   const user = c.get("user");
-  const org = c.get("org");
+  const activeOrganization = c.get("organization");
   const details = c.get("organizationDetails");
   const subscription = c.get("subscription");
 
   return c.json({
     user: { id: user.id, email: user.email, name: user.name },
     organization: {
-      id: org.organizationId,
+      id: activeOrganization.organizationId,
       name: details.name,
       slug: details.slug,
       plan: subscription.tier,
     },
-    role: org.role,
+    role: activeOrganization.role,
     limits: subscription.limits,
   });
 });

@@ -16,11 +16,11 @@ export type SessionUserType = {
   name: string;
 };
 
-// Adds `user` and `org` to Hono's context, so c.set / c.get are type-checked.
+// Adds `user` and `organization` to Hono's context, so c.set / c.get are type-checked.
 declare module "hono" {
   interface ContextVariableMap {
     user: SessionUserType;
-    org: ActiveOrganizationType;
+    organization: ActiveOrganizationType;
   }
 }
 
@@ -49,6 +49,6 @@ export const requireOrganizationMiddleware = createMiddleware(async (c, next) =>
     email: session.user.email,
     name: session.user.name ?? "", // accounts made by email code have no name
   });
-  c.set("org", activeOrganization);
+  c.set("organization", activeOrganization);
   await next();
 });

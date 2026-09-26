@@ -17,10 +17,10 @@ export type PermissionsType = NonNullable<
 // the day dynamic access control is switched on.
 export const requirePermissionMiddleware = (permissions: PermissionsType) =>
   createMiddleware(async (c, next) => {
-    const org = c.get("org");
+    const activeOrganization = c.get("organization");
 
     // Mount after requireOrganizationMiddleware: it reads the business that one resolved.
-    if (!org) {
+    if (!activeOrganization) {
       throw new Error(
         "requirePermissionMiddleware ran without requireOrganizationMiddleware before it. Mount them in that order."
       );
@@ -32,7 +32,7 @@ export const requirePermissionMiddleware = (permissions: PermissionsType) =>
     const allowed = await auth.api
       .hasPermission({
         headers: c.req.raw.headers,
-        body: { organizationId: org.organizationId, permissions },
+        body: { organizationId: activeOrganization.organizationId, permissions },
       })
       .then((result) => result.success)
       .catch((error: unknown) => {

@@ -27,9 +27,9 @@ declare module "hono" {
 // The only place in the API that reads organization.plan, so an unknown value is
 // handled one way, in one place.
 export const requireKnownSubscriptionMiddleware = createMiddleware(async (c, next) => {
-  const org = c.get("org");
+  const activeOrganization = c.get("organization");
 
-  if (!org) {
+  if (!activeOrganization) {
     throw new Error(
       "requireKnownSubscriptionMiddleware ran without requireOrganizationMiddleware before it. Mount them in that order."
     );
@@ -43,7 +43,7 @@ export const requireKnownSubscriptionMiddleware = createMiddleware(async (c, nex
       slug: organization.slug,
     })
     .from(organization)
-    .where(eq(organization.id, org.organizationId))
+    .where(eq(organization.id, activeOrganization.organizationId))
     .limit(1);
 
   // The business was deleted since sign-in. Not a plan problem, so it gets the
