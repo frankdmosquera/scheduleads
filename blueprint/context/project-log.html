@@ -18,7 +18,8 @@
      approved, violet = a real fault found and repaired.
      --------------------------------------------------------------- */
   :root {
-    --ground: #F4F5F7;
+    --ground: #ECEEF1; /* the page, one step darker than before Sep 26 */
+    --section-ground: #FAFAFB; /* inside a Project or Architecture section, fixed so the page can move alone */
     --surface: #FFFFFF;
     --surface-2: #E9EBEF;
     --ink: #15181D;
@@ -50,7 +51,8 @@
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --ground: #0E1116;
+      --ground: #0A0D11;
+      --section-ground: #12161C;
       --surface: #151A21;
       --surface-2: #1C222B;
       --ink: #E6EAF0;
@@ -78,7 +80,8 @@
   }
 
   :root[data-theme="dark"] {
-    --ground: #0E1116;
+    --ground: #0A0D11;
+    --section-ground: #12161C;
     --surface: #151A21;
     --surface-2: #1C222B;
     --ink: #E6EAF0;
@@ -166,8 +169,8 @@
   [data-color="violet"] { --sec: #6B4FC8; }
   [data-color="rose"] { --sec: #C2416E; }
   [data-color="slate"] { --sec: #5B6678; }
-  /* A step in from the page: halfway between the page and the white of a diagram. */
-  #view-project > section[data-color], #view-architecture > section[data-color] { background: color-mix(in srgb, var(--ground) 50%, var(--surface)); border-color: color-mix(in srgb, var(--sec) 55%, var(--ground)); }
+  /* A step in from the page, and a step darker than the white of a diagram. */
+  #view-project > section[data-color], #view-architecture > section[data-color] { background: var(--section-ground); border-color: color-mix(in srgb, var(--sec) 55%, var(--ground)); }
   #view-project > section[data-color] > h2, #view-architecture > section[data-color] > h2 { color: color-mix(in srgb, var(--sec) 75%, var(--ink)); border-bottom-color: color-mix(in srgb, var(--sec) 35%, var(--ground)); }
   .cell--text[data-color] { background: transparent; }
   #view-architecture .map-what { font-size: 14px; color: var(--ink-3); }
