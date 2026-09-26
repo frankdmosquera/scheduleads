@@ -360,7 +360,9 @@ he reads code, not diffs. Coloured by Shiki, loaded by the page from
 Checked against his screen on 2026-09-25: `import` purple, type names green.
 The theme is built by `node blueprint/scripts/code-theme.mjs` from the theme
 files in his VS Code install; rerun it when VS Code changes the theme. Ends
-with a link to the step's commit on GitHub for the full diff.
+with a link to the step's commit on GitHub for the full diff, pinned to
+commits (`compare/<base>...<step commit>`), never to the branch name, which
+keeps moving and would show later steps too.
 
 Build the drawer with `node blueprint/scripts/code-drawer.mjs` (usage at the top
 of the file), never by hand, so the line numbers are the file's own. The page

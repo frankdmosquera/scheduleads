@@ -203,7 +203,7 @@ interfaces the standard names). Small, but it is the pattern the next file copie
 **Suggested fix:** `export type AvailabilityRuleRowType = ...`.
 **Resolution:** 2026-09-25, fixed by /implement: `export type AvailabilityRuleRowType`. Backend build and Prettier pass. Awaiting re-review.
 
-### F-21 [P3] open - The build log's "full diff" links move with the branch
+### F-21 [P3] fixed - The build log's "full diff" links move with the branch
 
 **File:** blueprint/context/project-log.html:3715
 **Found:** 2026-09-25 by /audit independent (scope: current; lens: quality)
@@ -218,4 +218,4 @@ the whole feature, not the step.
 the step's own commits (`compare/b4b39a5...2519644` for 2.2,
 `compare/cb8e09c...b4b39a5` or the step commit for 2.1). A step's own hash
 cannot be in its own commit, so pin it on the following republish.
-**Resolution:**
+**Resolution:** 2026-09-25, fixed by /implement: the 2.1 link now compares `cb8e09c...ab16897` and the 2.2 link `b4b39a5...98e2493`, each a step plus its review fix. `AGENTS.md` now says every drawer link is pinned to commits, never the branch. Awaiting re-review.
