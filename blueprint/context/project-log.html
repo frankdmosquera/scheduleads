@@ -1411,7 +1411,7 @@
           </div>
           <div class="row">
             <div class="row-key">Browser cache</div>
-            <div class="row-val">Every signed-in API answer carries <code>Cache-Control: no-store</code>: "never keep a copy". Set once by <code>dashboardNoStoreMiddleware</code> in <code>backend/src/middleware/dashboard/</code>, which stamps the header <em>after</em> <code>await next()</code>, on the finished response. That forces the browser to really ask the server, which refuses someone who is signed out. Done and proved.</div>
+            <div class="row-val">Every signed-in API answer carries <code>Cache-Control: no-store</code>: "never keep a copy". Set once by <code>dashboardNoStoreMiddleware</code> in <code>backend/middleware/dashboard/</code>, which stamps the header <em>after</em> <code>await next()</code>, on the finished response. That forces the browser to really ask the server, which refuses someone who is signed out. Done and proved.</div>
           </div>
           <div class="row">
             <div class="row-key">Page snapshot</div>
@@ -4655,9 +4655,17 @@ const db = drizzle(client, { schema });</code></pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">8 general entries, newest first &middot; each step keeps its own</span></summary>
+                <summary>Log <span class="tag-drift">9 general entries, newest first &middot; each step keeps its own</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">The backend has no <code>src/</code> folder any more</span><span class="kind-tag">Decided</span><span class="stamp">Sep 26</span></div>
+                        <p class="entry-text">Right after the middleware move, you asked whether <code>backend/src/</code> was needed. It is the usual convention, not a need: it keeps code apart from config and build output, and there is no security side, because the API only answers routes and never hands out its own files. Your call, as a matter of taste and to match the frontend: <code>server.ts</code>, <code>database.ts</code>, <code>lib/</code> and <code>middleware/</code> now sit straight in <code>backend/</code>. So the entry below now reads <code>backend/middleware/&lt;area&gt;/</code>.</p>
+                        <p class="entry-text">The cost, paid in <code>tsconfig.json</code>: code now sits beside <code>dist/</code>, so it excludes <code>dist</code>, <code>node_modules</code> and the tests. The build still writes <code>dist/server.js</code>, so Railway does not change. Proved: the build output holds only the 14 expected files and no test, all 36 tests pass, and the dev server, started from the new path, answered 401 signed out and the painting company's <code>/me</code> signed in as the dev admin. <code>packages/shared</code> keeps its <code>src/</code>; that would be a separate yes.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">

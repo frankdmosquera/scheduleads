@@ -8,8 +8,10 @@
     "types": ["node"],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
-    "rootDir": "./src",
+    "rootDir": ".",
     "outDir": "./dist"
   },
-  "exclude": ["node_modules", "src/**/*.test.ts"] // tests run through Vitest, never shipped in dist/
+  // No src/ folder (Frank, 2026-09-26), so the code sits beside the build output and
+  // any config file: only .ts files that are not tests and not in these folders compile.
+  "exclude": ["node_modules", "dist", "**/*.test.ts"] // tests run through Vitest, never shipped in dist/
 }

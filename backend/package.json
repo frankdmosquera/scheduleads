@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "predev": "tsc -p ../packages/shared/tsconfig.json",
-    "dev": "tsx watch --env-file-if-exists=../.env src/server.ts",
+    "dev": "tsx watch --env-file-if-exists=../.env server.ts",
     "prebuild": "tsc -p ../packages/shared/tsconfig.json",
     "build": "tsc",
     "start": "node --env-file-if-exists=../.env dist/server.js",

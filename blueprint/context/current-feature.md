@@ -127,7 +127,7 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   hand the one statement that gives every existing organization its first
   person (kind `person`, named after the organization), and read the SQL
   before applying it. Then add `organizationHooks.afterCreateOrganization`
-  to the organization plugin in `backend/src/lib/auth-server.ts`, creating
+  to the organization plugin in `backend/lib/auth-server.ts`, creating
   the same first person for every new business. It runs after the business
   is saved, not in the same transaction, which fails safe: a business
   without a person cannot take a booking.
@@ -148,7 +148,7 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   checks as the proof.
 
 - [x] **2.2 The resolution function.**
-  `backend/src/lib/resolve-availability.ts` exports `resolveAvailability(
+  `backend/lib/resolve-availability.ts` exports `resolveAvailability(
   organizationId, resourceId | null, now)`. It reads the business's row and,
   when `resourceId` is set and that person has a row, the person's row. Both
   queries filter on `organizationId` first. It returns
@@ -168,7 +168,7 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   today in the business's time zone to today plus `horizonDays` (60 days on
   Sep 25 ends Nov 24); dates before or after it are dropped.
   **Split in two (Frank, 2026-09-25):** the rules are a pure function,
-  `applyAvailabilityRules` in `backend/src/lib/availability-rules.ts`, with
+  `applyAvailabilityRules` in `backend/lib/availability-rules.ts`, with
   no database; `resolveAvailability` only reads the rows and hands them
   over. The first version of this Done when said "against seeded rows", but
   the seeds are 2.3, so it could not be met in order.
@@ -232,9 +232,9 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   dropped; this Done when, including rebuilding the local database.
 
 - [ ] **2.4 The public routes.**
-  Split `backend/src/server.ts` into `app.ts` (routes, exports `app` and
+  Split `backend/server.ts` into `app.ts` (routes, exports `app` and
   `AppType`) and `server.ts` (only `serve`), so importing the type never
-  starts a server. Add `backend/src/routes/public-booking-links.ts` with the
+  starts a server. Add `backend/routes/public-booking-links.ts` with the
   two routes in Data / contracts, mounted under `/public` with a public CORS
   rule: origins from `WIDGET_ORIGINS` plus the dashboard origin,
   `credentials: false`, `GET` only. Add `WIDGET_ORIGINS` to `.env.example`.
@@ -288,11 +288,11 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
 - `packages/shared/src/zod-validation/availability/` - three validation
   schemas, exported from `zod-validation/index.ts`
 - `packages/shared/scripts/seed-dev.ts`
-- `backend/src/lib/auth-server.ts` (the first-person hook),
-  `backend/src/app.ts` (new), `backend/src/server.ts` (reduced),
-  `backend/src/routes/public-booking-links.ts`,
-  `backend/src/lib/resolve-availability.ts`,
-  `backend/src/lib/availability-rules.ts` and its test, `backend/package.json`,
+- `backend/lib/auth-server.ts` (the first-person hook),
+  `backend/app.ts` (new), `backend/server.ts` (reduced),
+  `backend/routes/public-booking-links.ts`,
+  `backend/lib/resolve-availability.ts`,
+  `backend/lib/availability-rules.ts` and its test, `backend/package.json`,
   `backend/tsconfig.json`
 - `frontend/lib/api-client.ts`, `frontend/app/page.tsx`,
   `frontend/package.json`

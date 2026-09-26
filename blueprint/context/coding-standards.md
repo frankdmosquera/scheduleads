@@ -33,7 +33,10 @@ Conventions for this monorepo: a Next.js 16 frontend, a Hono API, and
 ## File Organization
 
 No `src/` directory. The scaffolder passes `--no-src-dir`, so everything sits at
-the project root. In a monorepo these paths are relative to `frontend/`.
+the project root. In a monorepo these paths are relative to `frontend/`. The
+backend has none either (Frank, 2026-09-26): `server.ts`, `lib/` and
+`middleware/` sit straight in `backend/`, and its `tsconfig.json` excludes
+`dist` and the tests so nothing else compiles.
 
 - Components: `components/[feature]/ComponentName.tsx`
 - Pages: `app/[route]/page.tsx`
@@ -79,7 +82,7 @@ a shape on either side.
   export: `zod-validation/auth/sign-in-email-validation-schema.ts`. Each kind
   folder is one import (`@scheduleads-app/shared/zod-validation`, through its
   `index.ts`). The Drizzle tables are `db/drizzle-schema.ts`
-- `backend/src` follows the same rule (Frank, 2026-09-26): kind, then area,
+- `backend` follows the same rule (Frank, 2026-09-26): kind, then area,
   then one file per export. Every middleware is named as one
   (`requireOrganizationMiddleware`) and lives in
   `middleware/<area>/<name>.ts`; plain functions live in
@@ -142,7 +145,7 @@ a shape on either side.
 - Every signed-in API response carries `Cache-Control: no-store`, so no
   browser or proxy keeps one business's data. New dashboard routes mount the
   same `dashboardNoStoreMiddleware` as `/me`
-  (`backend/src/middleware/dashboard/dashboard-no-store-middleware.ts`)
+  (`backend/middleware/dashboard/dashboard-no-store-middleware.ts`)
 - Validate with the Zod schemas in `packages/shared` at both ends: the form
   before it sends, the route before it touches the database
 - Every app table is organization-scoped and the scope is a security boundary.
@@ -319,7 +322,7 @@ permanent truth.
   screen that depends on a business role calls Better Auth's organization
   `hasPermission` (for example `{ member: ["delete"] }`) and never compares
   `role === "owner"`. The roles and what they grant are defined once, in
-  `customStatements` and the `newRole` blocks in `backend/src/lib/auth-server.ts`.
+  `customStatements` and the `newRole` blocks in `backend/lib/auth-server.ts`.
   This keeps Better Auth's dynamic access control (roles a business defines
   for itself) a clean switch to turn on later: a hard-coded role name would
   silently ignore every custom role.
