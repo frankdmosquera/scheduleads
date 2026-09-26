@@ -348,6 +348,17 @@ in two places and silently drifted. Never reintroduce that: Architecture is one
 view for the whole system, never one per feature. If something seems to belong
 in two places, one of them links to the other rather than restating it.
 
+**The page is where a plan is read; the chat is where it is debated.**
+Decided by Frank, 2026-09-26. Before a step is built, its plan on the roadmap
+carries everything the chat explained: one picture of the whole step as a
+request or flow, then each planned piece with its own picture right under it
+in a small closed drawer (a diagram, or a drawn file tree with each file's
+`new` or `changed` tag and what it is for). Anything drawn in chat while
+planning goes onto the step in the same turn, so a week later the page still
+holds the whole reasoning and the chat never has to be scrolled back. The
+Architecture view keeps only whole-system pictures; a step's own pictures live
+in the step.
+
 **Plan first, then plan against reality.** A step is published with its plan
 before the work starts: what it does and why, its concrete pieces, its
 `Done when`. When it closes, that plan is **not rewritten to match what
