@@ -853,7 +853,7 @@
      like a plan that went perfectly, and none of them do. The snags are
      the part worth reading back in six months. */
 
-  .snags { display: flex; flex-direction: column; gap: 7px; }
+  .snags { display: flex; flex-direction: column; gap: 7px; padding: 9px 12px; border: 1px solid color-mix(in srgb, var(--fixed) 30%, var(--surface)); border-radius: 5px; background: color-mix(in srgb, var(--fixed) 7%, var(--surface)); }
 
   .snags-head {
     font-family: var(--mono);
@@ -888,6 +888,21 @@
 
   .snags b { color: var(--ink); font-weight: 600; }
 
+  /* A step's tests, in their own blue box, apart from the planned pieces: what was
+     added, how it was proved it can fail, and what was only proved by hand. */
+  .tests { display: flex; flex-direction: column; gap: 7px; padding: 11px 13px; border: 1px solid color-mix(in srgb, #3994BC 40%, var(--surface)); border-radius: 5px; background: color-mix(in srgb, #3994BC 8%, var(--surface)); }
+  .tests-head { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: #2B7DA3; }
+  .tests ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .tests li { font-size: 14.5px; line-height: 1.6; color: var(--ink-2); }
+  .tests b { color: var(--ink); font-weight: 600; }
+  .tests .rstep-when { margin-top: 4px; }
+
+  /* Inside the blue box, one white card per kind of proof: the saved tests and checks by
+     hand, then the independent review. Each card carries its own What bit when it had one. */
+  .proof-card { display: flex; flex-direction: column; gap: 8px; padding: 11px 13px; border: 1px solid color-mix(in srgb, #3994BC 35%, var(--surface)); border-radius: 5px; background: var(--surface); }
+  .card-head { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); }
+  .proof-card ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+
   /* ---------- plan vs reality ----------
      The planned pieces, kept as planned, and marked with what actually
      became of each. Rewriting the plan to match the outcome hides the
@@ -898,8 +913,11 @@
   .substeps li[data-outcome="kept"]::before    { content: "\2713"; color: var(--done); font-weight: 700; }
   .substeps li[data-outcome="changed"] { color: var(--fixed); }
   .substeps li[data-outcome="changed"]::before { content: "\21bb"; color: var(--fixed); }
-  .substeps li[data-outcome="added"]   { color: var(--pending); }
-  .substeps li[data-outcome="added"]::before   { content: "+"; color: var(--pending); }
+  /* Added means done, just not in the plan: the same green check as kept, in the same
+     column, with "added" in front of its reason. A yellow plus read as "not done". */
+  .substeps li[data-outcome="added"]   { color: var(--done); }
+  .substeps li[data-outcome="added"]::before   { content: "\2713"; color: var(--done); font-weight: 700; }
+  .substeps li[data-outcome="added"] .why::before { content: "added \00b7  "; font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--done); }
   .substeps li[data-outcome="dropped"] { color: var(--ink-3); }
   .substeps li[data-outcome="dropped"]::before { content: "\2717"; color: var(--ink-3); }
   .substeps li[data-outcome="dropped"] > s { text-decoration-color: var(--ink-3); }
@@ -1063,7 +1081,7 @@
   .verdict span { padding: 2px 7px; border-radius: 3px; border: 1px solid; }
   .verdict .v-kept    { color: var(--done);    border-color: var(--done);    background: var(--done-soft); }
   .verdict .v-changed { color: var(--fixed);   border-color: var(--fixed);   background: var(--fixed-soft); }
-  .verdict .v-added   { color: var(--pending); border-color: var(--pending); background: var(--pending-soft); }
+  .verdict .v-added   { color: var(--done);    border-color: var(--done);    background: var(--surface); }
   .verdict .v-dropped { color: var(--ink-3);   border-color: var(--rule);    background: var(--surface); }
 
   /* ---------- design option wireframes ----------
@@ -1180,6 +1198,10 @@
      the page reads like his editor in both page themes. New lines get a green bar, removed
      lines a red one; no + or - signs. */
 
+  /* Review issues: violet, the page's colour for a fault found and repaired. */
+  .drawer[data-kind="issues"] > summary { background: color-mix(in srgb, var(--fixed) 9%, var(--surface)); color: var(--fixed); }
+  .drawer[data-kind="issues"] > summary:hover { background: color-mix(in srgb, var(--fixed) 18%, var(--surface)); }
+  .drawer[data-kind="issues"][open] { border-color: color-mix(in srgb, var(--fixed) 40%, var(--surface)); }
   .drawer[data-kind="code"] > summary { background: color-mix(in srgb, #3994BC 12%, var(--surface)); color: var(--ink-2); }
   .drawer[data-kind="code"] > summary:hover { background: color-mix(in srgb, #3994BC 22%, var(--surface)); }
   .drawer[data-kind="code"][open] { border-color: color-mix(in srgb, #3994BC 45%, var(--surface)); }
@@ -1220,10 +1242,10 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.2 reviewed, 2.3&#39;s plan next</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.3 built, its review next</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
-                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="next" title="2.3 The seeds - next">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" title="2.4 The public routes">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
+                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="next" title="2.4 The public routes - next">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
                 <a class="cell" href="#item-3" data-goto="item-3" title="3 Calendar connection">3</a>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
@@ -2693,7 +2715,7 @@
               </div>
 
               <details class="drawer" data-kind="plan" open>
-                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 and 2.2 done and reviewed &middot; 2.3&#39;s plan next &middot; 2.1 to 2.6</span></summary>
+                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 and 2.2 done and reviewed &middot; 2.3 built, its review next &middot; 2.1 to 2.6</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
                   <div class="item-steps">
@@ -2736,8 +2758,8 @@
                               <li data-outcome="kept">the composite key, so hours can never name another business's person</li>
                               <li data-outcome="kept">the three hours checks in <code>packages/shared</code>: several windows a day, no overlaps, a real time zone, a real date, a country and province</li>
                               <li data-outcome="kept">one migration plus the backfill: both dev businesses got exactly one first person, named after the business; and the Better Auth hook for every new business</li>
-                              <li data-outcome="added">21 saved tests for the hours checks
-                                <em class="why">The test runner went in today, before this step. Proved they can fail: with the overlap rule switched off for a moment, the overlap test failed by name.</em></li>
+                              <li data-outcome="added">saved tests for the hours checks
+                                <em class="why">The test runner went in today, before this step. Counts and proof in Tests below.</em></li>
                               <li data-outcome="added">the database also refuses a province without its country
                                 <em class="why">The spec had this in the hours checks only. A seed script writes straight to the database, so the database should refuse it too.</em></li>
                               <li data-outcome="added"><code>updatedAt</code> refreshes on every change
@@ -2747,12 +2769,37 @@
                               <div class="snags-head">What bit</div>
                               <ul>
                                 <li><b>The migration printed what looked like two errors.</b> Both were notices from Drizzle's own ledger ("already exists, skipping"). Nothing failed, and a second run changed nothing. It is written down here so the next migration is not read as broken.</li>
-                                <li><b>"A new business gets its person" was proved in-process, not over the network.</b> The check signed in as the dev platform admin and created a business through Better Auth's own create, which passes the platform-admin check and fires the hook. It did not go through a browser or the running API. The browser path gets its own proof in 2.5, when the dashboard lists this data.</li>
-                                <li><b>"Every business has exactly one person" was only true on this laptop.</b> The reviewer found it: on a fresh database the backfill runs before the seed has made any business, and the seed skips the hook, so the dev businesses would have nobody. The check passed because this database already held its businesses. Fixed in 2.3, where the seed now makes the person when missing (F-17).</li>
                               </ul>
                             </div>
-                            <div class="rstep-when">Passed. The migration SQL shows both indexes, the key, the checks and the backfill. Each dev business has exactly one person. A new business got "Check 2.1 Painters (person)" and was deleted after. By hand, the four forbidden rows were each refused by their own rule (<code>availability_rule_business_unique</code>, <code>availability_rule_resource_unique</code>, <code>availability_rule_resource_fk</code>, <code>availability_rule_row_kind_check</code>) while two normal rows went in, all rolled back after. 21 tests pass. Both builds pass.</div>
-                            <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, over the test setup and this step, all four lenses. No P0 or P1. Two notes: <strong>F-17</strong> (P2), a fresh database gets no first person for the dev businesses, planned into 2.3 with you; <strong>F-18</strong> (P3), four hours rules had no test, fixed the same evening with four more tests, 25 in all. Receipt in <code>blueprint/context/review.md</code>.</p>
+                            <div class="tests">
+                              <div class="tests-head">How it was proved</div>
+<div class="proof-card">
+<div class="card-head">Saved tests and checks by hand</div>
+                              <ul>
+                                <li><b>Added:</b> 15 saved tests for the hours checks (a week, a one-off date, a whole row), beside the 6 that already covered the plans. 21 in the shared package at the end of the step.</li>
+                                <li><b>Added by the review:</b> 4 more, for rules that had none (F-18). 25 in all.</li>
+                                <li><b>Proved they can fail:</b> with the overlap rule switched off for a moment, the overlap test failed by name. With the horizon and notice limits removed, exactly those two new tests failed.</li>
+                                <li><b>Proved by hand, not by saved tests:</b> the four rows the database refuses, checked in <code>psql</code> and rolled back.</li>
+                              </ul>
+                              <div class="rstep-when">Passed. The migration SQL shows both indexes, the key, the checks and the backfill. Each dev business has exactly one person. A new business got "Check 2.1 Painters (person)" and was deleted after. By hand, the four forbidden rows were each refused by their own rule (<code>availability_rule_business_unique</code>, <code>availability_rule_resource_unique</code>, <code>availability_rule_resource_fk</code>, <code>availability_rule_row_kind_check</code>) while two normal rows went in, all rolled back after. 21 tests pass. Both builds pass.</div>
+                              <div class="snags">
+                                <div class="snags-head">What bit</div>
+                                <ul>
+                                  <li><b>"A new business gets its person" was proved in-process, not over the network.</b> The check signed in as the dev platform admin and created a business through Better Auth's own create, which passes the platform-admin check and fires the hook. It did not go through a browser or the running API. The browser path gets its own proof in 2.5, when the dashboard lists this data.</li>
+                                </ul>
+                              </div>
+                            </div>
+                            <div class="proof-card">
+                              <div class="card-head">Independent review</div>
+                              <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, over the test setup and this step, all four lenses. No P0 or P1. Two notes: <strong>F-17</strong> (P2), a fresh database gets no first person for the dev businesses, planned into 2.3 with you; <strong>F-18</strong> (P3), four hours rules had no test, fixed the same evening with four more tests, 25 in all. Receipt in <code>blueprint/context/review.md</code>.</p>
+                              <div class="snags">
+                                <div class="snags-head">What bit</div>
+                                <ul>
+                                  <li><b>"Every business has exactly one person" was only true on this laptop.</b> The reviewer found it: on a fresh database the backfill runs before the seed has made any business, and the seed skips the hook, so the dev businesses would have nobody. The check passed because this database already held its businesses. Fixed in 2.3, where the seed now makes the person when missing (F-17).</li>
+                                </ul>
+                              </div>
+                            </div>
+</div>
                           </div>
                         </details>
 <details class="drawer" data-kind="code">
@@ -3329,6 +3376,40 @@ import { sendLoginCode } from "./send-login-code.js";</code></pre>
   </div>
 </details>
 
+                        <details class="drawer" data-kind="issues">
+                          <summary>Review issues <span class="tag-drift">2 found &middot; 1 fixed, 1 planned into 2.3</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
+                            <div class="rows">
+                              <div class="row"><div class="row-key">F-17 &middot; P2 &middot; open</div><div class="row-val">On a brand-new machine, the dev businesses would have no first person: the migration runs before the seed makes them, and the seed skips the hook. Planned into 2.3 with you: the seed makes the person when missing.</div></div>
+                              <div class="row"><div class="row-key">F-18 &middot; P3 &middot; fixed</div><div class="row-val">Four hours rules had no test (a closed date twice, a country written out, zero days ahead, negative notice). Four tests added; removing the rules made them fail.</div></div>
+                            </div>
+                          </div>
+                        </details>
+                        <details class="drawer" data-kind="reality">
+                          <summary>Log <span class="tag-drift">2 entries, newest first</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">This step's own entries, newest first: built, reviewed, fixed. Entries about the whole item stay in the item's Log.</p>
+                            <div class="log">
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.1 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">The first per-step independent review ran as a fresh reviewer that read only the code and the spec. It rebuilt everything, reran the tests, checked the migration against the schema and probed the database. No serious findings. Its two notes: the seed must make the first person on a fresh machine (into 2.3, with your idea of fictional painting and clinic businesses for the test data), and four rules needed tests (added, 25 tests now).</p>
+                        <p class="entry-text"><strong>Housekeeping:</strong> the reviewer left a stray folder of throwaway files on your Desktop, <code>Desktop\AppData</code>, which it was not allowed to delete. It is yours to remove.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.1 built: the three tables and every business's first person</span><span class="kind-tag">Done</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">The database now has services, people and places, and bookable hours, and refuses the four things you approved it should refuse. Both dev businesses got their first person from the migration, and a business made through Better Auth got one from the hook. 21 tests check the hours rules.</p>
+                        <p class="entry-text"><strong>New on this page:</strong> the step carries its first <em>What changed in the code</em> drawer, 8 files, the real code in your editor's colours. Next is the audit and the independent review of this step, before 2.2's plan.</p>
+                      </div>
+                    </div>
+                            </div>
+                          </div>
+                        </details>
                       </div>
                     </details>
 
@@ -3369,19 +3450,39 @@ import { sendLoginCode } from "./send-login-code.js";</code></pre>
                                 <em class="why">The plan said "filter on the business first" would be enough. It is not: another business's person simply has no row here, and a person with no row follows the business's week. Without the check, the wrong person would quietly get this business's hours instead of nothing.</em></li>
                               <li data-outcome="added">"today" is the business's date, not the server's
                                 <em class="why">At 10:30pm in Edmonton the server, in UTC, is already on tomorrow. Counted from the server, today's closed day would drop off the list.</em></li>
-                              <li data-outcome="added">Vitest in the backend, with 10 saved tests
-                                <em class="why">Your yes, Sep 25. One test per rule, plus the time zone trap and the business's settings. Proved they can fail: with "today" switched to the server's date for a moment, the time zone test failed by name.</em></li>
+                              <li data-outcome="added">Vitest in the backend, and saved tests for every rule
+                                <em class="why">Your yes, Sep 25. Counts and proof in Tests below.</em></li>
                             </ul>
                             <div class="snags">
                               <div class="snags-head">What bit</div>
                               <ul>
                                 <li><b>The spec's check could not be met in order.</b> It asked for "seeded rows" one step before the seeds exist. Caught while going through the plan, before any code, and amended with you.</li>
                                 <li><b>"Filter on the business first" sounded like it covered another business's person.</b> It does not, because "no row" has a legitimate meaning here: follow the business. A missing row and a foreign person look the same unless the person is looked up on its own.</li>
-                                <li><b>Planting a bug in a brand new file needs a copy first.</b> <code>git checkout</code> cannot restore a file git has never seen. A copy had been taken, so nothing was lost, but only just.</li>
                               </ul>
                             </div>
-                            <div class="rstep-when">Passed. 10 backend tests pass, and shared's 25 still pass. By hand, with a business row and one person's row added to <code>test-salon-dev</code> and removed after: the business itself and a person with no row get the salon's week; a person with a row gets their own; <code>agency-dev</code>, which has no hours yet, gets nothing; the salon asked about the agency's person gets nothing. The database is back to 0 hours rows. Backend build passes, and no test file reaches <code>dist/</code>.</div>
-                            <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>2519644</code>. No P0 or P1. It reran every test and the build, and rechecked the database half itself on the salon (rows removed after). Three notes: <strong>F-19</strong> (P2), no test catches a person with their own row losing the business's one-off dates; it proved the gap by breaking that line in a copy and watching all 10 tests still pass. <strong>F-20</strong> (P3), one type not exported, against the naming standard. <strong>F-21</strong> (P3), the "full diff" links on this page follow the branch, so 2.1's already shows 2.2 too. Receipt in <code>blueprint/context/review.md</code>.</p>
+                            <div class="tests">
+                              <div class="tests-head">How it was proved</div>
+<div class="proof-card">
+<div class="card-head">Saved tests and checks by hand</div>
+                              <ul>
+                                <li><b>Added:</b> 10 saved tests for the rules half, in the backend's first test file (Vitest went into the backend for this step).</li>
+                                <li><b>Added by the review:</b> 1 for Ben's case (F-19). 11 in the backend; the shared package's 25 unchanged.</li>
+                                <li><b>Proved they can fail:</b> with "today" switched to the server's date, the time zone test failed by name. With the reviewer's break put back, Ben's test failed by name.</li>
+                                <li><b>Proved by hand, not by saved tests:</b> the database half, on the salon with rows added and removed after, by the builder and again by the reviewer.</li>
+                              </ul>
+                              <div class="rstep-when">Passed. 10 backend tests pass, and shared's 25 still pass. By hand, with a business row and one person's row added to <code>test-salon-dev</code> and removed after: the business itself and a person with no row get the salon's week; a person with a row gets their own; <code>agency-dev</code>, which has no hours yet, gets nothing; the salon asked about the agency's person gets nothing. The database is back to 0 hours rows. Backend build passes, and no test file reaches <code>dist/</code>.</div>
+                              <div class="snags">
+                                <div class="snags-head">What bit</div>
+                                <ul>
+                                  <li><b>Planting a bug in a brand new file needs a copy first.</b> <code>git checkout</code> cannot restore a file git has never seen. A copy had been taken, so nothing was lost, but only just.</li>
+                                </ul>
+                              </div>
+                            </div>
+                            <div class="proof-card">
+                              <div class="card-head">Independent review</div>
+                              <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>2519644</code>. No P0 or P1. It reran every test and the build, and rechecked the database half itself on the salon (rows removed after). Three notes: <strong>F-19</strong> (P2), no test catches a person with their own row losing the business's one-off dates; it proved the gap by breaking that line in a copy and watching all 10 tests still pass. <strong>F-20</strong> (P3), one type not exported, against the naming standard. <strong>F-21</strong> (P3), the "full diff" links on this page follow the branch, so 2.1's already shows 2.2 too. Receipt in <code>blueprint/context/review.md</code>.</p>
+                            </div>
+</div>
                           </div>
                         </details>
 <details class="drawer" data-kind="code">
@@ -3716,22 +3817,541 @@ describe("applyAvailabilityRules", () =&gt; {
     <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/compare/b4b39a5...98e2493">The full diff on GitHub</a></p>
   </div>
 </details>
+                        <details class="drawer" data-kind="issues">
+                          <summary>Review issues <span class="tag-drift">3 found &middot; all 3 fixed</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
+                            <div class="rows">
+                              <div class="row"><div class="row-key">F-19 &middot; P2 &middot; fixed</div><div class="row-val">No test caught Ben's case: a person who follows the business's week but has a row of his own must still get the business's extra dates. The reviewer broke that line in a copy and all 10 tests passed. Test added; it now fails on that break.</div></div>
+                              <div class="row"><div class="row-key">F-20 &middot; P3 &middot; fixed</div><div class="row-val">One type was not exported, against the naming standard. One word added.</div></div>
+                              <div class="row"><div class="row-key">F-21 &middot; P3 &middot; fixed</div><div class="row-val">The "full diff on GitHub" link at the bottom of each code drawer showed later steps too. Now pinned to the step's own commits.</div></div>
+                            </div>
+                          </div>
+                        </details>
+                        <details class="drawer" data-kind="reality">
+                          <summary>Log <span class="tag-drift">4 entries, newest first</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">This step's own entries, newest first: built, reviewed, fixed. Entries about the whole item stay in the item's Log.</p>
+                            <div class="log">
+                    <div class="entry" data-kind="fix">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">F-21 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">The "full diff on GitHub" links at the bottom of the 2.1 and 2.2 code drawers now open exactly that step's changes, not whatever the branch holds today. <code>AGENTS.md</code> now says every such link is pinned this way.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="fix">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">F-19 and F-20 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">Your call: fix both now rather than carry them. F-19: a test for Ben's case, the salon opening Nov 2 while Ben, who follows the salon's week, has his own Oct 13; he must get both. The reviewer's exact break was planted again and the new test failed by name; restored, 11 pass. F-20: one word, <code>export</code>. Both are marked fixed, not closed: only the next review can close them. F-21, the moving "full diff" links, is still open.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.2 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">A fresh reviewer read only the code and the spec, reran the tests and the build, and checked the database half itself. No serious findings. Its best note, F-19: one rule had no test guarding it. It changed that line in a copy and all 10 tests still passed, which is the kind of gap a test suite hides. Two small notes: an unexported type (F-20), and this page's "full diff" links moving with the branch (F-21).</p>
+                        <p class="entry-text"><strong>Carried risks it named:</strong> an inactive person still gets hours (the spec does not say otherwise yet; feature 5 decides who is bookable), and the hours columns trust whoever writes them, so every writer must validate, starting with 2.3's seeds.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.2 built: the one function that answers "when can a customer book?"</span><span class="kind-tag">Done</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">Given a business and, if wanted, one person, it returns their week, their one-off dates, the closed days that still apply, and the business's time zone, notice and horizon. Split in two with your yes: the rules have no database and 10 saved tests; the reader was proved by hand on the salon, with the rows removed after. Vitest is now in the backend too.</p>
+                        <p class="entry-text"><strong>One fault in the plan, found while building:</strong> filtering on the business did not stop another business's person from getting this business's week, because "no row" means "follow the business". It now checks the person belongs to the business first. Next: the audit and independent review of this step, then 2.3's plan.</p>
+                      </div>
+                    </div>
+                            </div>
+                          </div>
+                        </details>
+                        <details class="drawer" data-kind="plan">
+                          <summary>Diagrams <span class="tag-drift">3 &middot; the cases worth seeing</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">The pictures that explained this step while it was planned: the rules, why it is two halves, and where the horizon ends.</p>
+                            <figure class="fig"><svg viewBox="0 0 680 380" role="img"><title>How resolveAvailability answers for two people</title><desc>The salon's row, Ana's row and Ben's row feed one function. Ana gets her own week with Dec 24 closed. Ben gets the salon's week with Dec 24 open 10 to 2.</desc><defs><marker id="s22rules-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g class="c-gray"><rect x="40" y="40" width="180" height="76" rx="8"/><text class="th" x="130" y="64" text-anchor="middle" dominant-baseline="central">Salon's row</text><text class="ts" x="130" y="86" text-anchor="middle" dominant-baseline="central">Mon to Sat, 9 to 5</text><text class="ts" x="130" y="104" text-anchor="middle" dominant-baseline="central">closed Dec 24</text></g><g class="c-gray"><rect x="250" y="40" width="180" height="76" rx="8"/><text class="th" x="340" y="64" text-anchor="middle" dominant-baseline="central">Ana's row</text><text class="ts" x="340" y="86" text-anchor="middle" dominant-baseline="central">own week, Tue to Thu</text><text class="ts" x="340" y="104" text-anchor="middle" dominant-baseline="central">no extra dates</text></g><g class="c-gray"><rect x="460" y="40" width="180" height="76" rx="8"/><text class="th" x="550" y="64" text-anchor="middle" dominant-baseline="central">Ben's row</text><text class="ts" x="550" y="86" text-anchor="middle" dominant-baseline="central">no week of his own</text><text class="ts" x="550" y="104" text-anchor="middle" dominant-baseline="central">Dec 24, 10 to 2</text></g><line x1="130" y1="116" x2="270" y2="166" class="arr" marker-end="url(#s22rules-arrow)"/><line x1="340" y1="116" x2="340" y2="166" class="arr" marker-end="url(#s22rules-arrow)"/><line x1="550" y1="116" x2="410" y2="166" class="arr" marker-end="url(#s22rules-arrow)"/><g class="c-purple"><rect x="220" y="170" width="240" height="44" rx="8"/><text class="th" x="340" y="192" text-anchor="middle" dominant-baseline="central">resolveAvailability</text></g><line x1="300" y1="214" x2="215" y2="266" class="arr" marker-end="url(#s22rules-arrow)"/><line x1="380" y1="214" x2="465" y2="266" class="arr" marker-end="url(#s22rules-arrow)"/><g class="c-teal"><rect x="100" y="270" width="220" height="76" rx="8"/><text class="th" x="210" y="294" text-anchor="middle" dominant-baseline="central">Book with Ana</text><text class="ts" x="210" y="316" text-anchor="middle" dominant-baseline="central">Tue to Thu (her own)</text><text class="ts" x="210" y="334" text-anchor="middle" dominant-baseline="central">Dec 24 closed</text></g><g class="c-teal"><rect x="360" y="270" width="220" height="76" rx="8"/><text class="th" x="470" y="294" text-anchor="middle" dominant-baseline="central">Book with Ben</text><text class="ts" x="470" y="316" text-anchor="middle" dominant-baseline="central">Mon to Sat (the salon's)</text><text class="ts" x="470" y="334" text-anchor="middle" dominant-baseline="central">Dec 24 open, 10 to 2</text></g></svg><figcaption>The rules in one picture. A person's own week, else the business's. A closed day is closed for everyone; an extra date opens it again, for that person only. Time zone, notice and how far ahead always come from the business.</figcaption></figure>
+                            <figure class="fig"><svg viewBox="0 0 680 250" role="img"><title>resolveAvailability split into two halves</title><desc>A thin database half reads the two rows and hands them to a pure rules half. The rules half is proved by saved tests with no database; the database half by hand with rows added and removed.</desc><defs><marker id="s22split-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g class="c-gray"><rect x="60" y="40" width="240" height="60" rx="8"/><text class="th" x="180" y="62" text-anchor="middle" dominant-baseline="central">Read the two rows</text><text class="ts" x="180" y="82" text-anchor="middle" dominant-baseline="central">database, business first</text></g><line x1="300" y1="70" x2="376" y2="70" class="arr" marker-end="url(#s22split-arrow)"/><g class="c-purple"><rect x="380" y="40" width="240" height="60" rx="8"/><text class="th" x="500" y="62" text-anchor="middle" dominant-baseline="central">Apply the rules</text><text class="ts" x="500" y="82" text-anchor="middle" dominant-baseline="central">no database, pure</text></g><line x1="180" y1="100" x2="180" y2="146" class="arr" stroke-dasharray="4 3" marker-end="url(#s22split-arrow)"/><line x1="500" y1="100" x2="500" y2="146" class="arr" stroke-dasharray="4 3" marker-end="url(#s22split-arrow)"/><g class="c-teal"><rect x="60" y="150" width="240" height="60" rx="8"/><text class="th" x="180" y="172" text-anchor="middle" dominant-baseline="central">Proved by hand</text><text class="ts" x="180" y="192" text-anchor="middle" dominant-baseline="central">rows added, then removed</text></g><g class="c-teal"><rect x="380" y="150" width="240" height="60" rx="8"/><text class="th" x="500" y="172" text-anchor="middle" dominant-baseline="central">Proved by saved tests</text><text class="ts" x="500" y="192" text-anchor="middle" dominant-baseline="central">every rule, rerun every step</text></g></svg><figcaption>Why the function is two halves: the seeds arrive in 2.3, so the rules had to be provable without a database. The reader is thin; the rules carry the tests.</figcaption></figure>
+                            <figure class="fig"><svg viewBox="0 0 680 200" role="img"><title>The booking horizon for a 60-day business on Sep 25</title><desc>Dates from Sep 25, today in the business's time zone, through Nov 24 are inside the horizon. Sep 20 is past and dropped; Dec 24 is too far and dropped.</desc><line x1="40" y1="100" x2="640" y2="100" class="arr"/><g class="c-teal"><rect x="170" y="86" width="330" height="28" rx="4"/><text class="ts" x="335" y="100" text-anchor="middle" dominant-baseline="central">inside the horizon</text></g><line x1="170" y1="70" x2="170" y2="130" style="stroke:var(--fig-teal)" stroke-width="1.5"/><line x1="500" y1="70" x2="500" y2="130" style="stroke:var(--fig-teal)" stroke-width="1.5"/><text class="th" x="170" y="56" text-anchor="middle" dominant-baseline="central">Sep 25</text><text class="ts" x="170" y="148" text-anchor="middle" dominant-baseline="central">today, business time</text><text class="th" x="500" y="56" text-anchor="middle" dominant-baseline="central">Nov 24</text><text class="ts" x="500" y="148" text-anchor="middle" dominant-baseline="central">today + 60 days</text><circle cx="80" cy="100" r="5" style="fill:var(--ink-3)"/><text class="ts" x="80" y="128" text-anchor="middle" dominant-baseline="central">Sep 20</text><text class="ts" x="80" y="146" text-anchor="middle" dominant-baseline="central">past, dropped</text><circle cx="590" cy="100" r="5" style="fill:var(--ink-3)"/><text class="ts" x="590" y="128" text-anchor="middle" dominant-baseline="central">Dec 24</text><text class="ts" x="590" y="146" text-anchor="middle" dominant-baseline="central">too far, dropped</text></svg><figcaption>Where "how far ahead" ends. Today is the business's date, not the server's: at 10:30pm in Edmonton the server is already on tomorrow. A saved test checks exactly that.</figcaption></figure>
+                          </div>
+                        </details>
                       </div>
                     </details>
 
-                    <details class="rstep" id="step-2-3" data-state="planned" open>
-                      <summary><span class="sn">2.3</span><span class="sm"></span><span>The seeds</span><span class="ss">Planned</span></summary>
+                    <details class="rstep" id="step-2-3" data-state="done" open>
+                      <summary><span class="sn">2.3</span><span class="sm"></span><span>The seeds</span><span class="ss">Done</span></summary>
                       <div class="rstep-body">
-                        <p class="rstep-what">Until settings arrive in item 12, a script is the only way hours and links get into the database, for the dev businesses and for real clients. So it validates with the same schema a settings page will use, and it will not touch the real database unless told to on purpose.</p>
+                        <p class="rstep-what">Your local database gets two made-up businesses shaped like your real clients: a painting company like Primo and a bigger clinic like Face and Body. Every later feature is then built and tested against realistic shapes, not a toy. Only the local database; real clients always set their own hours in the app.</p>
                         <details class="drawer" data-kind="plan">
-                          <summary>The plan <span class="tag-drift">as written before starting &middot; 3 pieces</span></summary>
+                          <summary>The plan <span class="tag-drift">as agreed before starting &middot; 4 pieces</span></summary>
                           <div class="drawer-body">
                             <ul class="substeps">
-                              <li>The dev seed gives <code>agency-dev</code> Primo-shaped hours (several windows a day, Sunday open) and two links with buffers, and <code>test-salon-dev</code> business hours, a person with their own week, a person with only a one-off date, and a room. The first person from 2.1 is used, never duplicated</li>
-                              <li>A <code>db:seed-booking-link</code> command: adds a link, and business hours if none exist, to any business by slug, in one transaction</li>
-                              <li>It refuses anything but the local <code>_dev</code> database unless <code>--allow-remote</code> is passed</li>
+                              <li>Summit Painting (dev), <code>painting-dev</code>, owned by <code>admin@example.com</code>: Primo-shaped hours (several windows a day, Sunday open), the owner as estimator, a second estimator, six painters, and three services with buffers</li>
+                              <li>Riverbend Clinic (dev), <code>clinic-dev</code>, owned by <code>owner@example.com</code>: six practitioners with mixed hours, five rooms in the layout below, and ten of Face and Body's treatments with her real lengths</li>
+                              <li>The seed makes each business's first person when it is missing (the 2.1 review's fresh-machine gap), and checks every set of hours with the 2.1 rules before writing it</li>
+                              <li>The local database deleted and rebuilt from scratch to prove it</li>
                             </ul>
-                            <div class="rstep-when">Done when: the dev seed run twice changes nothing the second time; the command adds a link and prints its id; an unknown slug lists the real ones; and a non-dev database is refused before connecting.</div>
+                            <div class="rstep-when">Done when: the rebuilt database holds exactly that cast, with one first person per business; running the seed again changes nothing; a bad set of hours stops the seed; by hand, the weekends-only practitioner gets her own week and the one with only an extra date gets the clinic's week plus that date; all tests and both builds pass.</div>
+                            <p class="rstep-what"><strong>Approved by you, Sep 25,</strong> point by point: the two made-up businesses and the clinic's five rooms; the command for real clients dropped (a client's hours are always their own, set in the app; the one gap, your own business in feature 10, is noted there); this Done when, including rebuilding the local database.</p>
+                          </div>
+                        </details>
+                        <details class="drawer" data-kind="reality" open>
+                          <summary>What actually happened <span class="tag-drift">4 kept, 1 added &middot; review next</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">All four planned pieces went in as agreed. The one addition is a line of docs that still described the old businesses.</p>
+                            <div class="verdict">
+                              <span class="v-kept">4 as planned</span>
+                              <span class="v-added">1 added</span>
+                            </div>
+                            <ul class="substeps">
+                              <li data-outcome="kept">Summit Painting (dev): Primo-shaped hours, the owner as estimator, Marco the second estimator with his own week, six painters, three services with buffers</li>
+                              <li data-outcome="kept">Riverbend Clinic (dev): six practitioners (Sofia and Luis with their own weeks, Ana and Mei following the clinic, Priya weekends only, Daniel with one extra Sunday), the five rooms as you drew them, and ten of Face and Body's treatments with her real lengths</li>
+                              <li data-outcome="kept">the first person made when missing, and every set of hours checked by the 2.1 rules before it is written</li>
+                              <li data-outcome="kept">the local database deleted and rebuilt from scratch</li>
+                              <li data-outcome="added"><code>AGENTS.md</code> now names the two businesses
+                                <em class="why">Its Commands section still said the seed makes "one business each", with nothing about the new cast.</em></li>
+                            </ul>
+                            <div class="snags">
+                              <div class="snags-head">What bit</div>
+                              <ul>
+                                <li><b>The migration printed an error-shaped message again.</b> A <code>NOTICE</code> about a column that already exists, the same kind step 2.1 recorded. "Migrations applied successfully" is the line that counts.</li>
+                              </ul>
+                            </div>
+                            <div class="tests">
+                              <div class="tests-head">How it was proved</div>
+                              <div class="proof-card">
+                                <div class="card-head">Saved tests and checks by hand</div>
+                                <ul>
+                                  <li><b>Added:</b> no saved tests. The seed is data, not logic; the rules it relies on are already tested (2.1 and 2.2).</li>
+                                  <li><b>Proved by hand:</b> the rebuilt database holds exactly the cast: clinic 7 people, 5 rooms, 4 own weeks, 10 services; painting 8 people, 1 own week, 3 services; one first person each. A second run changed nothing.</li>
+                                  <li><b>Proved it can fail:</b> a backwards window planted in the seed stopped it with "A window has to end after it starts." and nothing was written, not even the new person.</li>
+                                  <li><b>Spot check:</b> Priya resolves to her own weekends; Daniel to the clinic's week plus Sunday Oct 18.</li>
+                                </ul>
+                                <div class="rstep-when">Passed. Rebuilt from scratch, the counts above, the second run identical, the planted mistake refused and rolled back, both spot checks right. 25 shared tests and 11 backend tests pass; both builds pass; the seed type-checks on its own.</div>
+                                <div class="snags">
+                                  <div class="snags-head">What bit</div>
+                                  <ul>
+                                    <li><b>Nothing type-checks the seed.</b> It sits outside every build, so a type error there would only show when it runs. It was checked on its own this time, and passed; any future script has the same gap.</li>
+                                    <li><b>A throwaway script cannot see the project's packages from the scratch folder.</b> The spot check took its ids from <code>psql</code> instead.</li>
+                                  </ul>
+                                </div>
+                              </div>
+                              <div class="proof-card">
+                                <div class="card-head">Independent review</div>
+                                <p class="rstep-what">Next, after the commit.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </details>
+<details class="drawer" data-kind="code">
+  <summary>What changed in the code <span class="tag-drift">1 files &middot; +256 &minus;10 lines</span></summary>
+  <div class="drawer-body">
+    <p class="drawer-what">The real code of this step, file by file, coloured like VS Code's Dark 2026. A green bar marks a new line, a red bar a removed one; a changed file shows the old block above the new. Only this project's own code: generated files and packages are left out.</p>
+<details class="codefile"><summary><code>packages/shared/scripts/seed-dev.ts</code> <span class="tag-drift">changed &middot; +256 &minus;10</span></summary><div class="codefile-body">
+<div class="code-label">Before &middot; line 1</div><pre class="code" data-lang="typescript" data-start="1" data-mark="1,2,7,12" data-kind="removed"><code>// Shared script: puts two dev accounts into an empty local database. Signup is closed,
+// so without this a fresh database has no way in. Safe to run repeatedly.
+// Run: npm run db:seed --workspace=@scheduleads-app/shared
+
+import { randomUUID } from "node:crypto";
+
+import { and, eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+
+import * as schema from "@scheduleads-app/shared/db";
+import { member, organization, user } from "@scheduleads-app/shared/db";
+
+const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+</code></pre>
+<div class="code-label">After &middot; line 1</div><pre class="code" data-lang="typescript" data-start="1" data-mark="1,2,3,4,9,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28" data-kind="added"><code>// Shared script: fills an empty local database with two dev accounts and two made-up
+// businesses shaped like the real clients, a painting company like Primo and a clinic like
+// Face and Body. Signup is closed, so without this a fresh database has no way in. Safe to
+// run repeatedly: everything is looked up first and only made when missing.
+// Run: npm run db:seed --workspace=@scheduleads-app/shared
+
+import { randomUUID } from "node:crypto";
+
+import { and, eq, isNull } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+
+import * as schema from "@scheduleads-app/shared/db";
+import {
+  availabilityRule,
+  bookingLink,
+  member,
+  organization,
+  resource,
+  user,
+} from "@scheduleads-app/shared/db";
+import {
+  businessAvailabilityRuleValidationSchema,
+  personAvailabilityRuleValidationSchema,
+  toSlug,
+  type DateHoursType,
+  type WeeklyHoursType,
+} from "@scheduleads-app/shared/zod-validation";
+
+const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+</code></pre>
+<div class="code-label">Added &middot; line 50</div><pre class="code" data-lang="typescript" data-start="50" data-mark="53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73" data-kind="added"><code>  return database;
+}
+
+// Minutes from midnight, so 9:30 reads as at(9, 30) instead of 570.
+const at = (hour: number, minute = 0) =&gt; hour * 60 + minute;
+const between = (from: number, to: number) =&gt; ({ startMinute: from, endMinute: to });
+
+type PersonSeedType = {
+  name: string;
+  kind: "person" | "place";
+  weeklyHours?: WeeklyHoursType | null; // missing = no row, follows the business's week
+  dateHours?: DateHoursType;
+};
+
+type ServiceSeedType = {
+  name: string;
+  durationMinutes: number;
+  bufferBeforeMinutes?: number;
+  bufferAfterMinutes?: number;
+};
+
+// Primo's shape: estimates early morning and evenings on weekdays, daytime at weekends.
+const paintingWeekday = [between(at(7, 30), at(8, 30)), between(at(17), at(19, 30))];
+
+// Fake addresses on purpose: login codes print in the API console, so no mailbox is needed.
+// owner@example.com is the non-admin that proves an owner cannot create a business.
+const ACCOUNTS = [</code></pre>
+<div class="code-label">Before &middot; line 41</div><pre class="code" data-lang="typescript" data-start="41" data-mark="44,50" data-kind="removed"><code>    email: "admin@example.com",
+    name: "Dev Admin",
+    role: "admin",
+    business: { name: "Agency (dev)", slug: "agency-dev" },
+  },
+  {
+    email: "owner@example.com",
+    name: "Dev Owner",
+    role: null,
+    business: { name: "Test Salon (dev)", slug: "test-salon-dev" },
+  },
+] as const;
+
+const database = assertLocalDevelopmentDatabase(process.env.DATABASE_URL);
+const client = postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () =&gt; {} });
+const db = drizzle(client, { schema });</code></pre>
+<div class="code-label">After &middot; line 78</div><pre class="code" data-lang="typescript" data-start="78" data-mark="81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220" data-kind="added"><code>    email: "admin@example.com",
+    name: "Dev Admin",
+    role: "admin",
+    business: {
+      name: "Summit Painting (dev)",
+      slug: "painting-dev",
+      hours: {
+        weeklyHours: {
+          mon: paintingWeekday,
+          tue: paintingWeekday,
+          wed: paintingWeekday,
+          thu: paintingWeekday,
+          fri: paintingWeekday,
+          sat: [between(at(9), at(17))],
+          sun: [between(at(9, 30), at(17))],
+        },
+        timezone: "America/Edmonton",
+        minimumNoticeMinutes: 240,
+        horizonDays: 60,
+        closedDates: ["2026-12-25", "2027-01-01"],
+      },
+      // The business's first person (the owner, the estimator) is made separately, below.
+      people: [
+        {
+          name: "Marco (estimator)",
+          kind: "person",
+          weeklyHours: { mon: [between(at(9), at(17))], wed: [between(at(9), at(17))] },
+        },
+        { name: "Carlos (painter)", kind: "person" },
+        { name: "Diego (painter)", kind: "person" },
+        { name: "Jorge (painter)", kind: "person" },
+        { name: "Mateo (painter)", kind: "person" },
+        { name: "Pedro (painter)", kind: "person" },
+        { name: "Tomas (painter)", kind: "person" },
+      ] satisfies PersonSeedType[],
+      services: [
+        { name: "Interior estimate", durationMinutes: 60, bufferAfterMinutes: 15 },
+        {
+          name: "Exterior estimate",
+          durationMinutes: 45,
+          bufferBeforeMinutes: 15,
+          bufferAfterMinutes: 15,
+        },
+        { name: "Colour consultation", durationMinutes: 30, bufferAfterMinutes: 10 },
+      ] satisfies ServiceSeedType[],
+    },
+  },
+  {
+    email: "owner@example.com",
+    name: "Dev Owner",
+    role: null,
+    business: {
+      name: "Riverbend Clinic (dev)",
+      slug: "clinic-dev",
+      hours: {
+        weeklyHours: {
+          mon: [between(at(9), at(19))],
+          tue: [between(at(9), at(19))],
+          wed: [between(at(9), at(19))],
+          thu: [between(at(9), at(19))],
+          fri: [between(at(9), at(19))],
+          sat: [between(at(10), at(16))],
+        },
+        timezone: "America/Edmonton",
+        minimumNoticeMinutes: 1440,
+        horizonDays: 120,
+        closedDates: ["2026-12-25", "2026-12-26", "2027-01-01"],
+      },
+      // Six practitioners with every kind of hours, then the five rooms. The room layout is
+      // the contract feature 5 wires skills and rooms-per-treatment from (current-feature.md).
+      people: [
+        {
+          name: "Sofia",
+          kind: "person",
+          weeklyHours: {
+            mon: [between(at(9), at(17))],
+            wed: [between(at(9), at(17))],
+            fri: [between(at(9), at(17))],
+          },
+        },
+        {
+          name: "Luis",
+          kind: "person",
+          weeklyHours: { tue: [between(at(12), at(19))], thu: [between(at(12), at(19))] },
+        },
+        { name: "Ana", kind: "person" },
+        { name: "Mei", kind: "person" },
+        {
+          name: "Priya",
+          kind: "person",
+          weeklyHours: { sat: [between(at(10), at(16))], sun: [between(at(10), at(16))] },
+        },
+        {
+          name: "Daniel",
+          kind: "person",
+          weeklyHours: null, // has a row only for one extra Sunday; otherwise the clinic's week
+          dateHours: [{ date: "2026-10-18", windows: [between(at(10), at(14))] }],
+        },
+        { name: "Room 1 (massage)", kind: "place" },
+        { name: "Room 2 (massage)", kind: "place" },
+        { name: "Room 3 (massage, facials)", kind: "place" },
+        { name: "Room 4 (massage, body)", kind: "place" },
+        { name: "Room 5 (laser)", kind: "place" },
+      ] satisfies PersonSeedType[],
+      // Face and Body's own treatments and lengths (face-and-body/data/servicesData.ts).
+      // Massages and the wrap leave 15 minutes after, to turn the room over.
+      services: [
+        { name: "Deep Cleansing Facial", durationMinutes: 75 },
+        { name: "Dermaplaning Facial", durationMinutes: 60 },
+        { name: "Hydra Spa Facial", durationMinutes: 70 },
+        { name: "Chemical Peel", durationMinutes: 30 },
+        { name: "Relaxation Massage", durationMinutes: 60, bufferAfterMinutes: 15 },
+        { name: "Relaxation Massage, 90 min", durationMinutes: 90, bufferAfterMinutes: 15 },
+        { name: "Deep Tissue Massage", durationMinutes: 75, bufferAfterMinutes: 15 },
+        { name: "Lymphatic Drainage Massage", durationMinutes: 60, bufferAfterMinutes: 15 },
+        { name: "Laser Hair Removal", durationMinutes: 10 },
+        { name: "Body Wrap", durationMinutes: 60, bufferAfterMinutes: 15 },
+      ] satisfies ServiceSeedType[],
+    },
+  },
+] as const;
+
+type TransactionType = Parameters&lt;Parameters&lt;ReturnType&lt;typeof drizzle&gt;["transaction"]&gt;[0]&gt;[0];
+
+// Finds a resource by its name in this business, or makes it. Returns its id and whether it was made.
+async function ensureResource(
+  tx: TransactionType,
+  organizationId: string,
+  name: string,
+  kind: "person" | "place"
+): Promise&lt;{ id: string; made: boolean }&gt; {
+  const [existing] = await tx
+    .select({ id: resource.id })
+    .from(resource)
+    .where(and(eq(resource.organizationId, organizationId), eq(resource.name, name)))
+    .limit(1);
+  if (existing) return { id: existing.id, made: false };
+
+  const id = randomUUID();
+  await tx.insert(resource).values({ id, organizationId, name, kind });
+  return { id, made: true };
+}
+
+const database = assertLocalDevelopmentDatabase(process.env.DATABASE_URL);
+const client = postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () =&gt; {} });
+const db = drizzle(client, { schema });</code></pre>
+<div class="code-label">Added &middot; line 225</div><pre class="code" data-lang="typescript" data-start="225" data-mark="228,229" data-kind="added"><code>try {
+  await db.transaction(async (tx) =&gt; {
+    for (const account of ACCOUNTS) {
+      const { business } = account;
+
+      const [existingUser] = await tx
+        .select({ id: user.id })
+        .from(user)</code></pre>
+<div class="code-label">Before &middot; line 78</div><pre class="code" data-lang="typescript" data-start="78" data-mark="81" data-kind="removed"><code>      const [existingOrg] = await tx
+        .select({ id: organization.id })
+        .from(organization)
+        .where(eq(organization.slug, account.business.slug))
+        .limit(1);
+
+      const organizationId = existingOrg?.id ?? randomUUID();</code></pre>
+<div class="code-label">After &middot; line 247</div><pre class="code" data-lang="typescript" data-start="247" data-mark="250" data-kind="added"><code>      const [existingOrg] = await tx
+        .select({ id: organization.id })
+        .from(organization)
+        .where(eq(organization.slug, business.slug))
+        .limit(1);
+
+      const organizationId = existingOrg?.id ?? randomUUID();</code></pre>
+<div class="code-label">Before &middot; line 86</div><pre class="code" data-lang="typescript" data-start="86" data-mark="89,90" data-kind="removed"><code>        // plan is left to its default, "agency", as for a business created in the app.
+        await tx.insert(organization).values({
+          id: organizationId,
+          name: account.business.name,
+          slug: account.business.slug,
+        });
+      }
+</code></pre>
+<div class="code-label">After &middot; line 255</div><pre class="code" data-lang="typescript" data-start="255" data-mark="258,259" data-kind="added"><code>        // plan is left to its default, "agency", as for a business created in the app.
+        await tx.insert(organization).values({
+          id: organizationId,
+          name: business.name,
+          slug: business.slug,
+        });
+      }
+</code></pre>
+<div class="code-label">Before &middot; line 106</div><pre class="code" data-lang="typescript" data-start="106" data-mark="116" data-kind="removed"><code>        });
+      }
+
+      const made = [
+        !existingUser &amp;&amp; "account",
+        !existingOrg &amp;&amp; "business",
+        !existingMember &amp;&amp; "membership",
+      ].filter(Boolean);
+      console.log(
+        `${account.email.padEnd(20)} ${account.role === "admin" ? "platform admin" : "ordinary owner"}, ` +
+          `owns "${account.business.name}"  ${made.length ? "(created " + made.join(", ") + ")" : "(already there)"}`
+      );
+    }
+  });</code></pre>
+<div class="code-label">After &middot; line 275</div><pre class="code" data-lang="typescript" data-start="275" data-mark="278,279,280,281,282,283,284,285,286,287,288,289,290,291,292,293,294,295,296,297,298,299,300,301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349,354,355,356,357,358,362" data-kind="added"><code>        });
+      }
+
+      // The first person, named after the business like the 2.1 migration and hook name it.
+      // Made here when missing: on a fresh database the migration's backfill ran before this
+      // business existed, and inserting it directly skips the Better Auth hook (F-17).
+      const firstPerson = await ensureResource(tx, organizationId, business.name, "person");
+
+      // Parsed before writing, so a bad week stops the whole seed instead of reaching the
+      // database, whose jsonb columns would accept it (the 2.2 review's warning).
+      const [existingBusinessHours] = await tx
+        .select({ id: availabilityRule.id })
+        .from(availabilityRule)
+        .where(
+          and(
+            eq(availabilityRule.organizationId, organizationId),
+            isNull(availabilityRule.resourceId)
+          )
+        )
+        .limit(1);
+      if (!existingBusinessHours) {
+        const hours = businessAvailabilityRuleValidationSchema.parse({
+          resourceId: null,
+          ...business.hours,
+        });
+        await tx.insert(availabilityRule).values({ id: randomUUID(), organizationId, ...hours });
+      }
+
+      let peopleMade = 0;
+      let hoursMade = 0;
+      for (const person of business.people as readonly PersonSeedType[]) {
+        const { id: resourceId, made } = await ensureResource(
+          tx,
+          organizationId,
+          person.name,
+          person.kind
+        );
+        if (made) peopleMade++;
+        if (person.weeklyHours === undefined) continue; // no row: follows the business's week
+
+        const [existingHours] = await tx
+          .select({ id: availabilityRule.id })
+          .from(availabilityRule)
+          .where(
+            and(
+              eq(availabilityRule.organizationId, organizationId),
+              eq(availabilityRule.resourceId, resourceId)
+            )
+          )
+          .limit(1);
+        if (existingHours) continue;
+
+        const hours = personAvailabilityRuleValidationSchema.parse({
+          resourceId,
+          weeklyHours: person.weeklyHours,
+          dateHours: person.dateHours ?? [],
+        });
+        await tx.insert(availabilityRule).values({ id: randomUUID(), organizationId, ...hours });
+        hoursMade++;
+      }
+
+      let servicesMade = 0;
+      for (const service of business.services as readonly ServiceSeedType[]) {
+        const slug = toSlug(service.name);
+        const [existingLink] = await tx
+          .select({ id: bookingLink.id })
+          .from(bookingLink)
+          .where(and(eq(bookingLink.organizationId, organizationId), eq(bookingLink.slug, slug)))
+          .limit(1);
+        if (existingLink) continue;
+
+        await tx.insert(bookingLink).values({ id: randomUUID(), organizationId, slug, ...service });
+        servicesMade++;
+      }
+
+      const made = [
+        !existingUser &amp;&amp; "account",
+        !existingOrg &amp;&amp; "business",
+        !existingMember &amp;&amp; "membership",
+        firstPerson.made &amp;&amp; "first person",
+        !existingBusinessHours &amp;&amp; "business hours",
+        peopleMade &amp;&amp; `${peopleMade} people and places`,
+        hoursMade &amp;&amp; `${hoursMade} people's own hours`,
+        servicesMade &amp;&amp; `${servicesMade} services`,
+      ].filter(Boolean);
+      console.log(
+        `${account.email.padEnd(20)} ${account.role === "admin" ? "platform admin" : "ordinary owner"}, ` +
+          `owns "${business.name}"  ${made.length ? "(created " + made.join(", ") + ")" : "(already there)"}`
+      );
+    }
+  });</code></pre>
+</div></details>
+    <p class="rstep-what">The full diff on GitHub: linked once the step is committed.</p>
+  </div>
+</details>
+
+                        <details class="drawer" data-kind="reality">
+                          <summary>Log <span class="tag-drift">1 entry, newest first</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">This step's own entries, newest first: built, reviewed, fixed. Entries about the whole item stay in the item's Log.</p>
+                            <div class="log">
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.3 built: two made-up businesses in your local database</span><span class="kind-tag">Done</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">The local database was deleted and rebuilt from scratch. Summit Painting and Riverbend Clinic now have their full cast, hours and services, and "Agency (dev)" and "Test Salon (dev)" are gone. Sign in as <code>admin@example.com</code> for the painting company or <code>owner@example.com</code> for the clinic. A planted mistake in the hours stopped the seed with a readable message, and nothing was written.</p>
+                      </div>
+                    </div>
+                            </div>
+                          </div>
+                        </details>
+                        <details class="drawer" data-kind="plan">
+                          <summary>Diagrams <span class="tag-drift">2 &middot; the cases worth seeing</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">The pictures this step was planned with: the two businesses, and the clinic's rooms.</p>
+                            <figure class="fig"><svg viewBox="0 0 680 420" role="img"><title>The two made-up businesses, now and later</title><desc>Seeded now: Riverbend Clinic with six practitioners with mixed hours, five rooms and ten of Face and Body's treatments; Summit Painting with the owner, a second estimator, six painters and three services. Added later to the same people: who does which treatment and which room it needs in feature 5; crews and jobs in feature 19.</desc><g class="c-teal"><rect x="40" y="30" width="290" height="186" rx="8"/><text class="th" x="60" y="54" dominant-baseline="central">Riverbend Clinic (dev)</text><text class="ts" x="60" y="80" dominant-baseline="central">owner@example.com, like Face and Body</text><text class="ts" x="60" y="104" dominant-baseline="central">6 practitioners: own weeks, following</text><text class="ts" x="60" y="122" dominant-baseline="central">the clinic, weekends only, one extra date</text><text class="ts" x="60" y="146" dominant-baseline="central">5 rooms (drawn below)</text><text class="ts" x="60" y="170" dominant-baseline="central">10 of her treatments, her real lengths;</text><text class="ts" x="60" y="188" dominant-baseline="central">massages +15 min after, room turnover</text></g><g class="c-teal"><rect x="350" y="30" width="290" height="186" rx="8"/><text class="th" x="370" y="54" dominant-baseline="central">Summit Painting (dev)</text><text class="ts" x="370" y="80" dominant-baseline="central">admin@example.com, like Primo</text><text class="ts" x="370" y="104" dominant-baseline="central">owner (estimator), a 2nd estimator,</text><text class="ts" x="370" y="122" dominant-baseline="central">6 painters</text><text class="ts" x="370" y="146" dominant-baseline="central">several windows a day, Sunday open</text><text class="ts" x="370" y="170" dominant-baseline="central">3 services: interior estimate,</text><text class="ts" x="370" y="188" dominant-baseline="central">exterior estimate, colour consult</text></g><text class="th" x="40" y="252" dominant-baseline="central">Added later, to the same people</text><g class="c-purple"><rect x="40" y="272" width="290" height="100" rx="8"/><text class="th" x="60" y="296" dominant-baseline="central">Feature 5</text><text class="ts" x="60" y="322" dominant-baseline="central">who does which treatment</text><text class="ts" x="60" y="342" dominant-baseline="central">which room each treatment needs</text></g><g class="c-purple"><rect x="350" y="272" width="290" height="100" rx="8"/><text class="th" x="370" y="296" dominant-baseline="central">Feature 19</text><text class="ts" x="370" y="322" dominant-baseline="central">crews: saved lists of painters</text><text class="ts" x="370" y="342" dominant-baseline="central">jobs: visits over several days</text></g></svg><figcaption>The two made-up businesses, shaped like your real clients. Skills, rooms per treatment, crews and jobs have no tables yet; later features add them to these same people.</figcaption></figure>
+                            <figure class="fig"><svg viewBox="0 0 680 250" role="img"><title>Riverbend Clinic's five rooms</title><desc>Rooms 1 and 2 massage only; room 3 massage and facials; room 4 massage and body treatments; room 5 laser only. Massage has four rooms, facials one shared room, laser one special room.</desc><g class="c-teal"><rect x="40" y="30" width="110" height="80" rx="8"/><text class="th" x="95" y="58" text-anchor="middle" dominant-baseline="central">Room 1</text><text class="ts" x="95" y="82" text-anchor="middle" dominant-baseline="central">massage</text></g><g class="c-teal"><rect x="165" y="30" width="110" height="80" rx="8"/><text class="th" x="220" y="58" text-anchor="middle" dominant-baseline="central">Room 2</text><text class="ts" x="220" y="82" text-anchor="middle" dominant-baseline="central">massage</text></g><g class="c-purple"><rect x="290" y="30" width="110" height="80" rx="8"/><text class="th" x="345" y="54" text-anchor="middle" dominant-baseline="central">Room 3</text><text class="ts" x="345" y="76" text-anchor="middle" dominant-baseline="central">massage</text><text class="ts" x="345" y="94" text-anchor="middle" dominant-baseline="central">+ facials</text></g><g class="c-purple"><rect x="415" y="30" width="110" height="80" rx="8"/><text class="th" x="470" y="54" text-anchor="middle" dominant-baseline="central">Room 4</text><text class="ts" x="470" y="76" text-anchor="middle" dominant-baseline="central">massage</text><text class="ts" x="470" y="94" text-anchor="middle" dominant-baseline="central">+ body wrap</text></g><g class="c-gray"><rect x="540" y="30" width="100" height="80" rx="8"/><text class="th" x="590" y="58" text-anchor="middle" dominant-baseline="central">Room 5</text><text class="ts" x="590" y="82" text-anchor="middle" dominant-baseline="central">laser only</text></g><text class="ts" x="40" y="146" dominant-baseline="central">Massage: 4 rooms. At most 4 practitioners do massage, so it never runs out.</text><text class="ts" x="40" y="170" dominant-baseline="central">Facials: only room 3, shared with massage. A massage there blocks a facial.</text><text class="ts" x="40" y="194" dominant-baseline="central">Laser: only room 5, one laser booking at a time.</text><text class="ts" x="40" y="224" dominant-baseline="central">Seeded now: the 5 rooms. Feature 5 wires treatments and skills from this exact layout.</text></svg><figcaption>The room layout you drew on Sep 25, on purpose uneven: it is the contract feature 5 wires up, not invented again.</figcaption></figure>
                           </div>
                         </details>
                       </div>
@@ -4009,22 +4629,14 @@ describe("applyAvailabilityRules", () =&gt; {
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">11 entries, newest first</span></summary>
+                <summary>Log <span class="tag-drift">7 general entries, newest first &middot; each step keeps its own</span></summary>
                 <div class="drawer-body">
                   <div class="log">
-                    <div class="entry" data-kind="fix">
+                    <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">F-19 and F-20 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 25</span></div>
-                        <p class="entry-text">Your call: fix both now rather than carry them. F-19: a test for Ben's case, the salon opening Nov 2 while Ben, who follows the salon's week, has his own Oct 13; he must get both. The reviewer's exact break was planted again and the new test failed by name; restored, 11 pass. F-20: one word, <code>export</code>. Both are marked fixed, not closed: only the next review can close them. F-21, the moving "full diff" links, is still open.</p>
-                      </div>
-                    </div>
-                    <div class="entry" data-kind="done">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">Step 2.2 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 25</span></div>
-                        <p class="entry-text">A fresh reviewer read only the code and the spec, reran the tests and the build, and checked the database half itself. No serious findings. Its best note, F-19: one rule had no test guarding it. It changed that line in a copy and all 10 tests still passed, which is the kind of gap a test suite hides. Two small notes: an unexported type (F-20), and this page's "full diff" links moving with the branch (F-21).</p>
-                        <p class="entry-text"><strong>Carried risks it named:</strong> an inactive person still gets hours (the spec does not say otherwise yet; feature 5 decides who is bookable), and the hours columns trust whoever writes them, so every writer must validate, starting with 2.3's seeds.</p>
+                        <div class="entry-top"><span class="entry-title">Each step now holds everything about itself</span><span class="kind-tag">Decided</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">Your design, worked out over the evening. Inside a step: the plan; what actually happened, with every done piece a green check and unplanned ones tagged "added"; a blue <strong>How it was proved</strong> box with one white card for the tests and one for the independent review; a small purple <strong>What bit</strong> inside whichever part caught us out, and none where nothing did; the code; the review's issues in plain words; the step's own log; and its diagrams. This log keeps only what is about the whole item. Written into <code>AGENTS.md</code>.</p>
                       </div>
                     </div>
                     <div class="entry" data-kind="decided">
@@ -4034,30 +4646,6 @@ describe("applyAvailabilityRules", () =&gt; {
                         <p class="entry-text">You noticed <code>import</code> was red on this page and purple in your VS Code, and type names orange instead of green. The cause: Dark 2026 sits on top of Dark+, and VS Code uses Dark+'s more specific rules where they exist. The page had copied only the top layer. Checked by measuring the pixels on your screen, not from memory.</p>
                         <p class="entry-text">Your call: switch to <strong>Shiki</strong>, the highlighter that uses VS Code's own grammars and colouring rules, fed your exact theme, built from the files in your VS Code install by <code>blueprint/scripts/code-theme.mjs</code>. It loads from jsdelivr; nothing was installed in the repo. The 2.1 and 2.2 drawers recoloured on their own.</p>
                         <p class="entry-text"><strong>What it cannot do:</strong> VS Code also colours TypeScript by meaning. One case is added by hand, field names in a type (<code>weeklyHours</code>) in light grey, as your editor shows them. A parameter used later in its function may still differ.</p>
-                      </div>
-                    </div>
-                    <div class="entry" data-kind="done">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">Step 2.2 built: the one function that answers "when can a customer book?"</span><span class="kind-tag">Done</span><span class="stamp">Sep 25</span></div>
-                        <p class="entry-text">Given a business and, if wanted, one person, it returns their week, their one-off dates, the closed days that still apply, and the business's time zone, notice and horizon. Split in two with your yes: the rules have no database and 10 saved tests; the reader was proved by hand on the salon, with the rows removed after. Vitest is now in the backend too.</p>
-                        <p class="entry-text"><strong>One fault in the plan, found while building:</strong> filtering on the business did not stop another business's person from getting this business's week, because "no row" means "follow the business". It now checks the person belongs to the business first. Next: the audit and independent review of this step, then 2.3's plan.</p>
-                      </div>
-                    </div>
-                    <div class="entry" data-kind="done">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">Step 2.1 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 25</span></div>
-                        <p class="entry-text">The first per-step independent review ran as a fresh reviewer that read only the code and the spec. It rebuilt everything, reran the tests, checked the migration against the schema and probed the database. No serious findings. Its two notes: the seed must make the first person on a fresh machine (into 2.3, with your idea of fictional painting and clinic businesses for the test data), and four rules needed tests (added, 25 tests now).</p>
-                        <p class="entry-text"><strong>Housekeeping:</strong> the reviewer left a stray folder of throwaway files on your Desktop, <code>Desktop\AppData</code>, which it was not allowed to delete. It is yours to remove.</p>
-                      </div>
-                    </div>
-                    <div class="entry" data-kind="done">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">Step 2.1 built: the three tables and every business's first person</span><span class="kind-tag">Done</span><span class="stamp">Sep 25</span></div>
-                        <p class="entry-text">The database now has services, people and places, and bookable hours, and refuses the four things you approved it should refuse. Both dev businesses got their first person from the migration, and a business made through Better Auth got one from the hook. 21 tests check the hours rules.</p>
-                        <p class="entry-text"><strong>New on this page:</strong> the step carries its first <em>What changed in the code</em> drawer, 8 files, the real code in your editor's colours. Next is the audit and the independent review of this step, before 2.2's plan.</p>
                       </div>
                     </div>
                     <div class="entry" data-kind="decided">

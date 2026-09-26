@@ -46,7 +46,9 @@ else.
   `agency`, and the check every module route calls. The rule that tenant
   code never reads across organizations starts here
 - [ ] 2. **Booking links, resources and availability rules** - the three
-  tables, the public read route, the seed CLI, and the shared-package layout.
+  tables, the public read route, the dev seed, and the shared-package layout.
+  (The seed CLI for real clients was dropped on 2026-09-25: a client's hours
+  are always set by the client in the app.)
   Shaped by version 8 of the booking model, approved 2026-09-25 (the build
   log's "How it all fits together").
   A booking link is a service: a length, and a buffer before and after it,
@@ -186,7 +188,11 @@ rented" rents nothing.
   (a salon) or the business assigns one (Primo's estimates)
 - [ ] 10. **Tenant zero wired: agents-web** - the agency's siteConfig holds
   its slug, the existing contact-inquiry seam calls the API, the site's
-  theme reaches the modal. Frank is the first customer
+  theme reaches the modal. Frank is the first customer.
+  Open, from 2026-09-25: this item goes live before Settings (item 12), so
+  the agency's own business has no in-app way to get its services and hours
+  yet. Decide here: move the needed part of Settings earlier, or a small
+  one-off command for this one business
 
 ## Phase 4. The CRM, first release
 

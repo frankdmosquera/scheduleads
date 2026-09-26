@@ -316,6 +316,23 @@ their plans and outcomes), **Why this item exists**, **Decisions**,
 **Contracts**, **Log**, **Notes**. Closed, the row is one line in a list of 28.
 Open, it is the whole record without leaving the page.
 
+**Each step holds everything about that step.** Decided by Frank, 2026-09-25,
+so he never has to piece a step together from the item's general log. Inside
+a step, in this order: **The plan**, **What actually happened** (the planned
+pieces, each a green check, an unplanned one tagged "added"; then one blue
+**How it was proved** box holding two white cards: **Saved tests and checks
+by hand** (tests added, how they were proved able to fail, what was only
+proved by hand, and the "Passed." result of the Done when) and **Independent
+review** (its verdict and issues). The planned pieces and each card carry
+their own small violet **What bit** block when something caught us out
+there, and none when nothing did), **What
+changed in the code**, **Review issues** (every finding its review raised, in
+plain words, with its F-number and state), **Log** (that step's own entries:
+built, reviewed, fixed), and **Diagrams** (the two or three pictures that
+explained its tricky cases while it was planned; left out when there were
+none). The item's **Log** keeps only entries about the whole item, such as
+decisions. An entry lives in one of the two, never both.
+
 The page therefore has two views and two buttons: **Roadmap**, which is home and
 what loads, and **The project**, the eight planning answers. It used to have a
 third view per feature, which meant the same steps were maintained in two places
@@ -515,8 +532,11 @@ ledger:
 Development runs against a local PostgreSQL 18, the same major version as
 Railway, in a database named `scheduleads_dev` on 127.0.0.1:5432, and `.env`
 points `DATABASE_URL` there. `db:migrate` builds a fresh one and `db:seed`
-makes it usable: it creates `admin@example.com`, the platform admin, and
-`owner@example.com`, an ordinary owner, each owning one business. Signup is
+makes it usable: it creates `admin@example.com`, the platform admin, owning
+Summit Painting (dev) (`painting-dev`, shaped like Primo), and
+`owner@example.com`, an ordinary owner, owning Riverbend Clinic (dev)
+(`clinic-dev`, shaped like Face and Body: six practitioners, five rooms, ten
+treatments). The full cast is in `packages/shared/scripts/seed-dev.ts`. Signup is
 closed, so without the seed a new database has no way in. Login codes print in
 the API's console. The seed refuses any database that is not on this machine
 or whose name does not end in `_dev`.

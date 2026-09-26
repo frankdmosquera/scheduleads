@@ -63,10 +63,11 @@ stops the build instead of failing at runtime.
   `GET /public/:slug/booking-links/:bookingLinkId`.
 - A public CORS rule for those routes, separate from the dashboard's, that
   never allows credentials, with origins from `WIDGET_ORIGINS`.
-- The seed CLI: seeds a booking link and the business's row for an existing
-  organization by slug. Plus the dev seed extended so both dev businesses
-  have bookable data, including a person with their own week, a person with
-  only a one-off date, and a place.
+- The dev seed extended so both dev businesses have bookable data: the
+  made-up painting company and clinic approved in 2.3. (A command that wrote
+  links and hours into a real client's business was dropped on 2026-09-25:
+  a client's hours are always set by the client in the app. See Out of
+  scope.)
 - The typed seam: the backend exports `AppType`, the frontend builds its
   client with `hc<AppType>` from `hono/client`, `fetchMe` moves onto it (its
   hand-written types go), and the dashboard home lists the business's active
@@ -88,7 +89,12 @@ stops the build instead of failing at runtime.
   Item 12. Here every holiday of the province is on, and closed dates and
   one-off dates are written by the seeds.
 - Any write route or settings screen for links, resources or hours. Item 12.
-  Until then the seed CLI is the only writer.
+  Until then the dev seed is the only writer, and only on the local database.
+- Any command that writes links or hours into a real client's business.
+  Dropped by Frank, 2026-09-25: hours are always the client's own, set in
+  the app; even when a new client asks for help with setup, it is done with
+  them in Settings. The one gap this leaves, the agency's own business going
+  live in item 10 before Settings exists in item 12, is noted on item 10.
 - Calendar connection and free/busy. Item 3.
 - Bookings, contacts, leads. Items 4 and 5.
 - Per-resource screens. Nothing builds one until a tenant has two people.
@@ -180,33 +186,50 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   **Approved by Frank, 2026-09-25**, point by point: the rules; the split
   and Vitest in the backend; this Done when.
 
-- [ ] **2.3 The seeds.**
-  Extend `packages/shared/scripts/seed-dev.ts` so, idempotently,
-  `agency-dev` gets a business row shaped like Primo's live schedule
-  (several windows a day, Sunday open) and two booking links with buffers,
-  and `test-salon-dev` gets a business row, a person with their own week, a
-  person with no week and one one-off date, and a place (a room). Each
-  business's first person is used, never duplicated, and **created by the
-  seed when missing**: on a fresh database the 2.1 backfill runs before the
-  seed makes any business, and the seed inserts businesses directly, so the
-  Better Auth hook never fires (review finding F-17, 2026-09-25).
-  **To discuss when 2.3's plan is gone through (Frank, 2026-09-25):** make
-  the two dev businesses fictional versions of the real client shapes: a
-  painting company (an estimator, painters who later form crews) and a
-  clinic (several practitioners with their own weeks, treatment rooms).
-  Seed only what exists by then; skills join the seed in feature 5, crews in
-  feature 19. Add
-  `packages/shared/scripts/seed-booking-link.ts` and a
-  `db:seed-booking-link` script: creates a booking link and, only if none
-  exists, the business row, for an existing organization found by `--slug`,
-  all in one transaction, validated by `availabilityRuleValidationSchema`.
-  It refuses any database that is not local and `_dev` unless
-  `--allow-remote` is passed, because this is also how a real tenant gets
-  hours until item 12.
-  **Done when:** `db:seed` run twice leaves the same row counts; the CLI adds
-  a link to `agency-dev` and prints its id; the CLI refuses an unknown slug
-  by listing real ones; and pointed at a non-`_dev` URL without
-  `--allow-remote` it refuses before connecting.
+- [x] **2.3 The seeds.**
+  Extend `packages/shared/scripts/seed-dev.ts` so, idempotently, the two dev
+  businesses are made-up versions of the real client shapes (**approved by
+  Frank, 2026-09-25**; they replace `agency-dev` and `test-salon-dev`, the
+  two logins stay):
+  - **Summit Painting (dev)**, `painting-dev`, owned by `admin@example.com`,
+    shaped like Primo: a business row with several windows a day and Sunday
+    open; the owner (first person, an estimator), a second estimator and six
+    painters; three booking links with buffers: interior estimate, exterior
+    estimate, colour consultation. Crews and jobs join in feature 19.
+  - **Riverbend Clinic (dev)**, `clinic-dev`, owned by `owner@example.com`,
+    shaped like Face and Body and bigger: a business row; six practitioners
+    with mixed hours (some their own week, some following the clinic, one
+    weekends only, one with only a one-off date); five rooms (kind `place`):
+    rooms 1 and 2 massage only, room 3 massage and facials, room 4 massage
+    and body treatments, room 5 laser only; ten of her real treatments with
+    her real lengths (from `face-and-body/data/servicesData.ts`: facials, a
+    peel, massages, laser, a body wrap), massages with 15 minutes after for
+    room turnover.
+  The room layout above is the contract for feature 5: which treatment needs
+  which room, and who does what (at most four practitioners do massage, so
+  massage never runs out of rooms; facials compete for room 3; laser has one
+  room), are wired from it then, not invented again.
+  Each business's first person is used, never duplicated, and **created by
+  the seed when missing**: on a fresh database the 2.1 backfill runs before
+  the seed makes any business, and the seed inserts businesses directly, so
+  the Better Auth hook never fires (review finding F-17, 2026-09-25). The
+  local database is rebuilt from scratch to prove it. The planned
+  `db:seed-booking-link` command for real clients was dropped on
+  2026-09-25 (see Out of scope).
+  **Done when:** the local `scheduleads_dev` is dropped and rebuilt from
+  scratch (`db:migrate`, then `db:seed`; it only ever held seed data);
+  Summit Painting then has its owner, a second estimator, six painters,
+  three booking links and its business row, and Riverbend Clinic its owner,
+  six practitioners with mixed hours, five rooms and ten booking links, each
+  business with exactly one first person; `db:seed` run a second time
+  changes no row count; every hours row is parsed by the 2.1 validation
+  schemas before it is written, and the seed stops on a bad one; by hand,
+  `resolveAvailability` gives the weekends-only practitioner her own week and
+  the practitioner with only an extra date the clinic's week plus that date;
+  all tests and both builds pass.
+  **Approved by Frank, 2026-09-25**, point by point: the two made-up
+  businesses and the clinic's five-room layout; the real-client command
+  dropped; this Done when, including rebuilding the local database.
 
 - [ ] **2.4 The public routes.**
   Split `backend/src/server.ts` into `app.ts` (routes, exports `app` and
@@ -236,7 +259,9 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   loading, empty and unreachable states. Correct the `AppType` line in
   `coding-standards.md`.
   **Done when:** signed in as `admin@example.com`, the home lists
-  `agency-dev`'s two links; then the list route is renamed on purpose and
+  `painting-dev`'s three links, and the empty state shows when they are
+  switched off for a moment (no dev business starts empty since the 2.3
+  cast was approved); then the list route is renamed on purpose and
   `npm run build --workspace=frontend` **fails with a type error** in
   `api-client.ts`, and passes again once restored. Paste both outputs into
   the step's log. Lint passes.
@@ -262,8 +287,7 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
 - `packages/shared/drizzle/` - one generated migration, plus the backfill
 - `packages/shared/src/zod-validation/availability/` - three validation
   schemas, exported from `zod-validation/index.ts`
-- `packages/shared/scripts/seed-dev.ts`, new `seed-booking-link.ts`,
-  `packages/shared/package.json` script
+- `packages/shared/scripts/seed-dev.ts`
 - `backend/src/lib/auth-server.ts` (the first-person hook),
   `backend/src/app.ts` (new), `backend/src/server.ts` (reduced),
   `backend/src/routes/public-booking-links.ts`,
@@ -458,8 +482,9 @@ build for the typed seam. Final gate: the tests,
   renamed.
 - **Port, do not copy, from `scheduleads` feature 2** (`../scheduleads`,
   branch `main`): `backend/src/routes/booking-links.ts`, the contract in
-  `packages/shared/src/api/booking-link-contract.ts`, and
-  `backend/scripts/seed-booking-link.ts`. What changed: slug-keyed routes,
+  `packages/shared/src/api/booking-link-contract.ts` (its
+  `backend/scripts/seed-booking-link.ts` is not ported: that command was
+  dropped). What changed: slug-keyed routes,
   `startMinute`/`endMinute`, a resource dimension, one-off dates, business
   settings only on the business's row, buffers on the service, horizon and
   province holidays, `timestamptz`, this repo's `refuse` error shape and
