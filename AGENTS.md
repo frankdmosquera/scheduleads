@@ -359,6 +359,10 @@ with the token colours and `#121314` background of VS Code's **Dark 2026**,
 the theme Frank uses, so the page and his editor match. Ends with a link to the
 step's commit on GitHub for the full diff.
 
+Build the drawer with `node blueprint/scripts/code-drawer.mjs` (usage at the top
+of the file), never by hand, so the line numbers are the file's own. The page
+already carries the viewer that colours and numbers it.
+
 Only the project's own code goes in the drawer: what sits in `frontend/`,
 `backend/` and `packages/shared/`, tests included, and the SQL of a migration.
 Never `node_modules`, `package-lock.json`, `dist/`, Drizzle's snapshot JSON or
