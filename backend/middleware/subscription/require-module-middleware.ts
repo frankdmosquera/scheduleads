@@ -4,7 +4,7 @@ import { createMiddleware } from "hono/factory";
 
 import { type ModuleType } from "@scheduleads-app/shared/subscriptions";
 
-import { refuse } from "../../lib/refusal/refuse.js";
+import { refuse } from "../../lib/errors/refuse.js";
 
 // A function that makes a middleware: requireModuleMiddleware("booking"). Reads what
 // requireKnownSubscriptionMiddleware stored, so no query of its own.

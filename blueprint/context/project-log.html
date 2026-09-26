@@ -4655,9 +4655,17 @@ const db = drizzle(client, { schema });</code></pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">9 general entries, newest first &middot; each step keeps its own</span></summary>
+                <summary>Log <span class="tag-drift">10 general entries, newest first &middot; each step keeps its own</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Every folder in <code>lib/</code> says what is in it</span><span class="kind-tag">Decided</span><span class="stamp">Sep 26</span></div>
+                        <p class="entry-text">Walking <code>lib/</code>, you pointed out that <code>organization/</code> and <code>refusal/</code> say nothing until opened, unlike <code>middleware/</code>. Your ask: fix every folder in one pass. <code>lib/</code> is now grouped by area: <code>auth/</code> (the Better Auth setup, the login-code sender, and <code>getOrganizationFromSession</code>, renamed from <code>getActiveOrganization</code> because it answers "which business" from the session), <code>availability/</code> (<code>apply-availability-rules.ts</code>, renamed to match the function it exports, and <code>resolve-availability.ts</code>), and <code>errors/</code> (<code>refuse.ts</code>). The two middleware that check who is signed in moved to <code>middleware/auth/</code>, matching.</p>
+                        <p class="entry-text">Written into <code>coding-standards.md</code>: a folder names its area, never a single thing inside it. Only moves and one rename; the build output, rebuilt from empty, holds only the new paths, all 36 tests pass, and the running API gave 401 signed out and the clinic's <code>/me</code> signed in. <strong>Left alone on purpose:</strong> the comment inside the already-applied migration 0001 still says <code>backend/src/lib/auth-server.ts</code>, because an applied migration is never edited; and <code>toSlug</code> still sits in <code>zod-validation/</code> though it is not a validation schema, since moving it means a new package entry: yours to call.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">

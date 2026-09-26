@@ -6,7 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { member } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
-import { auth } from "../auth-server.js";
+import { auth } from "./auth-server.js";
 
 export type ActiveOrganizationType = {
   userId: string;
@@ -18,7 +18,7 @@ export type AuthSessionType = NonNullable<Awaited<ReturnType<typeof auth.api.get
 
 // The business comes from the session and nothing else: never from a body, query,
 // path or header. That is the only thing keeping one tenant out of another's data.
-export async function getActiveOrganization(
+export async function getOrganizationFromSession(
   session: AuthSessionType
 ): Promise<ActiveOrganizationType | null> {
   const activeOrganizationId = session.session.activeOrganizationId;

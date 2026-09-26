@@ -1,16 +1,16 @@
 // Backend: when can a customer book this business, or one person in it? The one place
-// that question is answered. Reads the rows here; the rules live in availability-rules.ts.
+// that question is answered. Reads the rows here; the rules live in apply-availability-rules.ts.
 
 import { and, eq, isNull } from "drizzle-orm";
 
 import { availabilityRule, resource } from "@scheduleads-app/shared/db";
 
-import { db } from "../database.js";
+import { db } from "../../database.js";
 import {
   applyAvailabilityRules,
   type BusinessHoursInputType,
   type ResolvedAvailabilityType,
-} from "./availability-rules.js";
+} from "./apply-availability-rules.js";
 
 export type AvailabilityRuleRowType = typeof availabilityRule.$inferSelect;
 

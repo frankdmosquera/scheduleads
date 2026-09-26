@@ -88,6 +88,13 @@ a shape on either side.
   `middleware/<area>/<name>.ts`; plain functions live in
   `lib/<area>/<name>.ts`. A type sits in the file of the function that
   produces it. Frank navigates by folder and file name, not by scrolling
+- An area folder names what is in it before it is opened: `auth` (who is
+  signed in, and for which business), `availability` (when a customer can
+  book), `errors` (what the API sends back when it says no). A folder named
+  after a single thing inside it (`organization/`, `refusal/`) says nothing
+  and is not used. Today's areas: `lib/auth`, `lib/availability`,
+  `lib/errors`, `middleware/auth`, `middleware/dashboard`,
+  `middleware/subscription`
 - `frontend` is judged case by case: a piece with real logic gets its own
   file, a component that is mostly markup and CSS stays whole, however long
 
@@ -322,7 +329,7 @@ permanent truth.
   screen that depends on a business role calls Better Auth's organization
   `hasPermission` (for example `{ member: ["delete"] }`) and never compares
   `role === "owner"`. The roles and what they grant are defined once, in
-  `customStatements` and the `newRole` blocks in `backend/lib/auth-server.ts`.
+  `customStatements` and the `newRole` blocks in `backend/lib/auth/auth-server.ts`.
   This keeps Better Auth's dynamic access control (roles a business defines
   for itself) a clean switch to turn on later: a hard-coded role name would
   silently ignore every custom role.

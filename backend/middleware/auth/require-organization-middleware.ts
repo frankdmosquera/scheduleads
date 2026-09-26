@@ -2,12 +2,12 @@
 
 import { createMiddleware } from "hono/factory";
 
-import { auth } from "../../lib/auth-server.js";
+import { auth } from "../../lib/auth/auth-server.js";
 import {
-  getActiveOrganization,
+  getOrganizationFromSession,
   type ActiveOrganizationType,
-} from "../../lib/organization/get-active-organization.js";
-import { refuse } from "../../lib/refusal/refuse.js";
+} from "../../lib/auth/get-organization-from-session.js";
+import { refuse } from "../../lib/errors/refuse.js";
 
 // The person, kept apart from the business: an audit trail records one, a lead belongs to the other.
 export type SessionUserType = {
@@ -32,7 +32,7 @@ export const requireOrganizationMiddleware = createMiddleware(async (c, next) =>
   }
 
   // The session is passed in, not re-read, to save a database query on every request.
-  const activeOrganization = await getActiveOrganization(session);
+  const activeOrganization = await getOrganizationFromSession(session);
   // 403 no_active_organization: signed in, but no single business to act for.
   if (!activeOrganization) {
     return c.json(

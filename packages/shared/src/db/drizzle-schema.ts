@@ -50,7 +50,7 @@ export const session = pgTable("session", {
     .references(() => user.id, { onDelete: "cascade" }),
 
   // The business this session acts for: the source of every organizationId the API uses.
-  // Filled at sign-in by the session hook in backend/src/lib/auth-server.ts.
+  // Filled at sign-in by the session hook in backend/lib/auth/auth-server.ts.
   activeOrganizationId: text("activeOrganizationId"),
 
   impersonatedBy: text("impersonatedBy"), // set while the platform admin impersonates someone

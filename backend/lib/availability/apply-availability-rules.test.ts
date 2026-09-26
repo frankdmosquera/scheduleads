@@ -4,7 +4,7 @@ import {
   applyAvailabilityRules,
   type BusinessHoursInputType,
   type PersonHoursInputType,
-} from "./availability-rules.js";
+} from "./apply-availability-rules.js";
 
 const nineToFive = { startMinute: 540, endMinute: 1020 };
 const tenToTwo = { startMinute: 600, endMinute: 840 };

@@ -4,7 +4,7 @@
 
 import { cors } from "hono/cors";
 
-import { appOrigin } from "../../lib/auth-server.js";
+import { appOrigin } from "../../lib/auth/auth-server.js";
 
 export const dashboardCorsMiddleware = cors({
   origin: appOrigin,

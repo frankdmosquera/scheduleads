@@ -12,7 +12,7 @@ import { eq } from "drizzle-orm";
 import * as schema from "@scheduleads-app/shared/db";
 import { member, resource } from "@scheduleads-app/shared/db";
 
-import { db } from "../database.js";
+import { db } from "../../database.js";
 import { sendLoginCode } from "./send-login-code.js";
 
 if (!process.env.BETTER_AUTH_SECRET) {

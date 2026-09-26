@@ -3,8 +3,8 @@
 import { isAPIError } from "better-auth/api";
 import { createMiddleware } from "hono/factory";
 
-import { auth } from "../../lib/auth-server.js";
-import { refuse } from "../../lib/refusal/refuse.js";
+import { auth } from "../../lib/auth/auth-server.js";
+import { refuse } from "../../lib/errors/refuse.js";
 
 // What a route can require, e.g. { organization: ["update"] }. Typed from the
 // permission list in auth-server.ts, so an action that does not exist won't compile.

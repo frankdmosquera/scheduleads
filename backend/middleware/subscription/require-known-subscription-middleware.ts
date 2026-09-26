@@ -13,7 +13,7 @@ import {
 import { organization } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
-import { refuse } from "../../lib/refusal/refuse.js";
+import { refuse } from "../../lib/errors/refuse.js";
 
 // Adds `subscription` and `organizationDetails` to Hono's context. Only the resolved tier
 // and limits go on it, never the raw plan string.
