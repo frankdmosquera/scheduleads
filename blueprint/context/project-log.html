@@ -156,8 +156,8 @@
   .bar nav[data-menu][hidden] { display: none; }
   .bar nav[data-menu="project"] .strip-cells, .bar nav[data-menu="architecture"] .strip-cells { flex-wrap: wrap; }
   /* Each Project and Architecture section is outlined in its own color (below), no fill, so
-     a glance says where one ends. The one being read gets a green edge, and its menu link a
-     green border: you always know where you are without closing anything. */
+     a glance says where one ends. The one being read gets a thicker left edge in its color, and its menu button
+     turns that color: you always know where you are without closing anything. */
   #view-project > section, #view-architecture > section { padding: 18px 20px 22px; border: 1px solid var(--rule-soft); border-left: 3px solid transparent; border-radius: 10px; }
   /* One color per section, worn by its menu button too, so a jump lands on the color it came from. */
   [data-color="blue"] { --sec: #3B6FD8; }
@@ -168,10 +168,11 @@
   [data-color="slate"] { --sec: #5B6678; }
   #view-project > section[data-color], #view-architecture > section[data-color] { border-color: color-mix(in srgb, var(--sec) 55%, var(--ground)); }
   #view-project > section[data-color] > h2, #view-architecture > section[data-color] > h2 { color: color-mix(in srgb, var(--sec) 75%, var(--ink)); border-bottom-color: color-mix(in srgb, var(--sec) 35%, var(--ground)); }
-  .cell--text[data-color] { background: transparent; border-color: color-mix(in srgb, var(--sec) 70%, var(--surface)); color: color-mix(in srgb, var(--sec) 75%, var(--ink)); }
+  .cell--text[data-color] { background: transparent; }
   #view-architecture .map-what { font-size: 14px; color: var(--ink-3); }
-  #view-project > section.is-current-section, #view-architecture > section.is-current-section { border-left-color: var(--done); }
-  .cell--text.is-current { border-color: var(--done); color: var(--done); }
+  #view-project > section.is-current-section, #view-architecture > section.is-current-section { border-left-color: var(--sec); }
+  /* A button stays plain until its section is on screen; then it wears that section's color. */
+  .cell--text[data-color].is-current { border-color: var(--sec); color: color-mix(in srgb, var(--sec) 75%, var(--ink)); }
   #view-architecture section, #view-project section { scroll-margin-top: 150px; }
   #arch-booking-model, #arch-versions, #arch-not-in-model, #arch-folders { scroll-margin-top: 150px; }
   a.cell:hover { border-color: var(--ink-3); color: var(--ink); }
