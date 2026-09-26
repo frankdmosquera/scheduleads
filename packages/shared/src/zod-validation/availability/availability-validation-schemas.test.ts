@@ -101,6 +101,28 @@ describe("availabilityRuleValidationSchema", () => {
     expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
   });
 
+  test("refuses the same closed date twice", () => {
+    const row = { ...primoBusinessRow, closedDates: ["2026-12-25", "2026-12-25"] };
+    expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
+  });
+
+  test("refuses a country or province written out instead of its code", () => {
+    const countryWrittenOut = { ...primoBusinessRow, holidayCountry: "Canada" };
+    const provinceWrittenOut = { ...primoBusinessRow, holidayRegion: "Alberta" };
+    expect(availabilityRuleValidationSchema.safeParse(countryWrittenOut).success).toBe(false);
+    expect(availabilityRuleValidationSchema.safeParse(provinceWrittenOut).success).toBe(false);
+  });
+
+  test("refuses booking zero days ahead", () => {
+    const row = { ...primoBusinessRow, horizonDays: 0 };
+    expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
+  });
+
+  test("refuses negative notice", () => {
+    const row = { ...primoBusinessRow, minimumNoticeMinutes: -30 };
+    expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
+  });
+
   test("refuses a province without its country", () => {
     const row = { ...primoBusinessRow, holidayCountry: null };
     expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);

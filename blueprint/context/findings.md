@@ -130,3 +130,45 @@ item 3b decides the invitation flow, and correct the `user.role` contract and
 comments to say a platform admin can set it through the admin plugin's
 endpoint, or record either as accepted with the reason.
 **Resolution:**
+
+### F-17 [P2] open - A database rebuilt from migrations and the seed has businesses with no first person
+
+**File:** packages/shared/scripts/seed-dev.ts:87
+**Found:** 2026-09-25 by /audit independent (scope: current; lens: quality)
+**Why it matters:** Step 2.1 makes "every business has a first person" an
+invariant and states it in `drizzle-schema.ts:138`: made by migration 0001 for
+businesses that existed then, and by the `afterCreateOrganization` hook for
+every new one. `seed-dev.ts` is a third way a business is created, and it
+inserts `organization` rows directly through Drizzle, so the Better Auth hook
+never runs. On a fresh database, the documented rebuild path (`AGENTS.md`:
+"`db:migrate` builds a fresh one and `db:seed` makes it usable"; the workspace
+rule that each machine rebuilds its local database from migrations and the
+seed) runs the migration's backfill against zero organizations, then the seed
+creates `agency-dev` and `test-salon-dev` with no resource. This machine's
+database hides it because both businesses existed before 0001 was applied
+(checked: one `person` each). Nothing reads `resource` yet, so nothing fails
+today, but step 2.3's plan says "The first person every business already has
+from 2.1 is used, never duplicated", which is false on any other machine.
+**Suggested fix:** In `seed-dev.ts`, after the organization is found or made,
+insert its first person (kind `person`, named after the business) when it has
+no resource, in the same transaction. This can land in step 2.3, which already
+edits this file, but correct the 2.3 plan text now so it says the seed creates
+the person when missing rather than assuming it exists.
+**Resolution:** Still open. Planned into step 2.3 with Frank on 2026-09-25: the seed creates each dev business's first person when missing; the spec's 2.3 text was corrected the same day.
+
+### F-18 [P3] fixed - Several refinements in the business-row schema have no test
+
+**File:** packages/shared/src/zod-validation/availability/availability-rule-validation-schema.ts:28
+**Found:** 2026-09-25 by /audit independent (scope: current; lens: tests)
+**Why it matters:** The standard (`coding-standards.md`, Testing) asks for tests
+on validators where a wrong answer is possible. The 15 new tests cover the
+week, the one-off dates and four rule cases, but not the hand-written
+duplicate-closed-date refine (line 28), the `holidayCountry` and
+`holidayRegion` patterns (lines 31-40, e.g. a lowercase `ca` or a four
+character region), `horizonDays` at 0, or a negative `minimumNoticeMinutes`.
+Each mirrors a database check or a spec rule, so a regression there would
+only surface as a raw constraint error from a writer in 2.3 or item 12.
+**Suggested fix:** Add one refusal test per rule to
+`availability-validation-schemas.test.ts`, ideally asserting the issue path
+(`holidayRegion`, `closedDates`) rather than only `success === false`.
+**Resolution:** Fixed 2026-09-25 on Frank's yes: four tests added (a closed date twice, country and province written out instead of their codes, zero days ahead, negative notice). Removing the horizon and notice limits made exactly those two tests fail. Awaits the next review pass to close.

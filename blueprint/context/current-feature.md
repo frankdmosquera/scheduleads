@@ -174,8 +174,17 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   `agency-dev` gets a business row shaped like Primo's live schedule
   (several windows a day, Sunday open) and two booking links with buffers,
   and `test-salon-dev` gets a business row, a person with their own week, a
-  person with no week and one one-off date, and a place (a room). The first
-  person every business already has from 2.1 is used, never duplicated. Add
+  person with no week and one one-off date, and a place (a room). Each
+  business's first person is used, never duplicated, and **created by the
+  seed when missing**: on a fresh database the 2.1 backfill runs before the
+  seed makes any business, and the seed inserts businesses directly, so the
+  Better Auth hook never fires (review finding F-17, 2026-09-25).
+  **To discuss when 2.3's plan is gone through (Frank, 2026-09-25):** make
+  the two dev businesses fictional versions of the real client shapes: a
+  painting company (an estimator, painters who later form crews) and a
+  clinic (several practitioners with their own weeks, treatment rooms).
+  Seed only what exists by then; skills join the seed in feature 5, crews in
+  feature 19. Add
   `packages/shared/scripts/seed-booking-link.ts` and a
   `db:seed-booking-link` script: creates a booking link and, only if none
   exists, the business row, for an existing organization found by `--slug`,

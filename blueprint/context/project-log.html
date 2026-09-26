@@ -1226,10 +1226,10 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.1 built, in review</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.2&#39;s plan, your yes</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
-                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="active" title="2.1 The three tables, the first person, and their validation - built, in review">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" title="2.2 The one function that resolves hours">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" title="2.3 The seeds">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" title="2.4 The public routes">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
+                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="next" title="2.2 The one function that resolves hours - next">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" title="2.3 The seeds">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" title="2.4 The public routes">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
                 <a class="cell" href="#item-3" data-goto="item-3" title="3 Calendar connection">3</a>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
@@ -2699,13 +2699,13 @@
               </div>
 
               <details class="drawer" data-kind="plan" open>
-                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 built, in review &middot; 2.1 to 2.6</span></summary>
+                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 done &middot; 2.2&#39;s plan next &middot; 2.1 to 2.6</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
                   <div class="item-steps">
 
-                    <details class="rstep" id="step-2-1" data-state="active" open>
-                      <summary><span class="sn">2.1</span><span class="sm"></span><span>The three tables, the first person, and their validation</span><span class="ss">Built · in review</span></summary>
+                    <details class="rstep" id="step-2-1" data-state="done">
+                      <summary><span class="sn">2.1</span><span class="sm"></span><span>The three tables, the first person, and their validation</span><span class="ss">Done</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what">Adds <code>resource</code>, <code>booking_link</code> and <code>availability_rule</code> to the database, and gives every business its first person. The hard part is the rule's uniqueness: one row for the business, one per person, and the database, not the code, refusing a second one. A plain unique constraint looks right and silently allows two business rows, because Postgres treats empty values as all different. The database also refuses business settings on a person's row, so nothing gets copied and nothing drifts.</p>
                         <p class="rstep-what">Where these three tables sit in the whole system is drawn once, under <strong>How it all fits together</strong> at the top of the roadmap.</p>
@@ -2727,7 +2727,7 @@
                         </details>
 
                         <details class="drawer" data-kind="reality" open>
-                          <summary>What actually happened <span class="tag-drift">7 kept, 3 added &middot; review next</span></summary>
+                          <summary>What actually happened <span class="tag-drift">7 kept, 3 added &middot; review passed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">Every planned piece went in as written. The three additions are small, and each one closes a gap the plan left open.</p>
                             <div class="verdict">
@@ -2754,13 +2754,15 @@
                               <ul>
                                 <li><b>The migration printed what looked like two errors.</b> Both were notices from Drizzle's own ledger ("already exists, skipping"). Nothing failed, and a second run changed nothing. It is written down here so the next migration is not read as broken.</li>
                                 <li><b>"A new business gets its person" was proved in-process, not over the network.</b> The check signed in as the dev platform admin and created a business through Better Auth's own create, which passes the platform-admin check and fires the hook. It did not go through a browser or the running API. The browser path gets its own proof in 2.5, when the dashboard lists this data.</li>
+                                <li><b>"Every business has exactly one person" was only true on this laptop.</b> The reviewer found it: on a fresh database the backfill runs before the seed has made any business, and the seed skips the hook, so the dev businesses would have nobody. The check passed because this database already held its businesses. Fixed in 2.3, where the seed now makes the person when missing (F-17).</li>
                               </ul>
                             </div>
                             <div class="rstep-when">Passed. The migration SQL shows both indexes, the key, the checks and the backfill. Each dev business has exactly one person. A new business got "Check 2.1 Painters (person)" and was deleted after. By hand, the four forbidden rows were each refused by their own rule (<code>availability_rule_business_unique</code>, <code>availability_rule_resource_unique</code>, <code>availability_rule_resource_fk</code>, <code>availability_rule_row_kind_check</code>) while two normal rows went in, all rolled back after. 21 tests pass. Both builds pass.</div>
+                            <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, over the test setup and this step, all four lenses. No P0 or P1. Two notes: <strong>F-17</strong> (P2), a fresh database gets no first person for the dev businesses, planned into 2.3 with you; <strong>F-18</strong> (P3), four hours rules had no test, fixed the same evening with four more tests, 25 in all. Receipt in <code>blueprint/context/review.md</code>.</p>
                           </div>
                         </details>
 <details class="drawer" data-kind="code">
-  <summary>What changed in the code <span class="tag-drift">8 files &middot; +484 &minus;2 lines</span></summary>
+  <summary>What changed in the code <span class="tag-drift">8 files &middot; +506 &minus;2 lines</span></summary>
   <div class="drawer-body">
     <p class="drawer-what">The real code of this step, file by file, coloured like VS Code's Dark 2026. A green bar marks a new line, a red bar a removed one; a changed file shows the old block above the new. Only this project's own code: generated files and packages are left out.</p>
 <details class="codefile"><summary><code>packages/shared/src/db/drizzle-schema.ts</code> <span class="tag-drift">changed &middot; +148 &minus;1</span></summary><div class="codefile-body">
@@ -3151,7 +3153,7 @@ export * from "./availability/weekly-hours-validation-schema.js";
 export * from "./availability/date-hours-validation-schema.js";
 export * from "./availability/availability-rule-validation-schema.js";</code></pre>
 </div></details>
-<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/availability-validation-schemas.test.ts</code> <span class="tag-drift">new &middot; 108 lines</span></summary><div class="codefile-body">
+<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/availability-validation-schemas.test.ts</code> <span class="tag-drift">new &middot; 130 lines</span></summary><div class="codefile-body">
 <pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>import { describe, expect, test } from "vitest";
 
 import { availabilityRuleValidationSchema } from "./availability-rule-validation-schema.js";
@@ -3255,6 +3257,28 @@ describe("availabilityRuleValidationSchema", () =&gt; {
     expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
   });
 
+  test("refuses the same closed date twice", () =&gt; {
+    const row = { ...primoBusinessRow, closedDates: ["2026-12-25", "2026-12-25"] };
+    expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
+  });
+
+  test("refuses a country or province written out instead of its code", () =&gt; {
+    const countryWrittenOut = { ...primoBusinessRow, holidayCountry: "Canada" };
+    const provinceWrittenOut = { ...primoBusinessRow, holidayRegion: "Alberta" };
+    expect(availabilityRuleValidationSchema.safeParse(countryWrittenOut).success).toBe(false);
+    expect(availabilityRuleValidationSchema.safeParse(provinceWrittenOut).success).toBe(false);
+  });
+
+  test("refuses booking zero days ahead", () =&gt; {
+    const row = { ...primoBusinessRow, horizonDays: 0 };
+    expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
+  });
+
+  test("refuses negative notice", () =&gt; {
+    const row = { ...primoBusinessRow, minimumNoticeMinutes: -30 };
+    expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
+  });
+
   test("refuses a province without its country", () =&gt; {
     const row = { ...primoBusinessRow, holidayCountry: null };
     expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
@@ -3307,14 +3331,14 @@ import { sendLoginCode } from "./send-login-code.js";</code></pre>
         organization: {
           additionalFields: {</code></pre>
 </div></details>
-    <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/commits/feature/booking-links-resources-and-availability-rules">The full diff on GitHub</a></p>
+    <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/compare/cb8e09c...feature/booking-links-resources-and-availability-rules">The full diff on GitHub</a></p>
   </div>
 </details>
 
                       </div>
                     </details>
 
-                    <details class="rstep" id="step-2-2" data-state="planned">
+                    <details class="rstep" id="step-2-2" data-state="planned" open>
                       <summary><span class="sn">2.2</span><span class="sm"></span><span>The one function that resolves hours</span><span class="ss">Planned</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what"><code>resolveAvailability</code>: given a business and optionally a person, it works out that person's bookable hours. Their own week if they have one, otherwise the business's; their one-off dates; the business's closed days and holidays, minus any date a one-off date opens; and the business's time zone, notice and horizon. Every later item that asks "when can this be booked" calls this and nothing else, so these rules exist in exactly one place.</p>
@@ -3623,9 +3647,17 @@ import { sendLoginCode } from "./send-login-code.js";</code></pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">6 entries, newest first</span></summary>
+                <summary>Log <span class="tag-drift">7 entries, newest first</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.1 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">The first per-step independent review ran as a fresh reviewer that read only the code and the spec. It rebuilt everything, reran the tests, checked the migration against the schema and probed the database. No serious findings. Its two notes: the seed must make the first person on a fresh machine (into 2.3, with your idea of fictional painting and clinic businesses for the test data), and four rules needed tests (added, 25 tests now).</p>
+                        <p class="entry-text"><strong>Housekeeping:</strong> the reviewer left a stray folder of throwaway files on your Desktop, <code>Desktop\AppData</code>, which it was not allowed to delete. It is yours to remove.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="done">
                       <div class="dot"></div>
                       <div class="entry-body">
