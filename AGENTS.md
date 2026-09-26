@@ -332,6 +332,15 @@ entries: built, reviewed, fixed). The item's **Log** keeps only entries about
 the whole item, such as decisions. An entry lives in one of the two, never
 both.
 
+**A step's plan comes in three parts** (Frank, 2026-09-26), each its own
+colored chunk with its state and date: **Part 1, What it builds** (the
+numbered pieces, each with its picture), **Part 2, Open questions** (whatever
+still needs his call, with its picture; it joins Part 1 once answered, and the
+chunk is left out when nothing is open), and **Part 3, Done when** (the checks
+agreed now, run once it is built). The numbers count pieces of the plan, never
+work done: the step says "nothing built yet" until it is built. The chat uses
+the same three names.
+
 **Pictures live with what they explain** (Frank, 2026-09-26; there is no
 separate Diagrams drawer any more). The plan opens with one picture of the
 whole step, and each planned piece has its own picture in a small closed
