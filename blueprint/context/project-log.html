@@ -1242,7 +1242,7 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.3 reviewed, its 4 small issues</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.3 done, 2.4&#39;s plan next</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
                 <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="next" title="2.4 The public routes - next">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
@@ -2715,7 +2715,7 @@
               </div>
 
               <details class="drawer" data-kind="plan" open>
-                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.3 done and reviewed &middot; 2.3&#39;s small issues, then 2.4&#39;s plan &middot; 2.1 to 2.6</span></summary>
+                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.3 done and reviewed &middot; 2.4&#39;s plan next &middot; 2.1 to 2.6</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
                   <div class="item-steps">
@@ -4332,22 +4332,29 @@ const db = drizzle(client, { schema });</code></pre>
 </details>
 
                         <details class="drawer" data-kind="issues">
-                          <summary>Review issues <span class="tag-drift">4 found &middot; all small, open</span></summary>
+                          <summary>Review issues <span class="tag-drift">4 found &middot; all 4 fixed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
                             <div class="rows">
-                              <div class="row"><div class="row-key">F-22 &middot; P3 &middot; open</div><div class="row-val">The seed's dates are fixed calendar dates. After Oct 18, 2026 Daniel's extra Sunday is in the past, so the clinic loses its "only an extra date" case, and the closed days run out in 2027.</div></div>
-                              <div class="row"><div class="row-key">F-23 &middot; P3 &middot; open</div><div class="row-val">A made-up person given an extra date but no week at all is skipped without a word. Daniel only works because his entry says "no week" out loud.</div></div>
-                              <div class="row"><div class="row-key">F-24 &middot; P3 &middot; open</div><div class="row-val">Three helper types in the seed are not exported, against the naming standard (the same rule as F-20).</div></div>
-                              <div class="row"><div class="row-key">F-25 &middot; P3 &middot; open</div><div class="row-val">On another machine whose local database was not rebuilt, the seed adds the two new businesses beside the old ones, so each login ends up in two businesses, and nothing says to rebuild.</div></div>
+                              <div class="row"><div class="row-key">F-22 &middot; P3 &middot; fixed</div><div class="row-val">The seed's dates are fixed calendar dates. After Oct 18, 2026 Daniel's extra Sunday is in the past, so the clinic loses its "only an extra date" case, and the closed days run out in 2027.</div></div>
+                              <div class="row"><div class="row-key">F-23 &middot; P3 &middot; fixed</div><div class="row-val">A made-up person given an extra date but no week at all is skipped without a word. Daniel only works because his entry says "no week" out loud.</div></div>
+                              <div class="row"><div class="row-key">F-24 &middot; P3 &middot; fixed</div><div class="row-val">Three helper types in the seed are not exported, against the naming standard (the same rule as F-20).</div></div>
+                              <div class="row"><div class="row-key">F-25 &middot; P3 &middot; fixed</div><div class="row-val">On another machine whose local database was not rebuilt, the seed adds the two new businesses beside the old ones, so each login ends up in two businesses, and nothing says to rebuild.</div></div>
                             </div>
                           </div>
                         </details>
                         <details class="drawer" data-kind="reality">
-                          <summary>Log <span class="tag-drift">2 entries, newest first</span></summary>
+                          <summary>Log <span class="tag-drift">3 entries, newest first</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">This step's own entries, newest first: built, reviewed, fixed. Entries about the whole item stay in the item's Log.</p>
                             <div class="log">
+                    <div class="entry" data-kind="fix">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">F-22 to F-25 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 26</span></div>
+                        <p class="entry-text">All four, on your yes. Another computer's practice database now gets the old pretend businesses removed automatically (your option A). The seed's dates are relative to the day it runs, so they never go stale. A pretend person with only an extra day is no longer skipped. Three types exported. Each was proved by planting the problem and watching the seed handle it; the practice database was rebuilt once more along the way.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="done">
                       <div class="dot"></div>
                       <div class="entry-body">

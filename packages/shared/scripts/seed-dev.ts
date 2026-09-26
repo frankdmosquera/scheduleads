@@ -6,7 +6,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -54,14 +54,25 @@ function assertLocalDevelopmentDatabase(url: string | undefined): string {
 const at = (hour: number, minute = 0) => hour * 60 + minute;
 const between = (from: number, to: number) => ({ startMinute: from, endMinute: to });
 
-type PersonSeedType = {
+// Dates relative to the day the seed runs, so they never go stale: rebuilding the practice
+// database makes them fresh again. Counted in UTC; a day either way does not matter here.
+const DAY_MS = 24 * 60 * 60 * 1000;
+const daysFromToday = (days: number) =>
+  new Date(Date.now() + days * DAY_MS).toISOString().slice(0, 10);
+function sundayAfterDays(days: number): string {
+  const date = new Date(Date.now() + days * DAY_MS);
+  date.setUTCDate(date.getUTCDate() + ((7 - date.getUTCDay()) % 7)); // forward to a Sunday
+  return date.toISOString().slice(0, 10);
+}
+
+export type ResourceSeedType = {
   name: string;
   kind: "person" | "place";
   weeklyHours?: WeeklyHoursType | null; // missing = no row, follows the business's week
   dateHours?: DateHoursType;
 };
 
-type ServiceSeedType = {
+export type ServiceSeedType = {
   name: string;
   durationMinutes: number;
   bufferBeforeMinutes?: number;
@@ -73,6 +84,10 @@ const paintingWeekday = [between(at(7, 30), at(8, 30)), between(at(17), at(19, 3
 
 // Fake addresses on purpose: login codes print in the API console, so no mailbox is needed.
 // owner@example.com is the non-admin that proves an owner cannot create a business.
+// The made-up businesses this seed used to make, before 2026-09-25. A practice database on
+// another computer may still hold them; they are removed so the old and new never mix.
+const RETIRED_DEV_SLUGS = ["agency-dev", "test-salon-dev"];
+
 const ACCOUNTS = [
   {
     email: "admin@example.com",
@@ -94,7 +109,7 @@ const ACCOUNTS = [
         timezone: "America/Edmonton",
         minimumNoticeMinutes: 240,
         horizonDays: 60,
-        closedDates: ["2026-12-25", "2027-01-01"],
+        closedDates: [daysFromToday(21)], // inside the 60-day window
       },
       // The business's first person (the owner, the estimator) is made separately, below.
       people: [
@@ -109,7 +124,7 @@ const ACCOUNTS = [
         { name: "Mateo (painter)", kind: "person" },
         { name: "Pedro (painter)", kind: "person" },
         { name: "Tomas (painter)", kind: "person" },
-      ] satisfies PersonSeedType[],
+      ] satisfies ResourceSeedType[],
       services: [
         { name: "Interior estimate", durationMinutes: 60, bufferAfterMinutes: 15 },
         {
@@ -141,7 +156,7 @@ const ACCOUNTS = [
         timezone: "America/Edmonton",
         minimumNoticeMinutes: 1440,
         horizonDays: 120,
-        closedDates: ["2026-12-25", "2026-12-26", "2027-01-01"],
+        closedDates: [daysFromToday(21)],
       },
       // Six practitioners with every kind of hours, then the five rooms. The room layout is
       // the contract feature 5 wires skills and rooms-per-treatment from (current-feature.md).
@@ -171,14 +186,14 @@ const ACCOUNTS = [
           name: "Daniel",
           kind: "person",
           weeklyHours: null, // has a row only for one extra Sunday; otherwise the clinic's week
-          dateHours: [{ date: "2026-10-18", windows: [between(at(10), at(14))] }],
+          dateHours: [{ date: sundayAfterDays(14), windows: [between(at(10), at(14))] }],
         },
         { name: "Room 1 (massage)", kind: "place" },
         { name: "Room 2 (massage)", kind: "place" },
         { name: "Room 3 (massage, facials)", kind: "place" },
         { name: "Room 4 (massage, body)", kind: "place" },
         { name: "Room 5 (laser)", kind: "place" },
-      ] satisfies PersonSeedType[],
+      ] satisfies ResourceSeedType[],
       // Face and Body's own treatments and lengths (face-and-body/data/servicesData.ts).
       // Massages and the wrap leave 15 minutes after, to turn the room over.
       services: [
@@ -197,7 +212,9 @@ const ACCOUNTS = [
   },
 ] as const;
 
-type TransactionType = Parameters<Parameters<ReturnType<typeof drizzle>["transaction"]>[0]>[0];
+export type TransactionType = Parameters<
+  Parameters<ReturnType<typeof drizzle>["transaction"]>[0]
+>[0];
 
 // Finds a resource by its name in this business, or makes it. Returns its id and whether it was made.
 async function ensureResource(
@@ -224,6 +241,14 @@ const db = drizzle(client, { schema });
 
 try {
   await db.transaction(async (tx) => {
+    // Only these exact slugs, and only here, where the database is already known to be a
+    // local _dev one. Their members, people, hours and services go with them (cascade).
+    const retired = await tx
+      .delete(organization)
+      .where(inArray(organization.slug, RETIRED_DEV_SLUGS))
+      .returning({ name: organization.name });
+    for (const { name } of retired) console.log(`Removed the old made-up business "${name}"`);
+
     for (const account of ACCOUNTS) {
       const { business } = account;
 
@@ -302,7 +327,7 @@ try {
 
       let peopleMade = 0;
       let hoursMade = 0;
-      for (const person of business.people as readonly PersonSeedType[]) {
+      for (const person of business.people as readonly ResourceSeedType[]) {
         const { id: resourceId, made } = await ensureResource(
           tx,
           organizationId,
@@ -310,7 +335,9 @@ try {
           person.kind
         );
         if (made) peopleMade++;
-        if (person.weeklyHours === undefined) continue; // no row: follows the business's week
+        // No row only when there is nothing to store: no week and no extra dates. Someone
+        // with extra dates but no week still gets a row, following the business's week.
+        if (person.weeklyHours === undefined && !person.dateHours?.length) continue;
 
         const [existingHours] = await tx
           .select({ id: availabilityRule.id })
@@ -326,7 +353,7 @@ try {
 
         const hours = personAvailabilityRuleValidationSchema.parse({
           resourceId,
-          weeklyHours: person.weeklyHours,
+          weeklyHours: person.weeklyHours ?? null,
           dateHours: person.dateHours ?? [],
         });
         await tx.insert(availabilityRule).values({ id: randomUUID(), organizationId, ...hours });

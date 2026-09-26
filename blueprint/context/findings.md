@@ -220,7 +220,7 @@ the step's own commits (`compare/b4b39a5...2519644` for 2.2,
 cannot be in its own commit, so pin it on the following republish.
 **Resolution:** 2026-09-25, fixed by /implement: the 2.1 link now compares `cb8e09c...ab16897` and the 2.2 link `b4b39a5...98e2493`, each a step plus its review fix. `AGENTS.md` now says every drawer link is pinned to commits, never the branch. Awaiting re-review. Closed 2026-09-26 by /audit independent: `project-log.html:3375` compares `cb8e09c...ab16897` and `:3817` `b4b39a5...98e2493`, exactly 2.1 plus its fix and 2.2 plus its fix. No link in the page targets a branch name; the 2.3 drawer says its link comes once committed, as the F-21 note expects.
 
-### F-22 [P3] open - The seed's one-off and closed dates are fixed dates, so the clinic loses its "only an extra date" practitioner after Oct 18
+### F-22 [P3] fixed - The seed's one-off and closed dates are fixed dates, so the clinic loses its "only an extra date" practitioner after Oct 18
 
 **File:** packages/shared/scripts/seed-dev.ts:174
 **Found:** 2026-09-26 by /audit independent (scope: current; lens: quality, tests)
@@ -238,9 +238,9 @@ against this data.
 **Suggested fix:** Compute the seed's dates relative to the day it runs (for
 example Daniel on the Sunday about three weeks ahead, closed dates inside each
 horizon), or say beside line 174 that the case expires and when to move it.
-**Resolution:**
+**Resolution:** 2026-09-26, fixed by /implement on Frank's yes: the seed's dates are relative to the day it runs. Each business gets one closed day 21 days out (inside both booking windows) and Daniel's extra day is the Sunday at least 14 days out. Proved by rebuilding the practice database: closed day 2026-10-17 for both, Daniel 2026-10-11, a Sunday. Awaiting re-review.
 
-### F-23 [P3] open - A seeded person given one-off dates but no `weeklyHours` key is silently skipped
+### F-23 [P3] fixed - A seeded person given one-off dates but no `weeklyHours` key is silently skipped
 
 **File:** packages/shared/scripts/seed-dev.ts:313
 **Found:** 2026-09-26 by /audit independent (scope: current; lens: quality)
@@ -255,9 +255,9 @@ the next person to give a follower a one-off date will write it the natural way.
 (`weeklyHours !== undefined || dateHours !== undefined`), or make the type say
 it, for example one optional `hours: { weeklyHours, dateHours }` whose presence
 means a row.
-**Resolution:**
+**Resolution:** 2026-09-26, fixed by /implement on Frank's yes: a seeded person gets a row when they have a week or any extra dates; a missing week is stored as null (follows the business). Proved by planting a person with only an extra date: their row was written with no week and the date; the plant was removed after. Awaiting re-review.
 
-### F-24 [P3] open - The seed's types are not exported, and `PersonSeedType` also describes rooms
+### F-24 [P3] fixed - The seed's types are not exported, and `PersonSeedType` also describes rooms
 
 **File:** packages/shared/scripts/seed-dev.ts:57
 **Found:** 2026-09-26 by /audit independent (scope: current; lens: quality)
@@ -269,9 +269,9 @@ The same section says names say what a thing is: `PersonSeedType` carries
 schema calls both a resource and the helper beside it is `ensureResource`.
 **Suggested fix:** Export the three types and rename `PersonSeedType` to
 `ResourceSeedType` (and `people` to `resources` if wanted).
-**Resolution:**
+**Resolution:** 2026-09-26, fixed by /implement on Frank's yes: `ResourceSeedType` (renamed from `PersonSeedType`, since it also describes rooms), `ServiceSeedType` and `TransactionType` are exported. The seed type-checks on its own. Awaiting re-review.
 
-### F-25 [P3] open - On a dev database that was not rebuilt, the seed adds the new businesses beside the old ones
+### F-25 [P3] fixed - On a dev database that was not rebuilt, the seed adds the new businesses beside the old ones
 
 **File:** packages/shared/scripts/seed-dev.ts:247
 **Found:** 2026-09-26 by /audit independent (scope: current; lens: quality)
@@ -287,4 +287,4 @@ dev database must be rebuilt after this step.
 **Suggested fix:** One line in `AGENTS.md` Commands and the seed header: after
 pulling 2.3, drop and rebuild the local `scheduleads_dev` (`db:migrate`, then
 `db:seed`). Removing the old businesses from the seed is not needed.
-**Resolution:**
+**Resolution:** 2026-09-26, fixed by /implement on Frank's yes (option A, the seed cleans up): the seed deletes the retired made-up businesses `agency-dev` and `test-salon-dev` by exact slug, inside the local `_dev` guard, and says so; their members, people, hours and services cascade. Proved by putting both back with members, a person and a service: the seed removed them, left exactly the new cast, and the admin login belongs to one business again; a second run removed nothing. Awaiting re-review.
