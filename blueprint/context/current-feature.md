@@ -234,23 +234,28 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
 - [ ] **2.4 The public routes.**
   Split `backend/server.ts` into `app.ts` (routes, exports `app` and
   `AppType`) and `server.ts` (only `serve`), so importing the type never
-  starts a server. Add `backend/routes/public-booking-links.ts` with the
-  two routes in Data / contracts, mounted under `/public` with a public CORS
-  rule: origins from `WIDGET_ORIGINS` plus the dashboard origin,
-  `credentials: false`, `GET` only. Add `WIDGET_ORIGINS` to `.env.example`.
-  The org is found by slug, and the link only by
-  `(organizationId, bookingLinkId)`, never by id alone.
+  starts a server. Add `backend/routes/public-booking-links-routes.ts` with
+  the two routes in Data / contracts, mounted under `/public` with
+  `backend/middleware/public-middleware/public-cors-middleware.ts`: origins
+  from `WIDGET_ORIGINS` plus the dashboard origin, `credentials: false`,
+  `GET` only. `WIDGET_ORIGINS` is already in `.env.example`. `refuse` in
+  `backend/lib/errors/refuse.ts` gains `not_found` and `bad_request`. The org
+  is found by slug, and the link only by `(organizationId, bookingLinkId)`,
+  never by id alone. **A business whose plan does not include `booking`
+  gets the same 404** (agreed with Frank, 2026-09-26): one more condition on
+  the organization lookup, through `subscriptionIncludes`.
   **Done when:** with the API running, `curl` shows the documented shape for
   both routes with no `organizationId` anywhere; an unknown slug, an unknown
-  link, an inactive link, another business's link under this slug, and a
-  business with no business row all return the identical `404` body; a
+  link, an inactive link, another business's link under this slug, a
+  business with no business row, and a business whose plan lacks booking
+  all return the identical `404` body; a
   browser `fetch` from an allowed origin succeeds and from a disallowed
   origin is blocked; and the response never carries
   `Access-Control-Allow-Credentials`.
 
 - [ ] **2.5 The typed seam, proved.**
   Declarations for `AppType` are emitted by the backend build and exposed as
-  a type-only entry of the `api` workspace; the frontend depends on the
+  a type-only entry of the `backend` workspace; the frontend depends on the
   workspace (`"backend": "*"`) and on `hono`, for `hono/client` (needs a yes,
   Open question 1). `frontend/lib/api-client.ts` builds one
   `hc<AppType>(API_URL)`; `fetchMe` moves onto it and `MeType` becomes a
