@@ -327,11 +327,18 @@ review** (its verdict and issues). The planned pieces and each card carry
 their own small violet **What bit** block when something caught us out
 there, and none when nothing did), **What
 changed in the code**, **Review issues** (every finding its review raised, in
-plain words, with its F-number and state), **Log** (that step's own entries:
-built, reviewed, fixed), and **Diagrams** (the two or three pictures that
-explained its tricky cases while it was planned; left out when there were
-none). The item's **Log** keeps only entries about the whole item, such as
-decisions. An entry lives in one of the two, never both.
+plain words, with its F-number and state), and **Log** (that step's own
+entries: built, reviewed, fixed). The item's **Log** keeps only entries about
+the whole item, such as decisions. An entry lives in one of the two, never
+both.
+
+**Pictures live with what they explain** (Frank, 2026-09-26; there is no
+separate Diagrams drawer any more). The plan opens with one picture of the
+whole step, and each planned piece has its own picture in a small closed
+drawer under it. When a piece ends up different from its picture, **What
+actually happened** may add a closed pair under that piece, "Planned" and
+"What we ended up with", only when a picture makes the change clearer; the
+plan's own pictures are never redrawn.
 
 The page therefore has three views and three buttons: **Roadmap**, which is home
 and what loads, **The project**, the eight planning answers, and
