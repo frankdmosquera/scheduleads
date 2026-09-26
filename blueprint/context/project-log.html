@@ -155,14 +155,23 @@
   .cell--text { padding: 4px 9px; white-space: nowrap; }
   .bar nav[data-menu][hidden] { display: none; }
   .bar nav[data-menu="project"] .strip-cells, .bar nav[data-menu="architecture"] .strip-cells { flex-wrap: wrap; }
-  /* Each Project and Architecture section is its own card, alternating two soft grounds, so
+  /* Each Project and Architecture section is its own card in its own color (below), so
      a glance says where one ends. The one being read gets a green edge, and its menu link a
      green border: you always know where you are without closing anything. */
-  #view-project > section, #view-architecture > section { padding: 18px 20px 22px; border: 1px solid var(--rule-soft); border-left: 3px solid transparent; border-radius: 10px; transition: border-color 0.2s; }
-  #view-project > section:nth-of-type(odd), #view-architecture > section:nth-of-type(odd) { background: color-mix(in srgb, var(--accent) 5%, var(--ground)); }
-  #view-project > section:nth-of-type(even), #view-architecture > section:nth-of-type(even) { background: var(--surface); }
-  main section.is-current-section { border-left-color: var(--done); }
-  .cell--text.is-current { border-color: var(--done); background: var(--done-soft); color: var(--done); font-weight: 700; box-shadow: 0 0 0 2px var(--done-soft); }
+  #view-project > section, #view-architecture > section { padding: 18px 20px 22px; border: 1px solid var(--rule-soft); border-left: 3px solid transparent; border-radius: 10px; }
+  /* One color per section, worn by its menu button too, so a jump lands on the color it came from. */
+  [data-color="blue"] { --sec: #3B6FD8; }
+  [data-color="teal"] { --sec: #0F8A6E; }
+  [data-color="amber"] { --sec: #B7791F; }
+  [data-color="violet"] { --sec: #6B4FC8; }
+  [data-color="rose"] { --sec: #C2416E; }
+  [data-color="slate"] { --sec: #5B6678; }
+  #view-project > section[data-color], #view-architecture > section[data-color] { background: color-mix(in srgb, var(--sec) 7%, var(--ground)); border-color: color-mix(in srgb, var(--sec) 28%, var(--ground)); }
+  #view-project > section[data-color] > h2, #view-architecture > section[data-color] > h2 { color: color-mix(in srgb, var(--sec) 75%, var(--ink)); border-bottom-color: color-mix(in srgb, var(--sec) 35%, var(--ground)); }
+  .cell--text[data-color] { background: color-mix(in srgb, var(--sec) 12%, var(--surface)); border-color: color-mix(in srgb, var(--sec) 45%, var(--surface)); color: color-mix(in srgb, var(--sec) 75%, var(--ink)); }
+  #view-architecture .map-what { font-size: 14px; color: var(--ink-3); }
+  #view-project > section.is-current-section, #view-architecture > section.is-current-section { border-left-color: var(--done); }
+  .cell--text.is-current { border-color: var(--done); font-weight: 700; box-shadow: 0 0 0 2px var(--done); }
   #view-architecture section, #view-project section { scroll-margin-top: 150px; }
   #arch-booking-model, #arch-versions, #arch-not-in-model, #arch-folders { scroll-margin-top: 150px; }
   a.cell:hover { border-color: var(--ink-3); color: var(--ink); }
@@ -1334,9 +1343,9 @@
           <div class="strip-phase">
             <div class="strip-label">The project</div>
             <div class="strip-cells">
-                <a class="cell cell--text" href="#project-plan" data-goto="project-plan">From the project plan</a>
-                <a class="cell cell--text" href="#project-decisions" data-goto="project-decisions">Locked decisions</a>
-                <a class="cell cell--text" href="#project-private-data" data-goto="project-private-data">Private data and caching</a>
+                <a class="cell cell--text" href="#project-plan" data-goto="project-plan" data-color="blue">From the project plan</a>
+                <a class="cell cell--text" href="#project-decisions" data-goto="project-decisions" data-color="teal">Locked decisions</a>
+                <a class="cell cell--text" href="#project-private-data" data-goto="project-private-data" data-color="amber">Private data and caching</a>
             </div>
           </div>
     </nav>
@@ -1344,12 +1353,12 @@
           <div class="strip-phase">
             <div class="strip-label">Architecture</div>
             <div class="strip-cells">
-                <a class="cell cell--text" href="#arch-code" data-goto="arch-code">The code</a>
-                <a class="cell cell--text" href="#arch-folders" data-goto="arch-folders">Where things live</a>
-                <a class="cell cell--text" href="#arch-routes" data-goto="arch-routes">The routes</a>
-                <a class="cell cell--text" href="#arch-booking-model" data-goto="arch-booking-model">The booking model</a>
-                <a class="cell cell--text" href="#arch-versions" data-goto="arch-versions">How we got here</a>
-                <a class="cell cell--text" href="#arch-not-in-model" data-goto="arch-not-in-model">Not in the model yet</a>
+                <a class="cell cell--text" href="#arch-code" data-goto="arch-code" data-color="blue">The code</a>
+                <a class="cell cell--text" href="#arch-folders" data-goto="arch-folders" data-color="teal">Where things live</a>
+                <a class="cell cell--text" href="#arch-routes" data-goto="arch-routes" data-color="amber">The routes</a>
+                <a class="cell cell--text" href="#arch-booking-model" data-goto="arch-booking-model" data-color="violet">How it all fits together</a>
+                <a class="cell cell--text" href="#arch-versions" data-goto="arch-versions" data-color="rose">How it got here</a>
+                <a class="cell cell--text" href="#arch-not-in-model" data-goto="arch-not-in-model" data-color="slate">Not in the model yet</a>
             </div>
           </div>
     </nav>
@@ -1378,7 +1387,7 @@
         </p>
       </header>
 
-      <section id="project-plan">
+      <section id="project-plan" data-color="blue">
         <h2>From the project plan</h2>
         <div class="rows">
           <div class="row">
@@ -1416,7 +1425,7 @@
         </div>
       </section>
 
-      <section id="project-decisions">
+      <section id="project-decisions" data-color="teal">
         <h2>Locked decisions</h2>
         <div class="notes">
           <ul>
@@ -1439,7 +1448,7 @@
         </div>
       </section>
 
-      <section id="project-private-data">
+      <section id="project-private-data" data-color="amber">
         <h2>Private data and caching</h2>
         <p class="drawer-what">Settled during your folder walkthrough on Sep 23. The rule: one person's data is never kept anywhere another person could see it. Written here so it can be reread, not relearned.</p>
         <div class="rows">
@@ -1494,12 +1503,12 @@
         </p>
       </header>
 
-      <section id="arch-code">
+      <section id="arch-code" data-color="blue">
         <h2>The code</h2>
         <figure class="fig"><svg viewBox="0 0 680 380" role="img"><title>How the code fits together</title><desc>The frontend on Vercel calls the backend on Railway two ways: auth-client for Better Auth's routes, api-client for our own routes. Client websites will call the backend's public routes from feature 9. The backend reads and writes Postgres. packages/shared is compiled into both the frontend and the backend at build time.</desc><defs><marker id="arch-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g class="c-gray"><rect x="40" y="12" width="200" height="40" rx="8"/><text class="ts" x="140" y="32" text-anchor="middle" dominant-baseline="central">Client websites &#183; feature 9</text></g><path d="M240 32 L395 32 L395 66" fill="none" class="arr" marker-end="url(#arch-arrow)"/><g class="c-teal"><rect x="40" y="70" width="200" height="150" rx="8"/><text class="th" x="140" y="92" text-anchor="middle" dominant-baseline="central">frontend/</text><text class="ts" x="140" y="112" text-anchor="middle" dominant-baseline="central">Next.js on Vercel</text><text class="ts" x="56" y="140" dominant-baseline="central">app/  the screens</text><text class="ts" x="56" y="162" dominant-baseline="central">lib/auth-client.ts</text><text class="ts" x="56" y="184" dominant-baseline="central">lib/api-client.ts</text></g><g class="c-teal"><rect x="290" y="70" width="210" height="150" rx="8"/><text class="th" x="395" y="92" text-anchor="middle" dominant-baseline="central">backend/</text><text class="ts" x="395" y="112" text-anchor="middle" dominant-baseline="central">Hono on Railway</text><text class="ts" x="306" y="140" dominant-baseline="central">/api/auth/*  Better Auth</text><text class="ts" x="306" y="162" dominant-baseline="central">/me  our own routes</text><text class="ts" x="306" y="184" dominant-baseline="central">/public/*  from step 2.4</text></g><g class="c-gray"><rect x="540" y="70" width="100" height="150" rx="8"/><text class="th" x="590" y="92" text-anchor="middle" dominant-baseline="central">Postgres</text><text class="ts" x="590" y="112" text-anchor="middle" dominant-baseline="central">Railway</text><text class="ts" x="590" y="150" text-anchor="middle" dominant-baseline="central">the tables</text><text class="ts" x="590" y="172" text-anchor="middle" dominant-baseline="central">local: _dev</text></g><line x1="240" y1="140" x2="288" y2="140" class="arr" marker-end="url(#arch-arrow)"/><line x1="240" y1="162" x2="288" y2="162" class="arr" marker-end="url(#arch-arrow)"/><line x1="500" y1="150" x2="538" y2="150" class="arr" marker-end="url(#arch-arrow)"/><g class="c-purple"><rect x="40" y="270" width="600" height="64" rx="8"/><text class="th" x="340" y="292" text-anchor="middle" dominant-baseline="central">packages/shared</text><text class="ts" x="340" y="313" text-anchor="middle" dominant-baseline="central">built into both: the tables, the form checks, what a plan buys</text></g><line x1="140" y1="268" x2="140" y2="224" class="arr" stroke-dasharray="4 3" marker-end="url(#arch-arrow)"/><line x1="395" y1="268" x2="395" y2="224" class="arr" stroke-dasharray="4 3" marker-end="url(#arch-arrow)"/><text class="ts" x="340" y="362" text-anchor="middle" dominant-baseline="central">Solid arrow: a request over the network. Dashed: code compiled in when each app is built.</text></svg><figcaption>Only the frontend and the backend ever run. The session lives on the backend: the frontend never reads it, it asks. <code>auth-client.ts</code> talks to Better Auth's routes (sign in, sign out); <code>api-client.ts</code> talks to the routes we wrote (<code>/me</code>, and every route from step 2.5 on, typed from the backend).</figcaption></figure>
       </section>
 
-      <section id="arch-folders">
+      <section id="arch-folders" data-color="teal">
         <h2>Where things live</h2>
         <div class="rows">
             <div class="row"><div class="row-key"><code>frontend/app/</code></div><div class="row-val">The screens: sign in, create a business, the dashboard home.</div></div>
@@ -1517,7 +1526,7 @@
         </div>
       </section>
 
-      <section id="arch-routes">
+      <section id="arch-routes" data-color="amber">
         <h2>The routes</h2>
         <p class="drawer-what">Every address the API answers, who may call it, and the checks it runs first.</p>
         <div class="rows">
@@ -1529,10 +1538,8 @@
         </div>
       </section>
 
-      <section id="arch-booking">
+      <section id="arch-booking-model" data-color="violet">
         <h2>How it all fits together</h2>
-        <details class="callout callout--map" id="arch-booking-model" open>
-          <summary class="callout-title">How it all fits together <span class="callout-count">booking + scheduler &middot; version 8 approved Sep 25</span></summary>
           <p class="map-what">The whole booking and scheduling system on one page. Version 8 is at the top: you approved it on Sep 25, and it is the plan. The build plan, the project plan and the feature 2 spec were changed the same day to match it. Below it, how it got here: open any version to see its diagram and what changed. Then what the model deliberately leaves out. Drawn Sep 24 while reviewing feature 2 and checked five times; version 8 comes from three audits on Sep 25.</p>
           <p><span class="pill pill--done">Version 8 &middot; approved Sep 25</span></p>
           <figure class="fig"><svg viewBox="0 0 680 766" role="img"><title>Version 8: the approved booking model</title><desc>A business has services, people or places, and logins. Services and people feed who does what; people have bookable hours and their Google calendar. Free time is bookable hours minus busy, fed by commitments. Lead sources feed the customer, linked both ways to a booking. Free time feeds bookings made online; the owner places jobs and phone bookings anytime someone is not off or busy, checked against commitments. A job comes from a customer, by quote or by hand. Commitments are written to Google and shown on each person's and place's calendar, where the owner adds things by hand. Amber marks what changed from version 7.</desc><defs><marker id="v8draft-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="v8draft-arrow-new" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:var(--pending)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g class="c-gray"><rect x="258" y="24" width="164" height="46" rx="8"/><text class="th" x="340" y="39" text-anchor="middle" dominant-baseline="central">A business</text><text class="ts" x="340" y="56" text-anchor="middle" dominant-baseline="central">its plan sets modules</text></g><path d="M340 70 L340 88 L132 88 L132 106" fill="none" class="arr" marker-end="url(#v8draft-arrow)"/><line x1="340" y1="70" x2="340" y2="106" class="arr" marker-end="url(#v8draft-arrow)"/><path d="M340 88 L548 88 L548 106" fill="none" class="arr" marker-end="url(#v8draft-arrow)"/><g class="c-teal"><rect x="50" y="110" width="164" height="62" rx="8"/><text class="th" x="132" y="126" text-anchor="middle" dominant-baseline="central">Services</text><text class="ts" x="132" y="143" text-anchor="middle" dominant-baseline="central">length, buffers</text><text class="ts" x="132" y="159" text-anchor="middle" dominant-baseline="central">feature 2</text></g><g class="c-teal"><rect x="258" y="110" width="164" height="62" rx="8"/><text class="th" x="340" y="126" text-anchor="middle" dominant-baseline="central">People</text><text class="ts" x="340" y="143" text-anchor="middle" dominant-baseline="central">a person or a place</text><text class="ts" x="340" y="159" text-anchor="middle" dominant-baseline="central">feature 2 &#183; owner first</text></g><g class="c-gray"><rect x="466" y="110" width="164" height="62" rx="8"/><text class="th" x="548" y="126" text-anchor="middle" dominant-baseline="central">Logins</text><text class="ts" x="548" y="143" text-anchor="middle" dominant-baseline="central">roles, who sees what</text><text class="ts" x="548" y="159" text-anchor="middle" dominant-baseline="central">feature 1</text></g><line x1="422" y1="141" x2="466" y2="141" stroke="var(--s)" stroke-width="1.5" stroke-dasharray="1 4" stroke-linecap="round"/><line x1="132" y1="172" x2="132" y2="206" class="arr" marker-end="url(#v8draft-arrow)"/><path d="M258 160 L236 160 L236 241 L218 241" fill="none" class="arr" marker-end="url(#v8draft-arrow)"/><line x1="340" y1="172" x2="340" y2="206" class="arr" marker-end="url(#v8draft-arrow)"/><path d="M422 160 L444 160 L444 241 L462 241" fill="none" class="arr" marker-end="url(#v8draft-arrow)"/><g class="c-purple"><rect x="50" y="210" width="164" height="62" rx="8"/><text class="th" x="132" y="226" text-anchor="middle" dominant-baseline="central">Who does what</text><text class="ts" x="132" y="243" text-anchor="middle" dominant-baseline="central">skills and rooms</text><text class="ts" x="132" y="259" text-anchor="middle" dominant-baseline="central">features 5, 12</text></g><g class="c-teal"><rect x="258" y="210" width="164" height="62" rx="8"/><text class="th" x="340" y="226" text-anchor="middle" dominant-baseline="central">Bookable hours</text><text class="ts" x="340" y="243" text-anchor="middle" dominant-baseline="central">own, else the business's</text><text class="ts" x="340" y="259" text-anchor="middle" dominant-baseline="central">one-off dates &#183; feature 2</text></g><g class="c-purple"><rect x="466" y="210" width="164" height="62" rx="8"/><text class="th" x="548" y="226" text-anchor="middle" dominant-baseline="central">Their Google</text><text class="ts" x="548" y="243" text-anchor="middle" dominant-baseline="central">read busy, write bookings</text><text class="ts" x="548" y="259" text-anchor="middle" dominant-baseline="central">per worker &#183; feature 3</text></g><path d="M132 272 L132 291 L300 291 L300 306" fill="none" class="arr" marker-end="url(#v8draft-arrow)"/><line x1="340" y1="272" x2="340" y2="306" class="arr" marker-end="url(#v8draft-arrow)"/><path d="M500 272 L500 291 L380 291 L380 306" fill="none" class="arr" marker-end="url(#v8draft-arrow)"/><line x1="590" y1="310" x2="590" y2="276" class="arr" style="stroke:var(--pending);stroke-width:1.5" marker-end="url(#v8draft-arrow-new)"/><text class="ts" x="598" y="293" dominant-baseline="central">bookings</text><g class="c-purple"><rect x="50" y="310" width="164" height="62" rx="8"/><text class="th" x="132" y="326" text-anchor="middle" dominant-baseline="central">Lead sources</text><text class="ts" x="132" y="343" text-anchor="middle" dominant-baseline="central">site, form, by hand</text><text class="ts" x="132" y="359" text-anchor="middle" dominant-baseline="central">features 9, 11, 24</text></g><g class="c-gray"><rect x="258" y="310" width="164" height="62" rx="8"/><text class="th" x="340" y="326" text-anchor="middle" dominant-baseline="central">Free time</text><text class="ts" x="340" y="343" text-anchor="middle" dominant-baseline="central">bookable minus busy</text><text class="ts" x="340" y="359" text-anchor="middle" dominant-baseline="central">features 2 and 5</text></g><g class="c-purple"><rect x="466" y="310" width="164" height="62" rx="8"/><text class="th" x="548" y="326" text-anchor="middle" dominant-baseline="central">Commitments</text><text class="ts" x="548" y="343" text-anchor="middle" dominant-baseline="central">overlaps refused</text><text class="ts" x="548" y="359" text-anchor="middle" dominant-baseline="central">features 5, 12b, 19</text></g><line x1="466" y1="341" x2="426" y2="341" class="arr" marker-end="url(#v8draft-arrow)"/><text class="ts" x="530" y="391" text-anchor="middle" dominant-baseline="central">&#8635; bookings, time off</text><path d="M422 425 L444 425 L444 356 L462 356" fill="none" class="arr" style="stroke:var(--pending);stroke-width:1.5" marker-end="url(#v8draft-arrow-new)"/><line x1="132" y1="372" x2="132" y2="406" class="arr" marker-end="url(#v8draft-arrow)"/><line x1="340" y1="372" x2="340" y2="406" class="arr" marker-end="url(#v8draft-arrow)"/><line x1="618" y1="406" x2="618" y2="376" class="arr" style="stroke:var(--pending);stroke-width:1.5" marker-end="url(#v8draft-arrow-new)"/><g class="c-purple"><rect x="50" y="410" width="164" height="62" rx="8"/><text class="th" x="132" y="426" text-anchor="middle" dominant-baseline="central">Customer</text><text class="ts" x="132" y="443" text-anchor="middle" dominant-baseline="central">lead, stage, timeline</text><text class="ts" x="132" y="459" text-anchor="middle" dominant-baseline="central">feature 4</text></g><g class="c-purple"><rect x="258" y="410" width="164" height="62" rx="8"/><text class="th" x="340" y="426" text-anchor="middle" dominant-baseline="central">A booking</text><text class="ts" x="340" y="443" text-anchor="middle" dominant-baseline="central">online, or by the owner</text><text class="ts" x="340" y="459" text-anchor="middle" dominant-baseline="central">feature 5</text></g><g class="c-purple"><rect x="466" y="410" width="164" height="62" rx="8"/><text class="th" x="548" y="426" text-anchor="middle" dominant-baseline="central">Scheduled jobs</text><text class="ts" x="548" y="443" text-anchor="middle" dominant-baseline="central">visits, one per day</text><text class="ts" x="548" y="459" text-anchor="middle" dominant-baseline="central">features 16, 19</text></g><line x1="218" y1="441" x2="254" y2="441" class="arr" marker-start="url(#v8draft-arrow)" marker-end="url(#v8draft-arrow)"/><line x1="340" y1="472" x2="340" y2="506" class="arr" marker-end="url(#v8draft-arrow)"/><g class="c-purple"><rect x="258" y="510" width="164" height="62" rx="8"/><text class="th" x="340" y="526" text-anchor="middle" dominant-baseline="central">After booking</text><text class="ts" x="340" y="543" text-anchor="middle" dominant-baseline="central">email, text, notify</text><text class="ts" x="340" y="559" text-anchor="middle" dominant-baseline="central">features 6-8, 21</text></g><g class="c-purple"><rect x="466" y="510" width="164" height="62" rx="8"/><text class="th" x="548" y="526" text-anchor="middle" dominant-baseline="central">Calendars</text><text class="ts" x="548" y="543" text-anchor="middle" dominant-baseline="central">each person and place</text><text class="ts" x="548" y="559" text-anchor="middle" dominant-baseline="central">bookings, time off &#183; 12b</text></g><path d="M634 541 L652 541 L652 341 L634 341" fill="none" class="arr" style="stroke:var(--pending);stroke-width:1.5" marker-start="url(#v8draft-arrow-new)" marker-end="url(#v8draft-arrow-new)"/><path d="M132 472 L132 596 L452 596 L452 462 L462 462" fill="none" class="arr" style="stroke:var(--pending);stroke-width:1.5" marker-end="url(#v8draft-arrow-new)"/><text class="ts" x="292" y="612" text-anchor="middle" dominant-baseline="central">a job comes from a customer: a quote, or by hand</text><g style="fill:var(--pending)"><circle cx="204" cy="120" r="5"/><circle cx="412" cy="120" r="5"/><circle cx="204" cy="220" r="5"/><circle cx="412" cy="220" r="5"/><circle cx="620" cy="220" r="5"/><circle cx="412" cy="320" r="5"/><circle cx="620" cy="320" r="5"/><circle cx="412" cy="420" r="5"/><circle cx="620" cy="420" r="5"/><circle cx="620" cy="520" r="5"/></g><g class="c-gray"><rect x="60" y="634" width="14" height="12" rx="3"/></g><text class="ts" x="80" y="640" dominant-baseline="central">built, or worked out</text><g class="c-teal"><rect x="212" y="634" width="14" height="12" rx="3"/></g><text class="ts" x="232" y="640" dominant-baseline="central">feature 2</text><g class="c-purple"><rect x="304" y="634" width="14" height="12" rx="3"/></g><text class="ts" x="324" y="640" dominant-baseline="central">a later feature</text><circle cx="440" cy="640" r="5" style="fill:var(--pending)"/><text class="ts" x="451" y="640" dominant-baseline="central">changed in version 8</text><text class="ts" x="340" y="666" text-anchor="middle" dominant-baseline="central">Dotted line: optional, the same human. Two-way arrow: a booking updates the customer.</text><text class="ts" x="340" y="686" text-anchor="middle" dominant-baseline="central">Every person and place is bookable, on standby or off, by date. A job never hides anyone.</text><text class="ts" x="340" y="706" text-anchor="middle" dominant-baseline="central">Customers book inside bookable hours. The owner places work anytime someone is not off or busy.</text><text class="ts" x="340" y="726" text-anchor="middle" dominant-baseline="central">A closed day or holiday closes online booking for everyone; a one-off date opens it again.</text><text class="ts" x="340" y="746" text-anchor="middle" dominant-baseline="central">By hand on a calendar: a phone estimate is a booking; time off goes straight to Commitments.</text></svg><figcaption>Version 8, approved Sep 25. It comes from the audit of version 7 (eleven points), a second check of the first draft (four more), and a third audit against every earlier session (four more, listed below as "Audit"). Amber dots and arrows mark what changed from version 7. The build plan, the project plan and the feature 2 spec now say the same thing.</figcaption></figure>
@@ -1556,7 +1563,11 @@
             <li data-outcome="added"><b>Audit, the business owner:</b> the email a business is created under is its business owner and its first person. The platform admin reaches every business from the admin area and is never a client business's owner. Today's code does the opposite, so feature 3b fixes it.</li>
             <li data-outcome="added"><b>Audit, Google's approval:</b> finished before feature 13. While the app is in Google's Testing mode a connection drops every seven days, and the client's booking page shows no times until they reconnect.</li>
           </ul>
-          <h4 id="arch-versions">How we got here &middot; open one to see its diagram</h4>
+      </section>
+
+      <section id="arch-versions" data-color="rose">
+        <h2>How it got here</h2>
+        <p class="map-what">Every earlier version of the booking model, oldest first. Open one to see its diagram and what changed.</p>
           <div class="item-steps">
             <details class="rstep" data-state="done">
               <summary><span class="sn">v1</span><span class="sm"></span><span>The first full picture</span><span class="ss">8 boxes</span></summary>
@@ -1709,7 +1720,11 @@
               </div>
             </details>
           </div>
-          <h4 id="arch-not-in-model">Not in the model yet</h4>
+      </section>
+
+      <section id="arch-not-in-model" data-color="slate">
+        <h2>Not in the model yet</h2>
+        <p class="map-what">What the booking model deliberately leaves out, and who would notice first.</p>
           <div class="rows">
             <div class="row"><div class="row-key">Deposits or payment at booking</div><div class="row-val">The clinic would notice first. An open question, answered at her onboarding before feature 17.</div></div>
             <div class="row"><div class="row-key">No-shows</div><div class="row-val">Any salon. Named in the plan, not planned.</div></div>
@@ -1721,7 +1736,6 @@
             <div class="row"><div class="row-key">Opening hours for the public</div><div class="row-val">The website and the Google profile. A separate setting from bookable hours, often the same, never forced to be. Noted on feature 12; nothing needs it yet.</div></div>
             <div class="row"><div class="row-key">Two clients in one sales talk</div><div class="row-val">The only double booking ever discussed, made on purpose by the owner. Parked until a client asks.</div></div>
           </div>
-        </details>
       </section>
 
       <footer>
