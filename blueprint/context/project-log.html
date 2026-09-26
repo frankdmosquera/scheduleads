@@ -151,6 +151,13 @@
   .bar .strip-phase:has(.cell-open) .strip-label { color: var(--pending); }
 
   a.cell { text-decoration: none; cursor: pointer; }
+  /* The Project and Architecture menus: the same chips, holding words instead of numbers. */
+  .cell--text { padding: 4px 9px; white-space: nowrap; }
+  .bar nav[data-menu][hidden] { display: none; }
+  .bar nav[data-menu="project"] .strip-cells, .bar nav[data-menu="architecture"] .strip-cells { flex-wrap: wrap; }
+  #view-architecture h3 { margin-top: 10px; }
+  #view-architecture section, #view-project section { scroll-margin-top: 150px; }
+  #arch-booking-model, #arch-versions, #arch-not-in-model, #arch-folders { scroll-margin-top: 150px; }
   a.cell:hover { border-color: var(--ink-3); color: var(--ink); }
   a.cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   /* The item being built, opened into its steps beside its own chip. */
@@ -1223,8 +1230,8 @@
   pre.code .ln.removed { background: rgba(201, 60, 55, 0.18); border-left-color: #F28772; }
 </style>
 
-<!-- One bar, one row, across the whole window: the two views, then every
-     item as a chip grouped by phase. The item being built opens into its
+<!-- One bar, one row, across the whole window: the three views, then the
+     open view's own menu. On the roadmap that is every item as a chip grouped by phase. The item being built opens into its
      steps, with what is happening now written above them. A chip jumps to
      its row. -->
 <header class="topbar">
@@ -1232,8 +1239,9 @@
     <nav class="switch" aria-label="Views">
       <button class="nav-link" data-view="roadmap">Roadmap</button>
       <button class="nav-link" data-view="project">Project</button>
+      <button class="nav-link" data-view="architecture">Architecture</button>
     </nav>
-    <nav class="strip bar-plan" aria-label="Every item, by phase">
+    <nav class="strip bar-plan" data-menu="roadmap" aria-label="Every item, by phase">
           <div class="strip-phase">
             <div class="strip-label">Ph 0 Decide</div>
             <div class="strip-cells">
@@ -1315,6 +1323,29 @@
             </div>
           </div>
     </nav>
+    <nav class="strip bar-plan" data-menu="project" aria-label="The project" hidden>
+          <div class="strip-phase">
+            <div class="strip-label">The project</div>
+            <div class="strip-cells">
+                <a class="cell cell--text" href="#project-plan" data-goto="project-plan">From the project plan</a>
+                <a class="cell cell--text" href="#project-decisions" data-goto="project-decisions">Locked decisions</a>
+                <a class="cell cell--text" href="#project-private-data" data-goto="project-private-data">Private data and caching</a>
+            </div>
+          </div>
+    </nav>
+    <nav class="strip bar-plan" data-menu="architecture" aria-label="Architecture" hidden>
+          <div class="strip-phase">
+            <div class="strip-label">Architecture</div>
+            <div class="strip-cells">
+                <a class="cell cell--text" href="#arch-code" data-goto="arch-code">The code</a>
+                <a class="cell cell--text" href="#arch-folders" data-goto="arch-folders">Where things live</a>
+                <a class="cell cell--text" href="#arch-routes" data-goto="arch-routes">The routes</a>
+                <a class="cell cell--text" href="#arch-booking-model" data-goto="arch-booking-model">The booking model</a>
+                <a class="cell cell--text" href="#arch-versions" data-goto="arch-versions">How we got here</a>
+                <a class="cell cell--text" href="#arch-not-in-model" data-goto="arch-not-in-model">Not in the model yet</a>
+            </div>
+          </div>
+    </nav>
   </div>
 </header>
 
@@ -1340,7 +1371,7 @@
         </p>
       </header>
 
-      <section>
+      <section id="project-plan">
         <h2>From the project plan</h2>
         <div class="rows">
           <div class="row">
@@ -1378,7 +1409,7 @@
         </div>
       </section>
 
-      <section>
+      <section id="project-decisions">
         <h2>Locked decisions</h2>
         <div class="notes">
           <ul>
@@ -1401,7 +1432,7 @@
         </div>
       </section>
 
-      <section>
+      <section id="project-private-data">
         <h2>Private data and caching</h2>
         <p class="drawer-what">Settled during your folder walkthrough on Sep 23. The rule: one person's data is never kept anywhere another person could see it. Written here so it can be reread, not relearned.</p>
         <div class="rows">
@@ -1439,36 +1470,58 @@
       </footer>
     </div>
 
-    <!-- ================= ROADMAP =================
-         /overview fills this from build-plan.md. One .item per build-plan
-         line, data-state planned | active | done, grouped by the plan's
-         milestone headings. -->
-    <div id="view-roadmap" hidden>
+    <!-- ================= ARCHITECTURE =================
+         How the system is built, not what is being built: the code, the
+         routes, and the booking model. A step that adds a route, a folder
+         or a table updates this view in the same publish. -->
+    <div id="view-architecture" hidden>
       <header class="head">
-        <h1 class="visually-hidden">Roadmap</h1>
-        <p class="lede">
-          Thirty items. Two are Phase 0 decisions rather than code, already answered. The
-          other 28 are built one at a time, each on its own branch, each split into numbered steps
-          you can see below it while it is the current one. An item is done when it works against
-          the running app, not when its boxes are ticked.
-        </p>
-        <div class="tally">
-          <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b, 1</span></span>
-          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">2</span></span>
-          <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">3, 3b, then 4 through 26, with 12b</span></span>
+        <div>
+          <div class="eyebrow">How it is built</div>
+          <h1>Architecture</h1>
         </div>
-        <details class="callout callout--open">
-          <summary class="callout-title">Left open from your walkthrough <span class="callout-count">3 parked</span></summary>
-          <p>Your folder-by-folder review on Sep 23 and 24 closed most of what it found. These three are parked on purpose (W21, the backend package name, was done Sep 26):</p>
-          <div class="notes">
-            <ul>
-              <li><strong>W16. The Back button after sign-out.</strong> Sign in, sign out, press Back, and confirm no business data shows. If it does: <code>no-store</code> on the dashboard pages, and a sign-out that leaves nothing behind. Run it together with the end-to-end sign-in check that never happened after the renames.</li>
-              <li><strong>W23. Forms and pages the standard way.</strong> shadcn <code>Input</code>, <code>Label</code> and <code>Card</code> (needs your yes to add), react-hook-form with <code>zodResolver</code> on sign-in and create-organization, and each page split into a server-rendered frame plus a small interactive form. Looks and behaves the same.</li>
-              <li><strong>W26. A <code>Table</code> suffix on the Drizzle tables?</strong> <code>user</code> becomes <code>userTable</code> and so on. Better Auth finds tables by name, so it needs a small name map in <code>auth-server.ts</code>. Yes or no.</li>
-            </ul>
-          </div>
-        </details>
-        <details class="callout callout--map">
+        <p class="lede">
+          What each part of the code is, which part talks to which, every address the API answers,
+          and the booking model the whole product follows. Kept current: a step that adds a route,
+          a folder or a table updates this tab when it is published.
+        </p>
+      </header>
+
+      <section id="arch-code">
+        <h2>The code</h2>
+        <figure class="fig"><svg viewBox="0 0 680 380" role="img"><title>How the code fits together</title><desc>The frontend on Vercel calls the backend on Railway two ways: auth-client for Better Auth's routes, api-client for our own routes. Client websites will call the backend's public routes from feature 9. The backend reads and writes Postgres. packages/shared is compiled into both the frontend and the backend at build time.</desc><defs><marker id="arch-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g class="c-gray"><rect x="40" y="12" width="200" height="40" rx="8"/><text class="ts" x="140" y="32" text-anchor="middle" dominant-baseline="central">Client websites &#183; feature 9</text></g><path d="M240 32 L395 32 L395 66" fill="none" class="arr" marker-end="url(#arch-arrow)"/><g class="c-teal"><rect x="40" y="70" width="200" height="150" rx="8"/><text class="th" x="140" y="92" text-anchor="middle" dominant-baseline="central">frontend/</text><text class="ts" x="140" y="112" text-anchor="middle" dominant-baseline="central">Next.js on Vercel</text><text class="ts" x="56" y="140" dominant-baseline="central">app/  the screens</text><text class="ts" x="56" y="162" dominant-baseline="central">lib/auth-client.ts</text><text class="ts" x="56" y="184" dominant-baseline="central">lib/api-client.ts</text></g><g class="c-teal"><rect x="290" y="70" width="210" height="150" rx="8"/><text class="th" x="395" y="92" text-anchor="middle" dominant-baseline="central">backend/</text><text class="ts" x="395" y="112" text-anchor="middle" dominant-baseline="central">Hono on Railway</text><text class="ts" x="306" y="140" dominant-baseline="central">/api/auth/*  Better Auth</text><text class="ts" x="306" y="162" dominant-baseline="central">/me  our own routes</text><text class="ts" x="306" y="184" dominant-baseline="central">/public/*  from step 2.4</text></g><g class="c-gray"><rect x="540" y="70" width="100" height="150" rx="8"/><text class="th" x="590" y="92" text-anchor="middle" dominant-baseline="central">Postgres</text><text class="ts" x="590" y="112" text-anchor="middle" dominant-baseline="central">Railway</text><text class="ts" x="590" y="150" text-anchor="middle" dominant-baseline="central">the tables</text><text class="ts" x="590" y="172" text-anchor="middle" dominant-baseline="central">local: _dev</text></g><line x1="240" y1="140" x2="288" y2="140" class="arr" marker-end="url(#arch-arrow)"/><line x1="240" y1="162" x2="288" y2="162" class="arr" marker-end="url(#arch-arrow)"/><line x1="500" y1="150" x2="538" y2="150" class="arr" marker-end="url(#arch-arrow)"/><g class="c-purple"><rect x="40" y="270" width="600" height="64" rx="8"/><text class="th" x="340" y="292" text-anchor="middle" dominant-baseline="central">packages/shared</text><text class="ts" x="340" y="313" text-anchor="middle" dominant-baseline="central">built into both: the tables, the form checks, what a plan buys</text></g><line x1="140" y1="268" x2="140" y2="224" class="arr" stroke-dasharray="4 3" marker-end="url(#arch-arrow)"/><line x1="395" y1="268" x2="395" y2="224" class="arr" stroke-dasharray="4 3" marker-end="url(#arch-arrow)"/><text class="ts" x="340" y="362" text-anchor="middle" dominant-baseline="central">Solid arrow: a request over the network. Dashed: code compiled in when each app is built.</text></svg><figcaption>Only the frontend and the backend ever run. The session lives on the backend: the frontend never reads it, it asks. <code>auth-client.ts</code> talks to Better Auth's routes (sign in, sign out); <code>api-client.ts</code> talks to the routes we wrote (<code>/me</code>, and every route from step 2.5 on, typed from the backend).</figcaption></figure>
+        <h3 id="arch-folders">Where things live</h3>
+        <div class="rows">
+            <div class="row"><div class="row-key"><code>frontend/app/</code></div><div class="row-val">The screens: sign in, create a business, the dashboard home.</div></div>
+            <div class="row"><div class="row-key"><code>frontend/components/</code></div><div class="row-val">Pieces of screens. <code>ui/</code> is shadcn's.</div></div>
+            <div class="row"><div class="row-key"><code>frontend/lib/</code></div><div class="row-val"><code>auth-client.ts</code> (Better Auth's routes), <code>api-client.ts</code> (our own routes), <code>utils.ts</code> (shadcn's helper, a name its tool expects).</div></div>
+            <div class="row"><div class="row-key"><code>backend/server.ts</code></div><div class="row-val">Every route, and starting the API. Step 2.4 splits it: <code>app.ts</code> for the routes, <code>server.ts</code> only starts it, and the public routes get a <code>routes/</code> folder.</div></div>
+            <div class="row"><div class="row-key"><code>backend/middleware/</code></div><div class="row-val">Checks that run before a route, one per file: <code>auth-middleware/</code> (who is signed in, may they do this), <code>dashboard-middleware/</code> (cookie rule, never cache), <code>subscription-middleware/</code> (what the plan unlocks).</div></div>
+            <div class="row"><div class="row-key"><code>backend/lib/</code></div><div class="row-val">Plain functions: <code>auth/</code> (Better Auth setup, the login code, which business a session acts for), <code>bookable-hours/</code> (when customers can book), <code>errors/</code> (the one refusal shape).</div></div>
+            <div class="row"><div class="row-key"><code>backend/database.ts</code></div><div class="row-val">The database connection. Becomes a folder only when something else about the database needs a home.</div></div>
+            <div class="row"><div class="row-key"><code>packages/shared/src/db/</code></div><div class="row-val">The tables (Drizzle). Used by the backend only.</div></div>
+            <div class="row"><div class="row-key"><code>packages/shared/src/zod-validation/</code></div><div class="row-val">Form checks, used by both apps. <code>index.ts</code> is the folder's front door, so an app imports the folder, not each file.</div></div>
+            <div class="row"><div class="row-key"><code>packages/shared/src/subscriptions/</code></div><div class="row-val">What each plan unlocks. The backend enforces it; the frontend hides what would be refused.</div></div>
+            <div class="row"><div class="row-key"><code>packages/shared/drizzle/</code></div><div class="row-val">The migrations: every change to the tables, in order.</div></div>
+            <div class="row"><div class="row-key"><code>packages/shared/scripts/seed-dev.ts</code></div><div class="row-val">Fills your local database with the two made-up businesses.</div></div>
+        </div>
+      </section>
+
+      <section id="arch-routes">
+        <h2>The routes</h2>
+        <p class="drawer-what">Every address the API answers, who may call it, and the checks it runs first.</p>
+        <div class="rows">
+            <div class="row"><div class="row-key"><code>GET /health</code></div><div class="row-val">Anyone. Railway asks it whether the API is up. Touches no database on purpose. <code>backend/server.ts</code>.</div></div>
+            <div class="row"><div class="row-key"><code>GET, POST /api/auth/*</code></div><div class="row-val">Better Auth owns everything under here: send the login code, sign in, sign out, create a business (platform admin only). Called by <code>frontend/lib/auth-client.ts</code>. Runs <code>dashboardCorsMiddleware</code> (the cookie, dashboard origin only) and <code>dashboardNoStoreMiddleware</code>.</div></div>
+            <div class="row"><div class="row-key"><code>GET /me</code></div><div class="row-val">Signed in. Who you are, your business, your role, and what your plan unlocks. Called by <code>fetchMe</code> in <code>frontend/lib/api-client.ts</code>. Runs the two dashboard middleware, then <code>requireOrganizationMiddleware</code> and <code>requireKnownSubscriptionMiddleware</code>.</div></div>
+            <div class="row"><div class="row-key"><code>GET /public/:slug/booking-links</code></div><div class="row-val">Planned, step 2.4. Anyone, never the cookie. A business's active services, found by its slug. Its own CORS rule from <code>WIDGET_ORIGINS</code>.</div></div>
+            <div class="row"><div class="row-key"><code>GET /public/:slug/booking-links/:bookingLinkId</code></div><div class="row-val">Planned, step 2.4. One service and the business's bookable hours. The same 404 for every "not here".</div></div>
+        </div>
+      </section>
+
+      <section id="arch-booking">
+        <h2>How it all fits together</h2>
+        <details class="callout callout--map" id="arch-booking-model" open>
           <summary class="callout-title">How it all fits together <span class="callout-count">booking + scheduler &middot; version 8 approved Sep 25</span></summary>
           <p class="map-what">The whole booking and scheduling system on one page. Version 8 is at the top: you approved it on Sep 25, and it is the plan. The build plan, the project plan and the feature 2 spec were changed the same day to match it. Below it, how it got here: open any version to see its diagram and what changed. Then what the model deliberately leaves out. Drawn Sep 24 while reviewing feature 2 and checked five times; version 8 comes from three audits on Sep 25.</p>
           <p><span class="pill pill--done">Version 8 &middot; approved Sep 25</span></p>
@@ -1493,7 +1546,7 @@
             <li data-outcome="added"><b>Audit, the business owner:</b> the email a business is created under is its business owner and its first person. The platform admin reaches every business from the admin area and is never a client business's owner. Today's code does the opposite, so feature 3b fixes it.</li>
             <li data-outcome="added"><b>Audit, Google's approval:</b> finished before feature 13. While the app is in Google's Testing mode a connection drops every seven days, and the client's booking page shows no times until they reconnect.</li>
           </ul>
-          <h4>How we got here &middot; open one to see its diagram</h4>
+          <h4 id="arch-versions">How we got here &middot; open one to see its diagram</h4>
           <div class="item-steps">
             <details class="rstep" data-state="done">
               <summary><span class="sn">v1</span><span class="sm"></span><span>The first full picture</span><span class="ss">8 boxes</span></summary>
@@ -1646,7 +1699,7 @@
               </div>
             </details>
           </div>
-          <h4>Not in the model yet</h4>
+          <h4 id="arch-not-in-model">Not in the model yet</h4>
           <div class="rows">
             <div class="row"><div class="row-key">Deposits or payment at booking</div><div class="row-val">The clinic would notice first. An open question, answered at her onboarding before feature 17.</div></div>
             <div class="row"><div class="row-key">No-shows</div><div class="row-val">Any salon. Named in the plan, not planned.</div></div>
@@ -1657,6 +1710,44 @@
             <div class="row"><div class="row-key">A repeat customer's usual person</div><div class="row-val">Salons. Not in the plan; it can be added without changing anything.</div></div>
             <div class="row"><div class="row-key">Opening hours for the public</div><div class="row-val">The website and the Google profile. A separate setting from bookable hours, often the same, never forced to be. Noted on feature 12; nothing needs it yet.</div></div>
             <div class="row"><div class="row-key">Two clients in one sales talk</div><div class="row-val">The only double booking ever discussed, made on purpose by the owner. Parked until a client asks.</div></div>
+          </div>
+        </details>
+      </section>
+
+      <footer>
+        <span>Updated Sep 26, 2026</span>
+        <span>&middot;</span>
+        <span>Sources: the code, blueprint/project-plan.md decisions 20 to 29</span>
+      </footer>
+    </div>
+
+    <!-- ================= ROADMAP =================
+         /overview fills this from build-plan.md. One .item per build-plan
+         line, data-state planned | active | done, grouped by the plan's
+         milestone headings. -->
+    <div id="view-roadmap" hidden>
+      <header class="head">
+        <h1 class="visually-hidden">Roadmap</h1>
+        <p class="lede">
+          Thirty items. Two are Phase 0 decisions rather than code, already answered. The
+          other 28 are built one at a time, each on its own branch, each split into numbered steps
+          you can see below it while it is the current one. An item is done when it works against
+          the running app, not when its boxes are ticked.
+        </p>
+        <div class="tally">
+          <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b, 1</span></span>
+          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">2</span></span>
+          <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">3, 3b, then 4 through 26, with 12b</span></span>
+        </div>
+        <details class="callout callout--open">
+          <summary class="callout-title">Left open from your walkthrough <span class="callout-count">3 parked</span></summary>
+          <p>Your folder-by-folder review on Sep 23 and 24 closed most of what it found. These three are parked on purpose (W21, the backend package name, was done Sep 26):</p>
+          <div class="notes">
+            <ul>
+              <li><strong>W16. The Back button after sign-out.</strong> Sign in, sign out, press Back, and confirm no business data shows. If it does: <code>no-store</code> on the dashboard pages, and a sign-out that leaves nothing behind. Run it together with the end-to-end sign-in check that never happened after the renames.</li>
+              <li><strong>W23. Forms and pages the standard way.</strong> shadcn <code>Input</code>, <code>Label</code> and <code>Card</code> (needs your yes to add), react-hook-form with <code>zodResolver</code> on sign-in and create-organization, and each page split into a server-rendered frame plus a small interactive form. Looks and behaves the same.</li>
+              <li><strong>W26. A <code>Table</code> suffix on the Drizzle tables?</strong> <code>user</code> becomes <code>userTable</code> and so on. Better Auth finds tables by name, so it needs a small name map in <code>auth-server.ts</code>. Yes or no.</li>
+            </ul>
           </div>
         </details>
       </header>
@@ -2723,7 +2814,7 @@
                       <summary><span class="sn">2.1</span><span class="sm"></span><span>The three tables, the first person, and their validation</span><span class="ss">Done</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what">Adds <code>resource</code>, <code>booking_link</code> and <code>availability_rule</code> to the database, and gives every business its first person. The hard part is the rule's uniqueness: one row for the business, one per person, and the database, not the code, refusing a second one. A plain unique constraint looks right and silently allows two business rows, because Postgres treats empty values as all different. The database also refuses business settings on a person's row, so nothing gets copied and nothing drifts.</p>
-                        <p class="rstep-what">Where these three tables sit in the whole system is drawn once, under <strong>How it all fits together</strong> at the top of the roadmap.</p>
+                        <p class="rstep-what">Where these three tables sit in the whole system is drawn once, under <strong>How it all fits together</strong> on the Architecture tab.</p>
                         <details class="drawer" data-kind="plan">
                           <summary>The plan <span class="tag-drift">as written before starting &middot; 7 pieces</span></summary>
                           <div class="drawer-body">
@@ -4654,9 +4745,17 @@ const db = drizzle(client, { schema });</code></pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">11 general entries, newest first &middot; each step keeps its own</span></summary>
+                <summary>Log <span class="tag-drift">12 general entries, newest first &middot; each step keeps its own</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">A third tab: Architecture</span><span class="kind-tag">Decided</span><span class="stamp">Sep 26</span></div>
+                        <p class="entry-text">Walking <code>packages/shared</code> got confusing: which part talks to which, and why shared looks like a second backend. Your call: the page gets a third tab for how the system is built. <strong>Architecture</strong> holds the code map (frontend, backend and shared, and which file talks to which), where every folder's contents live, every route the API answers with the checks it runs, and <strong>How it all fits together</strong>, moved from the top of the Roadmap exactly as it was, versions included.</p>
+                        <p class="entry-text">Also yours: each tab has its own menu in the top bar. The Roadmap keeps its item chips; Project and Architecture get section links. <code>AGENTS.md</code> said the page has two views, because a view per feature once duplicated the steps; it now names three, and says Architecture is one view for the whole system, kept current by any step that adds a route, a folder or a table.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">
@@ -4737,7 +4836,7 @@ const db = drizzle(client, { schema });</code></pre>
                       <div class="dot"></div>
                       <div class="entry-body">
                         <div class="entry-top"><span class="entry-title">The whole system, drawn and checked five times</span><span class="kind-tag">Decided</span><span class="stamp">Sep 24</span></div>
-                        <p class="entry-text">Reviewing step 2.1 turned into one picture of the whole booking and scheduling system, redrawn seven times while five passes checked it: against the plans, as the business, for anything that would force a rebuild, for two things happening in the same second, and for small businesses. Every version is kept under <strong>How it all fits together</strong> at the top of the roadmap.</p>
+                        <p class="entry-text">Reviewing step 2.1 turned into one picture of the whole booking and scheduling system, redrawn seven times while five passes checked it: against the plans, as the business, for anything that would force a rebuild, for two things happening in the same second, and for small businesses. Every version is kept under <strong>How it all fits together</strong> on the Architecture tab.</p>
                         <p class="entry-text"><strong>Agreed:</strong> a resource is one person or one thing, never a group, and a crew is a saved list of people. Bookings and jobs hold a list of people, written as rows in one commitments table where the database refuses overlaps. Every business has at least one person, made automatically. A person is bookable, on standby or off, by date. None of this changes feature 2's tables; it lands in features 5, 13 and 19, and those plan lines still need editing, with your yes.</p>
                         <p class="entry-text"><strong>Still open:</strong> who does what in 2.1 or feature 5; the gap after an appointment per service; service-only days; date-specific extra hours; person or place on each resource; whether the owner can override a double booking; the web name on booking links; a default booking horizon; and <code>hono</code>, holidays and <code>/tests</code>.</p>
                       </div>
@@ -5074,6 +5173,9 @@ const db = drizzle(client, { schema });</code></pre>
     document.querySelectorAll("main > div[id^='view-']").forEach(function (el) {
       el.hidden = el.id !== "view-" + view;
     });
+    document.querySelectorAll(".bar nav[data-menu]").forEach(function (menu) {
+      menu.hidden = menu.dataset.menu !== view;
+    });
     document.querySelectorAll(".nav-link").forEach(function (link) {
       if (link.dataset.view === view) {
         link.setAttribute("aria-current", "page");
@@ -5103,7 +5205,8 @@ const db = drizzle(client, { schema });</code></pre>
       var target = document.getElementById(chip.dataset.goto);
       if (!target) return;
       event.preventDefault();
-      selectView("roadmap");
+      var holder = target.closest("main > div[id^='view-']");
+      selectView(holder ? holder.id.replace("view-", "") : "roadmap");
       for (var node = target; node; node = node.parentElement) {
         if (node.tagName === "DETAILS") node.open = true;
       }

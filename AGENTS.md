@@ -333,11 +333,20 @@ explained its tricky cases while it was planned; left out when there were
 none). The item's **Log** keeps only entries about the whole item, such as
 decisions. An entry lives in one of the two, never both.
 
-The page therefore has two views and two buttons: **Roadmap**, which is home and
-what loads, and **The project**, the eight planning answers. It used to have a
-third view per feature, which meant the same steps were maintained in two places
-and silently drifted. Never reintroduce that. If something seems to belong in
-two places, one of them links to the other rather than restating it.
+The page therefore has three views and three buttons: **Roadmap**, which is home
+and what loads, **The project**, the eight planning answers, and
+**Architecture** (Frank, 2026-09-26): how the system is built, not what is
+being built. Architecture holds the code map (which part talks to which, and
+where things live), every route the API answers, and **How it all fits
+together**, the booking model with its versions. A step that adds a route, a
+folder or a table updates the Architecture view in the same publish. Each view
+has its own menu in the top bar: the item chips on the Roadmap, section links
+on the other two.
+
+It used to have a view per feature, which meant the same steps were maintained
+in two places and silently drifted. Never reintroduce that: Architecture is one
+view for the whole system, never one per feature. If something seems to belong
+in two places, one of them links to the other rather than restating it.
 
 **Plan first, then plan against reality.** A step is published with its plan
 before the work starts: what it does and why, its concrete pieces, its
