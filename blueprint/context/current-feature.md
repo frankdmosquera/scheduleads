@@ -116,13 +116,13 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
 
 - [x] **2.1 The three tables, the first person, and their validation.**
   Add `resource`, `booking_link` and `availability_rule` to
-  `packages/shared/src/db/drizzle-schema.ts` exactly as in Data / contracts,
+  `packages/shared/db/drizzle-schema.ts` exactly as in Data / contracts,
   with a comment beside the two uniqueness indexes saying why they are two
   (a future reader will otherwise "simplify" them into the broken single
   constraint), and one beside the check that keeps business settings off a
   person's row. Add `weeklyHoursValidationSchema`,
   `dateHoursValidationSchema` and `availabilityRuleValidationSchema` under
-  `packages/shared/src/zod-validation/availability/`, exported through the
+  `packages/shared/zod-validation/availability/`, exported through the
   existing `index.ts`. Generate the migration from `packages/shared`, add by
   hand the one statement that gives every existing organization its first
   person (kind `person`, named after the organization), and read the SQL
@@ -283,9 +283,9 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
 
 ## Files / areas
 
-- `packages/shared/src/db/drizzle-schema.ts` - three tables
-- `packages/shared/drizzle/` - one generated migration, plus the backfill
-- `packages/shared/src/zod-validation/availability/` - three validation
+- `packages/shared/db/drizzle-schema.ts` - three tables
+- `packages/shared/migrations/` - one generated migration, plus the backfill
+- `packages/shared/zod-validation/availability/` - three validation
   schemas, exported from `zod-validation/index.ts`
 - `packages/shared/scripts/seed-dev.ts`
 - `backend/lib/auth/auth-server.ts` (the first-person hook),

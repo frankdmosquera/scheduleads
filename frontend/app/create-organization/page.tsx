@@ -5,7 +5,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { createOrganizationValidationSchema, toSlug } from "@scheduleads-app/shared/zod-validation";
+import { toSlug } from "@scheduleads-app/shared/helpers";
+import { createOrganizationValidationSchema } from "@scheduleads-app/shared/zod-validation";
 
 import { AuthCard, Field, Notice } from "@/components/auth-card";
 import { Button } from "@/components/ui/button";

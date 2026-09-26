@@ -22,10 +22,10 @@ import {
 import {
   businessAvailabilityRuleValidationSchema,
   personAvailabilityRuleValidationSchema,
-  toSlug,
   type DateHoursType,
   type WeeklyHoursType,
 } from "@scheduleads-app/shared/zod-validation";
+import { toSlug } from "@scheduleads-app/shared/helpers";
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 

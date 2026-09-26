@@ -2,9 +2,9 @@
   "name": "backend",
   "type": "module",
   "scripts": {
-    "predev": "tsc -p ../packages/shared/tsconfig.json",
+    "predev": "tsc -p ../packages/shared/tsconfig.build.json",
     "dev": "tsx watch --env-file-if-exists=../.env server.ts",
-    "prebuild": "tsc -p ../packages/shared/tsconfig.json",
+    "prebuild": "tsc -p ../packages/shared/tsconfig.build.json",
     "build": "tsc",
     "start": "node --env-file-if-exists=../.env dist/server.js",
     "test": "vitest run",

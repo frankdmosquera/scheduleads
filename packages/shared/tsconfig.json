@@ -1,4 +1,7 @@
 {
+  // The editor's view of the whole package: the code, its tests, the seed and the
+  // drizzle config, all type-checked with Node's types. Emits nothing; the build is
+  // tsconfig.build.json, which compiles only the code the apps import.
   "compilerOptions": {
     "target": "ESNext",
     "module": "NodeNext",
@@ -6,13 +9,8 @@
     "strict": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "declaration": true,
-    "rootDir": "./src",
-    "outDir": "./dist"
+    "types": ["node"],
+    "noEmit": true
   },
-  // Only src/ is compiled. drizzle.config.ts sits at the package root on
-  // purpose: drizzle-kit runs it through its own loader, and including it
-  // here would drag it into dist/ and break rootDir.
-  "include": ["src"],
-  "exclude": ["node_modules", "dist", "src/**/*.test.ts"] // tests run through Vitest, never shipped in dist/
+  "include": ["db", "helpers", "subscriptions", "zod-validation", "scripts", "drizzle.config.ts"]
 }

@@ -54,9 +54,19 @@ source. The two workspaces disagree about extensions - the backend's NodeNext
 resolution wants `./file.js` where the frontend's bundler wants none - and
 building the package sidesteps that instead of forcing one of them to bend.
 Both apps build it first through their own `predev` and `prebuild` hooks, so
-neither ever consumes it as TypeScript. Do not add an export that points at
-`src/`; it breaks both builds. Import from the package rather than redeclaring
-a shape on either side.
+neither ever consumes it as TypeScript. Do not add an export that points at a
+`.ts` source file; it breaks both builds. Import from the package rather than
+redeclaring a shape on either side.
+
+It has no `src/` either (Frank, 2026-09-26): `db/`, `helpers/`,
+`subscriptions/` and `zod-validation/` sit straight in `packages/shared/`, next
+to `migrations/` (every change to the tables, in order), `scripts/` (the dev
+seed) and `drizzle.config.ts`. Two TypeScript configs keep that apart:
+`tsconfig.json` is the editor's view, type-checking everything with Node's
+types and emitting nothing; `tsconfig.build.json` compiles only the four code
+folders to `dist/`, and it is what `build` and both apps' `predev` and
+`prebuild` run. A new code folder is added to both `include` lists and gets its
+own subpath export.
 
 ## Naming
 
@@ -78,10 +88,13 @@ a shape on either side.
   one object per form (`signInEmailValidationSchema` in
   `sign-in-email-validation-schema.ts`). Frank reads the import and knows what
   it is without opening anything
-- `packages/shared/src` is organised by kind, then area, then one file per
+- `packages/shared` is organised by kind, then area, then one file per
   export: `zod-validation/auth/sign-in-email-validation-schema.ts`. Each kind
   folder is one import (`@scheduleads-app/shared/zod-validation`, through its
-  `index.ts`). The Drizzle tables are `db/drizzle-schema.ts`
+  `index.ts`). The Drizzle tables are `db/drizzle-schema.ts`. A helper both
+  apps use lives in `helpers/` (`toSlug`, imported from
+  `@scheduleads-app/shared/helpers`), never inside `zod-validation/`, which
+  holds only validation schemas
 - `backend` follows the same rule (Frank, 2026-09-26): kind, then area,
   then one file per export. Every middleware is named as one
   (`requireOrganizationMiddleware`) and lives in

@@ -1,6 +1,6 @@
 {
-  "id": "dee895da-092c-4873-ba88-dcf20d7bff2d",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "14afce63-d6e2-4464-9423-738d2bbebf91",
+  "prevId": "dee895da-092c-4873-ba88-dcf20d7bff2d",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -95,12 +95,8 @@
           "name": "account_userId_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -109,6 +105,299 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.availability_rule": {
+      "name": "availability_rule",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organizationId": {
+          "name": "organizationId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resourceId": {
+          "name": "resourceId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weeklyHours": {
+          "name": "weeklyHours",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dateHours": {
+          "name": "dateHours",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "minimumNoticeMinutes": {
+          "name": "minimumNoticeMinutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "horizonDays": {
+          "name": "horizonDays",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "closedDates": {
+          "name": "closedDates",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "holidayCountry": {
+          "name": "holidayCountry",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "holidayRegion": {
+          "name": "holidayRegion",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "availability_rule_business_unique": {
+          "name": "availability_rule_business_unique",
+          "columns": [
+            {
+              "expression": "organizationId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"availability_rule\".\"resourceId\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "availability_rule_resource_unique": {
+          "name": "availability_rule_resource_unique",
+          "columns": [
+            {
+              "expression": "organizationId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "resourceId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "availability_rule_organizationId_organization_id_fk": {
+          "name": "availability_rule_organizationId_organization_id_fk",
+          "tableFrom": "availability_rule",
+          "tableTo": "organization",
+          "columnsFrom": ["organizationId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "availability_rule_resource_fk": {
+          "name": "availability_rule_resource_fk",
+          "tableFrom": "availability_rule",
+          "tableTo": "resource",
+          "columnsFrom": ["organizationId", "resourceId"],
+          "columnsTo": ["organizationId", "id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "availability_rule_row_kind_check": {
+          "name": "availability_rule_row_kind_check",
+          "value": "(\n        \"availability_rule\".\"resourceId\" is null\n        and \"availability_rule\".\"weeklyHours\" is not null\n        and \"availability_rule\".\"timezone\" is not null\n        and \"availability_rule\".\"minimumNoticeMinutes\" is not null\n        and \"availability_rule\".\"horizonDays\" is not null\n        and \"availability_rule\".\"closedDates\" is not null\n      ) or (\n        \"availability_rule\".\"resourceId\" is not null\n        and \"availability_rule\".\"timezone\" is null\n        and \"availability_rule\".\"minimumNoticeMinutes\" is null\n        and \"availability_rule\".\"horizonDays\" is null\n        and \"availability_rule\".\"closedDates\" is null\n        and \"availability_rule\".\"holidayCountry\" is null\n        and \"availability_rule\".\"holidayRegion\" is null\n      )"
+        },
+        "availability_rule_notice_check": {
+          "name": "availability_rule_notice_check",
+          "value": "\"availability_rule\".\"minimumNoticeMinutes\" >= 0"
+        },
+        "availability_rule_horizon_check": {
+          "name": "availability_rule_horizon_check",
+          "value": "\"availability_rule\".\"horizonDays\" > 0"
+        },
+        "availability_rule_region_needs_country_check": {
+          "name": "availability_rule_region_needs_country_check",
+          "value": "\"availability_rule\".\"holidayRegion\" is null or \"availability_rule\".\"holidayCountry\" is not null"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.booking_link": {
+      "name": "booking_link",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organizationId": {
+          "name": "organizationId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "durationMinutes": {
+          "name": "durationMinutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bufferBeforeMinutes": {
+          "name": "bufferBeforeMinutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "bufferAfterMinutes": {
+          "name": "bufferAfterMinutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "booking_link_organization_slug_unique": {
+          "name": "booking_link_organization_slug_unique",
+          "columns": [
+            {
+              "expression": "organizationId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "booking_link_organizationId_organization_id_fk": {
+          "name": "booking_link_organizationId_organization_id_fk",
+          "tableFrom": "booking_link",
+          "tableTo": "organization",
+          "columnsFrom": ["organizationId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "booking_link_duration_check": {
+          "name": "booking_link_duration_check",
+          "value": "\"booking_link\".\"durationMinutes\" > 0"
+        },
+        "booking_link_buffers_check": {
+          "name": "booking_link_buffers_check",
+          "value": "\"booking_link\".\"bufferBeforeMinutes\" >= 0 and \"booking_link\".\"bufferAfterMinutes\" >= 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.invitation": {
@@ -172,12 +461,8 @@
           "name": "invitation_organizationId_organization_id_fk",
           "tableFrom": "invitation",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organizationId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organizationId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -185,12 +470,8 @@
           "name": "invitation_inviterId_user_id_fk",
           "tableFrom": "invitation",
           "tableTo": "user",
-          "columnsFrom": [
-            "inviterId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["inviterId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -266,12 +547,8 @@
           "name": "member_organizationId_organization_id_fk",
           "tableFrom": "member",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organizationId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organizationId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -279,12 +556,8 @@
           "name": "member_userId_user_id_fk",
           "tableFrom": "member",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -351,13 +624,91 @@
         "organization_slug_unique": {
           "name": "organization_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.resource": {
+      "name": "resource",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organizationId": {
+          "name": "organizationId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'person'"
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "resource_organizationId_organization_id_fk": {
+          "name": "resource_organizationId_organization_id_fk",
+          "tableFrom": "resource",
+          "tableTo": "organization",
+          "columnsFrom": ["organizationId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "resource_organization_id_unique": {
+          "name": "resource_organization_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["organizationId", "id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "resource_kind_check": {
+          "name": "resource_kind_check",
+          "value": "\"resource\".\"kind\" in ('person', 'place')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.session": {
@@ -433,12 +784,8 @@
           "name": "session_userId_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -448,9 +795,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -539,9 +884,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},

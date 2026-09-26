@@ -15,16 +15,20 @@
     "./zod-validation": {
       "types": "./dist/zod-validation/index.d.ts",
       "default": "./dist/zod-validation/index.js"
+    },
+    "./helpers": {
+      "types": "./dist/helpers/to-slug.d.ts",
+      "default": "./dist/helpers/to-slug.js"
     }
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsc && node --env-file-if-exists=../../.env scripts/seed-dev.ts",
+    "db:seed": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env scripts/seed-dev.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

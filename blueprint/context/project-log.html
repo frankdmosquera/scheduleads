@@ -1523,10 +1523,12 @@
             <div class="row"><div class="row-key"><code>backend/middleware/</code></div><div class="row-val">Checks that run before a route, one per file: <code>auth-middleware/</code> (who is signed in, may they do this), <code>dashboard-middleware/</code> (cookie rule, never cache), <code>subscription-middleware/</code> (what the plan unlocks).</div></div>
             <div class="row"><div class="row-key"><code>backend/lib/</code></div><div class="row-val">Plain functions: <code>auth/</code> (Better Auth setup, the login code, which business a session acts for), <code>bookable-hours/</code> (when customers can book), <code>errors/</code> (the one refusal shape).</div></div>
             <div class="row"><div class="row-key"><code>backend/database.ts</code></div><div class="row-val">The database connection. Becomes a folder only when something else about the database needs a home.</div></div>
-            <div class="row"><div class="row-key"><code>packages/shared/src/db/</code></div><div class="row-val">The tables (Drizzle). Used by the backend only.</div></div>
-            <div class="row"><div class="row-key"><code>packages/shared/src/zod-validation/</code></div><div class="row-val">Form checks, used by both apps. <code>index.ts</code> is the folder's front door, so an app imports the folder, not each file.</div></div>
-            <div class="row"><div class="row-key"><code>packages/shared/src/subscriptions/</code></div><div class="row-val">What each plan unlocks. The backend enforces it; the frontend hides what would be refused.</div></div>
-            <div class="row"><div class="row-key"><code>packages/shared/drizzle/</code></div><div class="row-val">The migrations: every change to the tables, in order.</div></div>
+            <div class="row"><div class="row-key"><code>packages/shared/db/</code></div><div class="row-val">The tables (Drizzle). Used by the backend only.</div></div>
+            <div class="row"><div class="row-key"><code>packages/shared/zod-validation/</code></div><div class="row-val">Form checks, used by both apps. <code>index.ts</code> is the folder's front door, so an app imports the folder, not each file.</div></div>
+            <div class="row"><div class="row-key"><code>packages/shared/subscriptions/</code></div><div class="row-val">What each plan unlocks. The backend enforces it; the frontend hides what would be refused.</div></div>
+            <div class="row"><div class="row-key"><code>packages/shared/helpers/</code></div><div class="row-val">Small functions both sides use. Today one: <code>toSlug</code>, which turns a name into a web address.</div></div>
+            <div class="row"><div class="row-key"><code>packages/shared/migrations/</code></div><div class="row-val">The migrations: every change to the tables, in order. Drizzle reads and writes them here.</div></div>
+            <div class="row"><div class="row-key"><code>packages/shared/tsconfig.json</code>, <code>tsconfig.build.json</code></div><div class="row-val">Two TypeScript setups. The first is your editor's view of the whole package, the seed and the drizzle config included, and builds nothing. The second builds only the four code folders into <code>dist/</code>, which is what the apps import.</div></div>
             <div class="row"><div class="row-key"><code>packages/shared/scripts/seed-dev.ts</code></div><div class="row-val">Fills your local database with the two made-up businesses.</div></div>
         </div>
       </section>
@@ -4774,9 +4776,18 @@ const db = drizzle(client, { schema });</code></pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">12 general entries, newest first &middot; each step keeps its own</span></summary>
+                <summary>Log <span class="tag-drift">13 general entries, newest first &middot; each step keeps its own</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title"><code>packages/shared</code> tidied the same way as the backend</span><span class="kind-tag">Decided</span><span class="stamp">Sep 26</span></div>
+                        <p class="entry-text">Your call, "do your thing": no <code>src/</code>, so <code>db/</code>, <code>zod-validation/</code> and <code>subscriptions/</code> sit straight in <code>packages/shared/</code>. <code>drizzle/</code> is now <code>migrations/</code>, which says what it holds. <code>toSlug</code> left <code>zod-validation/</code>, where it was the only thing not a form check, for a new <code>helpers/</code> folder: both apps use it, so by your helpers rule it is shared.</p>
+                        <p class="entry-text"><strong>The red error in <code>drizzle.config.ts</code></strong> was real: the file sat outside every TypeScript setup, so the editor did not know Node's <code>process</code>. Now two setups: <code>tsconfig.json</code> is the editor's view of everything (the seed included, which nothing checked before), with Node's types, building nothing; <code>tsconfig.build.json</code> builds only the four code folders. <strong>Said out loud:</strong> Node's types come from the copy the backend already installed, which npm shares across the repo; shared does not list it itself. Listing it would be a dependency change, so it waits for your yes. The <code>node_modules/</code> inside shared was not empty after all: it holds Vitest's cache, made by the tests, ignored by git.</p>
+                        <p class="entry-text"><strong>Proved:</strong> <code>db:generate</code> reads the renamed folder and finds no change; <code>db:migrate</code> applies nothing, the ledger still holds its two migrations; the seed runs through the new <code>helpers</code> import; the editor check passes on the whole package; 36 tests, both app builds and the frontend lint pass. The code drawers of steps 2.1 to 2.3 keep the old paths on purpose: they show each step as it was committed.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">
