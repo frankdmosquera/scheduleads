@@ -1220,7 +1220,7 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.2 built, its review next</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.2 reviewed, 2.3&#39;s plan next</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
                 <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="next" title="2.3 The seeds - next">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" title="2.4 The public routes">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
@@ -2693,7 +2693,7 @@
               </div>
 
               <details class="drawer" data-kind="plan" open>
-                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 and 2.2 done &middot; 2.2&#39;s review, then 2.3&#39;s plan &middot; 2.1 to 2.6</span></summary>
+                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 and 2.2 done and reviewed &middot; 2.3&#39;s plan next &middot; 2.1 to 2.6</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
                   <div class="item-steps">
@@ -3351,7 +3351,7 @@ import { sendLoginCode } from "./send-login-code.js";</code></pre>
                         </details>
 
                         <details class="drawer" data-kind="reality" open>
-                          <summary>What actually happened <span class="tag-drift">4 kept, 4 added &middot; review next</span></summary>
+                          <summary>What actually happened <span class="tag-drift">4 kept, 4 added &middot; review passed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">All four rules went in as planned. The additions are the split you approved, and one check the plan had wrong.</p>
                             <div class="verdict">
@@ -3381,6 +3381,7 @@ import { sendLoginCode } from "./send-login-code.js";</code></pre>
                               </ul>
                             </div>
                             <div class="rstep-when">Passed. 10 backend tests pass, and shared's 25 still pass. By hand, with a business row and one person's row added to <code>test-salon-dev</code> and removed after: the business itself and a person with no row get the salon's week; a person with a row gets their own; <code>agency-dev</code>, which has no hours yet, gets nothing; the salon asked about the agency's person gets nothing. The database is back to 0 hours rows. Backend build passes, and no test file reaches <code>dist/</code>.</div>
+                            <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>2519644</code>. No P0 or P1. It reran every test and the build, and rechecked the database half itself on the salon (rows removed after). Three notes: <strong>F-19</strong> (P2), no test catches a person with their own row losing the business's one-off dates; it proved the gap by breaking that line in a copy and watching all 10 tests still pass. <strong>F-20</strong> (P3), one type not exported, against the naming standard. <strong>F-21</strong> (P3), the "full diff" links on this page follow the branch, so 2.1's already shows 2.2 too. Receipt in <code>blueprint/context/review.md</code>.</p>
                           </div>
                         </details>
 <details class="drawer" data-kind="code">
@@ -4008,9 +4009,24 @@ describe("applyAvailabilityRules", () =&gt; {
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">9 entries, newest first</span></summary>
+                <summary>Log <span class="tag-drift">11 entries, newest first</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="fix">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">F-19 and F-20 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">Your call: fix both now rather than carry them. F-19: a test for Ben's case, the salon opening Nov 2 while Ben, who follows the salon's week, has his own Oct 13; he must get both. The reviewer's exact break was planted again and the new test failed by name; restored, 11 pass. F-20: one word, <code>export</code>. Both are marked fixed, not closed: only the next review can close them. F-21, the moving "full diff" links, is still open.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.2 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">A fresh reviewer read only the code and the spec, reran the tests and the build, and checked the database half itself. No serious findings. Its best note, F-19: one rule had no test guarding it. It changed that line in a copy and all 10 tests still passed, which is the kind of gap a test suite hides. Two small notes: an unexported type (F-20), and this page's "full diff" links moving with the branch (F-21).</p>
+                        <p class="entry-text"><strong>Carried risks it named:</strong> an inactive person still gets hours (the spec does not say otherwise yet; feature 5 decides who is bookable), and the hours columns trust whoever writes them, so every writer must validate, starting with 2.3's seeds.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">

@@ -12,7 +12,7 @@ import {
   type ResolvedAvailabilityType,
 } from "./availability-rules.js";
 
-type AvailabilityRuleRowType = typeof availabilityRule.$inferSelect;
+export type AvailabilityRuleRowType = typeof availabilityRule.$inferSelect;
 
 // The database check guarantees these on the business's row. A row without them is a
 // corrupt row, a real fault, so it throws instead of being read as "closed".

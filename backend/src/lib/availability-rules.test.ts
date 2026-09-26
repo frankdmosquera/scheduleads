@@ -54,6 +54,20 @@ describe("applyAvailabilityRules", () => {
     expect(resolved.dateHours).toEqual(benOnlyChristmasEve.dateHours);
   });
 
+  test("a person with a row who follows the business's week keeps the business's one-off dates", () => {
+    const salonOpensNov2 = {
+      ...salon,
+      dateHours: [{ date: "2026-11-02", windows: [nineToFive] }],
+    };
+    const benOct13: PersonHoursInputType = {
+      weeklyHours: null, // has a row, but follows the salon's week
+      dateHours: [{ date: "2026-10-13", windows: [tenToTwo] }],
+    };
+    const resolved = applyAvailabilityRules(salonOpensNov2, benOct13, noonSep25InEdmonton);
+
+    expect(resolved.dateHours.map((entry) => entry.date)).toEqual(["2026-10-13", "2026-11-02"]);
+  });
+
   test("on the same date, a person's one-off date beats the business's", () => {
     const salonOpensChristmasEve = {
       ...salon,

@@ -172,3 +172,50 @@ only surface as a raw constraint error from a writer in 2.3 or item 12.
 `availability-validation-schemas.test.ts`, ideally asserting the issue path
 (`holidayRegion`, `closedDates`) rather than only `success === false`.
 **Resolution:** Fixed 2026-09-25 on Frank's yes: four tests added (a closed date twice, country and province written out instead of their codes, zero days ahead, negative notice). Removing the horizon and notice limits made exactly those two tests fail. Awaits the next review pass to close.
+
+### F-19 [P2] fixed - No test catches a person with a row losing the business's one-off dates
+
+**File:** backend/src/lib/availability-rules.test.ts:49
+**Found:** 2026-09-25 by /audit independent (scope: current; lens: tests)
+**Why it matters:** Step 2.2's rule says "A person following the business's week
+also gets the business's one-off dates" (`current-feature.md`, 2.2), and
+`availability-rules.ts:67-69` does it. But no test gives a follower who has a row
+and the business one-off dates on different days. The "only a one-off date"
+test runs against a salon with no one-off dates, and the "same date" test only
+proves the override. Checked by mutation in a scratch copy: changing line 67 to
+`hasOwnWeek || person !== null` drops the business's one-off dates for every
+follower with a row, and all 10 tests still pass. That is the function items 5
+and 9 reuse, and the wrong answer is silent: the person would be bookable on the
+week's hours on a day the business changed.
+**Suggested fix:** Add one test: the salon with a one-off date on one day, a
+follower with their own one-off date on another, and assert both dates come
+back, sorted.
+**Resolution:** 2026-09-25, fixed by /implement: added the test "a person with a row who follows the business's week keeps the business's one-off dates" (salon opens Nov 2, Ben has his own Oct 13, both come back sorted). Re-ran the reviewer's mutation (`hasOwnWeek || person !== null` on line 67): the new test fails by name, 1 failed and 10 passed; restored, 11 pass. Awaiting re-review.
+
+### F-20 [P3] fixed - `AvailabilityRuleRowType` is the one type in the project that is not exported
+
+**File:** backend/src/lib/resolve-availability.ts:15
+**Found:** 2026-09-25 by /audit independent (scope: current; lens: quality)
+**Why it matters:** `coding-standards.md` (Naming) says types end in `Type` "and
+always exported". Every other type under `backend/src` and `packages/shared/src`
+is exported (the only exceptions are the augmented `ContextVariableMap`
+interfaces the standard names). Small, but it is the pattern the next file copies.
+**Suggested fix:** `export type AvailabilityRuleRowType = ...`.
+**Resolution:** 2026-09-25, fixed by /implement: `export type AvailabilityRuleRowType`. Backend build and Prettier pass. Awaiting re-review.
+
+### F-21 [P3] open - The build log's "full diff" links move with the branch
+
+**File:** blueprint/context/project-log.html:3715
+**Found:** 2026-09-25 by /audit independent (scope: current; lens: quality)
+**Why it matters:** `AGENTS.md` says each code drawer "Ends with a link to the
+step's commit on GitHub for the full diff". The 2.2 drawer links
+`compare/b4b39a5...feature/booking-links-resources-and-availability-rules`, and
+the 2.1 drawer (line 3328) `compare/cb8e09c...` the same branch. A compare
+against a branch name follows the branch head, so the 2.1 link already shows
+2.1 and 2.2 together, and each new push widens both. After the merge they show
+the whole feature, not the step.
+**Suggested fix:** When the next step republishes the page, pin each link to
+the step's own commits (`compare/b4b39a5...2519644` for 2.2,
+`compare/cb8e09c...b4b39a5` or the step commit for 2.1). A step's own hash
+cannot be in its own commit, so pin it on the following republish.
+**Resolution:**

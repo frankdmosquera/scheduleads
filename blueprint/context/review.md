@@ -1,23 +1,23 @@
 # Independent Review
 
 **Status:** passed
-**Target commit:** ead8273e80e1facf662c342676ccea907b6ac666
+**Target commit:** 2519644e2c6546da22e694dbc478250b69f11ff0
 **Base commit:** 931ecadd49bebb38bd9f02bf27a2deeab0236755
 **Base ref:** main
-**Spec hash:** 35eaa490686c4b2f66b031bf75dd48586d922eae884c9d49825feededa5cd1ad
+**Spec hash:** 5444ce8ca0cb30f487c319f0c307cd90f15cac335bdc5b8bf3d3016f9a9744cb
 **Prepared by:** claude
 **Builder model:** claude-opus-5-5
 **Requested reviewer:** claude
 **Requested model:** claude-opus-5-5
 **Requested execution:** automatic
-**Requested at:** 2026-09-25T23:40:42Z
+**Requested at:** 2026-09-26T02:58:07Z
 **Workflow:** regular
 **Check required:** no
 **Reviewer adapter:** claude
 **Reviewer model:** claude-opus-5-5
 **Reviewer context:** fresh subagent
 **Actual execution:** automatic
-**Reviewed at:** 2026-09-25T23:48:30Z
+**Reviewed at:** 2026-09-26T03:01:39Z
 **Scope:** current
 **Lenses:** quality, security, performance, tests
 **Verdict:** passed
@@ -25,44 +25,52 @@
 
 ## Handoff
 
-Review the active spec and the complete `931ecad..ead8273` delta in a fresh
+Review the active spec and the complete `931ecad..2519644` delta in a fresh
 session or isolated subagent without the builder conversation. Run all Audit lenses from scratch.
 Run Check when required above. Do not edit product code, accept findings, or
 reuse the existing findings as the review scope.
 
 This is a per-step review (`AGENTS.md`, "A review after every step"): feature 2
-is built and approved one step at a time, so only step 2.1 is checked in the
-spec and its status is not `verified`. The product code in this range is the
-test-runner setup (`cb8e09c`) and step 2.1 (`ead8273`); the two earlier commits
-are planning documents. Judge step 2.1 against its own `Done when`, not against
-steps 2.2 to 2.6.
+is built and approved one step at a time, so only steps 2.1 and 2.2 are checked
+in the spec and its status is not `verified`. Step 2.1 (through `b4b39a5`) was
+reviewed and passed on 2026-09-25; the new work is step 2.2, commit `2519644`
+(`b4b39a5..2519644`). Judge step 2.2 against its own `Done when` as amended on
+2026-09-25, not against steps 2.3 to 2.6. The same commit also changes the
+build log's code drawer viewer (`blueprint/context/project-log.html`, Prism
+replaced by Shiki loaded from jsdelivr) and adds `blueprint/scripts/code-theme.mjs`;
+those are in scope too.
 
 ## Commands
 
-- `git rev-parse HEAD`, `git merge-base main HEAD`, `sha256sum blueprint/context/current-feature.md`, `git status --porcelain`: pass (target, base and spec hash match; only `review.md` differed)
-- `npm run test --workspace=@scheduleads-app/shared`: pass (2 files, 21 tests)
-- `npm run build --workspace=backend`: pass
-- `npm run build --workspace=frontend`: pass
-- `npm run lint --workspace=frontend`: pass
-- `npx prettier --check packages/shared/src backend/src`: pass
-- `drizzle-kit generate` against a scratch copy of `packages/shared/drizzle`: pass ("No schema changes"), so the 0001 snapshot matches the schema
-- Read-only queries and rolled-back insert probes against `scheduleads_dev`: pass (0 probe rows left)
+- `git rev-parse HEAD`, `git merge-base main HEAD`, `sha256sum blueprint/context/current-feature.md`, `git status --porcelain --untracked-files=all`: pass (target, base and spec hash match; only review.md differed)
+- `npm run test --workspace=backend`: pass (1 file, 10 tests)
+- `npm run test --workspace=@scheduleads-app/shared`: pass (2 files, 25 tests)
+- `npm run build --workspace=backend`: pass (no test files in `dist/`)
+- `npx prettier --check backend/src`: pass
+- Mutation of `availability-rules.ts:67` in a scratch copy, run with the repo's Vitest: fail as a test signal, all 10 tests still pass (see F-19)
+- `resolveAvailability` from `backend/dist` against rows added to `scheduleads_dev` with psql and deleted after: pass (database left at 0 rules and 2 resources, as found)
 
 ## Evidence
 
-- Migration 0001 contains the partial unique index `WHERE resourceId IS NULL`, the composite unique index, the composite foreign key, the row-kind check and the hand-written backfill; the ledger `drizzle.__scheduleads_app_migrations` holds 2 entries.
-- `agency-dev` and `test-salon-dev` each have exactly one resource, kind `person`, named after the business.
-- Probes refused by the database, each inside a rolled-back transaction: second business row (`availability_rule_business_unique`), second rule for one resource (`availability_rule_resource_unique`), rule naming another business's resource (`availability_rule_resource_fk`), time zone on a person's row, business row with no week, and holiday country on a person's row (all `availability_rule_row_kind_check`).
-- better-auth 1.7.5 `organization/routes/crud-org.mjs:137` calls `afterCreateOrganization` after the organization and member are written, outside any transaction (`createOrganization` in `organization/adapter.mjs:141` uses no `runWithTransaction`), so the hook's separate insert sees the committed organization, as the comment in `auth-server.ts` says.
-- No new routes, no client-supplied organization id, no secret handling in the delta; indexes cover every organization-scoped lookup the three tables will serve.
+- Database half of the 2.2 Done when, at 2026-09-25 18:00Z: a business with no business row returns null; another business's person returns null; an unknown id returns null; the first person with no row gets the business's week (source organization); a person with their own row gets their own week and one-off date, and that one-off date removes Oct 12 from their closed dates while the business keeps it closed.
+- Rules half: the 10 Vitest tests cover each of the eight Done when rules, plus today taken in the business's time zone and settings always from the business.
+- The three new source files appear byte for byte in the 2.2 code drawer of `project-log.html`.
+- The Shiki viewer builds spans with `textContent`, never `innerHTML`, from theme JSON inside the page; `code-drawer.mjs` only ever emits `typescript` and `sql`, and both are loaded.
+- No `.only`, `.skip` or `.todo` in backend or shared tests; no em dashes in the new files.
 
 ## Findings
 
-- F-17 [P2] open - a database rebuilt from migrations and the seed has businesses with no first person (`packages/shared/scripts/seed-dev.ts:87`)
-- F-18 [P3] open - several refinements in the business-row schema have no test (`availability-rule-validation-schema.ts:28`)
+- F-19 [P2] open - no test catches a follower with a row losing the business's one-off dates
+- F-20 [P3] open - `AvailabilityRuleRowType` is not exported
+- F-21 [P3] open - the build log's "full diff" links follow the branch head
+- F-17 and F-18 not re-examined: step 2.2 did not touch their files
 
 ## Remaining risk
 
-- "Creating a business through the API as the platform admin gives it its person" was not re-run live: it needs the API running and a platform-admin sign-in by emailed code, and would leave rows behind. The hook was verified by reading the code and the library's call site only.
-- The database stores `weeklyHours` and `dateHours` as unchecked `jsonb` (a probe of malformed JSON on a person's row was accepted), so their shape depends on every writer using the Zod schemas; step 2.3's seeds and CLI are the first writers.
-- Check was not required and was not run.
+- `resolveAvailability` returns hours for a resource with `active = false`; 2.2 does not say, and the first caller that picks a person must decide.
+- jsonb read from the database (`weeklyHours`, `dateHours`, `closedDates`) is trusted as typed with no runtime validation; safe only while every writer validates (the 2.3 seed CLI, item 12).
+- Test files are excluded from `tsc` and Vitest does not typecheck, so a type error in a test is never reported.
+- The build log loads `shiki@3` and `mermaid@11` from jsdelivr by major version only, with no integrity hash; a new release runs on the page unreviewed.
+- Up to three sequential queries per call for one person; unmeasured, worth a look once item 9 resolves many people.
+- Frontend build and lint not run: 2.2 changed nothing in `frontend`.
+- Dashboard activity state (`run.json`) not written: the reviewer was limited to findings.md and review.md.
