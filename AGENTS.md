@@ -335,9 +335,11 @@ both.
 **A step's plan comes in two parts** (Frank, 2026-09-26), each its own
 colored chunk with its state and date: **Part 1, What it builds** (the
 numbered pieces, each with its picture) and **Part 2, Done when** (the checks
-agreed now, run once it is built). A piece that needs his call is a piece like
-any other, tagged "a question" while open and "answered", with the answer and
-its date, once decided, so a reader later sees it was his decision. The
+agreed now, run once it is built). A piece that needs his call is a
+**blocker**: it comes first in Part 1, because nothing is built until he
+answers it, tagged "blocker, waiting on you" while open and "blocker, answered"
+with the answer and its date once decided. It keeps its place and number, so a
+reader later sees it was his decision and that it came first. The
 numbers count pieces of the plan, never work done: the step says "nothing
 built yet" until it is built. The chat uses the same names.
 
