@@ -1242,7 +1242,7 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.3 built, its review next</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.3 reviewed, its 4 small issues</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
                 <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="next" title="2.4 The public routes - next">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
@@ -2715,7 +2715,7 @@
               </div>
 
               <details class="drawer" data-kind="plan" open>
-                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 and 2.2 done and reviewed &middot; 2.3 built, its review next &middot; 2.1 to 2.6</span></summary>
+                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.3 done and reviewed &middot; 2.3&#39;s small issues, then 2.4&#39;s plan &middot; 2.1 to 2.6</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
                   <div class="item-steps">
@@ -3377,12 +3377,12 @@ import { sendLoginCode } from "./send-login-code.js";</code></pre>
 </details>
 
                         <details class="drawer" data-kind="issues">
-                          <summary>Review issues <span class="tag-drift">2 found &middot; 1 fixed, 1 planned into 2.3</span></summary>
+                          <summary>Review issues <span class="tag-drift">2 found &middot; both closed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
                             <div class="rows">
-                              <div class="row"><div class="row-key">F-17 &middot; P2 &middot; open</div><div class="row-val">On a brand-new machine, the dev businesses would have no first person: the migration runs before the seed makes them, and the seed skips the hook. Planned into 2.3 with you: the seed makes the person when missing.</div></div>
-                              <div class="row"><div class="row-key">F-18 &middot; P3 &middot; fixed</div><div class="row-val">Four hours rules had no test (a closed date twice, a country written out, zero days ahead, negative notice). Four tests added; removing the rules made them fail.</div></div>
+                              <div class="row"><div class="row-key">F-17 &middot; P2 &middot; closed</div><div class="row-val">On a brand-new machine, the dev businesses would have no first person: the migration runs before the seed makes them, and the seed skips the hook. Planned into 2.3 with you: the seed makes the person when missing.</div></div>
+                              <div class="row"><div class="row-key">F-18 &middot; P3 &middot; closed</div><div class="row-val">Four hours rules had no test (a closed date twice, a country written out, zero days ahead, negative notice). Four tests added; removing the rules made them fail.</div></div>
                             </div>
                           </div>
                         </details>
@@ -3818,13 +3818,13 @@ describe("applyAvailabilityRules", () =&gt; {
   </div>
 </details>
                         <details class="drawer" data-kind="issues">
-                          <summary>Review issues <span class="tag-drift">3 found &middot; all 3 fixed</span></summary>
+                          <summary>Review issues <span class="tag-drift">3 found &middot; all 3 closed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
                             <div class="rows">
-                              <div class="row"><div class="row-key">F-19 &middot; P2 &middot; fixed</div><div class="row-val">No test caught Ben's case: a person who follows the business's week but has a row of his own must still get the business's extra dates. The reviewer broke that line in a copy and all 10 tests passed. Test added; it now fails on that break.</div></div>
-                              <div class="row"><div class="row-key">F-20 &middot; P3 &middot; fixed</div><div class="row-val">One type was not exported, against the naming standard. One word added.</div></div>
-                              <div class="row"><div class="row-key">F-21 &middot; P3 &middot; fixed</div><div class="row-val">The "full diff on GitHub" link at the bottom of each code drawer showed later steps too. Now pinned to the step's own commits.</div></div>
+                              <div class="row"><div class="row-key">F-19 &middot; P2 &middot; closed</div><div class="row-val">No test caught Ben's case: a person who follows the business's week but has a row of his own must still get the business's extra dates. The reviewer broke that line in a copy and all 10 tests passed. Test added; it now fails on that break.</div></div>
+                              <div class="row"><div class="row-key">F-20 &middot; P3 &middot; closed</div><div class="row-val">One type was not exported, against the naming standard. One word added.</div></div>
+                              <div class="row"><div class="row-key">F-21 &middot; P3 &middot; closed</div><div class="row-val">The "full diff on GitHub" link at the bottom of each code drawer showed later steps too. Now pinned to the step's own commits.</div></div>
                             </div>
                           </div>
                         </details>
@@ -3896,7 +3896,7 @@ describe("applyAvailabilityRules", () =&gt; {
                           </div>
                         </details>
                         <details class="drawer" data-kind="reality" open>
-                          <summary>What actually happened <span class="tag-drift">4 kept, 1 added &middot; review next</span></summary>
+                          <summary>What actually happened <span class="tag-drift">4 kept, 1 added &middot; review passed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">All four planned pieces went in as agreed. The one addition is a line of docs that still described the old businesses.</p>
                             <div class="verdict">
@@ -3938,7 +3938,7 @@ describe("applyAvailabilityRules", () =&gt; {
                               </div>
                               <div class="proof-card">
                                 <div class="card-head">Independent review</div>
-                                <p class="rstep-what">Next, after the commit.</p>
+                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>7b04316</code>. No P0 or P1. It reran every test and both builds, recounted the whole cast in the database, ran the seed again and compared every row byte for byte, and checked the ten treatments against Face and Body's own list. It closed all five issues left from steps 2.1 and 2.2, and found four small ones in the seed (below, in Review issues). Receipt in <code>blueprint/context/review.md</code>.</p>
                               </div>
                             </div>
                           </div>
@@ -4327,15 +4327,34 @@ const db = drizzle(client, { schema });</code></pre>
     }
   });</code></pre>
 </div></details>
-    <p class="rstep-what">The full diff on GitHub: linked once the step is committed.</p>
+    <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/compare/b4121a4...7b04316">The full diff on GitHub</a></p>
   </div>
 </details>
 
+                        <details class="drawer" data-kind="issues">
+                          <summary>Review issues <span class="tag-drift">4 found &middot; all small, open</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
+                            <div class="rows">
+                              <div class="row"><div class="row-key">F-22 &middot; P3 &middot; open</div><div class="row-val">The seed's dates are fixed calendar dates. After Oct 18, 2026 Daniel's extra Sunday is in the past, so the clinic loses its "only an extra date" case, and the closed days run out in 2027.</div></div>
+                              <div class="row"><div class="row-key">F-23 &middot; P3 &middot; open</div><div class="row-val">A made-up person given an extra date but no week at all is skipped without a word. Daniel only works because his entry says "no week" out loud.</div></div>
+                              <div class="row"><div class="row-key">F-24 &middot; P3 &middot; open</div><div class="row-val">Three helper types in the seed are not exported, against the naming standard (the same rule as F-20).</div></div>
+                              <div class="row"><div class="row-key">F-25 &middot; P3 &middot; open</div><div class="row-val">On another machine whose local database was not rebuilt, the seed adds the two new businesses beside the old ones, so each login ends up in two businesses, and nothing says to rebuild.</div></div>
+                            </div>
+                          </div>
+                        </details>
                         <details class="drawer" data-kind="reality">
-                          <summary>Log <span class="tag-drift">1 entry, newest first</span></summary>
+                          <summary>Log <span class="tag-drift">2 entries, newest first</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">This step's own entries, newest first: built, reviewed, fixed. Entries about the whole item stay in the item's Log.</p>
                             <div class="log">
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.3 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">A fresh reviewer recounted the cast, reran the seed and found every row byte for byte the same, checked the treatments against Face and Body's list, and closed all five issues left from 2.1 and 2.2. Four small new ones, all in the seed, the most useful being F-25: another machine that was not rebuilt would end up with both the old and the new businesses.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="done">
                       <div class="dot"></div>
                       <div class="entry-body">

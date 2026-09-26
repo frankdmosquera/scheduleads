@@ -131,7 +131,7 @@ comments to say a platform admin can set it through the admin plugin's
 endpoint, or record either as accepted with the reason.
 **Resolution:**
 
-### F-17 [P2] open - A database rebuilt from migrations and the seed has businesses with no first person
+### F-17 [P2] closed - A database rebuilt from migrations and the seed has businesses with no first person
 
 **File:** packages/shared/scripts/seed-dev.ts:87
 **Found:** 2026-09-25 by /audit independent (scope: current; lens: quality)
@@ -154,9 +154,9 @@ insert its first person (kind `person`, named after the business) when it has
 no resource, in the same transaction. This can land in step 2.3, which already
 edits this file, but correct the 2.3 plan text now so it says the seed creates
 the person when missing rather than assuming it exists.
-**Resolution:** Still open. Planned into step 2.3 with Frank on 2026-09-25: the seed creates each dev business's first person when missing; the spec's 2.3 text was corrected the same day.
+**Resolution:** Still open. Planned into step 2.3 with Frank on 2026-09-25: the seed creates each dev business's first person when missing; the spec's 2.3 text was corrected the same day. Closed 2026-09-26 by /audit independent (step 2.3, `7b04316`): `seed-dev.ts:281` now finds or makes the first person (kind `person`, named after the business) inside the seed's one transaction, before any hours or people. The builder left this entry `open` rather than `fixed`; this pass re-examined the repair directly. Evidence: the local database was rebuilt (both users, both businesses and all 20 resources carry one creation timestamp from the seed's transaction, and no old dev business remains), each business has exactly one resource named after it, and a second `db:seed` left every row of the six seeded tables byte-identical. No new defect in the repair; related gaps in the same file are recorded as F-22 to F-25.
 
-### F-18 [P3] fixed - Several refinements in the business-row schema have no test
+### F-18 [P3] closed - Several refinements in the business-row schema have no test
 
 **File:** packages/shared/src/zod-validation/availability/availability-rule-validation-schema.ts:28
 **Found:** 2026-09-25 by /audit independent (scope: current; lens: tests)
@@ -171,9 +171,9 @@ only surface as a raw constraint error from a writer in 2.3 or item 12.
 **Suggested fix:** Add one refusal test per rule to
 `availability-validation-schemas.test.ts`, ideally asserting the issue path
 (`holidayRegion`, `closedDates`) rather than only `success === false`.
-**Resolution:** Fixed 2026-09-25 on Frank's yes: four tests added (a closed date twice, country and province written out instead of their codes, zero days ahead, negative notice). Removing the horizon and notice limits made exactly those two tests fail. Awaits the next review pass to close.
+**Resolution:** Fixed 2026-09-25 on Frank's yes: four tests added (a closed date twice, country and province written out instead of their codes, zero days ahead, negative notice). Removing the horizon and notice limits made exactly those two tests fail. Awaits the next review pass to close. Closed 2026-09-26 by /audit independent: the four tests are at `availability-validation-schemas.test.ts:104-124`. Each targets a row only the business branch could accept (the person branch is `.strict()` and refuses a time zone), so removing the refine, either regex or either limit flips that test; 25 shared tests pass. Asserting the issue path was suggested, not required.
 
-### F-19 [P2] fixed - No test catches a person with a row losing the business's one-off dates
+### F-19 [P2] closed - No test catches a person with a row losing the business's one-off dates
 
 **File:** backend/src/lib/availability-rules.test.ts:49
 **Found:** 2026-09-25 by /audit independent (scope: current; lens: tests)
@@ -190,9 +190,9 @@ week's hours on a day the business changed.
 **Suggested fix:** Add one test: the salon with a one-off date on one day, a
 follower with their own one-off date on another, and assert both dates come
 back, sorted.
-**Resolution:** 2026-09-25, fixed by /implement: added the test "a person with a row who follows the business's week keeps the business's one-off dates" (salon opens Nov 2, Ben has his own Oct 13, both come back sorted). Re-ran the reviewer's mutation (`hasOwnWeek || person !== null` on line 67): the new test fails by name, 1 failed and 10 passed; restored, 11 pass. Awaiting re-review.
+**Resolution:** 2026-09-25, fixed by /implement: added the test "a person with a row who follows the business's week keeps the business's one-off dates" (salon opens Nov 2, Ben has his own Oct 13, both come back sorted). Re-ran the reviewer's mutation (`hasOwnWeek || person !== null` on line 67): the new test fails by name, 1 failed and 10 passed; restored, 11 pass. Awaiting re-review. Closed 2026-09-26 by /audit independent: the test at `availability-rules.test.ts:57` gives a follower with a row (Oct 13) and a business one-off date (Nov 2) and asserts both, sorted. Under the mutation the follower gets only `personDateHours`, so the assertion fails; the mutation was traced, not re-run from a copy. 11 backend tests pass.
 
-### F-20 [P3] fixed - `AvailabilityRuleRowType` is the one type in the project that is not exported
+### F-20 [P3] closed - `AvailabilityRuleRowType` is the one type in the project that is not exported
 
 **File:** backend/src/lib/resolve-availability.ts:15
 **Found:** 2026-09-25 by /audit independent (scope: current; lens: quality)
@@ -201,9 +201,9 @@ always exported". Every other type under `backend/src` and `packages/shared/src`
 is exported (the only exceptions are the augmented `ContextVariableMap`
 interfaces the standard names). Small, but it is the pattern the next file copies.
 **Suggested fix:** `export type AvailabilityRuleRowType = ...`.
-**Resolution:** 2026-09-25, fixed by /implement: `export type AvailabilityRuleRowType`. Backend build and Prettier pass. Awaiting re-review.
+**Resolution:** 2026-09-25, fixed by /implement: `export type AvailabilityRuleRowType`. Backend build and Prettier pass. Awaiting re-review. Closed 2026-09-26 by /audit independent: exported at `resolve-availability.ts:15`; backend build passes. The same class recurs in the 2.3 seed, recorded separately as F-24.
 
-### F-21 [P3] fixed - The build log's "full diff" links move with the branch
+### F-21 [P3] closed - The build log's "full diff" links move with the branch
 
 **File:** blueprint/context/project-log.html:3715
 **Found:** 2026-09-25 by /audit independent (scope: current; lens: quality)
@@ -218,4 +218,73 @@ the whole feature, not the step.
 the step's own commits (`compare/b4b39a5...2519644` for 2.2,
 `compare/cb8e09c...b4b39a5` or the step commit for 2.1). A step's own hash
 cannot be in its own commit, so pin it on the following republish.
-**Resolution:** 2026-09-25, fixed by /implement: the 2.1 link now compares `cb8e09c...ab16897` and the 2.2 link `b4b39a5...98e2493`, each a step plus its review fix. `AGENTS.md` now says every drawer link is pinned to commits, never the branch. Awaiting re-review.
+**Resolution:** 2026-09-25, fixed by /implement: the 2.1 link now compares `cb8e09c...ab16897` and the 2.2 link `b4b39a5...98e2493`, each a step plus its review fix. `AGENTS.md` now says every drawer link is pinned to commits, never the branch. Awaiting re-review. Closed 2026-09-26 by /audit independent: `project-log.html:3375` compares `cb8e09c...ab16897` and `:3817` `b4b39a5...98e2493`, exactly 2.1 plus its fix and 2.2 plus its fix. No link in the page targets a branch name; the 2.3 drawer says its link comes once committed, as the F-21 note expects.
+
+### F-22 [P3] open - The seed's one-off and closed dates are fixed dates, so the clinic loses its "only an extra date" practitioner after Oct 18
+
+**File:** packages/shared/scripts/seed-dev.ts:174
+**Found:** 2026-09-26 by /audit independent (scope: current; lens: quality, tests)
+**Why it matters:** The seed promises "six practitioners with every kind of
+hours" (line 146), and the 2.3 contract and its spot check rely on Daniel being
+the practitioner with only a one-off date. His date is the literal `2026-10-18`.
+From Oct 19, 2026 `resolveAvailability` drops it as past, so Daniel resolves
+exactly like Ana, and a database rebuilt from migrations and the seed (the
+workspace rule for every machine) no longer shows that case at all. The closed
+dates (lines 97 and 144) run out on 2027-01-01 the same way, and Summit
+Painting's two closed dates already sit outside its 60-day horizon, so the
+painting business resolves with no closed dates until late October (checked
+with `resolveAvailability` on the seeded rows). Features 5 and 9 compute slots
+against this data.
+**Suggested fix:** Compute the seed's dates relative to the day it runs (for
+example Daniel on the Sunday about three weeks ahead, closed dates inside each
+horizon), or say beside line 174 that the case expires and when to move it.
+**Resolution:**
+
+### F-23 [P3] open - A seeded person given one-off dates but no `weeklyHours` key is silently skipped
+
+**File:** packages/shared/scripts/seed-dev.ts:313
+**Found:** 2026-09-26 by /audit independent (scope: current; lens: quality)
+**Why it matters:** `PersonSeedType` makes both `weeklyHours` and `dateHours`
+optional (lines 60-61), but line 313 writes a row only when
+`weeklyHours !== undefined`. An entry like
+`{ name: "Ana", kind: "person", dateHours: [...] }` type-checks and its dates
+are dropped without a word. Daniel works only because he spells out
+`weeklyHours: null`. This file is the only writer of hours until item 12, and
+the next person to give a follower a one-off date will write it the natural way.
+**Suggested fix:** Decide the row from both fields
+(`weeklyHours !== undefined || dateHours !== undefined`), or make the type say
+it, for example one optional `hours: { weeklyHours, dateHours }` whose presence
+means a row.
+**Resolution:**
+
+### F-24 [P3] open - The seed's types are not exported, and `PersonSeedType` also describes rooms
+
+**File:** packages/shared/scripts/seed-dev.ts:57
+**Found:** 2026-09-26 by /audit independent (scope: current; lens: quality)
+**Why it matters:** `coding-standards.md` (Naming) says types end in `Type` "and
+always exported", the rule F-20 enforced one step earlier; `PersonSeedType`
+(57), `ServiceSeedType` (64) and `TransactionType` (200) are all unexported.
+The same section says names say what a thing is: `PersonSeedType` carries
+`kind: "person" | "place"` and types the five rooms (lines 176-180), while the
+schema calls both a resource and the helper beside it is `ensureResource`.
+**Suggested fix:** Export the three types and rename `PersonSeedType` to
+`ResourceSeedType` (and `people` to `resources` if wanted).
+**Resolution:**
+
+### F-25 [P3] open - On a dev database that was not rebuilt, the seed adds the new businesses beside the old ones
+
+**File:** packages/shared/scripts/seed-dev.ts:247
+**Found:** 2026-09-26 by /audit independent (scope: current; lens: quality)
+**Why it matters:** The seed finds businesses by slug and never touches others.
+On any machine whose `scheduleads_dev` still holds `agency-dev` and
+`test-salon-dev` (every machine but this one, which was rebuilt for 2.3),
+`db:seed` creates `painting-dev` and `clinic-dev` and a second owner membership
+for each dev account, so both accounts land in the pick-a-business state and
+the admin's home may open on the old, empty agency. Step 2.5's Done when ("the
+home lists `painting-dev`'s three links") then depends on which business is
+active. Nothing in `AGENTS.md` (Commands) or the seed header says an existing
+dev database must be rebuilt after this step.
+**Suggested fix:** One line in `AGENTS.md` Commands and the seed header: after
+pulling 2.3, drop and rebuild the local `scheduleads_dev` (`db:migrate`, then
+`db:seed`). Removing the old businesses from the seed is not needed.
+**Resolution:**
