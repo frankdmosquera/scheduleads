@@ -79,6 +79,14 @@ a shape on either side.
   export: `zod-validation/auth/sign-in-email-validation-schema.ts`. Each kind
   folder is one import (`@scheduleads-app/shared/zod-validation`, through its
   `index.ts`). The Drizzle tables are `db/drizzle-schema.ts`
+- `backend/src` follows the same rule (Frank, 2026-09-26): kind, then area,
+  then one file per export. Every middleware is named as one
+  (`requireOrganizationMiddleware`) and lives in
+  `middleware/<area>/<name>.ts`; plain functions live in
+  `lib/<area>/<name>.ts`. A type sits in the file of the function that
+  produces it. Frank navigates by folder and file name, not by scrolling
+- `frontend` is judged case by case: a piece with real logic gets its own
+  file, a component that is mostly markup and CSS stays whole, however long
 
 ## Styling
 
@@ -133,7 +141,8 @@ a shape on either side.
     push (server-sent events) only when a real need appears
 - Every signed-in API response carries `Cache-Control: no-store`, so no
   browser or proxy keeps one business's data. New dashboard routes mount the
-  same `dashboardNoStore` middleware as `/me` in `backend/src/server.ts`
+  same `dashboardNoStoreMiddleware` as `/me`
+  (`backend/src/middleware/dashboard/dashboard-no-store-middleware.ts`)
 - Validate with the Zod schemas in `packages/shared` at both ends: the form
   before it sends, the route before it touches the database
 - Every app table is organization-scoped and the scope is a security boundary.

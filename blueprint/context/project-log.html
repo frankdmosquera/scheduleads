@@ -1411,7 +1411,7 @@
           </div>
           <div class="row">
             <div class="row-key">Browser cache</div>
-            <div class="row-val">Every signed-in API answer carries <code>Cache-Control: no-store</code>: "never keep a copy". Set once by the <code>dashboardNoStore</code> middleware in <code>backend/src/server.ts</code>, which stamps the header <em>after</em> <code>await next()</code>, on the finished response. That forces the browser to really ask the server, which refuses someone who is signed out. Done and proved.</div>
+            <div class="row-val">Every signed-in API answer carries <code>Cache-Control: no-store</code>: "never keep a copy". Set once by <code>dashboardNoStoreMiddleware</code> in <code>backend/src/middleware/dashboard/</code>, which stamps the header <em>after</em> <code>await next()</code>, on the finished response. That forces the browser to really ask the server, which refuses someone who is signed out. Done and proved.</div>
           </div>
           <div class="row">
             <div class="row-key">Page snapshot</div>
@@ -4655,9 +4655,17 @@ const db = drizzle(client, { schema });</code></pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">7 general entries, newest first &middot; each step keeps its own</span></summary>
+                <summary>Log <span class="tag-drift">8 general entries, newest first &middot; each step keeps its own</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Every middleware is named as one and has its own file</span><span class="kind-tag">Decided</span><span class="stamp">Sep 26</span></div>
+                        <p class="entry-text">Reading <code>active-organization.ts</code> before 2.4, you asked why its middleware were not called middleware, and pointed out that the rule "kind, then area, then one file per export" had been agreed before. It had, but only <code>packages/shared</code> followed it. Now the backend does too: <code>backend/src/middleware/&lt;area&gt;/</code> holds each middleware in its own file, named <code>...Middleware</code> (<code>requireOrganizationMiddleware</code>, <code>requirePermissionMiddleware</code>, <code>requireKnownSubscriptionMiddleware</code>, <code>requireModuleMiddleware</code>, <code>dashboardCorsMiddleware</code>, <code>dashboardNoStoreMiddleware</code>). Their helpers, <code>getActiveOrganization</code> and <code>refuse</code>, are plain functions under <code>lib/&lt;area&gt;/</code>.</p>
+                        <p class="entry-text">The frontend is judged case by case: a piece with real logic gets its own file, a component that is mostly markup and CSS stays whole. Both halves written into <code>coding-standards.md</code>. Nothing changed in behaviour: the builds and all 36 tests pass, and the running API gave the same 401 signed out and the same <code>/me</code> answer signed in as the clinic's owner. Done as a chore before 2.4, because 2.4 adds the public CORS rule, which now starts life in <code>middleware/public/</code>.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">
@@ -4796,7 +4804,7 @@ const db = drizzle(client, { schema });</code></pre>
       </section>
 
       <footer>
-        <span>Updated Sep 25, 2026</span>
+        <span>Updated Sep 26, 2026</span>
         <span>&middot;</span>
         <span>Source: blueprint/build-plan.md</span>
       </footer>

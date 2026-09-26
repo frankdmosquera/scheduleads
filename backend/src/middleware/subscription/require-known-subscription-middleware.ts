@@ -1,5 +1,5 @@
-// Backend middleware: what the business has paid for. Two checks, always in this order:
-// requireOrganization -> requireKnownSubscription -> requireModule("...").
+// Is the business on a tier that exists at all? Always in this order:
+// requireOrganizationMiddleware -> requireKnownSubscriptionMiddleware -> requireModuleMiddleware("...").
 
 import { eq } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
@@ -7,14 +7,13 @@ import { createMiddleware } from "hono/factory";
 import {
   getSubscriptionLimits,
   isKnownTier,
-  type ModuleType,
   type SubscriptionLimitsType,
   type TierType,
 } from "@scheduleads-app/shared/subscriptions";
 import { organization } from "@scheduleads-app/shared/db";
 
-import { db } from "../database.js";
-import { refuse } from "./active-organization.js";
+import { db } from "../../database.js";
+import { refuse } from "../../lib/refusal/refuse.js";
 
 // Adds `subscription` and `organizationDetails` to Hono's context. Only the resolved tier
 // and limits go on it, never the raw plan string.
@@ -25,14 +24,14 @@ declare module "hono" {
   }
 }
 
-// Is the business on a tier that exists at all? The only place in the API that reads
-// organization.plan, so an unknown value is handled one way, in one place.
-export const requireKnownSubscription = createMiddleware(async (c, next) => {
+// The only place in the API that reads organization.plan, so an unknown value is
+// handled one way, in one place.
+export const requireKnownSubscriptionMiddleware = createMiddleware(async (c, next) => {
   const org = c.get("org");
 
   if (!org) {
     throw new Error(
-      "requireKnownSubscription ran without requireOrganization before it. Mount them in that order."
+      "requireKnownSubscriptionMiddleware ran without requireOrganizationMiddleware before it. Mount them in that order."
     );
   }
 
@@ -71,26 +70,3 @@ export const requireKnownSubscription = createMiddleware(async (c, next) => {
   c.set("organizationDetails", { name: row.name, slug: row.slug });
   await next();
 });
-
-// A function that makes a middleware: requireModule("booking"). Reads what
-// requireKnownSubscription stored, so no query of its own.
-export const requireModule = (module: ModuleType) =>
-  createMiddleware(async (c, next) => {
-    const subscription = c.get("subscription");
-
-    if (!subscription) {
-      throw new Error(
-        "requireModule ran without requireKnownSubscription before it. Mount them in that order."
-      );
-    }
-
-    // 403 plan_required: a real tier, but it does not include this module.
-    if (!subscription.limits.modules.includes(module)) {
-      return c.json(
-        refuse("plan_required", `This organization's plan does not include ${module}.`),
-        403
-      );
-    }
-
-    await next();
-  });
