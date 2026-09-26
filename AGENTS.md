@@ -354,10 +354,13 @@ real code, as it reads in the editor, never a summary line: a new file is
 shown whole; a changed file shows the old block, then the new one, with a few
 lines around them. Real line numbers from the file. New lines get a thin green
 bar on the left and removed lines a thin red one; no `+` or `-` signs, because
-he reads code, not diffs. Coloured by Prism, loaded by the page from `cdnjs`,
-with the token colours and `#121314` background of VS Code's **Dark 2026**,
-the theme Frank uses, so the page and his editor match. Ends with a link to the
-step's commit on GitHub for the full diff.
+he reads code, not diffs. Coloured by Shiki, loaded by the page from
+`cdn.jsdelivr.net`, which uses VS Code's own grammars, in VS Code's **Dark
+2026** exactly as his editor resolves it, so the page and his editor match.
+Checked against his screen on 2026-09-25: `import` purple, type names green.
+The theme is built by `node blueprint/scripts/code-theme.mjs` from the theme
+files in his VS Code install; rerun it when VS Code changes the theme. Ends
+with a link to the step's commit on GitHub for the full diff.
 
 Build the drawer with `node blueprint/scripts/code-drawer.mjs` (usage at the top
 of the file), never by hand, so the line numbers are the file's own. The page
@@ -538,10 +541,11 @@ step that adds logic adds its tests, and every step reruns them.
 
 - Shared package tests: `npm run test --workspace=@scheduleads-app/shared`
 - Shared package tests, rerunning on save: `npm run test:watch --workspace=@scheduleads-app/shared`
+- Backend tests: `npm run test --workspace=backend`
+- Backend tests, rerunning on save: `npm run test:watch --workspace=backend`
 
-The backend gets the same `test` and `test:watch` scripts, and Vitest as a dev
-dependency, in step 2.2 with its first test, so no workspace ever carries a
-test command that finds nothing to run.
+The frontend has no test script yet; it gets one with its first test, so no
+workspace ever carries a test command that finds nothing to run.
 
 There is no `Verify` command and no GitHub check yet; `/ci` sets those up when
 wanted.

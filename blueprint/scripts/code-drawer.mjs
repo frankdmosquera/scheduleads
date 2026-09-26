@@ -2,7 +2,7 @@
 // files and git diff, so line numbers match the files. Run from the repo root:
 //   node blueprint/scripts/code-drawer.mjs . <diffBase> <githubLink> <path:new|changed>... > drawer.html
 // Paste the output into the step's row in project-log.html; the page already carries
-// the viewer (Prism in Dark 2026 colours, line numbers, green and red bars).
+// the viewer (Shiki in Dark 2026 colours, line numbers, green and red bars).
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

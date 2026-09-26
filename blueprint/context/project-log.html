@@ -1175,9 +1175,10 @@
   }
 
   /* ---------- the code drawer ----------
-     Every closing step shows its real code, file by file. Coloured like VS Code's
-     Dark 2026, the theme Frank uses, so the page reads like his editor in both page
-     themes. New lines get a green bar, removed lines a red one; no + or - signs. */
+     Every closing step shows its real code, file by file. Coloured by Shiki with VS Code's
+     Dark 2026 exactly as Frank's editor resolves it (the theme is in #code-theme below), so
+     the page reads like his editor in both page themes. New lines get a green bar, removed
+     lines a red one; no + or - signs. */
 
   .drawer[data-kind="code"] > summary { background: color-mix(in srgb, #3994BC 12%, var(--surface)); color: var(--ink-2); }
   .drawer[data-kind="code"] > summary:hover { background: color-mix(in srgb, #3994BC 22%, var(--surface)); }
@@ -1192,19 +1193,12 @@
   .codefile > summary .tag-drift { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
   .codefile-body { padding: 10px; display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--rule); }
   .code-label { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
-  pre.code { margin: 0; padding: 10px 0; background: #121314; color: #c9d1d9; border: 1px solid #2A2B2C; border-radius: 8px; overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.6; tab-size: 2; }
+  pre.code { margin: 0; padding: 10px 0; background: #121314; color: #BBBEBF; border: 1px solid #2A2B2C; border-radius: 8px; overflow-x: auto; font-family: Consolas, "Courier New", var(--mono); font-variant-ligatures: none; font-size: 12.5px; line-height: 1.6; tab-size: 2; } /* VS Code's own default font on Windows, and no ligatures, as in Frank's editor */
   pre.code code { background: none; padding: 0; font-size: inherit; word-break: normal; white-space: pre; display: block; min-width: max-content; }
   pre.code .ln { display: block; padding-right: 14px; border-left: 3px solid transparent; }
   pre.code .ln .n { display: inline-block; width: 3.4em; padding-right: 1.1em; text-align: right; color: #858889; user-select: none; }
   pre.code .ln.added { background: rgba(52, 125, 57, 0.18); border-left-color: #72C892; }
   pre.code .ln.removed { background: rgba(201, 60, 55, 0.18); border-left-color: #F28772; }
-  pre.code .token.comment, pre.code .token.prolog { color: #8b949e; }
-  pre.code .token.keyword, pre.code .token.operator, pre.code .token.important { color: #ff7b72; }
-  pre.code .token.string, pre.code .token.template-string, pre.code .token.regex, pre.code .token.char { color: #a5d6ff; }
-  pre.code .token.function { color: #d2a8ff; }
-  pre.code .token.class-name, pre.code .token.builtin { color: #ffa657; }
-  pre.code .token.number, pre.code .token.boolean, pre.code .token.constant, pre.code .token.property { color: #79c0ff; }
-  pre.code .token.punctuation { color: #c9d1d9; }
 </style>
 
 <!-- One bar, one row, across the whole window: the two views, then every
@@ -1226,10 +1220,10 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.2&#39;s plan, your yes</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.2 built, its review next</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
-                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="next" title="2.2 The one function that resolves hours - next">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" title="2.3 The seeds">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" title="2.4 The public routes">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
+                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="next" title="2.3 The seeds - next">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" title="2.4 The public routes">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
                 <a class="cell" href="#item-3" data-goto="item-3" title="3 Calendar connection">3</a>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
@@ -2699,7 +2693,7 @@
               </div>
 
               <details class="drawer" data-kind="plan" open>
-                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 done &middot; 2.2&#39;s plan next &middot; 2.1 to 2.6</span></summary>
+                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 and 2.2 done &middot; 2.2&#39;s review, then 2.3&#39;s plan &middot; 2.1 to 2.6</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
                   <div class="item-steps">
@@ -3338,8 +3332,8 @@ import { sendLoginCode } from "./send-login-code.js";</code></pre>
                       </div>
                     </details>
 
-                    <details class="rstep" id="step-2-2" data-state="planned" open>
-                      <summary><span class="sn">2.2</span><span class="sm"></span><span>The one function that resolves hours</span><span class="ss">Planned</span></summary>
+                    <details class="rstep" id="step-2-2" data-state="done">
+                      <summary><span class="sn">2.2</span><span class="sm"></span><span>The one function that resolves hours</span><span class="ss">Done</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what"><code>resolveAvailability</code>: given a business and optionally a person, it works out that person's bookable hours. Their own week if they have one, otherwise the business's; their one-off dates; the business's closed days and holidays, minus any date a one-off date opens; and the business's time zone, notice and horizon. Every later item that asks "when can this be booked" calls this and nothing else, so these rules exist in exactly one place.</p>
                         <details class="drawer" data-kind="plan">
@@ -3352,12 +3346,379 @@ import { sendLoginCode } from "./send-login-code.js";</code></pre>
                               <li>"Now" is passed in, so the horizon can be checked without waiting for a date</li>
                             </ul>
                             <div class="rstep-when">Done when: against seeded rows it returns a person's own week for someone who has one, the business's for someone who does not, the business's week plus their date for someone with only a one-off date, a business closed day as closed for someone with their own week, a closed day opened by one person as open for them and still closed for another, and nothing for a business with no row or for another business's person.</div>
+                            <p class="rstep-what"><strong>Amended with you before building, Sep 25.</strong> "Against seeded rows" could not happen in order: the seeds are 2.3. So the function was split in two. The rules are a pure function with no database, proved by saved tests. A thin reader fetches the rows, proved by hand with rows added and removed. The horizon runs from today in the business's time zone to today plus its days: 60 days on Sep 25 ends Nov 24. <strong>Approved by you, Sep 25,</strong> point by point: the rules, the split with Vitest in the backend, and the new Done when.</p>
                           </div>
                         </details>
+
+                        <details class="drawer" data-kind="reality" open>
+                          <summary>What actually happened <span class="tag-drift">4 kept, 4 added &middot; review next</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">All four rules went in as planned. The additions are the split you approved, and one check the plan had wrong.</p>
+                            <div class="verdict">
+                              <span class="v-kept">4 as planned</span>
+                              <span class="v-added">4 added</span>
+                            </div>
+                            <ul class="substeps">
+                              <li data-outcome="kept">the week: the person's own, else the business's; every query filters on the business first</li>
+                              <li data-outcome="kept">one-off dates: the person's own, plus the business's for someone following the business's week, the person's winning on the same date</li>
+                              <li data-outcome="kept">closed dates inside the horizon, minus every date opened by this person or by the business</li>
+                              <li data-outcome="kept">"now" is passed in</li>
+                              <li data-outcome="added">split in two: <code>applyAvailabilityRules</code> (the rules, no database) and <code>resolveAvailability</code> (reads the rows)
+                                <em class="why">Approved with you before building: the seeds are 2.3, so the rules had to be provable without them.</em></li>
+                              <li data-outcome="added">a check that the person belongs to this business
+                                <em class="why">The plan said "filter on the business first" would be enough. It is not: another business's person simply has no row here, and a person with no row follows the business's week. Without the check, the wrong person would quietly get this business's hours instead of nothing.</em></li>
+                              <li data-outcome="added">"today" is the business's date, not the server's
+                                <em class="why">At 10:30pm in Edmonton the server, in UTC, is already on tomorrow. Counted from the server, today's closed day would drop off the list.</em></li>
+                              <li data-outcome="added">Vitest in the backend, with 10 saved tests
+                                <em class="why">Your yes, Sep 25. One test per rule, plus the time zone trap and the business's settings. Proved they can fail: with "today" switched to the server's date for a moment, the time zone test failed by name.</em></li>
+                            </ul>
+                            <div class="snags">
+                              <div class="snags-head">What bit</div>
+                              <ul>
+                                <li><b>The spec's check could not be met in order.</b> It asked for "seeded rows" one step before the seeds exist. Caught while going through the plan, before any code, and amended with you.</li>
+                                <li><b>"Filter on the business first" sounded like it covered another business's person.</b> It does not, because "no row" has a legitimate meaning here: follow the business. A missing row and a foreign person look the same unless the person is looked up on its own.</li>
+                                <li><b>Planting a bug in a brand new file needs a copy first.</b> <code>git checkout</code> cannot restore a file git has never seen. A copy had been taken, so nothing was lost, but only just.</li>
+                              </ul>
+                            </div>
+                            <div class="rstep-when">Passed. 10 backend tests pass, and shared's 25 still pass. By hand, with a business row and one person's row added to <code>test-salon-dev</code> and removed after: the business itself and a person with no row get the salon's week; a person with a row gets their own; <code>agency-dev</code>, which has no hours yet, gets nothing; the salon asked about the agency's person gets nothing. The database is back to 0 hours rows. Backend build passes, and no test file reaches <code>dist/</code>.</div>
+                          </div>
+                        </details>
+<details class="drawer" data-kind="code">
+  <summary>What changed in the code <span class="tag-drift">4 files &middot; +308 &minus;1 lines</span></summary>
+  <div class="drawer-body">
+    <p class="drawer-what">The real code of this step, file by file, coloured like VS Code's Dark 2026. A green bar marks a new line, a red bar a removed one; a changed file shows the old block above the new. Only this project's own code: generated files and packages are left out. <code>backend/package.json</code> gains one dev dependency, <code>vitest</code>, and the <code>test</code> and <code>test:watch</code> scripts.</p>
+<details class="codefile"><summary><code>backend/src/lib/availability-rules.ts</code> <span class="tag-drift">new &middot; 91 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: the rules that turn a business's row and one person's row into the hours a
+// customer can book. Pure, no database, so every rule is tested on its own.
+// resolve-availability.ts reads the rows and hands them here.
+
+import type { DateHoursType, WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
+
+// The business's row, with the settings the database guarantees are set on it.
+export type BusinessHoursInputType = {
+  weeklyHours: WeeklyHoursType;
+  dateHours: DateHoursType;
+  timezone: string;
+  minimumNoticeMinutes: number;
+  horizonDays: number;
+  closedDates: string[];
+};
+
+// A person's row: only their own week (null = follows the business's) and one-off dates.
+export type PersonHoursInputType = {
+  weeklyHours: WeeklyHoursType | null;
+  dateHours: DateHoursType;
+};
+
+export type ResolvedAvailabilityType = {
+  source: "resource" | "organization"; // whose week answered
+  timezone: string;
+  weeklyHours: WeeklyHoursType;
+  dateHours: DateHoursType; // the one-off dates that apply, inside the horizon
+  minimumNoticeMinutes: number;
+  horizonDays: number;
+  closedDates: string[]; // closed dates inside the horizon, minus opened ones; sorted, unique
+};
+
+// Today's date where the business is, not where the server is: at 11pm in Edmonton
+// the server in UTC is already on tomorrow.
+function localDate(now: Date, timezone: string): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const part = (type: string) =&gt; parts.find((datePart) =&gt; datePart.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+// Calendar arithmetic on a plain YYYY-MM-DD, done in UTC so no daylight change can shift it.
+function addDays(date: string, days: number): string {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
+export function applyAvailabilityRules(
+  business: BusinessHoursInputType,
+  person: PersonHoursInputType | null, // null = the business itself, or a person with no row
+  now: Date
+): ResolvedAvailabilityType {
+  const firstDate = localDate(now, business.timezone);
+  const lastDate = addDays(firstDate, business.horizonDays); // 60 days on Sep 25 ends Nov 24
+  const insideHorizon = (date: string) =&gt; date &gt;= firstDate &amp;&amp; date &lt;= lastDate; // YYYY-MM-DD sorts as text
+
+  const hasOwnWeek = person?.weeklyHours != null;
+  const personDateHours = person?.dateHours ?? [];
+
+  // A person with their own week keeps only their own one-off dates. Anyone following the
+  // business's week also gets the business's; on the same date the person's own wins.
+  const personDates = new Set(personDateHours.map((entry) =&gt; entry.date));
+  const dateHours = hasOwnWeek
+    ? personDateHours
+    : [...business.dateHours.filter((entry) =&gt; !personDates.has(entry.date)), ...personDateHours];
+
+  // A one-off date opens a closed day: the person's for them only, the business's for
+  // everyone, each on their own hours. So both lists open, whichever week applies.
+  const openedDates = new Set(
+    [...business.dateHours, ...personDateHours].map((entry) =&gt; entry.date)
+  );
+  const closedDates = [...new Set(business.closedDates)]
+    .filter((date) =&gt; insideHorizon(date) &amp;&amp; !openedDates.has(date))
+    .sort();
+
+  return {
+    source: hasOwnWeek ? "resource" : "organization",
+    timezone: business.timezone,
+    weeklyHours: person?.weeklyHours ?? business.weeklyHours,
+    dateHours: dateHours
+      .filter((entry) =&gt; insideHorizon(entry.date))
+      .sort((a, b) =&gt; a.date.localeCompare(b.date)),
+    minimumNoticeMinutes: business.minimumNoticeMinutes,
+    horizonDays: business.horizonDays,
+    closedDates,
+  };
+}</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/src/lib/resolve-availability.ts</code> <span class="tag-drift">new &middot; 85 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: when can a customer book this business, or one person in it? The one place
+// that question is answered. Reads the rows here; the rules live in availability-rules.ts.
+
+import { and, eq, isNull } from "drizzle-orm";
+
+import { availabilityRule, resource } from "@scheduleads-app/shared/db";
+
+import { db } from "../database.js";
+import {
+  applyAvailabilityRules,
+  type BusinessHoursInputType,
+  type ResolvedAvailabilityType,
+} from "./availability-rules.js";
+
+type AvailabilityRuleRowType = typeof availabilityRule.$inferSelect;
+
+// The database check guarantees these on the business's row. A row without them is a
+// corrupt row, a real fault, so it throws instead of being read as "closed".
+function toBusinessHours(row: AvailabilityRuleRowType): BusinessHoursInputType {
+  const { weeklyHours, timezone, minimumNoticeMinutes, horizonDays, closedDates } = row;
+  if (
+    weeklyHours === null ||
+    timezone === null ||
+    minimumNoticeMinutes === null ||
+    horizonDays === null ||
+    closedDates === null
+  ) {
+    throw new Error(`availability_rule ${row.id} is the business's row but is missing a setting.`);
+  }
+  return {
+    weeklyHours,
+    dateHours: row.dateHours,
+    timezone,
+    minimumNoticeMinutes,
+    horizonDays,
+    closedDates,
+  };
+}
+
+// null when the business has no hours yet, or the person is not one of its own.
+export async function resolveAvailability(
+  organizationId: string,
+  resourceId: string | null, // null = the business's own hours
+  now: Date // a parameter, not new Date() inside, so the horizon can be tested
+): Promise&lt;ResolvedAvailabilityType | null&gt; {
+  // Every query filters on the business first, so a person id from another business
+  // finds nothing here.
+  const [businessRow] = await db
+    .select()
+    .from(availabilityRule)
+    .where(
+      and(eq(availabilityRule.organizationId, organizationId), isNull(availabilityRule.resourceId))
+    )
+    .limit(1);
+
+  if (!businessRow) return null;
+
+  const business = toBusinessHours(businessRow);
+
+  if (resourceId === null) return applyAvailabilityRules(business, null, now);
+
+  // The person must exist in this business. Without this, another business's person
+  // would simply have no row here and quietly get this business's week.
+  const [person] = await db
+    .select({ id: resource.id })
+    .from(resource)
+    .where(and(eq(resource.organizationId, organizationId), eq(resource.id, resourceId)))
+    .limit(1);
+
+  if (!person) return null;
+
+  // No row for the person is normal: they follow the business's week.
+  const [personRow] = await db
+    .select({ weeklyHours: availabilityRule.weeklyHours, dateHours: availabilityRule.dateHours })
+    .from(availabilityRule)
+    .where(
+      and(
+        eq(availabilityRule.organizationId, organizationId),
+        eq(availabilityRule.resourceId, resourceId)
+      )
+    )
+    .limit(1);
+
+  return applyAvailabilityRules(business, personRow ?? null, now);
+}</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/src/lib/availability-rules.test.ts</code> <span class="tag-drift">new &middot; 131 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>import { describe, expect, test } from "vitest";
+
+import {
+  applyAvailabilityRules,
+  type BusinessHoursInputType,
+  type PersonHoursInputType,
+} from "./availability-rules.js";
+
+const nineToFive = { startMinute: 540, endMinute: 1020 };
+const tenToTwo = { startMinute: 600, endMinute: 840 };
+
+const noonSep25InEdmonton = new Date("2026-09-25T18:00:00Z"); // Edmonton is UTC-6 in September
+
+// The test salon: open Monday and Saturday, closed on Christmas Eve.
+const salon: BusinessHoursInputType = {
+  weeklyHours: { mon: [nineToFive], sat: [nineToFive] },
+  dateHours: [],
+  timezone: "America/Edmonton",
+  minimumNoticeMinutes: 240,
+  horizonDays: 120, // reaches Jan 23, so Christmas Eve is inside
+  closedDates: ["2026-12-24"],
+};
+
+const anaOwnWeek: PersonHoursInputType = {
+  weeklyHours: { tue: [nineToFive], thu: [nineToFive] },
+  dateHours: [],
+};
+
+const benOnlyChristmasEve: PersonHoursInputType = {
+  weeklyHours: null,
+  dateHours: [{ date: "2026-12-24", windows: [tenToTwo] }],
+};
+
+describe("applyAvailabilityRules", () =&gt; {
+  test("a person with their own week gets it", () =&gt; {
+    const resolved = applyAvailabilityRules(salon, anaOwnWeek, noonSep25InEdmonton);
+
+    expect(resolved.source).toBe("resource");
+    expect(resolved.weeklyHours).toEqual(anaOwnWeek.weeklyHours);
+  });
+
+  test("a person with no row gets the business's week", () =&gt; {
+    const resolved = applyAvailabilityRules(salon, null, noonSep25InEdmonton);
+
+    expect(resolved.source).toBe("organization");
+    expect(resolved.weeklyHours).toEqual(salon.weeklyHours);
+  });
+
+  test("a person with only a one-off date gets the business's week plus that date", () =&gt; {
+    const resolved = applyAvailabilityRules(salon, benOnlyChristmasEve, noonSep25InEdmonton);
+
+    expect(resolved.source).toBe("organization");
+    expect(resolved.weeklyHours).toEqual(salon.weeklyHours);
+    expect(resolved.dateHours).toEqual(benOnlyChristmasEve.dateHours);
+  });
+
+  test("on the same date, a person's one-off date beats the business's", () =&gt; {
+    const salonOpensChristmasEve = {
+      ...salon,
+      dateHours: [{ date: "2026-12-24", windows: [nineToFive] }],
+    };
+    const resolved = applyAvailabilityRules(
+      salonOpensChristmasEve,
+      benOnlyChristmasEve,
+      noonSep25InEdmonton
+    );
+
+    expect(resolved.dateHours).toEqual([{ date: "2026-12-24", windows: [tenToTwo] }]);
+  });
+
+  test("a business closed date is closed even for a person with their own week", () =&gt; {
+    const resolved = applyAvailabilityRules(salon, anaOwnWeek, noonSep25InEdmonton);
+
+    expect(resolved.closedDates).toEqual(["2026-12-24"]);
+  });
+
+  test("a person's one-off date opens a closed day for them only", () =&gt; {
+    const forBen = applyAvailabilityRules(salon, benOnlyChristmasEve, noonSep25InEdmonton);
+    const forAna = applyAvailabilityRules(salon, anaOwnWeek, noonSep25InEdmonton);
+
+    expect(forBen.closedDates).toEqual([]);
+    expect(forAna.closedDates).toEqual(["2026-12-24"]);
+  });
+
+  test("a business one-off date opens a closed day for everyone, each on their own hours", () =&gt; {
+    const salonOpensChristmasEve = {
+      ...salon,
+      dateHours: [{ date: "2026-12-24", windows: [nineToFive] }],
+    };
+    const forAna = applyAvailabilityRules(salonOpensChristmasEve, anaOwnWeek, noonSep25InEdmonton);
+    const forBusiness = applyAvailabilityRules(salonOpensChristmasEve, null, noonSep25InEdmonton);
+
+    expect(forAna.closedDates).toEqual([]);
+    expect(forAna.dateHours).toEqual([]); // open on her own Thursday hours, not the salon's
+    expect(forBusiness.closedDates).toEqual([]);
+    expect(forBusiness.dateHours).toEqual(salonOpensChristmasEve.dateHours);
+  });
+
+  test("past dates and dates beyond the horizon are dropped", () =&gt; {
+    const sixtyDays = {
+      ...salon,
+      horizonDays: 60, // on Sep 25 the last date is Nov 24
+      closedDates: ["2026-11-25", "2026-09-20", "2026-11-24", "2026-09-25"],
+      dateHours: [
+        { date: "2026-09-24", windows: [nineToFive] },
+        { date: "2026-10-13", windows: [nineToFive] },
+        { date: "2026-11-25", windows: [nineToFive] },
+      ],
+    };
+    const resolved = applyAvailabilityRules(sixtyDays, null, noonSep25InEdmonton);
+
+    expect(resolved.closedDates).toEqual(["2026-09-25", "2026-11-24"]); // sorted too
+    expect(resolved.dateHours.map((entry) =&gt; entry.date)).toEqual(["2026-10-13"]);
+  });
+
+  test("today is the business's date, not the server's", () =&gt; {
+    const lateSep25InEdmonton = new Date("2026-09-26T04:30:00Z"); // 10:30pm Sep 25 there, Sep 26 in UTC
+    const sixtyDays = { ...salon, horizonDays: 60, closedDates: ["2026-09-25", "2026-11-25"] };
+    const resolved = applyAvailabilityRules(sixtyDays, null, lateSep25InEdmonton);
+
+    expect(resolved.closedDates).toEqual(["2026-09-25"]);
+  });
+
+  test("business settings always come from the business", () =&gt; {
+    const resolved = applyAvailabilityRules(salon, anaOwnWeek, noonSep25InEdmonton);
+
+    expect(resolved.timezone).toBe("America/Edmonton");
+    expect(resolved.minimumNoticeMinutes).toBe(240);
+    expect(resolved.horizonDays).toBe(120);
+  });
+});</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/tsconfig.json</code> <span class="tag-drift">changed &middot; +1 &minus;1</span></summary><div class="codefile-body">
+<div class="code-label">Before &middot; line 11</div><pre class="code" data-lang="typescript" data-start="11" data-mark="14" data-kind="removed"><code>    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "exclude": ["node_modules"]
+}</code></pre>
+<div class="code-label">After &middot; line 11</div><pre class="code" data-lang="typescript" data-start="11" data-mark="14" data-kind="added"><code>    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "exclude": ["node_modules", "src/**/*.test.ts"] // tests run through Vitest, never shipped in dist/
+}</code></pre>
+</div></details>
+    <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/compare/b4b39a5...feature/booking-links-resources-and-availability-rules">The full diff on GitHub</a></p>
+  </div>
+</details>
                       </div>
                     </details>
 
-                    <details class="rstep" id="step-2-3" data-state="planned">
+                    <details class="rstep" id="step-2-3" data-state="planned" open>
                       <summary><span class="sn">2.3</span><span class="sm"></span><span>The seeds</span><span class="ss">Planned</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what">Until settings arrive in item 12, a script is the only way hours and links get into the database, for the dev businesses and for real clients. So it validates with the same schema a settings page will use, and it will not touch the real database unless told to on purpose.</p>
@@ -3647,9 +4008,26 @@ import { sendLoginCode } from "./send-login-code.js";</code></pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">7 entries, newest first</span></summary>
+                <summary>Log <span class="tag-drift">9 entries, newest first</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">The code drawer now uses your editor's colours</span><span class="kind-tag">Decided</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">You noticed <code>import</code> was red on this page and purple in your VS Code, and type names orange instead of green. The cause: Dark 2026 sits on top of Dark+, and VS Code uses Dark+'s more specific rules where they exist. The page had copied only the top layer. Checked by measuring the pixels on your screen, not from memory.</p>
+                        <p class="entry-text">Your call: switch to <strong>Shiki</strong>, the highlighter that uses VS Code's own grammars and colouring rules, fed your exact theme, built from the files in your VS Code install by <code>blueprint/scripts/code-theme.mjs</code>. It loads from jsdelivr; nothing was installed in the repo. The 2.1 and 2.2 drawers recoloured on their own.</p>
+                        <p class="entry-text"><strong>What it cannot do:</strong> VS Code also colours TypeScript by meaning. One case is added by hand, field names in a type (<code>weeklyHours</code>) in light grey, as your editor shows them. A parameter used later in its function may still differ.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.2 built: the one function that answers "when can a customer book?"</span><span class="kind-tag">Done</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">Given a business and, if wanted, one person, it returns their week, their one-off dates, the closed days that still apply, and the business's time zone, notice and horizon. Split in two with your yes: the rules have no database and 10 saved tests; the reader was proved by hand on the salon, with the rows removed after. Vitest is now in the backend too.</p>
+                        <p class="entry-text"><strong>One fault in the plan, found while building:</strong> filtering on the business did not stop another business's person from getting this business's week, because "no row" means "follow the business". It now checks the person belongs to the business first. Next: the audit and independent review of this step, then 2.3's plan.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="done">
                       <div class="dot"></div>
                       <div class="entry-body">
@@ -3947,31 +4325,16 @@ import { sendLoginCode } from "./send-login-code.js";</code></pre>
   </div>
 </div>
 
-<script>window.Prism = { manual: true };</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+<!-- Frank's Dark 2026, flattened from VS Code's theme files by
+     blueprint/scripts/code-theme.mjs. Regenerate it there, never by hand. -->
+<script type="application/json" id="code-theme">{"name":"dark-2026","type":"dark","fg":"#BBBEBF","bg":"#121314","colors":{"editor.foreground":"#BBBEBF","editor.background":"#121314"},"tokenColors":[{"scope":["meta.embedded","source.groovy.embedded","string meta.image.inline.markdown","variable.legacy.builtin.python"],"settings":{"foreground":"#D4D4D4"}},{"scope":"emphasis","settings":{"fontStyle":"italic"}},{"scope":"strong","settings":{"fontStyle":"bold"}},{"scope":"header","settings":{"foreground":"#000080"}},{"scope":"comment","settings":{"foreground":"#6A9955"}},{"scope":"constant.language","settings":{"foreground":"#569cd6"}},{"scope":["constant.numeric","variable.other.enummember","keyword.operator.plus.exponent","keyword.operator.minus.exponent"],"settings":{"foreground":"#b5cea8"}},{"scope":"constant.regexp","settings":{"foreground":"#646695"}},{"scope":"entity.name.tag","settings":{"foreground":"#569cd6"}},{"scope":["entity.name.tag.css","entity.name.tag.less"],"settings":{"foreground":"#d7ba7d"}},{"scope":"entity.other.attribute-name","settings":{"foreground":"#9cdcfe"}},{"scope":["entity.other.attribute-name.class.css","source.css entity.other.attribute-name.class","entity.other.attribute-name.id.css","entity.other.attribute-name.parent-selector.css","entity.other.attribute-name.parent.less","source.css entity.other.attribute-name.pseudo-class","entity.other.attribute-name.pseudo-element.css","source.css.less entity.other.attribute-name.id","entity.other.attribute-name.scss"],"settings":{"foreground":"#d7ba7d"}},{"scope":"invalid","settings":{"foreground":"#f44747"}},{"scope":"markup.underline","settings":{"fontStyle":"underline"}},{"scope":"markup.bold","settings":{"fontStyle":"bold","foreground":"#569cd6"}},{"scope":"markup.heading","settings":{"fontStyle":"bold","foreground":"#569cd6"}},{"scope":"markup.italic","settings":{"fontStyle":"italic","foreground":"#C586C0"}},{"scope":"markup.strikethrough","settings":{"fontStyle":"strikethrough"}},{"scope":"markup.inserted","settings":{"foreground":"#b5cea8"}},{"scope":"markup.deleted","settings":{"foreground":"#ce9178"}},{"scope":"markup.changed","settings":{"foreground":"#569cd6"}},{"scope":"punctuation.definition.quote.begin.markdown","settings":{"foreground":"#6A9955"}},{"scope":"punctuation.definition.list.begin.markdown","settings":{"foreground":"#6796e6"}},{"scope":"markup.inline.raw","settings":{"foreground":"#ce9178"}},{"name":"brackets of XML/HTML tags","scope":"punctuation.definition.tag","settings":{"foreground":"#808080"}},{"scope":["meta.preprocessor","entity.name.function.preprocessor"],"settings":{"foreground":"#569cd6"}},{"scope":"meta.preprocessor.string","settings":{"foreground":"#ce9178"}},{"scope":"meta.preprocessor.numeric","settings":{"foreground":"#b5cea8"}},{"scope":"meta.structure.dictionary.key.python","settings":{"foreground":"#9cdcfe"}},{"scope":"meta.diff.header","settings":{"foreground":"#569cd6"}},{"scope":"storage","settings":{"foreground":"#569cd6"}},{"scope":"storage.type","settings":{"foreground":"#569cd6"}},{"scope":["storage.modifier","keyword.operator.noexcept"],"settings":{"foreground":"#569cd6"}},{"scope":["string","meta.embedded.assembly"],"settings":{"foreground":"#ce9178"}},{"scope":"string.tag","settings":{"foreground":"#ce9178"}},{"scope":"string.value","settings":{"foreground":"#ce9178"}},{"scope":"string.regexp","settings":{"foreground":"#d16969"}},{"name":"String interpolation","scope":["punctuation.definition.template-expression.begin","punctuation.definition.template-expression.end","punctuation.section.embedded"],"settings":{"foreground":"#569cd6"}},{"name":"Reset JavaScript string interpolation expression","scope":["meta.template.expression"],"settings":{"foreground":"#d4d4d4"}},{"scope":["support.type.vendored.property-name","support.type.property-name","source.css variable","source.coffee.embedded"],"settings":{"foreground":"#9cdcfe"}},{"scope":"keyword","settings":{"foreground":"#569cd6"}},{"scope":"keyword.control","settings":{"foreground":"#569cd6"}},{"scope":"keyword.operator","settings":{"foreground":"#d4d4d4"}},{"scope":["keyword.operator.new","keyword.operator.expression","keyword.operator.cast","keyword.operator.sizeof","keyword.operator.alignof","keyword.operator.typeid","keyword.operator.alignas","keyword.operator.instanceof","keyword.operator.logical.python","keyword.operator.wordlike"],"settings":{"foreground":"#569cd6"}},{"scope":"keyword.other.unit","settings":{"foreground":"#b5cea8"}},{"scope":["punctuation.section.embedded.begin.php","punctuation.section.embedded.end.php"],"settings":{"foreground":"#569cd6"}},{"scope":"support.function.git-rebase","settings":{"foreground":"#9cdcfe"}},{"scope":"constant.sha.git-rebase","settings":{"foreground":"#b5cea8"}},{"name":"coloring of the Java import and package identifiers","scope":["storage.modifier.import.java","variable.language.wildcard.java","storage.modifier.package.java"],"settings":{"foreground":"#d4d4d4"}},{"name":"this.self","scope":"variable.language","settings":{"foreground":"#569cd6"}},{"name":"Function declarations","scope":["entity.name.function","support.function","support.constant.handlebars","source.powershell variable.other.member","entity.name.operator.custom-literal"],"settings":{"foreground":"#DCDCAA"}},{"name":"Types declaration and references","scope":["support.class","support.type","entity.name.type","entity.name.namespace","entity.other.attribute","entity.name.scope-resolution","entity.name.class","storage.type.numeric.go","storage.type.byte.go","storage.type.boolean.go","storage.type.string.go","storage.type.uintptr.go","storage.type.error.go","storage.type.rune.go","storage.type.cs","storage.type.generic.cs","storage.type.modifier.cs","storage.type.variable.cs","storage.type.annotation.java","storage.type.generic.java","storage.type.java","storage.type.object.array.java","storage.type.primitive.array.java","storage.type.primitive.java","storage.type.token.java","storage.type.groovy","storage.type.annotation.groovy","storage.type.parameters.groovy","storage.type.generic.groovy","storage.type.object.array.groovy","storage.type.primitive.array.groovy","storage.type.primitive.groovy"],"settings":{"foreground":"#4EC9B0"}},{"name":"Types declaration and references, TS grammar specific","scope":["meta.type.cast.expr","meta.type.new.expr","support.constant.math","support.constant.dom","support.constant.json","entity.other.inherited-class","punctuation.separator.namespace.ruby"],"settings":{"foreground":"#4EC9B0"}},{"name":"Control flow / Special keywords","scope":["keyword.control","source.cpp keyword.operator.new","keyword.operator.delete","keyword.other.using","keyword.other.directive.using","keyword.other.operator","entity.name.operator"],"settings":{"foreground":"#C586C0"}},{"name":"Variable and parameter name","scope":["variable","meta.definition.variable.name","support.variable","entity.name.variable","constant.other.placeholder"],"settings":{"foreground":"#9CDCFE"}},{"name":"Constants and enums","scope":["variable.other.constant","variable.other.enummember"],"settings":{"foreground":"#4FC1FF"}},{"name":"Object keys, TS grammar specific","scope":["meta.object-literal.key"],"settings":{"foreground":"#9CDCFE"}},{"name":"CSS property value","scope":["support.constant.property-value","support.constant.font-name","support.constant.media-type","support.constant.media","constant.other.color.rgb-value","constant.other.rgb-value","support.constant.color"],"settings":{"foreground":"#CE9178"}},{"name":"Regular expression groups","scope":["punctuation.definition.group.regexp","punctuation.definition.group.assertion.regexp","punctuation.definition.character-class.regexp","punctuation.character.set.begin.regexp","punctuation.character.set.end.regexp","keyword.operator.negation.regexp","support.other.parenthesis.regexp"],"settings":{"foreground":"#CE9178"}},{"scope":["constant.character.character-class.regexp","constant.other.character-class.set.regexp","constant.other.character-class.regexp","constant.character.set.regexp"],"settings":{"foreground":"#d16969"}},{"scope":["keyword.operator.or.regexp","keyword.control.anchor.regexp"],"settings":{"foreground":"#DCDCAA"}},{"scope":"keyword.operator.quantifier.regexp","settings":{"foreground":"#d7ba7d"}},{"scope":["constant.character","constant.other.option"],"settings":{"foreground":"#569cd6"}},{"scope":"constant.character.escape","settings":{"foreground":"#d7ba7d"}},{"scope":"entity.name.label","settings":{"foreground":"#C8C8C8"}},{"scope":["comment","punctuation.definition.comment","string.comment"],"settings":{"foreground":"#8b949e"}},{"scope":["constant.other.placeholder","constant.character"],"settings":{"foreground":"#ff7b72"}},{"scope":["constant","entity.name.constant","variable.other.constant","variable.other.enummember","variable.language","entity"],"settings":{"foreground":"#79c0ff"}},{"scope":["entity.name","meta.export.default","meta.definition.variable"],"settings":{"foreground":"#ffa657"}},{"scope":["variable.parameter.function","meta.jsx.children","meta.block","meta.tag.attributes","entity.name.constant","meta.object.member","meta.embedded.expression"],"settings":{"foreground":"#c9d1d9"}},{"scope":"entity.name.function","settings":{"foreground":"#d2a8ff"}},{"scope":["entity.name.tag","support.class.component"],"settings":{"foreground":"#7ee787"}},{"scope":"keyword","settings":{"foreground":"#ff7b72"}},{"scope":["storage","storage.type"],"settings":{"foreground":"#ff7b72"}},{"scope":["storage.modifier.package","storage.modifier.import","storage.type.java"],"settings":{"foreground":"#c9d1d9"}},{"scope":["string","string punctuation.section.embedded source"],"settings":{"foreground":"#a5d6ff"}},{"scope":"support","settings":{"foreground":"#79c0ff"}},{"scope":"meta.property-name","settings":{"foreground":"#79c0ff"}},{"scope":"variable","settings":{"foreground":"#ffa657"}},{"scope":"variable.other","settings":{"foreground":"#c9d1d9"}},{"scope":"invalid.broken","settings":{"foreground":"#ffa198","fontStyle":"italic"}},{"scope":"invalid.deprecated","settings":{"foreground":"#ffa198","fontStyle":"italic"}},{"scope":"invalid.illegal","settings":{"foreground":"#ffa198","fontStyle":"italic"}},{"scope":"invalid.unimplemented","settings":{"foreground":"#ffa198","fontStyle":"italic"}},{"scope":"carriage-return","settings":{"foreground":"#f0f6fc","fontStyle":"italic underline"}},{"scope":"message.error","settings":{"foreground":"#ffa198"}},{"scope":"string variable","settings":{"foreground":"#79c0ff"}},{"scope":["source.regexp","string.regexp"],"settings":{"foreground":"#a5d6ff"}},{"scope":["string.regexp.character-class","string.regexp constant.character.escape","string.regexp source.ruby.embedded","string.regexp string.regexp.arbitrary-repitition"],"settings":{"foreground":"#a5d6ff"}},{"scope":"string.regexp constant.character.escape","settings":{"foreground":"#7ee787","fontStyle":"bold"}},{"scope":"support.constant","settings":{"foreground":"#79c0ff"}},{"scope":"support.variable","settings":{"foreground":"#79c0ff"}},{"scope":"support.type.property-name.json","settings":{"foreground":"#7ee787"}},{"scope":"meta.module-reference","settings":{"foreground":"#79c0ff"}},{"scope":"punctuation.definition.list.begin.markdown","settings":{"foreground":"#ffa657"}},{"scope":["markup.heading","markup.heading entity.name"],"settings":{"foreground":"#79c0ff","fontStyle":"bold"}},{"scope":"markup.quote","settings":{"foreground":"#7ee787"}},{"scope":"markup.italic","settings":{"foreground":"#c9d1d9","fontStyle":"italic"}},{"scope":"markup.bold","settings":{"foreground":"#c9d1d9","fontStyle":"bold"}},{"scope":["markup.underline"],"settings":{"fontStyle":"underline"}},{"scope":["markup.strikethrough"],"settings":{"fontStyle":"strikethrough"}},{"scope":"markup.inline.raw","settings":{"foreground":"#79c0ff"}},{"scope":["markup.deleted","meta.diff.header.from-file","punctuation.definition.deleted"],"settings":{"foreground":"#ffa198"}},{"scope":["punctuation.section.embedded"],"settings":{"foreground":"#ff7b72"}},{"scope":["markup.inserted","meta.diff.header.to-file","punctuation.definition.inserted"],"settings":{"foreground":"#7ee787"}},{"scope":["markup.changed","punctuation.definition.changed"],"settings":{"foreground":"#ffa657"}},{"scope":["markup.ignored","markup.untracked"],"settings":{"foreground":"#0d1117"}},{"scope":"meta.diff.range","settings":{"foreground":"#d2a8ff","fontStyle":"bold"}},{"scope":"meta.diff.header","settings":{"foreground":"#79c0ff"}},{"scope":"meta.separator","settings":{"foreground":"#79c0ff","fontStyle":"bold"}},{"scope":"meta.output","settings":{"foreground":"#79c0ff"}},{"scope":["brackethighlighter.tag","brackethighlighter.curly","brackethighlighter.round","brackethighlighter.square","brackethighlighter.angle","brackethighlighter.quote"],"settings":{"foreground":"#8b949e"}},{"scope":"brackethighlighter.unmatched","settings":{"foreground":"#ffa198"}},{"scope":["constant.other.reference.link","string.other.link"],"settings":{"foreground":"#a5d6ff"}},{"scope":"token.info-token","settings":{"foreground":"#6796E6"}},{"scope":"token.warn-token","settings":{"foreground":"#CD9731"}},{"scope":"token.error-token","settings":{"foreground":"#F44747"}},{"scope":"token.debug-token","settings":{"foreground":"#B267E6"}},{"scope":"variable.object.property","settings":{"foreground":"#c9d1d9"}}]}</script>
 <script>
-  // The code drawer: colours each block with Prism, then splits it into numbered lines
-  // with the file's real line numbers and a green or red bar on the lines that changed.
-  // If Prism cannot load, the code still shows, numbered and barred, just uncoloured.
+  // The code drawer, first pass: numbers every line with the file's real line numbers and
+  // puts a green or red bar on the lines that changed. Needs no network, so the code always
+  // shows; the second pass below only colours it.
   (function () {
     function escapeHtml(text) {
       return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-    // Prism's spans can cross a line break (a long comment); close them at each break and
-    // reopen them on the next line, so every line is valid HTML on its own.
-    function splitLines(html) {
-      var lines = [], open = [], current = "", match;
-      var pattern = /(<span[^>]*>)|(<\/span>)|(\n)|([^<\n]+)/g;
-      while ((match = pattern.exec(html))) {
-        if (match[1]) { open.push(match[1]); current += match[1]; }
-        else if (match[2]) { open.pop(); current += match[2]; }
-        else if (match[3]) { current += new Array(open.length + 1).join("</span>"); lines.push(current); current = open.join(""); }
-        else { current += match[4]; }
-      }
-      lines.push(current);
-      return lines;
     }
     function markedLines(mark) {
       var marked = {};
@@ -3984,18 +4347,46 @@ import { sendLoginCode } from "./send-login-code.js";</code></pre>
     document.querySelectorAll("pre.code").forEach(function (pre) {
       var code = pre.querySelector("code");
       var source = code.textContent;
-      var grammar = window.Prism && window.Prism.languages && window.Prism.languages[pre.dataset.lang];
-      var html = grammar ? window.Prism.highlight(source, grammar, pre.dataset.lang) : escapeHtml(source);
       var start = Number(pre.dataset.start) || 1;
       var all = pre.dataset.mark === "all";
       var marked = all ? {} : markedLines(pre.dataset.mark);
-      code.innerHTML = splitLines(html).map(function (line, index) {
+      pre.dataset.source = source; // the colouring pass reads the code from here
+      code.innerHTML = source.split("\n").map(function (line, index) {
         var number = start + index;
         var barred = all || marked[number] ? " " + pre.dataset.kind : "";
-        return '<span class="ln' + barred + '"><span class="n">' + number + "</span>" + (line || " ") + "</span>";
+        return '<span class="ln' + barred + '"><span class="n">' + number + '</span><span class="src">' + (escapeHtml(line) || " ") + "</span></span>";
       }).join("");
     });
   })();
+</script>
+<script type="module">
+  // The code drawer, second pass: colours each line with Shiki, which uses VS Code's own
+  // grammars and colouring rules, in the theme above. If it cannot load, the numbered,
+  // barred lines from the first pass stay, uncoloured.
+  const theme = JSON.parse(document.getElementById("code-theme").textContent);
+  try {
+    const { createHighlighter } = await import("https://cdn.jsdelivr.net/npm/shiki@3/+esm");
+    const highlighter = await createHighlighter({ themes: [theme], langs: ["typescript", "sql"] });
+    document.querySelectorAll("pre.code").forEach((pre) => {
+      const { tokens } = highlighter.codeToTokens(pre.dataset.source, { lang: pre.dataset.lang, theme: theme.name });
+      pre.querySelectorAll(".ln > .src").forEach((cell, index) => {
+        const line = tokens[index] ?? [];
+        if (line.length === 0) return; // an empty line keeps its placeholder space
+        cell.replaceChildren(
+          ...line.map((token) => {
+            const span = document.createElement("span");
+            span.textContent = token.content;
+            span.style.color = token.color;
+            if (token.fontStyle & 1) span.style.fontStyle = "italic"; // Shiki's style flags: 1 italic, 2 bold
+            if (token.fontStyle & 2) span.style.fontWeight = "bold";
+            return span;
+          })
+        );
+      });
+    });
+  } catch (error) {
+    console.warn("Code drawer colouring unavailable; showing plain code.", error);
+  }
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>

@@ -141,7 +141,7 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   the owner decides the final name (renamed in settings, feature 12); these
   checks as the proof.
 
-- [ ] **2.2 The resolution function.**
+- [x] **2.2 The resolution function.**
   `backend/src/lib/resolve-availability.ts` exports `resolveAvailability(
   organizationId, resourceId | null, now)`. It reads the business's row and,
   when `resourceId` is set and that person has a row, the person's row. Both
@@ -158,16 +158,27 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
     person or for the business. A business opening a closed day opens it
     for everyone, each on their own hours.
   - **Time zone, notice, horizon:** always the business's.
-  `now` is a parameter so the horizon is testable.
-  **Done when:** called from a throwaway `tsx` one-liner against seeded
-  rows, it returns: a person's own week for a person who has one; the
-  business's week for a person with no row; the business's week plus their
-  date for a person with only a one-off date; a business closed date as
-  closed for a person with their own week; a closed date opened by one
-  person's one-off date as open for that person and still closed for
-  another; `null` for an organization with no business row; and `null`
-  when given a resource id that belongs to another organization. Backend
-  build passes.
+  `now` is a parameter so the horizon is testable. The horizon runs from
+  today in the business's time zone to today plus `horizonDays` (60 days on
+  Sep 25 ends Nov 24); dates before or after it are dropped.
+  **Split in two (Frank, 2026-09-25):** the rules are a pure function,
+  `applyAvailabilityRules` in `backend/src/lib/availability-rules.ts`, with
+  no database; `resolveAvailability` only reads the rows and hands them
+  over. The first version of this Done when said "against seeded rows", but
+  the seeds are 2.3, so it could not be met in order.
+  **Done when:** Vitest, in the backend, proves the rules half: a person's
+  own week; the business's week for a person with no row; the business's
+  week plus their date for a person with only a one-off date; on the same
+  date the person's one-off date beats the business's; a business closed
+  date closed for a person with their own week; a person's one-off date
+  opening a closed day for them only; a business one-off date opening it
+  for everyone; and past and beyond-horizon dates dropped. By hand, with
+  rows added in `psql` and removed after, the database half returns `null`
+  for a business with no business row, `null` for another business's
+  person, and a real answer for a person with a row and one without. All
+  tests pass, shared's included, and the backend build passes.
+  **Approved by Frank, 2026-09-25**, point by point: the rules; the split
+  and Vitest in the backend; this Done when.
 
 - [ ] **2.3 The seeds.**
   Extend `packages/shared/scripts/seed-dev.ts` so, idempotently,
@@ -256,7 +267,8 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
 - `backend/src/lib/auth-server.ts` (the first-person hook),
   `backend/src/app.ts` (new), `backend/src/server.ts` (reduced),
   `backend/src/routes/public-booking-links.ts`,
-  `backend/src/lib/resolve-availability.ts`, `backend/package.json`,
+  `backend/src/lib/resolve-availability.ts`,
+  `backend/src/lib/availability-rules.ts` and its test, `backend/package.json`,
   `backend/tsconfig.json`
 - `frontend/lib/api-client.ts`, `frontend/app/page.tsx`,
   `frontend/package.json`
