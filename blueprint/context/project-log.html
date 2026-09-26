@@ -1458,12 +1458,11 @@
           <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">3, 3b, then 4 through 26, with 12b</span></span>
         </div>
         <details class="callout callout--open">
-          <summary class="callout-title">Left open from your walkthrough <span class="callout-count">4 parked</span></summary>
-          <p>Your folder-by-folder review on Sep 23 and 24 closed most of what it found. These four are parked on purpose:</p>
+          <summary class="callout-title">Left open from your walkthrough <span class="callout-count">3 parked</span></summary>
+          <p>Your folder-by-folder review on Sep 23 and 24 closed most of what it found. These three are parked on purpose (W21, the backend package name, was done Sep 26):</p>
           <div class="notes">
             <ul>
               <li><strong>W16. The Back button after sign-out.</strong> Sign in, sign out, press Back, and confirm no business data shows. If it does: <code>no-store</code> on the dashboard pages, and a sign-out that leaves nothing behind. Run it together with the end-to-end sign-in check that never happened after the renames.</li>
-              <li><strong>W21. The backend package is named <code>api</code>.</strong> Rename it to <code>backend</code>, or give all three packages the <code>@scheduleads-app/</code> prefix like <code>shared</code>.</li>
               <li><strong>W23. Forms and pages the standard way.</strong> shadcn <code>Input</code>, <code>Label</code> and <code>Card</code> (needs your yes to add), react-hook-form with <code>zodResolver</code> on sign-in and create-organization, and each page split into a server-rendered frame plus a small interactive form. Looks and behaves the same.</li>
               <li><strong>W26. A <code>Table</code> suffix on the Drizzle tables?</strong> <code>user</code> becomes <code>userTable</code> and so on. Better Auth finds tables by name, so it needs a small name map in <code>auth-server.ts</code>. Yes or no.</li>
             </ul>
@@ -4759,7 +4758,7 @@ const db = drizzle(client, { schema });</code></pre>
                 <div class="drawer-body"><div class="notes"><ul>
                   <li><strong>The overview is behind the plans.</strong> It still says two tables, puts people in item 4, and calls hours one per business. The plans changed on Sep 22 and the overview's text did not. This item follows the plans; <code>/overview</code> should be rerun.</li>
                   <li><strong>The public routes have no rate limit.</strong> Read-only and narrow, fine for four clients, worth revisiting before the widget goes on every site in item 9.</li>
-                  <li><strong>Carried from your walkthrough:</strong> W21 (the backend package is named <code>api</code>) touches 2.5, which adds the frontend's dependency on it by that name. Renaming it first would save renaming the dependency later.</li>
+                  <li><strong>W21 done before 2.5, Sep 26:</strong> the backend package is now named <code>backend</code>, like its folder, so 2.5 adds the frontend's dependency as <code>"backend": "*"</code> and never has to rename it.</li>
                 </ul></div></div>
               </details>
 

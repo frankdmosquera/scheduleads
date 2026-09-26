@@ -251,7 +251,7 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
 - [ ] **2.5 The typed seam, proved.**
   Declarations for `AppType` are emitted by the backend build and exposed as
   a type-only entry of the `api` workspace; the frontend depends on the
-  workspace (`"api": "*"`) and on `hono`, for `hono/client` (needs a yes,
+  workspace (`"backend": "*"`) and on `hono`, for `hono/client` (needs a yes,
   Open question 1). `frontend/lib/api-client.ts` builds one
   `hc<AppType>(API_URL)`; `fetchMe` moves onto it and `MeType` becomes a
   type inferred from the route; the dashboard home lists the business's
