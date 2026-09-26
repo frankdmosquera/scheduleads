@@ -55,7 +55,7 @@ stops the build instead of failing at runtime.
 - Zod validation schemas for a weekly-hours value, a one-off date and a
   whole rule, in `packages/shared`, used by every writer (the seeds now,
   settings in item 12).
-- `resolveAvailability`: the one function that works out, for a business and
+- `resolveBookableHours`: the one function that works out, for a business and
   optionally one person, the week, the one-off dates, the closed dates
   within the horizon, and the business's settings.
 - Two public routes, keyed by organization slug:
@@ -148,11 +148,11 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   checks as the proof.
 
 - [x] **2.2 The resolution function.**
-  `backend/lib/availability/resolve-availability.ts` exports `resolveAvailability(
+  `backend/lib/bookable-hours/resolve-bookable-hours.ts` exports `resolveBookableHours(
   organizationId, resourceId | null, now)`. It reads the business's row and,
   when `resourceId` is set and that person has a row, the person's row. Both
   queries filter on `organizationId` first. It returns
-  `ResolvedAvailabilityType` (Data / contracts), or `null` when the
+  `ResolvedBookableHoursType` (Data / contracts), or `null` when the
   organization has no business row. The rules, in one place:
   - **Week:** the person's own, if their row has one; otherwise the
     business's.
@@ -168,8 +168,8 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   today in the business's time zone to today plus `horizonDays` (60 days on
   Sep 25 ends Nov 24); dates before or after it are dropped.
   **Split in two (Frank, 2026-09-25):** the rules are a pure function,
-  `applyAvailabilityRules` in `backend/lib/availability/apply-availability-rules.ts`, with
-  no database; `resolveAvailability` only reads the rows and hands them
+  `applyBookableHoursRules` in `backend/lib/bookable-hours/apply-bookable-hours-rules.ts`, with
+  no database; `resolveBookableHours` only reads the rows and hands them
   over. The first version of this Done when said "against seeded rows", but
   the seeds are 2.3, so it could not be met in order.
   **Done when:** Vitest, in the backend, proves the rules half: a person's
@@ -224,7 +224,7 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   business with exactly one first person; `db:seed` run a second time
   changes no row count; every hours row is parsed by the 2.1 validation
   schemas before it is written, and the seed stops on a bad one; by hand,
-  `resolveAvailability` gives the weekends-only practitioner her own week and
+  `resolveBookableHours` gives the weekends-only practitioner her own week and
   the practitioner with only an extra date the clinic's week plus that date;
   all tests and both builds pass.
   **Approved by Frank, 2026-09-25**, point by point: the two made-up
@@ -270,7 +270,7 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   Resolve `holidayCountry` (ISO 3166-1 alpha-2) and `holidayRegion` (the
   province, from ISO 3166-2) into the public holidays that fall inside the
   horizon, in the business's time zone, and add them to the closed dates in
-  `resolveAvailability`, where a one-off date opens them like any closed
+  `resolveBookableHours`, where a one-off date opens them like any closed
   date. Canada's holidays differ by province, which is why the province is
   stored. How the dates are produced depends on Open question 2. Seed both
   dev businesses with `CA` / `AB`, like every real tenant.
@@ -291,8 +291,8 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
 - `backend/lib/auth/auth-server.ts` (the first-person hook),
   `backend/app.ts` (new), `backend/server.ts` (reduced),
   `backend/routes/public-booking-links.ts`,
-  `backend/lib/availability/resolve-availability.ts`,
-  `backend/lib/availability/apply-availability-rules.ts` and its test, `backend/package.json`,
+  `backend/lib/bookable-hours/resolve-bookable-hours.ts`,
+  `backend/lib/bookable-hours/apply-bookable-hours-rules.ts` and its test, `backend/package.json`,
   `backend/tsconfig.json`
 - `frontend/lib/api-client.ts`, `frontend/app/page.tsx`,
   `frontend/package.json`
@@ -393,7 +393,7 @@ Validation also requires `timezone` accepted by `Intl.DateTimeFormat`,
 `holidayCountry` matching `^[A-Z]{2}$`, and `holidayRegion` matching
 `^[A-Z0-9]{1,3}$` and only with a country.
 
-**`ResolvedAvailabilityType`** (from `resolveAvailability`)
+**`ResolvedBookableHoursType`** (from `resolveBookableHours`)
 
 ```ts
 {

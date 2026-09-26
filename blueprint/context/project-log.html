@@ -1411,7 +1411,7 @@
           </div>
           <div class="row">
             <div class="row-key">Browser cache</div>
-            <div class="row-val">Every signed-in API answer carries <code>Cache-Control: no-store</code>: "never keep a copy". Set once by <code>dashboardNoStoreMiddleware</code> in <code>backend/middleware/dashboard/</code>, which stamps the header <em>after</em> <code>await next()</code>, on the finished response. That forces the browser to really ask the server, which refuses someone who is signed out. Done and proved.</div>
+            <div class="row-val">Every signed-in API answer carries <code>Cache-Control: no-store</code>: "never keep a copy". Set once by <code>dashboardNoStoreMiddleware</code> in <code>backend/middleware/dashboard-middleware/</code>, which stamps the header <em>after</em> <code>await next()</code>, on the finished response. That forces the browser to really ask the server, which refuses someone who is signed out. Done and proved.</div>
           </div>
           <div class="row">
             <div class="row-key">Page snapshot</div>
@@ -4647,7 +4647,7 @@ const db = drizzle(client, { schema });</code></pre>
                   <div class="rows">
                   <div class="row"><div class="row-key">Bookable hours</div><div class="row-val">When customers can book online. Unique per business and person; empty person = the business. Minute windows per weekday, several a day, no overlaps. A person uses their own week, else the business's, and can have one-off dates without copying it. Time zone, notice, horizon, closed days and holidays live only on the business's row.</div></div>
                   <div class="row"><div class="row-key">First person</div><div class="row-val">Every business has at least one resource, made automatically: by the migration for every existing business, by a Better Auth hook for every new one. It is the business owner.</div></div>
-                  <div class="row"><div class="row-key">resolveAvailability</div><div class="row-val">The only way anything asks "when can this be booked". Returns the week, the one-off dates, the closed dates inside the horizon (minus opened ones), and the business's time zone, notice and horizon.</div></div>
+                  <div class="row"><div class="row-key">resolveBookableHours</div><div class="row-val">The only way anything asks "when can this be booked". Returns the week, the one-off dates, the closed dates inside the horizon (minus opened ones), and the business's time zone, notice and horizon.</div></div>
                   <div class="row"><div class="row-key">Public routes</div><div class="row-val"><code>/public/:slug/booking-links</code> and <code>/:bookingLinkId</code>. No login, no cookie, never an <code>organizationId</code>. One identical 404 for every "not here".</div></div>
                   <div class="row"><div class="row-key">Errors</div><div class="row-val">The existing <code>{ error: { code, message } }</code> shape, extended with <code>not_found</code>. No second error shape.</div></div>
                   <div class="row"><div class="row-key">Typed client</div><div class="row-val">The frontend calls the API through one <code>hc&lt;AppType&gt;</code>. No hand-written response types.</div></div>
@@ -4655,9 +4655,17 @@ const db = drizzle(client, { schema });</code></pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">10 general entries, newest first &middot; each step keeps its own</span></summary>
+                <summary>Log <span class="tag-drift">11 general entries, newest first &middot; each step keeps its own</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">"Availability" became "bookable hours" in the code</span><span class="kind-tag">Decided</span><span class="stamp">Sep 26</span></div>
+                        <p class="entry-text">Opening <code>lib/availability/</code>, you had to read the files to learn they were rules. Then the word itself: available for what, a job, a crew, a customer? Your rule, a name says what it means with no guessing, so it is <strong>bookable hours</strong>, the meaning version 8 already gave it. <code>lib/bookable-hours/</code> holds <code>applyBookableHoursRules</code> and <code>resolveBookableHours</code> (were <code>applyAvailabilityRules</code> and <code>resolveAvailability</code>), and the spec uses the new names. The table stays <code>availability_rule</code>: renaming a table costs a migration.</p>
+                        <p class="entry-text">Also your call: middleware folders carry the word, <code>auth-middleware/</code>, <code>dashboard-middleware/</code>, <code>subscription-middleware/</code>, so a folder seen alone still says what it holds. <code>lib/auth/</code> stays as it is: <code>auth-server.ts</code> there pairs with <code>auth-client.ts</code> in the frontend. And your helpers rule is now in the standards: a helper used across areas goes in a shared <code>helpers/</code> folder, one used once stays beside its code. Proved: rebuilt from empty, only the new paths in the output, 36 tests pass, the running API answers as before.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">

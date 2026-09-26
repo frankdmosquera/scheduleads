@@ -4,10 +4,10 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 
 import { appOrigin, auth } from "./lib/auth/auth-server.js";
-import { dashboardCorsMiddleware } from "./middleware/dashboard/dashboard-cors-middleware.js";
-import { dashboardNoStoreMiddleware } from "./middleware/dashboard/dashboard-no-store-middleware.js";
-import { requireOrganizationMiddleware } from "./middleware/auth/require-organization-middleware.js";
-import { requireKnownSubscriptionMiddleware } from "./middleware/subscription/require-known-subscription-middleware.js";
+import { dashboardCorsMiddleware } from "./middleware/dashboard-middleware/dashboard-cors-middleware.js";
+import { dashboardNoStoreMiddleware } from "./middleware/dashboard-middleware/dashboard-no-store-middleware.js";
+import { requireOrganizationMiddleware } from "./middleware/auth-middleware/require-organization-middleware.js";
+import { requireKnownSubscriptionMiddleware } from "./middleware/subscription-middleware/require-known-subscription-middleware.js";
 
 const app = new Hono();
 

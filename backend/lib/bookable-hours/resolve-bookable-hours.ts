@@ -1,5 +1,5 @@
 // Backend: when can a customer book this business, or one person in it? The one place
-// that question is answered. Reads the rows here; the rules live in apply-availability-rules.ts.
+// that question is answered. Reads the rows here; the rules live in apply-bookable-hours-rules.ts.
 
 import { and, eq, isNull } from "drizzle-orm";
 
@@ -7,10 +7,10 @@ import { availabilityRule, resource } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
 import {
-  applyAvailabilityRules,
+  applyBookableHoursRules,
   type BusinessHoursInputType,
-  type ResolvedAvailabilityType,
-} from "./apply-availability-rules.js";
+  type ResolvedBookableHoursType,
+} from "./apply-bookable-hours-rules.js";
 
 export type AvailabilityRuleRowType = typeof availabilityRule.$inferSelect;
 
@@ -38,11 +38,11 @@ function toBusinessHours(row: AvailabilityRuleRowType): BusinessHoursInputType {
 }
 
 // null when the business has no hours yet, or the person is not one of its own.
-export async function resolveAvailability(
+export async function resolveBookableHours(
   organizationId: string,
   resourceId: string | null, // null = the business's own hours
   now: Date // a parameter, not new Date() inside, so the horizon can be tested
-): Promise<ResolvedAvailabilityType | null> {
+): Promise<ResolvedBookableHoursType | null> {
   // Every query filters on the business first, so a person id from another business
   // finds nothing here.
   const [businessRow] = await db
@@ -57,7 +57,7 @@ export async function resolveAvailability(
 
   const business = toBusinessHours(businessRow);
 
-  if (resourceId === null) return applyAvailabilityRules(business, null, now);
+  if (resourceId === null) return applyBookableHoursRules(business, null, now);
 
   // The person must exist in this business. Without this, another business's person
   // would simply have no row here and quietly get this business's week.
@@ -81,5 +81,5 @@ export async function resolveAvailability(
     )
     .limit(1);
 
-  return applyAvailabilityRules(business, personRow ?? null, now);
+  return applyBookableHoursRules(business, personRow ?? null, now);
 }

@@ -1,6 +1,6 @@
 // Backend: the rules that turn a business's row and one person's row into the hours a
 // customer can book. Pure, no database, so every rule is tested on its own.
-// resolve-availability.ts reads the rows and hands them here.
+// resolve-bookable-hours.ts reads the rows and hands them here.
 
 import type { DateHoursType, WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
 
@@ -20,7 +20,7 @@ export type PersonHoursInputType = {
   dateHours: DateHoursType;
 };
 
-export type ResolvedAvailabilityType = {
+export type ResolvedBookableHoursType = {
   source: "resource" | "organization"; // whose week answered
   timezone: string;
   weeklyHours: WeeklyHoursType;
@@ -49,11 +49,11 @@ function addDays(date: string, days: number): string {
   return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
 }
 
-export function applyAvailabilityRules(
+export function applyBookableHoursRules(
   business: BusinessHoursInputType,
   person: PersonHoursInputType | null, // null = the business itself, or a person with no row
   now: Date
-): ResolvedAvailabilityType {
+): ResolvedBookableHoursType {
   const firstDate = localDate(now, business.timezone);
   const lastDate = addDays(firstDate, business.horizonDays); // 60 days on Sep 25 ends Nov 24
   const insideHorizon = (date: string) => date >= firstDate && date <= lastDate; // YYYY-MM-DD sorts as text

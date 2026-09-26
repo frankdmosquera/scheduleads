@@ -85,16 +85,23 @@ a shape on either side.
 - `backend` follows the same rule (Frank, 2026-09-26): kind, then area,
   then one file per export. Every middleware is named as one
   (`requireOrganizationMiddleware`) and lives in
-  `middleware/<area>/<name>.ts`; plain functions live in
+  `middleware/<area>-middleware/<name>.ts`, so a folder seen on its own
+  still says it holds middleware; plain functions live in
   `lib/<area>/<name>.ts`. A type sits in the file of the function that
   produces it. Frank navigates by folder and file name, not by scrolling
-- An area folder names what is in it before it is opened: `auth` (who is
-  signed in, and for which business), `availability` (when a customer can
-  book), `errors` (what the API sends back when it says no). A folder named
-  after a single thing inside it (`organization/`, `refusal/`) says nothing
-  and is not used. Today's areas: `lib/auth`, `lib/availability`,
-  `lib/errors`, `middleware/auth`, `middleware/dashboard`,
-  `middleware/subscription`
+- A name says what it means, with no guessing: an area folder names what is
+  in it before it is opened, and the functions inside use the same words.
+  `auth` (who is signed in, and for which business), `bookable-hours` (when
+  customers can book online; "availability" was dropped because it leaves
+  open "available for what"), `errors` (what the API sends back when it
+  says no). A folder named after a single thing inside it
+  (`organization/`, `refusal/`) says nothing and is not used. The database
+  keeps its own names (`availability_rule`): renaming a table costs a
+  migration. Today's areas: `lib/auth`, `lib/bookable-hours`, `lib/errors`,
+  `middleware/auth-middleware`, `middleware/dashboard-middleware`,
+  `middleware/subscription-middleware`
+- Helpers: one used across several areas goes in a shared `helpers/`
+  folder; one used in a single place stays beside the code that uses it
 - `frontend` is judged case by case: a piece with real logic gets its own
   file, a component that is mostly markup and CSS stays whole, however long
 
@@ -152,7 +159,7 @@ a shape on either side.
 - Every signed-in API response carries `Cache-Control: no-store`, so no
   browser or proxy keeps one business's data. New dashboard routes mount the
   same `dashboardNoStoreMiddleware` as `/me`
-  (`backend/middleware/dashboard/dashboard-no-store-middleware.ts`)
+  (`backend/middleware/dashboard-middleware/dashboard-no-store-middleware.ts`)
 - Validate with the Zod schemas in `packages/shared` at both ends: the form
   before it sends, the route before it touches the database
 - Every app table is organization-scoped and the scope is a security boundary.
