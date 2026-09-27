@@ -6920,7 +6920,12 @@ describe("availabilityRuleValidationSchema", () =&gt; {
                             </div>
                             <div class="proof-card">
                               <div class="card-head">Independent review</div>
-                              <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, over the test setup and this step, all four lenses. No P0 or P1. Two notes: <strong>F-17</strong> (P2), a fresh database gets no first person for the dev businesses, planned into 2.3 with you; <strong>F-18</strong> (P3), four hours rules had no test, fixed the same evening with four more tests, 25 in all. Receipt in <code>blueprint/context/review.md</code>.</p>
+                              <ul>
+                                  <li><b>What it always checks:</b> a fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests, this step against its own Done when, and the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</li>
+                                  <li><b>What it did for this step:</b> Checked the test runner setup and this step: rebuilt everything, reran the tests, compared the migration with the tables, and tried the database itself.</li>
+                                  <li><b>Earlier issues it closed:</b> None: this was the first review of feature 2.</li>
+                                </ul>
+                                <div class="rstep-when">Passed, Sep 25, commit <code>ead8273</code>. Nothing serious. Two issues, both since closed.</div>
                                 <div class="review-issues">
                                   <div class="review-issues-head">Issues it found &middot; 2 &middot; both closed</div>
                                   <div class="rows">
@@ -7356,7 +7361,12 @@ describe("applyAvailabilityRules", () =&gt; {
                             </div>
                             <div class="proof-card">
                               <div class="card-head">Independent review</div>
-                              <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>2519644</code>. No P0 or P1. It reran every test and the build, and rechecked the database half itself on the salon (rows removed after). Three notes: <strong>F-19</strong> (P2), no test catches a person with their own row losing the business's one-off dates; it proved the gap by breaking that line in a copy and watching all 10 tests still pass. <strong>F-20</strong> (P3), one type not exported, against the naming standard. <strong>F-21</strong> (P3), the "full diff" links on this page follow the branch, so 2.1's already shows 2.2 too. Receipt in <code>blueprint/context/review.md</code>.</p>
+                              <ul>
+                                  <li><b>What it always checks:</b> a fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests, this step against its own Done when, and the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</li>
+                                  <li><b>What it did for this step:</b> Reran every test and build, and checked the database half itself on the made-up salon (its rows removed after). It proved one gap by breaking a line in a copy: all 10 tests still passed, which became F-19.</li>
+                                  <li><b>Earlier issues it closed:</b> None.</li>
+                                </ul>
+                                <div class="rstep-when">Passed, Sep 25, commit <code>2519644</code>. Nothing serious. Three issues, all since closed.</div>
                                 <div class="review-issues">
                                   <div class="review-issues-head">Issues it found &middot; 3 &middot; all 3 closed</div>
                                   <div class="rows">
@@ -7829,7 +7839,12 @@ const db = drizzle(client, { schema });</code></pre>
                               </div>
                               <div class="proof-card">
                                 <div class="card-head">Independent review</div>
-                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>7b04316</code>. No P0 or P1. It reran every test and both builds, recounted the whole cast in the database, ran the seed again and compared every row byte for byte, and checked the ten treatments against Face and Body's own list. It closed all five issues left from steps 2.1 and 2.2, and found four small ones in the seed (listed below). Receipt in <code>blueprint/context/review.md</code>.</p>
+                                <ul>
+                                  <li><b>What it always checks:</b> a fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests, this step against its own Done when, and the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</li>
+                                  <li><b>What it did for this step:</b> Reran every test and both builds, recounted the whole cast in the database, ran the seed a second time and compared every row byte for byte, and checked the ten treatments against Face and Body's own list.</li>
+                                  <li><b>Earlier issues it closed:</b> F-17 to F-21, the five issues from steps 2.1 and 2.2, each repair checked in its file.</li>
+                                </ul>
+                                <div class="rstep-when">Passed, Sep 25, commit <code>7b04316</code>. Nothing serious. Four small issues, all since closed.</div>
                                 <div class="review-issues">
                                   <div class="review-issues-head">Issues it found &middot; 4 &middot; all 4 closed</div>
                                   <div class="rows">
@@ -8483,7 +8498,12 @@ describe("the login cookie is never allowed", () =&gt; {
                               </div>
                               <div class="proof-card">
                                 <div class="card-head">Independent review</div>
-                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 26, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>e58e0a0</code>. No P0 or P1. It reran every test and both builds, traced every query of both routes, checked that each "not here" stops after the same number of queries so not even timing tells them apart, read Hono's own CORS code to confirm credentials are never sent, and compared the Sep 26 restructure line by line with the originals: only names and paths changed. It closed F-22 to F-25 from step 2.3 and the older F-15, and found three small issues (listed below). Receipt in <code>blueprint/context/review.md</code>.</p>
+                                <ul>
+                                  <li><b>What it always checks:</b> a fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests, this step against its own Done when, and the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</li>
+                                  <li><b>What it did for this step:</b> Reran every test and both builds, and traced every database query of both routes. It checked that each "not here" stops after the same number of queries, so not even timing tells them apart, read Hono's own CORS code to confirm the cookie is never allowed, and compared the Sep 26 restructure line by line with the originals: only names and paths changed.</li>
+                                  <li><b>Earlier issues it closed:</b> F-22 to F-25 from step 2.3 (the seed), and F-15, an older note about the coding standard.</li>
+                                </ul>
+                                <div class="rstep-when">Passed, Sep 26, commit <code>e58e0a0</code>. Nothing serious. Three small issues, waiting on your call.</div>
                                 <div class="review-issues">
                                   <div class="review-issues-head">Issues it found &middot; 3 &middot; all small, waiting on your call</div>
                                   <div class="rows">
