@@ -252,6 +252,15 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   browser `fetch` from an allowed origin succeeds and from a disallowed
   origin is blocked; and the response never carries
   `Access-Control-Allow-Credentials`.
+  **Plan status, 2026-09-26:** Part 1 (what it builds, pieces 1 to 5, the
+  plan-without-booking blocker first) agreed. Part 2 (this Done when) **not
+  yet agreed**. Proposed and waiting on Frank's yes: the shape, the six
+  identical 404s, the 400 for a malformed slug or id, and the absent
+  credentials header as saved Vitest tests in the backend that call the app
+  against the local seeded database (refusing any database not local and not
+  `*_dev`, like the seed; this makes the backend tests need Postgres running);
+  the allowed and blocked browser origins by hand in a real browser. Nothing
+  of 2.4 is built.
 
 - [ ] **2.5 The typed seam, proved.**
   Declarations for `AppType` are emitted by the backend build and exposed as
