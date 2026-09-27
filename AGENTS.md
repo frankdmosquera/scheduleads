@@ -357,9 +357,12 @@ its F-number and state; moved inside on Frank's call, 2026-09-26, because the
 issues are the review's answer, not a drawer of their own). The planned
 pieces and each card carry their own small violet **What bit** block when
 something caught us out there, and none when nothing did), **What changed in
-the code**, and **Log** (that step's own entries: built, reviewed, fixed). The item's **Log** keeps only entries about
-the whole item, such as decisions. An entry lives in one of the two, never
-both.
+the code**. A step has no Log of its own (Frank, 2026-09-26: the plan and
+what actually happened already tell the step's story). Every entry, a step's
+built, reviewed and fixed included, goes in the item's one **Log**, newest
+first, titled with its step number when it belongs to one ("Step 2.4 built:
+..."). The Log builds up for one feature only: a closed feature's row folds
+to one line with its Log inside, and the next feature starts a fresh one.
 
 **A step's plan comes in two parts** (Frank, 2026-09-26), each its own
 colored chunk with its state and date: **Part 1, What it builds** (the
@@ -441,7 +444,7 @@ under the piece it served, so what was built and what code it touched are read
 together. Unplanned pieces ("added") carry their code the same way. A file
 that served two pieces appears under each with only its own lines. Then **How
 it was proved** runs the Done when, with the independent review and the
-issues it found in its own card at the end. **Log** stays separate. Steps 2.1 to 2.3
+issues it found in its own card at the end. Steps 2.1 to 2.3
 were regrouped this way on Sep 26, sliced by the real line numbers.
 
 **And it shows the code.** Decided by Frank, 2026-09-25: the project is big

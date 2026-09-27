@@ -6939,30 +6939,6 @@ describe("availabilityRuleValidationSchema", () =&gt; {
                           </div>
                         </details>
 
-                        <details class="drawer" data-kind="reality">
-                          <summary>Log <span class="tag-drift">2 entries, newest first</span></summary>
-                          <div class="drawer-body">
-                            <p class="drawer-what">This step's own entries, newest first: built, reviewed, fixed. Entries about the whole item stay in the item's Log.</p>
-                            <div class="log">
-                    <div class="entry" data-kind="done">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">Step 2.1 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 25</span></div>
-                        <p class="entry-text">The first per-step independent review ran as a fresh reviewer that read only the code and the spec. It rebuilt everything, reran the tests, checked the migration against the schema and probed the database. No serious findings. Its two notes: the seed must make the first person on a fresh machine (into 2.3, with your idea of fictional painting and clinic businesses for the test data), and four rules needed tests (added, 25 tests now).</p>
-                        <p class="entry-text"><strong>Housekeeping:</strong> the reviewer left a stray folder of throwaway files on your Desktop, <code>Desktop\AppData</code>, which it was not allowed to delete. It is yours to remove.</p>
-                      </div>
-                    </div>
-                    <div class="entry" data-kind="done">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">Step 2.1 built: the three tables and every business's first person</span><span class="kind-tag">Done</span><span class="stamp">Sep 25</span></div>
-                        <p class="entry-text">The database now has services, people and places, and bookable hours, and refuses the four things you approved it should refuse. Both dev businesses got their first person from the migration, and a business made through Better Auth got one from the hook. 21 tests check the hours rules.</p>
-                        <p class="entry-text"><strong>New on this page:</strong> the step carries its first <em>What changed in the code</em> drawer, 8 files, the real code in your editor's colours. Next is the audit and the independent review of this step, before 2.2's plan.</p>
-                      </div>
-                    </div>
-                            </div>
-                          </div>
-                        </details>
                       </div>
                     </details>
 
@@ -7391,44 +7367,6 @@ describe("applyAvailabilityRules", () =&gt; {
                                 </div>
                             </div>
 </div>
-                          </div>
-                        </details>
-                        <details class="drawer" data-kind="reality">
-                          <summary>Log <span class="tag-drift">4 entries, newest first</span></summary>
-                          <div class="drawer-body">
-                            <p class="drawer-what">This step's own entries, newest first: built, reviewed, fixed. Entries about the whole item stay in the item's Log.</p>
-                            <div class="log">
-                    <div class="entry" data-kind="fix">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">F-21 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 25</span></div>
-                        <p class="entry-text">The "full diff on GitHub" links at the bottom of the 2.1 and 2.2 code drawers now open exactly that step's changes, not whatever the branch holds today. <code>AGENTS.md</code> now says every such link is pinned this way.</p>
-                      </div>
-                    </div>
-                    <div class="entry" data-kind="fix">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">F-19 and F-20 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 25</span></div>
-                        <p class="entry-text">Your call: fix both now rather than carry them. F-19: a test for Ben's case, the salon opening Nov 2 while Ben, who follows the salon's week, has his own Oct 13; he must get both. The reviewer's exact break was planted again and the new test failed by name; restored, 11 pass. F-20: one word, <code>export</code>. Both are marked fixed, not closed: only the next review can close them. F-21, the moving "full diff" links, is still open.</p>
-                      </div>
-                    </div>
-                    <div class="entry" data-kind="done">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">Step 2.2 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 25</span></div>
-                        <p class="entry-text">A fresh reviewer read only the code and the spec, reran the tests and the build, and checked the database half itself. No serious findings. Its best note, F-19: one rule had no test guarding it. It changed that line in a copy and all 10 tests still passed, which is the kind of gap a test suite hides. Two small notes: an unexported type (F-20), and this page's "full diff" links moving with the branch (F-21).</p>
-                        <p class="entry-text"><strong>Carried risks it named:</strong> an inactive person still gets hours (the spec does not say otherwise yet; feature 5 decides who is bookable), and the hours columns trust whoever writes them, so every writer must validate, starting with 2.3's seeds.</p>
-                      </div>
-                    </div>
-                    <div class="entry" data-kind="done">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">Step 2.2 built: the one function that answers "when can a customer book?"</span><span class="kind-tag">Done</span><span class="stamp">Sep 25</span></div>
-                        <p class="entry-text">Given a business and, if wanted, one person, it returns their week, their one-off dates, the closed days that still apply, and the business's time zone, notice and horizon. Split in two with your yes: the rules have no database and 10 saved tests; the reader was proved by hand on the salon, with the rows removed after. Vitest is now in the backend too.</p>
-                        <p class="entry-text"><strong>One fault in the plan, found while building:</strong> filtering on the business did not stop another business's person from getting this business's week, because "no row" means "follow the business". It now checks the person belongs to the business first. Next: the audit and independent review of this step, then 2.3's plan.</p>
-                      </div>
-                    </div>
-                            </div>
                           </div>
                         </details>
                       </div>
@@ -7906,35 +7844,6 @@ const db = drizzle(client, { schema });</code></pre>
                           </div>
                         </details>
 
-                        <details class="drawer" data-kind="reality">
-                          <summary>Log <span class="tag-drift">3 entries, newest first</span></summary>
-                          <div class="drawer-body">
-                            <p class="drawer-what">This step's own entries, newest first: built, reviewed, fixed. Entries about the whole item stay in the item's Log.</p>
-                            <div class="log">
-                    <div class="entry" data-kind="fix">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">F-22 to F-25 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 26</span></div>
-                        <p class="entry-text">All four, on your yes. Another computer's practice database now gets the old pretend businesses removed automatically (your option A). The seed's dates are relative to the day it runs, so they never go stale. A pretend person with only an extra day is no longer skipped. Three types exported. Each was proved by planting the problem and watching the seed handle it; the practice database was rebuilt once more along the way.</p>
-                      </div>
-                    </div>
-                    <div class="entry" data-kind="done">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">Step 2.3 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 25</span></div>
-                        <p class="entry-text">A fresh reviewer recounted the cast, reran the seed and found every row byte for byte the same, checked the treatments against Face and Body's list, and closed all five issues left from 2.1 and 2.2. Four small new ones, all in the seed, the most useful being F-25: another machine that was not rebuilt would end up with both the old and the new businesses.</p>
-                      </div>
-                    </div>
-                    <div class="entry" data-kind="done">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">Step 2.3 built: two made-up businesses in your local database</span><span class="kind-tag">Done</span><span class="stamp">Sep 25</span></div>
-                        <p class="entry-text">The local database was deleted and rebuilt from scratch. Summit Painting and Riverbend Clinic now have their full cast, hours and services, and "Agency (dev)" and "Test Salon (dev)" are gone. Sign in as <code>admin@example.com</code> for the painting company or <code>owner@example.com</code> for the clinic. A planted mistake in the hours stopped the seed with a readable message, and nothing was written.</p>
-                      </div>
-                    </div>
-                            </div>
-                          </div>
-                        </details>
                       </div>
                     </details>
 
@@ -8587,29 +8496,6 @@ describe("the login cookie is never allowed", () =&gt; {
                             </div>
                           </div>
                         </details>
-                        <details class="drawer" data-kind="reality">
-                          <summary>Log <span class="tag-drift">2 entries, newest first</span></summary>
-                          <div class="drawer-body">
-                            <p class="drawer-what">This step's own entries, newest first: built, reviewed, fixed. Entries about the whole item stay in the item's Log.</p>
-                            <div class="log">
-                    <div class="entry" data-kind="done">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">Step 2.4 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 26</span></div>
-                        <p class="entry-text">A fresh reviewer read only the code and the spec, reran everything, and traced both routes query by query. Nothing serious. It confirmed a stranger cannot tell any "not here" apart, not even by how long the answer takes, and that the login cookie is never allowed. It closed the four seed issues from 2.3. Three small notes, all about writing things down in the right place: a stale comment (F-26), the coding standard missing the public-route exception (F-27), and the test command not rebuilding shared first (F-28).</p>
-                      </div>
-                    </div>
-                    <div class="entry" data-kind="done">
-                      <div class="dot"></div>
-                      <div class="entry-body">
-                        <div class="entry-top"><span class="entry-title">Step 2.4 built: the first routes a stranger can call</span><span class="kind-tag">Done</span><span class="stamp">Sep 26</span></div>
-                        <p class="entry-text">A client's website can now ask the API for a business's services, and for one service with its bookable hours, with no login. Every way of finding nothing answers the same 404, so a stranger cannot tell a switched-off service from one that never existed. Only listed sites can read the answer in a browser, and never with the login cookie. 19 saved tests prove it on every later step; the browser half was checked by hand.</p>
-                        <p class="entry-text"><strong>Decided on the way, without asking</strong> (small calls, named here): the address checks live as two schemas in <code>packages/shared</code>, as the coding standard asks; a slug may be up to 48 characters, the length the app makes, so no real business is ever refused; the test's database guard is written in the test file rather than shared with the seed, since nothing else needs it yet.</p>
-                      </div>
-                    </div>
-                            </div>
-                          </div>
-                        </details>
                       </div>
                     </details>
 
@@ -8866,9 +8752,31 @@ describe("the login cookie is never allowed", () =&gt; {
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">16 general entries, newest first &middot; each step keeps its own</span></summary>
+                <summary>Log <span class="tag-drift">27 entries, newest first, each titled with its step when it has one</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.4 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 26</span></div>
+                        <p class="entry-text">A fresh reviewer read only the code and the spec, reran everything, and traced both routes query by query. Nothing serious. It confirmed a stranger cannot tell any "not here" apart, not even by how long the answer takes, and that the login cookie is never allowed. It closed the four seed issues from 2.3. Three small notes, all about writing things down in the right place: a stale comment (F-26), the coding standard missing the public-route exception (F-27), and the test command not rebuilding shared first (F-28).</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.4 built: the first routes a stranger can call</span><span class="kind-tag">Done</span><span class="stamp">Sep 26</span></div>
+                        <p class="entry-text">A client's website can now ask the API for a business's services, and for one service with its bookable hours, with no login. Every way of finding nothing answers the same 404, so a stranger cannot tell a switched-off service from one that never existed. Only listed sites can read the answer in a browser, and never with the login cookie. 19 saved tests prove it on every later step; the browser half was checked by hand.</p>
+                        <p class="entry-text"><strong>Decided on the way, without asking</strong> (small calls, named here): the address checks live as two schemas in <code>packages/shared</code>, as the coding standard asks; a slug may be up to 48 characters, the length the app makes, so no real business is ever refused; the test's database guard is written in the test file rather than shared with the seed, since nothing else needs it yet.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="fix">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.3: F-22 to F-25 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 26</span></div>
+                        <p class="entry-text">All four, on your yes. Another computer's practice database now gets the old pretend businesses removed automatically (your option A). The seed's dates are relative to the day it runs, so they never go stale. A pretend person with only an extra day is no longer skipped. Three types exported. Each was proved by planting the problem and watching the seed handle it; the practice database was rebuilt once more along the way.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">
@@ -8943,6 +8851,66 @@ describe("the login cookie is never allowed", () =&gt; {
                         <div class="entry-top"><span class="entry-title">Every middleware is named as one and has its own file</span><span class="kind-tag">Decided</span><span class="stamp">Sep 26</span></div>
                         <p class="entry-text">Reading <code>active-organization.ts</code> before 2.4, you asked why its middleware were not called middleware, and pointed out that the rule "kind, then area, then one file per export" had been agreed before. It had, but only <code>packages/shared</code> followed it. Now the backend does too: <code>backend/src/middleware/&lt;area&gt;/</code> holds each middleware in its own file, named <code>...Middleware</code> (<code>requireOrganizationMiddleware</code>, <code>requirePermissionMiddleware</code>, <code>requireKnownSubscriptionMiddleware</code>, <code>requireModuleMiddleware</code>, <code>dashboardCorsMiddleware</code>, <code>dashboardNoStoreMiddleware</code>). Their helpers, <code>getActiveOrganization</code> and <code>refuse</code>, are plain functions under <code>lib/&lt;area&gt;/</code>.</p>
                         <p class="entry-text">The frontend is judged case by case: a piece with real logic gets its own file, a component that is mostly markup and CSS stays whole. Both halves written into <code>coding-standards.md</code>. Nothing changed in behaviour: the builds and all 36 tests pass, and the running API gave the same 401 signed out and the same <code>/me</code> answer signed in as the clinic's owner. Done as a chore before 2.4, because 2.4 adds the public CORS rule, which now starts life in <code>middleware/public/</code>.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.3 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">A fresh reviewer recounted the cast, reran the seed and found every row byte for byte the same, checked the treatments against Face and Body's list, and closed all five issues left from 2.1 and 2.2. Four small new ones, all in the seed, the most useful being F-25: another machine that was not rebuilt would end up with both the old and the new businesses.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.3 built: two made-up businesses in your local database</span><span class="kind-tag">Done</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">The local database was deleted and rebuilt from scratch. Summit Painting and Riverbend Clinic now have their full cast, hours and services, and "Agency (dev)" and "Test Salon (dev)" are gone. Sign in as <code>admin@example.com</code> for the painting company or <code>owner@example.com</code> for the clinic. A planted mistake in the hours stopped the seed with a readable message, and nothing was written.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="fix">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.2: F-21 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">The "full diff on GitHub" links at the bottom of the 2.1 and 2.2 code drawers now open exactly that step's changes, not whatever the branch holds today. <code>AGENTS.md</code> now says every such link is pinned this way.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="fix">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.2: F-19 and F-20 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">Your call: fix both now rather than carry them. F-19: a test for Ben's case, the salon opening Nov 2 while Ben, who follows the salon's week, has his own Oct 13; he must get both. The reviewer's exact break was planted again and the new test failed by name; restored, 11 pass. F-20: one word, <code>export</code>. Both are marked fixed, not closed: only the next review can close them. F-21, the moving "full diff" links, is still open.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.2 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">A fresh reviewer read only the code and the spec, reran the tests and the build, and checked the database half itself. No serious findings. Its best note, F-19: one rule had no test guarding it. It changed that line in a copy and all 10 tests still passed, which is the kind of gap a test suite hides. Two small notes: an unexported type (F-20), and this page's "full diff" links moving with the branch (F-21).</p>
+                        <p class="entry-text"><strong>Carried risks it named:</strong> an inactive person still gets hours (the spec does not say otherwise yet; feature 5 decides who is bookable), and the hours columns trust whoever writes them, so every writer must validate, starting with 2.3's seeds.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.2 built: the one function that answers "when can a customer book?"</span><span class="kind-tag">Done</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">Given a business and, if wanted, one person, it returns their week, their one-off dates, the closed days that still apply, and the business's time zone, notice and horizon. Split in two with your yes: the rules have no database and 10 saved tests; the reader was proved by hand on the salon, with the rows removed after. Vitest is now in the backend too.</p>
+                        <p class="entry-text"><strong>One fault in the plan, found while building:</strong> filtering on the business did not stop another business's person from getting this business's week, because "no row" means "follow the business". It now checks the person belongs to the business first. Next: the audit and independent review of this step, then 2.3's plan.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.1 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">The first per-step independent review ran as a fresh reviewer that read only the code and the spec. It rebuilt everything, reran the tests, checked the migration against the schema and probed the database. No serious findings. Its two notes: the seed must make the first person on a fresh machine (into 2.3, with your idea of fictional painting and clinic businesses for the test data), and four rules needed tests (added, 25 tests now).</p>
+                        <p class="entry-text"><strong>Housekeeping:</strong> the reviewer left a stray folder of throwaway files on your Desktop, <code>Desktop\AppData</code>, which it was not allowed to delete. It is yours to remove.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.1 built: the three tables and every business's first person</span><span class="kind-tag">Done</span><span class="stamp">Sep 25</span></div>
+                        <p class="entry-text">The database now has services, people and places, and bookable hours, and refuses the four things you approved it should refuse. Both dev businesses got their first person from the migration, and a business made through Better Auth got one from the hook. 21 tests check the hours rules.</p>
+                        <p class="entry-text"><strong>New on this page:</strong> the step carries its first <em>What changed in the code</em> drawer, 8 files, the real code in your editor's colours. Next is the audit and the independent review of this step, before 2.2's plan.</p>
                       </div>
                     </div>
                     <div class="entry" data-kind="decided">
