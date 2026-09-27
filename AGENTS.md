@@ -402,9 +402,21 @@ padding. Keep these separate from the piece-level marks above: the marks say
 what changed, this says what it cost to find out. These are the part worth
 reading back in six months, and they are written whether or not anyone asks.
 
+**What actually happened mirrors the plan, code included.** Decided by Frank,
+2026-09-26, from step 2.4 on. It lists the plan's pieces with the same
+numbers, each with its outcome (kept, changed, added, dropped) and, in a closed
+drawer under it, the code that piece touched: every changed file is placed
+under the piece it served, so what was built and what code it touched are read
+together. Unplanned pieces ("added") carry their code the same way. A file
+that served two pieces appears under each with only its own lines. Then **How
+it was proved** runs the Done when. **Review issues** and **Log** stay
+separate: the review is independent and comes at the end. Steps 2.1 to 2.3
+keep their single code drawer unless Frank asks for them to be regrouped.
+
 **And it shows the code.** Decided by Frank, 2026-09-25: the project is big
-and he wants full control, so every closing step carries a closed drawer,
-**What changed in the code**, holding one closed drawer per changed file. The
+and he wants full control, so every closing step shows its real code: from
+step 2.4 under each piece, as above; before it in one closed drawer, **What
+changed in the code**, holding one closed drawer per changed file. The
 real code, as it reads in the editor, never a summary line: a new file is
 shown whole; a changed file shows the old block, then the new one, with a few
 lines around them. Real line numbers from the file. New lines get a thin green
