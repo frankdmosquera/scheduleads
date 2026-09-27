@@ -66,6 +66,12 @@ commit? A yes covers this branch and this work item only. It never covers
 `main`, a merge, a force push, or any other branch. On resume, ask again unless
 the yes is already in the current chat.
 
+**This project: do not ask.** When the project's `AGENTS.md` records a standing
+yes for step commits on feature branches (Frank, 2026-09-26), that is the yes:
+commit and push each passing step, and each agreed review-fix commit, to the
+work branch without stopping, and stop only after the independent review. It
+still never covers `main`, a merge, a force push or a deleted branch.
+
 If the spec says `Type: Rollback`, read and follow
 `reference/rollback-implementation.md` before changing product files. Do not load
 that reference for a feature or fix.

@@ -274,8 +274,8 @@ changes anything on its own, so the two stay a mirror.
 1. **New branch** off `main` per feature, using the prefixes in
    `blueprint/config.json`. Steps are commits on it, never branches.
 2. **One commit per build step, pushed right after.** Requires
-   `workflow.checkpointCommits: "enabled"` and the once-per-item yes that
-   `/implement` asks for.
+   `workflow.checkpointCommits: "enabled"`. Frank gave a standing yes on
+   2026-09-26 (see Git in `AGENTS.md`), so `/implement` no longer asks.
 3. **Merge into `main` locally with a merge commit**, never a squash, then tag
    and push `main`. `/complete` does this on one explicit yes.
 4. **The next feature starts from a fresh branch** off the updated `main`.

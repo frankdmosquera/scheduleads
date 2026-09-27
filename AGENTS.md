@@ -150,6 +150,29 @@ Why: a yes to a whole spec meant approving pages he had not been through,
 and going over six steps at once is the "too many things at a time" that
 loses him. Every yes should be on something he has seen.
 
+### After the green light, nothing stops until the review
+
+**Decided by Frank, 2026-09-26.** His time goes into the plan. Once a step's
+plan (both parts) has his yes, the step runs straight through: build, tests
+and checks, tick the box, publish the page, commit and push to the feature
+branch, `/audit`, independent review. The one planned stop is after the
+review, where its findings are talked through.
+
+Only three things stop a step earlier:
+
+1. **The agreed plan turns out wrong** while building, and the choice changes
+   what gets built (the spec and step are amended with him, then work
+   resumes).
+2. **A line only he crosses**: installing a package, touching Railway or real
+   data, `main`, a merge, a force push, deleting anything.
+3. **Blocking review findings** (P0/P1): fixed by default; leaving one unfixed
+   is his call.
+
+Everything else is decided without asking and named in the step report, so
+nothing is decided silently. Never ask for a yes on something not built yet
+(on 2026-09-26 a commit yes asked before 2.4 existed read as if something had
+already been built).
+
 ### How to present reviews and steps
 
 **Decided by Frank, 2026-09-25.** Applies to audits, reviews, walkthroughs, and
@@ -185,8 +208,13 @@ not to read. That is how this repo went a week with no GitHub remote at all.
 - **One branch per feature**, off `main`. Steps are commits on it, never
   branches. Small chores go on whichever feature branch is open.
 - **One commit per step, pushed straight after.** The step number goes in the
-  message: `feat: 2.3 availability rules api`. `/implement` asks once per
-  feature whether it may; the yes covers that branch only.
+  message: `feat: 2.3 availability rules api`. **Standing yes, Frank,
+  2026-09-26:** a step that passes its checks is committed and pushed to its
+  feature branch without asking, and so is the commit of review fixes he has
+  agreed to. Nothing stops between the build and the independent review; the
+  stop is after the review, where the findings are talked through. The yes
+  covers feature branches only, never `main`, a merge, a force push or a
+  deleted branch, each of which still needs its own yes.
 - **Merging is Frank's call, every time.** `/complete` merges locally with a
   merge commit (`--no-ff`), never a squash, tags `item-NN-done`, and pushes
   `main` and the tag, all on one explicit yes. The branch is kept.
@@ -356,7 +384,9 @@ and what loads, **The project**, the eight planning answers, and
 **Architecture** (Frank, 2026-09-26): how the system is built, not what is
 being built. Architecture holds the code map (which part talks to which, and
 where things live), every route the API answers, and **How it all fits
-together**, the booking model with its versions. A step that adds a route, a
+together**, the booking model with its versions, and **How a step is built**,
+the build, commit, independent review, fix order every step follows (Frank,
+2026-09-26). A step that adds a route, a
 folder or a table updates the Architecture view in the same publish. Each view
 has its own menu in the top bar: the item chips on the Roadmap, section links
 on the other two.

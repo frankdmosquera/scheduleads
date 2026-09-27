@@ -105,8 +105,8 @@ stops the build instead of failing at runtime.
 ## Build loop
 
 `workflow.stepReview` is `every` and `workflow.checkpointCommits` is
-`enabled`. `/implement` asks once, before 2.1, to commit and push each step;
-after that each step is committed and pushed, then gets `/audit` scoped to
+`enabled`. Each step is committed and pushed without asking (Frank's standing
+yes for feature branches, 2026-09-26, in `AGENTS.md`), then gets `/audit` scoped to
 the step and the independent review, and P0/P1 findings are fixed or accepted
 before the next step starts. Each step's commit message starts with its
 number (`feat: 2.1 ...`). The build log is republished at every step.
@@ -231,7 +231,7 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   businesses and the clinic's five-room layout; the real-client command
   dropped; this Done when, including rebuilding the local database.
 
-- [ ] **2.4 The public routes.**
+- [x] **2.4 The public routes.**
   Split `backend/server.ts` into `app.ts` (routes, exports `app` and
   `AppType`) and `server.ts` (only `serve`), so importing the type never
   starts a server. Add `backend/routes/public-booking-links-routes.ts` with
@@ -244,23 +244,29 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   never by id alone. **A business whose plan does not include `booking`
   gets the same 404** (agreed with Frank, 2026-09-26): one more condition on
   the organization lookup, through `subscriptionIncludes`.
-  **Done when:** with the API running, `curl` shows the documented shape for
-  both routes with no `organizationId` anywhere; an unknown slug, an unknown
-  link, an inactive link, another business's link under this slug, a
-  business with no business row, and a business whose plan lacks booking
-  all return the identical `404` body; a
-  browser `fetch` from an allowed origin succeeds and from a disallowed
-  origin is blocked; and the response never carries
-  `Access-Control-Allow-Credentials`.
-  **Plan status, 2026-09-26:** Part 1 (what it builds, pieces 1 to 5, the
-  plan-without-booking blocker first) agreed. Part 2 (this Done when) **not
-  yet agreed**. Proposed and waiting on Frank's yes: the shape, the six
-  identical 404s, the 400 for a malformed slug or id, and the absent
-  credentials header as saved Vitest tests in the backend that call the app
-  against the local seeded database (refusing any database not local and not
-  `*_dev`, like the seed; this makes the backend tests need Postgres running);
-  the allowed and blocked browser origins by hand in a real browser. Nothing
-  of 2.4 is built.
+  **Done when:** saved Vitest tests in the backend call the app against the
+  local seeded database (refusing any database that is not local or not
+  `*_dev`, like the seed) and prove: both routes return the documented shape
+  with no `organizationId` anywhere; an unknown slug, an unknown link, an
+  inactive link, another business's link under this slug, a business with
+  no business row, and a business whose plan lacks booking all return the
+  identical `404` body; a malformed slug or id returns `400` in the same
+  error shape; and no response carries `Access-Control-Allow-Credentials`.
+  By hand, in a real browser, a `fetch` from an allowed origin reads the
+  answer and one from a disallowed origin is blocked. All tests and the
+  backend build pass. The backend tests then need the local Postgres
+  running; the 2.2 tests stay pure.
+  **Approved by Frank, 2026-09-26**, in two parts: what it builds (pieces 1
+  to 5, the plan-without-booking blocker first, answered yes); this Done
+  when, as saved tests plus the browser by hand.
+  **Built 2026-09-26**, all five pieces as planned: `app.ts` / `server.ts`,
+  `routes/public-booking-links-routes.ts`, `publicCorsMiddleware`, `refuse`
+  with `not_found` and `bad_request`, and two address schemas in
+  `packages/shared/zod-validation` (`organizationSlugValidationSchema`,
+  `bookingLinkIdValidationSchema`). 19 saved tests in
+  `backend/routes/public-booking-links-routes.test.ts`, three planted faults
+  caught; the browser half checked by hand. No plan without booking exists
+  until feature 23, so the test uses an unrecognised plan in its place.
 
 - [ ] **2.5 The typed seam, proved.**
   Declarations for `AppType` are emitted by the backend build and exposed as

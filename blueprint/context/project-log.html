@@ -169,6 +169,7 @@
   [data-color="violet"] { --sec: #6B4FC8; }
   [data-color="rose"] { --sec: #C2416E; }
   [data-color="slate"] { --sec: #5B6678; }
+  [data-color="green"] { --sec: #2F8A4C; }
   /* A step in from the page, and a step darker than the white of a diagram. */
   #view-project > section[data-color], #view-architecture > section[data-color] { background: var(--section-ground); border-color: color-mix(in srgb, var(--sec) 55%, var(--ground)); }
   #view-project > section[data-color] > h2, #view-architecture > section[data-color] > h2 { color: color-mix(in srgb, var(--sec) 75%, var(--ink)); border-bottom-color: color-mix(in srgb, var(--sec) 35%, var(--ground)); }
@@ -1308,10 +1309,10 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.4&#39;s plan, part 2 of 3</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.4 built, in review</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
-                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="next" title="2.4 The public routes - being planned">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
+                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="next" title="2.4 The public routes - built, in review">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
                 <a class="cell" href="#item-3" data-goto="item-3" title="3 Calendar connection">3</a>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
@@ -1401,6 +1402,7 @@
                 <a class="cell cell--text" href="#arch-booking-model" data-goto="arch-booking-model" data-color="violet">How it all fits together</a>
                 <a class="cell cell--text" href="#arch-versions" data-goto="arch-versions" data-color="rose">How it got here</a>
                 <a class="cell cell--text" href="#arch-not-in-model" data-goto="arch-not-in-model" data-color="slate">Not in the model yet</a>
+                <a class="cell cell--text" href="#arch-step-loop" data-goto="arch-step-loop" data-color="green">How a step is built</a>
             </div>
           </div>
     </nav>
@@ -1556,9 +1558,11 @@
             <div class="row"><div class="row-key"><code>frontend/app/</code></div><div class="row-val">The screens: sign in, create a business, the dashboard home.</div></div>
             <div class="row"><div class="row-key"><code>frontend/components/</code></div><div class="row-val">Pieces of screens. <code>ui/</code> is shadcn's.</div></div>
             <div class="row"><div class="row-key"><code>frontend/lib/</code></div><div class="row-val"><code>auth-client.ts</code> (Better Auth's routes), <code>api-client.ts</code> (our own routes), <code>utils.ts</code> (shadcn's helper, a name its tool expects).</div></div>
-            <div class="row"><div class="row-key"><code>backend/server.ts</code></div><div class="row-val">Every route, and starting the API. Step 2.4 splits it: <code>app.ts</code> for the routes, <code>server.ts</code> only starts it, and the public routes get a <code>routes/</code> folder.</div></div>
-            <div class="row"><div class="row-key"><code>backend/middleware/</code></div><div class="row-val">Checks that run before a route, one per file: <code>auth-middleware/</code> (who is signed in, may they do this), <code>dashboard-middleware/</code> (cookie rule, never cache), <code>subscription-middleware/</code> (what the plan unlocks).</div></div>
-            <div class="row"><div class="row-key"><code>backend/lib/</code></div><div class="row-val">Plain functions: <code>auth/</code> (Better Auth setup, the login code, which business a session acts for), <code>bookable-hours/</code> (when customers can book), <code>errors/</code> (the one refusal shape).</div></div>
+            <div class="row"><div class="row-key"><code>backend/app.ts</code></div><div class="row-val">Every route the API answers, as one chain, and <code>AppType</code>, the frontend's typed view of them (step 2.5). Importing it starts nothing.</div></div>
+            <div class="row"><div class="row-key"><code>backend/server.ts</code></div><div class="row-val">Only starts the API. Split from <code>app.ts</code> in step 2.4.</div></div>
+            <div class="row"><div class="row-key"><code>backend/routes/</code></div><div class="row-val">Groups of routes, one file each. Today one: <code>public-booking-links-routes.ts</code>, the routes a stranger can call.</div></div>
+            <div class="row"><div class="row-key"><code>backend/middleware/</code></div><div class="row-val">Checks that run before a route, one per file: <code>auth-middleware/</code> (who is signed in, may they do this), <code>dashboard-middleware/</code> (cookie rule, never cache), <code>subscription-middleware/</code> (what the plan unlocks), <code>public-middleware/</code> (who may read the public routes: listed sites, never the cookie).</div></div>
+            <div class="row"><div class="row-key"><code>backend/lib/</code></div><div class="row-val">Plain functions: <code>auth/</code> (Better Auth setup, the login code, which business a session acts for), <code>bookable-hours/</code> (when customers can book), <code>errors/</code> (the one refusal shape, with <code>not_found</code> and <code>bad_request</code> since step 2.4).</div></div>
             <div class="row"><div class="row-key"><code>backend/database.ts</code></div><div class="row-val">The database connection. Becomes a folder only when something else about the database needs a home.</div></div>
             <div class="row"><div class="row-key"><code>packages/shared/db/</code></div><div class="row-val">The tables (Drizzle). Used by the backend only.</div></div>
             <div class="row"><div class="row-key"><code>packages/shared/zod-validation/</code></div><div class="row-val">Form checks, used by both apps. <code>index.ts</code> is the folder's front door, so an app imports the folder, not each file.</div></div>
@@ -1574,11 +1578,11 @@
         <h2>The routes</h2>
         <p class="drawer-what">Every address the API answers, who may call it, and the checks it runs first.</p>
         <div class="rows">
-            <div class="row"><div class="row-key"><code>GET /health</code></div><div class="row-val">Anyone. Railway asks it whether the API is up. Touches no database on purpose. <code>backend/server.ts</code>.</div></div>
+            <div class="row"><div class="row-key"><code>GET /health</code></div><div class="row-val">Anyone. Railway asks it whether the API is up. Touches no database on purpose. <code>backend/app.ts</code>.</div></div>
             <div class="row"><div class="row-key"><code>GET, POST /api/auth/*</code></div><div class="row-val">Better Auth owns everything under here: send the login code, sign in, sign out, create a business (platform admin only). Called by <code>frontend/lib/auth-client.ts</code>. Runs <code>dashboardCorsMiddleware</code> (the cookie, dashboard origin only) and <code>dashboardNoStoreMiddleware</code>.</div></div>
             <div class="row"><div class="row-key"><code>GET /me</code></div><div class="row-val">Signed in. Who you are, your business, your role, and what your plan unlocks. Called by <code>fetchMe</code> in <code>frontend/lib/api-client.ts</code>. Runs the two dashboard middleware, then <code>requireOrganizationMiddleware</code> and <code>requireKnownSubscriptionMiddleware</code>.</div></div>
-            <div class="row"><div class="row-key"><code>GET /public/:slug/booking-links</code></div><div class="row-val">Planned, step 2.4. Anyone, never the cookie. A business's active services, found by its slug. Its own CORS rule from <code>WIDGET_ORIGINS</code>.</div></div>
-            <div class="row"><div class="row-key"><code>GET /public/:slug/booking-links/:bookingLinkId</code></div><div class="row-val">Planned, step 2.4. One service and the business's bookable hours. The same 404 for every "not here".</div></div>
+            <div class="row"><div class="row-key"><code>GET /public/:slug/booking-links</code></div><div class="row-val">Anyone, never the cookie. A business's active services, by name, found by its slug. <code>backend/routes/public-booking-links-routes.ts</code>. Runs <code>publicCorsMiddleware</code> (the sites in <code>WIDGET_ORIGINS</code> plus the dashboard, <code>GET</code> only). Since step 2.4.</div></div>
+            <div class="row"><div class="row-key"><code>GET /public/:slug/booking-links/:bookingLinkId</code></div><div class="row-val">Anyone, never the cookie. One service and the business's bookable hours, the service looked for only inside that business. The same 404 for every "not here" (no such business, no booking in its plan, no hours yet, no such service, switched off, another business's); 400 for a malformed address. Same file and CORS rule. Since step 2.4.</div></div>
         </div>
       </section>
 
@@ -1780,6 +1784,12 @@
             <div class="row"><div class="row-key">Opening hours for the public</div><div class="row-val">The website and the Google profile. A separate setting from bookable hours, often the same, never forced to be. Noted on feature 12; nothing needs it yet.</div></div>
             <div class="row"><div class="row-key">Two clients in one sales talk</div><div class="row-val">The only double booking ever discussed, made on purpose by the owner. Parked until a client asks.</div></div>
           </div>
+      </section>
+
+      <section id="arch-step-loop" data-color="green">
+        <h2>How a step is built</h2>
+        <p class="map-what">The order every build step follows, and where the independent review sits. Decided Sep 24: a review after every step, not one at the end of a feature.</p>
+        <figure class="fig"><svg viewBox="0 0 680 230" role="img"><title>When the independent review runs</title><desc>Each step is built with its tests passing, committed and pushed, then independently reviewed from that commit; blockers are fixed before the next step. At the end of the feature a short final review runs before the merge.</desc><defs><marker id="loop-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><text class="ts" x="20" y="24" dominant-baseline="central">Every step (2.1, 2.2, 2.3, ...)</text><g class="c-gray"><rect x="20" y="40" width="120" height="60" rx="8"/><text class="th" x="80" y="61" text-anchor="middle" dominant-baseline="central">Build</text><text class="ts" x="80" y="80" text-anchor="middle" dominant-baseline="central">tests pass</text></g><g class="c-gray"><rect x="170" y="40" width="130" height="60" rx="8"/><text class="th" x="235" y="61" text-anchor="middle" dominant-baseline="central">Commit, push</text><text class="ts" x="235" y="80" text-anchor="middle" dominant-baseline="central">with your yes</text></g><g class="c-purple"><rect x="330" y="40" width="160" height="60" rx="8"/><text class="th" x="410" y="61" text-anchor="middle" dominant-baseline="central">Independent review</text><text class="ts" x="410" y="80" text-anchor="middle" dominant-baseline="central">reads that commit</text></g><g class="c-teal"><rect x="520" y="40" width="140" height="60" rx="8"/><text class="th" x="590" y="61" text-anchor="middle" dominant-baseline="central">Fix blockers</text><text class="ts" x="590" y="80" text-anchor="middle" dominant-baseline="central">then next step</text></g><line x1="140" y1="70" x2="168" y2="70" class="arr" marker-end="url(#loop-arrow)"/><line x1="300" y1="70" x2="328" y2="70" class="arr" marker-end="url(#loop-arrow)"/><line x1="490" y1="70" x2="518" y2="70" class="arr" marker-end="url(#loop-arrow)"/><text class="ts" x="20" y="140" dominant-baseline="central">End of the feature</text><g class="c-purple"><rect x="20" y="156" width="300" height="46" rx="8"/><text class="th" x="170" y="179" text-anchor="middle" dominant-baseline="central">Short final review, then merge</text></g><text class="ts" x="350" y="179" dominant-baseline="central">merging is always your call</text></svg><figcaption>The review needs a fixed commit to read, which is why the commit and push come first. Blockers are fixed, or accepted by you, before the next step starts; smaller issues are recorded and carried. Why: feature 1 had one review over six steps, and faults found late had already been built on.</figcaption></figure>
       </section>
 
       <footer>
@@ -6171,7 +6181,7 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
               </div>
 
               <details class="drawer" data-kind="plan" open>
-                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.3 done and reviewed &middot; 2.4&#39;s plan next &middot; 2.1 to 2.6</span></summary>
+                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.3 done and reviewed &middot; 2.4 built, in review &middot; 2.1 to 2.6</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
                   <div class="item-steps">
@@ -7934,15 +7944,15 @@ const db = drizzle(client, { schema });</code></pre>
                     </details>
 
                     <details class="rstep" id="step-2-4" data-state="active" open>
-                      <summary><span class="sn">2.4</span><span class="sm"></span><span>The public routes</span><span class="ss">Planning</span></summary>
+                      <summary><span class="sn">2.4</span><span class="sm"></span><span>The public routes</span><span class="ss">Built &middot; in review</span></summary>
                       <div class="rstep-body">
-                        <p class="rstep-what">The first routes a stranger can call: a business's list of booking links, and one link with its hours. Read-only, no login, and built so a stranger learns nothing they should not, including whether a switched-off link ever existed. Planned in two parts, below: what it builds, then the checks that will prove it done. A piece that needs your call is a blocker: it comes first and nothing is built until you answer it. Piece 1 was one. Nothing is built until all three are agreed.</p>
-                        <details class="drawer" data-kind="plan" open>
-                          <summary>The plan <span class="tag-drift">two parts &middot; Part 1 agreed &middot; nothing built yet</span></summary>
+                        <p class="rstep-what">The first routes a stranger can call: a business's list of booking links, and one link with its hours. Read-only, no login, and built so a stranger learns nothing they should not, including whether a switched-off link ever existed. Planned in two parts, below: what it builds, then the checks that will prove it done. A piece that needs your call is a blocker: it comes first and nothing is built until you answer it. Piece 1 was one. Both parts agreed with you, Sep 26.</p>
+                        <details class="drawer" data-kind="plan">
+                          <summary>The plan <span class="tag-drift">two parts &middot; both agreed Sep 26 &middot; built Sep 26</span></summary>
                           <div class="drawer-body">
                             <div class="plan-part" data-part="build">
-                              <div class="plan-part-head"><span class="plan-part-title">Part 1 &middot; What it builds</span><span class="plan-part-state">agreed Sep 26 &middot; nothing built yet</span></div>
-                              <details class="piece-fig"><summary>The whole step, as one request</summary><figure class="fig"><svg viewBox="0 0 680 560" role="img"><title>Step 2.4: a public request, start to finish</title><desc>A client's website asks for services. The public CORS middleware checks the site. The route finds the business by slug, checks its plan includes booking, finds the service inside that business, and answers. Every failure gives the same 404.</desc><defs><marker id="s24flow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="190" y="20" width="300" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="340" y="40" text-anchor="middle" dominant-baseline="central">A client's website</text><text class="ts" x="340" y="60" text-anchor="middle" dominant-baseline="central">asks for services, no login</text></g><line x1="340" y1="76" x2="340" y2="104" class="arr" marker-end="url(#s24flow)"/><g><rect x="190" y="106" width="300" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="126" text-anchor="middle" dominant-baseline="central">public-cors-middleware.ts</text><text class="ts" x="340" y="146" text-anchor="middle" dominant-baseline="central">listed sites only, never the cookie</text></g><line x1="340" y1="162" x2="340" y2="190" class="arr" marker-end="url(#s24flow)"/><g><rect x="190" y="192" width="300" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="212" text-anchor="middle" dominant-baseline="central">Find the business by slug</text><text class="ts" x="340" y="232" text-anchor="middle" dominant-baseline="central">public-booking-links-routes.ts</text></g><line x1="340" y1="248" x2="340" y2="276" class="arr" marker-end="url(#s24flow)"/><g><rect x="190" y="278" width="300" height="56" rx="8" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="th" x="340" y="298" text-anchor="middle" dominant-baseline="central">Does its plan include booking?</text><text class="ts" x="340" y="318" text-anchor="middle" dominant-baseline="central">part 2, your call</text></g><line x1="340" y1="334" x2="340" y2="362" class="arr" marker-end="url(#s24flow)"/><g><rect x="190" y="364" width="300" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="384" text-anchor="middle" dominant-baseline="central">Find the service in that business</text><text class="ts" x="340" y="404" text-anchor="middle" dominant-baseline="central">never by id alone</text></g><line x1="340" y1="420" x2="340" y2="448" class="arr" marker-end="url(#s24flow)"/><g><rect x="190" y="450" width="300" height="56" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="340" y="470" text-anchor="middle" dominant-baseline="central">Answer</text><text class="ts" x="340" y="490" text-anchor="middle" dominant-baseline="central">the services, or one and its hours</text></g><g><rect x="530" y="278" width="120" height="56" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="590" y="298" text-anchor="middle" dominant-baseline="central">Same 404</text><text class="ts" x="590" y="318" text-anchor="middle" dominant-baseline="central">can't tell which</text></g><path d="M490 220 L510 220 L510 292 L528 292" fill="none" class="arr" style="stroke:var(--alert)" marker-end="url(#s24flow)"/><line x1="490" y1="306" x2="528" y2="306" class="arr" style="stroke:var(--alert)" marker-end="url(#s24flow)"/><path d="M490 392 L510 392 L510 320 L528 320" fill="none" class="arr" style="stroke:var(--alert)" marker-end="url(#s24flow)"/><text class="ts" x="40" y="220" text-anchor="start" dominant-baseline="central">no such business</text><text class="ts" x="40" y="306" text-anchor="start" dominant-baseline="central">no booking in plan</text><text class="ts" x="40" y="392" text-anchor="start" dominant-baseline="central">no such service</text><text class="ts" x="340" y="536" text-anchor="middle" dominant-baseline="central">app.ts holds every route. server.ts only starts the API.</text></svg><figcaption>The whole step as one request. Each piece below is one box of this picture.</figcaption></figure></details>
+                              <div class="plan-part-head"><span class="plan-part-title">Part 1 &middot; What it builds</span><span class="plan-part-state">agreed Sep 26 &middot; built</span></div>
+                              <details class="piece-fig"><summary>The whole step, as one request</summary><figure class="fig"><svg viewBox="0 0 680 560" role="img"><title>Step 2.4: a public request, start to finish</title><desc>A client's website asks for services. The public CORS middleware checks the site. The route finds the business by slug, checks its plan includes booking, finds the service inside that business, and answers. Every failure gives the same 404.</desc><defs><marker id="s24flow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="190" y="20" width="300" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="340" y="40" text-anchor="middle" dominant-baseline="central">A client's website</text><text class="ts" x="340" y="60" text-anchor="middle" dominant-baseline="central">asks for services, no login</text></g><line x1="340" y1="76" x2="340" y2="104" class="arr" marker-end="url(#s24flow)"/><g><rect x="190" y="106" width="300" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="126" text-anchor="middle" dominant-baseline="central">public-cors-middleware.ts</text><text class="ts" x="340" y="146" text-anchor="middle" dominant-baseline="central">listed sites only, never the cookie</text></g><line x1="340" y1="162" x2="340" y2="190" class="arr" marker-end="url(#s24flow)"/><g><rect x="190" y="192" width="300" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="212" text-anchor="middle" dominant-baseline="central">Find the business by slug</text><text class="ts" x="340" y="232" text-anchor="middle" dominant-baseline="central">public-booking-links-routes.ts</text></g><line x1="340" y1="248" x2="340" y2="276" class="arr" marker-end="url(#s24flow)"/><g><rect x="190" y="278" width="300" height="56" rx="8" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="th" x="340" y="298" text-anchor="middle" dominant-baseline="central">Does its plan include booking?</text><text class="ts" x="340" y="318" text-anchor="middle" dominant-baseline="central">answered yes, Sep 26</text></g><line x1="340" y1="334" x2="340" y2="362" class="arr" marker-end="url(#s24flow)"/><g><rect x="190" y="364" width="300" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="384" text-anchor="middle" dominant-baseline="central">Find the service in that business</text><text class="ts" x="340" y="404" text-anchor="middle" dominant-baseline="central">never by id alone</text></g><line x1="340" y1="420" x2="340" y2="448" class="arr" marker-end="url(#s24flow)"/><g><rect x="190" y="450" width="300" height="56" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="340" y="470" text-anchor="middle" dominant-baseline="central">Answer</text><text class="ts" x="340" y="490" text-anchor="middle" dominant-baseline="central">the services, or one and its hours</text></g><g><rect x="530" y="278" width="120" height="56" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="590" y="298" text-anchor="middle" dominant-baseline="central">Same 404</text><text class="ts" x="590" y="318" text-anchor="middle" dominant-baseline="central">can't tell which</text></g><path d="M490 220 L510 220 L510 292 L528 292" fill="none" class="arr" style="stroke:var(--alert)" marker-end="url(#s24flow)"/><line x1="490" y1="306" x2="528" y2="306" class="arr" style="stroke:var(--alert)" marker-end="url(#s24flow)"/><path d="M490 392 L510 392 L510 320 L528 320" fill="none" class="arr" style="stroke:var(--alert)" marker-end="url(#s24flow)"/><text class="ts" x="40" y="220" text-anchor="start" dominant-baseline="central">no such business</text><text class="ts" x="40" y="306" text-anchor="start" dominant-baseline="central">no booking in plan</text><text class="ts" x="40" y="392" text-anchor="start" dominant-baseline="central">no such service</text><text class="ts" x="340" y="536" text-anchor="middle" dominant-baseline="central">app.ts holds every route. server.ts only starts the API.</text></svg><figcaption>The whole step as one request. Each piece below is one box of this picture.</figcaption></figure></details>
                               <ul class="substeps">
                               <li><b>1. A plan without booking gets the same 404.</b> <span class="piece-state" data-state="answered">blocker &middot; answered yes, Sep 26</span> The business lookup also asks whether its plan includes booking; if not, the answer is the same 404 as a business that does not exist. No extra database call.
                                 <details class="piece-fig"><summary>A plan without booking</summary><figure class="fig"><svg viewBox="0 0 680 230" role="img"><title>A plan without booking gets the same 404</title><desc>Primo's plan includes booking, so its website gets its services. A later business on a cheaper plan without booking gets the same 404 as a business that does not exist.</desc><defs><marker id="s24plan" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="40" y="30" width="200" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="140" y="50" text-anchor="middle" dominant-baseline="central">Primo's website</text><text class="ts" x="140" y="70" text-anchor="middle" dominant-baseline="central">plan: agency, has booking</text></g><line x1="240" y1="58" x2="438" y2="58" class="arr" marker-end="url(#s24plan)"/><g><rect x="440" y="30" width="200" height="56" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="540" y="50" text-anchor="middle" dominant-baseline="central">Its services</text><text class="ts" x="540" y="70" text-anchor="middle" dominant-baseline="central">today, every business</text></g><g><rect x="40" y="120" width="200" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="140" y="140" text-anchor="middle" dominant-baseline="central">A later business</text><text class="ts" x="140" y="160" text-anchor="middle" dominant-baseline="central">cheaper plan, no booking</text></g><line x1="240" y1="148" x2="438" y2="148" class="arr" style="stroke:var(--alert)" marker-end="url(#s24plan)"/><g><rect x="440" y="120" width="200" height="56" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="540" y="140" text-anchor="middle" dominant-baseline="central">Same 404</text><text class="ts" x="540" y="160" text-anchor="middle" dominant-baseline="central">as “no such business”</text></g><text class="ts" x="340" y="206" text-anchor="middle" dominant-baseline="central">Cheaper plans arrive in feature 23. Today nobody takes the red path.</text></svg><figcaption>One more condition in the lookup the route already makes, no extra database call.</figcaption></figure></details></li>
@@ -7968,16 +7978,625 @@ const db = drizzle(client, { schema });</code></pre>
                               </ul>
                             </div>
                             <div class="plan-part" data-part="proof">
-                              <div class="plan-part-head"><span class="plan-part-title">Part 2 &middot; Done when</span><span class="plan-part-state">to go through &middot; the checks run once it is built</span></div>
+                              <div class="plan-part-head"><span class="plan-part-title">Part 2 &middot; Done when</span><span class="plan-part-state">agreed Sep 26 &middot; passed, see How it was proved</span></div>
+                              <details class="piece-fig"><summary>How it is proved: saved tests, and the browser by hand</summary><figure class="fig"><svg viewBox="0 0 680 330" role="img"><title>How step 2.4 is proved</title><desc>Checks 1 to 5 are saved tests that call the app against the local seeded database and rerun on every step. Checks 6 and 7 are done once by hand in a real browser, because only a browser enforces the block.</desc><g><rect x="20" y="20" width="390" height="250" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="215" y="46" text-anchor="middle" dominant-baseline="central">Saved tests, rerun every step</text><text class="ts" x="215" y="68" text-anchor="middle" dominant-baseline="central">call the app, local seeded database</text><text class="ts" x="40" y="104" dominant-baseline="central">1. both routes: the right shape</text><text class="ts" x="40" y="130" dominant-baseline="central">2. no organizationId anywhere</text><text class="ts" x="40" y="156" dominant-baseline="central">3. six "not here" cases: the same 404</text><text class="ts" x="40" y="182" dominant-baseline="central">4. a malformed slug or id: 400</text><text class="ts" x="40" y="208" dominant-baseline="central">5. never allows the login cookie</text><text class="ts" x="40" y="244" dominant-baseline="central">refuses any database not local and not _dev</text></g><g><rect x="430" y="20" width="230" height="250" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="545" y="46" text-anchor="middle" dominant-baseline="central">By hand, once</text><text class="ts" x="545" y="68" text-anchor="middle" dominant-baseline="central">in a real browser</text><text class="ts" x="450" y="104" dominant-baseline="central">6. a listed site reads it</text><text class="ts" x="450" y="130" dominant-baseline="central">7. another site is blocked</text><text class="ts" x="450" y="182" dominant-baseline="central">only a browser enforces</text><text class="ts" x="450" y="204" dominant-baseline="central">the block, so a test</text><text class="ts" x="450" y="226" dominant-baseline="central">cannot prove it</text></g><text class="ts" x="340" y="304" text-anchor="middle" dominant-baseline="central">The cost: backend tests now need the local Postgres running. The 2.2 tests stay pure.</text></svg><figcaption>Saved tests keep proving it on every later step; the browser half is the only part a test cannot see.</figcaption></figure></details>
                               <ul class="substeps">
-                                <li>Both routes return the documented shape, and no answer carries <code>organizationId</code>.</li>
-                                <li>All of these give the identical 404: unknown business, unknown service, switched-off service, another business's service, a business with no hours and a business whose plan has no booking.</li>
-                                <li>A malformed slug or id gives a 400, in the same error shape.</li>
-                                <li>A browser on an allowed site reads the answer; a browser on another site is blocked.</li>
-                                <li>No answer ever allows the login cookie.</li>
+                                <li><b>Saved tests</b> prove both routes return the documented shape, and no answer carries <code>organizationId</code>.</li>
+                                <li><b>Saved tests</b> prove all of these give the identical 404: unknown business, unknown service, switched-off service, another business's service, a business with no hours and a business whose plan has no booking.</li>
+                                <li><b>Saved tests</b> prove a malformed slug or id gives a 400, in the same error shape.</li>
+                                <li><b>Saved tests</b> prove no answer ever allows the login cookie.</li>
+                                <li><b>By hand, in a real browser:</b> a page on an allowed site reads the answer; a page on another site is blocked.</li>
+                                <li>All tests and the backend build pass.</li>
                               </ul>
+                              <p class="rstep-what"><strong>Agreed with you, Sep 26:</strong> saved tests rather than <code>curl</code> by hand, which was the first draft. A <code>curl</code> check proves it once; a saved test keeps proving it on every later step, so a feature 5 change that leaks a switched-off service fails at once. The cost: the backend tests now need the local Postgres running.</p>
                             </div>
                           
+                          </div>
+                        </details>
+                        <details class="drawer" data-kind="reality" open>
+                          <summary>What actually happened <span class="tag-drift">6 kept &middot; review next</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">Every planned piece went in as agreed, numbered as in the plan, with the code each one touched under it. The saved tests Part 2 asked for are piece 6.</p>
+                            <div class="verdict">
+                              <span class="v-kept">6 as planned</span>
+                            </div>
+                            <ul class="substeps">
+                              <li data-outcome="kept"><b>1.</b> A plan without booking gets the same 404: the business lookup reads the plan and the business's hours row in the one query it already makes, and answers the same 404 when either is missing
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/routes/public-booking-links-routes.ts</code></summary><div class="codefile-body">
+<div class="code-label">Lines 34 to 51</div><pre class="code" data-lang="typescript" data-start="34" data-mark="all" data-kind="added"><code>// The business behind a public address, or null when it must not be shown: no such slug,
+// a plan without booking, or no business hours yet. One query, the hours row joined in.
+// The slug is the only place a public route takes a business from the URL; every query
+// after this one filters on the id it returns.
+async function findBookableOrganizationId(slug: string): Promise&lt;string | null&gt; {
+  const [row] = await db
+    .select({ id: organization.id, plan: organization.plan, hoursId: availabilityRule.id })
+    .from(organization)
+    .leftJoin(
+      availabilityRule,
+      and(eq(availabilityRule.organizationId, organization.id), isNull(availabilityRule.resourceId))
+    )
+    .where(eq(organization.slug, slug))
+    .limit(1);
+
+  if (!row || !subscriptionIncludes(row.plan, "booking") || row.hoursId === null) return null;
+  return row.id;
+}</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>2.</b> <code>server.ts</code> split: <code>app.ts</code> holds every route as one chain, so <code>AppType</code> carries them all for step 2.5; <code>server.ts</code> only starts the API
+                                <details class="piece-fig piece-code"><summary>The code &middot; 2 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/app.ts</code></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: every route the API answers, and AppType, the frontend's typed view of them
+// (step 2.5). Importing this starts nothing; server.ts starts the API.
+// Written as one chain so AppType carries every route.
+
+import { Hono } from "hono";
+
+import { auth } from "./lib/auth/auth-server.js";
+import { requireOrganizationMiddleware } from "./middleware/auth-middleware/require-organization-middleware.js";
+import { dashboardCorsMiddleware } from "./middleware/dashboard-middleware/dashboard-cors-middleware.js";
+import { dashboardNoStoreMiddleware } from "./middleware/dashboard-middleware/dashboard-no-store-middleware.js";
+import { publicCorsMiddleware } from "./middleware/public-middleware/public-cors-middleware.js";
+import { requireKnownSubscriptionMiddleware } from "./middleware/subscription-middleware/require-known-subscription-middleware.js";
+import { publicBookingLinksRoutes } from "./routes/public-booking-links-routes.js";
+
+export const app = new Hono()
+  // Every dashboard route mounts both.
+  .use("/api/auth/*", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
+  .use("/me", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
+  // Anyone may read these, never with the login cookie: a CORS rule of their own.
+  .use("/public/*", publicCorsMiddleware)
+
+  // Better Auth owns every route under this path.
+  .on(["GET", "POST"], "/api/auth/*", (c) =&gt; auth.handler(c.req.raw))
+
+  // The dashboard's first call: who is signed in, which business, and what it paid for.
+  // It only requires a real tier, not a module; each module's own route checks that.
+  .get("/me", requireOrganizationMiddleware, requireKnownSubscriptionMiddleware, async (c) =&gt; {
+    // All loaded by the middleware above, so this route makes no query of its own.
+    const user = c.get("user");
+    const activeOrganization = c.get("organization");
+    const details = c.get("organizationDetails");
+    const subscription = c.get("subscription");
+
+    return c.json({
+      user: { id: user.id, email: user.email, name: user.name },
+      organization: {
+        id: activeOrganization.organizationId,
+        name: details.name,
+        slug: details.slug,
+        plan: subscription.tier,
+      },
+      role: activeOrganization.role,
+      limits: subscription.limits,
+    });
+  })
+
+  .route("/public", publicBookingLinksRoutes)
+
+  // "Is the process up?" for Railway. No database on purpose: a database outage should
+  // not make Railway restart a healthy API.
+  .get("/health", (c) =&gt; c.json({ ok: true }));
+
+export type AppType = typeof app;</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/server.ts</code></summary><div class="codefile-body">
+<div class="code-label">Before &middot; line 1</div><pre class="code" data-lang="typescript" data-start="1" data-mark="1,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45" data-kind="removed"><code>// Backend entry point: starts the Hono API and defines its routes.
+
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+
+import { appOrigin, auth } from "./lib/auth/auth-server.js";
+import { dashboardCorsMiddleware } from "./middleware/dashboard-middleware/dashboard-cors-middleware.js";
+import { dashboardNoStoreMiddleware } from "./middleware/dashboard-middleware/dashboard-no-store-middleware.js";
+import { requireOrganizationMiddleware } from "./middleware/auth-middleware/require-organization-middleware.js";
+import { requireKnownSubscriptionMiddleware } from "./middleware/subscription-middleware/require-known-subscription-middleware.js";
+
+const app = new Hono();
+
+// Every dashboard route mounts both.
+app.use("/api/auth/*", dashboardCorsMiddleware, dashboardNoStoreMiddleware);
+app.use("/me", dashboardCorsMiddleware, dashboardNoStoreMiddleware);
+
+// Better Auth owns every route under this path.
+app.on(["GET", "POST"], "/api/auth/*", (c) =&gt; auth.handler(c.req.raw));
+
+// The dashboard's first call: who is signed in, which business, and what it paid for.
+// It only requires a real tier, not a module; each module's own route checks that.
+app.get("/me", requireOrganizationMiddleware, requireKnownSubscriptionMiddleware, async (c) =&gt; {
+  // All loaded by the middleware above, so this route makes no query of its own.
+  const user = c.get("user");
+  const activeOrganization = c.get("organization");
+  const details = c.get("organizationDetails");
+  const subscription = c.get("subscription");
+
+  return c.json({
+    user: { id: user.id, email: user.email, name: user.name },
+    organization: {
+      id: activeOrganization.organizationId,
+      name: details.name,
+      slug: details.slug,
+      plan: subscription.tier,
+    },
+    role: activeOrganization.role,
+    limits: subscription.limits,
+  });
+});
+
+// "Is the process up?" for Railway. No database on purpose: a database outage should
+// not make Railway restart a healthy API.
+app.get("/health", (c) =&gt; c.json({ ok: true }));
+
+const port = Number(process.env.PORT ?? 3001); // 3000 is the frontend's
+</code></pre>
+<div class="code-label">After &middot; line 1</div><pre class="code" data-lang="typescript" data-start="1" data-mark="1,2,6,7" data-kind="added"><code>// Backend entry point: starts the API. The routes live in app.ts, so importing their type
+// (the frontend, step 2.5) never starts a server.
+
+import { serve } from "@hono/node-server";
+
+import { app } from "./app.js";
+import { appOrigin } from "./lib/auth/auth-server.js";
+
+const port = Number(process.env.PORT ?? 3001); // 3000 is the frontend's
+</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>3.</b> The two public routes in <code>routes/public-booking-links-routes.ts</code>: a business's active services by name, and one service with the business's bookable hours. The service is looked for only inside the business the address names
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/routes/public-booking-links-routes.ts</code></summary><div class="codefile-body">
+<div class="code-label">Lines 1 to 17</div><pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: the public booking routes, the first a stranger can call. Read-only, no login,
+// and answering "not here" the same way whatever the reason, so a stranger learns nothing
+// about which businesses or services exist.
+
+import { and, asc, eq, isNull } from "drizzle-orm";
+import { Hono } from "hono";
+
+import { availabilityRule, bookingLink, organization } from "@scheduleads-app/shared/db";
+import { subscriptionIncludes } from "@scheduleads-app/shared/subscriptions";
+import {
+  bookingLinkIdValidationSchema,
+  organizationSlugValidationSchema,
+} from "@scheduleads-app/shared/zod-validation";
+
+import { db } from "../database.js";
+import { resolveBookableHours } from "../lib/bookable-hours/resolve-bookable-hours.js";
+import { refuse } from "../lib/errors/refuse.js";</code></pre>
+<div class="code-label">Lines 53 to 101</div><pre class="code" data-lang="typescript" data-start="53" data-mark="all" data-kind="added"><code>export const publicBookingLinksRoutes = new Hono()
+  // A business's active services, by name.
+  .get("/:slug/booking-links", async (c) =&gt; {
+    const slug = organizationSlugValidationSchema.safeParse(c.req.param("slug"));
+    if (!slug.success) return c.json(refuse("bad_request", "That is not a business address."), 400);
+
+    const organizationId = await findBookableOrganizationId(slug.data);
+    if (!organizationId) return c.json(notFound, 404);
+
+    const bookingLinks = await db
+      .select(publicBookingLinkColumns)
+      .from(bookingLink)
+      .where(and(eq(bookingLink.organizationId, organizationId), eq(bookingLink.active, true)))
+      .orderBy(asc(bookingLink.name));
+
+    return c.json({ bookingLinks }, 200);
+  })
+  // One service and the business's bookable hours. A person is chosen with bookings (feature 5).
+  .get("/:slug/booking-links/:bookingLinkId", async (c) =&gt; {
+    const slug = organizationSlugValidationSchema.safeParse(c.req.param("slug"));
+    const bookingLinkId = bookingLinkIdValidationSchema.safeParse(c.req.param("bookingLinkId"));
+    if (!slug.success || !bookingLinkId.success) {
+      return c.json(refuse("bad_request", "That is not a valid booking address."), 400);
+    }
+
+    const organizationId = await findBookableOrganizationId(slug.data);
+    if (!organizationId) return c.json(notFound, 404);
+
+    // Found only inside this business, never by id alone.
+    const [publicBookingLink] = await db
+      .select(publicBookingLinkColumns)
+      .from(bookingLink)
+      .where(
+        and(
+          eq(bookingLink.organizationId, organizationId),
+          eq(bookingLink.id, bookingLinkId.data),
+          eq(bookingLink.active, true)
+        )
+      )
+      .limit(1);
+    if (!publicBookingLink) return c.json(notFound, 404);
+
+    const hours = await resolveBookableHours(organizationId, null, new Date());
+    if (!hours) return c.json(notFound, 404); // the hours row went between the two reads
+
+    // `source` stays out: it says whose week answered, which is about people.
+    const { source: _source, ...availability } = hours;
+    return c.json({ bookingLink: publicBookingLink, availability }, 200);
+  });</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>4.</b> One identical 404 for every "not here", a 400 for a malformed address, both in the API's one error shape; answers list only what a stranger may see, never <code>organizationId</code> or whose week answered. The address checks are two small schemas in <code>packages/shared</code>, as the standard says every route validates
+                                <details class="piece-fig piece-code"><summary>The code &middot; 5 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/lib/errors/refuse.ts</code></summary><div class="codefile-body">
+<div class="code-label">Before &middot; line 5</div><pre class="code" data-lang="typescript" data-start="5" data-mark="8" data-kind="removed"><code>  | "no_active_organization" // signed in, but no single business to act for
+  | "forbidden" // their role does not grant this permission
+  | "plan_unrecognised" // the tier is not in the config: a misconfiguration
+  | "plan_required"; // a real tier that does not include this module
+
+export type RefusalType = {
+  error: {</code></pre>
+<div class="code-label">After &middot; line 5</div><pre class="code" data-lang="typescript" data-start="5" data-mark="8,9,10" data-kind="added"><code>  | "no_active_organization" // signed in, but no single business to act for
+  | "forbidden" // their role does not grant this permission
+  | "plan_unrecognised" // the tier is not in the config: a misconfiguration
+  | "plan_required" // a real tier that does not include this module
+  | "not_found" // public routes: one answer for every "not here", so none can be told apart
+  | "bad_request"; // a malformed value in the request, such as a slug or an id
+
+export type RefusalType = {
+  error: {</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/routes/public-booking-links-routes.ts</code></summary><div class="codefile-body">
+<div class="code-label">Lines 19 to 32</div><pre class="code" data-lang="typescript" data-start="19" data-mark="all" data-kind="added"><code>// The one "not here" body. Unknown business, no booking in its plan, no hours yet, unknown,
+// switched-off or another business's service: all identical, so none can be probed.
+const notFound = refuse("not_found", "Nothing is bookable here.");
+
+// What a stranger may see of a service. Never organizationId, never anything about people.
+const publicBookingLinkColumns = {
+  id: bookingLink.id,
+  slug: bookingLink.slug,
+  name: bookingLink.name,
+  description: bookingLink.description,
+  durationMinutes: bookingLink.durationMinutes,
+  bufferBeforeMinutes: bookingLink.bufferBeforeMinutes,
+  bufferAfterMinutes: bookingLink.bufferAfterMinutes,
+};</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/zod-validation/organization/organization-slug-validation-schema.ts</code></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Shared Zod schema: a business's web address (slug), as it arrives in a public URL.
+// Loose on purpose: toSlug makes lowercase letters, digits and hyphens, up to 48, and a
+// real business must never be refused by a rule stricter than the one that made its slug.
+
+import { z } from "zod";
+
+export const organizationSlugValidationSchema = z
+  .string()
+  .regex(/^[a-z0-9][a-z0-9-]{0,47}$/, "That is not a business address.");</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/zod-validation/booking-links/booking-link-id-validation-schema.ts</code></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Shared Zod schema: a booking link's id, as it arrives in a public URL. Ids are
+// randomUUID() today; letters, digits, hyphens and underscores up to 64 leave room for
+// any id format without letting arbitrary text reach a query.
+
+import { z } from "zod";
+
+export const bookingLinkIdValidationSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]{1,64}$/, "That is not a booking link id.");</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/zod-validation/index.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 4</div><pre class="code" data-lang="typescript" data-start="4" data-mark="7,8" data-kind="added"><code>export * from "./auth/sign-in-email-validation-schema.js";
+export * from "./auth/sign-in-code-validation-schema.js";
+export * from "./organization/create-organization-validation-schema.js";
+export * from "./organization/organization-slug-validation-schema.js";
+export * from "./booking-links/booking-link-id-validation-schema.js";
+export * from "./availability/weekly-hours-validation-schema.js";
+export * from "./availability/date-hours-validation-schema.js";
+export * from "./availability/availability-rule-validation-schema.js";</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>5.</b> Its own CORS rule: the sites in <code>WIDGET_ORIGINS</code> plus the dashboard, <code>GET</code> only, never the login cookie
+                                <details class="piece-fig piece-code"><summary>The code &middot; 2 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/middleware/public-middleware/public-cors-middleware.ts</code></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Who may read the public booking routes from a browser: the client sites in
+// WIDGET_ORIGINS, plus the dashboard. Never credentials: the login cookie would let a
+// client site act as the owner. Kept apart from dashboardCorsMiddleware on purpose, and
+// the two lists never merge.
+
+import { cors } from "hono/cors";
+
+import { appOrigin } from "../../lib/auth/auth-server.js";
+
+// Comma separated in .env, e.g. "https://primopainters.com,https://www.primopainters.com".
+// Empty until a client site is wired (feature 10 on).
+const widgetOrigins = (process.env.WIDGET_ORIGINS ?? "")
+  .split(",")
+  .map((origin) =&gt; origin.trim().replace(/\/+$/, "")) // a browser's Origin never ends in /
+  .filter(Boolean);
+
+export const publicCorsMiddleware = cors({
+  origin: [...widgetOrigins, appOrigin], // any other site gets no Allow-Origin, so its browser blocks the read
+  allowMethods: ["GET"],
+  credentials: false,
+});</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/app.ts</code></summary><div class="codefile-body">
+<div class="code-label">Lines 19 to 20</div><pre class="code" data-lang="typescript" data-start="19" data-mark="all" data-kind="added"><code>  // Anyone may read these, never with the login cookie: a CORS rule of their own.
+  .use("/public/*", publicCorsMiddleware)</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>6.</b> The saved tests from Part 2: 19, calling the real app against the local seeded database, refusing any other database
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/routes/public-booking-links-routes.test.ts</code></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// The public booking routes, called through the real app against the local seeded
+// database (npm run db:seed). Needs local Postgres running; refuses any other database.
+
+import { randomUUID } from "node:crypto";
+
+import { inArray } from "drizzle-orm";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
+
+try {
+  process.loadEnvFile(new URL("../../.env", import.meta.url)); // the root .env, before the app reads it
+} catch {
+  // No .env: the environment must already carry DATABASE_URL.
+}
+
+// Like the seed: only a database on this machine whose name ends in _dev. These tests add
+// rows and remove them, which must never happen anywhere else.
+const databaseUrl = new URL(process.env.DATABASE_URL ?? "postgresql://missing/none");
+const localHosts = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+if (!localHosts.has(databaseUrl.hostname) || !databaseUrl.pathname.endsWith("_dev")) {
+  throw new Error(
+    `Refusing to run the public route tests against ${databaseUrl.hostname}${databaseUrl.pathname}. ` +
+      "They only run against a local database whose name ends in _dev."
+  );
+}
+
+// Imported after the env is loaded: both read it the moment they load.
+const { app } = await import("../app.js");
+const { db } = await import("../database.js");
+const { availabilityRule, bookingLink, organization } = await import("@scheduleads-app/shared/db");
+
+const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3000";
+
+// Rows this file adds, and removes after. A random tag keeps them apart from the seed.
+const tag = randomUUID().slice(0, 8);
+const noHours = { id: randomUUID(), slug: `test-no-hours-${tag}-dev`, linkId: randomUUID() };
+const noBooking = { id: randomUUID(), slug: `test-no-booking-${tag}-dev`, linkId: randomUUID() };
+const switchedOffLinkId = randomUUID();
+let paintingLinkId = "";
+let clinicLinkId = "";
+
+const get = (path: string, origin?: string) =&gt;
+  app.request(path, origin ? { headers: { Origin: origin } } : undefined);
+
+beforeAll(async () =&gt; {
+  const [painting] = await db
+    .select({ id: organization.id })
+    .from(organization)
+    .where(inArray(organization.slug, ["painting-dev"]));
+  if (!painting) throw new Error("painting-dev is missing: run npm run db:seed first.");
+
+  const paintingList = await (await get("/public/painting-dev/booking-links")).json();
+  const clinicList = await (await get("/public/clinic-dev/booking-links")).json();
+  paintingLinkId = paintingList.bookingLinks[0].id;
+  clinicLinkId = clinicList.bookingLinks[0].id;
+
+  await db.insert(organization).values([
+    { id: noHours.id, name: "Test, no hours", slug: noHours.slug }, // agency plan, no hours row
+    // No real tier lacks booking until feature 23, so an unrecognised plan stands in for one.
+    { id: noBooking.id, name: "Test, no booking", slug: noBooking.slug, plan: "no-booking-test" },
+  ]);
+  await db.insert(availabilityRule).values({
+    id: randomUUID(),
+    organizationId: noBooking.id,
+    weeklyHours: { mon: [{ startMinute: 540, endMinute: 1020 }] },
+    timezone: "America/Edmonton",
+    minimumNoticeMinutes: 0,
+    horizonDays: 30,
+    closedDates: [],
+  });
+  await db.insert(bookingLink).values([
+    {
+      id: noHours.linkId,
+      organizationId: noHours.id,
+      name: "Test",
+      slug: "test",
+      durationMinutes: 30,
+    },
+    {
+      id: noBooking.linkId,
+      organizationId: noBooking.id,
+      name: "Test",
+      slug: "test",
+      durationMinutes: 30,
+    },
+    {
+      id: switchedOffLinkId,
+      organizationId: painting.id,
+      name: `Switched off ${tag}`,
+      slug: `switched-off-${tag}`,
+      durationMinutes: 30,
+      active: false,
+    },
+  ]);
+});
+
+afterAll(async () =&gt; {
+  // Their links and hours go with them (cascade).
+  await db.delete(organization).where(inArray(organization.id, [noHours.id, noBooking.id]));
+  await db.delete(bookingLink).where(inArray(bookingLink.id, [switchedOffLinkId]));
+  await db.$client.end();
+});
+
+describe("the documented shape", () =&gt; {
+  test("the list gives a business's active services, by name, and nothing else", async () =&gt; {
+    const response = await get("/public/painting-dev/booking-links");
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(Object.keys(body)).toEqual(["bookingLinks"]);
+    expect(body.bookingLinks.map((link: { name: string }) =&gt; link.name)).toEqual([
+      "Colour consultation",
+      "Exterior estimate",
+      "Interior estimate",
+    ]); // the switched-off one is not listed
+    for (const link of body.bookingLinks) {
+      expect(Object.keys(link).sort()).toEqual(
+        [
+          "bufferAfterMinutes",
+          "bufferBeforeMinutes",
+          "description",
+          "durationMinutes",
+          "id",
+          "name",
+          "slug",
+        ].sort()
+      );
+    }
+  });
+
+  test("one service comes with the business's bookable hours", async () =&gt; {
+    const response = await get(`/public/painting-dev/booking-links/${paintingLinkId}`);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(Object.keys(body).sort()).toEqual(["availability", "bookingLink"]);
+    expect(body.bookingLink.id).toBe(paintingLinkId);
+    expect(Object.keys(body.availability).sort()).toEqual(
+      [
+        "closedDates",
+        "dateHours",
+        "horizonDays",
+        "minimumNoticeMinutes",
+        "timezone",
+        "weeklyHours",
+      ].sort()
+    );
+    expect(body.availability.timezone).toBe("America/Edmonton");
+  });
+
+  test("no answer carries organizationId, or whose week answered", async () =&gt; {
+    const list = await (await get("/public/painting-dev/booking-links")).text();
+    const one = await (await get(`/public/painting-dev/booking-links/${paintingLinkId}`)).text();
+
+    for (const text of [list, one]) {
+      expect(text).not.toContain("organizationId");
+      expect(text).not.toContain("source");
+    }
+  });
+});
+
+describe("every 'not here' is the identical 404", () =&gt; {
+  const unknownId = randomUUID();
+  const cases: [string, () =&gt; string][] = [
+    [
+      "an unknown business",
+      () =&gt; `/public/no-such-business-${tag}/booking-links/${paintingLinkId}`,
+    ],
+    ["an unknown service", () =&gt; `/public/painting-dev/booking-links/${unknownId}`],
+    ["a switched-off service", () =&gt; `/public/painting-dev/booking-links/${switchedOffLinkId}`],
+    ["another business's service", () =&gt; `/public/painting-dev/booking-links/${clinicLinkId}`],
+    [
+      "a business with no hours yet",
+      () =&gt; `/public/${noHours.slug}/booking-links/${noHours.linkId}`,
+    ],
+    ["a plan without booking", () =&gt; `/public/${noBooking.slug}/booking-links/${noBooking.linkId}`],
+    ["an unknown business's list", () =&gt; `/public/no-such-business-${tag}/booking-links`],
+    ["the list of a business with no hours", () =&gt; `/public/${noHours.slug}/booking-links`],
+    ["the list of a plan without booking", () =&gt; `/public/${noBooking.slug}/booking-links`],
+  ];
+
+  test.each(cases)("%s", async (_name, path) =&gt; {
+    const response = await get(path());
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({
+      error: { code: "not_found", message: "Nothing is bookable here." },
+    });
+  });
+});
+
+describe("a malformed address is a 400, in the same error shape", () =&gt; {
+  test.each([
+    ["a slug with a space", "/public/painting%20dev/booking-links"],
+    ["a slug in capitals", "/public/Painting-Dev/booking-links"],
+    ["an id with a quote", `/public/painting-dev/booking-links/abc'def`],
+  ])("%s", async (_name, path) =&gt; {
+    const response = await get(path);
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe("bad_request");
+    expect(typeof body.error.message).toBe("string");
+  });
+});
+
+describe("the login cookie is never allowed", () =&gt; {
+  test("an allowed site is named back, without credentials", async () =&gt; {
+    const response = await get("/public/painting-dev/booking-links", dashboardOrigin);
+
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(dashboardOrigin);
+    expect(response.headers.get("Access-Control-Allow-Credentials")).toBeNull();
+  });
+
+  test("a preflight allows GET only, without credentials", async () =&gt; {
+    const response = await app.request("/public/painting-dev/booking-links", {
+      method: "OPTIONS",
+      headers: { Origin: dashboardOrigin, "Access-Control-Request-Method": "GET" },
+    });
+
+    expect(response.headers.get("Access-Control-Allow-Methods")).toBe("GET");
+    expect(response.headers.get("Access-Control-Allow-Credentials")).toBeNull();
+  });
+
+  test("a 404 carries no credentials either", async () =&gt; {
+    const response = await get(
+      `/public/painting-dev/booking-links/${randomUUID()}`,
+      dashboardOrigin
+    );
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get("Access-Control-Allow-Credentials")).toBeNull();
+  });
+
+  test("a site not on the list is not named back", async () =&gt; {
+    const response = await get("/public/painting-dev/booking-links", "https://not-listed.example");
+
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBeNull();
+  });
+});</code></pre>
+</div></details>
+</div></details></li>
+                            </ul>
+                            <div class="tests">
+                              <div class="tests-head">How it was proved</div>
+                              <div class="proof-card">
+                                <div class="card-head">Saved tests and checks by hand</div>
+                                <ul>
+                                  <li><b>Added:</b> 19 saved tests in the backend: the documented shape of both routes, no <code>organizationId</code> anywhere, nine "not here" cases each giving the identical 404 (six on one service, three on the list), three malformed addresses giving a 400, and four on CORS: an allowed site named back without credentials, a preflight allowing <code>GET</code> only, a 404 without credentials, a site not on the list not named back. The rows they need (two made-up businesses and a switched-off service) are added and removed by the tests themselves.</li>
+                                  <li><b>Proved they can fail:</b> three faults planted one at a time. The service looked up by id alone: "another business's service" failed by name. The switched-off filter removed: "a switched-off service" failed. The login cookie allowed: all three credential tests failed. Each file restored after; 30 pass.</li>
+                                  <li><b>By hand, in a real browser:</b> from the dashboard's page (<code>localhost:3000</code>) the painting company's three services were read. From a throwaway page on <code>localhost:5599</code>, not on the list, the same fetch failed and the browser said why: "blocked by CORS policy: No 'Access-Control-Allow-Origin' header". The throwaway page was removed.</li>
+                                  <li><b>Left clean:</b> after the tests the database holds exactly the seed again, 2 businesses and 13 services.</li>
+                                </ul>
+                                <div class="rstep-when">Passed. Both routes answer the documented shape with no <code>organizationId</code>; the six reasons give the identical 404 on a service and on the list; a malformed slug or id gives a 400 in the same shape; no answer allows the login cookie; the allowed site reads and the unlisted one is blocked. 30 backend tests and 25 shared tests pass; the backend build, the frontend build and its lint pass.</div>
+                                <div class="snags">
+                                  <div class="snags-head">What bit</div>
+                                  <ul>
+                                    <li><b>A page cannot read the header that lets it in.</b> The browser uses <code>Access-Control-Allow-Origin</code> but does not show it to the page's own code, so from the allowed site it reads as empty. The proof there is that the read succeeded; the header itself is checked by the saved tests.</li>
+                                    <li><b>The backend tests now need Postgres.</b> As agreed: with the local database stopped, <code>npm run test --workspace=backend</code> fails on this file instead of skipping it, so it can never pass by not running.</li>
+                                  </ul>
+                                </div>
+                              </div>
+                              <div class="proof-card">
+                                <div class="card-head">Independent review</div>
+                                <p class="rstep-what"><strong>Next:</strong> runs on this step's pushed commit, by a fresh reviewer with none of the build conversation.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </details>
+                        <details class="drawer" data-kind="reality">
+                          <summary>Log <span class="tag-drift">1 entry, newest first</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">This step's own entries, newest first: built, reviewed, fixed. Entries about the whole item stay in the item's Log.</p>
+                            <div class="log">
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.4 built: the first routes a stranger can call</span><span class="kind-tag">Done</span><span class="stamp">Sep 26</span></div>
+                        <p class="entry-text">A client's website can now ask the API for a business's services, and for one service with its bookable hours, with no login. Every way of finding nothing answers the same 404, so a stranger cannot tell a switched-off service from one that never existed. Only listed sites can read the answer in a browser, and never with the login cookie. 19 saved tests prove it on every later step; the browser half was checked by hand.</p>
+                        <p class="entry-text"><strong>Decided on the way, without asking</strong> (small calls, named here): the address checks live as two schemas in <code>packages/shared</code>, as the coding standard asks; a slug may be up to 48 characters, the length the app makes, so no real business is ever refused; the test's database guard is written in the test file rather than shared with the seed, since nothing else needs it yet.</p>
+                      </div>
+                    </div>
+                            </div>
                           </div>
                         </details>
                       </div>
@@ -8236,9 +8855,18 @@ const db = drizzle(client, { schema });</code></pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">15 general entries, newest first &middot; each step keeps its own</span></summary>
+                <summary>Log <span class="tag-drift">16 general entries, newest first &middot; each step keeps its own</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">After the green light, nothing stops until the review</span><span class="kind-tag">Decided</span><span class="stamp">Sep 26</span></div>
+                        <p class="entry-text">Your call, before 2.4 was built: your time goes into the plan. Once a step's plan has your yes, the step runs straight through: build, checks, this page, commit and push to the feature branch, then the independent review. The one stop is after the review. You also gave a standing yes for those commits, so they are no longer asked for; <code>main</code>, a merge or deleting anything still is.</p>
+                        <p class="entry-text">Three things still stop a step early: the plan proving wrong in a way that changes what gets built, a line only you cross (a package, Railway or real data, <code>main</code>, a merge, a deletion), and serious review findings you might choose to leave. Everything else is decided without asking and named in the step's log. Written into <code>AGENTS.md</code> and the <code>/implement</code> skill. The order is drawn on the Architecture tab, under <strong>How a step is built</strong>.</p>
+                        <p class="entry-text"><strong>What bit:</strong> the commit yes was asked before 2.4 existed, and read as if something had already been built. A yes is only ever asked for something that exists.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">
