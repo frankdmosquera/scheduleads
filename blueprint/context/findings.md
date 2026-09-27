@@ -86,7 +86,7 @@ reason in the spec preamble and build log so the next form knows which pattern
 is the standard.
 **Resolution:**
 
-### F-15 [P3] fixed - `coding-standards.md` still says migrations run through drizzle-kit from `backend`
+### F-15 [P3] closed - `coding-standards.md` still says migrations run through drizzle-kit from `backend`
 
 **File:** blueprint/context/coding-standards.md:240
 **Found:** 2026-09-23 by /audit (scope: current; lens: quality)
@@ -102,7 +102,7 @@ would recreate the fork `AGENTS.md` warns about.
 applied from `packages/shared` with the commands in `AGENTS.md`.
 **Resolution:** 2026-09-23, during Frank's folder walkthrough. The Backend section now says
 migrations run through `drizzle-kit` from `packages/shared` only, never from `backend` or
-`frontend`, and points at Commands in `AGENTS.md`. Awaiting re-review.
+`frontend`, and points at Commands in `AGENTS.md`. Awaiting re-review. Closed 2026-09-27 by /audit independent (step 2.4, `e58e0a0`): `coding-standards.md:333-337` now says Drizzle schema and migrations run through `drizzle-kit` from `packages/shared` only, never from `backend` or `frontend`, matching `AGENTS.md` Commands and the `db:*` scripts in `packages/shared/package.json`. No other line in the file says otherwise.
 
 ### F-16 [P3] open - Better Auth endpoints already open two paths the spec reserves for later items
 
@@ -220,7 +220,7 @@ the step's own commits (`compare/b4b39a5...2519644` for 2.2,
 cannot be in its own commit, so pin it on the following republish.
 **Resolution:** 2026-09-25, fixed by /implement: the 2.1 link now compares `cb8e09c...ab16897` and the 2.2 link `b4b39a5...98e2493`, each a step plus its review fix. `AGENTS.md` now says every drawer link is pinned to commits, never the branch. Awaiting re-review. Closed 2026-09-26 by /audit independent: `project-log.html:3375` compares `cb8e09c...ab16897` and `:3817` `b4b39a5...98e2493`, exactly 2.1 plus its fix and 2.2 plus its fix. No link in the page targets a branch name; the 2.3 drawer says its link comes once committed, as the F-21 note expects.
 
-### F-22 [P3] fixed - The seed's one-off and closed dates are fixed dates, so the clinic loses its "only an extra date" practitioner after Oct 18
+### F-22 [P3] closed - The seed's one-off and closed dates are fixed dates, so the clinic loses its "only an extra date" practitioner after Oct 18
 
 **File:** packages/shared/scripts/seed-dev.ts:174
 **Found:** 2026-09-26 by /audit independent (scope: current; lens: quality, tests)
@@ -238,9 +238,9 @@ against this data.
 **Suggested fix:** Compute the seed's dates relative to the day it runs (for
 example Daniel on the Sunday about three weeks ahead, closed dates inside each
 horizon), or say beside line 174 that the case expires and when to move it.
-**Resolution:** 2026-09-26, fixed by /implement on Frank's yes: the seed's dates are relative to the day it runs. Each business gets one closed day 21 days out (inside both booking windows) and Daniel's extra day is the Sunday at least 14 days out. Proved by rebuilding the practice database: closed day 2026-10-17 for both, Daniel 2026-10-11, a Sunday. Awaiting re-review.
+**Resolution:** 2026-09-26, fixed by /implement on Frank's yes: the seed's dates are relative to the day it runs. Each business gets one closed day 21 days out (inside both booking windows) and Daniel's extra day is the Sunday at least 14 days out. Proved by rebuilding the practice database: closed day 2026-10-17 for both, Daniel 2026-10-11, a Sunday. Awaiting re-review. Closed 2026-09-27 by /audit independent (step 2.4, `e58e0a0`): `seed-dev.ts:57-66` computes `daysFromToday` and `sundayAfterDays` from the run date; both closed-date lists (`:112`, `:159`) are one day 21 days out, inside both horizons (60 and 120), and Daniel's date (`:189`) falls 14 to 20 days out, so it can never land on the closed day. A rebuilt database therefore always shows every case. The dates still freeze once written (the hours rows are find-or-make), which the comment at `:57-58` states: rebuilding refreshes them, as the original suggested fix allowed.
 
-### F-23 [P3] fixed - A seeded person given one-off dates but no `weeklyHours` key is silently skipped
+### F-23 [P3] closed - A seeded person given one-off dates but no `weeklyHours` key is silently skipped
 
 **File:** packages/shared/scripts/seed-dev.ts:313
 **Found:** 2026-09-26 by /audit independent (scope: current; lens: quality)
@@ -255,9 +255,9 @@ the next person to give a follower a one-off date will write it the natural way.
 (`weeklyHours !== undefined || dateHours !== undefined`), or make the type say
 it, for example one optional `hours: { weeklyHours, dateHours }` whose presence
 means a row.
-**Resolution:** 2026-09-26, fixed by /implement on Frank's yes: a seeded person gets a row when they have a week or any extra dates; a missing week is stored as null (follows the business). Proved by planting a person with only an extra date: their row was written with no week and the date; the plant was removed after. Awaiting re-review.
+**Resolution:** 2026-09-26, fixed by /implement on Frank's yes: a seeded person gets a row when they have a week or any extra dates; a missing week is stored as null (follows the business). Proved by planting a person with only an extra date: their row was written with no week and the date; the plant was removed after. Awaiting re-review. Closed 2026-09-27 by /audit independent (step 2.4, `e58e0a0`): `seed-dev.ts:340` now skips a row only when there is no week and no extra dates, and `:356` stores a missing week as `null` (follows the business), which the person branch of the 2.1 schema accepts. An entry with only `dateHours` now gets its row; Daniel's explicit `weeklyHours: null` still works. No new defect.
 
-### F-24 [P3] fixed - The seed's types are not exported, and `PersonSeedType` also describes rooms
+### F-24 [P3] closed - The seed's types are not exported, and `PersonSeedType` also describes rooms
 
 **File:** packages/shared/scripts/seed-dev.ts:57
 **Found:** 2026-09-26 by /audit independent (scope: current; lens: quality)
@@ -269,9 +269,9 @@ The same section says names say what a thing is: `PersonSeedType` carries
 schema calls both a resource and the helper beside it is `ensureResource`.
 **Suggested fix:** Export the three types and rename `PersonSeedType` to
 `ResourceSeedType` (and `people` to `resources` if wanted).
-**Resolution:** 2026-09-26, fixed by /implement on Frank's yes: `ResourceSeedType` (renamed from `PersonSeedType`, since it also describes rooms), `ServiceSeedType` and `TransactionType` are exported. The seed type-checks on its own. Awaiting re-review.
+**Resolution:** 2026-09-26, fixed by /implement on Frank's yes: `ResourceSeedType` (renamed from `PersonSeedType`, since it also describes rooms), `ServiceSeedType` and `TransactionType` are exported. The seed type-checks on its own. Awaiting re-review. Closed 2026-09-27 by /audit independent (step 2.4, `e58e0a0`): `ResourceSeedType` (`:68`), `ServiceSeedType` (`:75`) and `TransactionType` (`:215`) are exported, and no `PersonSeedType` remains anywhere in the repo's code. The `people` key was left as is, which the suggested fix made optional.
 
-### F-25 [P3] fixed - On a dev database that was not rebuilt, the seed adds the new businesses beside the old ones
+### F-25 [P3] closed - On a dev database that was not rebuilt, the seed adds the new businesses beside the old ones
 
 **File:** packages/shared/scripts/seed-dev.ts:247
 **Found:** 2026-09-26 by /audit independent (scope: current; lens: quality)
@@ -287,4 +287,67 @@ dev database must be rebuilt after this step.
 **Suggested fix:** One line in `AGENTS.md` Commands and the seed header: after
 pulling 2.3, drop and rebuild the local `scheduleads_dev` (`db:migrate`, then
 `db:seed`). Removing the old businesses from the seed is not needed.
-**Resolution:** 2026-09-26, fixed by /implement on Frank's yes (option A, the seed cleans up): the seed deletes the retired made-up businesses `agency-dev` and `test-salon-dev` by exact slug, inside the local `_dev` guard, and says so; their members, people, hours and services cascade. Proved by putting both back with members, a person and a service: the seed removed them, left exactly the new cast, and the admin login belongs to one business again; a second run removed nothing. Awaiting re-review.
+**Resolution:** 2026-09-26, fixed by /implement on Frank's yes (option A, the seed cleans up): the seed deletes the retired made-up businesses `agency-dev` and `test-salon-dev` by exact slug, inside the local `_dev` guard, and says so; their members, people, hours and services cascade. Proved by putting both back with members, a person and a service: the seed removed them, left exactly the new cast, and the admin login belongs to one business again; a second run removed nothing. Awaiting re-review. Closed 2026-09-27 by /audit independent (step 2.4, `e58e0a0`): the delete (`seed-dev.ts:246-250`) runs inside the seed's one transaction, matches only the two exact slugs in `RETIRED_DEV_SLUGS` (`:89`), and can only be reached after `assertLocalDevelopmentDatabase` (`:238`) has accepted a loopback host and a `_dev` name at module load, before any connection is made. Members, resources, hours and services cascade from `organization` in the schema, so no orphan is left. No new defect.
+
+### F-26 [P3] open - The subscription middleware still says it is the only place that reads `organization.plan`
+
+**File:** backend/middleware/subscription-middleware/require-known-subscription-middleware.ts:27
+**Found:** 2026-09-27 by /audit independent (scope: current; lens: quality)
+**Why it matters:** The comment reads "The only place in the API that reads
+organization.plan, so an unknown value is handled one way, in one place." Step
+2.4 made that false: `findBookableOrganizationId` in
+`backend/routes/public-booking-links-routes.ts:40` and `:49` reads the plan too,
+and handles an unknown value differently on purpose (the identical `404`, not
+`403 plan_unrecognised`). Both behaviours are right, but a reader changing plan
+handling in feature 23 is told there is one place to change, and would miss the
+public one.
+**Suggested fix:** Reword the comment to name both readers and why they answer
+differently: the dashboard says `plan_unrecognised`, the public routes say
+nothing is here.
+**Resolution:**
+
+### F-27 [P3] open - The coding standards were not updated for the first public route
+
+**File:** blueprint/context/coding-standards.md:178
+**Found:** 2026-09-27 by /audit independent (scope: current; lens: quality)
+**Why it matters:** Three lines in the standard now describe the backend as it
+was before 2.4:
+
+- `:178-180` says `organizationId` "is derived server-side from the Better Auth
+  session, never read from anything a client sends". The public routes take the
+  business from the URL slug, which the spec approves as the one exception
+  (`current-feature.md`, Notes for the AI, "Tenant scope"). That exception, and
+  its conditions (read-only, find the business by slug first, then filter every
+  query on its id, never a row by id alone), live only in the spec, which
+  `/complete` archives. Features 5 and 9 add more public routes, including the
+  first public write, and will read the standard, not the archive.
+- `:113-115` lists "Today's areas" without `middleware/public-middleware`.
+- `:36-39` says `server.ts`, `lib/` and `middleware/` sit in `backend/`; it now
+  also holds `app.ts` and a new kind folder, `routes/`, which the kind-then-area
+  rule at `:98-104` does not mention.
+**Suggested fix:** Add the public-route exception with its conditions beside the
+tenant rule, add `middleware/public-middleware` to the areas list, and name
+`app.ts` and `routes/` in the backend layout.
+**Resolution:**
+
+### F-28 [P3] open - Backend tests run against whatever `packages/shared/dist` holds, and silently need a seeded local Postgres
+
+**File:** backend/package.json:10
+**Found:** 2026-09-27 by /audit independent (scope: current; lens: tests)
+**Why it matters:** Until 2.4 the backend tests only imported shared types,
+which are erased. `public-booking-links-routes.test.ts` now loads
+`@scheduleads-app/shared/db`, `/subscriptions` and `/zod-validation` at runtime,
+and the package exports point only at `dist/` (`packages/shared/package.json`;
+there is no Vitest alias in `backend`). `predev` and `prebuild` rebuild `dist/`
+first, but `test` has no `pretest`, so after a change to a shared schema
+`npm run test --workspace=backend` passes or fails against the previous build,
+and on a fresh clone it fails on a missing module. Separately, `AGENTS.md`
+(Commands, `:646`) lists the backend test command with no word that it now
+needs the local `scheduleads_dev` running and seeded, which the spec's 2.4 Done
+when states; the test's own error only names the seed once the connection
+succeeds.
+**Suggested fix:** Add `"pretest": "tsc -p ../packages/shared/tsconfig.build.json"`
+(and the same before `test:watch`, or note it), and add one line under the
+backend test command in `AGENTS.md`: needs local Postgres with `db:migrate` and
+`db:seed` run.
+**Resolution:**

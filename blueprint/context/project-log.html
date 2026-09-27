@@ -1309,10 +1309,10 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.4 built, in review</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.4 reviewed, 3 small notes</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
-                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="next" title="2.4 The public routes - built, in review">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" title="2.5 The typed seam, proved by breaking it">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
+                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="done" title="2.4 The public routes - done">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" data-state="next" title="2.5 The typed seam, proved by breaking it - plan next">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
                 <a class="cell" href="#item-3" data-goto="item-3" title="3 Calendar connection">3</a>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
@@ -6181,7 +6181,7 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
               </div>
 
               <details class="drawer" data-kind="plan" open>
-                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.3 done and reviewed &middot; 2.4 built, in review &middot; 2.1 to 2.6</span></summary>
+                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.4 done and reviewed &middot; 2.1 to 2.6</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
                   <div class="item-steps">
@@ -7943,8 +7943,8 @@ const db = drizzle(client, { schema });</code></pre>
                       </div>
                     </details>
 
-                    <details class="rstep" id="step-2-4" data-state="active" open>
-                      <summary><span class="sn">2.4</span><span class="sm"></span><span>The public routes</span><span class="ss">Built &middot; in review</span></summary>
+                    <details class="rstep" id="step-2-4" data-state="done" open>
+                      <summary><span class="sn">2.4</span><span class="sm"></span><span>The public routes</span><span class="ss">Built &middot; reviewed</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what">The first routes a stranger can call: a business's list of booking links, and one link with its hours. Read-only, no login, and built so a stranger learns nothing they should not, including whether a switched-off link ever existed. Planned in two parts, below: what it builds, then the checks that will prove it done. A piece that needs your call is a blocker: it comes first and nothing is built until you answer it. Piece 1 was one. Both parts agreed with you, Sep 26.</p>
                         <details class="drawer" data-kind="plan">
@@ -7994,7 +7994,7 @@ const db = drizzle(client, { schema });</code></pre>
                           </div>
                         </details>
                         <details class="drawer" data-kind="reality" open>
-                          <summary>What actually happened <span class="tag-drift">6 kept &middot; review next</span></summary>
+                          <summary>What actually happened <span class="tag-drift">6 kept &middot; review passed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">Every planned piece went in as agreed, numbered as in the plan, with the code each one touched under it. The saved tests Part 2 asked for are piece 6.</p>
                             <div class="verdict">
@@ -8557,6 +8557,7 @@ describe("the login cookie is never allowed", () =&gt; {
 </div></details>
 </div></details></li>
                             </ul>
+                            <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/compare/e55240c...e58e0a0">This step's full diff on GitHub</a></p>
                             <div class="tests">
                               <div class="tests-head">How it was proved</div>
                               <div class="proof-card">
@@ -8578,16 +8579,34 @@ describe("the login cookie is never allowed", () =&gt; {
                               </div>
                               <div class="proof-card">
                                 <div class="card-head">Independent review</div>
-                                <p class="rstep-what"><strong>Next:</strong> runs on this step's pushed commit, by a fresh reviewer with none of the build conversation.</p>
+                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 26, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>e58e0a0</code>. No P0 or P1. It reran every test and both builds, traced every query of both routes, checked that each "not here" stops after the same number of queries so not even timing tells them apart, read Hono's own CORS code to confirm credentials are never sent, and compared the Sep 26 restructure line by line with the originals: only names and paths changed. It closed F-22 to F-25 from step 2.3 and the older F-15, and found three small issues (below, in Review issues). Receipt in <code>blueprint/context/review.md</code>.</p>
                               </div>
                             </div>
                           </div>
                         </details>
+                        <details class="drawer" data-kind="issues">
+                          <summary>Review issues <span class="tag-drift">3 found &middot; all small, waiting on your call</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
+                            <div class="rows">
+                              <div class="row"><div class="row-key">F-26 &middot; P3 &middot; open</div><div class="row-val">A comment says the plan check middleware is the only place that reads a business's plan. Since 2.4 the public routes read it too, and answer an unknown plan with the quiet 404 on purpose. Whoever adds plans in feature 23 could miss the second place.</div></div>
+                              <div class="row"><div class="row-key">F-27 &middot; P3 &middot; open</div><div class="row-val">The coding standard still says a business is never taken from anything the visitor sends. The public routes are the one agreed exception (found by its address, read-only), but that is written only in this feature's spec, which is archived when the feature closes. The standard's folder list also misses <code>public-middleware/</code>, <code>app.ts</code> and <code>routes/</code>.</div></div>
+                              <div class="row"><div class="row-key">F-28 &middot; P3 &middot; open</div><div class="row-val">The backend's test command does not rebuild <code>packages/shared</code> first, as its dev and build commands do. The new test loads shared code, so on a fresh machine it fails with a missing module, and elsewhere it can run against an old build. <code>AGENTS.md</code> also does not yet say these tests need the local database seeded.</div></div>
+                            </div>
+                          </div>
+                        </details>
                         <details class="drawer" data-kind="reality">
-                          <summary>Log <span class="tag-drift">1 entry, newest first</span></summary>
+                          <summary>Log <span class="tag-drift">2 entries, newest first</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">This step's own entries, newest first: built, reviewed, fixed. Entries about the whole item stay in the item's Log.</p>
                             <div class="log">
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.4 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 26</span></div>
+                        <p class="entry-text">A fresh reviewer read only the code and the spec, reran everything, and traced both routes query by query. Nothing serious. It confirmed a stranger cannot tell any "not here" apart, not even by how long the answer takes, and that the login cookie is never allowed. It closed the four seed issues from 2.3. Three small notes, all about writing things down in the right place: a stale comment (F-26), the coding standard missing the public-route exception (F-27), and the test command not rebuilding shared first (F-28).</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="done">
                       <div class="dot"></div>
                       <div class="entry-body">
