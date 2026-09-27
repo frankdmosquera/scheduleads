@@ -351,12 +351,13 @@ pieces, each a green check, an unplanned one tagged "added"; then one blue
 **How it was proved** box holding two white cards: **Saved tests and checks
 by hand** (tests added, how they were proved able to fail, what was only
 proved by hand, and the "Passed." result of the Done when) and **Independent
-review** (its verdict and issues). The planned pieces and each card carry
-their own small violet **What bit** block when something caught us out
-there, and none when nothing did), **What
-changed in the code**, **Independent review issues** (every finding the independent review raised, in
-plain words, with its F-number and state), and **Log** (that step's own
-entries: built, reviewed, fixed). The item's **Log** keeps only entries about
+review** (its verdict, then a violet **Issues it found** block inside the
+same card: every finding the independent review raised, in plain words, with
+its F-number and state; moved inside on Frank's call, 2026-09-26, because the
+issues are the review's answer, not a drawer of their own). The planned
+pieces and each card carry their own small violet **What bit** block when
+something caught us out there, and none when nothing did), **What changed in
+the code**, and **Log** (that step's own entries: built, reviewed, fixed). The item's **Log** keeps only entries about
 the whole item, such as decisions. An entry lives in one of the two, never
 both.
 
@@ -439,8 +440,8 @@ drawer under it, the code that piece touched: every changed file is placed
 under the piece it served, so what was built and what code it touched are read
 together. Unplanned pieces ("added") carry their code the same way. A file
 that served two pieces appears under each with only its own lines. Then **How
-it was proved** runs the Done when. **Independent review issues** and **Log** stay
-separate: the review is independent and comes at the end. Steps 2.1 to 2.3
+it was proved** runs the Done when, with the independent review and the
+issues it found in its own card at the end. **Log** stays separate. Steps 2.1 to 2.3
 were regrouped this way on Sep 26, sliced by the real line numbers.
 
 **And it shows the code.** Decided by Frank, 2026-09-25: the project is big

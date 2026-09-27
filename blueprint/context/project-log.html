@@ -1228,6 +1228,10 @@
      lines a red one; no + or - signs. */
 
   /* Independent review issues: violet, the page's colour for a fault found and repaired. */
+  /* The independent review's issues, inside its own card: violet like What bit, one row per finding. */
+  .review-issues { display: flex; flex-direction: column; gap: 6px; padding: 9px 12px; border: 1px solid color-mix(in srgb, var(--fixed) 30%, var(--surface)); border-radius: 5px; background: color-mix(in srgb, var(--fixed) 7%, var(--surface)); }
+  .review-issues-head { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: var(--fixed); }
+  .review-issues .row { grid-template-columns: 150px minmax(0, 1fr); padding: 8px 0; font-size: 14.5px; }
   .drawer[data-kind="issues"] > summary { background: color-mix(in srgb, var(--fixed) 9%, var(--surface)); color: var(--fixed); }
   .drawer[data-kind="issues"] > summary:hover { background: color-mix(in srgb, var(--fixed) 18%, var(--surface)); }
   .drawer[data-kind="issues"][open] { border-color: color-mix(in srgb, var(--fixed) 40%, var(--surface)); }
@@ -6917,6 +6921,13 @@ describe("availabilityRuleValidationSchema", () =&gt; {
                             <div class="proof-card">
                               <div class="card-head">Independent review</div>
                               <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, over the test setup and this step, all four lenses. No P0 or P1. Two notes: <strong>F-17</strong> (P2), a fresh database gets no first person for the dev businesses, planned into 2.3 with you; <strong>F-18</strong> (P3), four hours rules had no test, fixed the same evening with four more tests, 25 in all. Receipt in <code>blueprint/context/review.md</code>.</p>
+                                <div class="review-issues">
+                                  <div class="review-issues-head">Issues it found &middot; 2 &middot; both closed</div>
+                                  <div class="rows">
+                              <div class="row"><div class="row-key">F-17 &middot; P2 &middot; closed</div><div class="row-val">On a brand-new machine, the dev businesses would have no first person: the migration runs before the seed makes them, and the seed skips the hook. Planned into 2.3 with you: the seed makes the person when missing.</div></div>
+                              <div class="row"><div class="row-key">F-18 &middot; P3 &middot; closed</div><div class="row-val">Four hours rules had no test (a closed date twice, a country written out, zero days ahead, negative notice). Four tests added; removing the rules made them fail.</div></div>
+                            </div>
+                                </div>
                               <div class="snags">
                                 <div class="snags-head">What bit</div>
                                 <ul>
@@ -6928,16 +6939,6 @@ describe("availabilityRuleValidationSchema", () =&gt; {
                           </div>
                         </details>
 
-                        <details class="drawer" data-kind="issues">
-                          <summary>Independent review issues <span class="tag-drift">2 found &middot; both closed</span></summary>
-                          <div class="drawer-body">
-                            <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
-                            <div class="rows">
-                              <div class="row"><div class="row-key">F-17 &middot; P2 &middot; closed</div><div class="row-val">On a brand-new machine, the dev businesses would have no first person: the migration runs before the seed makes them, and the seed skips the hook. Planned into 2.3 with you: the seed makes the person when missing.</div></div>
-                              <div class="row"><div class="row-key">F-18 &middot; P3 &middot; closed</div><div class="row-val">Four hours rules had no test (a closed date twice, a country written out, zero days ahead, negative notice). Four tests added; removing the rules made them fail.</div></div>
-                            </div>
-                          </div>
-                        </details>
                         <details class="drawer" data-kind="reality">
                           <summary>Log <span class="tag-drift">2 entries, newest first</span></summary>
                           <div class="drawer-body">
@@ -7380,19 +7381,16 @@ describe("applyAvailabilityRules", () =&gt; {
                             <div class="proof-card">
                               <div class="card-head">Independent review</div>
                               <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>2519644</code>. No P0 or P1. It reran every test and the build, and rechecked the database half itself on the salon (rows removed after). Three notes: <strong>F-19</strong> (P2), no test catches a person with their own row losing the business's one-off dates; it proved the gap by breaking that line in a copy and watching all 10 tests still pass. <strong>F-20</strong> (P3), one type not exported, against the naming standard. <strong>F-21</strong> (P3), the "full diff" links on this page follow the branch, so 2.1's already shows 2.2 too. Receipt in <code>blueprint/context/review.md</code>.</p>
-                            </div>
-</div>
-                          </div>
-                        </details>
-                        <details class="drawer" data-kind="issues">
-                          <summary>Independent review issues <span class="tag-drift">3 found &middot; all 3 closed</span></summary>
-                          <div class="drawer-body">
-                            <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
-                            <div class="rows">
+                                <div class="review-issues">
+                                  <div class="review-issues-head">Issues it found &middot; 3 &middot; all 3 closed</div>
+                                  <div class="rows">
                               <div class="row"><div class="row-key">F-19 &middot; P2 &middot; closed</div><div class="row-val">No test caught Ben's case: a person who follows the business's week but has a row of his own must still get the business's extra dates. The reviewer broke that line in a copy and all 10 tests passed. Test added; it now fails on that break.</div></div>
                               <div class="row"><div class="row-key">F-20 &middot; P3 &middot; closed</div><div class="row-val">One type was not exported, against the naming standard. One word added.</div></div>
                               <div class="row"><div class="row-key">F-21 &middot; P3 &middot; closed</div><div class="row-val">The "full diff on GitHub" link at the bottom of each code drawer showed later steps too. Now pinned to the step's own commits.</div></div>
                             </div>
+                                </div>
+                            </div>
+</div>
                           </div>
                         </details>
                         <details class="drawer" data-kind="reality">
@@ -7893,24 +7891,21 @@ const db = drizzle(client, { schema });</code></pre>
                               </div>
                               <div class="proof-card">
                                 <div class="card-head">Independent review</div>
-                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>7b04316</code>. No P0 or P1. It reran every test and both builds, recounted the whole cast in the database, ran the seed again and compared every row byte for byte, and checked the ten treatments against Face and Body's own list. It closed all five issues left from steps 2.1 and 2.2, and found four small ones in the seed (below, in Independent review issues). Receipt in <code>blueprint/context/review.md</code>.</p>
-                              </div>
-                            </div>
-                          </div>
-                        </details>
-
-                        <details class="drawer" data-kind="issues">
-                          <summary>Independent review issues <span class="tag-drift">4 found &middot; all 4 closed</span></summary>
-                          <div class="drawer-body">
-                            <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
-                            <div class="rows">
+                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>7b04316</code>. No P0 or P1. It reran every test and both builds, recounted the whole cast in the database, ran the seed again and compared every row byte for byte, and checked the ten treatments against Face and Body's own list. It closed all five issues left from steps 2.1 and 2.2, and found four small ones in the seed (listed below). Receipt in <code>blueprint/context/review.md</code>.</p>
+                                <div class="review-issues">
+                                  <div class="review-issues-head">Issues it found &middot; 4 &middot; all 4 closed</div>
+                                  <div class="rows">
                               <div class="row"><div class="row-key">F-22 &middot; P3 &middot; closed</div><div class="row-val">The seed's dates are fixed calendar dates. After Oct 18, 2026 Daniel's extra Sunday is in the past, so the clinic loses its "only an extra date" case, and the closed days run out in 2027.</div></div>
                               <div class="row"><div class="row-key">F-23 &middot; P3 &middot; closed</div><div class="row-val">A made-up person given an extra date but no week at all is skipped without a word. Daniel only works because his entry says "no week" out loud.</div></div>
                               <div class="row"><div class="row-key">F-24 &middot; P3 &middot; closed</div><div class="row-val">Three helper types in the seed are not exported, against the naming standard (the same rule as F-20).</div></div>
                               <div class="row"><div class="row-key">F-25 &middot; P3 &middot; closed</div><div class="row-val">On another machine whose local database was not rebuilt, the seed adds the two new businesses beside the old ones, so each login ends up in two businesses, and nothing says to rebuild.</div></div>
                             </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </details>
+
                         <details class="drawer" data-kind="reality">
                           <summary>Log <span class="tag-drift">3 entries, newest first</span></summary>
                           <div class="drawer-body">
@@ -8579,19 +8574,16 @@ describe("the login cookie is never allowed", () =&gt; {
                               </div>
                               <div class="proof-card">
                                 <div class="card-head">Independent review</div>
-                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 26, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>e58e0a0</code>. No P0 or P1. It reran every test and both builds, traced every query of both routes, checked that each "not here" stops after the same number of queries so not even timing tells them apart, read Hono's own CORS code to confirm credentials are never sent, and compared the Sep 26 restructure line by line with the originals: only names and paths changed. It closed F-22 to F-25 from step 2.3 and the older F-15, and found three small issues (below, in Independent review issues). Receipt in <code>blueprint/context/review.md</code>.</p>
-                              </div>
-                            </div>
-                          </div>
-                        </details>
-                        <details class="drawer" data-kind="issues">
-                          <summary>Independent review issues <span class="tag-drift">3 found &middot; all small, waiting on your call</span></summary>
-                          <div class="drawer-body">
-                            <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
-                            <div class="rows">
+                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 26, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>e58e0a0</code>. No P0 or P1. It reran every test and both builds, traced every query of both routes, checked that each "not here" stops after the same number of queries so not even timing tells them apart, read Hono's own CORS code to confirm credentials are never sent, and compared the Sep 26 restructure line by line with the originals: only names and paths changed. It closed F-22 to F-25 from step 2.3 and the older F-15, and found three small issues (listed below). Receipt in <code>blueprint/context/review.md</code>.</p>
+                                <div class="review-issues">
+                                  <div class="review-issues-head">Issues it found &middot; 3 &middot; all small, waiting on your call</div>
+                                  <div class="rows">
                               <div class="row"><div class="row-key">F-26 &middot; P3 &middot; open</div><div class="row-val">A comment says the plan check middleware is the only place that reads a business's plan. Since 2.4 the public routes read it too, and answer an unknown plan with the quiet 404 on purpose. Whoever adds plans in feature 23 could miss the second place.</div></div>
                               <div class="row"><div class="row-key">F-27 &middot; P3 &middot; open</div><div class="row-val">The coding standard still says a business is never taken from anything the visitor sends. The public routes are the one agreed exception (found by its address, read-only), but that is written only in this feature's spec, which is archived when the feature closes. The standard's folder list also misses <code>public-middleware/</code>, <code>app.ts</code> and <code>routes/</code>.</div></div>
                               <div class="row"><div class="row-key">F-28 &middot; P3 &middot; open</div><div class="row-val">The backend's test command does not rebuild <code>packages/shared</code> first, as its dev and build commands do. The new test loads shared code, so on a fresh machine it fails with a missing module, and elsewhere it can run against an old build. <code>AGENTS.md</code> also does not yet say these tests need the local database seeded.</div></div>
+                            </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </details>
