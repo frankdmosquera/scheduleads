@@ -289,7 +289,7 @@ pulling 2.3, drop and rebuild the local `scheduleads_dev` (`db:migrate`, then
 `db:seed`). Removing the old businesses from the seed is not needed.
 **Resolution:** 2026-09-26, fixed by /implement on Frank's yes (option A, the seed cleans up): the seed deletes the retired made-up businesses `agency-dev` and `test-salon-dev` by exact slug, inside the local `_dev` guard, and says so; their members, people, hours and services cascade. Proved by putting both back with members, a person and a service: the seed removed them, left exactly the new cast, and the admin login belongs to one business again; a second run removed nothing. Awaiting re-review. Closed 2026-09-27 by /audit independent (step 2.4, `e58e0a0`): the delete (`seed-dev.ts:246-250`) runs inside the seed's one transaction, matches only the two exact slugs in `RETIRED_DEV_SLUGS` (`:89`), and can only be reached after `assertLocalDevelopmentDatabase` (`:238`) has accepted a loopback host and a `_dev` name at module load, before any connection is made. Members, resources, hours and services cascade from `organization` in the schema, so no orphan is left. No new defect.
 
-### F-26 [P3] fixed - The subscription middleware still says it is the only place that reads `organization.plan`
+### F-26 [P3] closed - The subscription middleware still says it is the only place that reads `organization.plan`
 
 **File:** backend/middleware/subscription-middleware/require-known-subscription-middleware.ts:27
 **Found:** 2026-09-27 by /audit independent (scope: current; lens: quality)
@@ -304,9 +304,9 @@ public one.
 **Suggested fix:** Reword the comment to name both readers and why they answer
 differently: the dashboard says `plan_unrecognised`, the public routes say
 nothing is here.
-**Resolution:** 2026-09-27, fixed on Frank's yes: the comment at `require-known-subscription-middleware.ts:27` now names both readers of the plan and why they answer differently (the dashboard's `403 plan_unrecognised`, the public routes' identical `404`), and `findBookableOrganizationId` in `public-booking-links-routes.ts` points back to it. Comments only; 30 backend tests pass. Awaits the next review to close.
+**Resolution:** 2026-09-27, fixed on Frank's yes: the comment at `require-known-subscription-middleware.ts:27` now names both readers of the plan and why they answer differently (the dashboard's `403 plan_unrecognised`, the public routes' identical `404`), and `findBookableOrganizationId` in `public-booking-links-routes.ts` points back to it. Comments only; 30 backend tests pass. Awaits the next review to close. Closed 2026-09-27 by /audit independent (step 2.5, `78370d9`): `require-known-subscription-middleware.ts:27-30` names both readers of the plan and why they answer differently, and `public-booking-links-routes.ts:37-38` points back to it. Both read it through the shared subscription config, so an unknown plan is `LOCKED` and falls under the comment's "plan without booking". No other reader of `organization.plan` exists under `backend/`. Comments only, no new defect.
 
-### F-27 [P3] fixed - The coding standards were not updated for the first public route
+### F-27 [P3] closed - The coding standards were not updated for the first public route
 
 **File:** blueprint/context/coding-standards.md:178
 **Found:** 2026-09-27 by /audit independent (scope: current; lens: quality)
@@ -328,9 +328,9 @@ was before 2.4:
 **Suggested fix:** Add the public-route exception with its conditions beside the
 tenant rule, add `middleware/public-middleware` to the areas list, and name
 `app.ts` and `routes/` in the backend layout.
-**Resolution:** 2026-09-27, fixed on Frank's yes: `coding-standards.md` now states the public-route exception beside the tenant rule, with its four conditions (read-only, business by slug first then every query on its id, never a row by id alone, one identical `404`); names `app.ts`, `server.ts` and `routes/` in the backend layout; adds `routes/<area>-routes.ts` to the kind-then-area rule; and lists `middleware/public-middleware` and `routes/public-booking-links-routes.ts` among today's areas. Awaits the next review to close.
+**Resolution:** 2026-09-27, fixed on Frank's yes: `coding-standards.md` now states the public-route exception beside the tenant rule, with its four conditions (read-only, business by slug first then every query on its id, never a row by id alone, one identical `404`); names `app.ts`, `server.ts` and `routes/` in the backend layout; adds `routes/<area>-routes.ts` to the kind-then-area rule; and lists `middleware/public-middleware` and `routes/public-booking-links-routes.ts` among today's areas. Awaits the next review to close. Closed 2026-09-27 by /audit independent (step 2.5, `78370d9`): `coding-standards.md:197-205` states the public-route exception beside the tenant rule with its four conditions, and they match the code (`public-booking-links-routes.ts:39-52` finds the business by slug first, `:63-67` and `:83-93` filter on its id and never find a link by id alone, one `notFound` body); `:37-40` names `app.ts`, `server.ts` and `routes/`; `:111` adds `routes/<area>-routes.ts`; `:124-125` lists `middleware/public-middleware`. No new defect from the repair; an unrelated wording slip that step 2.5 introduced in the same file is F-30.
 
-### F-28 [P3] fixed - Backend tests run against whatever `packages/shared/dist` holds, and silently need a seeded local Postgres
+### F-28 [P3] closed - Backend tests run against whatever `packages/shared/dist` holds, and silently need a seeded local Postgres
 
 **File:** backend/package.json:10
 **Found:** 2026-09-27 by /audit independent (scope: current; lens: tests)
@@ -350,4 +350,51 @@ succeeds.
 (and the same before `test:watch`, or note it), and add one line under the
 backend test command in `AGENTS.md`: needs local Postgres with `db:migrate` and
 `db:seed` run.
-**Resolution:** 2026-09-27, fixed on Frank's yes: `backend/package.json` has `pretest` and `pretest:watch` rebuilding `packages/shared` first, like `predev` and `prebuild`; `AGENTS.md` (Commands) says the backend tests need the local Postgres migrated and seeded, and fail rather than skip without it. Proved by deleting `packages/shared/dist` and running `npm run test --workspace=backend`: the pretest rebuilt it and all 30 tests passed. Awaits the next review to close.
+**Resolution:** 2026-09-27, fixed on Frank's yes: `backend/package.json` has `pretest` and `pretest:watch` rebuilding `packages/shared` first, like `predev` and `prebuild`; `AGENTS.md` (Commands) says the backend tests need the local Postgres migrated and seeded, and fail rather than skip without it. Proved by deleting `packages/shared/dist` and running `npm run test --workspace=backend`: the pretest rebuilt it and all 30 tests passed. Awaits the next review to close. Closed 2026-09-27 by /audit independent (step 2.5, `78370d9`): `backend/package.json:16` and `:18` add `pretest` and `pretest:watch` (npm runs a `pre` script for any script name); `npm run test --workspace=backend` was seen running `pretest` before Vitest, and 30 tests passed against the seeded local database. `AGENTS.md:660-665` says the tests need the local Postgres migrated and seeded and fail rather than skip. No new defect.
+
+### F-29 [P2] fixed - A business with no hours yet shows "unexpected status (404)" and a Try again that cannot help
+
+**File:** frontend/lib/api-client.ts:82
+**Found:** 2026-09-27 by /audit independent (scope: current; lens: quality)
+**Why it matters:** `fetchBookingLinks` treats every non-200 as unreachable, on
+the premise in its comment (`:82-84`) that a 404 "means the API and the
+dashboard disagree about this business". Step 2.4 made that false: the public
+list answers the identical `404` for a business with no business hours row
+(`public-booking-links-routes.ts:50`, tested at
+`public-booking-links-routes.test.ts:172-177`), and nothing but the dev seed
+writes that row until feature 12. Every business made through the app's own
+path (`/create-organization`, or the API as step 2.1's Done when did) gets its
+first person from the Better Auth hook (`auth-server.ts:114-120`) but no hours
+row, so its dashboard home shows "The API answered with an unexpected status
+(404)." with a Try again button (`booking-links-list.tsx:61-69`) that can never
+succeed. That is what `fetchMe`'s own comment (`api-client.ts:63-64`) says not
+to do: tell the user to do something that cannot help. The four real tenants
+will be created this way. Read off the code, not observed live (no dev server
+was started in this review).
+**Suggested fix:** Give the 404 its own state in `BookingLinksResultType`, shown
+without Try again as "not open for online booking yet" (from a slug `/me` just
+returned, its causes are no business hours or a plan without booking), and
+correct the comment at `:82-84`. Add the state to the spec's step 2.5 piece 4
+list.
+**Resolution:** Fixed 2026-09-27 on Frank's yes: `fetchBookingLinks` returns a `not-bookable` state for the public 404 (`frontend/lib/api-client.ts`), shown by `booking-links-list.tsx` as "Not open for online booking yet." with no Try again; the wrong comment is gone and the spec's piece 4 lists the state. Proved live: a throwaway business with no hours, made active for the dev admin, showed the new message; removed after, Summit's three links back. Lint, frontend build and format check pass. Awaiting the next review to close.
+
+### F-30 [P3] open - The docs around the new types build are half updated
+
+**File:** blueprint/context/coding-standards.md:59
+**Found:** 2026-09-27 by /audit independent (scope: current; lens: quality)
+**Why it matters:** Step 2.5 inserted the `AppType` sentences into the middle
+of the `packages/shared` paragraph (`:51-59`), so the next sentence, "It
+compiles to `dist/` and its subpath exports point there", now follows "The
+frontend's `predev` and `prebuild` write them fresh" and reads as if it meant
+the backend's declarations; the inserted text is also left as one unwrapped
+line. Separately, `AGENTS.md` Commands (`:644-647`) still says both apps'
+`predev`/`prebuild` build only `packages/shared`, and does not list
+`npm run build:types --workspace=backend` or say that the frontend's dev
+server and build now compile every backend file `app.ts` imports, so a backend
+type error now stops `npm run dev --workspace=frontend` as well. Only the
+Settled architecture section (`AGENTS.md:74`) mentions it.
+**Suggested fix:** Move the `AppType` sentences after the `packages/shared`
+paragraph (or start the next sentence with "`packages/shared` compiles"),
+rewrap it, and add one line to `AGENTS.md` Commands naming `build:types` and
+that the frontend's `predev`/`prebuild` run it.
+**Resolution:**

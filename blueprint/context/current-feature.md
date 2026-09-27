@@ -294,8 +294,10 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
      `MeType` becomes the inferred type of `/me`'s 200 answer.
   4. `frontend/components/booking-links/booking-links-list.tsx` (new) takes
      the slug from `/me` and reads `GET /public/:slug/booking-links` once on
-     page load: loading, list (name and length, name order), empty, and
-     unreachable with Try again. `page.tsx` renders it under the business
+     page load: loading, list (name and length, name order), empty, not
+     open for online booking yet (the public 404: no bookable hours until
+     feature 12, or a plan without booking; no Try again, added by F-29 on
+     2026-09-27), and unreachable with Try again. `page.tsx` renders it under the business
      card.
   5. Correct both `AppType` lines in `coding-standards.md` (File
      Organization and Data Fetching), adding the two-clients rule.

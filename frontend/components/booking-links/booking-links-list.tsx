@@ -1,6 +1,7 @@
 // Frontend: the dashboard home's list of the business's active booking links, read once
-// when the page opens from the public route a client site calls too. Four states: loading,
-// the list, empty, and can't reach the API. Nothing here edits a link (feature 12).
+// when the page opens from the public route a client site calls too. Five states: loading,
+// the list, empty, not open for online booking yet, and can't reach the API. Nothing here
+// edits a link (feature 12).
 
 "use client";
 
@@ -66,6 +67,14 @@ function BookingLinksBody({
           Try again
         </Button>
       </>
+    );
+  }
+
+  if (result.state === "not-bookable") {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Not open for online booking yet. Customers can&apos;t book on your site until it is.
+      </p>
     );
   }
 

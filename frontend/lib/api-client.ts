@@ -76,11 +76,11 @@ export type BookingLinkType = InferResponseType<
 >["bookingLinks"][number];
 
 export type BookingLinksResultType =
-  { state: "ok"; bookingLinks: BookingLinkType[] } | { state: "unreachable"; message: string };
+  | { state: "ok"; bookingLinks: BookingLinkType[] }
+  | { state: "not-bookable" }
+  | { state: "unreachable"; message: string };
 
 // A business's active booking links, from the public route a client site will call too.
-// The slug comes from /me, so a 404 here means the API and the dashboard disagree about
-// this business: shown as unreachable, never as an empty list.
 export async function fetchBookingLinks(slug: string): Promise<BookingLinksResultType> {
   const response = await bookingLinksRoute.$get({ param: { slug } }).catch(() => null);
   if (!response) return { state: "unreachable", message: notResponding };
@@ -89,6 +89,11 @@ export async function fetchBookingLinks(slug: string): Promise<BookingLinksResul
     const { bookingLinks } = await response.json();
     return { state: "ok", bookingLinks };
   }
+
+  // The slug came from /me, so the business exists: the public 404 here means it is not
+  // open for online booking yet (no bookable hours until feature 12, or a plan without
+  // booking). Trying again cannot change that, so it is not shown as an error (F-29).
+  if (response.status === 404) return { state: "not-bookable" };
 
   return {
     state: "unreachable",

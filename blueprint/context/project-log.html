@@ -1340,10 +1340,10 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.5 built, its review next</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.5 reviewed, F-29 fixed, F-30 to talk through</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
-                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="done" title="2.4 The public routes - done">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" data-state="next" title="2.5 The typed seam, proved by breaking it - built, review next">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
+                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="done" title="2.4 The public routes - done">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" data-state="done" title="2.5 The typed seam, proved by breaking it - done">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
                 <a class="cell" href="#item-3" data-goto="item-3" title="3 Calendar connection">3</a>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
@@ -5792,7 +5792,7 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
               </div>
             </details>
             <details class="drawer" data-kind="reality">
-              <summary>Log <span class="tag-drift">31 entries, newest first</span></summary>
+              <summary>Log <span class="tag-drift">33 entries, newest first</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The same work as Steps, ordered by date instead of by piece: decisions as they were taken, questions as they came up, faults as they were found. Steps answer what is being built; this answers what happened, and when.</p>
 <div class="log">
@@ -6213,7 +6213,7 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
               </div>
 
               <details class="drawer" data-kind="plan" open>
-                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.4 done and reviewed &middot; 2.5 built, review next &middot; 2.1 to 2.6</span></summary>
+                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.5 done and reviewed &middot; 2.1 to 2.6</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
                   <div class="item-steps">
@@ -8523,15 +8523,15 @@ describe("the login cookie is never allowed", () =&gt; {
                                 <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>A fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests; this step against its own Done when; the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</p><p><b>For this step:</b> Traced every database query of both routes, checked that each "not here" stops after the same number of queries so not even timing tells them apart, read Hono's own CORS code to confirm the cookie is never allowed, and compared the Sep 26 restructure line by line with the originals: only names and paths changed.</p></div>
                                 <div class="review-part"><div class="review-part-head">2 &middot; Verdict</div><div class="rstep-when">Passed, Sep 26, commit <code>e58e0a0</code>. Nothing serious. Three small issues, fixed Sep 27.</div></div>
                                 <div class="review-issues">
-                                  <div class="review-issues-head">3 &middot; Issues it found: 3, all fixed</div>
+                                  <div class="review-issues-head">3 &middot; Issues it found: 3, all 3 closed</div>
                                   <div class="rows">
-                              <div class="row"><div class="row-key">F-26 &middot; P3 &middot; fixed</div><div class="row-val">A comment says the plan check middleware is the only place that reads a business's plan. Since 2.4 the public routes read it too, and answer an unknown plan with the quiet 404 on purpose. Whoever adds plans in feature 23 could miss the second place.</div></div>
-                              <div class="row"><div class="row-key">F-27 &middot; P3 &middot; fixed</div><div class="row-val">The coding standard still says a business is never taken from anything the visitor sends. The public routes are the one agreed exception (found by its address, read-only), but that is written only in this feature's spec, which is archived when the feature closes. The standard's folder list also misses <code>public-middleware/</code>, <code>app.ts</code> and <code>routes/</code>.</div></div>
-                              <div class="row"><div class="row-key">F-28 &middot; P3 &middot; fixed</div><div class="row-val">The backend's test command does not rebuild <code>packages/shared</code> first, as its dev and build commands do. The new test loads shared code, so on a fresh machine it fails with a missing module, and elsewhere it can run against an old build. <code>AGENTS.md</code> also does not yet say these tests need the local database seeded.</div></div>
+                              <div class="row"><div class="row-key">F-26 &middot; P3 &middot; closed</div><div class="row-val">A comment says the plan check middleware is the only place that reads a business's plan. Since 2.4 the public routes read it too, and answer an unknown plan with the quiet 404 on purpose. Whoever adds plans in feature 23 could miss the second place.</div></div>
+                              <div class="row"><div class="row-key">F-27 &middot; P3 &middot; closed</div><div class="row-val">The coding standard still says a business is never taken from anything the visitor sends. The public routes are the one agreed exception (found by its address, read-only), but that is written only in this feature's spec, which is archived when the feature closes. The standard's folder list also misses <code>public-middleware/</code>, <code>app.ts</code> and <code>routes/</code>.</div></div>
+                              <div class="row"><div class="row-key">F-28 &middot; P3 &middot; closed</div><div class="row-val">The backend's test command does not rebuild <code>packages/shared</code> first, as its dev and build commands do. The new test loads shared code, so on a fresh machine it fails with a missing module, and elsewhere it can run against an old build. <code>AGENTS.md</code> also does not yet say these tests need the local database seeded.</div></div>
                             </div>
                                 </div>
                                 <div class="review-part"><div class="review-part-head">4 &middot; Earlier issues it closed</div><p>F-22 to F-25 from step 2.3 (the seed), and F-15, an older note about the coding standard.</p></div>
-                                <div class="review-fixed" data-state="done"><div class="review-part-head">5 &middot; After the fixes</div><p><b>F-26:</b> the plan-check comment now names both places that read a business's plan and why they answer differently, and the public route points back to it. <b>F-27:</b> the coding standard now states the public-route exception with its four conditions, and names <code>app.ts</code>, <code>routes/</code> and <code>public-middleware/</code>. <b>F-28:</b> the backend tests rebuild <code>packages/shared</code> first, and <code>AGENTS.md</code> says they need the local database migrated and seeded. <b>Proved:</b> with shared's build deleted, the backend tests rebuilt it themselves and all 30 passed; before the fix that run fails on a missing module. The next step's review closes them.</p></div>
+                                <div class="review-fixed" data-state="done"><div class="review-part-head">5 &middot; After the fixes</div><p><b>F-26:</b> the plan-check comment now names both places that read a business's plan and why they answer differently, and the public route points back to it. <b>F-27:</b> the coding standard now states the public-route exception with its four conditions, and names <code>app.ts</code>, <code>routes/</code> and <code>public-middleware/</code>. <b>F-28:</b> the backend tests rebuild <code>packages/shared</code> first, and <code>AGENTS.md</code> says they need the local database migrated and seeded. <b>Proved:</b> with shared's build deleted, the backend tests rebuilt it themselves and all 30 passed; before the fix that run fails on a missing module. All three closed by step 2.5's review.</p></div>
                               </div>
                             </div>
                           </div>
@@ -8539,8 +8539,8 @@ describe("the login cookie is never allowed", () =&gt; {
                       </div>
                     </details>
 
-                    <details class="rstep" id="step-2-5" data-state="active" open>
-                      <summary><span class="sn">2.5</span><span class="sm"></span><span>The typed seam, proved by breaking it</span><span class="ss">Built &middot; review next</span></summary>
+                    <details class="rstep" id="step-2-5" data-state="done" open>
+                      <summary><span class="sn">2.5</span><span class="sm"></span><span>The typed seam, proved by breaking it</span><span class="ss">Built &middot; reviewed</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what">Primo's owner signs in and the home lists the services customers can book. The frontend gets them through a client typed from the backend's own routes, so if someone renames a route or changes an answer, the frontend build fails instead of the owner's screen breaking. The first repo declared this and never used it once, so this step only closes on a build that fails on purpose. Planned in two parts, below: what it builds, then the checks that will prove it done. Piece 1 was one. Both parts agreed with you, Sep 27.</p>
                         <details class="drawer" data-kind="plan">
@@ -8586,7 +8586,7 @@ describe("the login cookie is never allowed", () =&gt; {
                           </div>
                         </details>
                         <details class="drawer" data-kind="reality" open>
-                          <summary>What actually happened <span class="tag-drift">5 kept, 1 added &middot; review next</span></summary>
+                          <summary>What actually happened <span class="tag-drift">5 kept, 1 added &middot; review passed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">Every planned piece went in as agreed, numbered as in the plan, with the code each one touched under it. One small addition: <code>AGENTS.md</code> still said the typed client was "not wired yet".</p>
                             <div class="verdict">
@@ -8912,7 +8912,7 @@ import { fetchMe, type MeResultType } from "@/lib/api-client";</code></pre>
                                 <em class="why">Its settled-architecture section said the typed client was "not wired yet". It now says it was wired and proved in 2.5, and how.</em>
                                 <span class="no-code">No project code: <code>AGENTS.md</code>.</span></li>
                             </ul>
-                            <p class="rstep-what" data-diff-link="2.5">The link to this step's full diff on GitHub is added once the step's commit exists.</p>
+                            <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/compare/fe5a144...78370d9">This step's full diff on GitHub</a></p>
                             <div class="snags">
                               <div class="snags-head">What bit</div>
                               <ul>
@@ -8959,8 +8959,17 @@ Failed to type check.</pre>
                               </div>
                               <div class="proof-card">
                                 <div class="card-head">Independent review</div>
-                                <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>Runs next, from this step's commit.</p></div>
-                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p>Not yet.</p></div>
+                                <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>A fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests; this step against its own Done when; the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</p><p><b>For this step:</b> Reran every test, both builds, lint and the format check; broke the build itself by renaming the list route and watched it fail in <code>api-client.ts</code>, then restored it; checked the lockfile gained only the two lines and that the routes' type written for the frontend carries no connection string or secret name; and followed what a brand-new business would see on its home.</p></div>
+                                <div class="review-part"><div class="review-part-head">2 &middot; Verdict</div><div class="rstep-when">Passed, Sep 27, commit <code>78370d9</code>. Nothing serious. Two issues.</div></div>
+                                <div class="review-issues">
+                                  <div class="review-issues-head">3 &middot; Issues it found: 2, one fixed, one open</div>
+                                  <div class="rows">
+                              <div class="row"><div class="row-key">F-29 &middot; P2 &middot; fixed</div><div class="row-val">A business with no hours yet sees "The API answered with an unexpected status (404)" and a Try again that can never work. Since 2.4 the public route gives that 404 for any business without hours, and a business made in the app gets its first person but no hours until feature 12. Primo, the clinic and the others will all be made that way. Suggested: its own state, "not open for online booking yet", with no Try again.</div></div>
+                              <div class="row"><div class="row-key">F-30 &middot; P3 &middot; open</div><div class="row-val">The docs around the new types build are half updated. In the coding standard, the next sentence ("It compiles to <code>dist/</code>") now reads as if it meant the backend's types; and <code>AGENTS.md</code>'s Commands still say the frontend's dev and build only build <code>packages/shared</code>, when they now also write the backend's types, so a backend type error stops the frontend's dev server too.</div></div>
+                            </div>
+                                </div>
+                                <div class="review-part"><div class="review-part-head">4 &middot; Earlier issues it closed</div><p>F-26 to F-28 from step 2.4, each repair re-checked in its file.</p></div>
+                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p><b>F-29:</b> on your yes, Sep 27, the home of a business with no hours says "Not open for online booking yet. Customers can't book on your site until it is.", with no error and no button. Proved live with a throwaway business with no hours, made active for the dev admin and removed after. <b>F-30:</b> not yet, next to talk through.</p></div>
                               </div>
                             </div>
                           </div>
@@ -9204,6 +9213,20 @@ Failed to type check.</pre>
                 <summary>Log <span class="tag-drift">31 entries, newest first, each titled with its step when it has one</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="fix">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.5: F-29 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 27</span></div>
+                        <p class="entry-text">Your yes: a business with no hours no longer sees a 404 error and a Try again that cannot help. Its home says "Not open for online booking yet." The list now has five states. Seen live on a throwaway business with no hours, removed after. Marked fixed; the next review closes it.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.5 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 27</span></div>
+                        <p class="entry-text">A fresh reviewer reran everything and broke the build itself by renaming the list route: it failed in <code>api-client.ts</code> as it should, and passed once restored. Nothing serious. It closed F-26 to F-28 from 2.4. Two new issues. F-29 is the useful one: a business made in the app has no hours until feature 12, so its home would show a 404 error and a Try again that can never work. F-30: the docs around the new types build are half updated.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="done">
                       <div class="dot"></div>
                       <div class="entry-body">
