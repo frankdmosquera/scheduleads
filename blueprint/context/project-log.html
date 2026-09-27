@@ -643,7 +643,7 @@
 
   .stage-head {
     display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px;
-    padding-bottom: 9px; margin-bottom: 6px;
+    padding: 0 0.5rem 9px; margin-bottom: 6px;
     border-bottom: 1px solid var(--rule);
   }
 
@@ -654,7 +654,7 @@
     display: grid;
     grid-template-columns: 24px minmax(0, 1fr) auto;
     gap: 4px 10px;
-    padding: 13px 0;
+    padding: 13px 0.5rem; /* the same small gap on both sides, so numbers and pills never touch the edge */
     border-bottom: 1px solid var(--rule-soft);
     align-items: baseline;
   }
@@ -664,7 +664,9 @@
      title line, so the steps and drawers below reach the right edge instead of stopping short. */
   .item { position: relative; }
   .item:has(> .item-body > .item-fold[open]) > .item-body { grid-column: 2 / -1; }
-  .item:has(> .item-body > .item-fold[open]) > .pill { position: absolute; top: 13px; right: 0; }
+  .item:has(> .item-body > .item-fold[open]) > .pill { position: absolute; top: 13px; right: 0.5rem; }
+  /* Below the title, an open item's contents start under its number, not under its title. */
+  .item-fold[open] > :not(summary) { margin-left: -34px; } /* the number column (24px) plus the gap (10px) */
   .item:has(> .item-body > .item-fold[open]) .item-fold > summary { padding-right: 130px; }
   .item-num { font-family: var(--mono); font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
   .item-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -1222,6 +1224,7 @@
     .scope { grid-template-columns: 1fr; gap: 22px; }
     .row { grid-template-columns: 1fr; }
     .item { grid-template-columns: 28px minmax(0, 1fr); }
+    .item-fold[open] > :not(summary) { margin-left: -38px; } /* 28px number column here */
     .item .pill { grid-column: 2; justify-self: start; margin-top: 4px; }
     .topbar { position: static; padding: 10px 16px; }
     .bar { flex-wrap: wrap; justify-content: flex-start; }
