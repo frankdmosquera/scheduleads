@@ -1340,7 +1340,7 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.5 reviewed, F-29 fixed, F-30 to talk through</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.5 reviewed, F-29 and F-30 fixed, 2.6 next</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
                 <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="done" title="2.4 The public routes - done">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" data-state="done" title="2.5 The typed seam, proved by breaking it - done">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
@@ -8962,14 +8962,14 @@ Failed to type check.</pre>
                                 <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>A fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests; this step against its own Done when; the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</p><p><b>For this step:</b> Reran every test, both builds, lint and the format check; broke the build itself by renaming the list route and watched it fail in <code>api-client.ts</code>, then restored it; checked the lockfile gained only the two lines and that the routes' type written for the frontend carries no connection string or secret name; and followed what a brand-new business would see on its home.</p></div>
                                 <div class="review-part"><div class="review-part-head">2 &middot; Verdict</div><div class="rstep-when">Passed, Sep 27, commit <code>78370d9</code>. Nothing serious. Two issues.</div></div>
                                 <div class="review-issues">
-                                  <div class="review-issues-head">3 &middot; Issues it found: 2, one fixed, one open</div>
+                                  <div class="review-issues-head">3 &middot; Issues it found: 2, both fixed</div>
                                   <div class="rows">
                               <div class="row"><div class="row-key">F-29 &middot; P2 &middot; fixed</div><div class="row-val">A business with no hours yet sees "The API answered with an unexpected status (404)" and a Try again that can never work. Since 2.4 the public route gives that 404 for any business without hours, and a business made in the app gets its first person but no hours until feature 12. Primo, the clinic and the others will all be made that way. Suggested: its own state, "not open for online booking yet", with no Try again.</div></div>
-                              <div class="row"><div class="row-key">F-30 &middot; P3 &middot; open</div><div class="row-val">The docs around the new types build are half updated. In the coding standard, the next sentence ("It compiles to <code>dist/</code>") now reads as if it meant the backend's types; and <code>AGENTS.md</code>'s Commands still say the frontend's dev and build only build <code>packages/shared</code>, when they now also write the backend's types, so a backend type error stops the frontend's dev server too.</div></div>
+                              <div class="row"><div class="row-key">F-30 &middot; P3 &middot; fixed</div><div class="row-val">The docs around the new types build are half updated. In the coding standard, the next sentence ("It compiles to <code>dist/</code>") now reads as if it meant the backend's types; and <code>AGENTS.md</code>'s Commands still say the frontend's dev and build only build <code>packages/shared</code>, when they now also write the backend's types, so a backend type error stops the frontend's dev server too.</div></div>
                             </div>
                                 </div>
                                 <div class="review-part"><div class="review-part-head">4 &middot; Earlier issues it closed</div><p>F-26 to F-28 from step 2.4, each repair re-checked in its file.</p></div>
-                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p><b>F-29:</b> on your yes, Sep 27, the home of a business with no hours says "Not open for online booking yet. Customers can't book on your site until it is.", with no error and no button. Proved live with a throwaway business with no hours, made active for the dev admin and removed after. <b>F-30:</b> not yet, next to talk through.</p></div>
+                                <div class="review-fixed" data-state="done"><div class="review-part-head">5 &middot; After the fixes</div><p><b>F-29:</b> on your yes, Sep 27, the home of a business with no hours says "Not open for online booking yet. Customers can't book on your site until it is.", with no error and no button. Proved live with a throwaway business with no hours, made active for the dev admin and removed after. <b>F-30:</b> on your yes, Sep 27, the coding standard has the <code>packages/shared</code> paragraph whole again, with the <code>AppType</code> sentences moved into their own paragraph after it, and <code>AGENTS.md</code>&apos;s Commands now say the frontend&apos;s dev and build also write the backend&apos;s types, so a backend type error stops them too. Docs only, no code touched. Both wait for the next review to close.</p></div>
                               </div>
                             </div>
                           </div>
@@ -9210,9 +9210,16 @@ Failed to type check.</pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">31 entries, newest first, each titled with its step when it has one</span></summary>
+                <summary>Log <span class="tag-drift">32 entries, newest first, each titled with its step when it has one</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="fix">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.5: F-30 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 27</span></div>
+                        <p class="entry-text">Your yes: the coding standard&apos;s paragraph about <code>packages/shared</code> is whole again, so &quot;It compiles to <code>dist/</code>&quot; is clearly about shared, and the <code>AppType</code> sentences sit in their own paragraph after it. <code>AGENTS.md</code>&apos;s Commands now name <code>build:types</code> and say a backend type error stops the frontend&apos;s dev server too. Docs only. Marked fixed; the next review closes it.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="fix">
                       <div class="dot"></div>
                       <div class="entry-body">

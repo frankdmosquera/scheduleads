@@ -645,7 +645,10 @@ generating against one database is how a migration ledger forks.
 No separate typecheck script: `next build` typechecks the frontend and the
 backend build is `tsc`. `packages/shared` compiles to `dist/` and both apps
 build it first through their own `predev` and `prebuild` hooks, so neither
-consumes it as TypeScript source.
+consumes it as TypeScript source. The frontend's hooks also run
+`npm run build:types --workspace=backend`, which writes the API's route types
+for the typed client, so a type error anywhere `backend/app.ts` reaches stops
+`npm run dev --workspace=frontend` and the frontend build too.
 
 Unit tests run on Vitest, a dev dependency of the workspace that holds the
 code under test. Test files sit beside the code as `*.test.ts` and are

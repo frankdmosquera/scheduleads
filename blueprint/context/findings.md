@@ -378,7 +378,7 @@ correct the comment at `:82-84`. Add the state to the spec's step 2.5 piece 4
 list.
 **Resolution:** Fixed 2026-09-27 on Frank's yes: `fetchBookingLinks` returns a `not-bookable` state for the public 404 (`frontend/lib/api-client.ts`), shown by `booking-links-list.tsx` as "Not open for online booking yet." with no Try again; the wrong comment is gone and the spec's piece 4 lists the state. Proved live: a throwaway business with no hours, made active for the dev admin, showed the new message; removed after, Summit's three links back. Lint, frontend build and format check pass. Awaiting the next review to close.
 
-### F-30 [P3] open - The docs around the new types build are half updated
+### F-30 [P3] fixed - The docs around the new types build are half updated
 
 **File:** blueprint/context/coding-standards.md:59
 **Found:** 2026-09-27 by /audit independent (scope: current; lens: quality)
@@ -397,4 +397,10 @@ Settled architecture section (`AGENTS.md:74`) mentions it.
 paragraph (or start the next sentence with "`packages/shared` compiles"),
 rewrap it, and add one line to `AGENTS.md` Commands naming `build:types` and
 that the frontend's `predev`/`prebuild` run it.
-**Resolution:**
+**Resolution:** Fixed 2026-09-27 on Frank's yes: in `coding-standards.md` the
+`packages/shared` paragraph is whole again, so "It compiles to `dist/`"
+follows the sentences about shared, and the `AppType` sentences are their own
+paragraph after it, rewrapped. `AGENTS.md` Commands now says the frontend's
+`predev` and `prebuild` also run `npm run build:types --workspace=backend`, so
+a backend type error stops the frontend's dev server and build too. Docs only,
+no code touched. Awaiting the next review to close.

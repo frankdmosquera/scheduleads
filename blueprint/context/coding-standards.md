@@ -49,21 +49,24 @@ its `tsconfig.json` excludes `dist` and the tests so nothing else compiles.
   `@/src/lib/utils`
 
 `packages/shared` holds what both sides need: the Drizzle schema and
-migrations, the Zod schemas and the crypto. The API contract, the Hono
-`AppType`, is not in it: it is the type of the app in `backend/app.ts`, and
-shared would have to import the backend to hold it. The backend writes its
-declarations (`npm run build:types --workspace=backend`, into `dist/types/`)
-and exposes them as the types-only entry `backend/app-type`; the frontend
-depends on the workspace (`"backend": "*"`) and imports it with
-`import type`. The frontend's `predev` and `prebuild` write them fresh,
-because Vercel builds only the frontend. It compiles to `dist/` and its subpath exports point there, not at
-source. The two workspaces disagree about extensions - the backend's NodeNext
-resolution wants `./file.js` where the frontend's bundler wants none - and
-building the package sidesteps that instead of forcing one of them to bend.
-Both apps build it first through their own `predev` and `prebuild` hooks, so
-neither ever consumes it as TypeScript. Do not add an export that points at a
-`.ts` source file; it breaks both builds. Import from the package rather than
-redeclaring a shape on either side.
+migrations, the Zod schemas and the crypto. It compiles to `dist/` and its
+subpath exports point there, not at source. The two workspaces disagree about
+extensions - the backend's NodeNext resolution wants `./file.js` where the
+frontend's bundler wants none - and building the package sidesteps that
+instead of forcing one of them to bend. Both apps build it first through their
+own `predev` and `prebuild` hooks, so neither ever consumes it as TypeScript.
+Do not add an export that points at a `.ts` source file; it breaks both
+builds. Import from the package rather than redeclaring a shape on either
+side.
+
+The API contract, the Hono `AppType`, is not in `packages/shared`: it is the
+type of the app in `backend/app.ts`, and shared would have to import the
+backend to hold it. The backend writes its declarations
+(`npm run build:types --workspace=backend`, into `dist/types/`) and exposes
+them as the types-only entry `backend/app-type`; the frontend depends on the
+workspace (`"backend": "*"`) and imports it with `import type`. The frontend's
+`predev` and `prebuild` write them fresh, because Vercel builds only the
+frontend.
 
 It has no `src/` either (Frank, 2026-09-26): `db/`, `helpers/`,
 `subscriptions/` and `zod-validation/` sit straight in `packages/shared/`, next
