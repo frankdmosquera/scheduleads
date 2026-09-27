@@ -1,6 +1,5 @@
-// Shared Zod schema: one row of bookable hours, either the business's or one person's.
-// Mirrors the database check on availability_rule, so a bad row is refused before it
-// reaches the database, with a readable message instead of a constraint name.
+// Shared Zod schema: one row of bookable hours, the business's or one person's. Mirrors the
+// database check, so a bad row gets a readable message instead of a constraint name.
 
 import { z } from "zod";
 

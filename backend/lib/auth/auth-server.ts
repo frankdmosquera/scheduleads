@@ -23,9 +23,8 @@ if (!process.env.BETTER_AUTH_SECRET) {
 
 const isProduction = process.env.NODE_ENV === "production";
 
-// A setting that may default to localhost in development only. In production a missing
-// value stops the server from starting, rather than quietly trusting localhost.
-// An empty string counts as missing.
+// Defaults to localhost in development only. In production a missing (or empty) value
+// stops the server rather than quietly trusting localhost.
 function settingWithDevDefault(name: string, developmentDefault: string): string {
   const value = process.env[name];
   if (value) return value;
@@ -39,8 +38,8 @@ function settingWithDevDefault(name: string, developmentDefault: string): string
   return developmentDefault;
 }
 
-// The dashboard's address: the only site allowed to hold a session. Read once here and
-// exported, so server.ts's CORS rule can never drift from Better Auth's.
+// The dashboard's address, the only site allowed to hold a session. Exported so the
+// CORS middleware reads the same value.
 export const appOrigin = settingWithDevDefault("APP_ORIGIN", "http://localhost:3000");
 
 // Every action a business role can be granted. Written out instead of importing Better
@@ -75,9 +74,7 @@ const orgMember = accessControl.newRole({
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
-  // The API's own address (not the dashboard's). Better Auth builds cookie and callback
-  // URLs from it.
-  baseURL: settingWithDevDefault("BETTER_AUTH_URL", "http://localhost:3001"),
+  baseURL: settingWithDevDefault("BETTER_AUTH_URL", "http://localhost:3001"), // the API's, not the dashboard's
   basePath: "/api/auth",
 
   // Schema passed explicitly, so a missing table fails at boot, not at the first query.
@@ -106,11 +103,9 @@ export const auth = betterAuth({
         (user as { role?: string | null }).role === "admin",
 
       organizationHooks: {
-        // Every business gets its first person, so the database always has someone to
-        // hold a booking. Named after the business, never after whoever clicked create:
-        // today that is the platform admin. The owner renames it in settings (feature 12).
-        // Runs after the business is saved, not in its transaction; if it fails, the
-        // business has no person and cannot take a booking, which fails safe.
+        // Every business gets its first person, named after the business (not whoever
+        // clicked create, today the platform admin). Outside the create transaction: if it
+        // fails, the business cannot take a booking, which fails safe.
         afterCreateOrganization: async ({ organization: createdOrganization }) => {
           await db.insert(resource).values({
             id: randomUUID(),
@@ -157,12 +152,10 @@ export const auth = betterAuth({
   databaseHooks: {
     session: {
       create: {
-        // Runs just before a login session is saved. Better Auth only picks a business
-        // when one is created or switched to, so without this a returning owner would
-        // sign in belonging to nothing. Pre-selects only when there is exactly one.
+        // Better Auth only picks a business when one is created or switched to, so a
+        // returning owner would sign in belonging to nothing. This pre-selects their one
+        // business; it never decides access.
         before: async (session) => {
-          // Only pre-selects. It never decides access: every business the
-          // user belongs to is still listed and reachable from the home page.
           const memberships = await db
             .select({ organizationId: member.organizationId })
             .from(member)
@@ -192,8 +185,8 @@ export const auth = betterAuth({
       ? { enabled: true, domain: process.env.COOKIE_DOMAIN }
       : undefined,
     defaultCookieAttributes: isProduction
-      ? { sameSite: "none", secure: true, partitioned: true } // A: production
-      : { sameSite: "lax", secure: false }, // B: development
+      ? { sameSite: "none", secure: true, partitioned: true }
+      : { sameSite: "lax", secure: false },
   },
 });
 

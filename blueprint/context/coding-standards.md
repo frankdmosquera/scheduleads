@@ -336,6 +336,12 @@ obvious code, or a long block at the top that explains lines far below it.
 - Keep doc comments minimal: a one-line purpose on an exported type or function is
   plenty; don't write JSDoc that just repeats the signature.
 - When in doubt, leave the comment out.
+- **The balance (Frank, 2026-09-27):** he likes comments, but not a paragraph
+  where a line will do. Most comments are one or two lines; a file header is two
+  or three. No history in code comments (step numbers, finding numbers, "the
+  first repo did"): that lives in the build log. Keep what the code cannot say:
+  why, the trap, the security rule, the other file that must change with this
+  one, and units or formats (minutes from midnight, `YYYY-MM-DD`).
 
 ## Writing
 

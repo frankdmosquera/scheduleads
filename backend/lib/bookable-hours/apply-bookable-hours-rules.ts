@@ -1,6 +1,5 @@
 // Backend: the rules that turn a business's row and one person's row into the hours a
-// customer can book. Pure, no database, so every rule is tested on its own.
-// resolve-bookable-hours.ts reads the rows and hands them here.
+// customer can book. No database, so every rule is tested; resolve-bookable-hours.ts reads the rows.
 
 import type { DateHoursType, WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
 

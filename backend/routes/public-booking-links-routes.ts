@@ -1,6 +1,5 @@
-// Backend: the public booking routes, the first a stranger can call. Read-only, no login,
-// and answering "not here" the same way whatever the reason, so a stranger learns nothing
-// about which businesses or services exist.
+// Backend: the public booking routes a stranger can call. Read-only, no login, and one
+// identical "not here" answer, so nobody can probe which businesses or services exist.
 
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
@@ -16,8 +15,6 @@ import { db } from "../database.js";
 import { resolveBookableHours } from "../lib/bookable-hours/resolve-bookable-hours.js";
 import { refuse } from "../lib/errors/refuse.js";
 
-// The one "not here" body. Unknown business, no booking in its plan, no hours yet, unknown,
-// switched-off or another business's service: all identical, so none can be probed.
 const notFound = refuse("not_found", "Nothing is bookable here.");
 
 // What a stranger may see of a service. Never organizationId, never anything about people.
@@ -31,11 +28,8 @@ const publicBookingLinkColumns = {
   bufferAfterMinutes: bookingLink.bufferAfterMinutes,
 };
 
-// The business behind a public address, or null when it must not be shown: no such slug,
-// a plan without booking, or no business hours yet. One query, the hours row joined in.
-// The slug is the only place a public route takes a business from the URL; every query
-// after this one filters on the id it returns. The plan is read here and in
-// requireKnownSubscriptionMiddleware (the dashboard's 403): a change to plans touches both.
+// The only place a public route takes a business from the URL; every query after uses this id.
+// The plan is also read in requireKnownSubscriptionMiddleware: a change to plans touches both.
 async function findBookableOrganizationId(slug: string): Promise<string | null> {
   const [row] = await db
     .select({ id: organization.id, plan: organization.plan, hoursId: availabilityRule.id })

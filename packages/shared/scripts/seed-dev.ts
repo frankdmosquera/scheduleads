@@ -1,7 +1,6 @@
-// Shared script: fills an empty local database with two dev accounts and two made-up
-// businesses shaped like the real clients, a painting company like Primo and a clinic like
-// Face and Body. Signup is closed, so without this a fresh database has no way in. Safe to
-// run repeatedly: everything is looked up first and only made when missing.
+// Shared script: fills the local database with two dev accounts and two made-up businesses,
+// a painting company like Primo and a clinic like Face and Body. Signup is closed, so a fresh
+// database has no other way in. Safe to rerun: everything is made only when missing.
 // Run: npm run db:seed --workspace=@scheduleads-app/shared
 
 import { randomUUID } from "node:crypto";
@@ -54,8 +53,7 @@ function assertLocalDevelopmentDatabase(url: string | undefined): string {
 const at = (hour: number, minute = 0) => hour * 60 + minute;
 const between = (from: number, to: number) => ({ startMinute: from, endMinute: to });
 
-// Dates relative to the day the seed runs, so they never go stale: rebuilding the practice
-// database makes them fresh again. Counted in UTC; a day either way does not matter here.
+// Dates relative to the day the seed runs, so they never go stale. UTC; a day off is fine.
 const DAY_MS = 24 * 60 * 60 * 1000;
 const daysFromToday = (days: number) =>
   new Date(Date.now() + days * DAY_MS).toISOString().slice(0, 10);
@@ -82,12 +80,11 @@ export type ServiceSeedType = {
 // Primo's shape: estimates early morning and evenings on weekdays, daytime at weekends.
 const paintingWeekday = [between(at(7, 30), at(8, 30)), between(at(17), at(19, 30))];
 
-// Fake addresses on purpose: login codes print in the API console, so no mailbox is needed.
-// owner@example.com is the non-admin that proves an owner cannot create a business.
-// The made-up businesses this seed used to make, before 2026-09-25. A practice database on
-// another computer may still hold them; they are removed so the old and new never mix.
+// Made by this seed before 2026-09-25; removed so another machine's database never mixes old and new.
 const RETIRED_DEV_SLUGS = ["agency-dev", "test-salon-dev"];
 
+// Fake addresses on purpose: login codes print in the API console. owner@example.com is the
+// non-admin that proves an owner cannot create a business.
 const ACCOUNTS = [
   {
     email: "admin@example.com",
@@ -158,8 +155,7 @@ const ACCOUNTS = [
         horizonDays: 120,
         closedDates: [daysFromToday(21)],
       },
-      // Six practitioners with every kind of hours, then the five rooms. The room layout is
-      // the contract feature 5 wires skills and rooms-per-treatment from (current-feature.md).
+      // Six practitioners with every kind of hours, then the five rooms feature 5 wires up.
       people: [
         {
           name: "Sofia",
@@ -300,13 +296,11 @@ try {
         });
       }
 
-      // The first person, named after the business like the 2.1 migration and hook name it.
-      // Made here when missing: on a fresh database the migration's backfill ran before this
-      // business existed, and inserting it directly skips the Better Auth hook (F-17).
+      // The first person. Made here because inserting the business directly skips the
+      // Better Auth hook that normally makes it.
       const firstPerson = await ensureResource(tx, organizationId, business.name, "person");
 
-      // Parsed before writing, so a bad week stops the whole seed instead of reaching the
-      // database, whose jsonb columns would accept it (the 2.2 review's warning).
+      // Parsed before writing: the jsonb columns would accept a bad week.
       const [existingBusinessHours] = await tx
         .select({ id: availabilityRule.id })
         .from(availabilityRule)
@@ -335,8 +329,7 @@ try {
           person.kind
         );
         if (made) peopleMade++;
-        // No row only when there is nothing to store: no week and no extra dates. Someone
-        // with extra dates but no week still gets a row, following the business's week.
+        // No row only when there is nothing to store: no week and no extra dates.
         if (person.weeklyHours === undefined && !person.dateHours?.length) continue;
 
         const [existingHours] = await tx

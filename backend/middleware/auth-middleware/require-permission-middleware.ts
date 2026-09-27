@@ -12,14 +12,12 @@ export type PermissionsType = NonNullable<
   Parameters<typeof auth.api.hasPermission>[0]
 >["body"]["permissions"];
 
-// A function that makes a middleware: requirePermissionMiddleware({ member: ["delete"] }).
-// Asks what the person may do, never which role they hold, so custom roles work
-// the day dynamic access control is switched on.
+// Asks what the person may do, never which role they hold, so custom roles work the day
+// dynamic access control is switched on.
 export const requirePermissionMiddleware = (permissions: PermissionsType) =>
   createMiddleware(async (c, next) => {
     const activeOrganization = c.get("organization");
 
-    // Mount after requireOrganizationMiddleware: it reads the business that one resolved.
     if (!activeOrganization) {
       throw new Error(
         "requirePermissionMiddleware ran without requireOrganizationMiddleware before it. Mount them in that order."
@@ -40,7 +38,6 @@ export const requirePermissionMiddleware = (permissions: PermissionsType) =>
         throw error; // anything else is a real fault, not a refusal
       });
 
-    // 403 forbidden: signed in and scoped, but their role does not grant this.
     if (!allowed) {
       return c.json(refuse("forbidden", "Your role in this business does not allow this."), 403);
     }

@@ -6,8 +6,7 @@ import { type ModuleType } from "@scheduleads-app/shared/subscriptions";
 
 import { refuse } from "../../lib/errors/refuse.js";
 
-// A function that makes a middleware: requireModuleMiddleware("booking"). Reads what
-// requireKnownSubscriptionMiddleware stored, so no query of its own.
+// Reads what requireKnownSubscriptionMiddleware stored, so no query of its own.
 export const requireModuleMiddleware = (module: ModuleType) =>
   createMiddleware(async (c, next) => {
     const subscription = c.get("subscription");
@@ -18,7 +17,6 @@ export const requireModuleMiddleware = (module: ModuleType) =>
       );
     }
 
-    // 403 plan_required: a real tier, but it does not include this module.
     if (!subscription.limits.modules.includes(module)) {
       return c.json(
         refuse("plan_required", `This organization's plan does not include ${module}.`),

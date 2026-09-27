@@ -1,5 +1,5 @@
 // Backend entry point: starts the API. The routes live in app.ts, so importing their type
-// (the frontend, step 2.5) never starts a server.
+// never starts a server.
 
 import { serve } from "@hono/node-server";
 

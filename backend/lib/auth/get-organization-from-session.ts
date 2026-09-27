@@ -26,7 +26,6 @@ export async function getOrganizationFromSession(
   if (activeOrganizationId) {
     // Filtered on the user AND the business, so a session naming a business the
     // user no longer belongs to is not trusted.
-    // Drizzle returns an array of rows; this takes the first, or undefined.
     const [activeMembership] = await db
       .select({ organizationId: member.organizationId, role: member.role })
       .from(member)

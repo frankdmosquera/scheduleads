@@ -45,9 +45,8 @@ export const availabilityRule = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
-    // Two indexes, not one. A single unique(organizationId, resourceId) looks right and
-    // is broken: Postgres treats nulls as all different, so it would allow two business
-    // rows. The partial index guards the business row, the other one each person's row.
+    // Two indexes, not one: a single unique(organizationId, resourceId) would allow two
+    // business rows, because Postgres treats nulls as all different.
     uniqueIndex("availability_rule_business_unique")
       .on(table.organizationId)
       .where(sql`${table.resourceId} is null`),
@@ -60,8 +59,7 @@ export const availabilityRule = pgTable(
       foreignColumns: [resource.organizationId, resource.id],
     }).onDelete("cascade"),
 
-    // The two kinds of row. The business's row carries every business-wide setting; a
-    // person's row carries none of them, so there is nothing to copy and nothing to drift.
+    // Business-wide settings live only on the business's row, so nothing is copied or drifts.
     check(
       "availability_rule_row_kind_check",
       sql`(

@@ -115,7 +115,6 @@ function PickOrganization({ onPicked }: { onPicked: () => void }) {
       }
 
       const list = data ?? [];
-      // A brand-new account: nothing to pick from, so go create a business.
       if (list.length === 0) {
         router.replace("/create-organization");
         return;

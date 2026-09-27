@@ -1,7 +1,5 @@
 // Frontend: the dashboard home's list of the business's active booking links, read once
-// when the page opens from the public route a client site calls too. Five states: loading,
-// the list, empty, not open for online booking yet, and can't reach the API. Nothing here
-// edits a link (feature 12).
+// from the same public route a client site calls. Editing a link is feature 12.
 
 "use client";
 

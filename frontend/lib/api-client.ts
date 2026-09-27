@@ -7,9 +7,8 @@ import type { AppType } from "backend/app-type";
 
 import { API_URL } from "./auth-client";
 
-// Two clients from one type, matching the backend's two CORS rules. The dashboard's routes
-// need the login cookie; the public routes refuse it, and the browser throws away any answer
-// to a request that sent it there.
+// Two clients, matching the backend's two CORS rules: the public routes refuse the login
+// cookie, and the browser discards any answer to a request that sent it.
 const dashboardApiClient = hc<AppType>(API_URL, {
   init: { credentials: "include" }, // send the login cookie, same reason as in auth-client.ts
 });
@@ -60,8 +59,7 @@ export async function fetchMe(): Promise<MeResultType> {
     }
   }
 
-  // Anything unexpected is shown as-is, not dressed up as a known refusal that would
-  // tell the user to do something that cannot help.
+  // Shown as-is, never dressed up as a known refusal.
   return {
     state: "unreachable",
     message: `The API answered with an unexpected status (${status}).`,
@@ -90,9 +88,8 @@ export async function fetchBookingLinks(slug: string): Promise<BookingLinksResul
     return { state: "ok", bookingLinks };
   }
 
-  // The slug came from /me, so the business exists: the public 404 here means it is not
-  // open for online booking yet (no bookable hours until feature 12, or a plan without
-  // booking). Trying again cannot change that, so it is not shown as an error (F-29).
+  // The slug came from /me, so the business exists: a 404 means not open for online
+  // booking yet (no hours, or no booking in its plan). Not an error; retrying cannot help.
   if (response.status === 404) return { state: "not-bookable" };
 
   return {

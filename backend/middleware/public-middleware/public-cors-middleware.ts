@@ -1,7 +1,6 @@
-// Who may read the public booking routes from a browser: the client sites in
-// WIDGET_ORIGINS, plus the dashboard. Never credentials: the login cookie would let a
-// client site act as the owner. Kept apart from dashboardCorsMiddleware on purpose, and
-// the two lists never merge.
+// Who may read the public booking routes from a browser: the sites in WIDGET_ORIGINS and the
+// dashboard. Never credentials, and never merged with dashboardCorsMiddleware: the login
+// cookie would let a client site act as the owner.
 
 import { cors } from "hono/cors";
 

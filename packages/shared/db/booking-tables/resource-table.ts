@@ -1,8 +1,6 @@
-// Shared: the resource table. One person or one place (a room, a chair) that does or
-// hosts the work. Never a group: a crew is a saved list of people (feature 19), so a job
-// makes each of them busy. Every business has at least one, its first person, made by
-// migration 0001 for the businesses that existed then and by a hook in auth-server.ts
-// for every new one.
+// Shared: the resource table. One person or one place (a room, a chair), never a group: a
+// crew is a saved list of people (feature 19). Every business has at least one, its first
+// person, made by migration 0001 or the hook in auth-server.ts.
 
 import { sql } from "drizzle-orm";
 import { boolean, check, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";

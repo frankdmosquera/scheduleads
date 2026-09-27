@@ -24,10 +24,8 @@ declare module "hono" {
   }
 }
 
-// One of two places that read organization.plan, both through the shared subscription
-// config: here the dashboard answers an unknown plan with 403 plan_unrecognised; the
-// public routes (routes/public-booking-links-routes.ts) answer a plan without booking with
-// the same 404 as "no such business", on purpose. A change to plans touches both.
+// One of two places that read organization.plan; the other is routes/public-booking-links-routes.ts,
+// which answers a plan without booking with its quiet 404 on purpose. A change to plans touches both.
 export const requireKnownSubscriptionMiddleware = createMiddleware(async (c, next) => {
   const activeOrganization = c.get("organization");
 
@@ -48,8 +46,7 @@ export const requireKnownSubscriptionMiddleware = createMiddleware(async (c, nex
     .where(eq(organization.id, activeOrganization.organizationId))
     .limit(1);
 
-  // The business was deleted since sign-in. Not a plan problem, so it gets the
-  // "no business" answer rather than a misleading plan refusal.
+  // Deleted since sign-in: a "no business" answer, not a misleading plan refusal.
   if (!row) {
     return c.json(
       refuse(
@@ -60,7 +57,6 @@ export const requireKnownSubscriptionMiddleware = createMiddleware(async (c, nex
     );
   }
 
-  // 403 plan_unrecognised: the business is on a tier the config does not define.
   if (!isKnownTier(row.plan)) {
     return c.json(
       refuse("plan_unrecognised", "This business is on a plan the product does not recognise."),

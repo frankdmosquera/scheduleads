@@ -1,6 +1,5 @@
-// Backend: every route the API answers, and AppType, the frontend's typed view of them
-// (step 2.5). Importing this starts nothing; server.ts starts the API.
-// Written as one chain so AppType carries every route.
+// Backend: every route the API answers, and AppType, the frontend's typed view of them.
+// One chain, so AppType carries every route. Importing this starts nothing; server.ts does.
 
 import { Hono } from "hono";
 
@@ -46,8 +45,7 @@ export const app = new Hono()
 
   .route("/public", publicBookingLinksRoutes)
 
-  // "Is the process up?" for Railway. No database on purpose: a database outage should
-  // not make Railway restart a healthy API.
+  // For Railway. No database on purpose: an outage there should not restart a healthy API.
   .get("/health", (c) => c.json({ ok: true }));
 
 export type AppType = typeof app;

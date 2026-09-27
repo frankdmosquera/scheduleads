@@ -8,7 +8,7 @@ import { defineConfig } from "drizzle-kit";
 try {
   process.loadEnvFile("../../.env");
 } catch {
-  // No local .env. Real environments set DATABASE_URL directly.
+  // no local .env
 }
 
 // db:generate needs no database. db:migrate and db:studio connect to whatever .env
