@@ -654,6 +654,13 @@ step that adds logic adds its tests, and every step reruns them.
 - Backend tests: `npm run test --workspace=backend`
 - Backend tests, rerunning on save: `npm run test:watch --workspace=backend`
 
+Both backend commands rebuild `packages/shared` first (their `pre` scripts),
+because the route tests load its code, not only its types. Since step 2.4 the
+backend tests also need the local Postgres running with `db:migrate` and
+`db:seed` done: the public route tests call the real app against the seeded
+`scheduleads_dev`, add their own rows and remove them, and refuse any database
+that is not local and `*_dev`. With Postgres stopped they fail; they never skip.
+
 The frontend has no test script yet; it gets one with its first test, so no
 workspace ever carries a test command that finds nothing to run.
 

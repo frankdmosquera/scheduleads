@@ -34,7 +34,8 @@ const publicBookingLinkColumns = {
 // The business behind a public address, or null when it must not be shown: no such slug,
 // a plan without booking, or no business hours yet. One query, the hours row joined in.
 // The slug is the only place a public route takes a business from the URL; every query
-// after this one filters on the id it returns.
+// after this one filters on the id it returns. The plan is read here and in
+// requireKnownSubscriptionMiddleware (the dashboard's 403): a change to plans touches both.
 async function findBookableOrganizationId(slug: string): Promise<string | null> {
   const [row] = await db
     .select({ id: organization.id, plan: organization.plan, hoursId: availabilityRule.id })

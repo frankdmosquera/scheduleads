@@ -7,7 +7,9 @@
     "prebuild": "tsc -p ../packages/shared/tsconfig.build.json",
     "build": "tsc",
     "start": "node --env-file-if-exists=../.env dist/server.js",
+    "pretest": "tsc -p ../packages/shared/tsconfig.build.json",
     "test": "vitest run",
+    "pretest:watch": "tsc -p ../packages/shared/tsconfig.build.json",
     "test:watch": "vitest"
   },
   "dependencies": {

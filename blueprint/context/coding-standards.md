@@ -34,9 +34,10 @@ Conventions for this monorepo: a Next.js 16 frontend, a Hono API, and
 
 No `src/` directory. The scaffolder passes `--no-src-dir`, so everything sits at
 the project root. In a monorepo these paths are relative to `frontend/`. The
-backend has none either (Frank, 2026-09-26): `server.ts`, `lib/` and
-`middleware/` sit straight in `backend/`, and its `tsconfig.json` excludes
-`dist` and the tests so nothing else compiles.
+backend has none either (Frank, 2026-09-26): `app.ts` (every route, and
+`AppType`), `server.ts` (only starts the API), `lib/`, `middleware/` and
+`routes/` (a group of routes, one file each) sit straight in `backend/`, and
+its `tsconfig.json` excludes `dist` and the tests so nothing else compiles.
 
 - Components: `components/[feature]/ComponentName.tsx`
 - Pages: `app/[route]/page.tsx`
@@ -100,7 +101,9 @@ own subpath export.
   (`requireOrganizationMiddleware`) and lives in
   `middleware/<area>-middleware/<name>.ts`, so a folder seen on its own
   still says it holds middleware; plain functions live in
-  `lib/<area>/<name>.ts`. A type sits in the file of the function that
+  `lib/<area>/<name>.ts`; a group of routes lives in
+  `routes/<area>-routes.ts`, exporting one Hono app that `app.ts` mounts
+  (`publicBookingLinksRoutes`). A type sits in the file of the function that
   produces it. Frank navigates by folder and file name, not by scrolling
 - A name says what it means, with no guessing: an area folder names what is
   in it before it is opened, and the functions inside use the same words.
@@ -112,7 +115,8 @@ own subpath export.
   keeps its own names (`availability_rule`): renaming a table costs a
   migration. Today's areas: `lib/auth`, `lib/bookable-hours`, `lib/errors`,
   `middleware/auth-middleware`, `middleware/dashboard-middleware`,
-  `middleware/subscription-middleware`
+  `middleware/public-middleware`, `middleware/subscription-middleware`, and
+  `routes/public-booking-links-routes.ts`
 - Helpers: one used across several areas goes in a shared `helpers/`
   folder; one used in a single place stays beside the code that uses it
 - `frontend` is judged case by case: a piece with real logic gets its own
@@ -178,6 +182,15 @@ own subpath export.
 - Every app table is organization-scoped and the scope is a security boundary.
   `organizationId` is derived server-side from the Better Auth session, never
   read from anything a client sends
+- The one exception is a public route, which a stranger calls with no session
+  (step 2.4, `routes/public-booking-links-routes.ts`). It may take the business
+  from the URL slug, on four conditions: it is read-only until a later spec
+  says otherwise; the business is looked up by slug first, and every later
+  query filters on the id that lookup returned; no row is ever found by its id
+  alone; and every "not here" (no such business, a plan without the module, a
+  missing, inactive or other business's row) answers the identical `404`, so a
+  stranger cannot tell them apart. The answer never carries `organizationId` or
+  anything about people or logins
 - Whether the booking widget calls the API from the browser or proxies through
   the host site's Server Action is open until Phase 3 (`project-plan.md`,
   open question 5)

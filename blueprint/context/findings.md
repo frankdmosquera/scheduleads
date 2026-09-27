@@ -289,7 +289,7 @@ pulling 2.3, drop and rebuild the local `scheduleads_dev` (`db:migrate`, then
 `db:seed`). Removing the old businesses from the seed is not needed.
 **Resolution:** 2026-09-26, fixed by /implement on Frank's yes (option A, the seed cleans up): the seed deletes the retired made-up businesses `agency-dev` and `test-salon-dev` by exact slug, inside the local `_dev` guard, and says so; their members, people, hours and services cascade. Proved by putting both back with members, a person and a service: the seed removed them, left exactly the new cast, and the admin login belongs to one business again; a second run removed nothing. Awaiting re-review. Closed 2026-09-27 by /audit independent (step 2.4, `e58e0a0`): the delete (`seed-dev.ts:246-250`) runs inside the seed's one transaction, matches only the two exact slugs in `RETIRED_DEV_SLUGS` (`:89`), and can only be reached after `assertLocalDevelopmentDatabase` (`:238`) has accepted a loopback host and a `_dev` name at module load, before any connection is made. Members, resources, hours and services cascade from `organization` in the schema, so no orphan is left. No new defect.
 
-### F-26 [P3] open - The subscription middleware still says it is the only place that reads `organization.plan`
+### F-26 [P3] fixed - The subscription middleware still says it is the only place that reads `organization.plan`
 
 **File:** backend/middleware/subscription-middleware/require-known-subscription-middleware.ts:27
 **Found:** 2026-09-27 by /audit independent (scope: current; lens: quality)
@@ -304,9 +304,9 @@ public one.
 **Suggested fix:** Reword the comment to name both readers and why they answer
 differently: the dashboard says `plan_unrecognised`, the public routes say
 nothing is here.
-**Resolution:**
+**Resolution:** 2026-09-27, fixed on Frank's yes: the comment at `require-known-subscription-middleware.ts:27` now names both readers of the plan and why they answer differently (the dashboard's `403 plan_unrecognised`, the public routes' identical `404`), and `findBookableOrganizationId` in `public-booking-links-routes.ts` points back to it. Comments only; 30 backend tests pass. Awaits the next review to close.
 
-### F-27 [P3] open - The coding standards were not updated for the first public route
+### F-27 [P3] fixed - The coding standards were not updated for the first public route
 
 **File:** blueprint/context/coding-standards.md:178
 **Found:** 2026-09-27 by /audit independent (scope: current; lens: quality)
@@ -328,9 +328,9 @@ was before 2.4:
 **Suggested fix:** Add the public-route exception with its conditions beside the
 tenant rule, add `middleware/public-middleware` to the areas list, and name
 `app.ts` and `routes/` in the backend layout.
-**Resolution:**
+**Resolution:** 2026-09-27, fixed on Frank's yes: `coding-standards.md` now states the public-route exception beside the tenant rule, with its four conditions (read-only, business by slug first then every query on its id, never a row by id alone, one identical `404`); names `app.ts`, `server.ts` and `routes/` in the backend layout; adds `routes/<area>-routes.ts` to the kind-then-area rule; and lists `middleware/public-middleware` and `routes/public-booking-links-routes.ts` among today's areas. Awaits the next review to close.
 
-### F-28 [P3] open - Backend tests run against whatever `packages/shared/dist` holds, and silently need a seeded local Postgres
+### F-28 [P3] fixed - Backend tests run against whatever `packages/shared/dist` holds, and silently need a seeded local Postgres
 
 **File:** backend/package.json:10
 **Found:** 2026-09-27 by /audit independent (scope: current; lens: tests)
@@ -350,4 +350,4 @@ succeeds.
 (and the same before `test:watch`, or note it), and add one line under the
 backend test command in `AGENTS.md`: needs local Postgres with `db:migrate` and
 `db:seed` run.
-**Resolution:**
+**Resolution:** 2026-09-27, fixed on Frank's yes: `backend/package.json` has `pretest` and `pretest:watch` rebuilding `packages/shared` first, like `predev` and `prebuild`; `AGENTS.md` (Commands) says the backend tests need the local Postgres migrated and seeded, and fail rather than skip without it. Proved by deleting `packages/shared/dist` and running `npm run test --workspace=backend`: the pretest rebuilt it and all 30 tests passed. Awaits the next review to close.

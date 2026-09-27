@@ -24,8 +24,10 @@ declare module "hono" {
   }
 }
 
-// The only place in the API that reads organization.plan, so an unknown value is
-// handled one way, in one place.
+// One of two places that read organization.plan, both through the shared subscription
+// config: here the dashboard answers an unknown plan with 403 plan_unrecognised; the
+// public routes (routes/public-booking-links-routes.ts) answer a plan without booking with
+// the same 404 as "no such business", on purpose. A change to plans touches both.
 export const requireKnownSubscriptionMiddleware = createMiddleware(async (c, next) => {
   const activeOrganization = c.get("organization");
 
