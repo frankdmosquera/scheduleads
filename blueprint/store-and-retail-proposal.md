@@ -19,9 +19,9 @@ with Frank about how the clinic's product store should work. It touches this
 repo because the conclusion was that the store does not belong in the clinic's
 site at all.
 
-The same material with diagrams is at
-https://claude.ai/artifact/K9MqXZ6me95FwSePbQxLvU (private to Frank's account).
-This file is the version that lives in the repo, and it is the one that counts.
+The same material once had a diagram page of its own; it was deleted on
+2026-09-27 after its diagrams moved to the build log. This file is the version
+that lives in the repo, and it is the one that counts.
 
 ---
 
