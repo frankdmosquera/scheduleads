@@ -643,7 +643,7 @@
 
   .stage-head {
     display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px;
-    padding: 0 0.5rem 9px; margin-bottom: 6px;
+    padding: 0 0.75rem 9px 0.375rem; margin-bottom: 6px;
     border-bottom: 1px solid var(--rule);
   }
 
@@ -654,7 +654,7 @@
     display: grid;
     grid-template-columns: 24px minmax(0, 1fr) auto;
     gap: 4px 10px;
-    padding: 13px 0.5rem; /* the same small gap on both sides, so numbers and pills never touch the edge */
+    padding: 13px 0.75rem 13px 0.375rem; /* text never touches the edge; a little more on the right, where the pills sit */
     border-bottom: 1px solid var(--rule-soft);
     align-items: baseline;
   }
@@ -664,7 +664,9 @@
      title line, so the steps and drawers below reach the right edge instead of stopping short. */
   .item { position: relative; }
   .item:has(> .item-body > .item-fold[open]) > .item-body { grid-column: 2 / -1; }
-  .item:has(> .item-body > .item-fold[open]) > .pill { position: absolute; top: 13px; right: 0.5rem; }
+  .item:has(> .item-body > .item-fold[open]) > .pill { position: absolute; top: 13px; right: 0.75rem; }
+  .item-fold[open] > .drawer { margin-right: -0.75rem; } /* an open item's boxes reach the row's right edge; its text keeps the gap */
+  .item-fold[open] > .gates { padding: 5px 0; } /* a little air around the three gate chips */
   /* Below the title, an open item's contents start under its number, not under its title. */
   .item-fold[open] > :not(summary) { margin-left: -34px; } /* the number column (24px) plus the gap (10px) */
   .item:has(> .item-body > .item-fold[open]) .item-fold > summary { padding-right: 130px; }
