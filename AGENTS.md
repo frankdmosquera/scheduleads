@@ -411,7 +411,7 @@ together. Unplanned pieces ("added") carry their code the same way. A file
 that served two pieces appears under each with only its own lines. Then **How
 it was proved** runs the Done when. **Review issues** and **Log** stay
 separate: the review is independent and comes at the end. Steps 2.1 to 2.3
-keep their single code drawer unless Frank asks for them to be regrouped.
+were regrouped this way on Sep 26, sliced by the real line numbers.
 
 **And it shows the code.** Decided by Frank, 2026-09-25: the project is big
 and he wants full control, so every closing step shows its real code: from

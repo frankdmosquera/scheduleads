@@ -1264,6 +1264,10 @@
   .piece-fig[open] > summary { border-bottom: 1px solid var(--rule); }
   .piece-fig > .fig, .piece-fig > .ftree { margin: 10px; }
   .substeps li .piece-fig { color: var(--ink-2); }
+  /* A piece's own code, under it in "What actually happened". */
+  .piece-code > summary { color: #2B7DA3; }
+  .piece-code-body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .substeps li .no-code { display: block; margin-top: 4px; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); }
   /* A step's file tree: each row indented by its depth with faint guide lines, a tag saying
      new or changed, and one line saying what the file is for. */
   .ftree { display: flex; flex-direction: column; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); padding: 6px 0; }
@@ -2922,62 +2926,9 @@
                               <span class="v-added">3 added</span>
                             </div>
                             <ul class="substeps">
-                              <li data-outcome="kept">the three tables, every timestamp with its time zone, everything deleted with its business</li>
-                              <li data-outcome="kept">a resource is a person or a place; a booking link carries its length and both buffers, the database refusing a length of zero or a negative buffer</li>
-                              <li data-outcome="kept">two indexes for the hours, with the comment saying why one would be broken</li>
-                              <li data-outcome="kept">one check keeping business settings off a person's row</li>
-                              <li data-outcome="kept">the composite key, so hours can never name another business's person</li>
-                              <li data-outcome="kept">the three hours checks in <code>packages/shared</code>: several windows a day, no overlaps, a real time zone, a real date, a country and province</li>
-                              <li data-outcome="kept">one migration plus the backfill: both dev businesses got exactly one first person, named after the business; and the Better Auth hook for every new business</li>
-                              <li data-outcome="added">saved tests for the hours checks
-                                <em class="why">The test runner went in today, before this step. Counts and proof in Tests below.</em></li>
-                              <li data-outcome="added">the database also refuses a province without its country
-                                <em class="why">The spec had this in the hours checks only. A seed script writes straight to the database, so the database should refuse it too.</em></li>
-                              <li data-outcome="added"><code>updatedAt</code> refreshes on every change
-                                <em class="why">Without it the column would say "created" forever, and a later screen showing "last changed" would lie.</em></li>
-                            </ul>
-                            <div class="snags">
-                              <div class="snags-head">What bit</div>
-                              <ul>
-                                <li><b>The migration printed what looked like two errors.</b> Both were notices from Drizzle's own ledger ("already exists, skipping"). Nothing failed, and a second run changed nothing. It is written down here so the next migration is not read as broken.</li>
-                              </ul>
-                            </div>
-                            <div class="tests">
-                              <div class="tests-head">How it was proved</div>
-<div class="proof-card">
-<div class="card-head">Saved tests and checks by hand</div>
-                              <ul>
-                                <li><b>Added:</b> 15 saved tests for the hours checks (a week, a one-off date, a whole row), beside the 6 that already covered the plans. 21 in the shared package at the end of the step.</li>
-                                <li><b>Added by the review:</b> 4 more, for rules that had none (F-18). 25 in all.</li>
-                                <li><b>Proved they can fail:</b> with the overlap rule switched off for a moment, the overlap test failed by name. With the horizon and notice limits removed, exactly those two new tests failed.</li>
-                                <li><b>Proved by hand, not by saved tests:</b> the four rows the database refuses, checked in <code>psql</code> and rolled back.</li>
-                              </ul>
-                              <div class="rstep-when">Passed. The migration SQL shows both indexes, the key, the checks and the backfill. Each dev business has exactly one person. A new business got "Check 2.1 Painters (person)" and was deleted after. By hand, the four forbidden rows were each refused by their own rule (<code>availability_rule_business_unique</code>, <code>availability_rule_resource_unique</code>, <code>availability_rule_resource_fk</code>, <code>availability_rule_row_kind_check</code>) while two normal rows went in, all rolled back after. 21 tests pass. Both builds pass.</div>
-                              <div class="snags">
-                                <div class="snags-head">What bit</div>
-                                <ul>
-                                  <li><b>"A new business gets its person" was proved in-process, not over the network.</b> The check signed in as the dev platform admin and created a business through Better Auth's own create, which passes the platform-admin check and fires the hook. It did not go through a browser or the running API. The browser path gets its own proof in 2.5, when the dashboard lists this data.</li>
-                                </ul>
-                              </div>
-                            </div>
-                            <div class="proof-card">
-                              <div class="card-head">Independent review</div>
-                              <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, over the test setup and this step, all four lenses. No P0 or P1. Two notes: <strong>F-17</strong> (P2), a fresh database gets no first person for the dev businesses, planned into 2.3 with you; <strong>F-18</strong> (P3), four hours rules had no test, fixed the same evening with four more tests, 25 in all. Receipt in <code>blueprint/context/review.md</code>.</p>
-                              <div class="snags">
-                                <div class="snags-head">What bit</div>
-                                <ul>
-                                  <li><b>"Every business has exactly one person" was only true on this laptop.</b> The reviewer found it: on a fresh database the backfill runs before the seed has made any business, and the seed skips the hook, so the dev businesses would have nobody. The check passed because this database already held its businesses. Fixed in 2.3, where the seed now makes the person when missing (F-17).</li>
-                                </ul>
-                              </div>
-                            </div>
-</div>
-                          </div>
-                        </details>
-<details class="drawer" data-kind="code">
-  <summary>What changed in the code <span class="tag-drift">8 files &middot; +506 &minus;2 lines</span></summary>
-  <div class="drawer-body">
-    <p class="drawer-what">The real code of this step, file by file, coloured like VS Code's Dark 2026. A green bar marks a new line, a red bar a removed one; a changed file shows the old block above the new. Only this project's own code: generated files and packages are left out.</p>
-<details class="codefile"><summary><code>packages/shared/src/db/drizzle-schema.ts</code> <span class="tag-drift">changed &middot; +148 &minus;1</span></summary><div class="codefile-body">
+                              <li data-outcome="kept">the three tables, every timestamp with its time zone, everything deleted with its business
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/src/db/drizzle-schema.ts</code></summary><div class="codefile-body">
 <div class="code-label">Before &middot; line 3</div><pre class="code" data-lang="typescript" data-start="3" data-mark="6" data-kind="removed"><code>// emailOTP, organization and admin plugins exactly; check its schema before changing them.
 // Every timestamp keeps its time zone: a booking product that loses it double-books.
 
@@ -3007,11 +2958,7 @@ import type { WeeklyHoursType } from "../zod-validation/availability/weekly-hour
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),</code></pre>
-<div class="code-label">Added &middot; line 132</div><pre class="code" data-lang="typescript" data-start="132" data-mark="135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266" data-kind="added"><code>    .notNull()
-    .references(() =&gt; user.id, { onDelete: "cascade" }),
-});
-
-// One person or one place (a room, a chair) that does or hosts the work. Never a group:
+<div class="code-label">Added &middot; lines 136 to 221</div><pre class="code" data-lang="typescript" data-start="136" data-mark="136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221" data-kind="added"><code>// One person or one place (a room, a chair) that does or hosts the work. Never a group:
 // a crew is a saved list of people (feature 19), so a job makes each of them busy.
 // Every business has at least one, its first person, made by migration 0001 for the
 // businesses that existed then and by a hook in auth-server.ts for every new one.
@@ -3096,24 +3043,64 @@ export const availabilityRule = pgTable(
       .notNull()
       .defaultNow()
       .$onUpdate(() =&gt; new Date()),
+  },</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept">a resource is a person or a place; a booking link carries its length and both buffers, the database refusing a length of zero or a negative buffer
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/src/db/drizzle-schema.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 147 to 160</div><pre class="code" data-lang="typescript" data-start="147" data-mark="147,148,149,150,151,152,153,154,155,156,157,158,159,160" data-kind="added"><code>    name: text("name").notNull(), // the first person starts with the business's name; the owner renames it (feature 12)
+    kind: text("kind").notNull().default("person"),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() =&gt; new Date()),
   },
   (table) =&gt; [
+    check("resource_kind_check", sql`${table.kind} in ('person', 'place')`),
+    // Exists only so availability_rule can point at (business, person) together.
+    unique("resource_organization_id_unique").on(table.organizationId, table.id),
+  ]</code></pre>
+<div class="code-label">Added &middot; lines 174 to 192</div><pre class="code" data-lang="typescript" data-start="174" data-mark="174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192" data-kind="added"><code>    description: text("description"),
+    durationMinutes: integer("durationMinutes").notNull(),
+    bufferBeforeMinutes: integer("bufferBeforeMinutes").notNull().default(0),
+    bufferAfterMinutes: integer("bufferAfterMinutes").notNull().default(0),
+    active: boolean("active").notNull().default(true), // inactive reads as absent publicly
+    createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() =&gt; new Date()),
+  },
+  (table) =&gt; [
+    uniqueIndex("booking_link_organization_slug_unique").on(table.organizationId, table.slug),
+    check("booking_link_duration_check", sql`${table.durationMinutes} &gt; 0`),
+    check(
+      "booking_link_buffers_check",
+      sql`${table.bufferBeforeMinutes} &gt;= 0 and ${table.bufferAfterMinutes} &gt;= 0`
+    ),
+  ]</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept">two indexes for the hours, with the comment saying why one would be broken
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/src/db/drizzle-schema.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 222 to 229</div><pre class="code" data-lang="typescript" data-start="222" data-mark="222,223,224,225,226,227,228,229" data-kind="added"><code>  (table) =&gt; [
     // Two indexes, not one. A single unique(organizationId, resourceId) looks right and
     // is broken: Postgres treats nulls as all different, so it would allow two business
     // rows. The partial index guards the business row, the other one each person's row.
     uniqueIndex("availability_rule_business_unique")
       .on(table.organizationId)
       .where(sql`${table.resourceId} is null`),
-    uniqueIndex("availability_rule_resource_unique").on(table.organizationId, table.resourceId),
-
-    // A rule can only name a person of its own business. A null resourceId skips the check.
-    foreignKey({
-      name: "availability_rule_resource_fk",
-      columns: [table.organizationId, table.resourceId],
-      foreignColumns: [resource.organizationId, resource.id],
-    }).onDelete("cascade"),
-
-    // The two kinds of row. The business's row carries every business-wide setting; a
+    uniqueIndex("availability_rule_resource_unique").on(table.organizationId, table.resourceId),</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept">one check keeping business settings off a person's row
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/src/db/drizzle-schema.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 238 to 258</div><pre class="code" data-lang="typescript" data-start="238" data-mark="238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258" data-kind="added"><code>    // The two kinds of row. The business's row carries every business-wide setting; a
     // person's row carries none of them, so there is nothing to copy and nothing to drift.
     check(
       "availability_rule_row_kind_check",
@@ -3133,17 +3120,172 @@ export const availabilityRule = pgTable(
         and ${table.holidayCountry} is null
         and ${table.holidayRegion} is null
       )`
-    ),
-    check("availability_rule_notice_check", sql`${table.minimumNoticeMinutes} &gt;= 0`),
-    check("availability_rule_horizon_check", sql`${table.horizonDays} &gt; 0`),
-    check(
-      "availability_rule_region_needs_country_check",
-      sql`${table.holidayRegion} is null or ${table.holidayCountry} is not null`
-    ),
-  ]
-);</code></pre>
+    ),</code></pre>
 </div></details>
-<details class="codefile"><summary><code>packages/shared/drizzle/0001_booking_links_resources_availability.sql</code> <span class="tag-drift">new &middot; 75 lines</span></summary><div class="codefile-body">
+</div></details></li>
+                              <li data-outcome="kept">the composite key, so hours can never name another business's person
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/src/db/drizzle-schema.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 231 to 237</div><pre class="code" data-lang="typescript" data-start="231" data-mark="231,232,233,234,235,236,237" data-kind="added"><code>    // A rule can only name a person of its own business. A null resourceId skips the check.
+    foreignKey({
+      name: "availability_rule_resource_fk",
+      columns: [table.organizationId, table.resourceId],
+      foreignColumns: [resource.organizationId, resource.id],
+    }).onDelete("cascade"),
+</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept">the three hours checks in <code>packages/shared</code>: several windows a day, no overlaps, a real time zone, a real date, a country and province
+                                <details class="piece-fig piece-code"><summary>The code &middot; 4 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/weekly-hours-validation-schema.ts</code></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Shared Zod schema: a week of bookable hours, the windows customers can book online.
+// Minutes count from midnight in the business's time zone, so 570 is 9:30.
+
+import { z } from "zod";
+
+const MINUTES_IN_A_DAY = 1440;
+
+export const timeWindowValidationSchema = z
+  .object({
+    startMinute: z.int().min(0).max(MINUTES_IN_A_DAY),
+    endMinute: z.int().min(0).max(MINUTES_IN_A_DAY),
+  })
+  .strict()
+  .refine((window) =&gt; window.endMinute &gt; window.startMinute, {
+    message: "A window has to end after it starts.",
+  });
+
+// A day's windows, in any order. Touching is fine (9-12 then 12-5); overlapping is not,
+// because nobody could say which window a 11:00 booking belongs to.
+export const dayWindowsValidationSchema = z.array(timeWindowValidationSchema).refine(
+  (windows) =&gt; {
+    const sorted = [...windows].sort((a, b) =&gt; a.startMinute - b.startMinute);
+    return sorted.every(
+      (window, index) =&gt; index === 0 || window.startMinute &gt;= sorted[index - 1].endMinute
+    );
+  },
+  { message: "Two windows on the same day overlap." }
+);
+
+// A missing or empty day is closed. Unknown keys are refused, so a typo like "tues"
+// fails loudly instead of silently closing Tuesday.
+export const weeklyHoursValidationSchema = z
+  .object({
+    mon: dayWindowsValidationSchema.optional(),
+    tue: dayWindowsValidationSchema.optional(),
+    wed: dayWindowsValidationSchema.optional(),
+    thu: dayWindowsValidationSchema.optional(),
+    fri: dayWindowsValidationSchema.optional(),
+    sat: dayWindowsValidationSchema.optional(),
+    sun: dayWindowsValidationSchema.optional(),
+  })
+  .strict();
+
+export type TimeWindowType = z.infer&lt;typeof timeWindowValidationSchema&gt;;
+export type WeeklyHoursType = z.infer&lt;typeof weeklyHoursValidationSchema&gt;;</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/date-hours-validation-schema.ts</code></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Shared Zod schema: one-off dates, hours on a single date without touching the week.
+// A one-off date replaces that date's hours, and opens it if it is closed or a holiday.
+
+import { z } from "zod";
+
+import { dayWindowsValidationSchema } from "./weekly-hours-validation-schema.js";
+
+export const dateHoursValidationSchema = z
+  .array(
+    z
+      .object({
+        date: z.iso.date(), // YYYY-MM-DD, a real calendar date
+        windows: dayWindowsValidationSchema.min(1, "A one-off date needs at least one window."),
+      })
+      .strict()
+  )
+  .refine((entries) =&gt; new Set(entries.map((entry) =&gt; entry.date)).size === entries.length, {
+    message: "The same date is listed twice.",
+  });
+
+export type DateHoursType = z.infer&lt;typeof dateHoursValidationSchema&gt;;</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/availability-rule-validation-schema.ts</code></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Shared Zod schema: one row of bookable hours, either the business's or one person's.
+// Mirrors the database check on availability_rule, so a bad row is refused before it
+// reaches the database, with a readable message instead of a constraint name.
+
+import { z } from "zod";
+
+import { dateHoursValidationSchema } from "./date-hours-validation-schema.js";
+import { weeklyHoursValidationSchema } from "./weekly-hours-validation-schema.js";
+
+function isRealTimezone(timezone: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: timezone }); // throws on an unknown zone
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// The business's row. Everything set once per business lives here and only here.
+export const businessAvailabilityRuleValidationSchema = z
+  .object({
+    resourceId: z.null(),
+    weeklyHours: weeklyHoursValidationSchema,
+    dateHours: dateHoursValidationSchema.default([]),
+    timezone: z.string().refine(isRealTimezone, { message: "That is not a time zone." }),
+    minimumNoticeMinutes: z.int().min(0),
+    horizonDays: z.int().min(1),
+    closedDates: z.array(z.iso.date()).refine((dates) =&gt; new Set(dates).size === dates.length, {
+      message: "The same closed date is listed twice.",
+    }),
+    holidayCountry: z
+      .string()
+      .regex(/^[A-Z]{2}$/, "Use the two-letter country code, like CA.")
+      .nullable()
+      .default(null),
+    holidayRegion: z
+      .string()
+      .regex(/^[A-Z0-9]{1,3}$/, "Use the province code, like AB.")
+      .nullable()
+      .default(null),
+  })
+  .strict()
+  .refine((rule) =&gt; rule.holidayRegion === null || rule.holidayCountry !== null, {
+    message: "A province needs its country.",
+    path: ["holidayRegion"],
+  });
+
+// A person's row: only their own week (null = follow the business's) and their one-off
+// dates. strict() refuses a time zone or notice here, like the database does.
+export const personAvailabilityRuleValidationSchema = z
+  .object({
+    resourceId: z.string().min(1),
+    weeklyHours: weeklyHoursValidationSchema.nullable().default(null),
+    dateHours: dateHoursValidationSchema.default([]),
+  })
+  .strict();
+
+export const availabilityRuleValidationSchema = z.union([
+  businessAvailabilityRuleValidationSchema,
+  personAvailabilityRuleValidationSchema,
+]);
+
+export type BusinessAvailabilityRuleType = z.infer&lt;typeof businessAvailabilityRuleValidationSchema&gt;;
+export type PersonAvailabilityRuleType = z.infer&lt;typeof personAvailabilityRuleValidationSchema&gt;;
+export type AvailabilityRuleType = z.infer&lt;typeof availabilityRuleValidationSchema&gt;;</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/src/zod-validation/index.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 5</div><pre class="code" data-lang="typescript" data-start="5" data-mark="8,9,10" data-kind="added"><code>export * from "./auth/sign-in-code-validation-schema.js";
+export * from "./organization/create-organization-validation-schema.js";
+export * from "./organization/to-slug.js";
+export * from "./availability/weekly-hours-validation-schema.js";
+export * from "./availability/date-hours-validation-schema.js";
+export * from "./availability/availability-rule-validation-schema.js";</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept">one migration plus the backfill: both dev businesses got exactly one first person, named after the business; and the Better Auth hook for every new business
+                                <details class="piece-fig piece-code"><summary>The code &middot; 2 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/drizzle/0001_booking_links_resources_availability.sql</code></summary><div class="codefile-body">
 <pre class="code" data-lang="sql" data-start="1" data-mark="all" data-kind="added"><code>CREATE TABLE "availability_rule" (
 	"id" text PRIMARY KEY NOT NULL,
 	"organizationId" text NOT NULL,
@@ -3220,152 +3362,57 @@ SELECT gen_random_uuid()::text, "organization"."id", "organization"."name", 'per
 FROM "organization"
 WHERE NOT EXISTS (SELECT 1 FROM "resource" WHERE "resource"."organizationId" = "organization"."id");</code></pre>
 </div></details>
-<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/weekly-hours-validation-schema.ts</code> <span class="tag-drift">new &middot; 45 lines</span></summary><div class="codefile-body">
-<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Shared Zod schema: a week of bookable hours, the windows customers can book online.
-// Minutes count from midnight in the business's time zone, so 570 is 9:30.
+<details class="codefile"><summary><code>backend/src/lib/auth-server.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 1</div><pre class="code" data-lang="typescript" data-start="1" data-mark="4,5" data-kind="added"><code>// Backend: the Better Auth setup (sign-in, businesses, roles, platform admin).
+// Holds the secret and the database, so nothing in frontend/ may import it.
 
-import { z } from "zod";
+import { randomUUID } from "node:crypto";
 
-const MINUTES_IN_A_DAY = 1440;
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { admin, emailOTP, organization } from "better-auth/plugins";</code></pre>
+<div class="code-label">Before &middot; line 8</div><pre class="code" data-lang="typescript" data-start="8" data-mark="11" data-kind="removed"><code>import { eq } from "drizzle-orm";
 
-export const timeWindowValidationSchema = z
-  .object({
-    startMinute: z.int().min(0).max(MINUTES_IN_A_DAY),
-    endMinute: z.int().min(0).max(MINUTES_IN_A_DAY),
-  })
-  .strict()
-  .refine((window) =&gt; window.endMinute &gt; window.startMinute, {
-    message: "A window has to end after it starts.",
-  });
+import * as schema from "@scheduleads-app/shared/db";
+import { member } from "@scheduleads-app/shared/db";
 
-// A day's windows, in any order. Touching is fine (9-12 then 12-5); overlapping is not,
-// because nobody could say which window a 11:00 booking belongs to.
-export const dayWindowsValidationSchema = z.array(timeWindowValidationSchema).refine(
-  (windows) =&gt; {
-    const sorted = [...windows].sort((a, b) =&gt; a.startMinute - b.startMinute);
-    return sorted.every(
-      (window, index) =&gt; index === 0 || window.startMinute &gt;= sorted[index - 1].endMinute
-    );
-  },
-  { message: "Two windows on the same day overlap." }
-);
+import { db } from "../database.js";
+import { sendLoginCode } from "./send-login-code.js";</code></pre>
+<div class="code-label">After &middot; line 10</div><pre class="code" data-lang="typescript" data-start="10" data-mark="13" data-kind="added"><code>import { eq } from "drizzle-orm";
 
-// A missing or empty day is closed. Unknown keys are refused, so a typo like "tues"
-// fails loudly instead of silently closing Tuesday.
-export const weeklyHoursValidationSchema = z
-  .object({
-    mon: dayWindowsValidationSchema.optional(),
-    tue: dayWindowsValidationSchema.optional(),
-    wed: dayWindowsValidationSchema.optional(),
-    thu: dayWindowsValidationSchema.optional(),
-    fri: dayWindowsValidationSchema.optional(),
-    sat: dayWindowsValidationSchema.optional(),
-    sun: dayWindowsValidationSchema.optional(),
-  })
-  .strict();
+import * as schema from "@scheduleads-app/shared/db";
+import { member, resource } from "@scheduleads-app/shared/db";
 
-export type TimeWindowType = z.infer&lt;typeof timeWindowValidationSchema&gt;;
-export type WeeklyHoursType = z.infer&lt;typeof weeklyHoursValidationSchema&gt;;</code></pre>
+import { db } from "../database.js";
+import { sendLoginCode } from "./send-login-code.js";</code></pre>
+<div class="code-label">Added &middot; line 104</div><pre class="code" data-lang="typescript" data-start="104" data-mark="107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122" data-kind="added"><code>      // changes this line and disableSignUp below, together.
+      allowUserToCreateOrganization: async (user) =&gt;
+        (user as { role?: string | null }).role === "admin",
+
+      organizationHooks: {
+        // Every business gets its first person, so the database always has someone to
+        // hold a booking. Named after the business, never after whoever clicked create:
+        // today that is the platform admin. The owner renames it in settings (feature 12).
+        // Runs after the business is saved, not in its transaction; if it fails, the
+        // business has no person and cannot take a booking, which fails safe.
+        afterCreateOrganization: async ({ organization: createdOrganization }) =&gt; {
+          await db.insert(resource).values({
+            id: randomUUID(),
+            organizationId: createdOrganization.id,
+            name: createdOrganization.name,
+            kind: "person",
+          });
+        },
+      },
+      schema: {
+        organization: {
+          additionalFields: {</code></pre>
 </div></details>
-<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/date-hours-validation-schema.ts</code> <span class="tag-drift">new &middot; 21 lines</span></summary><div class="codefile-body">
-<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Shared Zod schema: one-off dates, hours on a single date without touching the week.
-// A one-off date replaces that date's hours, and opens it if it is closed or a holiday.
-
-import { z } from "zod";
-
-import { dayWindowsValidationSchema } from "./weekly-hours-validation-schema.js";
-
-export const dateHoursValidationSchema = z
-  .array(
-    z
-      .object({
-        date: z.iso.date(), // YYYY-MM-DD, a real calendar date
-        windows: dayWindowsValidationSchema.min(1, "A one-off date needs at least one window."),
-      })
-      .strict()
-  )
-  .refine((entries) =&gt; new Set(entries.map((entry) =&gt; entry.date)).size === entries.length, {
-    message: "The same date is listed twice.",
-  });
-
-export type DateHoursType = z.infer&lt;typeof dateHoursValidationSchema&gt;;</code></pre>
-</div></details>
-<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/availability-rule-validation-schema.ts</code> <span class="tag-drift">new &middot; 65 lines</span></summary><div class="codefile-body">
-<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Shared Zod schema: one row of bookable hours, either the business's or one person's.
-// Mirrors the database check on availability_rule, so a bad row is refused before it
-// reaches the database, with a readable message instead of a constraint name.
-
-import { z } from "zod";
-
-import { dateHoursValidationSchema } from "./date-hours-validation-schema.js";
-import { weeklyHoursValidationSchema } from "./weekly-hours-validation-schema.js";
-
-function isRealTimezone(timezone: string): boolean {
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: timezone }); // throws on an unknown zone
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// The business's row. Everything set once per business lives here and only here.
-export const businessAvailabilityRuleValidationSchema = z
-  .object({
-    resourceId: z.null(),
-    weeklyHours: weeklyHoursValidationSchema,
-    dateHours: dateHoursValidationSchema.default([]),
-    timezone: z.string().refine(isRealTimezone, { message: "That is not a time zone." }),
-    minimumNoticeMinutes: z.int().min(0),
-    horizonDays: z.int().min(1),
-    closedDates: z.array(z.iso.date()).refine((dates) =&gt; new Set(dates).size === dates.length, {
-      message: "The same closed date is listed twice.",
-    }),
-    holidayCountry: z
-      .string()
-      .regex(/^[A-Z]{2}$/, "Use the two-letter country code, like CA.")
-      .nullable()
-      .default(null),
-    holidayRegion: z
-      .string()
-      .regex(/^[A-Z0-9]{1,3}$/, "Use the province code, like AB.")
-      .nullable()
-      .default(null),
-  })
-  .strict()
-  .refine((rule) =&gt; rule.holidayRegion === null || rule.holidayCountry !== null, {
-    message: "A province needs its country.",
-    path: ["holidayRegion"],
-  });
-
-// A person's row: only their own week (null = follow the business's) and their one-off
-// dates. strict() refuses a time zone or notice here, like the database does.
-export const personAvailabilityRuleValidationSchema = z
-  .object({
-    resourceId: z.string().min(1),
-    weeklyHours: weeklyHoursValidationSchema.nullable().default(null),
-    dateHours: dateHoursValidationSchema.default([]),
-  })
-  .strict();
-
-export const availabilityRuleValidationSchema = z.union([
-  businessAvailabilityRuleValidationSchema,
-  personAvailabilityRuleValidationSchema,
-]);
-
-export type BusinessAvailabilityRuleType = z.infer&lt;typeof businessAvailabilityRuleValidationSchema&gt;;
-export type PersonAvailabilityRuleType = z.infer&lt;typeof personAvailabilityRuleValidationSchema&gt;;
-export type AvailabilityRuleType = z.infer&lt;typeof availabilityRuleValidationSchema&gt;;</code></pre>
-</div></details>
-<details class="codefile"><summary><code>packages/shared/src/zod-validation/index.ts</code> <span class="tag-drift">changed &middot; +3 &minus;0</span></summary><div class="codefile-body">
-<div class="code-label">Added &middot; line 5</div><pre class="code" data-lang="typescript" data-start="5" data-mark="8,9,10" data-kind="added"><code>export * from "./auth/sign-in-code-validation-schema.js";
-export * from "./organization/create-organization-validation-schema.js";
-export * from "./organization/to-slug.js";
-export * from "./availability/weekly-hours-validation-schema.js";
-export * from "./availability/date-hours-validation-schema.js";
-export * from "./availability/availability-rule-validation-schema.js";</code></pre>
-</div></details>
-<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/availability-validation-schemas.test.ts</code> <span class="tag-drift">new &middot; 130 lines</span></summary><div class="codefile-body">
+</div></details></li>
+                              <li data-outcome="added">saved tests for the hours checks
+                                <em class="why">The test runner went in today, before this step. Counts and proof in Tests below.</em>
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/src/zod-validation/availability/availability-validation-schemas.test.ts</code></summary><div class="codefile-body">
 <pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>import { describe, expect, test } from "vitest";
 
 import { availabilityRuleValidationSchema } from "./availability-rule-validation-schema.js";
@@ -3497,55 +3544,81 @@ describe("availabilityRuleValidationSchema", () =&gt; {
   });
 });</code></pre>
 </div></details>
-<details class="codefile"><summary><code>backend/src/lib/auth-server.ts</code> <span class="tag-drift">changed &middot; +19 &minus;1</span></summary><div class="codefile-body">
-<div class="code-label">Added &middot; line 1</div><pre class="code" data-lang="typescript" data-start="1" data-mark="4,5" data-kind="added"><code>// Backend: the Better Auth setup (sign-in, businesses, roles, platform admin).
-// Holds the secret and the database, so nothing in frontend/ may import it.
-
-import { randomUUID } from "node:crypto";
-
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { admin, emailOTP, organization } from "better-auth/plugins";</code></pre>
-<div class="code-label">Before &middot; line 8</div><pre class="code" data-lang="typescript" data-start="8" data-mark="11" data-kind="removed"><code>import { eq } from "drizzle-orm";
-
-import * as schema from "@scheduleads-app/shared/db";
-import { member } from "@scheduleads-app/shared/db";
-
-import { db } from "../database.js";
-import { sendLoginCode } from "./send-login-code.js";</code></pre>
-<div class="code-label">After &middot; line 10</div><pre class="code" data-lang="typescript" data-start="10" data-mark="13" data-kind="added"><code>import { eq } from "drizzle-orm";
-
-import * as schema from "@scheduleads-app/shared/db";
-import { member, resource } from "@scheduleads-app/shared/db";
-
-import { db } from "../database.js";
-import { sendLoginCode } from "./send-login-code.js";</code></pre>
-<div class="code-label">Added &middot; line 104</div><pre class="code" data-lang="typescript" data-start="104" data-mark="107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122" data-kind="added"><code>      // changes this line and disableSignUp below, together.
-      allowUserToCreateOrganization: async (user) =&gt;
-        (user as { role?: string | null }).role === "admin",
-
-      organizationHooks: {
-        // Every business gets its first person, so the database always has someone to
-        // hold a booking. Named after the business, never after whoever clicked create:
-        // today that is the platform admin. The owner renames it in settings (feature 12).
-        // Runs after the business is saved, not in its transaction; if it fails, the
-        // business has no person and cannot take a booking, which fails safe.
-        afterCreateOrganization: async ({ organization: createdOrganization }) =&gt; {
-          await db.insert(resource).values({
-            id: randomUUID(),
-            organizationId: createdOrganization.id,
-            name: createdOrganization.name,
-            kind: "person",
-          });
-        },
-      },
-      schema: {
-        organization: {
-          additionalFields: {</code></pre>
+</div></details></li>
+                              <li data-outcome="added">the database also refuses a province without its country
+                                <em class="why">The spec had this in the hours checks only. A seed script writes straight to the database, so the database should refuse it too.</em>
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/src/db/drizzle-schema.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 259 to 266</div><pre class="code" data-lang="typescript" data-start="259" data-mark="259,260,261,262,263,264,265,266" data-kind="added"><code>    check("availability_rule_notice_check", sql`${table.minimumNoticeMinutes} &gt;= 0`),
+    check("availability_rule_horizon_check", sql`${table.horizonDays} &gt; 0`),
+    check(
+      "availability_rule_region_needs_country_check",
+      sql`${table.holidayRegion} is null or ${table.holidayCountry} is not null`
+    ),
+  ]
+);</code></pre>
 </div></details>
-    <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/compare/cb8e09c...ab16897">The full diff on GitHub</a></p>
-  </div>
-</details>
+</div></details></li>
+                              <li data-outcome="added"><code>updatedAt</code> refreshes on every change
+                                <em class="why">Without it the column would say "created" forever, and a later screen showing "last changed" would lie.</em>
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/src/db/drizzle-schema.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 150 to 154</div><pre class="code" data-lang="typescript" data-start="150" data-mark="150,151,152,153,154" data-kind="added"><code>    createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() =&gt; new Date()),</code></pre>
+<div class="code-label">Added &middot; lines 179 to 183</div><pre class="code" data-lang="typescript" data-start="179" data-mark="179,180,181,182,183" data-kind="added"><code>    createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() =&gt; new Date()),</code></pre>
+<div class="code-label">Added &middot; lines 216 to 220</div><pre class="code" data-lang="typescript" data-start="216" data-mark="216,217,218,219,220" data-kind="added"><code>    createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() =&gt; new Date()),</code></pre>
+</div></details>
+</div></details></li>
+                            </ul>
+                            <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/compare/cb8e09c...ab16897">This step's full diff on GitHub</a></p>
+                            <div class="snags">
+                              <div class="snags-head">What bit</div>
+                              <ul>
+                                <li><b>The migration printed what looked like two errors.</b> Both were notices from Drizzle's own ledger ("already exists, skipping"). Nothing failed, and a second run changed nothing. It is written down here so the next migration is not read as broken.</li>
+                              </ul>
+                            </div>
+                            <div class="tests">
+                              <div class="tests-head">How it was proved</div>
+<div class="proof-card">
+<div class="card-head">Saved tests and checks by hand</div>
+                              <ul>
+                                <li><b>Added:</b> 15 saved tests for the hours checks (a week, a one-off date, a whole row), beside the 6 that already covered the plans. 21 in the shared package at the end of the step.</li>
+                                <li><b>Added by the review:</b> 4 more, for rules that had none (F-18). 25 in all.</li>
+                                <li><b>Proved they can fail:</b> with the overlap rule switched off for a moment, the overlap test failed by name. With the horizon and notice limits removed, exactly those two new tests failed.</li>
+                                <li><b>Proved by hand, not by saved tests:</b> the four rows the database refuses, checked in <code>psql</code> and rolled back.</li>
+                              </ul>
+                              <div class="rstep-when">Passed. The migration SQL shows both indexes, the key, the checks and the backfill. Each dev business has exactly one person. A new business got "Check 2.1 Painters (person)" and was deleted after. By hand, the four forbidden rows were each refused by their own rule (<code>availability_rule_business_unique</code>, <code>availability_rule_resource_unique</code>, <code>availability_rule_resource_fk</code>, <code>availability_rule_row_kind_check</code>) while two normal rows went in, all rolled back after. 21 tests pass. Both builds pass.</div>
+                              <div class="snags">
+                                <div class="snags-head">What bit</div>
+                                <ul>
+                                  <li><b>"A new business gets its person" was proved in-process, not over the network.</b> The check signed in as the dev platform admin and created a business through Better Auth's own create, which passes the platform-admin check and fires the hook. It did not go through a browser or the running API. The browser path gets its own proof in 2.5, when the dashboard lists this data.</li>
+                                </ul>
+                              </div>
+                            </div>
+                            <div class="proof-card">
+                              <div class="card-head">Independent review</div>
+                              <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, over the test setup and this step, all four lenses. No P0 or P1. Two notes: <strong>F-17</strong> (P2), a fresh database gets no first person for the dev businesses, planned into 2.3 with you; <strong>F-18</strong> (P3), four hours rules had no test, fixed the same evening with four more tests, 25 in all. Receipt in <code>blueprint/context/review.md</code>.</p>
+                              <div class="snags">
+                                <div class="snags-head">What bit</div>
+                                <ul>
+                                  <li><b>"Every business has exactly one person" was only true on this laptop.</b> The reviewer found it: on a fresh database the backfill runs before the seed has made any business, and the seed skips the hook, so the dev businesses would have nobody. The check passed because this database already held its businesses. Fixed in 2.3, where the seed now makes the person when missing (F-17).</li>
+                                </ul>
+                              </div>
+                            </div>
+</div>
+                          </div>
+                        </details>
 
                         <details class="drawer" data-kind="issues">
                           <summary>Review issues <span class="tag-drift">2 found &middot; both closed</span></summary>
@@ -3616,57 +3689,85 @@ import { sendLoginCode } from "./send-login-code.js";</code></pre>
                               <span class="v-added">4 added</span>
                             </div>
                             <ul class="substeps">
-                              <li data-outcome="kept">the week: the person's own, else the business's; every query filters on the business first</li>
-                              <li data-outcome="kept">one-off dates: the person's own, plus the business's for someone following the business's week, the person's winning on the same date</li>
-                              <li data-outcome="kept">closed dates inside the horizon, minus every date opened by this person or by the business</li>
-                              <li data-outcome="kept">"now" is passed in</li>
+                              <li data-outcome="kept">the week: the person's own, else the business's; every query filters on the business first
+                                <details class="piece-fig piece-code"><summary>The code &middot; 2 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/src/lib/availability-rules.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 61 to 62</div><pre class="code" data-lang="typescript" data-start="61" data-mark="all" data-kind="added"><code>  const hasOwnWeek = person?.weeklyHours != null;
+  const personDateHours = person?.dateHours ?? [];</code></pre>
+<div class="code-label">Added &middot; lines 80 to 83</div><pre class="code" data-lang="typescript" data-start="80" data-mark="all" data-kind="added"><code>  return {
+    source: hasOwnWeek ? "resource" : "organization",
+    timezone: business.timezone,
+    weeklyHours: person?.weeklyHours ?? business.weeklyHours,</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/src/lib/resolve-availability.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 46 to 58</div><pre class="code" data-lang="typescript" data-start="46" data-mark="all" data-kind="added"><code>  // Every query filters on the business first, so a person id from another business
+  // finds nothing here.
+  const [businessRow] = await db
+    .select()
+    .from(availabilityRule)
+    .where(
+      and(eq(availabilityRule.organizationId, organizationId), isNull(availabilityRule.resourceId))
+    )
+    .limit(1);
+
+  if (!businessRow) return null;
+
+  const business = toBusinessHours(businessRow);</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept">one-off dates: the person's own, plus the business's for someone following the business's week, the person's winning on the same date
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/src/lib/availability-rules.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 64 to 69</div><pre class="code" data-lang="typescript" data-start="64" data-mark="all" data-kind="added"><code>  // A person with their own week keeps only their own one-off dates. Anyone following the
+  // business's week also gets the business's; on the same date the person's own wins.
+  const personDates = new Set(personDateHours.map((entry) =&gt; entry.date));
+  const dateHours = hasOwnWeek
+    ? personDateHours
+    : [...business.dateHours.filter((entry) =&gt; !personDates.has(entry.date)), ...personDateHours];</code></pre>
+<div class="code-label">Added &middot; lines 84 to 86</div><pre class="code" data-lang="typescript" data-start="84" data-mark="all" data-kind="added"><code>    dateHours: dateHours
+      .filter((entry) =&gt; insideHorizon(entry.date))
+      .sort((a, b) =&gt; a.date.localeCompare(b.date)),</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept">closed dates inside the horizon, minus every date opened by this person or by the business
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/src/lib/availability-rules.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 71 to 78</div><pre class="code" data-lang="typescript" data-start="71" data-mark="all" data-kind="added"><code>  // A one-off date opens a closed day: the person's for them only, the business's for
+  // everyone, each on their own hours. So both lists open, whichever week applies.
+  const openedDates = new Set(
+    [...business.dateHours, ...personDateHours].map((entry) =&gt; entry.date)
+  );
+  const closedDates = [...new Set(business.closedDates)]
+    .filter((date) =&gt; insideHorizon(date) &amp;&amp; !openedDates.has(date))
+    .sort();</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept">"now" is passed in
+                                <details class="piece-fig piece-code"><summary>The code &middot; 2 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/src/lib/availability-rules.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 52 to 59</div><pre class="code" data-lang="typescript" data-start="52" data-mark="all" data-kind="added"><code>export function applyAvailabilityRules(
+  business: BusinessHoursInputType,
+  person: PersonHoursInputType | null, // null = the business itself, or a person with no row
+  now: Date
+): ResolvedAvailabilityType {
+  const firstDate = localDate(now, business.timezone);
+  const lastDate = addDays(firstDate, business.horizonDays); // 60 days on Sep 25 ends Nov 24
+  const insideHorizon = (date: string) =&gt; date &gt;= firstDate &amp;&amp; date &lt;= lastDate; // YYYY-MM-DD sorts as text</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/src/lib/resolve-availability.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 40 to 45</div><pre class="code" data-lang="typescript" data-start="40" data-mark="all" data-kind="added"><code>// null when the business has no hours yet, or the person is not one of its own.
+export async function resolveAvailability(
+  organizationId: string,
+  resourceId: string | null, // null = the business's own hours
+  now: Date // a parameter, not new Date() inside, so the horizon can be tested
+): Promise&lt;ResolvedAvailabilityType | null&gt; {</code></pre>
+</div></details>
+</div></details></li>
                               <li data-outcome="added">split in two: <code>applyAvailabilityRules</code> (the rules, no database) and <code>resolveAvailability</code> (reads the rows)
-                                <em class="why">Approved with you before building: the seeds are 2.3, so the rules had to be provable without them.</em></li>
-                              <li data-outcome="added">a check that the person belongs to this business
-                                <em class="why">The plan said "filter on the business first" would be enough. It is not: another business's person simply has no row here, and a person with no row follows the business's week. Without the check, the wrong person would quietly get this business's hours instead of nothing.</em></li>
-                              <li data-outcome="added">"today" is the business's date, not the server's
-                                <em class="why">At 10:30pm in Edmonton the server, in UTC, is already on tomorrow. Counted from the server, today's closed day would drop off the list.</em></li>
-                              <li data-outcome="added">Vitest in the backend, and saved tests for every rule
-                                <em class="why">Your yes, Sep 25. Counts and proof in Tests below.</em></li>
-                            </ul>
-                            <div class="snags">
-                              <div class="snags-head">What bit</div>
-                              <ul>
-                                <li><b>The spec's check could not be met in order.</b> It asked for "seeded rows" one step before the seeds exist. Caught while going through the plan, before any code, and amended with you.</li>
-                                <li><b>"Filter on the business first" sounded like it covered another business's person.</b> It does not, because "no row" has a legitimate meaning here: follow the business. A missing row and a foreign person look the same unless the person is looked up on its own.</li>
-                              </ul>
-                            </div>
-                            <div class="tests">
-                              <div class="tests-head">How it was proved</div>
-<div class="proof-card">
-<div class="card-head">Saved tests and checks by hand</div>
-                              <ul>
-                                <li><b>Added:</b> 10 saved tests for the rules half, in the backend's first test file (Vitest went into the backend for this step).</li>
-                                <li><b>Added by the review:</b> 1 for Ben's case (F-19). 11 in the backend; the shared package's 25 unchanged.</li>
-                                <li><b>Proved they can fail:</b> with "today" switched to the server's date, the time zone test failed by name. With the reviewer's break put back, Ben's test failed by name.</li>
-                                <li><b>Proved by hand, not by saved tests:</b> the database half, on the salon with rows added and removed after, by the builder and again by the reviewer.</li>
-                              </ul>
-                              <div class="rstep-when">Passed. 10 backend tests pass, and shared's 25 still pass. By hand, with a business row and one person's row added to <code>test-salon-dev</code> and removed after: the business itself and a person with no row get the salon's week; a person with a row gets their own; <code>agency-dev</code>, which has no hours yet, gets nothing; the salon asked about the agency's person gets nothing. The database is back to 0 hours rows. Backend build passes, and no test file reaches <code>dist/</code>.</div>
-                              <div class="snags">
-                                <div class="snags-head">What bit</div>
-                                <ul>
-                                  <li><b>Planting a bug in a brand new file needs a copy first.</b> <code>git checkout</code> cannot restore a file git has never seen. A copy had been taken, so nothing was lost, but only just.</li>
-                                </ul>
-                              </div>
-                            </div>
-                            <div class="proof-card">
-                              <div class="card-head">Independent review</div>
-                              <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>2519644</code>. No P0 or P1. It reran every test and the build, and rechecked the database half itself on the salon (rows removed after). Three notes: <strong>F-19</strong> (P2), no test catches a person with their own row losing the business's one-off dates; it proved the gap by breaking that line in a copy and watching all 10 tests still pass. <strong>F-20</strong> (P3), one type not exported, against the naming standard. <strong>F-21</strong> (P3), the "full diff" links on this page follow the branch, so 2.1's already shows 2.2 too. Receipt in <code>blueprint/context/review.md</code>.</p>
-                            </div>
-</div>
-                          </div>
-                        </details>
-<details class="drawer" data-kind="code">
-  <summary>What changed in the code <span class="tag-drift">4 files &middot; +308 &minus;1 lines</span></summary>
-  <div class="drawer-body">
-    <p class="drawer-what">The real code of this step, file by file, coloured like VS Code's Dark 2026. A green bar marks a new line, a red bar a removed one; a changed file shows the old block above the new. Only this project's own code: generated files and packages are left out. <code>backend/package.json</code> gains one dev dependency, <code>vitest</code>, and the <code>test</code> and <code>test:watch</code> scripts.</p>
-<details class="codefile"><summary><code>backend/src/lib/availability-rules.ts</code> <span class="tag-drift">new &middot; 91 lines</span></summary><div class="codefile-body">
-<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: the rules that turn a business's row and one person's row into the hours a
+                                <em class="why">Approved with you before building: the seeds are 2.3, so the rules had to be provable without them.</em>
+                                <details class="piece-fig piece-code"><summary>The code &middot; 2 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/src/lib/availability-rules.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 1 to 31</div><pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: the rules that turn a business's row and one person's row into the hours a
 // customer can book. Pure, no database, so every rule is tested on its own.
 // resolve-availability.ts reads the rows and hands them here.
 
@@ -3696,70 +3797,10 @@ export type ResolvedAvailabilityType = {
   minimumNoticeMinutes: number;
   horizonDays: number;
   closedDates: string[]; // closed dates inside the horizon, minus opened ones; sorted, unique
-};
-
-// Today's date where the business is, not where the server is: at 11pm in Edmonton
-// the server in UTC is already on tomorrow.
-function localDate(now: Date, timezone: string): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const part = (type: string) =&gt; parts.find((datePart) =&gt; datePart.type === type)?.value;
-  return `${part("year")}-${part("month")}-${part("day")}`;
-}
-
-// Calendar arithmetic on a plain YYYY-MM-DD, done in UTC so no daylight change can shift it.
-function addDays(date: string, days: number): string {
-  const [year, month, day] = date.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
-}
-
-export function applyAvailabilityRules(
-  business: BusinessHoursInputType,
-  person: PersonHoursInputType | null, // null = the business itself, or a person with no row
-  now: Date
-): ResolvedAvailabilityType {
-  const firstDate = localDate(now, business.timezone);
-  const lastDate = addDays(firstDate, business.horizonDays); // 60 days on Sep 25 ends Nov 24
-  const insideHorizon = (date: string) =&gt; date &gt;= firstDate &amp;&amp; date &lt;= lastDate; // YYYY-MM-DD sorts as text
-
-  const hasOwnWeek = person?.weeklyHours != null;
-  const personDateHours = person?.dateHours ?? [];
-
-  // A person with their own week keeps only their own one-off dates. Anyone following the
-  // business's week also gets the business's; on the same date the person's own wins.
-  const personDates = new Set(personDateHours.map((entry) =&gt; entry.date));
-  const dateHours = hasOwnWeek
-    ? personDateHours
-    : [...business.dateHours.filter((entry) =&gt; !personDates.has(entry.date)), ...personDateHours];
-
-  // A one-off date opens a closed day: the person's for them only, the business's for
-  // everyone, each on their own hours. So both lists open, whichever week applies.
-  const openedDates = new Set(
-    [...business.dateHours, ...personDateHours].map((entry) =&gt; entry.date)
-  );
-  const closedDates = [...new Set(business.closedDates)]
-    .filter((date) =&gt; insideHorizon(date) &amp;&amp; !openedDates.has(date))
-    .sort();
-
-  return {
-    source: hasOwnWeek ? "resource" : "organization",
-    timezone: business.timezone,
-    weeklyHours: person?.weeklyHours ?? business.weeklyHours,
-    dateHours: dateHours
-      .filter((entry) =&gt; insideHorizon(entry.date))
-      .sort((a, b) =&gt; a.date.localeCompare(b.date)),
-    minimumNoticeMinutes: business.minimumNoticeMinutes,
-    horizonDays: business.horizonDays,
-    closedDates,
-  };
-}</code></pre>
+};</code></pre>
 </div></details>
-<details class="codefile"><summary><code>backend/src/lib/resolve-availability.ts</code> <span class="tag-drift">new &middot; 85 lines</span></summary><div class="codefile-body">
-<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: when can a customer book this business, or one person in it? The one place
+<details class="codefile"><summary><code>backend/src/lib/resolve-availability.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 1 to 38</div><pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: when can a customer book this business, or one person in it? The one place
 // that question is answered. Reads the rows here; the rules live in availability-rules.ts.
 
 import { and, eq, isNull } from "drizzle-orm";
@@ -3796,31 +3837,14 @@ function toBusinessHours(row: AvailabilityRuleRowType): BusinessHoursInputType {
     horizonDays,
     closedDates,
   };
-}
-
-// null when the business has no hours yet, or the person is not one of its own.
-export async function resolveAvailability(
-  organizationId: string,
-  resourceId: string | null, // null = the business's own hours
-  now: Date // a parameter, not new Date() inside, so the horizon can be tested
-): Promise&lt;ResolvedAvailabilityType | null&gt; {
-  // Every query filters on the business first, so a person id from another business
-  // finds nothing here.
-  const [businessRow] = await db
-    .select()
-    .from(availabilityRule)
-    .where(
-      and(eq(availabilityRule.organizationId, organizationId), isNull(availabilityRule.resourceId))
-    )
-    .limit(1);
-
-  if (!businessRow) return null;
-
-  const business = toBusinessHours(businessRow);
-
-  if (resourceId === null) return applyAvailabilityRules(business, null, now);
-
-  // The person must exist in this business. Without this, another business's person
+}</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="added">a check that the person belongs to this business
+                                <em class="why">The plan said "filter on the business first" would be enough. It is not: another business's person simply has no row here, and a person with no row follows the business's week. Without the check, the wrong person would quietly get this business's hours instead of nothing.</em>
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/src/lib/resolve-availability.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 62 to 84</div><pre class="code" data-lang="typescript" data-start="62" data-mark="all" data-kind="added"><code>  // The person must exist in this business. Without this, another business's person
   // would simply have no row here and quietly get this business's week.
   const [person] = await db
     .select({ id: resource.id })
@@ -3842,10 +3866,37 @@ export async function resolveAvailability(
     )
     .limit(1);
 
-  return applyAvailabilityRules(business, personRow ?? null, now);
+  return applyAvailabilityRules(business, personRow ?? null, now);</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="added">"today" is the business's date, not the server's
+                                <em class="why">At 10:30pm in Edmonton the server, in UTC, is already on tomorrow. Counted from the server, today's closed day would drop off the list.</em>
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/src/lib/availability-rules.ts</code></summary><div class="codefile-body">
+<div class="code-label">Added &middot; lines 33 to 50</div><pre class="code" data-lang="typescript" data-start="33" data-mark="all" data-kind="added"><code>// Today's date where the business is, not where the server is: at 11pm in Edmonton
+// the server in UTC is already on tomorrow.
+function localDate(now: Date, timezone: string): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const part = (type: string) =&gt; parts.find((datePart) =&gt; datePart.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+// Calendar arithmetic on a plain YYYY-MM-DD, done in UTC so no daylight change can shift it.
+function addDays(date: string, days: number): string {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
 }</code></pre>
 </div></details>
-<details class="codefile"><summary><code>backend/src/lib/availability-rules.test.ts</code> <span class="tag-drift">new &middot; 131 lines</span></summary><div class="codefile-body">
+</div></details></li>
+                              <li data-outcome="added">Vitest in the backend, and saved tests for every rule
+                                <em class="why">Your yes, Sep 25. Counts and proof in Tests below.</em>
+                                <details class="piece-fig piece-code"><summary>The code &middot; 2 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/src/lib/availability-rules.test.ts</code></summary><div class="codefile-body">
 <pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>import { describe, expect, test } from "vitest";
 
 import {
@@ -3978,7 +4029,7 @@ describe("applyAvailabilityRules", () =&gt; {
   });
 });</code></pre>
 </div></details>
-<details class="codefile"><summary><code>backend/tsconfig.json</code> <span class="tag-drift">changed &middot; +1 &minus;1</span></summary><div class="codefile-body">
+<details class="codefile"><summary><code>backend/tsconfig.json</code></summary><div class="codefile-body">
 <div class="code-label">Before &middot; line 11</div><pre class="code" data-lang="typescript" data-start="11" data-mark="14" data-kind="removed"><code>    "rootDir": "./src",
     "outDir": "./dist"
   },
@@ -3990,9 +4041,41 @@ describe("applyAvailabilityRules", () =&gt; {
   "exclude": ["node_modules", "src/**/*.test.ts"] // tests run through Vitest, never shipped in dist/
 }</code></pre>
 </div></details>
-    <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/compare/b4b39a5...98e2493">The full diff on GitHub</a></p>
-  </div>
-</details>
+</div></details></li>
+                            </ul>
+                            <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/compare/b4b39a5...98e2493">This step's full diff on GitHub</a></p>
+                            <div class="snags">
+                              <div class="snags-head">What bit</div>
+                              <ul>
+                                <li><b>The spec's check could not be met in order.</b> It asked for "seeded rows" one step before the seeds exist. Caught while going through the plan, before any code, and amended with you.</li>
+                                <li><b>"Filter on the business first" sounded like it covered another business's person.</b> It does not, because "no row" has a legitimate meaning here: follow the business. A missing row and a foreign person look the same unless the person is looked up on its own.</li>
+                              </ul>
+                            </div>
+                            <div class="tests">
+                              <div class="tests-head">How it was proved</div>
+<div class="proof-card">
+<div class="card-head">Saved tests and checks by hand</div>
+                              <ul>
+                                <li><b>Added:</b> 10 saved tests for the rules half, in the backend's first test file (Vitest went into the backend for this step).</li>
+                                <li><b>Added by the review:</b> 1 for Ben's case (F-19). 11 in the backend; the shared package's 25 unchanged.</li>
+                                <li><b>Proved they can fail:</b> with "today" switched to the server's date, the time zone test failed by name. With the reviewer's break put back, Ben's test failed by name.</li>
+                                <li><b>Proved by hand, not by saved tests:</b> the database half, on the salon with rows added and removed after, by the builder and again by the reviewer.</li>
+                              </ul>
+                              <div class="rstep-when">Passed. 10 backend tests pass, and shared's 25 still pass. By hand, with a business row and one person's row added to <code>test-salon-dev</code> and removed after: the business itself and a person with no row get the salon's week; a person with a row gets their own; <code>agency-dev</code>, which has no hours yet, gets nothing; the salon asked about the agency's person gets nothing. The database is back to 0 hours rows. Backend build passes, and no test file reaches <code>dist/</code>.</div>
+                              <div class="snags">
+                                <div class="snags-head">What bit</div>
+                                <ul>
+                                  <li><b>Planting a bug in a brand new file needs a copy first.</b> <code>git checkout</code> cannot restore a file git has never seen. A copy had been taken, so nothing was lost, but only just.</li>
+                                </ul>
+                              </div>
+                            </div>
+                            <div class="proof-card">
+                              <div class="card-head">Independent review</div>
+                              <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>2519644</code>. No P0 or P1. It reran every test and the build, and rechecked the database half itself on the salon (rows removed after). Three notes: <strong>F-19</strong> (P2), no test catches a person with their own row losing the business's one-off dates; it proved the gap by breaking that line in a copy and watching all 10 tests still pass. <strong>F-20</strong> (P3), one type not exported, against the naming standard. <strong>F-21</strong> (P3), the "full diff" links on this page follow the branch, so 2.1's already shows 2.2 too. Receipt in <code>blueprint/context/review.md</code>.</p>
+                            </div>
+</div>
+                          </div>
+                        </details>
                         <details class="drawer" data-kind="issues">
                           <summary>Review issues <span class="tag-drift">3 found &middot; all 3 closed</span></summary>
                           <div class="drawer-body">
@@ -4076,96 +4159,25 @@ describe("applyAvailabilityRules", () =&gt; {
                               <span class="v-added">1 added</span>
                             </div>
                             <ul class="substeps">
-                              <li data-outcome="kept">Summit Painting (dev): Primo-shaped hours, the owner as estimator, Marco the second estimator with his own week, six painters, three services with buffers</li>
-                              <li data-outcome="kept">Riverbend Clinic (dev): six practitioners (Sofia and Luis with their own weeks, Ana and Mei following the clinic, Priya weekends only, Daniel with one extra Sunday), the five rooms as you drew them, and ten of Face and Body's treatments with her real lengths</li>
-                              <li data-outcome="kept">the first person made when missing, and every set of hours checked by the 2.1 rules before it is written</li>
-                              <li data-outcome="kept">the local database deleted and rebuilt from scratch</li>
-                              <li data-outcome="added"><code>AGENTS.md</code> now names the two businesses
-                                <em class="why">Its Commands section still said the seed makes "one business each", with nothing about the new cast.</em></li>
-                            </ul>
-                            <div class="snags">
-                              <div class="snags-head">What bit</div>
-                              <ul>
-                                <li><b>The migration printed an error-shaped message again.</b> A <code>NOTICE</code> about a column that already exists, the same kind step 2.1 recorded. "Migrations applied successfully" is the line that counts.</li>
-                              </ul>
-                            </div>
-                            <div class="tests">
-                              <div class="tests-head">How it was proved</div>
-                              <div class="proof-card">
-                                <div class="card-head">Saved tests and checks by hand</div>
-                                <ul>
-                                  <li><b>Added:</b> no saved tests. The seed is data, not logic; the rules it relies on are already tested (2.1 and 2.2).</li>
-                                  <li><b>Proved by hand:</b> the rebuilt database holds exactly the cast: clinic 7 people, 5 rooms, 4 own weeks, 10 services; painting 8 people, 1 own week, 3 services; one first person each. A second run changed nothing.</li>
-                                  <li><b>Proved it can fail:</b> a backwards window planted in the seed stopped it with "A window has to end after it starts." and nothing was written, not even the new person.</li>
-                                  <li><b>Spot check:</b> Priya resolves to her own weekends; Daniel to the clinic's week plus Sunday Oct 18.</li>
-                                </ul>
-                                <div class="rstep-when">Passed. Rebuilt from scratch, the counts above, the second run identical, the planted mistake refused and rolled back, both spot checks right. 25 shared tests and 11 backend tests pass; both builds pass; the seed type-checks on its own.</div>
-                                <div class="snags">
-                                  <div class="snags-head">What bit</div>
-                                  <ul>
-                                    <li><b>Nothing type-checks the seed.</b> It sits outside every build, so a type error there would only show when it runs. It was checked on its own this time, and passed; any future script has the same gap.</li>
-                                    <li><b>A throwaway script cannot see the project's packages from the scratch folder.</b> The spot check took its ids from <code>psql</code> instead.</li>
-                                  </ul>
-                                </div>
-                              </div>
-                              <div class="proof-card">
-                                <div class="card-head">Independent review</div>
-                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>7b04316</code>. No P0 or P1. It reran every test and both builds, recounted the whole cast in the database, ran the seed again and compared every row byte for byte, and checked the ten treatments against Face and Body's own list. It closed all five issues left from steps 2.1 and 2.2, and found four small ones in the seed (below, in Review issues). Receipt in <code>blueprint/context/review.md</code>.</p>
-                              </div>
-                            </div>
-                          </div>
-                        </details>
-<details class="drawer" data-kind="code">
-  <summary>What changed in the code <span class="tag-drift">1 files &middot; +256 &minus;10 lines</span></summary>
-  <div class="drawer-body">
-    <p class="drawer-what">The real code of this step, file by file, coloured like VS Code's Dark 2026. A green bar marks a new line, a red bar a removed one; a changed file shows the old block above the new. Only this project's own code: generated files and packages are left out.</p>
-<details class="codefile"><summary><code>packages/shared/scripts/seed-dev.ts</code> <span class="tag-drift">changed &middot; +256 &minus;10</span></summary><div class="codefile-body">
-<div class="code-label">Before &middot; line 1</div><pre class="code" data-lang="typescript" data-start="1" data-mark="1,2,7,12" data-kind="removed"><code>// Shared script: puts two dev accounts into an empty local database. Signup is closed,
-// so without this a fresh database has no way in. Safe to run repeatedly.
-// Run: npm run db:seed --workspace=@scheduleads-app/shared
+                              <li data-outcome="kept">Summit Painting (dev): Primo-shaped hours, the owner as estimator, Marco the second estimator with his own week, six painters, three services with buffers
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/scripts/seed-dev.ts</code></summary><div class="codefile-body">
+<div class="code-label">Before &middot; line 41</div><pre class="code" data-lang="typescript" data-start="41" data-mark="44,50" data-kind="removed"><code>    email: "admin@example.com",
+    name: "Dev Admin",
+    role: "admin",
+    business: { name: "Agency (dev)", slug: "agency-dev" },
+  },
+  {
+    email: "owner@example.com",
+    name: "Dev Owner",
+    role: null,
+    business: { name: "Test Salon (dev)", slug: "test-salon-dev" },
+  },
+] as const;
 
-import { randomUUID } from "node:crypto";
-
-import { and, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-
-import * as schema from "@scheduleads-app/shared/db";
-import { member, organization, user } from "@scheduleads-app/shared/db";
-
-const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
-</code></pre>
-<div class="code-label">After &middot; line 1</div><pre class="code" data-lang="typescript" data-start="1" data-mark="1,2,3,4,9,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28" data-kind="added"><code>// Shared script: fills an empty local database with two dev accounts and two made-up
-// businesses shaped like the real clients, a painting company like Primo and a clinic like
-// Face and Body. Signup is closed, so without this a fresh database has no way in. Safe to
-// run repeatedly: everything is looked up first and only made when missing.
-// Run: npm run db:seed --workspace=@scheduleads-app/shared
-
-import { randomUUID } from "node:crypto";
-
-import { and, eq, isNull } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-
-import * as schema from "@scheduleads-app/shared/db";
-import {
-  availabilityRule,
-  bookingLink,
-  member,
-  organization,
-  resource,
-  user,
-} from "@scheduleads-app/shared/db";
-import {
-  businessAvailabilityRuleValidationSchema,
-  personAvailabilityRuleValidationSchema,
-  toSlug,
-  type DateHoursType,
-  type WeeklyHoursType,
-} from "@scheduleads-app/shared/zod-validation";
-
-const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
-</code></pre>
+const database = assertLocalDevelopmentDatabase(process.env.DATABASE_URL);
+const client = postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () =&gt; {} });
+const db = drizzle(client, { schema });</code></pre>
 <div class="code-label">Added &middot; line 50</div><pre class="code" data-lang="typescript" data-start="50" data-mark="53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73" data-kind="added"><code>  return database;
 }
 
@@ -4193,23 +4205,7 @@ const paintingWeekday = [between(at(7, 30), at(8, 30)), between(at(17), at(19, 3
 // Fake addresses on purpose: login codes print in the API console, so no mailbox is needed.
 // owner@example.com is the non-admin that proves an owner cannot create a business.
 const ACCOUNTS = [</code></pre>
-<div class="code-label">Before &middot; line 41</div><pre class="code" data-lang="typescript" data-start="41" data-mark="44,50" data-kind="removed"><code>    email: "admin@example.com",
-    name: "Dev Admin",
-    role: "admin",
-    business: { name: "Agency (dev)", slug: "agency-dev" },
-  },
-  {
-    email: "owner@example.com",
-    name: "Dev Owner",
-    role: null,
-    business: { name: "Test Salon (dev)", slug: "test-salon-dev" },
-  },
-] as const;
-
-const database = assertLocalDevelopmentDatabase(process.env.DATABASE_URL);
-const client = postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () =&gt; {} });
-const db = drizzle(client, { schema });</code></pre>
-<div class="code-label">After &middot; line 78</div><pre class="code" data-lang="typescript" data-start="78" data-mark="81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220" data-kind="added"><code>    email: "admin@example.com",
+<div class="code-label">After &middot; lines 78 to 124</div><pre class="code" data-lang="typescript" data-start="78" data-mark="81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123" data-kind="added"><code>    email: "admin@example.com",
     name: "Dev Admin",
     role: "admin",
     business: {
@@ -4255,8 +4251,13 @@ const db = drizzle(client, { schema });</code></pre>
         { name: "Colour consultation", durationMinutes: 30, bufferAfterMinutes: 10 },
       ] satisfies ServiceSeedType[],
     },
-  },
-  {
+  },</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept">Riverbend Clinic (dev): six practitioners (Sofia and Luis with their own weeks, Ana and Mei following the clinic, Priya weekends only, Daniel with one extra Sunday), the five rooms as you drew them, and ten of Face and Body's treatments with her real lengths
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/scripts/seed-dev.ts</code></summary><div class="codefile-body">
+<div class="code-label">After &middot; lines 125 to 198</div><pre class="code" data-lang="typescript" data-start="125" data-mark="129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196" data-kind="added"><code>  {
     email: "owner@example.com",
     name: "Dev Owner",
     role: null,
@@ -4329,9 +4330,59 @@ const db = drizzle(client, { schema });</code></pre>
       ] satisfies ServiceSeedType[],
     },
   },
-] as const;
+] as const;</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept">the first person made when missing, and every set of hours checked by the 2.1 rules before it is written
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/scripts/seed-dev.ts</code></summary><div class="codefile-body">
+<div class="code-label">Before &middot; line 1</div><pre class="code" data-lang="typescript" data-start="1" data-mark="1,2,7,12" data-kind="removed"><code>// Shared script: puts two dev accounts into an empty local database. Signup is closed,
+// so without this a fresh database has no way in. Safe to run repeatedly.
+// Run: npm run db:seed --workspace=@scheduleads-app/shared
 
-type TransactionType = Parameters&lt;Parameters&lt;ReturnType&lt;typeof drizzle&gt;["transaction"]&gt;[0]&gt;[0];
+import { randomUUID } from "node:crypto";
+
+import { and, eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+
+import * as schema from "@scheduleads-app/shared/db";
+import { member, organization, user } from "@scheduleads-app/shared/db";
+
+const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+</code></pre>
+<div class="code-label">After &middot; line 1</div><pre class="code" data-lang="typescript" data-start="1" data-mark="1,2,3,4,9,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28" data-kind="added"><code>// Shared script: fills an empty local database with two dev accounts and two made-up
+// businesses shaped like the real clients, a painting company like Primo and a clinic like
+// Face and Body. Signup is closed, so without this a fresh database has no way in. Safe to
+// run repeatedly: everything is looked up first and only made when missing.
+// Run: npm run db:seed --workspace=@scheduleads-app/shared
+
+import { randomUUID } from "node:crypto";
+
+import { and, eq, isNull } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+
+import * as schema from "@scheduleads-app/shared/db";
+import {
+  availabilityRule,
+  bookingLink,
+  member,
+  organization,
+  resource,
+  user,
+} from "@scheduleads-app/shared/db";
+import {
+  businessAvailabilityRuleValidationSchema,
+  personAvailabilityRuleValidationSchema,
+  toSlug,
+  type DateHoursType,
+  type WeeklyHoursType,
+} from "@scheduleads-app/shared/zod-validation";
+
+const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+</code></pre>
+<div class="code-label">After &middot; lines 200 to 223</div><pre class="code" data-lang="typescript" data-start="200" data-mark="200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220" data-kind="added"><code>type TransactionType = Parameters&lt;Parameters&lt;ReturnType&lt;typeof drizzle&gt;["transaction"]&gt;[0]&gt;[0];
 
 // Finds a resource by its name in this business, or makes it. Returns its id and whether it was made.
 async function ensureResource(
@@ -4499,9 +4550,46 @@ const db = drizzle(client, { schema });</code></pre>
     }
   });</code></pre>
 </div></details>
-    <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/compare/b4121a4...7b04316">The full diff on GitHub</a></p>
-  </div>
-</details>
+</div></details></li>
+                              <li data-outcome="kept">the local database deleted and rebuilt from scratch
+                                <span class="no-code">No project code: the database was dropped and rebuilt by hand; see How it was proved.</span></li>
+                              <li data-outcome="added"><code>AGENTS.md</code> now names the two businesses
+                                <em class="why">Its Commands section still said the seed makes "one business each", with nothing about the new cast.</em>
+                                <span class="no-code">No project code: a docs change to AGENTS.md.</span></li>
+                            </ul>
+                            <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/compare/b4121a4...7b04316">This step's full diff on GitHub</a></p>
+                            <div class="snags">
+                              <div class="snags-head">What bit</div>
+                              <ul>
+                                <li><b>The migration printed an error-shaped message again.</b> A <code>NOTICE</code> about a column that already exists, the same kind step 2.1 recorded. "Migrations applied successfully" is the line that counts.</li>
+                              </ul>
+                            </div>
+                            <div class="tests">
+                              <div class="tests-head">How it was proved</div>
+                              <div class="proof-card">
+                                <div class="card-head">Saved tests and checks by hand</div>
+                                <ul>
+                                  <li><b>Added:</b> no saved tests. The seed is data, not logic; the rules it relies on are already tested (2.1 and 2.2).</li>
+                                  <li><b>Proved by hand:</b> the rebuilt database holds exactly the cast: clinic 7 people, 5 rooms, 4 own weeks, 10 services; painting 8 people, 1 own week, 3 services; one first person each. A second run changed nothing.</li>
+                                  <li><b>Proved it can fail:</b> a backwards window planted in the seed stopped it with "A window has to end after it starts." and nothing was written, not even the new person.</li>
+                                  <li><b>Spot check:</b> Priya resolves to her own weekends; Daniel to the clinic's week plus Sunday Oct 18.</li>
+                                </ul>
+                                <div class="rstep-when">Passed. Rebuilt from scratch, the counts above, the second run identical, the planted mistake refused and rolled back, both spot checks right. 25 shared tests and 11 backend tests pass; both builds pass; the seed type-checks on its own.</div>
+                                <div class="snags">
+                                  <div class="snags-head">What bit</div>
+                                  <ul>
+                                    <li><b>Nothing type-checks the seed.</b> It sits outside every build, so a type error there would only show when it runs. It was checked on its own this time, and passed; any future script has the same gap.</li>
+                                    <li><b>A throwaway script cannot see the project's packages from the scratch folder.</b> The spot check took its ids from <code>psql</code> instead.</li>
+                                  </ul>
+                                </div>
+                              </div>
+                              <div class="proof-card">
+                                <div class="card-head">Independent review</div>
+                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>7b04316</code>. No P0 or P1. It reran every test and both builds, recounted the whole cast in the database, ran the seed again and compared every row byte for byte, and checked the ten treatments against Face and Body's own list. It closed all five issues left from steps 2.1 and 2.2, and found four small ones in the seed (below, in Review issues). Receipt in <code>blueprint/context/review.md</code>.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </details>
 
                         <details class="drawer" data-kind="issues">
                           <summary>Review issues <span class="tag-drift">4 found &middot; all 4 fixed</span></summary>
