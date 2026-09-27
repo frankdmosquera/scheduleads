@@ -1227,7 +1227,7 @@
      the page reads like his editor in both page themes. New lines get a green bar, removed
      lines a red one; no + or - signs. */
 
-  /* Review issues: violet, the page's colour for a fault found and repaired. */
+  /* Independent review issues: violet, the page's colour for a fault found and repaired. */
   .drawer[data-kind="issues"] > summary { background: color-mix(in srgb, var(--fixed) 9%, var(--surface)); color: var(--fixed); }
   .drawer[data-kind="issues"] > summary:hover { background: color-mix(in srgb, var(--fixed) 18%, var(--surface)); }
   .drawer[data-kind="issues"][open] { border-color: color-mix(in srgb, var(--fixed) 40%, var(--surface)); }
@@ -6929,7 +6929,7 @@ describe("availabilityRuleValidationSchema", () =&gt; {
                         </details>
 
                         <details class="drawer" data-kind="issues">
-                          <summary>Review issues <span class="tag-drift">2 found &middot; both closed</span></summary>
+                          <summary>Independent review issues <span class="tag-drift">2 found &middot; both closed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
                             <div class="rows">
@@ -7385,7 +7385,7 @@ describe("applyAvailabilityRules", () =&gt; {
                           </div>
                         </details>
                         <details class="drawer" data-kind="issues">
-                          <summary>Review issues <span class="tag-drift">3 found &middot; all 3 closed</span></summary>
+                          <summary>Independent review issues <span class="tag-drift">3 found &middot; all 3 closed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
                             <div class="rows">
@@ -7893,21 +7893,21 @@ const db = drizzle(client, { schema });</code></pre>
                               </div>
                               <div class="proof-card">
                                 <div class="card-head">Independent review</div>
-                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>7b04316</code>. No P0 or P1. It reran every test and both builds, recounted the whole cast in the database, ran the seed again and compared every row byte for byte, and checked the ten treatments against Face and Body's own list. It closed all five issues left from steps 2.1 and 2.2, and found four small ones in the seed (below, in Review issues). Receipt in <code>blueprint/context/review.md</code>.</p>
+                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 25, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>7b04316</code>. No P0 or P1. It reran every test and both builds, recounted the whole cast in the database, ran the seed again and compared every row byte for byte, and checked the ten treatments against Face and Body's own list. It closed all five issues left from steps 2.1 and 2.2, and found four small ones in the seed (below, in Independent review issues). Receipt in <code>blueprint/context/review.md</code>.</p>
                               </div>
                             </div>
                           </div>
                         </details>
 
                         <details class="drawer" data-kind="issues">
-                          <summary>Review issues <span class="tag-drift">4 found &middot; all 4 fixed</span></summary>
+                          <summary>Independent review issues <span class="tag-drift">4 found &middot; all 4 closed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
                             <div class="rows">
-                              <div class="row"><div class="row-key">F-22 &middot; P3 &middot; fixed</div><div class="row-val">The seed's dates are fixed calendar dates. After Oct 18, 2026 Daniel's extra Sunday is in the past, so the clinic loses its "only an extra date" case, and the closed days run out in 2027.</div></div>
-                              <div class="row"><div class="row-key">F-23 &middot; P3 &middot; fixed</div><div class="row-val">A made-up person given an extra date but no week at all is skipped without a word. Daniel only works because his entry says "no week" out loud.</div></div>
-                              <div class="row"><div class="row-key">F-24 &middot; P3 &middot; fixed</div><div class="row-val">Three helper types in the seed are not exported, against the naming standard (the same rule as F-20).</div></div>
-                              <div class="row"><div class="row-key">F-25 &middot; P3 &middot; fixed</div><div class="row-val">On another machine whose local database was not rebuilt, the seed adds the two new businesses beside the old ones, so each login ends up in two businesses, and nothing says to rebuild.</div></div>
+                              <div class="row"><div class="row-key">F-22 &middot; P3 &middot; closed</div><div class="row-val">The seed's dates are fixed calendar dates. After Oct 18, 2026 Daniel's extra Sunday is in the past, so the clinic loses its "only an extra date" case, and the closed days run out in 2027.</div></div>
+                              <div class="row"><div class="row-key">F-23 &middot; P3 &middot; closed</div><div class="row-val">A made-up person given an extra date but no week at all is skipped without a word. Daniel only works because his entry says "no week" out loud.</div></div>
+                              <div class="row"><div class="row-key">F-24 &middot; P3 &middot; closed</div><div class="row-val">Three helper types in the seed are not exported, against the naming standard (the same rule as F-20).</div></div>
+                              <div class="row"><div class="row-key">F-25 &middot; P3 &middot; closed</div><div class="row-val">On another machine whose local database was not rebuilt, the seed adds the two new businesses beside the old ones, so each login ends up in two businesses, and nothing says to rebuild.</div></div>
                             </div>
                           </div>
                         </details>
@@ -8579,13 +8579,13 @@ describe("the login cookie is never allowed", () =&gt; {
                               </div>
                               <div class="proof-card">
                                 <div class="card-head">Independent review</div>
-                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 26, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>e58e0a0</code>. No P0 or P1. It reran every test and both builds, traced every query of both routes, checked that each "not here" stops after the same number of queries so not even timing tells them apart, read Hono's own CORS code to confirm credentials are never sent, and compared the Sep 26 restructure line by line with the originals: only names and paths changed. It closed F-22 to F-25 from step 2.3 and the older F-15, and found three small issues (below, in Review issues). Receipt in <code>blueprint/context/review.md</code>.</p>
+                                <p class="rstep-what"><strong>Independent review: passed</strong>, Sep 26, by a fresh reviewer with none of the build conversation, all four lenses, commit <code>e58e0a0</code>. No P0 or P1. It reran every test and both builds, traced every query of both routes, checked that each "not here" stops after the same number of queries so not even timing tells them apart, read Hono's own CORS code to confirm credentials are never sent, and compared the Sep 26 restructure line by line with the originals: only names and paths changed. It closed F-22 to F-25 from step 2.3 and the older F-15, and found three small issues (below, in Independent review issues). Receipt in <code>blueprint/context/review.md</code>.</p>
                               </div>
                             </div>
                           </div>
                         </details>
                         <details class="drawer" data-kind="issues">
-                          <summary>Review issues <span class="tag-drift">3 found &middot; all small, waiting on your call</span></summary>
+                          <summary>Independent review issues <span class="tag-drift">3 found &middot; all small, waiting on your call</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">What the independent review found in this step, in plain words, and what became of each. Fixed means repaired; the next review looks again and closes it.</p>
                             <div class="rows">

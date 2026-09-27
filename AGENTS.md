@@ -354,7 +354,7 @@ proved by hand, and the "Passed." result of the Done when) and **Independent
 review** (its verdict and issues). The planned pieces and each card carry
 their own small violet **What bit** block when something caught us out
 there, and none when nothing did), **What
-changed in the code**, **Review issues** (every finding its review raised, in
+changed in the code**, **Independent review issues** (every finding the independent review raised, in
 plain words, with its F-number and state), and **Log** (that step's own
 entries: built, reviewed, fixed). The item's **Log** keeps only entries about
 the whole item, such as decisions. An entry lives in one of the two, never
@@ -439,7 +439,7 @@ drawer under it, the code that piece touched: every changed file is placed
 under the piece it served, so what was built and what code it touched are read
 together. Unplanned pieces ("added") carry their code the same way. A file
 that served two pieces appears under each with only its own lines. Then **How
-it was proved** runs the Done when. **Review issues** and **Log** stay
+it was proved** runs the Done when. **Independent review issues** and **Log** stay
 separate: the review is independent and comes at the end. Steps 2.1 to 2.3
 were regrouped this way on Sep 26, sliced by the real line numbers.
 
