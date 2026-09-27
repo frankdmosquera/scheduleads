@@ -323,12 +323,43 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   date. Canada's holidays differ by province, which is why the province is
   stored. How the dates are produced depends on Open question 2. Seed both
   dev businesses with `CA` / `AB`, like every real tenant.
-  **Done when:** the public detail route for an Alberta business lists
-  Family Day on the third Monday of February and Canada Day on July 1; the
-  function called for a `CA` / `QC` business leaves Family Day out; a
-  one-off date on Canada Day removes it from that person's closed dates; and
-  a business with no country lists only its own closed dates. Both builds
-  pass.
+  **Plan, written 2026-09-27 (not agreed yet), five pieces:**
+  1. Blocker: the holiday source (Open question 2). Recommended
+     `date-holidays` in `backend` only: every province, Easter days, kept
+     current by its maintainers; about 11 MB and four helper packages.
+  2. Only statutory holidays (the source's `public` type) close booking.
+     Alberta's nine: New Year's Day, Family Day, Good Friday, Victoria Day,
+     Canada Day, Labour Day, Thanksgiving, Remembrance Day, Christmas Day.
+     Optional days (Easter Monday, Heritage Day) and observances stay open;
+     switching single holidays is item 12.
+  3. `backend/lib/bookable-hours/statutory-holidays.ts` (new, the only file
+     that knows the source) gives the holiday dates between two dates;
+     `applyBookableHoursRules` gains `holidayCountry` / `holidayRegion` and
+     adds them to the closed dates before one-off dates open any; a horizon
+     past New Year asks for both years. `resolveBookableHours` passes the
+     two columns along.
+  4. A province the source does not know throws, like a business row
+     missing a setting; no country means no holidays.
+  5. The seed sets `CA` / `AB` on new business rows and on an existing one
+     with no country, so no machine needs a rebuild.
+  **Done when:** saved tests on the rules with a fixed `now`: an Alberta
+  business closes Family Day (third Monday of February, Feb 16 in 2026),
+  Good Friday and Canada Day; in 2027, when February 1 is a Monday, Family
+  Day is Feb 15; a `CA` / `QC` business leaves Family Day out and closes
+  June 24; Easter Monday and Heritage Day stay open; a one-off date on Canada
+  Day opens it for that person only; a business with no country gets only
+  its own closed dates; a horizon past New Year gets both years; an unknown
+  province throws; planted faults make the right tests fail. By hand, today:
+  the public detail route lists Thanksgiving (Oct 12) and Remembrance Day
+  (Nov 11) for `painting-dev`, and also Christmas and New Year's Day for
+  `clinic-dev`; the seed run twice changes nothing the second time. If the
+  package is added, the lockfile gains only it and its helpers and the
+  frontend build does not contain it. All tests, both builds, lint and the
+  format check pass.
+  **Changed from the first Done when (2026-09-27):** it asked the public
+  route to show Family Day and Canada Day, but no business books that far
+  ahead (60 and 120 days from Sep 27 end Nov 26 and Jan 25), so those are
+  proved by saved tests with a fixed date.
 
 ## Files / areas
 
