@@ -351,7 +351,11 @@ pieces, each a green check, an unplanned one tagged "added"; then one blue
 **How it was proved** box holding two white cards: **Saved tests and checks
 by hand** (tests added, how they were proved able to fail, what was only
 proved by hand, and the "Passed." result of the Done when) and **Independent
-review** (its verdict, then a violet **Issues it found** block inside the
+review** (written like the tests card, Frank 2026-09-26: three labelled
+bullets, **What it always checks**, **What it did for this step** and
+**Earlier issues it closed**, then its verdict in the result box, then a
+violet **Issues it found** block, and once those are repaired a green block
+saying what was fixed and how it was proved. The issues sit inside the
 same card: every finding the independent review raised, in plain words, with
 its F-number and state; moved inside on Frank's call, 2026-09-26, because the
 issues are the review's answer, not a drawer of their own). The planned
