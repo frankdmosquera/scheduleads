@@ -363,9 +363,10 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
 
 ## Files / areas
 
-- `packages/shared/db/drizzle-schema.ts` - three tables
+- `packages/shared/db/booking-tables/` - three tables, one file each (split from
+  `drizzle-schema.ts` on 2026-09-27)
 - `packages/shared/migrations/` - one generated migration, plus the backfill
-- `packages/shared/zod-validation/availability/` - three validation
+- `packages/shared/zod-validation/availability-validation-schemas/` - three validation
   schemas, exported from `zod-validation/index.ts`
 - `packages/shared/scripts/seed-dev.ts`
 - `backend/lib/auth/auth-server.ts` (the first-person hook),

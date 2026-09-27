@@ -5,8 +5,8 @@
   "type": "module",
   "exports": {
     "./db": {
-      "types": "./dist/db/drizzle-schema.d.ts",
-      "default": "./dist/db/drizzle-schema.js"
+      "types": "./dist/db/index.d.ts",
+      "default": "./dist/db/index.js"
     },
     "./subscriptions": {
       "types": "./dist/subscriptions/subscription-limits.d.ts",

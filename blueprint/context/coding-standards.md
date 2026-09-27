@@ -99,9 +99,14 @@ own subpath export.
   `sign-in-email-validation-schema.ts`). Frank reads the import and knows what
   it is without opening anything
 - `packages/shared` is organised by kind, then area, then one file per
-  export: `zod-validation/auth/sign-in-email-validation-schema.ts`. Each kind
-  folder is one import (`@scheduleads-app/shared/zod-validation`, through its
-  `index.ts`). The Drizzle tables are `db/drizzle-schema.ts`. A helper both
+  export: `zod-validation/auth-validation-schemas/sign-in-email-validation-schema.ts`.
+  An area folder says what it holds even seen alone (Frank, 2026-09-27), so it
+  is named `<area>-validation-schemas/` or `<area>-tables/`, never a bare
+  `auth/`. Each kind folder is one import
+  (`@scheduleads-app/shared/zod-validation`, through its `index.ts`). The
+  Drizzle tables follow the same rule: one table per file,
+  `db/booking-tables/resource-table.ts`, re-exported by `db/index.ts` and
+  imported as `@scheduleads-app/shared/db`. A helper both
   apps use lives in `helpers/` (`toSlug`, imported from
   `@scheduleads-app/shared/helpers`), never inside `zod-validation/`, which
   holds only validation schemas
@@ -147,8 +152,8 @@ own subpath export.
 
 ## Database
 
-- Use Drizzle for all database operations. Schema lives in one file, not spread
-  across call sites.
+- Use Drizzle for all database operations. The schema lives only in
+  `packages/shared/db/`, one table per file, never spread across call sites.
 - Generate migrations with `drizzle-kit generate`, apply with `drizzle-kit migrate`.
   Do not use `push` against anything but a local scratch database.
 - Check the generated SQL before committing a migration. Drizzle will happily
