@@ -118,9 +118,9 @@
   }
 
   .shell {
-    max-width: 1180px;
+    max-width: calc(1180px + 1rem);
     margin: 0; /* on the left, not centred, so the page sits beside the chat */
-    padding: 0 22px 70px 1rem;
+    padding: 0 0 70px 1rem; /* no gap on the right: the content uses the width before it shrinks */
   }
 
   /* ---------- top bar ----------
@@ -1248,7 +1248,7 @@
   .drawer[data-kind="code"] > summary { background: color-mix(in srgb, #3994BC 12%, var(--surface)); color: var(--ink-2); }
   .drawer[data-kind="code"] > summary:hover { background: color-mix(in srgb, #3994BC 22%, var(--surface)); }
   .drawer[data-kind="code"][open] { border-color: color-mix(in srgb, #3994BC 45%, var(--surface)); }
-  .codefile { border: 1px solid var(--rule); border-radius: 5px; overflow: visible; background: var(--surface); }
+  .codefile { position: relative; z-index: 3; border: 1px solid var(--rule); border-radius: 5px; overflow: visible; background: var(--surface); } /* an open file stretches to the screen's right edge (script below) */
   .codefile > summary { border-radius: 4px; }
   .codefile + .codefile { margin-top: 6px; }
   .codefile > summary { cursor: pointer; list-style: none; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 8px 12px; font-size: 13px; }
@@ -1298,11 +1298,9 @@
   @media (max-width: 880px) { .ft-row { grid-template-columns: 1fr; } .ft-row > span:nth-child(2):empty { display: none; } }
   pre.code { margin: 0; padding: 10px 0; position: relative; z-index: 3; box-sizing: border-box; min-width: 100%; background: #121314; color: #BBBEBF; border: 1px solid #2A2B2C; border-radius: 8px; overflow-x: auto; font-family: Consolas, "Courier New", var(--mono); font-variant-ligatures: none; font-size: 12.5px; line-height: 1.6; tab-size: 2; } /* VS Code's own default font on Windows, and no ligatures, as in Frank's editor */
   pre.code code { background: none; padding: 0; font-size: inherit; word-break: normal; white-space: pre; display: block; }
-  pre.code.measuring code { width: max-content; } /* only while its longest line is measured */
   pre.code .ln { display: flex; padding-right: 14px; border-left: 3px solid transparent; }
   /* A line longer than the screen wraps at the screen's edge, under its own text, never under the number. */
   pre.code .ln .src { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-  pre.code.measuring .ln .src { white-space: pre; }
   pre.code .ln .n { flex: none; display: inline-block; width: 3.4em; padding-right: 1.1em; text-align: right; color: #858889; user-select: none; }
   pre.code .ln.added { background: rgba(52, 125, 57, 0.18); border-left-color: #72C892; }
   pre.code .ln.removed { background: rgba(201, 60, 55, 0.18); border-left-color: #F28772; }
@@ -9303,26 +9301,25 @@ describe("the login cookie is never allowed", () =&gt; {
 </script>
 
 <script>
-  // Code blocks widen to their longest line, up to the screen's right edge; a line longer
-  // than that wraps at the edge. Only open blocks are measured.
-  function widenCodeBlocks(root) {
+  // An open code file stretches from where it starts to the screen's right edge, so every
+  // file ends at the same place and a long line only wraps at the edge of the screen.
+  function widenCodeFiles(root) {
     var screenRight = document.documentElement.clientWidth - 16;
-    (root || document).querySelectorAll("pre.code").forEach(function (pre) {
-      pre.style.width = "";
-      if (!pre.offsetParent) return; // inside a closed drawer
-      pre.classList.add("measuring");
-      var natural = pre.querySelector("code").offsetWidth + 18;
-      pre.classList.remove("measuring");
-      if (natural <= pre.clientWidth) return;
-      pre.style.width = Math.min(natural, screenRight - pre.getBoundingClientRect().left) + "px";
+    var files = root && root.matches && root.matches(".codefile") ? [root] : [];
+    (root || document).querySelectorAll(".codefile").forEach(function (file) { files.push(file); });
+    files.forEach(function (file) {
+      file.style.width = "";
+      if (!file.open || !file.offsetParent) return; // closed, or inside a closed drawer
+      var room = screenRight - file.getBoundingClientRect().left;
+      if (room > file.offsetWidth) file.style.width = room + "px";
     });
   }
   document.addEventListener("toggle", function (event) {
-    if (event.target.open) widenCodeBlocks(event.target); // a drawer just opened
+    if (event.target.open) widenCodeFiles(event.target); // a file or a drawer holding files just opened
   }, true);
-  window.addEventListener("resize", function () { widenCodeBlocks(); });
-  window.addEventListener("code-coloured", function () { widenCodeBlocks(); });
-  widenCodeBlocks();
+  window.addEventListener("resize", function () { widenCodeFiles(); });
+  window.addEventListener("code-coloured", function () { widenCodeFiles(); });
+  widenCodeFiles();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>
