@@ -1228,7 +1228,10 @@
     .item { grid-template-columns: 28px minmax(0, 1fr); }
     .item-fold[open] > :not(summary) { margin-left: -38px; } /* 28px number column here */
     .item .pill { grid-column: 2; justify-self: start; margin-top: 4px; }
-    .topbar { position: static; padding: 10px 16px; }
+    /* iPad and phone: the bar stays sticky but slides away while you scroll down and comes
+       back the moment you scroll up, as on the Face and Body site (useScrollDirection). */
+    .topbar { position: sticky; padding: 10px 16px; transition: transform 0.3s ease; }
+    .topbar.is-hidden { transform: translateY(-100%); }
     .bar { flex-wrap: wrap; justify-content: flex-start; }
     .strip { gap: 12px 14px; }
     .cell { min-width: 24px; padding: 4px; font-size: 10px; }
@@ -9331,6 +9334,26 @@ describe("the login cookie is never allowed", () =&gt; {
   window.addEventListener("resize", function () { widenCodeFiles(); });
   window.addEventListener("code-coloured", function () { widenCodeFiles(); });
   widenCodeFiles();
+</script>
+<script>
+  // Hide-on-scroll for the top bar at iPad and phone widths, ported from Face and Body's
+  // useScrollDirection: shown at the top of the page and while scrolling up, hidden while
+  // scrolling down. Desktop widths keep the bar always visible.
+  (function () {
+    var bar = document.querySelector(".topbar");
+    var narrow = window.matchMedia("(max-width: 880px)");
+    var threshold = 10;
+    var lastY = window.scrollY;
+    window.addEventListener("scroll", function () {
+      var y = window.scrollY;
+      var visible = !narrow.matches || y < threshold || y < lastY;
+      bar.classList.toggle("is-hidden", !visible);
+      lastY = y;
+    }, { passive: true });
+    // Keyboard focus landing in a hidden bar brings it back, so Tab never targets an invisible link.
+    bar.addEventListener("focusin", function () { bar.classList.remove("is-hidden"); });
+    narrow.addEventListener("change", function () { bar.classList.remove("is-hidden"); });
+  })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>
