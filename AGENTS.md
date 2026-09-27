@@ -67,12 +67,15 @@ later would cost a migration; splitting now costs one subdomain.
 
 **Type safety front to back is Hono RPC**, not tRPC: the backend exports
 `AppType`, the frontend uses `hc<AppType>` from `hono/client`, which ships with
-Hono. No extra dependency, no codegen. It is not wired yet and that is
-deliberate - feature 1's only frontend-to-backend traffic goes through the
-Better Auth client, which is already typed. It arrives at item 2 with the first
-real route, and must be **proved** there by breaking a route on purpose and
-confirming the frontend stops compiling. The first repo declared `AppType` and
-never consumed it once; do not inherit that claim unproven.
+Hono. No extra dependency, no codegen. Wired in step 2.5 (2026-09-27) and
+**proved** there: a renamed route and a renamed field each made
+`npm run build --workspace=frontend` fail with a type error, and it passed
+again once restored. The backend writes the routes' declarations
+(`build:types`, run by the frontend's `predev` and `prebuild`, because Vercel
+builds only the frontend), and `frontend/lib/api-client.ts` builds two clients
+from one `AppType`: one sends the login cookie, the public one never does. The
+first repo declared `AppType` and never consumed it once; every new route is
+called through these clients, never a bare `fetch`.
 
 **Environment variables.** One gitignored `.env` at the repo root in
 development, because both `backend` and `packages/shared` read it. In

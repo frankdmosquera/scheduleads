@@ -49,8 +49,14 @@ its `tsconfig.json` excludes `dist` and the tests so nothing else compiles.
   `@/src/lib/utils`
 
 `packages/shared` holds what both sides need: the Drizzle schema and
-migrations, the Zod schemas, the API contract (the Hono `AppType`) and the
-crypto. It compiles to `dist/` and its subpath exports point there, not at
+migrations, the Zod schemas and the crypto. The API contract, the Hono
+`AppType`, is not in it: it is the type of the app in `backend/app.ts`, and
+shared would have to import the backend to hold it. The backend writes its
+declarations (`npm run build:types --workspace=backend`, into `dist/types/`)
+and exposes them as the types-only entry `backend/app-type`; the frontend
+depends on the workspace (`"backend": "*"`) and imports it with
+`import type`. The frontend's `predev` and `prebuild` write them fresh,
+because Vercel builds only the frontend. It compiles to `dist/` and its subpath exports point there, not at
 source. The two workspaces disagree about extensions - the backend's NodeNext
 resolution wants `./file.js` where the frontend's bundler wants none - and
 building the package sidesteps that instead of forcing one of them to bend.
@@ -151,9 +157,15 @@ own subpath export.
 
 - The dashboard is an app behind a login, not a public site: nothing in it
   needs SEO. Data is fetched in the browser, from client components, through
-  the Hono client typed by the `AppType` in `packages/shared`, and React Query
-  owns caching and refetching once it arrives. A Server Action proxy is used
-  only when a call must stay off the browser
+  the Hono client typed by the backend's `AppType`, and React Query owns
+  caching and refetching once it arrives. A Server Action proxy is used only
+  when a call must stay off the browser
+- `frontend/lib/api-client.ts` holds two clients from that one type, matching
+  the backend's two CORS rules: `dashboardApiClient` sends the login cookie
+  (dashboard routes), `publicApiClient` never does (`/public/*`, whose rule
+  refuses credentials, so the browser would drop the answer). A call to our
+  own API goes through one of them, never through a bare `fetch` with a
+  hand-written response type
 - No data fetching in server components, and no Next caching features
   (`"use cache"`, `revalidate`, `force-static`, `fetch` cache options). Next
   only serves the page shell. A server-side fetch can be run once at

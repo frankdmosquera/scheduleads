@@ -1,11 +1,17 @@
 {
   "name": "backend",
   "type": "module",
+  "exports": {
+    "./app-type": {
+      "types": "./dist/types/app.d.ts"
+    }
+  },
   "scripts": {
     "predev": "tsc -p ../packages/shared/tsconfig.build.json",
     "dev": "tsx watch --env-file-if-exists=../.env server.ts",
     "prebuild": "tsc -p ../packages/shared/tsconfig.build.json",
     "build": "tsc",
+    "build:types": "tsc -p tsconfig.types.json",
     "start": "node --env-file-if-exists=../.env dist/server.js",
     "pretest": "tsc -p ../packages/shared/tsconfig.build.json",
     "test": "vitest run",

@@ -268,23 +268,50 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   caught; the browser half checked by hand. No plan without booking exists
   until feature 23, so the test uses an unrecognised plan in its place.
 
-- [ ] **2.5 The typed seam, proved.**
-  Declarations for `AppType` are emitted by the backend build and exposed as
-  a type-only entry of the `backend` workspace; the frontend depends on the
-  workspace (`"backend": "*"`) and on `hono`, for `hono/client` (needs a yes,
-  Open question 1). `frontend/lib/api-client.ts` builds one
-  `hc<AppType>(API_URL)`; `fetchMe` moves onto it and `MeType` becomes a
-  type inferred from the route; the dashboard home lists the business's
-  active booking links from `GET /public/:slug/booking-links`, with its
-  loading, empty and unreachable states. Correct the `AppType` line in
-  `coding-standards.md`.
-  **Done when:** signed in as `admin@example.com`, the home lists
-  `painting-dev`'s three links, and the empty state shows when they are
-  switched off for a moment (no dev business starts empty since the 2.3
-  cast was approved); then the list route is renamed on purpose and
-  `npm run build --workspace=frontend` **fails with a type error** in
-  `api-client.ts`, and passes again once restored. Paste both outputs into
-  the step's log. Lint passes.
+- [x] **2.5 The typed seam, proved.**
+  Plan written and agreed Sep 27, both parts (piece 1, the blocker, answered
+  yes). **Built 2026-09-27**, all five pieces as planned, plus `AGENTS.md`'s
+  "not wired yet" line updated. By hand: the three links, the empty state,
+  can't reach and its recovery, `/me` as before. Broken on purpose: the
+  renamed route failed in `api-client.ts`, the renamed field in
+  `booking-links-list.tsx`; both passed restored. Not pressed by hand: the
+  list's own Try again (its state was seen once).
+  1. `hono ^4.13.8` in `frontend` for `hono/client` (needs a yes, Open
+     question 1), plus the workspace link `"backend": "*"`.
+  2. `backend/tsconfig.types.json` writes only the routes' declarations into
+     `backend/dist/types/`; `backend/package.json` gets `build:types` and a
+     types-only export `backend/app-type`. The **frontend's** `predev` and
+     `prebuild` run it after the shared build. Corrected Sep 27: the spec
+     said "emitted by the backend build", but Vercel builds only the
+     frontend, and old declarations left in `dist/` would let a renamed
+     route pass the build. Declaration emit checked Sep 27: clean, status
+     codes included.
+  3. `frontend/lib/api-client.ts` builds two clients from one `AppType`:
+     `dashboardApiClient` (sends the cookie) and `publicApiClient` (never
+     does). Corrected Sep 27 from "one client": 2.4's public CORS rule has
+     `credentials: false`, so a credentialed request to `/public/*` is
+     blocked by the browser. `fetchMe` moves onto the dashboard client;
+     `MeType` becomes the inferred type of `/me`'s 200 answer.
+  4. `frontend/components/booking-links/booking-links-list.tsx` (new) takes
+     the slug from `/me` and reads `GET /public/:slug/booking-links` once on
+     page load: loading, list (name and length, name order), empty, and
+     unreachable with Try again. `page.tsx` renders it under the business
+     card.
+  5. Correct both `AppType` lines in `coding-standards.md` (File
+     Organization and Data Fetching), adding the two-clients rule.
+  Not in this step, said out loud: React Query (Out of scope), and the dev
+  server does not pick up a renamed route's types until restarted.
+  **Done when:** by hand, signed in as `admin@example.com`, the home lists
+  `painting-dev`'s three links in name order; switched off for a moment in
+  the local database, the empty state shows; with the API stopped, the
+  unreachable state shows and Try again recovers; `/me` shows the business
+  card as before and signed out still redirects to sign in. Then, broken on
+  purpose: the list route renamed makes `npm run build --workspace=frontend`
+  **fail with a type error** in `api-client.ts`, and `durationMinutes`
+  renamed makes it fail where the list reads it; each passes once restored.
+  All four outputs go on the step's page. Saved tests, both builds and lint
+  pass. No new saved tests: the frontend has no test runner, and adding
+  one needs a yes.
 
 - [ ] **2.6 Statutory holidays.**
   Resolve `holidayCountry` (ISO 3166-1 alpha-2) and `holidayRegion` (the
@@ -522,10 +549,9 @@ build for the typed seam. Final gate: the tests,
 
 ## Open questions
 
-1. **Add `hono` to the frontend's dependencies?** `hono/client` ships inside
-   the `hono` package, which the backend already uses; the frontend imports
-   from it, so it must be declared there, at the same version. No new
-   library enters the repo. Needed by 2.5.
+1. **Answered 2026-09-27: yes.** `hono ^4.13.8` and `"backend": "*"` added
+   to `frontend/package.json`; the lockfile gained only those two lines, one
+   `hono` copy is shared, and `backend` links to the workspace folder.
 2. **Where do statutory holidays come from?**
    Recommended: the `date-holidays` package. It covers Canada by province,
    including Family Day in Alberta, and Easter-based dates, and it is

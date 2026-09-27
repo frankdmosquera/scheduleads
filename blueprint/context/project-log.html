@@ -1340,10 +1340,10 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.4 done, 2.5&#39;s plan next</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.5 built, its review next</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
-                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="done" title="2.4 The public routes - done">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" data-state="next" title="2.5 The typed seam, proved by breaking it - plan next">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
+                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="done" title="2.4 The public routes - done">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" data-state="next" title="2.5 The typed seam, proved by breaking it - built, review next">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" title="2.6 Statutory holidays">2.6</a></span>
                 <a class="cell" href="#item-3" data-goto="item-3" title="3 Calendar connection">3</a>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
@@ -1587,9 +1587,10 @@
         <h2>Where things live</h2>
         <div class="rows">
             <div class="row"><div class="row-key"><code>frontend/app/</code></div><div class="row-val">The screens: sign in, create a business, the dashboard home.</div></div>
-            <div class="row"><div class="row-key"><code>frontend/components/</code></div><div class="row-val">Pieces of screens. <code>ui/</code> is shadcn's.</div></div>
-            <div class="row"><div class="row-key"><code>frontend/lib/</code></div><div class="row-val"><code>auth-client.ts</code> (Better Auth's routes), <code>api-client.ts</code> (our own routes), <code>utils.ts</code> (shadcn's helper, a name its tool expects).</div></div>
+            <div class="row"><div class="row-key"><code>frontend/components/</code></div><div class="row-val">Pieces of screens. <code>ui/</code> is shadcn's; <code>booking-links/</code> holds the home's list of booking links (step 2.5).</div></div>
+            <div class="row"><div class="row-key"><code>frontend/lib/</code></div><div class="row-val"><code>auth-client.ts</code> (Better Auth's routes), <code>api-client.ts</code> (our own routes, through two clients typed from the backend's <code>AppType</code>: one sends the login cookie, the public one never does; step 2.5), <code>utils.ts</code> (shadcn's helper, a name its tool expects).</div></div>
             <div class="row"><div class="row-key"><code>backend/app.ts</code></div><div class="row-val">Every route the API answers, as one chain, and <code>AppType</code>, the frontend's typed view of them (step 2.5). Importing it starts nothing.</div></div>
+            <div class="row"><div class="row-key"><code>backend/tsconfig.types.json</code></div><div class="row-val">Writes only the routes' type into <code>dist/types/</code>, exposed to the frontend as <code>backend/app-type</code>. Run by the frontend's own build, since Vercel never runs the backend's (step 2.5).</div></div>
             <div class="row"><div class="row-key"><code>backend/server.ts</code></div><div class="row-val">Only starts the API. Split from <code>app.ts</code> in step 2.4.</div></div>
             <div class="row"><div class="row-key"><code>backend/routes/</code></div><div class="row-val">Groups of routes, one file each. Today one: <code>public-booking-links-routes.ts</code>, the routes a stranger can call.</div></div>
             <div class="row"><div class="row-key"><code>backend/middleware/</code></div><div class="row-val">Checks that run before a route, one per file: <code>auth-middleware/</code> (who is signed in, may they do this), <code>dashboard-middleware/</code> (cookie rule, never cache), <code>subscription-middleware/</code> (what the plan unlocks), <code>public-middleware/</code> (who may read the public routes: listed sites, never the cookie).</div></div>
@@ -1611,8 +1612,8 @@
         <div class="rows">
             <div class="row"><div class="row-key"><code>GET /health</code></div><div class="row-val">Anyone. Railway asks it whether the API is up. Touches no database on purpose. <code>backend/app.ts</code>.</div></div>
             <div class="row"><div class="row-key"><code>GET, POST /api/auth/*</code></div><div class="row-val">Better Auth owns everything under here: send the login code, sign in, sign out, create a business (platform admin only). Called by <code>frontend/lib/auth-client.ts</code>. Runs <code>dashboardCorsMiddleware</code> (the cookie, dashboard origin only) and <code>dashboardNoStoreMiddleware</code>.</div></div>
-            <div class="row"><div class="row-key"><code>GET /me</code></div><div class="row-val">Signed in. Who you are, your business, your role, and what your plan unlocks. Called by <code>fetchMe</code> in <code>frontend/lib/api-client.ts</code>. Runs the two dashboard middleware, then <code>requireOrganizationMiddleware</code> and <code>requireKnownSubscriptionMiddleware</code>.</div></div>
-            <div class="row"><div class="row-key"><code>GET /public/:slug/booking-links</code></div><div class="row-val">Anyone, never the cookie. A business's active services, by name, found by its slug. <code>backend/routes/public-booking-links-routes.ts</code>. Runs <code>publicCorsMiddleware</code> (the sites in <code>WIDGET_ORIGINS</code> plus the dashboard, <code>GET</code> only). Since step 2.4.</div></div>
+            <div class="row"><div class="row-key"><code>GET /me</code></div><div class="row-val">Signed in. Who you are, your business, your role, and what your plan unlocks. Called by <code>fetchMe</code> in <code>frontend/lib/api-client.ts</code>, through the dashboard client, typed from the route since step 2.5. Runs the two dashboard middleware, then <code>requireOrganizationMiddleware</code> and <code>requireKnownSubscriptionMiddleware</code>.</div></div>
+            <div class="row"><div class="row-key"><code>GET /public/:slug/booking-links</code></div><div class="row-val">Anyone, never the cookie. A business's active services, by name, found by its slug. <code>backend/routes/public-booking-links-routes.ts</code>. Runs <code>publicCorsMiddleware</code> (the sites in <code>WIDGET_ORIGINS</code> plus the dashboard, <code>GET</code> only). Since step 2.4. Called by the dashboard's home through the public client since step 2.5; by client sites from feature 9.</div></div>
             <div class="row"><div class="row-key"><code>GET /public/:slug/booking-links/:bookingLinkId</code></div><div class="row-val">Anyone, never the cookie. One service and the business's bookable hours, the service looked for only inside that business. The same 404 for every "not here" (no such business, no booking in its plan, no hours yet, no such service, switched off, another business's); 400 for a malformed address. Same file and CORS rule. Since step 2.4.</div></div>
         </div>
       </section>
@@ -6212,7 +6213,7 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
               </div>
 
               <details class="drawer" data-kind="plan" open>
-                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.4 done and reviewed &middot; 2.1 to 2.6</span></summary>
+                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.4 done and reviewed &middot; 2.5 built, review next &middot; 2.1 to 2.6</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
                   <div class="item-steps">
@@ -8538,21 +8539,430 @@ describe("the login cookie is never allowed", () =&gt; {
                       </div>
                     </details>
 
-                    <details class="rstep" id="step-2-5" data-state="planned">
-                      <summary><span class="sn">2.5</span><span class="sm"></span><span>The typed seam, proved by breaking it</span><span class="ss">Planned</span></summary>
+                    <details class="rstep" id="step-2-5" data-state="active" open>
+                      <summary><span class="sn">2.5</span><span class="sm"></span><span>The typed seam, proved by breaking it</span><span class="ss">Built &middot; review next</span></summary>
                       <div class="rstep-body">
-                        <p class="rstep-what">The frontend stops guessing the API's shapes. It calls the backend through a client typed from the backend's own routes, so renaming or changing a route breaks the frontend build instead of breaking a screen for a customer. The first repo declared this and never used it once; this step only closes on a build that fails on purpose.</p>
+                        <p class="rstep-what">Primo's owner signs in and the home lists the services customers can book. The frontend gets them through a client typed from the backend's own routes, so if someone renames a route or changes an answer, the frontend build fails instead of the owner's screen breaking. The first repo declared this and never used it once, so this step only closes on a build that fails on purpose. Planned in two parts, below: what it builds, then the checks that will prove it done. Piece 1 was one. Both parts agreed with you, Sep 27.</p>
                         <details class="drawer" data-kind="plan">
-                          <summary>The plan <span class="tag-drift">as written before starting &middot; 5 pieces</span></summary>
+                          <summary>The plan <span class="tag-drift">two parts &middot; both agreed Sep 27 &middot; built Sep 27</span></summary>
                           <div class="drawer-body">
+                            <div class="plan-part" data-part="build">
+                              <div class="plan-part-head"><span class="plan-part-title">Part 1 &middot; What it builds</span><span class="plan-part-state">agreed Sep 27 &middot; built</span></div>
+                              <details class="piece-fig"><summary>The whole step, as one visit to the dashboard</summary><figure class="fig"><svg viewBox="0 0 680 480" role="img"><title>Step 2.5: the owner opens the dashboard</title><desc>The owner opens the dashboard. page.tsx asks GET /me through the dashboard client, which sends the login cookie, and learns the business is painting-dev. The new list asks GET /public/:slug/booking-links through the public client, which never sends the cookie, and shows the links, or an empty state, or cannot reach the API. At build time, the frontend checks every call against the backend's AppType.</desc><defs><marker id="s25flow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><text class="ts" x="170" y="12" text-anchor="middle" dominant-baseline="central">frontend</text><text class="ts" x="510" y="12" text-anchor="middle" dominant-baseline="central">backend</text><g><rect x="40" y="24" width="260" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="170" y="42" text-anchor="middle" dominant-baseline="central">Primo's owner opens the home</text><text class="ts" x="170" y="62" text-anchor="middle" dominant-baseline="central">already signed in</text></g><line x1="170" y1="74" x2="170" y2="102" class="arr" marker-end="url(#s25flow)"/><g><rect x="40" y="104" width="260" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="170" y="124" text-anchor="middle" dominant-baseline="central">page.tsx</text><text class="ts" x="170" y="144" text-anchor="middle" dominant-baseline="central">who is signed in, which business</text></g><g><rect x="380" y="104" width="260" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="510" y="124" text-anchor="middle" dominant-baseline="central">GET /me</text><text class="ts" x="510" y="144" text-anchor="middle" dominant-baseline="central">dashboard client, sends the cookie</text></g><line x1="300" y1="122" x2="378" y2="122" class="arr" marker-end="url(#s25flow)"/><line x1="380" y1="144" x2="302" y2="144" class="arr" marker-end="url(#s25flow)"/><text class="ts" x="340" y="176" text-anchor="middle" dominant-baseline="central">slug: painting-dev</text><line x1="170" y1="160" x2="170" y2="198" class="arr" marker-end="url(#s25flow)"/><g><rect x="40" y="200" width="260" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="170" y="220" text-anchor="middle" dominant-baseline="central">booking-links-list.tsx</text><text class="ts" x="170" y="240" text-anchor="middle" dominant-baseline="central">new: asks for the business's links</text></g><g><rect x="380" y="200" width="260" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="510" y="220" text-anchor="middle" dominant-baseline="central">GET /public/:slug/booking-links</text><text class="ts" x="510" y="240" text-anchor="middle" dominant-baseline="central">public client, never the cookie</text></g><line x1="300" y1="218" x2="378" y2="218" class="arr" marker-end="url(#s25flow)"/><line x1="380" y1="240" x2="302" y2="240" class="arr" marker-end="url(#s25flow)"/><line x1="170" y1="256" x2="170" y2="294" class="arr" marker-end="url(#s25flow)"/><g><rect x="40" y="296" width="260" height="56" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="170" y="316" text-anchor="middle" dominant-baseline="central">The list on the home</text><text class="ts" x="170" y="336" text-anchor="middle" dominant-baseline="central">or empty, or can't reach the API</text></g><line x1="510" y1="256" x2="510" y2="394" class="arr" stroke-dasharray="4 3" marker-end="url(#s25flow)"/><g class="c-purple"><rect x="40" y="396" width="600" height="56" rx="8"/><text class="th" x="340" y="416" text-anchor="middle" dominant-baseline="central">At build time: AppType, from backend/app.ts</text><text class="ts" x="340" y="436" text-anchor="middle" dominant-baseline="central">the frontend build checks every call above against the backend's real routes</text></g><text class="ts" x="340" y="470" text-anchor="middle" dominant-baseline="central">Solid: a request while the page runs. Dashed: types read when the frontend is built.</text></svg><figcaption>The whole step. Each piece below is one part of this picture.</figcaption></figure></details>
+                              <ul class="substeps">
+                              <li><b>1. Add <code>hono</code> to the frontend.</b> <span class="piece-state" data-state="answered">blocker &middot; answered yes, Sep 27</span> The typed client, <code>hono/client</code>, ships inside the <code>hono</code> package the backend already uses. The frontend imports it, so the frontend has to declare it too: <code>hono ^4.13.8</code>, the backend's exact version. No new library comes into the repo and nothing is downloaded: npm already keeps one copy for the whole repo. In the same file, <code>"backend": "*"</code> links the frontend to the backend folder so it can read the routes' type (piece 2); that is a link inside the repo, not a package.
+                                <details class="piece-fig"><summary>One copy, two declarations</summary><figure class="fig"><svg viewBox="0 0 680 250" role="img"><title>hono declared in the frontend, one copy on disk</title><desc>The backend already declares hono 4.13.8. The frontend would declare the same version. Both point at the one copy npm already keeps for the whole repo.</desc><defs><marker id="s25hono" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="40" y="20" width="260" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="170" y="40" text-anchor="middle" dominant-baseline="central">backend/package.json</text><text class="ts" x="170" y="60" text-anchor="middle" dominant-baseline="central">hono ^4.13.8, since feature 1</text></g><g><rect x="380" y="20" width="260" height="56" rx="8" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="th" x="510" y="40" text-anchor="middle" dominant-baseline="central">frontend/package.json</text><text class="ts" x="510" y="60" text-anchor="middle" dominant-baseline="central">hono ^4.13.8, your yes</text></g><line x1="170" y1="76" x2="290" y2="146" class="arr" marker-end="url(#s25hono)"/><line x1="510" y1="76" x2="390" y2="146" class="arr" style="stroke:var(--pending)" marker-end="url(#s25hono)"/><g><rect x="190" y="148" width="300" height="56" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="340" y="168" text-anchor="middle" dominant-baseline="central">node_modules/hono 4.13.8</text><text class="ts" x="340" y="188" text-anchor="middle" dominant-baseline="central">one copy, already on disk</text></g><text class="ts" x="340" y="232" text-anchor="middle" dominant-baseline="central">Without it the typed client cannot exist, and nothing in this step can be built.</text></svg><figcaption>Declaring it is what lets the frontend import it honestly. Importing it undeclared would work today by luck and break the day npm lays the folders out differently.</figcaption></figure></details></li>
+                              <li><b>2. The backend hands the frontend its routes' type.</b> A small <code>backend/tsconfig.types.json</code> writes only the type of every route (no code) into <code>backend/dist/types/</code>, and the backend's <code>package.json</code> exposes it as <code>backend/app-type</code>, types only. The frontend's <code>predev</code> and <code>prebuild</code> write it fresh every time, because Vercel builds only the frontend and must check it against today's routes, not an old copy.
+                                <details class="piece-fig"><summary>The files it touches</summary><div class="ftree">
+<div class="ft-row ft-dir" style="--d:0"><span class="ft-name">backend/</span><span></span><span class="ft-what"></span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">tsconfig.types.json</span><span class="ft-tag" data-change="new">new</span><span class="ft-what">Writes only the routes' type into <code>dist/types/</code>. Checked on Sep 27: the backend emits it cleanly, status codes included.</span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">package.json</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">A <code>build:types</code> script, and one types-only entry, <code>backend/app-type</code>. No backend code can be imported through it.</span></div>
+<div class="ft-row ft-dir" style="--d:0"><span class="ft-name">frontend/</span><span></span><span class="ft-what"></span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">package.json</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what"><code>predev</code> and <code>prebuild</code> also write the backend's types, after the shared package. Plus piece 1's two lines.</span></div>
+</div></details>
+                                <details class="piece-fig"><summary>Why the frontend writes them fresh</summary><figure class="fig"><svg viewBox="0 0 680 230" role="img"><title>Old types would hide a renamed route</title><desc>If the types were written once and left in dist, a renamed route would leave the old types behind and the frontend build would pass, proving nothing. Written fresh by every frontend build, the renamed route makes the build fail, as it should.</desc><defs><marker id="s25fresh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="40" y="24" width="180" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="130" y="44" text-anchor="middle" dominant-baseline="central">Route renamed</text><text class="ts" x="130" y="64" text-anchor="middle" dominant-baseline="central">in the backend</text></g><line x1="220" y1="52" x2="248" y2="52" class="arr" marker-end="url(#s25fresh)"/><g><rect x="250" y="24" width="180" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="340" y="44" text-anchor="middle" dominant-baseline="central">Old types left</text><text class="ts" x="340" y="64" text-anchor="middle" dominant-baseline="central">written once, never again</text></g><line x1="430" y1="52" x2="458" y2="52" class="arr" style="stroke:var(--alert)" marker-end="url(#s25fresh)"/><g><rect x="460" y="24" width="180" height="56" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="550" y="44" text-anchor="middle" dominant-baseline="central">Build passes</text><text class="ts" x="550" y="64" text-anchor="middle" dominant-baseline="central">proves nothing</text></g><g><rect x="40" y="120" width="180" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="130" y="140" text-anchor="middle" dominant-baseline="central">Route renamed</text><text class="ts" x="130" y="160" text-anchor="middle" dominant-baseline="central">in the backend</text></g><line x1="220" y1="148" x2="248" y2="148" class="arr" marker-end="url(#s25fresh)"/><g><rect x="250" y="120" width="180" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="140" text-anchor="middle" dominant-baseline="central">Types written fresh</text><text class="ts" x="340" y="160" text-anchor="middle" dominant-baseline="central">by every frontend build</text></g><line x1="430" y1="148" x2="458" y2="148" class="arr" marker-end="url(#s25fresh)"/><g><rect x="460" y="120" width="180" height="56" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="550" y="140" text-anchor="middle" dominant-baseline="central">Build fails</text><text class="ts" x="550" y="160" text-anchor="middle" dominant-baseline="central">as it should</text></g><text class="ts" x="340" y="208" text-anchor="middle" dominant-baseline="central">Top: what the spec's first wording allowed. Bottom: this plan.</text></svg><figcaption>Found while planning: the spec said "emitted by the backend build", but Vercel never runs the backend build. The spec is corrected with this step.</figcaption></figure></details></li>
+                              <li><b>3. One typed client file, two clients.</b> <code>frontend/lib/api-client.ts</code> builds both from the same <code>AppType</code>: <code>dashboardApiClient</code> sends the login cookie, <code>publicApiClient</code> never does, matching the backend's two CORS rules. <code>fetchMe</code> moves onto the dashboard client and the hand-written <code>MeType</code> goes: it becomes the type of what <code>/me</code> really answers.
+                                <details class="piece-fig"><summary>Two clients, two rules</summary><figure class="fig"><svg viewBox="0 0 680 260" role="img"><title>Two clients matching the two CORS rules</title><desc>api-client.ts holds dashboardApiClient, which sends the cookie to /me and Better Auth under the dashboard rule, and publicApiClient, which never sends it, to /public under the public rule. Sending the cookie to /public would be blocked by the browser.</desc><defs><marker id="s25two" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="40" y="20" width="270" height="190" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="175" y="44" text-anchor="middle" dominant-baseline="central">lib/api-client.ts</text><text class="ts" x="175" y="64" text-anchor="middle" dominant-baseline="central">both from the same AppType</text></g><g><rect x="60" y="86" width="230" height="46" rx="6" style="fill:var(--surface);stroke:var(--fig-teal)"/><text class="th" x="175" y="102" text-anchor="middle" dominant-baseline="central">dashboardApiClient</text><text class="ts" x="175" y="120" text-anchor="middle" dominant-baseline="central">sends the cookie</text></g><g><rect x="60" y="146" width="230" height="46" rx="6" style="fill:var(--surface);stroke:var(--fig-teal)"/><text class="th" x="175" y="162" text-anchor="middle" dominant-baseline="central">publicApiClient</text><text class="ts" x="175" y="180" text-anchor="middle" dominant-baseline="central">never the cookie</text></g><g><rect x="390" y="82" width="250" height="54" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="515" y="100" text-anchor="middle" dominant-baseline="central">dashboard rule</text><text class="ts" x="515" y="120" text-anchor="middle" dominant-baseline="central">/me, cookie allowed</text></g><g><rect x="390" y="142" width="250" height="54" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="515" y="160" text-anchor="middle" dominant-baseline="central">public rule</text><text class="ts" x="515" y="180" text-anchor="middle" dominant-baseline="central">/public/*, cookie refused</text></g><line x1="290" y1="109" x2="388" y2="109" class="arr" marker-end="url(#s25two)"/><line x1="290" y1="169" x2="388" y2="169" class="arr" marker-end="url(#s25two)"/><text class="ts" x="340" y="238" text-anchor="middle" dominant-baseline="central">One client with the cookie on everything would be blocked by the browser on /public/*.</text></svg><figcaption>A change from the spec, which said one client: found while planning, because 2.4's public rule refuses any request that carries the cookie. Two named clients make the choice visible at every call.</figcaption></figure></details></li>
+                              <li><b>4. The home lists the business's booking links.</b> A new <code>frontend/components/booking-links/booking-links-list.tsx</code> takes the business's slug from <code>/me</code> and asks <code>GET /public/:slug/booking-links</code>. Four states: loading, the list (each link's name and length, in name order), empty, and can't reach the API with Try again. <code>page.tsx</code> shows it under the business card. It reads once when the page opens.
+                                <details class="piece-fig"><summary>The four states</summary><figure class="fig"><svg viewBox="0 0 680 300" role="img"><title>The booking links list in its four states</title><desc>Loading shows a one-line message. The list shows Colour consultation 30 min, Exterior estimate 45 min, Interior estimate 60 min. Empty says no booking links are switched on. Can't reach says the API is not responding, with a Try again button.</desc><g><rect x="40" y="20" width="290" height="120" rx="8" style="fill:var(--surface);stroke:var(--rule)"/><text class="ts" x="56" y="40" dominant-baseline="central" style="fill:var(--ink-3)">loading</text><text class="th" x="56" y="66" dominant-baseline="central">Booking links</text><text class="ts" x="56" y="94" dominant-baseline="central">Loading your booking links…</text></g><g><rect x="350" y="20" width="290" height="120" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="ts" x="366" y="40" dominant-baseline="central" style="fill:var(--ink-3)">the list</text><text class="th" x="366" y="62" dominant-baseline="central">Booking links</text><text class="ts" x="366" y="86" dominant-baseline="central">Colour consultation</text><text class="ts" x="624" y="86" text-anchor="end" dominant-baseline="central">30 min</text><text class="ts" x="366" y="106" dominant-baseline="central">Exterior estimate</text><text class="ts" x="624" y="106" text-anchor="end" dominant-baseline="central">45 min</text><text class="ts" x="366" y="126" dominant-baseline="central">Interior estimate</text><text class="ts" x="624" y="126" text-anchor="end" dominant-baseline="central">60 min</text></g><g><rect x="40" y="160" width="290" height="120" rx="8" style="fill:var(--surface);stroke:var(--rule)"/><text class="ts" x="56" y="180" dominant-baseline="central" style="fill:var(--ink-3)">empty</text><text class="th" x="56" y="206" dominant-baseline="central">Booking links</text><text class="ts" x="56" y="234" dominant-baseline="central">None switched on yet. Customers</text><text class="ts" x="56" y="254" dominant-baseline="central">can't book online until one is.</text></g><g><rect x="350" y="160" width="290" height="120" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="ts" x="366" y="180" dominant-baseline="central" style="fill:var(--ink-3)">can't reach the API</text><text class="th" x="366" y="206" dominant-baseline="central">Booking links</text><text class="ts" x="366" y="232" dominant-baseline="central">The API is not responding.</text><rect x="366" y="244" width="90" height="26" rx="5" style="fill:var(--surface);stroke:var(--alert)"/><text class="ts" x="411" y="257" text-anchor="middle" dominant-baseline="central">Try again</text></g></svg><figcaption>The owner sees what customers can book, in the same order the public route gives them. Nothing here edits a link; that is feature 12.</figcaption></figure></details></li>
+                              <li><b>5. The coding standard corrected.</b> <code>coding-standards.md</code> says <code>AppType</code> lives in <code>packages/shared</code>, in two places. It lives in the backend: shared would have to import the backend to hold it, which turns the dependency upside down. Both lines rewritten, with the two-clients rule from piece 3.
+                                <details class="piece-fig"><summary>Where AppType lives</summary><figure class="fig"><svg viewBox="0 0 680 210" role="img"><title>AppType lives in the backend</title><desc>The standard says packages/shared holds AppType, which would need shared to import backend, the wrong way round. The fix: the backend holds it and the frontend reads it, types only.</desc><defs><marker id="s25std" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><text class="ts" x="170" y="16" text-anchor="middle" dominant-baseline="central">the standard today</text><text class="ts" x="510" y="16" text-anchor="middle" dominant-baseline="central">after this step</text><g><rect x="40" y="30" width="260" height="50" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="170" y="55" text-anchor="middle" dominant-baseline="central">packages/shared holds AppType</text></g><line x1="170" y1="80" x2="170" y2="124" class="arr" style="stroke:var(--alert)" marker-end="url(#s25std)"/><text class="ts" x="180" y="102" dominant-baseline="central">would import</text><g><rect x="40" y="126" width="260" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="170" y="151" text-anchor="middle" dominant-baseline="central">backend</text></g><g><rect x="380" y="30" width="260" height="50" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="510" y="55" text-anchor="middle" dominant-baseline="central">backend holds AppType</text></g><line x1="510" y1="80" x2="510" y2="124" class="arr" stroke-dasharray="4 3" marker-end="url(#s25std)"/><text class="ts" x="520" y="102" dominant-baseline="central">types only</text><g><rect x="380" y="126" width="260" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="510" y="151" text-anchor="middle" dominant-baseline="central">frontend</text></g><text class="ts" x="340" y="198" text-anchor="middle" dominant-baseline="central">Shared keeps what both sides need and neither owns: tables, form checks, plans.</text></svg><figcaption>The standard Hono arrangement, and what the Decisions drawer already records.</figcaption></figure></details></li>
+                              </ul>
+                              <p class="rstep-what"><strong>Left out on purpose, said out loud:</strong> React Query. The list reads once when the page opens; the plan brings React Query with the first screen that needs caching, so this step fetches without it. And in development, renaming a route while both servers run does not reach the frontend's types until it restarts; the build is the check, not the dev server.</p>
+                            </div>
+                            <div class="plan-part" data-part="proof">
+                              <div class="plan-part-head"><span class="plan-part-title">Part 2 &middot; Done when</span><span class="plan-part-state">agreed Sep 27 &middot; passed, see How it was proved</span></div>
+                              <details class="piece-fig"><summary>How it is proved: the browser by hand, and the build broken on purpose</summary><figure class="fig"><svg viewBox="0 0 680 320" role="img"><title>How step 2.5 is proved</title><desc>Checks 1 to 4 are done by hand in the browser, signed in as the admin. Check 5 breaks the build on purpose twice, a renamed route and a renamed field, and restores it. Check 6 reruns every saved test, both builds and lint.</desc><g><rect x="20" y="20" width="310" height="250" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="175" y="46" text-anchor="middle" dominant-baseline="central">By hand, in the browser</text><text class="ts" x="175" y="68" text-anchor="middle" dominant-baseline="central">as admin@example.com</text><text class="ts" x="40" y="104" dominant-baseline="central">1. the three links listed</text><text class="ts" x="40" y="130" dominant-baseline="central">2. switched off: the empty state</text><text class="ts" x="40" y="156" dominant-baseline="central">3. API stopped: can't reach</text><text class="ts" x="40" y="182" dominant-baseline="central">4. /me as before, and signed</text><text class="ts" x="56" y="202" dominant-baseline="central">out still goes to sign in</text></g><g><rect x="350" y="20" width="310" height="170" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="505" y="46" text-anchor="middle" dominant-baseline="central">Broken on purpose</text><text class="ts" x="505" y="68" text-anchor="middle" dominant-baseline="central">the frontend build, outputs kept</text><text class="ts" x="370" y="104" dominant-baseline="central">5a. route renamed: fails</text><text class="ts" x="370" y="130" dominant-baseline="central">5b. a field renamed: fails</text><text class="ts" x="370" y="156" dominant-baseline="central">restored: passes</text></g><g><rect x="350" y="200" width="310" height="70" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="505" y="224" text-anchor="middle" dominant-baseline="central">6. Rerun everything</text><text class="ts" x="505" y="246" text-anchor="middle" dominant-baseline="central">saved tests, both builds, lint</text></g><text class="ts" x="340" y="298" text-anchor="middle" dominant-baseline="central">No new saved tests: the frontend has no test runner, and adding one needs your yes.</text></svg><figcaption>The broken build is the heart of it: it is what the first repo never did.</figcaption></figure></details>
+                              <ul class="substeps">
+                                <li><b>By hand:</b> signed in as <code>admin@example.com</code>, the home lists Summit Painting (dev)'s three links in name order: Colour consultation 30 min, Exterior estimate 45 min, Interior estimate 60 min.</li>
+                                <li><b>By hand:</b> the three switched off for a moment in the local database, the home shows the empty state; switched back on, the list returns.</li>
+                                <li><b>By hand:</b> with the API stopped, the home shows can't reach the API; started again, Try again brings the list back.</li>
+                                <li><b>By hand:</b> <code>/me</code> on the typed client shows the business card exactly as before, and a signed-out visit still goes to sign in.</li>
+                                <li><b>Broken on purpose:</b> the list route renamed in the backend makes <code>npm run build --workspace=frontend</code> fail with a type error in <code>api-client.ts</code>; a field renamed (<code>durationMinutes</code>) makes it fail where the list reads it. Each restored, it passes. All four outputs go on this page.</li>
+                                <li>All saved tests, both builds and the frontend lint pass.</li>
+                              </ul>
+                              <p class="rstep-what"><strong>Why the field too:</strong> a renamed route only proves the addresses are typed. A renamed field proves the answers are typed as well, which is what stops a screen quietly showing blanks.</p>
+                            </div>
+                          </div>
+                        </details>
+                        <details class="drawer" data-kind="reality" open>
+                          <summary>What actually happened <span class="tag-drift">5 kept, 1 added &middot; review next</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">Every planned piece went in as agreed, numbered as in the plan, with the code each one touched under it. One small addition: <code>AGENTS.md</code> still said the typed client was "not wired yet".</p>
+                            <div class="verdict">
+                              <span class="v-kept">5 as planned</span>
+                              <span class="v-added">1 added</span>
+                            </div>
                             <ul class="substeps">
-                              <li>The backend build emits <code>AppType</code>; the frontend takes a type-only dependency on the backend</li>
-                              <li><code>hono</code> declared in the frontend for <code>hono/client</code> (needs your yes, question 1)</li>
-                              <li>One <code>hc&lt;AppType&gt;</code> client in <code>lib/api-client.ts</code>; <code>fetchMe</code> moves onto it and its hand-written types go</li>
-                              <li>The dashboard home lists the business's active booking links, with loading, empty and unreachable states</li>
-                              <li>The coding standard that says <code>AppType</code> lives in <code>packages/shared</code> corrected</li>
+                              <li data-outcome="kept"><b>1.</b> <code>hono ^4.13.8</code> declared in the frontend, with the link <code>"backend": "*"</code>: one copy of <code>hono</code> for the whole repo, <code>backend</code> a link to the repo's own folder, nothing downloaded
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>frontend/package.json</code> <span class="tag-drift">changed &middot; +2, piece 1's lines</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 15</div><pre class="code" data-lang="json" data-start="15" data-mark="18,22" data-kind="added"><code>    "@hookform/resolvers": "^5.9.1",
+    "@imagekit/next": "^2.1.6",
+    "@scheduleads-app/shared": "*",
+    "backend": "*",
+    "better-auth": "^1.7.5",
+    "class-variance-authority": "^0.7.1",
+    "cn": "^0.3.0",
+    "hono": "^4.13.8",
+    "lucide-react": "^1.47.0",
+    "next": "16.3.5",
+    "react": "19.2.8",</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>2.</b> The backend hands the frontend its routes' type: <code>tsconfig.types.json</code> writes only declarations into <code>dist/types/</code>, <code>backend/app-type</code> exposes them types-only, and the frontend's <code>predev</code> and <code>prebuild</code> write them fresh
+                                <details class="piece-fig piece-code"><summary>The code &middot; 3 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/tsconfig.types.json</code> <span class="tag-drift">new &middot; 13 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="json" data-start="1" data-mark="all" data-kind="added"><code>{
+  // The routes' type for the frontend (AppType, step 2.5): declarations only, no code, into
+  // dist/types/. The frontend's own build runs this first, because Vercel never runs the
+  // backend's build and an old copy would let a renamed route pass the frontend build.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./dist/types"
+  },
+  "include": [], // everything app.ts imports is followed from it
+  "files": ["app.ts"]
+}</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/package.json</code> <span class="tag-drift">changed &middot; +6 &minus;0</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 1</div><pre class="code" data-lang="json" data-start="1" data-mark="4,5,6,7,8,14" data-kind="added"><code>{
+  "name": "backend",
+  "type": "module",
+  "exports": {
+    "./app-type": {
+      "types": "./dist/types/app.d.ts"
+    }
+  },
+  "scripts": {
+    "predev": "tsc -p ../packages/shared/tsconfig.build.json",
+    "dev": "tsx watch --env-file-if-exists=../.env server.ts",
+    "prebuild": "tsc -p ../packages/shared/tsconfig.build.json",
+    "build": "tsc",
+    "build:types": "tsc -p tsconfig.types.json",
+    "start": "node --env-file-if-exists=../.env dist/server.js",
+    "pretest": "tsc -p ../packages/shared/tsconfig.build.json",
+    "test": "vitest run",</code></pre>
+</div></details>
+<details class="codefile"><summary><code>frontend/package.json</code> <span class="tag-drift">changed &middot; +2 &minus;2, piece 2's lines</span></summary><div class="codefile-body">
+<div class="code-label">Before &middot; line 3</div><pre class="code" data-lang="json" data-start="3" data-mark="6,8" data-kind="removed"><code>  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "predev": "tsc -p ../packages/shared/tsconfig.build.json",
+    "dev": "next dev",
+    "prebuild": "tsc -p ../packages/shared/tsconfig.build.json",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"</code></pre>
+<div class="code-label">After &middot; line 3</div><pre class="code" data-lang="json" data-start="3" data-mark="6,8" data-kind="added"><code>  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "predev": "tsc -p ../packages/shared/tsconfig.build.json &amp;&amp; npm run build:types --workspace=backend",
+    "dev": "next dev",
+    "prebuild": "tsc -p ../packages/shared/tsconfig.build.json &amp;&amp; npm run build:types --workspace=backend",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>3.</b> Two typed clients from one <code>AppType</code> in <code>lib/api-client.ts</code>; <code>fetchMe</code> moved onto the dashboard client, <code>MeType</code> is now the type of what <code>/me</code> really answers, and <code>fetchBookingLinks</code> uses the public client
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>frontend/lib/api-client.ts</code> <span class="tag-drift">changed &middot; +53 &minus;28</span></summary><div class="codefile-body">
+<div class="code-label">Before &middot; line 1</div><pre class="code" data-lang="typescript" data-start="1" data-mark="1,2,4,8,9,10,11,12,13" data-kind="removed"><code>// Frontend: calls to our own API (everything that is not Better Auth).
+// The types below are written by hand until item 2 wires Hono RPC, which replaces them.
+
+import type { SubscriptionLimitsType } from "@scheduleads-app/shared/subscriptions";
+
+import { API_URL } from "./auth-client";
+
+export type MeType = {
+  user: { id: string; email: string; name: string };
+  organization: { id: string; name: string; slug: string; plan: string };
+  role: string;
+  limits: SubscriptionLimitsType;
+};
+
+// One state per screen, so the user sees "sign in" or "pick a business" instead of a
+// generic "something went wrong".</code></pre>
+<div class="code-label">After &middot; line 1</div><pre class="code" data-lang="typescript" data-start="1" data-mark="1,2,4,5,6,10,11,12,13,14,15,16,17,18,19,20" data-kind="added"><code>// Frontend: calls to our own API (everything that is not Better Auth), typed from the
+// backend's routes (AppType), so a renamed route or a changed answer fails this build.
+
+import { hc, type InferResponseType } from "hono/client";
+
+import type { AppType } from "backend/app-type";
+
+import { API_URL } from "./auth-client";
+
+// Two clients from one type, matching the backend's two CORS rules. The dashboard's routes
+// need the login cookie; the public routes refuse it, and the browser throws away any answer
+// to a request that sent it there.
+const dashboardApiClient = hc&lt;AppType&gt;(API_URL, {
+  init: { credentials: "include" }, // send the login cookie, same reason as in auth-client.ts
+});
+const publicApiClient = hc&lt;AppType&gt;(API_URL);
+
+const notResponding = "The API is not responding. Check that it is running.";
+
+export type MeType = InferResponseType&lt;typeof dashboardApiClient.me.$get, 200&gt;;
+
+// One state per screen, so the user sees "sign in" or "pick a business" instead of a
+// generic "something went wrong".</code></pre>
+<div class="code-label">Before &middot; line 27</div><pre class="code" data-lang="typescript" data-start="27" data-mark="30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,46,47,49,51" data-kind="removed"><code>};
+
+export async function fetchMe(): Promise&lt;MeResultType&gt; {
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_URL}/me`, {
+      credentials: "include", // send the login cookie, same reason as in auth-client.ts
+      headers: { Accept: "application/json" },
+    });
+  } catch {
+    // The API is not answering at all.
+    return {
+      state: "unreachable",
+      message: "The API is not responding. Check that it is running.",
+    };
+  }
+
+  if (response.ok) {
+    return { state: "ok", me: (await response.json()) as MeType };
+  }
+
+  if (response.status === 401) return { state: "signed-out" };
+
+  if (response.status === 403) {
+    const body = (await response.json().catch(() =&gt; ({}))) as RefusalType;
+    const code = body.error?.code;
+</code></pre>
+<div class="code-label">After &middot; line 34</div><pre class="code" data-lang="typescript" data-start="34" data-mark="37,38,40,41,42,43,44,46,48" data-kind="added"><code>};
+
+export async function fetchMe(): Promise&lt;MeResultType&gt; {
+  const response = await dashboardApiClient.me.$get().catch(() =&gt; null);
+  if (!response) return { state: "unreachable", message: notResponding }; // the API is not answering at all
+
+  if (response.ok) return { state: "ok", me: await response.json() };
+
+  // The 401 and 403 come from the middleware, which the route's type does not list,
+  // so the status is read as a plain number here.
+  const status: number = response.status;
+
+  if (status === 401) return { state: "signed-out" };
+
+  if (status === 403) {
+    const body = (await response.json().catch(() =&gt; ({}))) as RefusalType;
+    const code = body.error?.code;
+</code></pre>
+<div class="code-label">Added &middot; line 62</div><pre class="code" data-lang="typescript" data-start="62" data-mark="65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92" data-kind="added"><code>
+  // Anything unexpected is shown as-is, not dressed up as a known refusal that would
+  // tell the user to do something that cannot help.
+  return {
+    state: "unreachable",
+    message: `The API answered with an unexpected status (${status}).`,
+  };
+}
+
+const bookingLinksRoute = publicApiClient.public[":slug"]["booking-links"];
+
+export type BookingLinkType = InferResponseType&lt;
+  typeof bookingLinksRoute.$get,
+  200
+&gt;["bookingLinks"][number];
+
+export type BookingLinksResultType =
+  { state: "ok"; bookingLinks: BookingLinkType[] } | { state: "unreachable"; message: string };
+
+// A business's active booking links, from the public route a client site will call too.
+// The slug comes from /me, so a 404 here means the API and the dashboard disagree about
+// this business: shown as unreachable, never as an empty list.
+export async function fetchBookingLinks(slug: string): Promise&lt;BookingLinksResultType&gt; {
+  const response = await bookingLinksRoute.$get({ param: { slug } }).catch(() =&gt; null);
+  if (!response) return { state: "unreachable", message: notResponding };
+
+  if (response.status === 200) {
+    const { bookingLinks } = await response.json();
+    return { state: "ok", bookingLinks };
+  }
+
+  return {
+    state: "unreachable",
+    message: `The API answered with an unexpected status (${response.status}).`,</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>4.</b> The home lists the business's booking links, name and length in name order, with loading, empty and can't-reach states, under the business card
+                                <details class="piece-fig piece-code"><summary>The code &middot; 2 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>frontend/components/booking-links/booking-links-list.tsx</code> <span class="tag-drift">new &middot; 93 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="tsx" data-start="1" data-mark="all" data-kind="added"><code>// Frontend: the dashboard home's list of the business's active booking links, read once
+// when the page opens from the public route a client site calls too. Four states: loading,
+// the list, empty, and can't reach the API. Nothing here edits a link (feature 12).
+
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { Notice } from "@/components/auth-card";
+import { Button } from "@/components/ui/button";
+import { fetchBookingLinks, type BookingLinksResultType } from "@/lib/api-client";
+
+export function BookingLinksList({ slug }: { slug: string }) {
+  const [result, setResult] = useState&lt;BookingLinksResultType | null&gt;(null);
+
+  // Bump to ask again, on "Try again".
+  const [reloads, setReloads] = useState(0);
+
+  useEffect(() =&gt; {
+    // `live` stops a late answer from updating a page the user already left.
+    let live = true;
+
+    fetchBookingLinks(slug).then((next) =&gt; {
+      if (live) setResult(next);
+    });
+
+    return () =&gt; {
+      live = false;
+    };
+  }, [slug, reloads]);
+
+  return (
+    &lt;section className="mt-4 rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-md)]"&gt;
+      &lt;h2 className="text-base font-semibold tracking-tight text-foreground"&gt;Booking links&lt;/h2&gt;
+      &lt;p className="mt-1 text-sm text-muted-foreground"&gt;What customers can book on your site.&lt;/p&gt;
+
+      &lt;div className="mt-6"&gt;
+        &lt;BookingLinksBody
+          result={result}
+          onRetry={() =&gt; {
+            setResult(null); // back to loading while it asks again
+            setReloads((n) =&gt; n + 1);
+          }}
+        /&gt;
+      &lt;/div&gt;
+    &lt;/section&gt;
+  );
+}
+
+function BookingLinksBody({
+  result,
+  onRetry,
+}: {
+  result: BookingLinksResultType | null;
+  onRetry: () =&gt; void;
+}) {
+  if (!result) {
+    return &lt;p className="text-sm text-muted-foreground"&gt;Loading your booking links…&lt;/p&gt;;
+  }
+
+  if (result.state === "unreachable") {
+    return (
+      &lt;&gt;
+        &lt;Notice&gt;{result.message}&lt;/Notice&gt;
+        &lt;Button className="mt-4" onClick={onRetry}&gt;
+          Try again
+        &lt;/Button&gt;
+      &lt;/&gt;
+    );
+  }
+
+  if (result.bookingLinks.length === 0) {
+    return (
+      &lt;p className="text-sm text-muted-foreground"&gt;
+        None switched on yet. Customers can&amp;apos;t book online until one is.
+      &lt;/p&gt;
+    );
+  }
+
+  // In the order the public route gives them, by name.
+  return (
+    &lt;ul className="grid gap-px overflow-hidden rounded-lg border border-border bg-border text-sm"&gt;
+      {result.bookingLinks.map((link) =&gt; (
+        &lt;li key={link.id} className="flex items-center justify-between gap-4 bg-card px-4 py-3"&gt;
+          &lt;span className="truncate text-foreground"&gt;{link.name}&lt;/span&gt;
+          &lt;span className="flex-none font-mono text-muted-foreground"&gt;
+            {link.durationMinutes} min
+          &lt;/span&gt;
+        &lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}</code></pre>
+</div></details>
+<details class="codefile"><summary><code>frontend/app/page.tsx</code> <span class="tag-drift">changed &middot; +3 &minus;0</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 7</div><pre class="code" data-lang="tsx" data-start="7" data-mark="10" data-kind="added"><code>import { useEffect, useState } from "react";
+
+import { AuthCard, Notice } from "@/components/auth-card";
+import { BookingLinksList } from "@/components/booking-links/booking-links-list";
+import { Button } from "@/components/ui/button";
+import { authClient } from "@/lib/auth-client";
+import { fetchMe, type MeResultType } from "@/lib/api-client";</code></pre>
+<div class="code-label">Added &middot; line 222</div><pre class="code" data-lang="tsx" data-start="222" data-mark="225,226" data-kind="added"><code>          &lt;/p&gt;
+        &lt;/div&gt;
+
+        &lt;BookingLinksList slug={me.organization.slug} /&gt;
+
+        &lt;div className="mt-4 text-center text-sm text-muted-foreground"&gt;
+          &lt;SignOutLink onSignedOut={onSignedOut} /&gt;
+        &lt;/div&gt;</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>5.</b> The coding standard corrected: <code>AppType</code> lives in the backend, how the frontend gets it, and the two-clients rule (a call to our own API never goes through a bare <code>fetch</code>)
+                                <span class="no-code">No project code: <code>blueprint/context/coding-standards.md</code>.</span></li>
+                              <li data-outcome="added"><b>6.</b> <code>AGENTS.md</code> brought up to date
+                                <em class="why">Its settled-architecture section said the typed client was "not wired yet". It now says it was wired and proved in 2.5, and how.</em>
+                                <span class="no-code">No project code: <code>AGENTS.md</code>.</span></li>
                             </ul>
-                            <div class="rstep-when">Done when: signed in as the admin, the home lists the agency's two links; the list route renamed on purpose makes the frontend build fail with a type error, and restoring it makes it pass. Both outputs pasted here.</div>
+                            <p class="rstep-what" data-diff-link="2.5">The link to this step's full diff on GitHub is added once the step's commit exists.</p>
+                            <div class="snags">
+                              <div class="snags-head">What bit</div>
+                              <ul>
+                                <li><b>The typed client does not know about the middleware's answers.</b> <code>/me</code>'s 401 and 403 come from the sign-in and plan checks, which Hono's route type does not list, so the type says <code>/me</code> only ever answers 200. <code>fetchMe</code> reads the status as a plain number for those two. A known limit of Hono's RPC, not a fault here; worth knowing before feature 5 adds routes behind the same checks.</li>
+                              </ul>
+                            </div>
+                            <div class="tests">
+                              <div class="tests-head">How it was proved</div>
+                              <div class="proof-card">
+                                <div class="card-head">Saved tests and checks by hand</div>
+                                <ul>
+                                  <li><b>Added:</b> no saved tests, as planned. The frontend has no test runner, and the seam itself is proved by the frontend build, which reruns on every step from here on.</li>
+                                  <li><b>By hand, signed in as <code>admin@example.com</code>:</b> the home showed the business card exactly as before, then Booking links: Colour consultation 30 min, Exterior estimate 45 min, Interior estimate 60 min. Signed out, the home went straight to sign in.</li>
+                                  <li><b>By hand, switched off:</b> with the three links switched off in the local database, the home said "None switched on yet"; switched back on, the list returned.</li>
+                                  <li><b>By hand, API stopped:</b> the home showed "Cannot reach the API"; with the API started again, Try again brought back the card and the list. The list's own can't-reach state was also seen once, when the API was shutting down between the two calls.</li>
+                                  <li><b>Why two clients, seen in the browser:</b> from the dashboard, the same public call with the login cookie was blocked ("Failed to fetch"); without it, it read 200.</li>
+                                  <li><b>Also checked:</b> the types are real, not silently empty. A throwaway file reading a field that does not exist on a booking link or on <code>/me</code> failed the typecheck, then was deleted.</li>
+                                </ul>
+                                <p class="rstep-what"><b>Broken on purpose</b>, <code>npm run build --workspace=frontend</code>, the four outputs:</p>
+                                <div class="code-label">1 &middot; The list route renamed to <code>/:slug/services</code>: fails</div><pre style="margin:0;padding:10px 14px;background:#121314;color:#BBBEBF;border:1px solid #2A2B2C;border-radius:8px;overflow-x:auto;white-space:pre-wrap;font-family:Consolas,'Courier New',monospace;font-size:12.5px;line-height:1.6">lib/api-client.ts(74,28): error TS2339: Property '$get' does not exist on type
+  '{ ":bookingLinkId": ClientRequest&lt;string, "/public/:slug/booking-links/:bookingLinkId", ... }'.
+lib/api-client.ts(85,44): error TS2339: Property '$get' does not exist on type
+  '{ ":bookingLinkId": ClientRequest&lt;string, "/public/:slug/booking-links/:bookingLinkId", ... }'.
+Failed to type check.
+npm error Lifecycle script `build` failed with error: npm error code 1</pre>
+                                <div class="code-label">2 &middot; Restored: passes</div><pre style="margin:0;padding:10px 14px;background:#121314;color:#BBBEBF;border:1px solid #2A2B2C;border-radius:8px;overflow-x:auto;white-space:pre-wrap;font-family:Consolas,'Courier New',monospace;font-size:12.5px;line-height:1.6">✓ Compiled successfully in 463ms
+  Running TypeScript ...
+  Finished TypeScript in 2.4s ...
+Route (app)   ○ /   ○ /create-organization   ○ /sign-in</pre>
+                                <div class="code-label">3 &middot; The field <code>durationMinutes</code> renamed to <code>lengthMinutes</code>: fails where the list reads it</div><pre style="margin:0;padding:10px 14px;background:#121314;color:#BBBEBF;border:1px solid #2A2B2C;border-radius:8px;overflow-x:auto;white-space:pre-wrap;font-family:Consolas,'Courier New',monospace;font-size:12.5px;line-height:1.6">components/booking-links/booking-links-list.tsx(87,19): error TS2339: Property
+  'durationMinutes' does not exist on type '{ id: string; slug: string; name: string;
+  description: string | null; lengthMinutes: number; bufferBeforeMinutes: number;
+  bufferAfterMinutes: number; }'.
+Failed to type check.</pre>
+                                <div class="code-label">4 &middot; Restored: passes</div><pre style="margin:0;padding:10px 14px;background:#121314;color:#BBBEBF;border:1px solid #2A2B2C;border-radius:8px;overflow-x:auto;white-space:pre-wrap;font-family:Consolas,'Courier New',monospace;font-size:12.5px;line-height:1.6">  Finished TypeScript in 2.4s ...   (exit 0)</pre>
+                                <div class="rstep-when">Passed. The three links listed, the empty state, the can't-reach state and its recovery, <code>/me</code> as before; the renamed route and the renamed field each failed the frontend build with a type error and passed once restored. 25 shared tests and 30 backend tests pass; both builds, the frontend lint and the format check pass.</div>
+                                <div class="snags">
+                                  <div class="snags-head">What bit</div>
+                                  <ul>
+                                    <li><b>The list's own Try again was not pressed by hand.</b> Its can't-reach state only shows when <code>/me</code> answers and the list does not. That was seen once, by luck, with the API shutting down. Forcing it again meant failing only the list's call, and every way of reopening the home in the preview pane was a full reload, which drops the patch. The page's own Try again was proved; the list's uses the same pattern. A saved frontend test would cover it, and would need a runner, which needs your yes.</li>
+                                    <li><b>On Windows, "can't reach" takes a few seconds.</b> With the API stopped, the home sat on "Loading your business" for about four seconds before saying it could not reach the API: Windows retries before refusing a local connection.</li>
+                                  </ul>
+                                </div>
+                              </div>
+                              <div class="proof-card">
+                                <div class="card-head">Independent review</div>
+                                <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>Runs next, from this step's commit.</p></div>
+                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p>Not yet.</p></div>
+                              </div>
+                            </div>
                           </div>
                         </details>
                       </div>
@@ -8640,7 +9050,7 @@ describe("the login cookie is never allowed", () =&gt; {
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Decisions <span class="tag-drift">5 made, with why the rejected options lost &middot; 2 waiting on you</span></summary>
+                <summary>Decisions <span class="tag-drift">5 made, with why the rejected options lost &middot; 1 waiting on you</span></summary>
                 <div class="drawer-body">
                   <h3>Where each booking setting lives</h3>
                   <p class="rstep-what">Decided Sep 25, from version 8. Each setting has one home, so changing it once changes it for everyone it belongs to.</p>
@@ -8725,7 +9135,7 @@ describe("the login cookie is never allowed", () =&gt; {
 
                   <h3>Waiting on you</h3>
                   <div class="notes"><ul>
-                    <li><strong>? 1. Add <code>hono</code> to the frontend?</strong> <code>hono/client</code> is inside the <code>hono</code> package the backend already uses. No new library enters the repo, but the frontend must declare it. Needed by 2.5.</li>
+                    <li><strong>&#10003; 1. <code>hono</code> in the frontend: answered yes, Sep 27.</strong> Declared at the backend's version, with the <code>"backend": "*"</code> link beside it; one copy on disk, nothing downloaded.</li>
                     <li><strong>? 2. Where do holidays come from?</strong> Recommended: the <code>date-holidays</code> package, which covers Canada by province, including Alberta's Family Day, and Easter-based dates. The alternative is a hand-written table per province, maintained forever. Needed by 2.6.</li>
                     <li><strong>&#10003; 3. Tests before 2.1: answered yes, Sep 25.</strong> The Sep 19 decision stood; the install was the only thing that needed your yes. Vitest is in, and 2.1, 2.2 and 2.6 each add their tests. See the log.</li>
                   </ul></div>
@@ -8786,14 +9196,36 @@ describe("the login cookie is never allowed", () =&gt; {
                   <div class="row"><div class="row-key">resolveBookableHours</div><div class="row-val">The only way anything asks "when can this be booked". Returns the week, the one-off dates, the closed dates inside the horizon (minus opened ones), and the business's time zone, notice and horizon.</div></div>
                   <div class="row"><div class="row-key">Public routes</div><div class="row-val"><code>/public/:slug/booking-links</code> and <code>/:bookingLinkId</code>. No login, no cookie, never an <code>organizationId</code>. One identical 404 for every "not here".</div></div>
                   <div class="row"><div class="row-key">Errors</div><div class="row-val">The existing <code>{ error: { code, message } }</code> shape, extended with <code>not_found</code>. No second error shape.</div></div>
-                  <div class="row"><div class="row-key">Typed client</div><div class="row-val">The frontend calls the API through one <code>hc&lt;AppType&gt;</code>. No hand-written response types.</div></div>
+                  <div class="row"><div class="row-key">Typed client</div><div class="row-val">The frontend calls the API through <code>hc&lt;AppType&gt;</code>, as two clients from one type: the dashboard's sends the login cookie, the public one never does (planned in 2.5). No hand-written response types.</div></div>
                 </div></div>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">28 entries, newest first, each titled with its step when it has one</span></summary>
+                <summary>Log <span class="tag-drift">31 entries, newest first, each titled with its step when it has one</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.5 built: the home lists the booking links, and the build breaks when a route changes</span><span class="kind-tag">Done</span><span class="stamp">Sep 27</span></div>
+                        <p class="entry-text">Signed in, the painting company's home now shows its three booking links under the business card, fetched through a client typed from the backend's own routes. Renaming the list route broke the frontend build with a type error in <code>api-client.ts</code>; renaming one field broke it where the list reads that field. Both passed again once restored. This is the typed seam the first repo declared and never used, now proved.</p>
+                        <p class="entry-text"><strong>Decided on the way, without asking</strong> (small calls, named here): <code>fetchBookingLinks</code> sits beside <code>fetchMe</code> in <code>api-client.ts</code>, so every call to our API is in one file; a 404 on the list is shown as "can't reach", never as an empty list, because the slug came from <code>/me</code> and a 404 means the two disagree; the list shows name and length only, since buffers mean nothing to the owner until bookings exist; <code>AGENTS.md</code>'s "not wired yet" line was updated.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.5: hono added to the frontend</span><span class="kind-tag">Decided</span><span class="stamp">Sep 27</span></div>
+                        <p class="entry-text">Your yes on piece 1, the blocker. The frontend now declares <code>hono ^4.13.8</code> and the link <code>"backend": "*"</code>. Checked after the install: the lockfile gained only those two lines, nothing was downloaded, the frontend and the backend share the one copy of <code>hono</code> 4.13.8, and <code>backend</code> is a link to the repo's own folder, not a package from the internet. Question 1 is closed.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="question">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.5 planned: the home lists the booking links, through a typed client</span><span class="kind-tag">Plan</span><span class="stamp">Sep 27</span></div>
+                        <p class="entry-text">Written in two parts, five pieces, each with its picture. Piece 1 is a blocker waiting on you: <code>hono</code> declared in the frontend. Two things in the spec turned out wrong while planning, and the plan fixes both: the routes' type has to be written by the frontend's own build, because Vercel never runs the backend's; and one client cannot serve both kinds of route, because 2.4's public rule refuses the login cookie, so there are two. Done when adds a renamed field to the renamed route, so the answers are proved typed, not only the addresses.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="fix">
                       <div class="dot"></div>
                       <div class="entry-body">
