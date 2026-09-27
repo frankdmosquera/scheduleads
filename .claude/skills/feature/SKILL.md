@@ -125,7 +125,10 @@ Build steps are ordered checklist items. Each step must leave the project
 working, stay small enough to review, and end with a concrete `Done when` that
 names observable behavior and the relevant check. Follow `workflow.stepReview`
 and `workflow.checkpointCommits` from config in the Build loop. `/complete`
-creates the final feature commit.
+creates the final feature commit. Where the project's `AGENTS.md` has "After
+the green light, nothing stops until the review" (this project does), the Build
+loop says so: each step runs from its plan's yes through commit, push and
+review without asking, so the planning is where the user's decisions go.
 
 The spec must preserve every explicit contract in the feature packet, including
 applicable project-wide UX and security requirements. Do not discard a required

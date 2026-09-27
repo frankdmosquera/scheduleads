@@ -161,7 +161,14 @@ when you just want something done.
    @blueprint/context/current-feature.md, then review it together before any code.
 2. **Branch** - Create a new branch for the feature/fix.
 3. **Implement** - Build one small step from the spec at a time, not the whole
-   feature as one undifferentiated change.
+   feature as one undifferentiated change. **In this project, once a step's
+   plan has Frank's yes, it runs without stopping** through build, tests,
+   checks, the build log, commit and push to the feature branch, audit and the
+   independent review (Frank, 2026-09-26; the full rule is "After the green
+   light, nothing stops until the review" in `AGENTS.md`). Never ask to commit,
+   push, test or review, and never ask for a yes on something not built yet.
+   Stop earlier only for a plan that proves wrong, a line only Frank crosses, or
+   a blocking finding; name every small call in the step report.
 4. **Review** - By default, implement and verify each small step, then show one
    feature-level review packet with the complete diff and done-when evidence.
    Set `workflow.stepReview` to `every` when I should approve each step before

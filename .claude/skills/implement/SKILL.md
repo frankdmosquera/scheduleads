@@ -82,6 +82,18 @@ Follow build steps in order. Build only what the spec says. If a step requires a
 unresolved product decision, unsafe action, missing prerequisite, or material
 scope expansion, stop and revise the spec instead of improvising.
 
+**No stop between the plan's yes and the review (Frank, 2026-09-26, a project
+rule, not a preference).** Once a step's plan has the user's yes, build, test,
+check, publish, commit, push, audit and independent review run as one
+uninterrupted sequence. None of them holds a decision for the user: each passes
+into the next, or fails and is repaired. Never stop to ask "may I commit",
+"may I push", "may I test" or "may I review", and never ask for a yes on
+something not built yet. The only early stops are the three in `AGENTS.md`
+("After the green light, nothing stops until the review"): the plan proves
+wrong in a way that changes what gets built, a line only the user crosses, or a
+blocking finding. Every small call made along the way is named in the step
+report and its log entry. The one planned stop is after the review.
+
 For each step:
 
 1. Make the smallest coherent change that satisfies its `Done when`.
@@ -118,7 +130,9 @@ For each step:
    without this having happened is the rule already broken. Log decisions with
    why the rejected option lost, open questions, and any real fault found and
    repaired, not only completed steps.
-7. **Commit and push the step** when the once-per-item yes was given. One
+7. **Commit and push the step** when the once-per-item yes was given, or the
+   project's `AGENTS.md` records a standing yes for step commits on feature
+   branches (this project does, so it never asks). One
    commit per step, its message carrying the step number, for example
    `feat: 2.3 availability rules api`. Then push the branch and end the step
    report with a sync line comparing `git rev-parse <branch>` with
@@ -151,7 +165,8 @@ built on for several steps:
    carried.
 4. If the review shows the spec or plan is wrong, correct it now.
 5. Stop with the diff, a short explanation, evidence, the review outcome, and a
-   manual try path when one exists. Continue only after approval.
+   manual try path when one exists. Continue only after approval. This is the
+   step's one planned stop: steps 1 to 4 above run without asking.
 
 `/complete` still runs its own final review, but over steps that were each
 reviewed, so it is a short integration check.
@@ -201,7 +216,9 @@ final packet:
    immutable review checkpoint. Obtain explicit commit approval when the exact
    checkpoint does not already exist, then create or use it. Configuration,
    including `review.independentExecution: "automatic"`, never grants commit
-   permission, even when normal checkpoint commits are disabled.
+   permission, even when normal checkpoint commits are disabled. The user's
+   standing yes in `AGENTS.md` does: in this project a review checkpoint on the
+   feature branch is committed without asking.
 3. Follow `/audit independent current` to prepare or reuse the request and record
    `Requested execution`. For requested `automatic`, start and wait for the
    generic isolated current-runtime child instructed from the project-local
