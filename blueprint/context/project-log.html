@@ -863,6 +863,12 @@
   .rstep > summary .ss::after { content: " +"; color: var(--rule); }
   .rstep[open] > summary .ss::after { content: " \2212"; }
 
+  /* You are here. One step is open at a time; it is framed from its title to its last line,
+     so where it starts and ends is plain, and its chip in the top bar is underlined in the
+     same colour. The frame sits on the steps' grey line, so the text does not move. */
+  .rstep[open] { margin-left: -12px; padding-left: 9px; border-left: 3px solid var(--accent); border-top: 3px solid var(--accent); border-bottom: 3px solid var(--accent); }
+  .bar .cell.is-here { box-shadow: inset 0 -3px 0 var(--accent); }
+
   .rstep-body {
     padding: 4px 0 16px 16px;
     display: flex; flex-direction: column; gap: 11px;
@@ -10797,6 +10803,39 @@ describe("holidays the owner picked", () =&gt; {
     }, 100);
   }
 
+  // One step open at a time: opening a step closes the others, and opening a feature closes
+  // the other features. Opened by tapping its title, the page keeps that title where it was,
+  // so closing a long step above it never moves the reader somewhere else.
+  function closeOthers(opening) {
+    var kind = opening.matches(".rstep") ? ".rstep" : opening.matches(".item-fold") ? ".item-fold" : null;
+    if (!kind) return;
+    document.querySelectorAll(kind + "[open]").forEach(function (other) {
+      if (other !== opening && !other.contains(opening) && !opening.contains(other)) other.open = false;
+    });
+  }
+  document.addEventListener("click", function (event) {
+    var summary = event.target.closest(".rstep > summary, .item-fold > summary");
+    if (!summary || summary.parentElement.open) return; // closing one needs nothing
+    var before = summary.getBoundingClientRect().top;
+    closeOthers(summary.parentElement);
+    window.scrollBy(0, summary.getBoundingClientRect().top - before);
+  });
+
+  // The open step's chip in the top bar carries a line under it: you are here.
+  function markHere() {
+    document.querySelectorAll(".bar .cell.is-here").forEach(function (chip) { chip.classList.remove("is-here"); });
+    document.querySelectorAll(".rstep[open]").forEach(function (step) {
+      var chip = document.querySelector('.bar a[data-goto="' + step.id + '"]');
+      if (!chip) return;
+      chip.classList.add("is-here");
+      // On a phone the row slides sideways: bring the chip into the middle of it if it is off the edge.
+      var bar = chip.closest(".bar"), c = chip.getBoundingClientRect(), b = bar.getBoundingClientRect();
+      if (c.left < b.left || c.right > b.right) bar.scrollLeft += c.left - b.left - (b.width - c.width) / 2;
+    });
+  }
+  document.addEventListener("toggle", function (event) { if (event.target.matches(".rstep, .item-fold")) markHere(); }, true);
+  markHere();
+
   // A chip in the bar jumps to its item or step: switch to the roadmap,
   // open every drawer around the target, then scroll to it.
   document.querySelectorAll("[data-goto]").forEach(function (chip) {
@@ -10807,10 +10846,10 @@ describe("holidays the owner picked", () =&gt; {
       var holder = target.closest("main > div[id^='view-']");
       selectView(holder ? holder.id.replace("view-", "") : "roadmap");
       for (var node = target; node; node = node.parentElement) {
-        if (node.tagName === "DETAILS") node.open = true;
+        if (node.tagName === "DETAILS") { node.open = true; closeOthers(node); }
       }
       var fold = target.querySelector(":scope > .item-body > .item-fold");
-      if (fold) fold.open = true;
+      if (fold) { fold.open = true; closeOthers(fold); }
       if (typeof bleedFigures === "function") bleedFigures(); // settle the layout before measuring
       jumpTo(target);
     });
