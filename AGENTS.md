@@ -402,7 +402,13 @@ the build, commit, independent review, fix order every step follows (Frank,
 2026-09-26). A step that adds a route, a
 folder or a table updates the Architecture view in the same publish. Each view
 has its own menu in the top bar: the item chips on the Roadmap, section links
-on the other two.
+on the other two. On the Roadmap, only the feature being worked on opens into
+its steps beside its chip (N.1 ... N.k): the one being built, or when none is,
+the last one finished, its steps in the done colour. `/complete` leaves them
+open; they fold back to one chip when the next feature starts. On a feature's
+last step, once the next feature's steps are planned, they open too. Arrows
+either side of the bar move it for a mouse with no sideways scroll (Frank,
+2026-09-28).
 
 It used to have a view per feature, which meant the same steps were maintained
 in two places and silently drifted. Never reintroduce that: Architecture is one

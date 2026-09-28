@@ -184,6 +184,8 @@
   a.cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   /* The item being built, opened into its steps beside its own chip. */
   .cell-open { display: inline-flex; gap: 3px; padding: 3px 4px; margin: -4px 8px; background: color-mix(in srgb, var(--pending-soft) 50%, var(--surface)); border: 1px solid color-mix(in srgb, var(--pending) 40%, var(--surface)); border-radius: 6px; }
+  /* A finished feature keeps its steps beside its chip (Frank, Sep 28), framed in the done colour. */
+  .cell-open[data-state="done"] { background: color-mix(in srgb, var(--done-soft) 50%, var(--surface)); border-color: color-mix(in srgb, var(--done) 40%, var(--surface)); }
   .cell--step { min-width: 30px; font-size: 10px; }
   .cell[data-state="next"] { border-color: var(--pending); color: var(--pending); font-weight: 700; }
 
@@ -1356,6 +1358,14 @@
   .bar .strip-phase { flex-direction: row; align-items: center; }
   .bar .strip-cells, .bar nav[data-menu="project"] .strip-cells, .bar nav[data-menu="architecture"] .strip-cells { flex-wrap: nowrap; align-items: center; }
   .cell-open { margin: 0 2px; }
+  /* Arrows either side of the bar (Frank, Sep 28): a click moves it most of a screen, for a
+     mouse with no sideways scroll. Greyed at the end the bar has reached. */
+  .topbar { flex-direction: row; align-items: center; gap: 4px; }
+  .topbar > .bar { flex: 1; min-width: 0; }
+  .bar-arrow { all: unset; flex: none; cursor: pointer; display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid var(--rule); border-radius: 50%; background: var(--surface); color: var(--ink-2); font-family: var(--mono); font-size: 14px; line-height: 1; }
+  .bar-arrow:hover { border-color: var(--accent); color: var(--accent); }
+  .bar-arrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .bar-arrow:disabled { opacity: 0.3; cursor: default; border-color: var(--rule); color: var(--ink-3); }
   @media (min-width: 761px) { .bar .strip-phase + .strip-phase { border-left: 1px solid var(--rule); padding-left: 8px; margin-left: 4px; } }
   .item, .rstep, #view-architecture section, #view-project section, #arch-booking-model, #arch-versions, #arch-not-in-model, #arch-folders { scroll-margin-top: 70px; }
 
@@ -1408,7 +1418,8 @@
     .bar .strip-label { display: none; }
     .bar .strip-cells, .bar nav[data-menu="project"] .strip-cells, .bar nav[data-menu="architecture"] .strip-cells { flex-wrap: nowrap; align-items: center; }
     .bar nav[data-menu="roadmap"] .strip-cells > .cell:not(.is-near) { display: none; }
-    .bar nav[data-menu="roadmap"] .strip-phase:not(:has(.is-near, .cell-open)) { display: none; }
+    .bar nav[data-menu="roadmap"] .cell-open[data-state="done"]:not(.is-near) { display: none; }
+    .bar nav[data-menu="roadmap"] .strip-phase:not(:has(.is-near, .cell-open:not([data-state="done"]))) { display: none; }
     .cell-open { margin: 0 2px; }
     .item, .rstep, #view-architecture section, #view-project section, #arch-booking-model, #arch-versions, #arch-not-in-model, #arch-folders { scroll-margin-top: 60px; }
   }
@@ -1437,7 +1448,7 @@
             <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: feature 2 done; feature 3 is next</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
-                <a class="cell" href="#item-2" data-goto="item-2" data-state="done" title="2 Booking links, resources and availability rules - done">2</a>
+                <span class="cell-open" data-state="done" title="Feature 2 is done, the last one worked on; its steps stay until feature 3 starts"><a class="cell" href="#item-2" data-goto="item-2" data-state="done" title="2 Booking links, resources and availability rules - done">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="done" title="2.4 The public routes - done">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" data-state="done" title="2.5 The typed seam, proved by breaking it - done">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" data-state="done" title="2.6 Holidays the owner picks - done">2.6</a></span>
                 <a class="cell" href="#item-3" data-goto="item-3" title="3 Calendar connection">3</a>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
@@ -10667,17 +10678,27 @@ describe("holidays the owner picked", () =&gt; {
   var smallScreen = window.matchMedia("(max-width: 760px)");
 
   // The top bar on a phone shows only the feature being built (its chip opened into steps)
-  // and the features either side of it. Worked out from the bar itself, so it follows the
+  // and the features either side of it, a finished neighbour with its own steps. Worked out from the bar itself, so it follows the
   // build without anyone remembering to update it. With nothing being built, every chip shows.
+  // The feature you are on: the one being built, else the last one worked on. It alone opens
+  // into its steps (Frank, Sep 28); a finished one folds back when the next one starts.
+  function currentGroup(menu) {
+    var groups = menu.querySelectorAll(".cell-open");
+    return menu.querySelector('.cell-open:not([data-state="done"])') || groups[groups.length - 1] || null;
+  }
   (function markNearChips() {
     var menu = document.querySelector('.bar nav[data-menu="roadmap"]');
     if (!menu) return;
-    var current = menu.querySelector('.cell-open [data-goto^="item-"]');
-    if (!current) { menu.querySelectorAll("a.cell").forEach(function (chip) { chip.classList.add("is-near"); }); return; }
+    var group = currentGroup(menu);
+    var current = group && group.querySelector('[data-goto^="item-"]');
+    if (!current) { menu.querySelectorAll("a.cell, .cell-open").forEach(function (chip) { chip.classList.add("is-near"); }); return; }
+    group.classList.add("is-near");
     var n = Number(current.dataset.goto.slice(5));
     [n - 1, n + 1].forEach(function (k) {
-      var chip = menu.querySelector('.strip-cells > a.cell[data-goto="item-' + k + '"]');
-      if (chip) chip.classList.add("is-near");
+      var chip = menu.querySelector('a.cell[data-goto="item-' + k + '"]');
+      if (!chip) return;
+      chip.classList.add("is-near");
+      if (chip.parentElement.classList.contains("cell-open")) chip.parentElement.classList.add("is-near"); // a finished neighbour shows with its steps
     });
   })();
   // With a root (a drawer that just opened), only the figures inside it are placed: the ones
@@ -10919,11 +10940,36 @@ describe("holidays the owner picked", () =&gt; {
   // the bar stays put, so the view buttons at its start are not pushed off.
   function centerBar() {
     var menu = document.querySelector(".bar nav[data-menu]:not([hidden])");
-    var chip = menu && menu.querySelector(".cell.is-here, .cell-open, .cell.is-current");
+    var chip = menu && (menu.querySelector(".cell.is-here") || (menu.dataset.menu === "roadmap" && currentGroup(menu)) || menu.querySelector(".cell.is-current"));
     if (chip && chip.offsetParent && offEdge(chip)) centerChip(chip);
   }
   document.querySelectorAll(".nav-link").forEach(function (link) { link.addEventListener("click", centerBar); });
   window.addEventListener("resize", centerBar);
+  (function barArrows() {
+    var bar = document.querySelector(".topbar > .bar");
+    function arrow(label, glyph, direction) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "bar-arrow";
+      button.setAttribute("aria-label", label);
+      button.textContent = glyph;
+      button.addEventListener("click", function () {
+        bar.scrollBy({ left: direction * bar.clientWidth * 0.7, behavior: "smooth" });
+      });
+      return button;
+    }
+    var back = arrow("Earlier chips", "‹", -1), ahead = arrow("Later chips", "›", 1);
+    bar.before(back);
+    bar.after(ahead);
+    function update() {
+      back.disabled = bar.scrollLeft <= 1;
+      ahead.disabled = bar.scrollLeft + bar.clientWidth >= bar.scrollWidth - 1;
+    }
+    bar.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    document.querySelectorAll(".nav-link").forEach(function (link) { link.addEventListener("click", function () { setTimeout(update, 0); }); });
+    setTimeout(update, 0);
+  })();
   // A mouse wheel over the bar slides it sideways, so every chip is reachable without a trackpad.
   document.querySelector(".bar").addEventListener("wheel", function (event) {
     var bar = event.currentTarget;
@@ -10934,7 +10980,7 @@ describe("holidays the owner picked", () =&gt; {
   // The now note left the bar with the phase names; it lives on as the feature chip's hover text.
   (function () {
     var note = document.querySelector('.bar nav[data-menu="roadmap"] .now-note');
-    var open = document.querySelector('.bar nav[data-menu="roadmap"] .cell-open');
+    var open = currentGroup(document.querySelector('.bar nav[data-menu="roadmap"]'));
     if (note && open) open.title = note.textContent.replace(/^[^a-z0-9]+/i, "");
   })();
   document.addEventListener("toggle", function (event) { if (event.target.matches(".rstep, .item-fold")) markHere(); }, true);
