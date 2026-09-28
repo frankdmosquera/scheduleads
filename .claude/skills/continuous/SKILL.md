@@ -31,9 +31,8 @@ A direct Continuous request authorizes these local actions for this run:
 - create the final local feature commit
 - merge a completed feature into the local default branch with a merge commit,
   and tag it `item-NN-done`
+- delete the merged local feature branch with `git branch -d`
 - repeat with the next unchecked build-plan item
-
-Feature branches are kept, never deleted.
 
 It does not authorize push, deploy, publish, send, remote changes, destructive
 actions, database resets, irreversible migrations, finding acceptance, failed
@@ -251,7 +250,7 @@ For the finished feature:
 7. Switch to the local default branch and merge the feature branch with a merge
    commit (`git merge --no-ff <branch> -m "feat: <title>"`), never a squash,
    so every step commit stays in its history. Tag it `item-NN-done`.
-8. Keep the feature branch.
+8. Delete the merged local feature branch with `git branch -d`, never `-D`.
 9. Confirm the default branch is clean before selecting the next feature.
 
 Never merge a partial or failing feature. Never push the default branch. The
@@ -275,7 +274,7 @@ For a confirmed P0 or P1 introduced by this run, automatic repair may use one
 dedicated configured fix branch and the same repair-attempt limit only when no
 product decision or scope expansion is required. Spec, verify, archive, and
 locally merge that fix branch with a merge commit like normal Blueprint fix
-work, keeping the branch. Re-audit
+work, then delete it. Re-audit
 the repair before closing the finding.
 
 Otherwise stop with the finding open. Do not hide it, widen into general

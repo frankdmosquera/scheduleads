@@ -208,8 +208,10 @@ not to read. That is how this repo went a week with no GitHub remote at all.
 - **GitHub is the main copy.** The repo is `frankdmosquera/scheduleads`. On
   any machine, pull before starting. A missing remote or unpushed commits get
   said out loud at the start of a session.
-- **One branch per feature**, off `main`. Steps are commits on it, never
-  branches. Small chores go on whichever feature branch is open.
+- **One branch per feature**, off `main`, named for the feature so the branch
+  alone says which one is open: `feature/booking-links-resources-and-availability-rules`.
+  Steps are commits on it, never branches. Small chores go on whichever
+  feature branch is open.
 - **One commit per step, pushed straight after.** The step number goes in the
   message: `feat: 2.3 availability rules api`. **Standing yes, Frank,
   2026-09-26:** a step that passes its checks is committed and pushed to its
@@ -220,7 +222,7 @@ not to read. That is how this repo went a week with no GitHub remote at all.
   deleted branch, each of which still needs its own yes.
 - **Merging is Frank's call, every time.** `/complete` merges locally with a
   merge commit (`--no-ff`), never a squash, tags `item-NN-done`, and pushes
-  `main` and the tag, all on one explicit yes. The branch is kept.
+  `main` and the tag, all on one explicit yes, then deletes the branch.
 - **Every step and merge ends with a sync line** comparing the local and GitHub
   commit, so "it's pushed" is checked, never assumed.
 
@@ -481,6 +483,12 @@ Only the project's own code goes in the drawer: what sits in `frontend/`,
 Never `node_modules`, `package-lock.json`, `dist/`, Drizzle's snapshot JSON or
 anything else generated. A changed dependency is one line naming the package,
 not the manifest.
+
+**Phone layout lives in two pages.** On screens up to 760px the page makes
+diagrams, file trees and code full width and the top bar one row (Frank,
+2026-09-28, ported from asset-engine's build log). The same CSS block and
+script are in `asset-engine/blueprint/context/project-log.html`; a change to
+either page's phone layout goes into both.
 
 **One numbering, everywhere.** Roadmap item N owns steps N.1 to N.k, so a step
 number always says which item it belongs to. Never number a feature's steps from

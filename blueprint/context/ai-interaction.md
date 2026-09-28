@@ -234,10 +234,11 @@ enable checkpoint prompts by itself. The previous workflow uses
    `blueprint/context/review.md` to their stubs.
 11. **Feature commit** - `/complete` stages everything on the branch (step work
    plus the logging changes) into one conventional feature commit.
-12. **Merge** - `/complete` asks one question naming the merge, the tag and the
-    push. On a yes it merges the branch into main locally with a merge commit
-    (`--no-ff`, never a squash), tags a feature `item-NN-done`, pushes main and
-    the tag, and keeps the branch. Every step commit stays in main's history.
+12. **Merge** - `/complete` asks one question naming the merge, the tag, the
+    push and the branch deletion. On a yes it merges the branch into main
+    locally with a merge commit (`--no-ff`, never a squash), tags a feature
+    `item-NN-done`, pushes main and the tag, then deletes the branch locally and
+    on GitHub. Every step commit stays in main's history.
 13. **Release prep (optional)** - run `/release render` or `/release vercel`
     after a completed feature or milestone when you want local provider config,
     env var review, build/start checks, and a smoke-test path. `/release` must
@@ -266,7 +267,7 @@ Continuous Mode also exists only as an explicit opt-in command: `/continuous`
 or `$continuous`. Do not suggest it as the default next action. Its explicit
 invocation authorizes the local per-feature lifecycle defined by that skill:
 configured checkpoint commits, one local merge commit and tag per completed
-feature, kept branches, and repetition through the
+feature, local merge commits, branch deletion, and repetition through the
 configured limit or end of the build plan. It never authorizes push, deploy,
 publish, send, remote changes, destructive actions, finding waivers, or product
 decisions.
@@ -286,7 +287,8 @@ changes anything on its own, so the two stay a mirror.
 3. **Merge into `main` locally with a merge commit**, never a squash, then tag
    and push `main`. `/complete` does this on one explicit yes.
 4. **The next feature starts from a fresh branch** off the updated `main`.
-5. **Keep the merged branch.** Never delete a branch, on this or any project.
+5. **Delete the merged branch**, locally with `git branch -d` and on GitHub,
+   once `main` is pushed. The merge commit keeps every step; only the name goes.
 
 On a second machine, pull before starting. That is the only time GitHub gives
 anything back.
