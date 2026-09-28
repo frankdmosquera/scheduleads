@@ -1,23 +1,23 @@
 # Independent Review
 
 **Status:** passed
-**Target commit:** 78370d9dbf9555bdcbb0fc4dcb91c8746d7908da
+**Target commit:** 5a30d472e59621b62e5b88bae2e5532978d913a3
 **Base commit:** 931ecadd49bebb38bd9f02bf27a2deeab0236755
 **Base ref:** main
-**Spec hash:** 67cc0e5600e408d762c53bd2ab6455fdc291d7beba31e60405f768b4203ca0e8
+**Spec hash:** 072b404b016a35ef9a82d6205bc75cf19236b0ef241131e4d5b8b5e8297f1bf0
 **Prepared by:** claude
 **Builder model:** claude-opus-5-5
 **Requested reviewer:** claude
 **Requested model:** claude-opus-5-5
 **Requested execution:** automatic
-**Requested at:** 2026-09-27T04:16:13Z
+**Requested at:** 2026-09-28T13:34:06Z
 **Workflow:** regular
 **Check required:** no
 **Reviewer adapter:** claude
 **Reviewer model:** claude-opus-5-5
 **Reviewer context:** fresh subagent
 **Actual execution:** automatic
-**Reviewed at:** 2026-09-27T04:19:39Z
+**Reviewed at:** 2026-09-28T13:40:13Z
 **Scope:** current
 **Lenses:** quality, security, performance, tests
 **Verdict:** passed
@@ -25,65 +25,86 @@
 
 ## Handoff
 
-Review the active spec and the complete `931ecad..78370d9` delta in a fresh
+Review the active spec and the complete `931ecad..5a30d47` delta in a fresh
 session or isolated subagent without the builder conversation. Run all Audit lenses from scratch.
 Run Check when required above. Do not edit product code, accept findings, or
 reuse the existing findings as the review scope.
 
 This is a per-step review (`AGENTS.md`, "A review after every step"): feature 2
-is built and approved one step at a time, so steps 2.1 to 2.5 are checked in
-the spec and its status is not `verified`. The last receipt passed at
-`e58e0a0` (step 2.4). New since then (`e58e0a0..78370d9`): the F-26 to F-28
-fixes (`fe5a144`, marked `fixed`, yours to close or reopen), and step 2.5
-itself, commit `78370d9` (`fe5a144..78370d9`): `hono` and the workspace link
-`"backend": "*"` declared in the frontend; `backend/tsconfig.types.json` and
-the types-only export `backend/app-type`, written fresh by the frontend's
-`predev`/`prebuild`; two `hc<AppType>` clients in `frontend/lib/api-client.ts`
-(`dashboardApiClient` with the cookie, `publicApiClient` without); the home's
-booking links list (`frontend/components/booking-links/booking-links-list.tsx`,
-`frontend/app/page.tsx`); `coding-standards.md` and `AGENTS.md` corrected.
-Judge 2.5 against its own Done when as approved on 2026-09-27 (Part 1 pieces 1
-to 5, Part 2 checks). The by-hand browser checks and the four broken-build
-outputs are recorded on the build log page, not in the repo; the broken builds
-can be re-run by renaming the list route or the `durationMinutes` field in
-`backend/routes/public-booking-links-routes.ts` and running
-`npm run build --workspace=frontend` (restore after).
+is built and approved one step at a time. The last receipt passed at `78370d9`
+(step 2.5). New since then (`78370d9..5a30d47`): the F-29 and F-30 fixes
+(`b86c70c`, `b2c5856`, marked `fixed`, yours to close or reopen); docs and
+build-log chores (`3292f91` to `de03970`), including `4cbc707`, which split the
+shared tables one per file and renamed the validation folders (behaviour
+unchanged, `db:generate` found no change), and `1e45d8d`, a comment sweep; and
+step 2.6 itself, commit `5a30d47` (`de03970..5a30d47`).
+
+Step 2.6, "Holidays the owner picks", as rewritten and approved on 2026-09-28
+(spec, step 2.6, Part 1 pieces 1 to 5 and the Done when). The rule behind it,
+new project plan decision 30: the product never decides a business's schedule;
+nothing is closed by default. What it adds: `date-holidays ^3.37.0` in the
+backend only (Frank's yes); `closedHolidays` (jsonb, not null, default `[]`)
+on `availability_rule`, with the row-kind check keeping it empty on a person's
+row and a new check that picks need a country, migration
+`0002_closed_holidays.sql`; the form check's `closedHolidays`;
+`backend/lib/bookable-hours/closed-holidays.ts` turning picked names into dates
+from the province's and the country's lists, throwing on an unknown country,
+province or name (the package silently falls back to the national list for an
+unknown province); `applyBookableHoursRules` adding them to the closed dates
+before one-off dates open any; the dev seed's picks (painting all nine,
+clinic four, set on existing rows too); 8 rules tests and 4 form-check tests.
+By-hand checks (planted faults, database refusals, the public routes' closed
+dates on Sep 28, the seed run twice, the frontend bundle) are recorded on the
+build log page, not in the repo; the routes can be re-read by building the
+backend and calling `app.request` from `backend/dist/app.js` against the seeded
+local `scheduleads_dev`.
+
+**Working tree note.** Four files are modified in the working tree but are not
+part of the target and were not made by the builder: `AGENTS.md`,
+`blueprint/context/ai-interaction.md`, `.claude/skills/complete/SKILL.md` and
+`.claude/skills/continuous/SKILL.md` (someone else's uncommitted edits, left
+untouched). Exclude them from the review and record them under Remaining risk
+rather than treating the target as stale.
 
 ## Commands
 
-- Freshness: `HEAD` = target, `git merge-base main HEAD` = base, spec SHA-256 matches, working tree differed only in `review.md`: pass
-- `npm run test --workspace=@scheduleads-app/shared`: pass (25 tests)
-- `npm run test --workspace=backend`: pass (30 tests, `pretest` seen rebuilding `packages/shared` first, against the seeded local `scheduleads_dev`)
+- `git rev-parse HEAD`: pass (`5a30d472e59621b62e5b88bae2e5532978d913a3`, equals Target commit)
+- `git merge-base main HEAD`: pass (`931ecadd49bebb38bd9f02bf27a2deeab0236755`, equals Base commit)
+- SHA-256 of `blueprint/context/current-feature.md`: pass (equals Spec hash)
+- `npm run test --workspace=@scheduleads-app/shared`: pass (2 files, 29 tests)
+- `npm run test --workspace=backend`: pass (2 files, 38 tests, against the seeded local `scheduleads_dev`)
 - `npm run build --workspace=backend`: pass
-- `npm run build --workspace=frontend`: pass (`prebuild` wrote `backend/dist/types/`)
+- `npm run build --workspace=frontend`: pass
 - `npm run lint --workspace=frontend`: pass
 - `npm run format:check`: pass
-- Broken on purpose: list route renamed to `/:slug/booking-linkz`, `npm run build --workspace=frontend`: fail as expected, `TS2339` at `lib/api-client.ts(74,28)` and `(85,44)`; restored with `git checkout`, rebuilt: pass, and the regenerated declarations no longer carry the renamed path
+- Planted faults in `closed-holidays.ts` (temporary edit, restored byte-for-byte, SHA-256 compared, `git status` unchanged): pass, each caught by exactly one test
+- Holiday probe against `backend/dist` and `date-holidays` 3.37.0: pass
+- Database probe in one transaction, rolled back; public detail route via `app.request` from `backend/dist/app.js`: pass
 
 ## Evidence
 
-- F-26 closed: `require-known-subscription-middleware.ts:27-30` names both readers of `organization.plan`; `public-booking-links-routes.ts:37-38` points back
-- F-27 closed: `coding-standards.md:197-205` public-route exception matches the route code (`public-booking-links-routes.ts:39-52`, `:63-67`, `:83-93`); `:37-40`, `:111`, `:124-125` layout and areas
-- F-28 closed: `backend/package.json:16`, `:18` pre scripts; `AGENTS.md:660-665`
-- 2.5 piece 1: `frontend/package.json` adds `hono ^4.13.8` and `"backend": "*"`; lockfile gains only those two lines, one `hono` 4.13.8 at the root, `node_modules/backend` a workspace link
-- 2.5 piece 2: `backend/tsconfig.types.json` emits declarations only from `app.ts` into `dist/types/` (gitignored, `backend/.gitignore:2`); `backend/package.json:4-8` types-only export; `frontend/package.json` `predev`/`prebuild` chain it with `&&`, so a backend type error stops the frontend build. Emitted declarations checked for connection strings or secret names: none
-- 2.5 piece 3: `api-client.ts` builds `dashboardApiClient` with `credentials: "include"` and `publicApiClient` with the fetch default (no cookie cross-origin), matching `publicCorsMiddleware`'s `credentials: false`; `MeType` inferred from `/me`'s 200 (`app.ts:27-45`); `fetchMe` keeps its signed-out, 403 and unexpected-status paths
-- 2.5 piece 4: `booking-links-list.tsx` reads once per slug with a `live` guard, loading/list/empty/unreachable states, names in the route's name order; mounted at `page.tsx:225`. The 404 case is mis-stated (F-29)
-- 2.5 piece 5: `coding-standards.md:51-59` and `:158-168` no longer place `AppType` in `packages/shared` and add the two-clients rule; wording slip recorded as F-30
-- Security: no new write path, no `organizationId` added to any public answer, no bare `fetch` to the API left in `frontend/`; the dashboard list goes through the unauthenticated public route, so it shows exactly what a stranger sees
-- Performance: one extra request per home load, after `/me`; the list is a business's services, no pagination needed at this size
-- Tests: no skipped or focused tests; no frontend test runner (spec says adding one needs a yes); the typed seam is proved by the type system at every build, not by a saved test
+- Freshness: HEAD, merge base against local `main` and spec hash all match the request. The only other paths differing from the target are the four files named in the working-tree note plus this file; excluded as instructed.
+- Step 2.6 against its Done when: rules tests cover no picks, Family Day on Feb 16 2026 and Feb 15 2027, all nine closing exactly nine 2026 dates, the national-only Sep 30 for an Alberta business, Heritage Day unpicked staying open, a one-off date opening a picked Canada Day for that person only, a horizon across New Year, and an unknown name and province throwing (`apply-bookable-hours-rules.test.ts:172-268`); 4 new form-check tests (`availability-validation-schemas.test.ts:131-154`).
+- Planted faults: removing the province check failed only the unknown-name/province test; dropping the national list failed only the national-only test; limiting the year loop to the first year failed only the New Year test.
+- Probe: unknown country `ZZ`, unknown province `CA-ZZ` and lowercase `ab` throw; picks with no country throw; no picks with no country return nothing; no name in any Canadian province's list has a different date from the national list in 2026 to 2030.
+- Database (rolled back): `closedHolidays` is `jsonb not null default '[]'`; picks on a person's row, picks with no country on the business row, and a null `closedHolidays` are all refused; clearing picks and country together is allowed; the row was unchanged after rollback.
+- Public detail route today (2026-09-28): `painting-dev` closes `2026-10-12` (Thanksgiving) and `2026-11-11` (Remembrance Day); `clinic-dev` closes `2026-09-30`, `2026-12-25` and `2027-01-01` and not Thanksgiving; neither answer contains `organizationId` or `source`.
+- Lockfile: step 2.6 adds `date-holidays` and twelve helper entries and removes nothing; the frontend's `.next/static` contains no `date-holidays` code.
+- Migration `0002_closed_holidays.sql` adds the column before re-adding the row-kind check and adds the picks-need-country check; the Drizzle table matches it.
+- Earlier commits in the delta: F-29 and F-30 repairs re-read and closed; `4cbc707` (tables one per file, validation folders renamed) and `1e45d8d` (comment sweep) change no behaviour in the code read (exports, drizzle glob, package exports; the builds and tests pass); no em dashes and no AI attribution in the step's code or commit.
 
 ## Findings
 
-- F-29 [P2] open: a business with no hours yet shows "unexpected status (404)" with a Try again that cannot help (`frontend/lib/api-client.ts:82`)
-- F-30 [P3] open: the docs around the new types build are half updated (`blueprint/context/coding-standards.md:59`, `AGENTS.md:644-647`)
-- Closed this pass: F-26, F-27, F-28
+- F-29 closed (repair verified)
+- F-30 closed (repair verified)
+- F-31 [P3] open: holiday dates recomputed per public request, work grows with an unbounded `horizonDays`
+- F-32 [P3] unverified: picks are the package's display names; a renamed holiday would 500 the business's public detail route
+- F-33 [P3] open: spec still says step 2.6 is "not agreed yet", with no approval or built record and a stale Files / areas list
 
 ## Remaining risk
 
-- `/check` not run (not required); the by-hand browser checks of 2.5 (three links, empty state, unreachable and recovery, `/me`) were not repeated here, and no dev server was started, so F-29 is read off the code, not observed live
-- The broken-on-purpose `durationMinutes` rename was not re-run; only the route rename was
-- Vercel's install and build of the frontend (workspace root install, `backend` devDependencies present for `build:types`) are assumed, not proved; if the frontend were ever installed outside the workspace, the unscoped `"backend": "*"` would resolve from the public registry
-- The dashboard dev server keeps old route types until restarted (said out loud in the spec)
-- Open from earlier work and not re-examined: F-12, F-13, F-14, F-16
+- Four files outside the target are modified in the working tree by someone else and were not reviewed: `AGENTS.md`, `blueprint/context/ai-interaction.md`, `.claude/skills/complete/SKILL.md`, `.claude/skills/continuous/SKILL.md`. Seen in passing: they switch `/complete` and `/continuous` to deleting the merged feature branch, which contradicts the workspace `CLAUDE.md` rule "Never delete a branch" and the committed `AGENTS.md`.
+- Check was not required and was not run; no dev server or browser was started. The F-29 live check and the step's by-hand checks (seed run twice, browser) are the builder's and were not repeated; this pass re-read the public route through `app.request` instead.
+- The throw on an unknown pick answers `500` on a public route by design (step 2.6 piece 4); nothing yet alerts on it.
+- The dashboard activity record (`blueprint/.state/run.json`) was not written: this reviewer was limited to `findings.md` and `review.md`.
+- Rate limiting the public routes remains out of scope (spec), which F-31's cost makes slightly more relevant once owners set their own horizon.

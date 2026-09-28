@@ -352,7 +352,7 @@ backend test command in `AGENTS.md`: needs local Postgres with `db:migrate` and
 `db:seed` run.
 **Resolution:** 2026-09-27, fixed on Frank's yes: `backend/package.json` has `pretest` and `pretest:watch` rebuilding `packages/shared` first, like `predev` and `prebuild`; `AGENTS.md` (Commands) says the backend tests need the local Postgres migrated and seeded, and fail rather than skip without it. Proved by deleting `packages/shared/dist` and running `npm run test --workspace=backend`: the pretest rebuilt it and all 30 tests passed. Awaits the next review to close. Closed 2026-09-27 by /audit independent (step 2.5, `78370d9`): `backend/package.json:16` and `:18` add `pretest` and `pretest:watch` (npm runs a `pre` script for any script name); `npm run test --workspace=backend` was seen running `pretest` before Vitest, and 30 tests passed against the seeded local database. `AGENTS.md:660-665` says the tests need the local Postgres migrated and seeded and fail rather than skip. No new defect.
 
-### F-29 [P2] fixed - A business with no hours yet shows "unexpected status (404)" and a Try again that cannot help
+### F-29 [P2] closed - A business with no hours yet shows "unexpected status (404)" and a Try again that cannot help
 
 **File:** frontend/lib/api-client.ts:82
 **Found:** 2026-09-27 by /audit independent (scope: current; lens: quality)
@@ -376,9 +376,9 @@ without Try again as "not open for online booking yet" (from a slug `/me` just
 returned, its causes are no business hours or a plan without booking), and
 correct the comment at `:82-84`. Add the state to the spec's step 2.5 piece 4
 list.
-**Resolution:** Fixed 2026-09-27 on Frank's yes: `fetchBookingLinks` returns a `not-bookable` state for the public 404 (`frontend/lib/api-client.ts`), shown by `booking-links-list.tsx` as "Not open for online booking yet." with no Try again; the wrong comment is gone and the spec's piece 4 lists the state. Proved live: a throwaway business with no hours, made active for the dev admin, showed the new message; removed after, Summit's three links back. Lint, frontend build and format check pass. Awaiting the next review to close.
+**Resolution:** Fixed 2026-09-27 on Frank's yes: `fetchBookingLinks` returns a `not-bookable` state for the public 404 (`frontend/lib/api-client.ts`), shown by `booking-links-list.tsx` as "Not open for online booking yet." with no Try again; the wrong comment is gone and the spec's piece 4 lists the state. Proved live: a throwaway business with no hours, made active for the dev admin, showed the new message; removed after, Summit's three links back. Lint, frontend build and format check pass. Awaiting the next review to close. Closed 2026-09-28 by /audit independent (step 2.6, `5a30d47`): `frontend/lib/api-client.ts:76-79` adds `{ state: "not-bookable" }` to `BookingLinksResultType`, `:91-93` returns it for a `404` with a comment that now states the real causes, and `booking-links-list.tsx:71-77` shows "Not open for online booking yet." with no Try again, while `:60-69` keeps Try again only for `unreachable`. The spec's step 2.5 piece 4 lists the state. Frontend build and lint pass. No new defect from the repair (the live check was the builder's; this pass read the code).
 
-### F-30 [P3] fixed - The docs around the new types build are half updated
+### F-30 [P3] closed - The docs around the new types build are half updated
 
 **File:** blueprint/context/coding-standards.md:59
 **Found:** 2026-09-27 by /audit independent (scope: current; lens: quality)
@@ -403,4 +403,78 @@ follows the sentences about shared, and the `AppType` sentences are their own
 paragraph after it, rewrapped. `AGENTS.md` Commands now says the frontend's
 `predev` and `prebuild` also run `npm run build:types --workspace=backend`, so
 a backend type error stops the frontend's dev server and build too. Docs only,
-no code touched. Awaiting the next review to close.
+no code touched. Awaiting the next review to close. Closed 2026-09-28 by /audit
+independent (step 2.6, `5a30d47`), read at the target commit:
+`coding-standards.md:51-54` is the whole `packages/shared` paragraph, so "It
+compiles to `dist/`" now follows the sentences about shared, and the `AppType`
+sentences are their own wrapped paragraph from `:62`. `AGENTS.md:647-651` (as
+committed) says the frontend's hooks also run
+`npm run build:types --workspace=backend` and that a backend type error stops
+the frontend's dev server and build. No new defect.
+
+### F-31 [P3] open - Holiday dates are recomputed on every public request, with work that grows with an unbounded horizon
+
+**File:** backend/lib/bookable-hours/closed-holidays.ts:45
+**Found:** 2026-09-28 by /audit independent (scope: current; lens: performance)
+**Why it matters:** `closedHolidayDates` builds a fresh catalogue and calls
+`getHolidays(year)` on two lists for every year the horizon touches, on every
+call, and `GET /public/:slug/booking-links/:bookingLinkId` calls it on every
+request (through `resolveBookableHours`). The work is synchronous CPU on the
+event loop of a public, unauthenticated, not rate-limited route. Measured
+against the built backend: about 1.0 ms per call for a 60-day horizon, 1.6 ms
+across New Year, 7.5 ms for ten years and 68 ms for a hundred. `horizonDays`
+has no upper bound in the database check (`> 0`) or the shared schema
+(`z.int().min(1)`, `availability-rule-validation-schema.ts:26`), so from
+feature 12, when owners write their own row, one business with a large horizon
+makes each public request to it cost tens of milliseconds of blocked CPU. At
+today's 60 and 120 days it is harmless; before step 2.6 the horizon's size cost
+nothing.
+**Suggested fix:** Give `horizonDays` a sensible maximum in the shared schema
+and the database check (for example 365 or 730) when feature 12 adds its
+writer, and optionally cache each list's holidays per year in the module (the
+lists are already cached; the years are not).
+**Resolution:**
+
+### F-32 [P3] unverified - A pick is the package's display name, so a renamed holiday would take a business's booking page down
+
+**File:** backend/lib/bookable-hours/closed-holidays.ts:58
+**Found:** 2026-09-28 by /audit independent (scope: current; lens: quality)
+**Why it matters:** `closedHolidays` stores `date-holidays`' English display
+names (`"Thanksgiving"`, `"St. Patrick’s Day"` with a typographic apostrophe),
+and a name the list no longer has throws, as step 2.6 piece 4 decided. The
+throw propagates out of `applyBookableHoursRules` and the public detail route
+answers `500` for that business until its row is corrected. The names are not a
+stable identifier: the dependency is `^3.37.0`, so a lockfile refresh can pull
+a minor release that renames or drops a holiday, and a province can abolish
+one, after which every business that picked it loses its public booking page,
+not just that one closure. The saved tests pin the nine Alberta names and
+National Day for Truth and Reconciliation, so a rename of those would fail the
+tests on upgrade; any other name a feature 12 picker offers would not. Not
+observed: no rename exists in 3.37.0, and the probe found no name that differs
+in date between Alberta's list and the national one in 2026 to 2030, for any
+province.
+**Suggested fix:** Decide in feature 12, when the picker writes names: either
+validate picks against the list at write time and keep a test over every name
+the picker can offer, or store a stable key (the package's `rule` string) with
+the display name. Worth a note on feature 12 now so it is not rediscovered.
+**Resolution:**
+
+### F-33 [P3] open - The spec still says step 2.6's plan is "not agreed yet" and records neither its approval nor what was built
+
+**File:** blueprint/context/current-feature.md:327
+**Found:** 2026-09-28 by /audit independent (scope: current; lens: quality)
+**Why it matters:** Step 2.6 is ticked `[x]` and built in `5a30d47`, but its
+text still reads "Plan, rewritten 2026-09-28 (not agreed yet)", and unlike
+steps 2.1 to 2.5 it has no "Approved by Frank" or "Built" line, so the only
+record in the repo says the plan was never agreed. The approval and the by-hand
+checks live only on the build log page. The Files / areas list is also stale:
+`:395` names `backend/routes/public-booking-links.ts` (the file is
+`public-booking-links-routes.ts`) and it omits
+`backend/lib/bookable-hours/closed-holidays.ts` and migration
+`0002_closed_holidays.sql`. The workflow rules say a spec found wrong in review
+is corrected before the next step builds on it.
+**Suggested fix:** Replace "(not agreed yet)" with the approval and its date,
+add a short "Built 2026-09-28" line like 2.4's (the lockfile gained
+`date-holidays` and twelve helpers; 43 MB on disk), and correct the Files /
+areas list.
+**Resolution:**
