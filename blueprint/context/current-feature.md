@@ -43,8 +43,8 @@ stops the build instead of failing at runtime.
   A person can have **one-off dates** (hours on one date) without copying
   the week.
 - **Set once per business, on the business's row only**: time zone, minimum
-  notice, how far ahead customers can book, closed dates, and the country
-  and province for statutory holidays. The database refuses them on a
+  notice, how far ahead customers can book, closed dates, the country and
+  province, and the holidays the owner picked to close. The database refuses them on a
   person's row, so there is nothing to copy and nothing to drift.
 - **Closures are for everyone, openings beat them**: a closed date or
   holiday closes online booking for everyone, whatever their own week says;
@@ -85,9 +85,10 @@ stops the build instead of failing at runtime.
 - Linking a person to a login. Nothing in this item reads the link; the
   first item that does (item 3's per-person Google, or item 12b's calendars)
   adds it as one nullable column.
-- Switching single holidays off, and the one-click close and open screens.
-  Item 12. Here every holiday of the province is on, and closed dates and
-  one-off dates are written by the seeds.
+- The holiday picker (all the province's main holidays in one click, or one
+  by one), and the one-click close and open screens. Item 12. Here nothing
+  is closed by default; the seeds write the picks, closed dates and one-off
+  dates.
 - Any write route or settings screen for links, resources or hours. Item 12.
   Until then the dev seed is the only writer, and only on the local database.
 - Any command that writes links or hours into a real client's business.
@@ -315,50 +316,70 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   pass. No new saved tests: the frontend has no test runner, and adding
   one needs a yes.
 
-- [ ] **2.6 Statutory holidays.**
-  Resolve `holidayCountry` (ISO 3166-1 alpha-2) and `holidayRegion` (the
-  province, from ISO 3166-2) into the public holidays that fall inside the
-  horizon, in the business's time zone, and add them to the closed dates in
-  `resolveBookableHours`, where a one-off date opens them like any closed
-  date. Canada's holidays differ by province, which is why the province is
-  stored. How the dates are produced depends on Open question 2. Seed both
-  dev businesses with `CA` / `AB`, like every real tenant.
-  **Plan, written 2026-09-27 (not agreed yet), five pieces:**
+- [x] **2.6 Holidays the owner picks.**
+  The business's row says its country and province (`holidayCountry`,
+  `holidayRegion`) and, new, which holidays the owner has picked to close
+  (`closedHolidays`). The picked holidays inside the horizon, in the
+  business's time zone, join the closed dates in `resolveBookableHours`,
+  where a one-off date opens them like any closed date. **Nothing is closed
+  by default: we build the functionality, the client decides their schedule**
+  (Frank, 2026-09-28). The picker screen is feature 12.
+  **Plan, rewritten 2026-09-28 (not agreed yet), five pieces.** The first
+  version (2026-09-27) closed Alberta's nine statutory holidays for every
+  business automatically, following version 8's "the whole year on by
+  default". Frank reversed that: none closes until the owner picks it.
   1. Blocker: the holiday source (Open question 2). Recommended
      `date-holidays` in `backend` only: every province, Easter days, kept
      current by its maintainers; about 11 MB and four helper packages.
-  2. Only statutory holidays (the source's `public` type) close booking.
-     Alberta's nine: New Year's Day, Family Day, Good Friday, Victoria Day,
-     Canada Day, Labour Day, Thanksgiving, Remembrance Day, Christmas Day.
-     Optional days (Easter Monday, Heritage Day) and observances stay open;
-     switching single holidays is item 12.
-  3. `backend/lib/bookable-hours/statutory-holidays.ts` (new, the only file
-     that knows the source) gives the holiday dates between two dates;
-     `applyBookableHoursRules` gains `holidayCountry` / `holidayRegion` and
-     adds them to the closed dates before one-off dates open any; a horizon
-     past New Year asks for both years. `resolveBookableHours` passes the
-     two columns along.
-  4. A province the source does not know throws, like a business row
-     missing a setting; no country means no holidays.
-  5. The seed sets `CA` / `AB` on new business rows and on an existing one
-     with no country, so no machine needs a rebuild.
-  **Done when:** saved tests on the rules with a fixed `now`: an Alberta
-  business closes Family Day (third Monday of February, Feb 16 in 2026),
-  Good Friday and Canada Day; in 2027, when February 1 is a Monday, Family
-  Day is Feb 15; a `CA` / `QC` business leaves Family Day out and closes
-  June 24; Easter Monday and Heritage Day stay open; a one-off date on Canada
-  Day opens it for that person only; a business with no country gets only
-  its own closed dates; a horizon past New Year gets both years; an unknown
-  province throws; planted faults make the right tests fail. By hand, today:
-  the public detail route lists Thanksgiving (Oct 12) and Remembrance Day
-  (Nov 11) for `painting-dev`, and also Christmas and New Year's Day for
-  `clinic-dev`; the seed run twice changes nothing the second time. If the
-  package is added, the lockfile gains only it and its helpers and the
-  frontend build does not contain it. All tests, both builds, lint and the
-  format check pass.
+     **Answered 2026-09-28: yes, the whole package, no `--pick`.** Added as
+     `date-holidays ^3.37.0`. The plan's size was wrong: 11 MB was the
+     package alone; with its helpers it is 43 MB on disk and twelve
+     packages (moon tables, moment, lodash), none with install scripts.
+     Measured in memory: about 9 MB alone, about 3 MB on top of the running
+     API (~215 MB). `holidays2json --pick CA,US` was weighed and left out:
+     it saves memory only, and needs a hook that fails quietly.
+  2. The owner picks; nothing is closed by default. A new column,
+     `closedHolidays`, on the business's row: a list of holiday names
+     (`"Family Day"`), empty = none closed, refused on a person's row like
+     every business setting. Names, not dates, so a picked holiday lands on
+     the right date every year. The names come from the province's list and
+     the country's national one (an Alberta business can also pick National
+     Day for Truth and Reconciliation, which is national only). "All the
+     province's main holidays in one click" is the picker's, feature 12.
+     One migration, generated from `packages/shared`.
+  3. `backend/lib/bookable-hours/closed-holidays.ts` (new, the only file
+     that knows the source) gives the dates of the picked holidays between
+     two dates; `applyBookableHoursRules` adds them to the closed dates
+     before one-off dates open any; a horizon past New Year asks for both
+     years. `resolveBookableHours` passes the three columns along.
+  4. A picked name or a province the source does not know throws, like a
+     business row missing a setting: a business that silently lost its
+     Christmas closure would take bookings on Christmas Day. No picks, or no
+     country, means only its own closed dates.
+  5. The seed: both made-up businesses `CA` / `AB`. The painting company
+     picks all nine statutory days (the one-click case); the clinic picks
+     four by hand (New Year's Day, National Day for Truth and
+     Reconciliation, Canada Day, Christmas Day: the pick-and-choose case).
+     Set on existing rows with no picks too, so no machine needs a rebuild.
+     The shared validation schema gains `closedHolidays`.
+  **Done when:** saved tests on the rules with a fixed `now`: a business
+  with no picks gets only its own closed dates; Family Day picked closes Feb
+  16 in 2026 and, in 2027 when February 1 is a Monday, Feb 15; all nine
+  picked close exactly nine dates in a year; a national-only pick (Truth and
+  Reconciliation, Sep 30) closes for an Alberta business; Heritage Day,
+  not picked, stays open; a one-off date on a picked Canada Day opens it for
+  that person only; a horizon past New Year gets both years; an unknown name
+  or province throws; planted faults make the right tests fail. By hand,
+  today: the migration applies to the local database, which refuses
+  `closedHolidays` on a person's row; the painting company's public detail
+  route lists Thanksgiving (Oct 12) and Remembrance Day (Nov 11); the
+  clinic's lists Sep 30, Dec 25 and Jan 1 and not Thanksgiving; the seed
+  run twice changes nothing the second time; the lockfile gains only the
+  package and its helpers, and the frontend build does not contain it. All
+  tests, both builds, lint and the format check pass.
   **Changed from the first Done when (2026-09-27):** it asked the public
   route to show Family Day and Canada Day, but no business books that far
-  ahead (60 and 120 days from Sep 27 end Nov 26 and Jan 25), so those are
+  ahead (60 and 120 days end late November and late January), so those are
   proved by saved tests with a fixed date.
 
 ## Files / areas
@@ -432,13 +453,14 @@ stored time.
 | `closedDates` | jsonb | business's row only; `YYYY-MM-DD` list |
 | `holidayCountry` | text, nullable | business's row only; ISO 3166-1 alpha-2; null = no holidays |
 | `holidayRegion` | text, nullable | business's row only; the province, e.g. `AB`; needs a country |
+| `closedHolidays` | jsonb, not null, default `[]` | business setting (2.6): the holiday names the owner picked to close, `[]` = none, nothing closed by default; a person's row must keep it empty; picks need a country |
 | `createdAt`, `updatedAt` | timestamptz, not null, default now | |
 
 One check keeps the two kinds of row honest: when `resourceId` is null,
 `weeklyHours`, `timezone`, `minimumNoticeMinutes`, `horizonDays` and
 `closedDates` are all set; when it is set, `timezone`,
 `minimumNoticeMinutes`, `horizonDays`, `closedDates`, `holidayCountry` and
-`holidayRegion` are all null. A person's row therefore holds only their own
+`holidayRegion` are all null and `closedHolidays` is empty (2.6). A person's row therefore holds only their own
 week and their one-off dates, and changing a business setting changes it
 for everyone.
 
@@ -586,11 +608,11 @@ build for the typed seam. Final gate: the tests,
 1. **Answered 2026-09-27: yes.** `hono ^4.13.8` and `"backend": "*"` added
    to `frontend/package.json`; the lockfile gained only those two lines, one
    `hono` copy is shared, and `backend` links to the workspace folder.
-2. **Where do statutory holidays come from?**
-   Recommended: the `date-holidays` package. It covers Canada by province,
-   including Family Day in Alberta, and Easter-based dates, and it is
-   maintained. The alternative is a hand-written table per province,
-   maintained forever. Needed by 2.6.
+2. **Answered 2026-09-28: `date-holidays`, the whole package.** Added to
+   `backend` only as `^3.37.0`: 43 MB on disk with twelve helper packages,
+   about 3 MB of memory on top of the running API. About a million
+   downloads a week, since 2016; code ISC, data CC-BY-3.0 (credit only if
+   the holiday list itself is republished). See step 2.6, piece 1.
 3. **Answered 2026-09-25: yes.** `/tests` ran before 2.1 and installed
    Vitest in `packages/shared`, with a first test on the subscription
    limits that was shown to fail when the old `in` bug is put back. See

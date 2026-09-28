@@ -34,6 +34,9 @@ function toBusinessHours(row: AvailabilityRuleRowType): BusinessHoursInputType {
     minimumNoticeMinutes,
     horizonDays,
     closedDates,
+    holidayCountry: row.holidayCountry,
+    holidayRegion: row.holidayRegion,
+    closedHolidays: row.closedHolidays,
   };
 }
 

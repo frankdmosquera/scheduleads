@@ -15,6 +15,13 @@
       "when": 1790379268720,
       "tag": "0001_booking_links_resources_availability",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790600670089,
+      "tag": "0002_closed_holidays",
+      "breakpoints": true
     }
   ]
 }

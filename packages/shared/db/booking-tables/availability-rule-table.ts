@@ -37,6 +37,9 @@ export const availabilityRule = pgTable(
     closedDates: jsonb("closedDates").$type<string[]>(), // YYYY-MM-DD
     holidayCountry: text("holidayCountry"), // ISO 3166-1, e.g. CA; null = no holidays
     holidayRegion: text("holidayRegion"), // the province, e.g. AB
+    // Names the owner picked to close ("Family Day"), never dates, so each year gets its own.
+    // Nothing is closed by default: the owner decides (project plan decision 30).
+    closedHolidays: jsonb("closedHolidays").$type<string[]>().notNull().default([]),
 
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })
@@ -77,6 +80,7 @@ export const availabilityRule = pgTable(
         and ${table.closedDates} is null
         and ${table.holidayCountry} is null
         and ${table.holidayRegion} is null
+        and ${table.closedHolidays} = '[]'::jsonb
       )`
     ),
     check("availability_rule_notice_check", sql`${table.minimumNoticeMinutes} >= 0`),
@@ -84,6 +88,10 @@ export const availabilityRule = pgTable(
     check(
       "availability_rule_region_needs_country_check",
       sql`${table.holidayRegion} is null or ${table.holidayCountry} is not null`
+    ),
+    check(
+      "availability_rule_holidays_need_country_check",
+      sql`${table.closedHolidays} = '[]'::jsonb or ${table.holidayCountry} is not null`
     ),
   ]
 );

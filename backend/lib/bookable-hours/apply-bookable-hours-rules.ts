@@ -3,6 +3,8 @@
 
 import type { DateHoursType, WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
 
+import { closedHolidayDates } from "./closed-holidays.js";
+
 // The business's row, with the settings the database guarantees are set on it.
 export type BusinessHoursInputType = {
   weeklyHours: WeeklyHoursType;
@@ -11,6 +13,9 @@ export type BusinessHoursInputType = {
   minimumNoticeMinutes: number;
   horizonDays: number;
   closedDates: string[];
+  holidayCountry: string | null;
+  holidayRegion: string | null;
+  closedHolidays: string[]; // names the owner picked; [] = none closed
 };
 
 // A person's row: only their own week (null = follows the business's) and one-off dates.
@@ -26,7 +31,7 @@ export type ResolvedBookableHoursType = {
   dateHours: DateHoursType; // the one-off dates that apply, inside the horizon
   minimumNoticeMinutes: number;
   horizonDays: number;
-  closedDates: string[]; // closed dates inside the horizon, minus opened ones; sorted, unique
+  closedDates: string[]; // closed dates and picked holidays inside the horizon, minus opened ones; sorted, unique
 };
 
 // Today's date where the business is, not where the server is: at 11pm in Edmonton
@@ -72,7 +77,14 @@ export function applyBookableHoursRules(
   const openedDates = new Set(
     [...business.dateHours, ...personDateHours].map((entry) => entry.date)
   );
-  const closedDates = [...new Set(business.closedDates)]
+  const pickedHolidays = closedHolidayDates(
+    business.holidayCountry,
+    business.holidayRegion,
+    business.closedHolidays,
+    firstDate,
+    lastDate
+  );
+  const closedDates = [...new Set([...business.closedDates, ...pickedHolidays])]
     .filter((date) => insideHorizon(date) && !openedDates.has(date))
     .sort();
 

@@ -127,4 +127,29 @@ describe("availabilityRuleValidationSchema", () => {
     const row = { ...primoBusinessRow, holidayCountry: null };
     expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
   });
+
+  test("picks no holidays unless the owner picks some", () => {
+    const parsed = availabilityRuleValidationSchema.parse(primoBusinessRow);
+    expect("closedHolidays" in parsed && parsed.closedHolidays).toEqual([]);
+  });
+
+  test("refuses the same holiday picked twice", () => {
+    const row = { ...primoBusinessRow, closedHolidays: ["Family Day", "Family Day"] };
+    expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
+  });
+
+  test("refuses picked holidays without the country they come from", () => {
+    const row = {
+      ...primoBusinessRow,
+      holidayCountry: null,
+      holidayRegion: null,
+      closedHolidays: ["Canada Day"],
+    };
+    expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
+  });
+
+  test("refuses picked holidays on a person's row", () => {
+    const juan = { resourceId: "juan", closedHolidays: ["Canada Day"] };
+    expect(availabilityRuleValidationSchema.safeParse(juan).success).toBe(false);
+  });
 });

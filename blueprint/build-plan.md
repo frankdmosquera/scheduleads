@@ -62,8 +62,8 @@ else.
   weekly hours, a set one is that person's. A person uses their own week if
   they have one, otherwise the business's, and can have one-off dates (hours
   on one date) without copying the week. Closed days and statutory holidays
-  (country **and province**, the whole year's list on by default) belong to
-  the business and close online booking for everyone; a one-off date opens a
+  (country **and province**, only the ones the owner picks, none by default:
+  we never decide a client's schedule) belong to the business and close online booking for everyone; a one-off date opens a
   closed day or holiday again, for one person or the whole business. Time
   zone, minimum notice and how far ahead customers can book are set once per
   business, each business choosing its own. One resolution function, written
@@ -217,8 +217,10 @@ without Frank touching the database.
     bookings only: bookings made before the click are shown to the owner,
     who keeps them or cancels them, all at once or one by one. One click
     opens a closed day or a holiday again, for one person or everyone.
-  - The holiday list for the business's province, the whole year on by
-    default, with a switch on each.
+  - The holiday picker: the province's and the country's holidays, none
+    closed by default; all the main ones in one click, or one by one
+    (Frank, 2026-09-28: we build the functionality, the client decides
+    their schedule).
   - Notice, how far ahead and time zone, once for the business.
   - Changing a service's length or someone's hours keeps existing bookings
     and warns the owner which ones now fall outside.

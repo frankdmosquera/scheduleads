@@ -37,11 +37,22 @@ export const businessAvailabilityRuleValidationSchema = z
       .regex(/^[A-Z0-9]{1,3}$/, "Use the province code, like AB.")
       .nullable()
       .default(null),
+    // The holiday names the owner picked to close; empty = none, which is the default.
+    closedHolidays: z
+      .array(z.string().min(1))
+      .refine((names) => new Set(names).size === names.length, {
+        message: "The same holiday is picked twice.",
+      })
+      .default([]),
   })
   .strict()
   .refine((rule) => rule.holidayRegion === null || rule.holidayCountry !== null, {
     message: "A province needs its country.",
     path: ["holidayRegion"],
+  })
+  .refine((rule) => rule.closedHolidays.length === 0 || rule.holidayCountry !== null, {
+    message: "Picked holidays need the country they come from.",
+    path: ["closedHolidays"],
   });
 
 // A person's row: only their own week (null = follow the business's) and their one-off

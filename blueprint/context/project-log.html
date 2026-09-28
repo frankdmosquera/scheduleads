@@ -1340,10 +1340,10 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.6 planned, piece 1 waiting on you</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.6 built, independent review next</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
-                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="done" title="2.4 The public routes - done">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" data-state="done" title="2.5 The typed seam, proved by breaking it - done">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" data-state="next" title="2.6 Statutory holidays - planned, waiting on you">2.6</a></span>
+                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="done" title="2.4 The public routes - done">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" data-state="done" title="2.5 The typed seam, proved by breaking it - done">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" data-state="next" title="2.6 Holidays the owner picks - built, review next">2.6</a></span>
                 <a class="cell" href="#item-3" data-goto="item-3" title="3 Calendar connection">3</a>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
@@ -1520,6 +1520,7 @@
             <li>Every account is one the agency created. Signup is closed and only the platform admin creates a business; item 3b provisions clients, and item 25 is where self-serve reopens.</li>
             <li>Development never uses real data. It runs on a local database built from the migrations and filled by <code>db:seed</code>; only migrations ever reach Railway.</li>
             <li>Every build step gets its own review before the next one starts: <code>/audit</code> on that step's changes, then the independent review. Blockers are fixed or accepted by you first. <code>/complete</code> keeps a short final check. Decided Sep 24, because item 1's single review of six steps at the end was slow, and faults found late had been built on. Written into <code>AGENTS.md</code>.</li>
+            <li>We build the functionality; the client decides. Nothing about a business's schedule, times, closed days, holidays or places is fixed or on by default: the product offers the choice (a picker, a switch, a one-click preset) and the owner makes it. Decided Sep 28, project plan decision 30, when step 2.6 would have closed Alberta's holidays for everyone.</li>
           </ul>
         </div>
       </section>
@@ -1658,7 +1659,7 @@
             <li data-outcome="changed"><b>Services:</b> a length plus a buffer before and after, set per service, any number including zero.</li>
             <li data-outcome="changed"><b>People:</b> a person or a place, such as a room or a chair. Every business gets its owner as its first person, made automatically.</li>
             <li data-outcome="changed"><b>Who does what:</b> skills and rooms. A time shows only when someone has the skill, is bookable then, is free, and the room the service needs is free. A service with no room ticked checks no room.</li>
-            <li data-outcome="changed"><b>Bookable hours:</b> renamed from Hours. When customers can book a person, not opening hours and not time at work. Weekly, plus one-off dates, plus holidays by province that the owner can switch off.</li>
+            <li data-outcome="changed"><b>Bookable hours:</b> renamed from Hours. When customers can book a person, not opening hours and not time at work. Weekly, plus one-off dates, plus holidays by province that the owner can switch off. <em>Sep 28: none on by default any more; the owner picks them (decision 30).</em></li>
             <li data-outcome="changed"><b>Their Google:</b> reads busy times and also writes each booking into the booked person's own calendar, so it shows on their phone. Feature 3 asks for both permissions in one connection.</li>
             <li data-outcome="changed"><b>Scheduled jobs:</b> visits, one per day, each with its own people, so a three-day job never blocks the evenings in between. A job comes from a customer, by an accepted quote or by hand.</li>
             <li data-outcome="added"><b>Calendars:</b> new, replacing Crew week. Every person and place has one, and the owner adds things by hand: a phone estimate, a walk-in, time off. Planned as feature 12b, after bookings exist.</li>
@@ -6244,7 +6245,7 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
               </div>
 
               <details class="drawer" data-kind="plan" open>
-                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.5 done and reviewed &middot; 2.6 planned, waiting on you</span></summary>
+                <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.5 done and reviewed &middot; 2.6 built, review next</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
                   <div class="item-steps">
@@ -9009,56 +9010,627 @@ Failed to type check.</pre>
                     </details>
 
                     <details class="rstep" id="step-2-6" data-state="active" open>
-                      <summary><span class="sn">2.6</span><span class="sm"></span><span>Statutory holidays</span><span class="ss">Planned &middot; waiting on you</span></summary>
+                      <summary><span class="sn">2.6</span><span class="sm"></span><span>Holidays the owner picks</span><span class="ss">Built &middot; review next</span></summary>
                       <div class="rstep-body">
-                        <p class="rstep-what">Primo sets Alberta once, and every statutory holiday of the year closes online booking on its own: nobody has to remember Family Day or Thanksgiving. The province matters, because Canada's holidays differ by province. A one-off date still opens a holiday for one person, like any closed day. Planned in two parts, below: what it builds, then the checks that will prove it done. Piece 1 is a blocker: nothing is built until you answer it. Nothing built yet.</p>
-                        <details class="drawer" data-kind="plan" open>
-                          <summary>The plan <span class="tag-drift">two parts &middot; written Sep 27 &middot; piece 1 waiting on you</span></summary>
+                        <p class="rstep-what">Primo decides which holidays close online booking, and nobody else does. The owner picks from Alberta's holidays and Canada's national ones: all the main ones in one click, or one by one. Nothing is closed until they pick it (your rule, Sep 28: we build the functionality, the client decides their schedule). This step saves the picks and turns them into closed dates every year; the picker screen is feature 12. A one-off date still opens a picked holiday for one person, like any closed day. Planned in two parts, below. Piece 1 was a blocker, answered Sep 28: <code>date-holidays</code>. Both parts agreed with you, Sep 28, and built the same day.</p>
+                        <details class="drawer" data-kind="plan">
+                          <summary>The plan <span class="tag-drift">two parts &middot; rewritten Sep 28: the owner picks &middot; both agreed Sep 28 &middot; built Sep 28</span></summary>
                           <div class="drawer-body">
                             <div class="plan-part" data-part="build">
-                              <div class="plan-part-head"><span class="plan-part-title">Part 1 &middot; What it builds</span><span class="plan-part-state">written Sep 27 &middot; not agreed yet</span></div>
-                              <details class="piece-fig" open><summary>The whole step, as one question: is this date open?</summary><figure class="fig"><svg viewBox="0 0 680 450" role="img"><title>Step 2.6: from a province to closed dates</title><desc>The business's row says Canada, Alberta. A holiday source turns that into Alberta's statutory holidays inside the booking horizon, leaving optional days and observances out. They join the business's own closed days, minus any one-off date, and the public route answers with them in closedDates.</desc><defs><marker id="s26flow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="180" y="20" width="320" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="340" y="40" text-anchor="middle" dominant-baseline="central">The business's row</text><text class="ts" x="340" y="60" text-anchor="middle" dominant-baseline="central">country CA, province AB</text></g><line x1="340" y1="76" x2="340" y2="102" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="104" width="320" height="56" rx="8" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="th" x="340" y="124" text-anchor="middle" dominant-baseline="central">Where the dates come from</text><text class="ts" x="340" y="144" text-anchor="middle" dominant-baseline="central">piece 1, waiting on you</text></g><line x1="340" y1="160" x2="340" y2="186" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="188" width="320" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="208" text-anchor="middle" dominant-baseline="central">Its statutory holidays</text><text class="ts" x="340" y="228" text-anchor="middle" dominant-baseline="central">inside the horizon, piece 2</text></g><text class="ts" x="512" y="208" dominant-baseline="central">optional days and</text><text class="ts" x="512" y="226" dominant-baseline="central">observances left out</text><line x1="340" y1="244" x2="340" y2="270" class="arr" marker-end="url(#s26flow)"/><g><rect x="20" y="272" width="140" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="90" y="292" text-anchor="middle" dominant-baseline="central">Own closed days</text><text class="ts" x="90" y="312" text-anchor="middle" dominant-baseline="central">already there</text></g><line x1="160" y1="300" x2="178" y2="300" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="272" width="320" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="292" text-anchor="middle" dominant-baseline="central">Closed days, holidays included</text><text class="ts" x="340" y="312" text-anchor="middle" dominant-baseline="central">a one-off date still opens one, piece 3</text></g><line x1="340" y1="328" x2="340" y2="354" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="356" width="320" height="56" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="340" y="376" text-anchor="middle" dominant-baseline="central">The public route answers</text><text class="ts" x="340" y="396" text-anchor="middle" dominant-baseline="central">closedDates now carries them</text></g><text class="ts" x="340" y="434" text-anchor="middle" dominant-baseline="central">Nothing new for a caller to learn: the answer keeps its shape, with more dates in it.</text></svg><figcaption>The whole step. Each piece below is one box of this picture.</figcaption></figure></details>
+                              <div class="plan-part-head"><span class="plan-part-title">Part 1 &middot; What it builds</span><span class="plan-part-state">rewritten and agreed Sep 28 &middot; built</span></div>
+                              <p class="rstep-what"><strong>Rewritten Sep 28.</strong> The first version closed Alberta's nine statutory holidays for every business automatically, following version 8's "the whole year on by default". You reversed it: we never decide a client's schedule, so nothing closes until the owner picks it. Pieces 2 to 5 and Part 2 are the rewrite; piece 1 is unchanged.</p>
+                              <details class="piece-fig" open><summary>The whole step, as one question: is this date open?</summary><figure class="fig"><svg viewBox="0 0 680 450" role="img"><title>Step 2.6: from a province to closed dates</title><desc>The business's row says Canada, Alberta. The holidays the owner picked, none by default, become dates inside the booking horizon. They join the business's own closed days, minus any one-off date, and the public route answers with them in closedDates.</desc><defs><marker id="s26flow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="180" y="20" width="320" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="340" y="40" text-anchor="middle" dominant-baseline="central">The business's row</text><text class="ts" x="340" y="60" text-anchor="middle" dominant-baseline="central">country CA, province AB</text></g><line x1="340" y1="76" x2="340" y2="102" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="104" width="320" height="56" rx="8" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="th" x="340" y="124" text-anchor="middle" dominant-baseline="central">Where the dates come from</text><text class="ts" x="340" y="144" text-anchor="middle" dominant-baseline="central">piece 1, date-holidays</text></g><line x1="340" y1="160" x2="340" y2="186" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="188" width="320" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="208" text-anchor="middle" dominant-baseline="central">The holidays the owner picked</text><text class="ts" x="340" y="228" text-anchor="middle" dominant-baseline="central">none by default, piece 2</text></g><text class="ts" x="512" y="208" dominant-baseline="central">the owner's picks,</text><text class="ts" x="512" y="226" dominant-baseline="central">never ours</text><line x1="340" y1="244" x2="340" y2="270" class="arr" marker-end="url(#s26flow)"/><g><rect x="20" y="272" width="140" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="90" y="292" text-anchor="middle" dominant-baseline="central">Own closed days</text><text class="ts" x="90" y="312" text-anchor="middle" dominant-baseline="central">already there</text></g><line x1="160" y1="300" x2="178" y2="300" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="272" width="320" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="292" text-anchor="middle" dominant-baseline="central">Closed days, holidays included</text><text class="ts" x="340" y="312" text-anchor="middle" dominant-baseline="central">a one-off date still opens one, piece 3</text></g><line x1="340" y1="328" x2="340" y2="354" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="356" width="320" height="56" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="340" y="376" text-anchor="middle" dominant-baseline="central">The public route answers</text><text class="ts" x="340" y="396" text-anchor="middle" dominant-baseline="central">closedDates now carries them</text></g><text class="ts" x="340" y="434" text-anchor="middle" dominant-baseline="central">Nothing new for a caller to learn: the answer keeps its shape, with more dates in it.</text></svg><figcaption>The whole step. Each piece below is one box of this picture.</figcaption></figure></details>
                               <ul class="substeps">
-                              <li><b>1. Where the dates come from.</b> <span class="piece-state">blocker &middot; waiting on you</span> Recommended: the <code>date-holidays</code> package, in the backend only. It knows every Canadian province and territory, Easter-based days included, and its maintainers update it when a province changes a holiday (last updated Sep 20, 2026). The cost: about 11 MB on disk and four helper packages it brings with it (<code>lodash</code>, <code>js-yaml</code>, and two of its own). Nothing reaches the frontend or a customer's browser. The alternative is a table we write for Alberta, with the Easter arithmetic, kept right by us forever and redone for every new province.
+                              <li><b>1. Where the dates come from.</b> <span class="piece-state" data-state="answered">blocker &middot; answered yes, Sep 28</span> Recommended: the <code>date-holidays</code> package, in the backend only. It knows every Canadian province and territory, Easter-based days included, and its maintainers update it when a province changes a holiday (last updated Sep 20, 2026). The cost: about 11 MB on disk and four helper packages it brings with it (<code>lodash</code>, <code>js-yaml</code>, and two of its own). Nothing reaches the frontend or a customer's browser. The alternative is a table we write for Alberta, with the Easter arithmetic, kept right by us forever and redone for every new province.
+                                <p style="margin-top:8px"><b>Your answer, Sep 28: yes, the whole package.</b> Added to the backend as <code>date-holidays ^3.37.0</code>. <b>The size above was wrong:</b> 11 MB was the package alone. With what it brings, it is 43 MB on disk and twelve packages, because it covers the whole world, lunar calendars included. None runs an install script. What matters on Railway is memory, and measured it is small: about 3 MB on top of the running API, which sits at about 215 MB. Its own <code>--pick CA,US</code> option was weighed and left out: it only trims memory, and needs a hook that fails quietly. It is the library people use: about a million downloads a week, since 2016.</p>
+                                <details class="piece-fig"><summary>What the 43 MB is</summary><figure class="fig"><svg viewBox="0 0 680 200" role="img"><title>What the 43 MB of date-holidays is</title><desc>19 MB of moon and planet tables for lunar calendars, 13 MB of holidays for 208 countries shipped in three builds, 8 MB of world time zones, and 4 MB of lodash and small calendar helpers. Alberta's nine days use a few KB.</desc><rect x="40" y="24" width="258" height="40" rx="4" style="fill:var(--fig-purple)"/><rect x="300" y="24" width="176" height="40" style="fill:var(--fig-teal)"/><rect x="478" y="24" width="108" height="40" style="fill:var(--pending)"/><rect x="588" y="24" width="52" height="40" rx="4" style="fill:var(--ink-3)"/><rect x="40" y="94" width="10" height="10" rx="2" style="fill:var(--fig-purple)"/><text class="ts" x="58" y="99" dominant-baseline="central">19 MB moon and planet tables (lunar calendars)</text><rect x="360" y="94" width="10" height="10" rx="2" style="fill:var(--fig-teal)"/><text class="ts" x="378" y="99" dominant-baseline="central">13 MB holidays of 208 countries, 3 builds</text><rect x="40" y="122" width="10" height="10" rx="2" style="fill:var(--pending)"/><text class="ts" x="58" y="127" dominant-baseline="central">8 MB world time zones (moment)</text><rect x="360" y="122" width="10" height="10" rx="2" style="fill:var(--ink-3)"/><text class="ts" x="378" y="127" dominant-baseline="central">4 MB lodash and small calendar helpers</text><text class="ts" x="340" y="172" text-anchor="middle" dominant-baseline="central">What Alberta's nine days use: a few KB of it.</text></svg><figcaption>Measured in <code>node_modules</code> after the install, Sep 28. The package is one download for the whole world; a server installs all of it and uses its slice.</figcaption></figure></details>
+                                <details class="piece-fig"><summary>Disk and memory on Railway</summary><figure class="fig"><svg viewBox="0 0 680 350" role="img"><title>How code gets from GitHub to running on Railway</title><desc>GitHub holds the code. Railway builds it and installs every package onto the machine's disk, 43 MB for date-holidays. When the server starts, Node loads only what the code imports into memory, about 3 MB more for date-holidays, and memory is what Railway bills by the minute.</desc><defs><marker id="s26rail" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="40" y="40" width="180" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="130" y="60" text-anchor="middle" dominant-baseline="central">1 GitHub</text><text class="ts" x="130" y="80" text-anchor="middle" dominant-baseline="central">our code, as text</text></g><g><rect x="250" y="40" width="180" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="340" y="60" text-anchor="middle" dominant-baseline="central">2 Railway builds</text><text class="ts" x="340" y="80" text-anchor="middle" dominant-baseline="central">installs every package</text></g><g><rect x="460" y="40" width="180" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="550" y="60" text-anchor="middle" dominant-baseline="central">3 Railway runs it</text><text class="ts" x="550" y="80" text-anchor="middle" dominant-baseline="central">starts node server.js</text></g><line x1="222" y1="68" x2="246" y2="68" class="arr" marker-end="url(#s26rail)"/><line x1="432" y1="68" x2="456" y2="68" class="arr" marker-end="url(#s26rail)"/><rect x="40" y="140" width="600" height="180" rx="8" fill="none" style="stroke:var(--ink-3)" stroke-width="1" stroke-dasharray="4 4"/><text class="th" x="60" y="164" dominant-baseline="central">The Railway machine</text><path d="M340 96 L340 122 L195 122 L195 180" fill="none" class="arr" marker-end="url(#s26rail)"/><line x1="550" y1="96" x2="550" y2="180" class="arr" marker-end="url(#s26rail)"/><g><rect x="70" y="184" width="250" height="116" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="195" y="220" text-anchor="middle" dominant-baseline="central">Disk</text><text class="ts" x="195" y="244" text-anchor="middle" dominant-baseline="central">43 MB: the whole world</text><text class="ts" x="195" y="266" text-anchor="middle" dominant-baseline="central">just sits there, near free</text></g><g><rect x="360" y="184" width="250" height="116" rx="8" style="fill:var(--fig-purple-soft);stroke:var(--fig-purple)"/><text class="th" x="485" y="220" text-anchor="middle" dominant-baseline="central">Memory</text><text class="ts" x="485" y="244" text-anchor="middle" dominant-baseline="central">only what the code opens</text><text class="ts" x="485" y="266" text-anchor="middle" dominant-baseline="central">billed every minute it runs</text></g><line x1="322" y1="242" x2="356" y2="242" class="arr" marker-end="url(#s26rail)"/></svg><figcaption>Disk holds everything npm installed; memory holds only what Node loaded when the server started, and stays taken while it runs. Railway bills the memory.</figcaption></figure></details>
+                                <details class="piece-fig"><summary>The whole API's memory, measured</summary><figure class="fig"><svg viewBox="0 0 680 200" role="img"><title>Memory of the scheduleads API, measured</title><desc>Node itself 64 MB, Hono, the database driver, Better Auth and our routes 148 MB, date-holidays about 3 MB more on top. About 215 MB in all, usual for an API like this.</desc><rect x="40" y="24" width="154" height="40" rx="4" style="fill:var(--ink-3)"/><rect x="196" y="24" width="355" height="40" style="fill:var(--fig-teal)"/><rect x="553" y="24" width="10" height="40" style="fill:var(--pending)"/><rect x="565" y="24" width="75" height="40" rx="4" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="ts" x="40" y="80" dominant-baseline="central">0</text><text class="ts" x="640" y="80" text-anchor="end" dominant-baseline="central">250 MB</text><rect x="40" y="106" width="10" height="10" rx="2" style="fill:var(--ink-3)"/><text class="ts" x="58" y="111" dominant-baseline="central">64 MB Node itself, before any code</text><rect x="360" y="106" width="10" height="10" rx="2" style="fill:var(--fig-teal)"/><text class="ts" x="378" y="111" dominant-baseline="central">148 MB Hono, database, Better Auth, routes</text><rect x="40" y="134" width="10" height="10" rx="2" style="fill:var(--pending)"/><text class="ts" x="58" y="139" dominant-baseline="central">about 3 MB date-holidays on top</text><text class="ts" x="340" y="176" text-anchor="middle" dominant-baseline="central">About 215 MB in all; an API like this usually runs at 150 to 300 MB.</text></svg><figcaption>Measured Sep 28, each part in a fresh Node process after garbage collection. Alone, the holiday data takes about 9 MB; next to the app it adds about 3, because memory the app already holds gets reused.</figcaption></figure></details>
                                 <details class="piece-fig"><summary>The package, or a table we write</summary><figure class="fig"><svg viewBox="0 0 680 300" role="img"><title>date-holidays against a hand-written table</title><desc>The package covers all provinces and is updated by its maintainers when a holiday changes; it costs 11 MB and four helpers in the backend. A hand-written table covers Alberta only and nobody tells us when a holiday changes.</desc><text class="th" x="180" y="24" text-anchor="middle" dominant-baseline="central">date-holidays (recommended)</text><text class="th" x="500" y="24" text-anchor="middle" dominant-baseline="central">A table we write</text><g><rect x="40" y="44" width="280" height="200" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="ts" x="60" y="72" dominant-baseline="central">Every province and territory</text><text class="ts" x="60" y="104" dominant-baseline="central">A holiday changes: its maintainers</text><text class="ts" x="60" y="122" dominant-baseline="central">update it, we update the package</text><text class="ts" x="60" y="154" dominant-baseline="central">Easter days worked out for us</text><text class="ts" x="60" y="186" dominant-baseline="central">Cost: 11 MB, 4 helpers,</text><text class="ts" x="60" y="204" dominant-baseline="central">backend only, never the browser</text></g><g><rect x="360" y="44" width="280" height="200" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="ts" x="380" y="72" dominant-baseline="central">Alberta only; each new province</text><text class="ts" x="380" y="90" dominant-baseline="central">is another table</text><text class="ts" x="380" y="122" dominant-baseline="central" style="fill:var(--alert)">A holiday changes: nobody tells us</text><text class="ts" x="380" y="154" dominant-baseline="central">Easter arithmetic written by hand</text><text class="ts" x="380" y="186" dominant-baseline="central">Cost: no package, and ours</text><text class="ts" x="380" y="204" dominant-baseline="central">to keep right, forever</text></g><text class="ts" x="340" y="270" text-anchor="middle" dominant-baseline="central">Already in its data: BC moving Family Day (2019), Truth and Reconciliation Day (2021).</text></svg><figcaption>The deciding line is the middle one: when a province adds or moves a holiday, the package hears about it; a table of ours does not.</figcaption></figure></details></li>
-                              <li><b>2. Only statutory holidays close booking.</b> Alberta has nine: New Year's Day, Family Day, Good Friday, Victoria Day, Canada Day, Labour Day, Thanksgiving, Remembrance Day and Christmas Day. Its optional days (Easter Monday, Heritage Day) and observances (Mother's Day, Halloween) stay open, since many businesses work them. Switching a single holiday on or off is the owner's, in feature 12.
-                                <details class="piece-fig"><summary>Alberta's year, sorted</summary><figure class="fig"><svg viewBox="0 0 680 290" role="img"><title>Which Alberta days close online booking</title><desc>Nine statutory holidays close online booking. Two optional days and the observances stay open.</desc><g><rect x="40" y="20" width="300" height="250" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="60" y="44" dominant-baseline="central">Closes online booking</text><text class="ts" x="60" y="66" dominant-baseline="central">statutory, 9</text><text class="ts" x="60" y="94" dominant-baseline="central">New Year's Day</text><text class="ts" x="60" y="114" dominant-baseline="central">Family Day, 3rd Monday of Feb</text><text class="ts" x="60" y="134" dominant-baseline="central">Good Friday</text><text class="ts" x="60" y="154" dominant-baseline="central">Victoria Day</text><text class="ts" x="60" y="174" dominant-baseline="central">Canada Day, July 1</text><text class="ts" x="60" y="194" dominant-baseline="central">Labour Day</text><text class="ts" x="60" y="214" dominant-baseline="central">Thanksgiving</text><text class="ts" x="60" y="234" dominant-baseline="central">Remembrance Day, Nov 11</text><text class="ts" x="60" y="254" dominant-baseline="central">Christmas Day</text></g><g><rect x="370" y="20" width="270" height="110" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="390" y="44" dominant-baseline="central">Stays open: optional</text><text class="ts" x="390" y="74" dominant-baseline="central">Easter Monday</text><text class="ts" x="390" y="96" dominant-baseline="central">Heritage Day, 1st Monday of Aug</text></g><g><rect x="370" y="150" width="270" height="120" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="390" y="174" dominant-baseline="central">Stays open: observances</text><text class="ts" x="390" y="204" dominant-baseline="central">Mother's Day, Father's Day</text><text class="ts" x="390" y="226" dominant-baseline="central">Halloween, Valentine's Day</text><text class="ts" x="390" y="248" dominant-baseline="central">Groundhog Day, St. Patrick's Day</text></g></svg><figcaption>Read off the package's own Alberta data on Sep 27. Boxing Day is not a statutory holiday in Alberta, so it stays open too.</figcaption></figure></details></li>
-                              <li><b>3. The holidays join the closed days, in the one rules function.</b> <code>applyBookableHoursRules</code> gains the business's country and province and adds that province's statutory holidays inside the horizon to its closed days, before one-off dates open any of them. A horizon that runs past New Year asks for both years. <code>resolveBookableHours</code> only passes the two columns along. The rules stay free of the database, so every case is a saved test.
-                                <details class="piece-fig"><summary>Closed for everyone, opened for one</summary><figure class="fig"><svg viewBox="0 0 680 300" role="img"><title>How a holiday becomes a closed date</title><desc>Own closed days plus statutory holidays, minus one-off dates, give the closed dates. On Canada Day, Ben has a one-off date from 10 to 2, so it is open for him and closed for Ana. A horizon from December into February asks for both years.</desc><defs><marker id="s26rule" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="20" y="20" width="140" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="90" y="45" text-anchor="middle" dominant-baseline="central">Own closed days</text></g><text class="th" x="176" y="45" text-anchor="middle" dominant-baseline="central">+</text><g><rect x="192" y="20" width="140" height="50" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="262" y="45" text-anchor="middle" dominant-baseline="central">Holidays</text></g><text class="th" x="348" y="45" text-anchor="middle" dominant-baseline="central">&#8722;</text><g><rect x="364" y="20" width="140" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="434" y="45" text-anchor="middle" dominant-baseline="central">One-off dates</text></g><text class="th" x="520" y="45" text-anchor="middle" dominant-baseline="central">=</text><g><rect x="536" y="20" width="124" height="50" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="598" y="45" text-anchor="middle" dominant-baseline="central">Closed dates</text></g><g><rect x="20" y="110" width="200" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="120" y="130" text-anchor="middle" dominant-baseline="central">Canada Day</text><text class="ts" x="120" y="150" text-anchor="middle" dominant-baseline="central">a holiday</text></g><g><rect x="250" y="110" width="200" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="350" y="130" text-anchor="middle" dominant-baseline="central">Ben: one-off July 1</text><text class="ts" x="350" y="150" text-anchor="middle" dominant-baseline="central">10 to 2</text></g><line x1="220" y1="138" x2="248" y2="138" class="arr" marker-end="url(#s26rule)"/><g><rect x="480" y="100" width="180" height="34" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="ts" x="570" y="117" text-anchor="middle" dominant-baseline="central">Ben: open, 10 to 2</text></g><g><rect x="480" y="142" width="180" height="34" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="ts" x="570" y="159" text-anchor="middle" dominant-baseline="central">Ana: closed</text></g><line x1="450" y1="130" x2="478" y2="118" class="arr" marker-end="url(#s26rule)"/><line x1="450" y1="146" x2="478" y2="158" class="arr" marker-end="url(#s26rule)"/><line x1="60" y1="236" x2="620" y2="236" class="arr"/><line x1="340" y1="222" x2="340" y2="250" style="stroke:var(--ink-3)" stroke-width="1.5"/><text class="ts" x="200" y="214" text-anchor="middle" dominant-baseline="central">2026: Christmas Day</text><text class="ts" x="480" y="214" text-anchor="middle" dominant-baseline="central">2027: New Year's, Family Day</text><text class="ts" x="340" y="272" text-anchor="middle" dominant-baseline="central">A horizon from December into February asks for both years.</text></svg><figcaption>The same rule the closed days already follow since 2.2: closed for everyone, and a one-off date opens it again for whoever has it.</figcaption></figure></details>
+                              <li><b>2. The owner picks; nothing is closed by default.</b> A new column, <code>closedHolidays</code>, on the business's hours row: a list of holiday names such as <code>"Family Day"</code>, empty until the owner picks, and refused on a person's row like every business setting. Names, not dates, so a picked holiday lands on the right date every year. The names come from the province's list and the country's national one, so an Alberta business can also pick National Day for Truth and Reconciliation, which is national only. "All the province's main holidays in one click" belongs to the picker, feature 12. One migration, generated from <code>packages/shared</code>.
+                                <details class="piece-fig"><summary>The owner picks, we never decide</summary><figure class="fig"><svg viewBox="0 0 680 350" role="img"><title>Holidays are the owner's choice</title><desc>The package lists Alberta's and Canada's holidays. The owner picks all the main ones in one click, or one by one. The business saves the names of the picked holidays. Each year the names become dates and join the closed days, closing online booking. A new business starts with none picked.</desc><defs><marker id="s26pick" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="40" y="20" width="270" height="64" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="175" y="42" text-anchor="middle" dominant-baseline="central">The list to pick from</text><text class="ts" x="175" y="64" text-anchor="middle" dominant-baseline="central">Alberta's, and Canada's national</text></g><g><rect x="370" y="20" width="270" height="64" rx="8" style="fill:var(--fig-purple-soft);stroke:var(--fig-purple)"/><text class="th" x="505" y="42" text-anchor="middle" dominant-baseline="central">The owner picks</text><text class="ts" x="505" y="64" text-anchor="middle" dominant-baseline="central">all main ones in one click, or one by one</text></g><line x1="310" y1="52" x2="368" y2="52" class="arr" marker-end="url(#s26pick)"/><g><rect x="370" y="124" width="270" height="64" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="505" y="146" text-anchor="middle" dominant-baseline="central">Saved on the business</text><text class="ts" x="505" y="168" text-anchor="middle" dominant-baseline="central">names like Family Day, not dates</text></g><line x1="505" y1="84" x2="505" y2="122" class="arr" marker-end="url(#s26pick)"/><g><rect x="40" y="124" width="270" height="64" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="175" y="146" text-anchor="middle" dominant-baseline="central">Each year, names become dates</text><text class="ts" x="175" y="168" text-anchor="middle" dominant-baseline="central">Family Day: Feb 16, then Feb 15</text></g><line x1="370" y1="156" x2="312" y2="156" class="arr" marker-end="url(#s26pick)"/><g><rect x="40" y="228" width="600" height="64" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="340" y="250" text-anchor="middle" dominant-baseline="central">Joined to the closed days: online booking closed</text><text class="ts" x="340" y="272" text-anchor="middle" dominant-baseline="central">a one-off date still opens one for a single person</text></g><line x1="175" y1="188" x2="175" y2="226" class="arr" marker-end="url(#s26pick)"/><text class="ts" x="340" y="322" text-anchor="middle" dominant-baseline="central">A new business starts with nothing picked. The picker screen is feature 12.</text></svg><figcaption>Drawn in chat on Sep 28 when you set the rule. Nothing here decides a business's schedule; every closed holiday is one its owner picked.</figcaption></figure></details>
+                                <details class="piece-fig"><summary>What there is to pick from</summary><figure class="fig"><svg viewBox="0 0 680 300" role="img"><title>What an Alberta business can pick from</title><desc>Alberta's nine main holidays, picked all at once in one click or one by one. Alberta's optional days, Easter Monday and Heritage Day. Canada's national-only day, National Day for Truth and Reconciliation.</desc><g><rect x="40" y="20" width="300" height="260" rx="8" style="fill:var(--fig-purple-soft);stroke:var(--fig-purple)"/><text class="th" x="60" y="44" dominant-baseline="central">Alberta's main holidays, 9</text><text class="ts" x="60" y="66" dominant-baseline="central">one click picks all nine</text><text class="ts" x="60" y="94" dominant-baseline="central">New Year's Day</text><text class="ts" x="60" y="114" dominant-baseline="central">Family Day, 3rd Monday of Feb</text><text class="ts" x="60" y="134" dominant-baseline="central">Good Friday</text><text class="ts" x="60" y="154" dominant-baseline="central">Victoria Day</text><text class="ts" x="60" y="174" dominant-baseline="central">Canada Day, July 1</text><text class="ts" x="60" y="194" dominant-baseline="central">Labour Day</text><text class="ts" x="60" y="214" dominant-baseline="central">Thanksgiving</text><text class="ts" x="60" y="234" dominant-baseline="central">Remembrance Day, Nov 11</text><text class="ts" x="60" y="254" dominant-baseline="central">Christmas Day</text></g><g><rect x="370" y="20" width="270" height="110" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="390" y="44" dominant-baseline="central">Also Alberta's: optional</text><text class="ts" x="390" y="74" dominant-baseline="central">Easter Monday</text><text class="ts" x="390" y="96" dominant-baseline="central">Heritage Day, 1st Monday of Aug</text></g><g><rect x="370" y="150" width="270" height="130" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="390" y="174" dominant-baseline="central">Canada's, national only</text><text class="ts" x="390" y="204" dominant-baseline="central">National Day for Truth</text><text class="ts" x="390" y="224" dominant-baseline="central">and Reconciliation, Sep 30</text><text class="ts" x="390" y="254" dominant-baseline="central">each picked one by one</text></g></svg><figcaption>Read off the package on Sep 28. The one-click preset is the nine on the left; anything else is picked one by one. Picking none is fine.</figcaption></figure></details></li>
+                              <li><b>3. The picked holidays join the closed days, in the one rules function.</b> <code>closed-holidays.ts</code>, the only file that knows the package, gives the dates of the picked holidays between two dates. <code>applyBookableHoursRules</code> adds them to the closed days before one-off dates open any of them; a horizon that runs past New Year asks for both years. <code>resolveBookableHours</code> passes the three columns along. The rules stay free of the database, so every case is a saved test.
+                                <details class="piece-fig"><summary>Closed for everyone, opened for one</summary><figure class="fig"><svg viewBox="0 0 680 300" role="img"><title>How a holiday becomes a closed date</title><desc>Own closed days plus the picked holidays, minus one-off dates, give the closed dates. On Canada Day, Ben has a one-off date from 10 to 2, so it is open for him and closed for Ana. A horizon from December into February asks for both years.</desc><defs><marker id="s26rule" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="20" y="20" width="140" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="90" y="45" text-anchor="middle" dominant-baseline="central">Own closed days</text></g><text class="th" x="176" y="45" text-anchor="middle" dominant-baseline="central">+</text><g><rect x="192" y="20" width="140" height="50" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="262" y="45" text-anchor="middle" dominant-baseline="central">Picked holidays</text></g><text class="th" x="348" y="45" text-anchor="middle" dominant-baseline="central">&#8722;</text><g><rect x="364" y="20" width="140" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="434" y="45" text-anchor="middle" dominant-baseline="central">One-off dates</text></g><text class="th" x="520" y="45" text-anchor="middle" dominant-baseline="central">=</text><g><rect x="536" y="20" width="124" height="50" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="598" y="45" text-anchor="middle" dominant-baseline="central">Closed dates</text></g><g><rect x="20" y="110" width="200" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="120" y="130" text-anchor="middle" dominant-baseline="central">Canada Day</text><text class="ts" x="120" y="150" text-anchor="middle" dominant-baseline="central">picked by the owner</text></g><g><rect x="250" y="110" width="200" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="350" y="130" text-anchor="middle" dominant-baseline="central">Ben: one-off July 1</text><text class="ts" x="350" y="150" text-anchor="middle" dominant-baseline="central">10 to 2</text></g><line x1="220" y1="138" x2="248" y2="138" class="arr" marker-end="url(#s26rule)"/><g><rect x="480" y="100" width="180" height="34" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="ts" x="570" y="117" text-anchor="middle" dominant-baseline="central">Ben: open, 10 to 2</text></g><g><rect x="480" y="142" width="180" height="34" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="ts" x="570" y="159" text-anchor="middle" dominant-baseline="central">Ana: closed</text></g><line x1="450" y1="130" x2="478" y2="118" class="arr" marker-end="url(#s26rule)"/><line x1="450" y1="146" x2="478" y2="158" class="arr" marker-end="url(#s26rule)"/><line x1="60" y1="236" x2="620" y2="236" class="arr"/><line x1="340" y1="222" x2="340" y2="250" style="stroke:var(--ink-3)" stroke-width="1.5"/><text class="ts" x="200" y="214" text-anchor="middle" dominant-baseline="central">2026: Christmas Day</text><text class="ts" x="480" y="214" text-anchor="middle" dominant-baseline="central">2027: New Year's, Family Day</text><text class="ts" x="340" y="272" text-anchor="middle" dominant-baseline="central">A horizon from December into February asks for both years.</text></svg><figcaption>The same rule the closed days already follow since 2.2: closed for everyone, and a one-off date opens it again for whoever has it.</figcaption></figure></details>
                                 <details class="piece-fig"><summary>The files it touches</summary><div class="ftree">
 <div class="ft-row ft-dir" style="--d:0"><span class="ft-name">backend/</span><span></span><span class="ft-what"></span></div>
-<div class="ft-row ft-file" style="--d:1"><span class="ft-name">package.json</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">The holiday source, if piece 1 is yes.</span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">package.json</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what"><code>date-holidays</code>, your yes Sep 28 (already in).</span></div>
 <div class="ft-row ft-dir" style="--d:1"><span class="ft-name">lib/bookable-hours/</span><span></span><span class="ft-what"></span></div>
-<div class="ft-row ft-file" style="--d:2"><span class="ft-name">statutory-holidays.ts</span><span class="ft-tag" data-change="new">new</span><span class="ft-what">A country, a province and two dates in; the statutory holiday dates between them out. The only file that knows the source.</span></div>
-<div class="ft-row ft-file" style="--d:2"><span class="ft-name">apply-bookable-hours-rules.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">Adds the holidays to the closed days, before one-off dates open them.</span></div>
-<div class="ft-row ft-file" style="--d:2"><span class="ft-name">resolve-bookable-hours.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">Passes the country and province along.</span></div>
+<div class="ft-row ft-file" style="--d:2"><span class="ft-name">closed-holidays.ts</span><span class="ft-tag" data-change="new">new</span><span class="ft-what">A country, a province, the picked names and two dates in; their dates between them out. The only file that knows the package.</span></div>
+<div class="ft-row ft-file" style="--d:2"><span class="ft-name">apply-bookable-hours-rules.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">Adds the picked holidays to the closed days, before one-off dates open them.</span></div>
+<div class="ft-row ft-file" style="--d:2"><span class="ft-name">resolve-bookable-hours.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">Passes the country, province and picks along.</span></div>
 <div class="ft-row ft-file" style="--d:2"><span class="ft-name">apply-bookable-hours-rules.test.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">The holiday tests (Part 2).</span></div>
-<div class="ft-row ft-dir" style="--d:0"><span class="ft-name">packages/shared/scripts/</span><span></span><span class="ft-what"></span></div>
-<div class="ft-row ft-file" style="--d:1"><span class="ft-name">seed-dev.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">Both made-up businesses set to Alberta (piece 5).</span></div>
+<div class="ft-row ft-dir" style="--d:0"><span class="ft-name">packages/shared/</span><span></span><span class="ft-what"></span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">db/booking-tables/availability-rule-table.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">The <code>closedHolidays</code> column, business row only (piece 2).</span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">migrations/0002_...sql</span><span class="ft-tag" data-change="new">new</span><span class="ft-what">Generated: the column; existing business rows start with nothing picked.</span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">zod-validation/availability-validation-schemas/availability-rule-validation-schema.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">The form check learns the picks.</span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">scripts/seed-dev.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">The two made-up businesses' picks (piece 5).</span></div>
 </div></details></li>
-                              <li><b>4. A province the source does not know is a broken row.</b> The province is checked against the source's own list. <code>CA</code> / <code>ZZ</code> throws, the same way a business row missing a setting already does, rather than quietly giving a business no holidays. A business with no country simply has none. Nothing can write a wrong code before feature 12's settings screen, which checks it first.
-                                <details class="piece-fig"><summary>Three kinds of row</summary><figure class="fig"><svg viewBox="0 0 680 230" role="img"><title>What each kind of business row gets</title><desc>Canada, Alberta gets Alberta's holidays. No country gets only its own closed days. An unknown province throws, like a row missing a setting.</desc><defs><marker id="s26kind" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="40" y="20" width="220" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="150" y="45" text-anchor="middle" dominant-baseline="central">CA / AB</text></g><g><rect x="420" y="20" width="220" height="50" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="530" y="45" text-anchor="middle" dominant-baseline="central">Alberta's holidays</text></g><line x1="260" y1="45" x2="418" y2="45" class="arr" marker-end="url(#s26kind)"/><g><rect x="40" y="90" width="220" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="150" y="115" text-anchor="middle" dominant-baseline="central">no country</text></g><g><rect x="420" y="90" width="220" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="530" y="115" text-anchor="middle" dominant-baseline="central">only its own closed days</text></g><line x1="260" y1="115" x2="418" y2="115" class="arr" marker-end="url(#s26kind)"/><g><rect x="40" y="160" width="220" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="150" y="185" text-anchor="middle" dominant-baseline="central">CA / ZZ</text></g><g><rect x="420" y="160" width="220" height="50" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="530" y="185" text-anchor="middle" dominant-baseline="central">throws: a broken row</text></g><line x1="260" y1="185" x2="418" y2="185" class="arr" style="stroke:var(--alert)" marker-end="url(#s26kind)"/></svg><figcaption>Loud rather than quiet: a business that silently lost its holidays would take bookings on Christmas Day.</figcaption></figure></details></li>
-                              <li><b>5. Both made-up businesses set to Alberta</b>, like every real tenant. The seed sets <code>CA</code> / <code>AB</code> on new rows and also on an existing business row that has no country yet, so another machine gets it without rebuilding its database (the F-25 lesson).
-                                <details class="piece-fig"><summary>Any machine gets it</summary><figure class="fig"><svg viewBox="0 0 680 190" role="img"><title>The seed sets Alberta on new and existing rows</title><desc>On a fresh database the seed writes the business row with Alberta. On a database seeded before, the row has no country, so the seed fills it in. Run again, nothing changes.</desc><defs><marker id="s26seed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="40" y="20" width="200" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="140" y="45" text-anchor="middle" dominant-baseline="central">Fresh database</text></g><g><rect x="40" y="90" width="200" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="140" y="115" text-anchor="middle" dominant-baseline="central">Seeded before, no country</text></g><g><rect x="420" y="55" width="220" height="50" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="530" y="80" text-anchor="middle" dominant-baseline="central">CA / AB on the row</text></g><line x1="240" y1="45" x2="418" y2="72" class="arr" marker-end="url(#s26seed)"/><line x1="240" y1="115" x2="418" y2="88" class="arr" marker-end="url(#s26seed)"/><text class="ts" x="340" y="166" text-anchor="middle" dominant-baseline="central">Run again: nothing changes. No rebuild needed on any machine.</text></svg><figcaption>Only the local practice database. A real client's province is set by the client, in feature 12.</figcaption></figure></details></li>
+                              <li><b>4. A picked name or a province the package does not know is a broken row.</b> It throws, the same way a business row missing a setting already does, rather than quietly dropping the holiday: a business that silently lost its Christmas closure would take bookings on Christmas Day. Nothing picked, or no country, means only its own closed days. Nothing can write a wrong name before feature 12's picker, which only offers the package's own names.
+                                <details class="piece-fig"><summary>Three kinds of row</summary><figure class="fig"><svg viewBox="0 0 680 230" role="img"><title>What each kind of business row gets</title><desc>A business that picked Family Day gets it closed. One that picked nothing gets only its own closed days. An unknown name or province throws, like a row missing a setting.</desc><defs><marker id="s26kind" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="40" y="20" width="220" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="150" y="45" text-anchor="middle" dominant-baseline="central">picked: Family Day</text></g><g><rect x="420" y="20" width="220" height="50" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="530" y="45" text-anchor="middle" dominant-baseline="central">Family Day closed</text></g><line x1="260" y1="45" x2="418" y2="45" class="arr" marker-end="url(#s26kind)"/><g><rect x="40" y="90" width="220" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="150" y="115" text-anchor="middle" dominant-baseline="central">nothing picked</text></g><g><rect x="420" y="90" width="220" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="530" y="115" text-anchor="middle" dominant-baseline="central">only its own closed days</text></g><line x1="260" y1="115" x2="418" y2="115" class="arr" marker-end="url(#s26kind)"/><g><rect x="40" y="160" width="220" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="150" y="185" text-anchor="middle" dominant-baseline="central">unknown name, or ZZ</text></g><g><rect x="420" y="160" width="220" height="50" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="530" y="185" text-anchor="middle" dominant-baseline="central">throws: a broken row</text></g><line x1="260" y1="185" x2="418" y2="185" class="arr" style="stroke:var(--alert)" marker-end="url(#s26kind)"/></svg><figcaption>Loud rather than quiet: a business that silently lost its holidays would take bookings on Christmas Day.</figcaption></figure></details></li>
+                              <li><b>5. The seed picks for the two made-up businesses</b>, standing in for their owners, both <code>CA</code> / <code>AB</code>. The painting company picks all nine main holidays, the one-click case; the clinic picks four by hand (New Year's Day, National Day for Truth and Reconciliation, Canada Day, Christmas Day), the pick-and-choose case. Also set on an existing business row with nothing picked yet, so another machine gets it without rebuilding its database (the F-25 lesson). Only the local practice database: a real client's picks are the client's, in feature 12.
+                                <details class="piece-fig"><summary>Any machine gets it</summary><figure class="fig"><svg viewBox="0 0 680 190" role="img"><title>The seed picks on new and existing rows</title><desc>On a fresh database the seed writes the business row with Alberta and its picks. On a database seeded before, the row has none, so the seed fills them in. Run again, nothing changes.</desc><defs><marker id="s26seed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="40" y="20" width="200" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="140" y="45" text-anchor="middle" dominant-baseline="central">Fresh database</text></g><g><rect x="40" y="90" width="200" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="140" y="115" text-anchor="middle" dominant-baseline="central">Seeded before, no picks</text></g><g><rect x="420" y="55" width="220" height="50" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="530" y="80" text-anchor="middle" dominant-baseline="central">CA / AB and the picks</text></g><line x1="240" y1="45" x2="418" y2="72" class="arr" marker-end="url(#s26seed)"/><line x1="240" y1="115" x2="418" y2="88" class="arr" marker-end="url(#s26seed)"/><text class="ts" x="340" y="166" text-anchor="middle" dominant-baseline="central">Painting picks all nine, the clinic four. Run again: nothing changes.</text></svg><figcaption>Only the local practice database, standing in for two owners. A real client's picks are the client's, in feature 12.</figcaption></figure></details></li>
                               </ul>
                             </div>
                             <div class="plan-part" data-part="proof">
-                              <div class="plan-part-head"><span class="plan-part-title">Part 2 &middot; Done when</span><span class="plan-part-state">written Sep 27 &middot; not agreed yet</span></div>
-                              <details class="piece-fig"><summary>How it is proved: saved tests with a fixed date, then today by hand</summary><figure class="fig"><svg viewBox="0 0 680 330" role="img"><title>How step 2.6 is proved</title><desc>Saved tests call the rules with a fixed date, so they can reach February and July. By hand, the public route today shows the holidays that fall inside each business's horizon. Then every test, both builds and lint.</desc><g><rect x="20" y="20" width="390" height="250" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="215" y="46" text-anchor="middle" dominant-baseline="central">Saved tests, a fixed "now"</text><text class="ts" x="215" y="68" text-anchor="middle" dominant-baseline="central">the rules function, no database</text><text class="ts" x="40" y="100" dominant-baseline="central">1. Alberta: Family Day, Good Friday, Canada Day</text><text class="ts" x="40" y="124" dominant-baseline="central">2. 2027, Feb 1 a Monday: Family Day Feb 15</text><text class="ts" x="40" y="148" dominant-baseline="central">3. Quebec: no Family Day, June 24 closed</text><text class="ts" x="40" y="172" dominant-baseline="central">4. Easter Monday, Heritage Day stay open</text><text class="ts" x="40" y="196" dominant-baseline="central">5. a one-off on Canada Day opens it for one</text><text class="ts" x="40" y="220" dominant-baseline="central">6. no country: only its own closed days</text><text class="ts" x="40" y="244" dominant-baseline="central">7. past New Year: both years; ZZ throws</text></g><g><rect x="430" y="20" width="230" height="160" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="545" y="46" text-anchor="middle" dominant-baseline="central">By hand, today</text><text class="ts" x="545" y="68" text-anchor="middle" dominant-baseline="central">the public route</text><text class="ts" x="450" y="100" dominant-baseline="central">painting: Oct 12, Nov 11</text><text class="ts" x="450" y="124" dominant-baseline="central">clinic: also Dec 25, Jan 1</text><text class="ts" x="450" y="148" dominant-baseline="central">seed twice: no change</text></g><g><rect x="430" y="200" width="230" height="70" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="545" y="224" text-anchor="middle" dominant-baseline="central">Rerun everything</text><text class="ts" x="545" y="246" text-anchor="middle" dominant-baseline="central">tests, both builds, lint</text></g><text class="ts" x="340" y="300" text-anchor="middle" dominant-baseline="central">Test 2 is the trap: the source's rule says "3rd Monday after Feb 1", and in 2027 Feb 1 is a Monday.</text></svg><figcaption>No business books far enough ahead today to reach February or July, so those are proved with a fixed date; the route is proved with the holidays that do fall inside.</figcaption></figure></details>
+                              <div class="plan-part-head"><span class="plan-part-title">Part 2 &middot; Done when</span><span class="plan-part-state">agreed Sep 28 &middot; passed, see How it was proved</span></div>
+                              <details class="piece-fig"><summary>How it is proved: saved tests with a fixed date, then today by hand</summary><figure class="fig"><svg viewBox="0 0 680 340" role="img"><title>How step 2.6 is proved</title><desc>Saved tests call the rules with a fixed date for seven cases, from nothing picked to the 2027 Family Day trap. By hand, the migration, the refused person row, each business's route and the seed. Then every test, both builds and lint.</desc><g><rect x="20" y="20" width="400" height="262" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="220" y="44" text-anchor="middle" dominant-baseline="central">Saved tests, a fixed "now"</text><text class="ts" x="220" y="66" text-anchor="middle" dominant-baseline="central">the rules function, no database</text><text class="ts" x="40" y="98" dominant-baseline="central">1. nothing picked: only its own closed days</text><text class="ts" x="40" y="122" dominant-baseline="central">2. Family Day: Feb 16, and Feb 15 in 2027</text><text class="ts" x="40" y="146" dominant-baseline="central">3. all nine picked: nine dates in a year</text><text class="ts" x="40" y="170" dominant-baseline="central">4. national pick: Sep 30 closes</text><text class="ts" x="40" y="194" dominant-baseline="central">5. not picked: Heritage Day stays open</text><text class="ts" x="40" y="218" dominant-baseline="central">6. one-off on Canada Day opens it for one</text><text class="ts" x="40" y="242" dominant-baseline="central">7. past New Year: both years; unknown throws</text></g><g><rect x="440" y="20" width="220" height="176" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="550" y="44" text-anchor="middle" dominant-baseline="central">By hand, today</text><text class="ts" x="456" y="76" dominant-baseline="central">migration applies</text><text class="ts" x="456" y="100" dominant-baseline="central">person row refused</text><text class="ts" x="456" y="124" dominant-baseline="central">painting: Oct 12, Nov 11</text><text class="ts" x="456" y="148" dominant-baseline="central">clinic: Sep 30, Dec 25, Jan 1</text><text class="ts" x="456" y="172" dominant-baseline="central">seed twice: no change</text></g><g><rect x="440" y="212" width="220" height="70" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="550" y="236" text-anchor="middle" dominant-baseline="central">Rerun everything</text><text class="ts" x="550" y="258" text-anchor="middle" dominant-baseline="central">tests, both builds, lint</text></g><text class="ts" x="340" y="312" text-anchor="middle" dominant-baseline="central">Test 2 is the trap: in 2027 Feb 1 is a Monday, so "3rd Monday" must land on Feb 15.</text></svg><figcaption>No business books far enough ahead today to reach February or July, so those are proved with a fixed date; the route is proved with the picked holidays that do fall inside.</figcaption></figure></details>
                               <ul class="substeps">
-                                <li><b>Saved tests</b>, calling the rules with a fixed date: an Alberta business closes on Family Day (the third Monday of February, Feb 16 in 2026), Good Friday and Canada Day.</li>
-                                <li><b>Saved test, the trap:</b> in 2027 February 1 is itself a Monday, and Family Day must still be the 15th, not the 22nd.</li>
-                                <li><b>Saved tests:</b> a Quebec business leaves Family Day out and closes June 24; Easter Monday and Heritage Day stay open in Alberta.</li>
-                                <li><b>Saved tests:</b> a one-off date on Canada Day opens it for that person and no one else; a business with no country gets only its own closed days; a horizon past New Year gets both years' holidays; an unknown province throws.</li>
-                                <li><b>Proved they can fail:</b> optional days let through makes the Heritage Day test fail; only the first year asked makes the New Year test fail.</li>
-                                <li><b>By hand, today:</b> the public detail route for the painting company lists Thanksgiving (Oct 12) and Remembrance Day (Nov 11) among its closed dates; the clinic's, with its longer horizon, also Christmas Day and New Year's Day. The seed run twice on the existing database changes nothing the second time.</li>
-                                <li><b>If piece 1 is yes:</b> the lockfile gains only the package and its helpers, under the backend, and the frontend build does not contain it.</li>
+                                <li><b>Saved tests</b>, calling the rules with a fixed date: a business that picked nothing gets only its own closed days.</li>
+                                <li><b>Saved tests:</b> Family Day picked closes Feb 16 in 2026. <b>The trap:</b> in 2027 February 1 is itself a Monday, and Family Day must still be the 15th, not the 22nd.</li>
+                                <li><b>Saved tests:</b> all nine picked close exactly nine dates in a year; a national-only pick (Truth and Reconciliation, Sep 30) closes for an Alberta business; Heritage Day, not picked, stays open.</li>
+                                <li><b>Saved tests:</b> a one-off date on a picked Canada Day opens it for that person and no one else; a horizon past New Year gets both years; an unknown name or province throws.</li>
+                                <li><b>Proved they can fail:</b> all nine closed whatever was picked makes the nothing-picked test fail; only the first year asked makes the New Year test fail.</li>
+                                <li><b>By hand, today:</b> the migration applies to the local database, which refuses <code>closedHolidays</code> on a person's row. The painting company's public detail route lists Thanksgiving (Oct 12) and Remembrance Day (Nov 11); the clinic's lists Sep 30, Dec 25 and Jan 1, and not Thanksgiving, which it did not pick. The seed run twice changes nothing the second time.</li>
+                                <li>The lockfile gains only the package and its helpers, under the backend, and the frontend build does not contain it.</li>
                                 <li>All saved tests, both builds, the frontend lint and the format check pass.</li>
                               </ul>
                               <p class="rstep-what"><strong>Changed from the spec, found while planning:</strong> the spec asked the public route to show Family Day and Canada Day. No business books that far ahead today (60 and 120 days from Sep 27 end Nov 26 and Jan 25), so those are proved by saved tests with a fixed date, and the route by the holidays that do fall inside. The spec is corrected with this step.</p>
                             </div>
                           </div>
                         </details>
+                        <details class="drawer" data-kind="reality" open>
+                          <summary>What actually happened <span class="tag-drift">6 kept, 1 added &middot; review next</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">Every planned piece went in as agreed, numbered as in the plan, with the code each one touched under it. One small addition: the database and the form check both refuse picks with no country.</p>
+                            <div class="verdict">
+                              <span class="v-kept">6 as planned</span>
+                              <span class="v-added">1 added</span>
+                            </div>
+                            <ul class="substeps">
+                              <li data-outcome="kept"><b>1.</b> <code>date-holidays ^3.37.0</code> in the backend, your yes Sep 28
+                                <span class="no-code">A dependency change: <code>date-holidays</code> in <code>backend/package.json</code>. The lockfile gained it and its twelve helpers and lost nothing.</span></li>
+                              <li data-outcome="kept"><b>2.</b> The owner's picks saved as names: <code>closedHolidays</code> on the hours row, an empty list by default, so nothing is closed until picked; a person's row must keep it empty. One migration, <code>0002_closed_holidays</code>, generated from <code>packages/shared</code>; every existing row started with nothing picked
+                                <details class="piece-fig piece-code"><summary>The code &middot; 3 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/db/booking-tables/availability-rule-table.ts</code> <span class="tag-drift">changed &middot; +8 &minus;0</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 37</div><pre class="code" data-lang="typescript" data-start="37" data-mark="40,41,42" data-kind="added"><code>    closedDates: jsonb("closedDates").$type&lt;string[]&gt;(), // YYYY-MM-DD
+    holidayCountry: text("holidayCountry"), // ISO 3166-1, e.g. CA; null = no holidays
+    holidayRegion: text("holidayRegion"), // the province, e.g. AB
+    // Names the owner picked to close ("Family Day"), never dates, so each year gets its own.
+    // Nothing is closed by default: the owner decides (project plan decision 30).
+    closedHolidays: jsonb("closedHolidays").$type&lt;string[]&gt;().notNull().default([]),
+
+    createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true })</code></pre>
+<div class="code-label">Added &middot; line 80</div><pre class="code" data-lang="typescript" data-start="80" data-mark="83" data-kind="added"><code>        and ${table.closedDates} is null
+        and ${table.holidayCountry} is null
+        and ${table.holidayRegion} is null
+        and ${table.closedHolidays} = '[]'::jsonb
+      )`
+    ),
+    check("availability_rule_notice_check", sql`${table.minimumNoticeMinutes} &gt;= 0`),</code></pre>
+<div class="code-label">Added &middot; line 89</div><pre class="code" data-lang="typescript" data-start="89" data-mark="92,93,94,95" data-kind="added"><code>      "availability_rule_region_needs_country_check",
+      sql`${table.holidayRegion} is null or ${table.holidayCountry} is not null`
+    ),
+    check(
+      "availability_rule_holidays_need_country_check",
+      sql`${table.closedHolidays} = '[]'::jsonb or ${table.holidayCountry} is not null`
+    ),
+  ]
+);</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/migrations/0002_closed_holidays.sql</code> <span class="tag-drift">new &middot; 20 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="sql" data-start="1" data-mark="all" data-kind="added"><code>ALTER TABLE "availability_rule" DROP CONSTRAINT "availability_rule_row_kind_check";--&gt; statement-breakpoint
+ALTER TABLE "availability_rule" ADD COLUMN "closedHolidays" jsonb DEFAULT '[]'::jsonb NOT NULL;--&gt; statement-breakpoint
+ALTER TABLE "availability_rule" ADD CONSTRAINT "availability_rule_holidays_need_country_check" CHECK ("availability_rule"."closedHolidays" = '[]'::jsonb or "availability_rule"."holidayCountry" is not null);--&gt; statement-breakpoint
+ALTER TABLE "availability_rule" ADD CONSTRAINT "availability_rule_row_kind_check" CHECK ((
+        "availability_rule"."resourceId" is null
+        and "availability_rule"."weeklyHours" is not null
+        and "availability_rule"."timezone" is not null
+        and "availability_rule"."minimumNoticeMinutes" is not null
+        and "availability_rule"."horizonDays" is not null
+        and "availability_rule"."closedDates" is not null
+      ) or (
+        "availability_rule"."resourceId" is not null
+        and "availability_rule"."timezone" is null
+        and "availability_rule"."minimumNoticeMinutes" is null
+        and "availability_rule"."horizonDays" is null
+        and "availability_rule"."closedDates" is null
+        and "availability_rule"."holidayCountry" is null
+        and "availability_rule"."holidayRegion" is null
+        and "availability_rule"."closedHolidays" = '[]'::jsonb
+      ));</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/zod-validation/availability-validation-schemas/availability-rule-validation-schema.ts</code> <span class="tag-drift">changed &middot; +11 &minus;0</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 37</div><pre class="code" data-lang="typescript" data-start="37" data-mark="40,41,42,43,44,45,46,52,53,54,55" data-kind="added"><code>      .regex(/^[A-Z0-9]{1,3}$/, "Use the province code, like AB.")
+      .nullable()
+      .default(null),
+    // The holiday names the owner picked to close; empty = none, which is the default.
+    closedHolidays: z
+      .array(z.string().min(1))
+      .refine((names) =&gt; new Set(names).size === names.length, {
+        message: "The same holiday is picked twice.",
+      })
+      .default([]),
+  })
+  .strict()
+  .refine((rule) =&gt; rule.holidayRegion === null || rule.holidayCountry !== null, {
+    message: "A province needs its country.",
+    path: ["holidayRegion"],
+  })
+  .refine((rule) =&gt; rule.closedHolidays.length === 0 || rule.holidayCountry !== null, {
+    message: "Picked holidays need the country they come from.",
+    path: ["closedHolidays"],
+  });
+
+// A person's row: only their own week (null = follow the business's) and their one-off</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>3.</b> Picked holidays join the closed days in the one rules function: <code>closed-holidays.ts</code> turns names into that year's dates from the province's list and the country's own, and asks for every year the booking window touches; a one-off date still opens one for a single person
+                                <details class="piece-fig piece-code"><summary>The code &middot; 3 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/lib/bookable-hours/closed-holidays.ts</code> <span class="tag-drift">new &middot; 62 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: the dates of the holidays a business picked to close. The only file that knows
+// the holiday package; a pick is the package's English name, such as "Family Day".
+
+import Holidays from "date-holidays";
+
+const holidayLists = new Map&lt;string, Holidays&gt;(); // one per country or province, built once
+
+function holidayList(country: string, region: string | null): Holidays {
+  const key = region ? `${country}-${region}` : country;
+  let list = holidayLists.get(key);
+  if (!list) {
+    list = region
+      ? new Holidays(country, region, { languages: ["en"] })
+      : new Holidays(country, { languages: ["en"] });
+    holidayLists.set(key, list);
+  }
+  return list;
+}
+
+// The picked holidays' dates from firstDate to lastDate, both included, looked up in the
+// province's list and the country's own. Throws on an unknown country, province or name
+// rather than drop a closure: the package quietly uses the national list for a bad province.
+export function closedHolidayDates(
+  country: string | null,
+  region: string | null,
+  names: string[],
+  firstDate: string,
+  lastDate: string
+): string[] {
+  if (names.length === 0) return [];
+  if (!country) throw new Error("Picked holidays need the country they come from.");
+
+  const catalogue = new Holidays();
+  if (!catalogue.getCountries("en")[country]) {
+    throw new Error(`The holiday list does not know the country ${country}.`);
+  }
+  if (region &amp;&amp; !catalogue.getStates(country, "en")?.[region]) {
+    throw new Error(`The holiday list does not know the province ${country}-${region}.`);
+  }
+
+  const lists = region
+    ? [holidayList(country, region), holidayList(country, null)]
+    : [holidayList(country, null)];
+  const datesByName = new Map&lt;string, Set&lt;string&gt;&gt;();
+  for (let year = Number(firstDate.slice(0, 4)); year &lt;= Number(lastDate.slice(0, 4)); year++) {
+    for (const list of lists) {
+      for (const holiday of list.getHolidays(year)) {
+        const dates = datesByName.get(holiday.name) ?? new Set&lt;string&gt;();
+        dates.add(holiday.date.slice(0, 10)); // "2027-02-15 00:00:00", local to the province
+        datesByName.set(holiday.name, dates);
+      }
+    }
+  }
+
+  const closed = new Set&lt;string&gt;();
+  for (const name of names) {
+    const dates = datesByName.get(name);
+    if (!dates) throw new Error(`The holiday list has no holiday named "${name}".`);
+    for (const date of dates) if (date &gt;= firstDate &amp;&amp; date &lt;= lastDate) closed.add(date);
+  }
+  return [...closed];
+}</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/lib/bookable-hours/apply-bookable-hours-rules.ts</code> <span class="tag-drift">changed &middot; +14 &minus;2</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 3</div><pre class="code" data-lang="typescript" data-start="3" data-mark="6,7" data-kind="added"><code>
+import type { DateHoursType, WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
+
+import { closedHolidayDates } from "./closed-holidays.js";
+
+// The business's row, with the settings the database guarantees are set on it.
+export type BusinessHoursInputType = {
+  weeklyHours: WeeklyHoursType;</code></pre>
+<div class="code-label">Added &middot; line 13</div><pre class="code" data-lang="typescript" data-start="13" data-mark="16,17,18" data-kind="added"><code>  minimumNoticeMinutes: number;
+  horizonDays: number;
+  closedDates: string[];
+  holidayCountry: string | null;
+  holidayRegion: string | null;
+  closedHolidays: string[]; // names the owner picked; [] = none closed
+};
+
+// A person's row: only their own week (null = follows the business's) and one-off dates.</code></pre>
+<div class="code-label">Before &middot; line 26</div><pre class="code" data-lang="typescript" data-start="26" data-mark="29" data-kind="removed"><code>  dateHours: DateHoursType; // the one-off dates that apply, inside the horizon
+  minimumNoticeMinutes: number;
+  horizonDays: number;
+  closedDates: string[]; // closed dates inside the horizon, minus opened ones; sorted, unique
+};
+
+// Today's date where the business is, not where the server is: at 11pm in Edmonton</code></pre>
+<div class="code-label">After &middot; line 31</div><pre class="code" data-lang="typescript" data-start="31" data-mark="34" data-kind="added"><code>  dateHours: DateHoursType; // the one-off dates that apply, inside the horizon
+  minimumNoticeMinutes: number;
+  horizonDays: number;
+  closedDates: string[]; // closed dates and picked holidays inside the horizon, minus opened ones; sorted, unique
+};
+
+// Today's date where the business is, not where the server is: at 11pm in Edmonton</code></pre>
+<div class="code-label">Before &middot; line 72</div><pre class="code" data-lang="typescript" data-start="72" data-mark="75" data-kind="removed"><code>  const openedDates = new Set(
+    [...business.dateHours, ...personDateHours].map((entry) =&gt; entry.date)
+  );
+  const closedDates = [...new Set(business.closedDates)]
+    .filter((date) =&gt; insideHorizon(date) &amp;&amp; !openedDates.has(date))
+    .sort();
+</code></pre>
+<div class="code-label">After &middot; line 77</div><pre class="code" data-lang="typescript" data-start="77" data-mark="80,81,82,83,84,85,86,87" data-kind="added"><code>  const openedDates = new Set(
+    [...business.dateHours, ...personDateHours].map((entry) =&gt; entry.date)
+  );
+  const pickedHolidays = closedHolidayDates(
+    business.holidayCountry,
+    business.holidayRegion,
+    business.closedHolidays,
+    firstDate,
+    lastDate
+  );
+  const closedDates = [...new Set([...business.closedDates, ...pickedHolidays])]
+    .filter((date) =&gt; insideHorizon(date) &amp;&amp; !openedDates.has(date))
+    .sort();
+</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/lib/bookable-hours/resolve-bookable-hours.ts</code> <span class="tag-drift">changed &middot; +3 &minus;0</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 34</div><pre class="code" data-lang="typescript" data-start="34" data-mark="37,38,39" data-kind="added"><code>    minimumNoticeMinutes,
+    horizonDays,
+    closedDates,
+    holidayCountry: row.holidayCountry,
+    holidayRegion: row.holidayRegion,
+    closedHolidays: row.closedHolidays,
+  };
+}
+</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>4.</b> The guard: an unknown country, province or name is an error, never a silent skip
+                                <details class="piece-fig piece-code"><summary>The code &middot; 2 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/lib/bookable-hours/closed-holidays.ts</code> <span class="tag-drift">the guard, part 1</span></summary><div class="codefile-body">
+<div class="code-label">Lines 30 to 39</div><pre class="code" data-lang="typescript" data-start="30" data-mark="all" data-kind="added"><code>  if (names.length === 0) return [];
+  if (!country) throw new Error("Picked holidays need the country they come from.");
+
+  const catalogue = new Holidays();
+  if (!catalogue.getCountries("en")[country]) {
+    throw new Error(`The holiday list does not know the country ${country}.`);
+  }
+  if (region &amp;&amp; !catalogue.getStates(country, "en")?.[region]) {
+    throw new Error(`The holiday list does not know the province ${country}-${region}.`);
+  }</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/lib/bookable-hours/closed-holidays.ts</code> <span class="tag-drift">the guard, part 2</span></summary><div class="codefile-body">
+<div class="code-label">Lines 55 to 58</div><pre class="code" data-lang="typescript" data-start="55" data-mark="all" data-kind="added"><code>  const closed = new Set&lt;string&gt;();
+  for (const name of names) {
+    const dates = datesByName.get(name);
+    if (!dates) throw new Error(`The holiday list has no holiday named "${name}".`);</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>5.</b> The seed picks for the two made-up businesses: the painting company all nine main holidays, the clinic four by hand with the national-only Truth and Reconciliation day; set on existing rows too
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>packages/shared/scripts/seed-dev.ts</code> <span class="tag-drift">changed &middot; +49 &minus;5</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 77</div><pre class="code" data-lang="typescript" data-start="77" data-mark="80,81,82,83,84,85,86,87,88,89,90,91,92" data-kind="added"><code>  bufferAfterMinutes?: number;
+};
+
+// Alberta's nine main holidays, the picker's one-click set (feature 12).
+const albertaMainHolidays = [
+  "New Year's Day",
+  "Family Day",
+  "Good Friday",
+  "Victoria Day",
+  "Canada Day",
+  "Labour Day",
+  "Thanksgiving",
+  "Remembrance Day",
+  "Christmas Day",
+];
+
+// Primo's shape: estimates early morning and evenings on weekdays, daytime at weekends.
+const paintingWeekday = [between(at(7, 30), at(8, 30)), between(at(17), at(19, 30))];
+</code></pre>
+<div class="code-label">Added &middot; line 120</div><pre class="code" data-lang="typescript" data-start="120" data-mark="123,124,125" data-kind="added"><code>        minimumNoticeMinutes: 240,
+        horizonDays: 60,
+        closedDates: [daysFromToday(21)], // inside the 60-day window
+        holidayCountry: "CA",
+        holidayRegion: "AB",
+        closedHolidays: albertaMainHolidays, // as if the owner pressed "all main holidays"
+      },
+      // The business's first person (the owner, the estimator) is made separately, below.
+      people: [</code></pre>
+<div class="code-label">Added &middot; line 170</div><pre class="code" data-lang="typescript" data-start="170" data-mark="173,174,175,176,177,178,179,180,181" data-kind="added"><code>        minimumNoticeMinutes: 1440,
+        horizonDays: 120,
+        closedDates: [daysFromToday(21)],
+        holidayCountry: "CA",
+        holidayRegion: "AB",
+        // As if the owner picked one by one, a national-only day among them.
+        closedHolidays: [
+          "New Year's Day",
+          "National Day for Truth and Reconciliation",
+          "Canada Day",
+          "Christmas Day",
+        ],
+      },
+      // Six practitioners with every kind of hours, then the five rooms feature 5 wires up.
+      people: [</code></pre>
+<div class="code-label">Before &middot; line 302</div><pre class="code" data-lang="typescript" data-start="302" data-mark="305" data-kind="removed"><code>
+      // Parsed before writing: the jsonb columns would accept a bad week.
+      const [existingBusinessHours] = await tx
+        .select({ id: availabilityRule.id })
+        .from(availabilityRule)
+        .where(
+          and(</code></pre>
+<div class="code-label">After &middot; line 327</div><pre class="code" data-lang="typescript" data-start="327" data-mark="330,331,332,333,334" data-kind="added"><code>
+      // Parsed before writing: the jsonb columns would accept a bad week.
+      const [existingBusinessHours] = await tx
+        .select({
+          id: availabilityRule.id,
+          holidayCountry: availabilityRule.holidayCountry,
+          closedHolidays: availabilityRule.closedHolidays,
+        })
+        .from(availabilityRule)
+        .where(
+          and(</code></pre>
+<div class="code-label">Before &middot; line 311</div><pre class="code" data-lang="typescript" data-start="311" data-mark="315,316,317,318" data-kind="removed"><code>          )
+        )
+        .limit(1);
+      if (!existingBusinessHours) {
+        const hours = businessAvailabilityRuleValidationSchema.parse({
+          resourceId: null,
+          ...business.hours,
+        });
+        await tx.insert(availabilityRule).values({ id: randomUUID(), organizationId, ...hours });
+      }
+
+      let peopleMade = 0;
+      let hoursMade = 0;</code></pre>
+<div class="code-label">After &middot; line 340</div><pre class="code" data-lang="typescript" data-start="340" data-mark="343,344,345,346,350,351,352,353,354,355,356,357,358,359,360,361,362,363" data-kind="added"><code>          )
+        )
+        .limit(1);
+      const hours = businessAvailabilityRuleValidationSchema.parse({
+        resourceId: null,
+        ...business.hours,
+      });
+      if (!existingBusinessHours) {
+        await tx.insert(availabilityRule).values({ id: randomUUID(), organizationId, ...hours });
+      }
+      // A row seeded before holidays existed gets the picks, so no machine needs a rebuild.
+      const holidaysAdded =
+        existingBusinessHours?.holidayCountry === null &amp;&amp;
+        existingBusinessHours.closedHolidays.length === 0;
+      if (holidaysAdded) {
+        await tx
+          .update(availabilityRule)
+          .set({
+            holidayCountry: hours.holidayCountry,
+            holidayRegion: hours.holidayRegion,
+            closedHolidays: hours.closedHolidays,
+          })
+          .where(eq(availabilityRule.id, existingBusinessHours.id));
+      }
+
+      let peopleMade = 0;
+      let hoursMade = 0;</code></pre>
+<div class="code-label">Added &middot; line 416</div><pre class="code" data-lang="typescript" data-start="416" data-mark="419" data-kind="added"><code>        !existingMember &amp;&amp; "membership",
+        firstPerson.made &amp;&amp; "first person",
+        !existingBusinessHours &amp;&amp; "business hours",
+        holidaysAdded &amp;&amp; "holiday picks",
+        peopleMade &amp;&amp; `${peopleMade} people and places`,
+        hoursMade &amp;&amp; `${hoursMade} people's own hours`,
+        servicesMade &amp;&amp; `${servicesMade} services`,</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>6.</b> The saved tests from Part 2: 8 on the rules, 4 on the form check
+                                <details class="piece-fig piece-code"><summary>The code &middot; 2 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/lib/bookable-hours/apply-bookable-hours-rules.test.ts</code> <span class="tag-drift">changed &middot; +123 &minus;0</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 19</div><pre class="code" data-lang="typescript" data-start="19" data-mark="22,23,24" data-kind="added"><code>  minimumNoticeMinutes: 240,
+  horizonDays: 120, // reaches Jan 23, so Christmas Eve is inside
+  closedDates: ["2026-12-24"],
+  holidayCountry: null,
+  holidayRegion: null,
+  closedHolidays: [],
+};
+
+const anaOwnWeek: PersonHoursInputType = {</code></pre>
+<div class="code-label">Added &middot; line 146</div><pre class="code" data-lang="typescript" data-start="146" data-mark="149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268" data-kind="added"><code>    expect(resolved.horizonDays).toBe(120);
+  });
+});
+
+// Alberta's nine main holidays, the picker's one-click set.
+const albertaMainHolidays = [
+  "New Year's Day",
+  "Family Day",
+  "Good Friday",
+  "Victoria Day",
+  "Canada Day",
+  "Labour Day",
+  "Thanksgiving",
+  "Remembrance Day",
+  "Christmas Day",
+];
+
+const albertaSalon: BusinessHoursInputType = {
+  ...salon,
+  closedDates: [],
+  holidayCountry: "CA",
+  holidayRegion: "AB",
+};
+
+const noonInEdmonton = (date: string) =&gt; new Date(`${date}T19:00:00Z`); // noon, either offset
+
+describe("holidays the owner picked", () =&gt; {
+  test("nothing picked closes no holiday, only the business's own closed dates", () =&gt; {
+    const resolved = applyBookableHoursRules(
+      { ...albertaSalon, closedDates: ["2026-12-24"] },
+      null,
+      noonSep25InEdmonton
+    );
+
+    expect(resolved.closedDates).toEqual(["2026-12-24"]);
+  });
+
+  test("Family Day is the third Monday of February, even when February 1 is a Monday", () =&gt; {
+    const familyDay = { ...albertaSalon, horizonDays: 60, closedHolidays: ["Family Day"] };
+
+    expect(
+      applyBookableHoursRules(familyDay, null, noonInEdmonton("2026-01-10")).closedDates
+    ).toEqual(["2026-02-16"]);
+    expect(
+      applyBookableHoursRules(familyDay, null, noonInEdmonton("2027-01-10")).closedDates
+    ).toEqual(["2027-02-15"]);
+  });
+
+  test("all nine main holidays picked close exactly nine dates in a year", () =&gt; {
+    const allNine = { ...albertaSalon, horizonDays: 364, closedHolidays: albertaMainHolidays };
+    const resolved = applyBookableHoursRules(allNine, null, noonInEdmonton("2026-01-01"));
+
+    expect(resolved.closedDates).toEqual([
+      "2026-01-01",
+      "2026-02-16",
+      "2026-04-03",
+      "2026-05-18",
+      "2026-07-01",
+      "2026-09-07",
+      "2026-10-12",
+      "2026-11-11",
+      "2026-12-25",
+    ]);
+  });
+
+  test("a national-only holiday can be picked by an Alberta business", () =&gt; {
+    const truthAndReconciliation = {
+      ...albertaSalon,
+      closedHolidays: ["National Day for Truth and Reconciliation"],
+    };
+    const resolved = applyBookableHoursRules(truthAndReconciliation, null, noonSep25InEdmonton);
+
+    expect(resolved.closedDates).toEqual(["2026-09-30"]);
+  });
+
+  test("a holiday that is not picked stays open", () =&gt; {
+    const allNine = { ...albertaSalon, horizonDays: 70, closedHolidays: albertaMainHolidays };
+    const resolved = applyBookableHoursRules(allNine, null, noonInEdmonton("2026-07-01")); // to Sep 9
+
+    expect(resolved.closedDates).toEqual(["2026-07-01", "2026-09-07"]); // Heritage Day, Aug 3, stays open
+  });
+
+  test("a one-off date on a picked holiday opens it for that person only", () =&gt; {
+    const canadaDay = { ...albertaSalon, horizonDays: 60, closedHolidays: ["Canada Day"] };
+    const benOnCanadaDay: PersonHoursInputType = {
+      weeklyHours: null,
+      dateHours: [{ date: "2026-07-01", windows: [tenToTwo] }],
+    };
+    const june1 = noonInEdmonton("2026-06-01");
+
+    expect(applyBookableHoursRules(canadaDay, benOnCanadaDay, june1).closedDates).toEqual([]);
+    expect(applyBookableHoursRules(canadaDay, anaOwnWeek, june1).closedDates).toEqual([
+      "2026-07-01",
+    ]);
+  });
+
+  test("a horizon past New Year closes the picked holidays of both years", () =&gt; {
+    const winter = {
+      ...albertaSalon,
+      horizonDays: 60,
+      closedHolidays: ["Christmas Day", "New Year's Day"],
+    };
+    const resolved = applyBookableHoursRules(winter, null, noonInEdmonton("2026-12-01"));
+
+    expect(resolved.closedDates).toEqual(["2026-12-25", "2027-01-01"]);
+  });
+
+  test("a name or province the holiday list does not know is an error, not a silent skip", () =&gt; {
+    const misspelled = { ...albertaSalon, closedHolidays: ["Famly Day"] };
+    const unknownProvince = {
+      ...albertaSalon,
+      holidayRegion: "ZZ",
+      closedHolidays: ["Canada Day"],
+    };
+
+    expect(() =&gt; applyBookableHoursRules(misspelled, null, noonSep25InEdmonton)).toThrow(
+      /Famly Day/
+    );
+    expect(() =&gt; applyBookableHoursRules(unknownProvince, null, noonSep25InEdmonton)).toThrow(
+      /CA-ZZ/
+    );
+  });
+});</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/zod-validation/availability-validation-schemas/availability-validation-schemas.test.ts</code> <span class="tag-drift">changed &middot; +25 &minus;0</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 127</div><pre class="code" data-lang="typescript" data-start="127" data-mark="130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154" data-kind="added"><code>    const row = { ...primoBusinessRow, holidayCountry: null };
+    expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
+  });
+
+  test("picks no holidays unless the owner picks some", () =&gt; {
+    const parsed = availabilityRuleValidationSchema.parse(primoBusinessRow);
+    expect("closedHolidays" in parsed &amp;&amp; parsed.closedHolidays).toEqual([]);
+  });
+
+  test("refuses the same holiday picked twice", () =&gt; {
+    const row = { ...primoBusinessRow, closedHolidays: ["Family Day", "Family Day"] };
+    expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
+  });
+
+  test("refuses picked holidays without the country they come from", () =&gt; {
+    const row = {
+      ...primoBusinessRow,
+      holidayCountry: null,
+      holidayRegion: null,
+      closedHolidays: ["Canada Day"],
+    };
+    expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
+  });
+
+  test("refuses picked holidays on a person's row", () =&gt; {
+    const juan = { resourceId: "juan", closedHolidays: ["Canada Day"] };
+    expect(availabilityRuleValidationSchema.safeParse(juan).success).toBe(false);
+  });
+});</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="added"><b>7.</b> Picks need a country, refused by the database and the form check
+                                <em class="why">Not in the plan. Without it a row could hold picks the rules cannot look up, which the guard would only catch when someone opens the booking page.</em>
+                                <span class="no-code">Its code is in piece 2: <code>availability_rule_holidays_need_country_check</code> in the table and the migration, and the second refine in the form check.</span></li>
+                            </ul>
+                            <p class="rstep-what"><a href="https://github.com/frankdmosquera/scheduleads/compare/de03970...STEP26COMMIT">This step's full diff on GitHub</a></p>
+                            <div class="snags">
+                              <div class="snags-head">What bit</div>
+                              <ul>
+                                <li><b>The package never complains about a wrong province.</b> Asked for <code>CA</code> / <code>ZZ</code>, it quietly hands back Canada's national list, so a typo would have closed the wrong days with no error. The guard now checks the province against the package's own list first. Found by trying it before writing the code, not assumed.</li>
+                                <li><b>Alberta's list has no Truth and Reconciliation day.</b> It is national only, so the rules look a name up in the province's list and the country's, as the plan said. The clinic's pick proves it.</li>
+                              </ul>
+                            </div>
+                            <div class="tests">
+                              <div class="tests-head">How it was proved</div>
+                              <div class="proof-card">
+                                <div class="card-head">Saved tests and checks by hand</div>
+                                <ul>
+                                  <li><b>Added:</b> 8 saved tests on the rules (nothing picked, the Family Day trap in 2026 and 2027, all nine in a year, a national-only pick, a day not picked, a one-off on a picked day, a horizon past New Year, the guard) and 4 on the form check (nothing picked by default, a pick twice, picks with no country, picks on a person's row). 38 backend and 29 shared tests pass.</li>
+                                  <li><b>Proved they can fail:</b> three faults planted one at a time, each file restored from a copy and compared after. All holidays closed whatever was picked: the nothing-picked test failed, with six others. Only the first year looked up: the New Year test failed by name. An unknown name skipped silently: the guard test failed by name.</li>
+                                  <li><b>By hand, the database:</b> migration <code>0002</code> applied to the local database; a person's row given a pick, and a business row with picks but no country, were both refused by <code>availability_rule_holidays_need_country_check</code>, rolled back.</li>
+                                  <li><b>By hand, the routes today (Sep 28):</b> the painting company's public detail route closes Oct 12 and Nov 11 (and its own Oct 17); the clinic's closes Sep 30, Dec 25 and Jan 1 (and Oct 17), and not Thanksgiving, which it did not pick.</li>
+                                  <li><b>The seed:</b> the first run gave the clinic its picks on the existing row ("created holiday picks"); the second run changed nothing.</li>
+                                  <li><b>The package stays in the backend:</b> the lockfile gained 13 entries and lost none; the frontend build's output does not contain the package or its holiday names.</li>
+                                </ul>
+                                <div class="rstep-when">Passed. Nothing picked closes nothing; Family Day lands on Feb 16, 2026 and Feb 15, 2027; all nine picked close nine dates; the national-only pick closes Sep 30; Heritage Day, not picked, stays open; a one-off opens a picked Canada Day for one person only; both years past New Year; an unknown name or province is an error. The routes, the database and the seed checked by hand. Both builds, the frontend lint and the format check pass.</div>
+                                <div class="snags">
+                                  <div class="snags-head">What bit</div>
+                                  <ul>
+                                    <li><b>One test was written wrong the first time.</b> "Heritage Day stays open" expected Labour Day inside a 60-day window from Jul 1, which ends Aug 30. The window was widened to 70 days so the test really shows the skipped Aug 3 between two closed days.</li>
+                                  </ul>
+                                </div>
+                              </div>
+                              <div class="proof-card">
+                                <div class="card-head">Independent review</div>
+                                <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>Not run yet: it runs next, from this step's commit.</p></div>
+                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p>Not yet.</p></div>
+                              </div>
+                            </div>
+                          </div>
+                        </details>
+
                       </div>
                     </details>
 
@@ -9126,7 +9698,7 @@ Failed to type check.</pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Decisions <span class="tag-drift">5 made, with why the rejected options lost &middot; 1 waiting on you</span></summary>
+                <summary>Decisions <span class="tag-drift">6 made, with why the rejected options lost &middot; all 3 questions answered</span></summary>
                 <div class="drawer-body">
                   <h3>Where each booking setting lives</h3>
                   <p class="rstep-what">Decided Sep 25, from version 8. Each setting has one home, so changing it once changes it for everyone it belongs to.</p>
@@ -9209,10 +9781,33 @@ Failed to type check.</pre>
                   <h3>What proves the typed client is real</h3>
                   <p class="rstep-what">A real screen using it, and a build that fails when a route is renamed. <code>/me</code> moves onto it, and the home lists the booking links. Rejected: a typed function nobody calls, which is exactly how the first repo's seam typechecked for weeks while proving nothing.</p>
 
+                  <h3>Who decides a business's holidays</h3>
+                  <p class="rstep-what">Your rule, Sep 28, for the whole product: we build the functionality, the client decides their schedule, when they can be booked and where they work. Fixed days are not flexibility. Project plan decision 30.</p>
+                  <div class="options">
+                    <div class="opt" data-match="yes">
+                      <div class="opt-top"><span class="opt-key">Chosen</span><span class="pill pill--done">Your rule</span></div>
+                      <div class="opt-name">The owner picks</div>
+                      <div class="wire">
+                        <div class="wire-row"><span class="btn">the province's and the country's list</span></div>
+                        <div class="wire-row"><span class="btn btn--solid">all main ones, one click</span><span class="btn">or one by one</span></div>
+                        <div class="wire-row"><span class="btn btn--ghost">nothing closed by default</span></div>
+                      </div>
+                      <p class="opt-text">A painter who works Easter Monday, or a clinic open on Remembrance Day, never has to undo a choice we made for them.</p>
+                      <div class="opt-trade">Cost: one column and one migration in 2.6, and a new business has no holidays closed until its owner picks them in feature 12.</div>
+                    </div>
+                    <div class="opt">
+                      <div class="opt-top"><span class="opt-key">Rejected</span><span class="pill pill--plan">Version 8, and 2.6's first plan</span></div>
+                      <div class="opt-name">The province's statutory days, on by default</div>
+                      <div class="wire"><div class="wire-row"><span class="btn btn--danger">we close 9 days for everyone</span></div><div class="wire-row"><span class="btn">a switch to undo each</span></div></div>
+                      <p class="opt-text">No column to add, and every business is covered on day one.</p>
+                      <div class="opt-trade">Why it lost: it decides a business's schedule for it. Flexibility means the owner chooses; a default they never chose is us choosing.</div>
+                    </div>
+                  </div>
+
                   <h3>Waiting on you</h3>
                   <div class="notes"><ul>
                     <li><strong>&#10003; 1. <code>hono</code> in the frontend: answered yes, Sep 27.</strong> Declared at the backend's version, with the <code>"backend": "*"</code> link beside it; one copy on disk, nothing downloaded.</li>
-                    <li><strong>? 2. Where do holidays come from?</strong> Recommended: the <code>date-holidays</code> package, which covers Canada by province, including Alberta's Family Day, and Easter-based dates. The alternative is a hand-written table per province, maintained forever. Needed by 2.6.</li>
+                    <li><strong>&#10003; 2. Where holidays come from: <code>date-holidays</code>, answered yes, Sep 28.</strong> The whole package, in the backend only: 43 MB on disk with its twelve helpers, about 3 MB of memory beside the running API. See step 2.6, piece 1.</li>
                     <li><strong>&#10003; 3. Tests before 2.1: answered yes, Sep 25.</strong> The Sep 19 decision stood; the install was the only thing that needed your yes. Vitest is in, and 2.1, 2.2 and 2.6 each add their tests. See the log.</li>
                   </ul></div>
                 </div>
@@ -9277,9 +9872,33 @@ Failed to type check.</pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">33 entries, newest first, each titled with its step when it has one</span></summary>
+                <summary>Log <span class="tag-drift">36 entries, newest first, each titled with its step when it has one</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.6 built: holidays close booking only when the owner picks them</span><span class="kind-tag">Done</span><span class="stamp">Sep 28</span></div>
+                        <p class="entry-text">A business now saves which holidays its owner picked, by name, and every year those names become closed dates for online booking. Nothing is closed until picked. The painting company's route closes Thanksgiving and Remembrance Day; the clinic's closes Truth and Reconciliation, Christmas and New Year's Day, and not Thanksgiving, which it did not pick. A name or province the package does not know is an error, never a silent skip. 12 new saved tests, each kind proved able to fail.</p>
+                        <p class="entry-text"><strong>Decided on the way, without asking</strong> (small calls, named here): the column is an empty list rather than empty, like the one-off dates, so every existing row needed no backfill; a picked holiday needs a country, refused by the database and the form check; each province's list is built once and kept, rather than on every request.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.6 replanned: holidays are the owner's choice, never ours</span><span class="kind-tag">Decided</span><span class="stamp">Sep 28</span></div>
+                        <p class="entry-text">The plan closed Alberta's nine statutory holidays for every business automatically, as version 8 said ("the whole year on by default"). Your rule: we never decide a client's schedule, when they can be booked or where they work; we build the functionality and they choose. Fixed days are not flexibility. So nothing closes until the owner picks it, all of the province's main holidays in one click or one by one, from Alberta's list and Canada's national one. Step 2.6 now saves the picks in one new column and turns them into closed dates each year; the picker is feature 12. Written into the project plan (decision 24, and a new decision 30 for the whole product), the build plan (items 2 and 12) and the spec.</p>
+                        <p class="entry-text"><strong>What bit:</strong> the first plan followed an approved default without asking whether a default should exist at all.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.6: date-holidays added, and the size in the plan was wrong</span><span class="kind-tag">Decided</span><span class="stamp">Sep 28</span></div>
+                        <p class="entry-text">Your yes on piece 1, the blocker: the backend now declares <code>date-holidays ^3.37.0</code>. Question 2 is closed. Asked for Alberta, it gives exactly the nine statutory days of 2026, Family Day on Feb 16.</p>
+                        <p class="entry-text"><strong>What bit:</strong> the plan said about 11 MB and four helpers. That was the package alone. The install brought twelve packages and 43 MB, because it covers 208 countries and lunar calendars. Said before going on, and weighed with you: disk is near free on Railway, memory is what is billed, and measured properly the package adds about 3 MB to an API that runs at about 215 MB. A first rough reading said 26 MB; it was taken before Node cleared its leftovers, and was corrected. Its <code>--pick CA,US</code> option was left out: memory only, and a hook that fails quietly.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">

@@ -77,6 +77,19 @@ export type ServiceSeedType = {
   bufferAfterMinutes?: number;
 };
 
+// Alberta's nine main holidays, the picker's one-click set (feature 12).
+const albertaMainHolidays = [
+  "New Year's Day",
+  "Family Day",
+  "Good Friday",
+  "Victoria Day",
+  "Canada Day",
+  "Labour Day",
+  "Thanksgiving",
+  "Remembrance Day",
+  "Christmas Day",
+];
+
 // Primo's shape: estimates early morning and evenings on weekdays, daytime at weekends.
 const paintingWeekday = [between(at(7, 30), at(8, 30)), between(at(17), at(19, 30))];
 
@@ -107,6 +120,9 @@ const ACCOUNTS = [
         minimumNoticeMinutes: 240,
         horizonDays: 60,
         closedDates: [daysFromToday(21)], // inside the 60-day window
+        holidayCountry: "CA",
+        holidayRegion: "AB",
+        closedHolidays: albertaMainHolidays, // as if the owner pressed "all main holidays"
       },
       // The business's first person (the owner, the estimator) is made separately, below.
       people: [
@@ -154,6 +170,15 @@ const ACCOUNTS = [
         minimumNoticeMinutes: 1440,
         horizonDays: 120,
         closedDates: [daysFromToday(21)],
+        holidayCountry: "CA",
+        holidayRegion: "AB",
+        // As if the owner picked one by one, a national-only day among them.
+        closedHolidays: [
+          "New Year's Day",
+          "National Day for Truth and Reconciliation",
+          "Canada Day",
+          "Christmas Day",
+        ],
       },
       // Six practitioners with every kind of hours, then the five rooms feature 5 wires up.
       people: [
@@ -302,7 +327,11 @@ try {
 
       // Parsed before writing: the jsonb columns would accept a bad week.
       const [existingBusinessHours] = await tx
-        .select({ id: availabilityRule.id })
+        .select({
+          id: availabilityRule.id,
+          holidayCountry: availabilityRule.holidayCountry,
+          closedHolidays: availabilityRule.closedHolidays,
+        })
         .from(availabilityRule)
         .where(
           and(
@@ -311,12 +340,26 @@ try {
           )
         )
         .limit(1);
+      const hours = businessAvailabilityRuleValidationSchema.parse({
+        resourceId: null,
+        ...business.hours,
+      });
       if (!existingBusinessHours) {
-        const hours = businessAvailabilityRuleValidationSchema.parse({
-          resourceId: null,
-          ...business.hours,
-        });
         await tx.insert(availabilityRule).values({ id: randomUUID(), organizationId, ...hours });
+      }
+      // A row seeded before holidays existed gets the picks, so no machine needs a rebuild.
+      const holidaysAdded =
+        existingBusinessHours?.holidayCountry === null &&
+        existingBusinessHours.closedHolidays.length === 0;
+      if (holidaysAdded) {
+        await tx
+          .update(availabilityRule)
+          .set({
+            holidayCountry: hours.holidayCountry,
+            holidayRegion: hours.holidayRegion,
+            closedHolidays: hours.closedHolidays,
+          })
+          .where(eq(availabilityRule.id, existingBusinessHours.id));
       }
 
       let peopleMade = 0;
@@ -373,6 +416,7 @@ try {
         !existingMember && "membership",
         firstPerson.made && "first person",
         !existingBusinessHours && "business hours",
+        holidaysAdded && "holiday picks",
         peopleMade && `${peopleMade} people and places`,
         hoursMade && `${hoursMade} people's own hours`,
         servicesMade && `${servicesMade} services`,

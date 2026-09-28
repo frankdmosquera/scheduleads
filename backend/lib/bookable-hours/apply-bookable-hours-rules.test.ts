@@ -19,6 +19,9 @@ const salon: BusinessHoursInputType = {
   minimumNoticeMinutes: 240,
   horizonDays: 120, // reaches Jan 23, so Christmas Eve is inside
   closedDates: ["2026-12-24"],
+  holidayCountry: null,
+  holidayRegion: null,
+  closedHolidays: [],
 };
 
 const anaOwnWeek: PersonHoursInputType = {
@@ -141,5 +144,125 @@ describe("applyBookableHoursRules", () => {
     expect(resolved.timezone).toBe("America/Edmonton");
     expect(resolved.minimumNoticeMinutes).toBe(240);
     expect(resolved.horizonDays).toBe(120);
+  });
+});
+
+// Alberta's nine main holidays, the picker's one-click set.
+const albertaMainHolidays = [
+  "New Year's Day",
+  "Family Day",
+  "Good Friday",
+  "Victoria Day",
+  "Canada Day",
+  "Labour Day",
+  "Thanksgiving",
+  "Remembrance Day",
+  "Christmas Day",
+];
+
+const albertaSalon: BusinessHoursInputType = {
+  ...salon,
+  closedDates: [],
+  holidayCountry: "CA",
+  holidayRegion: "AB",
+};
+
+const noonInEdmonton = (date: string) => new Date(`${date}T19:00:00Z`); // noon, either offset
+
+describe("holidays the owner picked", () => {
+  test("nothing picked closes no holiday, only the business's own closed dates", () => {
+    const resolved = applyBookableHoursRules(
+      { ...albertaSalon, closedDates: ["2026-12-24"] },
+      null,
+      noonSep25InEdmonton
+    );
+
+    expect(resolved.closedDates).toEqual(["2026-12-24"]);
+  });
+
+  test("Family Day is the third Monday of February, even when February 1 is a Monday", () => {
+    const familyDay = { ...albertaSalon, horizonDays: 60, closedHolidays: ["Family Day"] };
+
+    expect(
+      applyBookableHoursRules(familyDay, null, noonInEdmonton("2026-01-10")).closedDates
+    ).toEqual(["2026-02-16"]);
+    expect(
+      applyBookableHoursRules(familyDay, null, noonInEdmonton("2027-01-10")).closedDates
+    ).toEqual(["2027-02-15"]);
+  });
+
+  test("all nine main holidays picked close exactly nine dates in a year", () => {
+    const allNine = { ...albertaSalon, horizonDays: 364, closedHolidays: albertaMainHolidays };
+    const resolved = applyBookableHoursRules(allNine, null, noonInEdmonton("2026-01-01"));
+
+    expect(resolved.closedDates).toEqual([
+      "2026-01-01",
+      "2026-02-16",
+      "2026-04-03",
+      "2026-05-18",
+      "2026-07-01",
+      "2026-09-07",
+      "2026-10-12",
+      "2026-11-11",
+      "2026-12-25",
+    ]);
+  });
+
+  test("a national-only holiday can be picked by an Alberta business", () => {
+    const truthAndReconciliation = {
+      ...albertaSalon,
+      closedHolidays: ["National Day for Truth and Reconciliation"],
+    };
+    const resolved = applyBookableHoursRules(truthAndReconciliation, null, noonSep25InEdmonton);
+
+    expect(resolved.closedDates).toEqual(["2026-09-30"]);
+  });
+
+  test("a holiday that is not picked stays open", () => {
+    const allNine = { ...albertaSalon, horizonDays: 70, closedHolidays: albertaMainHolidays };
+    const resolved = applyBookableHoursRules(allNine, null, noonInEdmonton("2026-07-01")); // to Sep 9
+
+    expect(resolved.closedDates).toEqual(["2026-07-01", "2026-09-07"]); // Heritage Day, Aug 3, stays open
+  });
+
+  test("a one-off date on a picked holiday opens it for that person only", () => {
+    const canadaDay = { ...albertaSalon, horizonDays: 60, closedHolidays: ["Canada Day"] };
+    const benOnCanadaDay: PersonHoursInputType = {
+      weeklyHours: null,
+      dateHours: [{ date: "2026-07-01", windows: [tenToTwo] }],
+    };
+    const june1 = noonInEdmonton("2026-06-01");
+
+    expect(applyBookableHoursRules(canadaDay, benOnCanadaDay, june1).closedDates).toEqual([]);
+    expect(applyBookableHoursRules(canadaDay, anaOwnWeek, june1).closedDates).toEqual([
+      "2026-07-01",
+    ]);
+  });
+
+  test("a horizon past New Year closes the picked holidays of both years", () => {
+    const winter = {
+      ...albertaSalon,
+      horizonDays: 60,
+      closedHolidays: ["Christmas Day", "New Year's Day"],
+    };
+    const resolved = applyBookableHoursRules(winter, null, noonInEdmonton("2026-12-01"));
+
+    expect(resolved.closedDates).toEqual(["2026-12-25", "2027-01-01"]);
+  });
+
+  test("a name or province the holiday list does not know is an error, not a silent skip", () => {
+    const misspelled = { ...albertaSalon, closedHolidays: ["Famly Day"] };
+    const unknownProvince = {
+      ...albertaSalon,
+      holidayRegion: "ZZ",
+      closedHolidays: ["Canada Day"],
+    };
+
+    expect(() => applyBookableHoursRules(misspelled, null, noonSep25InEdmonton)).toThrow(
+      /Famly Day/
+    );
+    expect(() => applyBookableHoursRules(unknownProvince, null, noonSep25InEdmonton)).toThrow(
+      /CA-ZZ/
+    );
   });
 });

@@ -178,7 +178,8 @@ Carried over from the first repo, verified against Railway Postgres:
   date), which a person can have without copying the week. The business's
   row alone carries what is set once for everyone: the time zone, minimum
   notice, how far ahead a customer may book, closed dates, and the country
-  and province for statutory holidays. A closed day or holiday closes online
+  and province, and the holidays the owner picked (none by default). A closed
+  day or picked holiday closes online
   booking for everyone; a one-off date opens it again, for one person or the
   whole business. Buffers moved to `booking_link`.
   **Several windows per day is the normal case, not an edge case.** Primo's
@@ -568,8 +569,11 @@ same day. Numbered on from the open questions, one sequence.
     day for online booking for everyone, whatever anyone's own hours say;
     bookings made before the click are shown, and the owner keeps or
     cancels them. A one-click opening beats a holiday or closed day, for one
-    person or the whole business. Holidays go by country and province, the
-    whole year on by default, each one switchable.
+    person or the whole business. Holidays go by country and province, and
+    only the ones the owner picks close: none by default, all the main ones
+    in one click or one by one. We build the functionality; the client
+    decides their schedule and times (Frank, 2026-09-28, replacing "the
+    whole year on by default").
 25. **Set once per business:** time zone, minimum notice, how far ahead
     customers can book. **Set per service:** length and the buffers before
     and after. **Set per person:** the week of bookable hours and one-off
@@ -583,3 +587,10 @@ same day. Numbered on from the open questions, one sequence.
 29. **Google belongs to people.** Optional, one calendar per person, the
     first the business owner's, read for busy times and written with each
     booking. Not a two-way sync. Google's approval is finished before item 13.
+30. **We build the functionality; the client decides.** Frank, 2026-09-28:
+    the product never decides a business's schedule, when it can be booked,
+    its times, its closed days or where its people work. Nothing is fixed
+    and nothing is on by default: the product offers the choice (a picker,
+    a switch, a one-click preset such as "all of Alberta's main holidays")
+    and the owner makes it. Fixed days are not flexibility. Found when step
+    2.6 planned to close Alberta's statutory holidays for everyone; see 24.
