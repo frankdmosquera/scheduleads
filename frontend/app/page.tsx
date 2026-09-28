@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { AuthCard, Notice } from "@/components/auth-card";
+import { BookingLinksList } from "@/components/booking-links/booking-links-list";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { fetchMe, type MeResultType } from "@/lib/api-client";
@@ -114,7 +115,6 @@ function PickOrganization({ onPicked }: { onPicked: () => void }) {
       }
 
       const list = data ?? [];
-      // A brand-new account: nothing to pick from, so go create a business.
       if (list.length === 0) {
         router.replace("/create-organization");
         return;
@@ -220,6 +220,8 @@ function SignedIn({
             session. Leads, bookings and the calendar arrive with the next build-plan items.
           </p>
         </div>
+
+        <BookingLinksList slug={me.organization.slug} />
 
         <div className="mt-4 text-center text-sm text-muted-foreground">
           <SignOutLink onSignedOut={onSignedOut} />

@@ -125,7 +125,10 @@ Build steps are ordered checklist items. Each step must leave the project
 working, stay small enough to review, and end with a concrete `Done when` that
 names observable behavior and the relevant check. Follow `workflow.stepReview`
 and `workflow.checkpointCommits` from config in the Build loop. `/complete`
-creates the final feature commit.
+creates the final feature commit. Where the project's `AGENTS.md` has "After
+the green light, nothing stops until the review" (this project does), the Build
+loop says so: each step runs from its plan's yes through commit, push and
+review without asking, so the planning is where the user's decisions go.
 
 The spec must preserve every explicit contract in the feature packet, including
 applicable project-wide UX and security requirements. Do not discard a required
@@ -178,8 +181,11 @@ has not been shown to the user.
 
 Everything goes in the item's own row on the roadmap in
 `blueprint/context/project-log.html`. There is no per-feature view; do not
-create one. Flip the item to `active`, mark its chip in the plan strip, update
-the tally, and build its row from the stencil at the bottom of that file: the
+create one. Flip the item to `active`, and in the top bar open its chip into
+its step chips (N.1 to N.k, the first marked `next`, each jumping to
+`step-N-k`) with a now note above them. Update the tally, and build its row
+from the stencil at the bottom of that file, with `id="item-N"` on the row and
+`id="step-N-k"` on each step: the
 gates, then collapsed `<details>` drawers for **Steps** (open), **Why this item
 exists**, **Decisions**, **Contracts**, **Log** and **Notes**.
 

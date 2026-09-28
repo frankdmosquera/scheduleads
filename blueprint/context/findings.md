@@ -86,24 +86,6 @@ reason in the spec preamble and build log so the next form knows which pattern
 is the standard.
 **Resolution:**
 
-### F-15 [P3] fixed - `coding-standards.md` still says migrations run through drizzle-kit from `backend`
-
-**File:** blueprint/context/coding-standards.md:240
-**Found:** 2026-09-23 by /audit (scope: current; lens: quality)
-**Why it matters:** The Backend section says Drizzle migrations "run through
-`drizzle-kit` from `backend`". This feature moved them: `drizzle.config.ts` and
-the `db:*` scripts live in `packages/shared`, and `AGENTS.md` (Commands) says
-"Never generate a migration from `backend` or `frontend`: two workspaces
-generating against one database is how a migration ledger forks." Same class as
-F-09, in the same file, missed by its repair. An agent obeying the standard
-would recreate the fork `AGENTS.md` warns about.
-
-**Suggested fix:** Rewrite the sentence to say migrations are generated and
-applied from `packages/shared` with the commands in `AGENTS.md`.
-**Resolution:** 2026-09-23, during Frank's folder walkthrough. The Backend section now says
-migrations run through `drizzle-kit` from `packages/shared` only, never from `backend` or
-`frontend`, and points at Commands in `AGENTS.md`. Awaiting re-review.
-
 ### F-16 [P3] open - Better Auth endpoints already open two paths the spec reserves for later items
 
 **File:** backend/src/lib/auth.ts:85
@@ -129,4 +111,45 @@ written contract and is live over HTTP today.
 item 3b decides the invitation flow, and correct the `user.role` contract and
 comments to say a platform admin can set it through the admin plugin's
 endpoint, or record either as accepted with the reason.
+**Resolution:**
+
+### F-32 [P3] unverified - A pick is the package's display name, so a renamed holiday would take a business's booking page down
+
+**File:** backend/lib/bookable-hours/closed-holidays.ts:58
+**Found:** 2026-09-28 by /audit independent (scope: current; lens: quality)
+**Why it matters:** `closedHolidays` stores `date-holidays`' English display
+names (`"Thanksgiving"`, `"St. Patrick’s Day"` with a typographic apostrophe),
+and a name the list no longer has throws, as step 2.6 piece 4 decided. The
+throw propagates out of `applyBookableHoursRules` and the public detail route
+answers `500` for that business until its row is corrected. The names are not a
+stable identifier: the dependency is `^3.37.0`, so a lockfile refresh can pull
+a minor release that renames or drops a holiday, and a province can abolish
+one, after which every business that picked it loses its public booking page,
+not just that one closure. The saved tests pin the nine Alberta names and
+National Day for Truth and Reconciliation, so a rename of those would fail the
+tests on upgrade; any other name a feature 12 picker offers would not. Not
+observed: no rename exists in 3.37.0, and the probe found no name that differs
+in date between Alberta's list and the national one in 2026 to 2030, for any
+province.
+**Suggested fix:** Decide in feature 12, when the picker writes names: either
+validate picks against the list at write time and keep a test over every name
+the picker can offer, or store a stable key (the package's `rule` string) with
+the display name. Worth a note on feature 12 now so it is not rediscovered.
+**Resolution:** Carried to feature 12 on Frank's call, 2026-09-28, noted on
+item 12 in `build-plan.md`. Stays unverified until then.
+
+### F-34 [P3] open - Three config comments carry history the comment standard keeps out of code
+
+**File:** backend/tsconfig.types.json:2
+**Found:** 2026-09-28 by /audit independent (scope: current; lens: quality)
+**Why it matters:** `coding-standards.md` (Comments, "The balance") says no
+history in code comments, naming step numbers as the first example: that lives
+in the build log. This feature added `backend/tsconfig.types.json:2` ("AppType,
+step 2.5"), `backend/tsconfig.json:14` and `packages/shared/tsconfig.build.json:3`
+("No src/ folder (Frank, 2026-09-26)"). The Sep 27 comment sweep covered the
+code files, not the tsconfigs. Harmless at runtime; it is the pattern the next
+config file copies.
+**Suggested fix:** Drop "step 2.5" and the two "(Frank, 2026-09-26)" asides and
+keep the why ("declarations only, because Vercel builds only the frontend"; "no
+src/ folder, so the code sits beside the build output").
 **Resolution:**

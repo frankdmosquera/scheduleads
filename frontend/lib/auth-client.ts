@@ -1,5 +1,5 @@
 // Frontend: the browser side of Better Auth, a typed wrapper around the API's auth routes.
-// Never import backend/src/lib/auth-server.ts here: it would ship the secret to Vercel.
+// Never import backend/lib/auth/auth-server.ts here: it would ship the secret to Vercel.
 
 import { createAuthClient } from "better-auth/react";
 import { adminClient, emailOTPClient, organizationClient } from "better-auth/client/plugins";

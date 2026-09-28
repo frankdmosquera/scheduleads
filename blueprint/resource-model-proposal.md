@@ -2,6 +2,14 @@
 
 **Status: approved and applied, 2026-09-22.**
 
+**Partly superseded, 2026-09-25**, by version 8 of the booking model (the
+build log's "How it all fits together", and `project-plan.md` decisions 20
+to 29). A resource is one person or one place, never a crew; "an
+organization with no resources behaves as one" is replaced by a first
+person every business gets automatically; a calendar connection belongs to
+a person, never to the business. The two-index uniqueness trap in section 4
+still stands. The rest is kept below as the record of why, unchanged.
+
 Frank approved section 5 the same day it was written. All seven plan edits and
 all three drift fixes in section 8 are now in `build-plan.md` and
 `project-plan.md`. This file stays as the record of why, because the reason a

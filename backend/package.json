@@ -1,17 +1,28 @@
 {
-  "name": "api",
+  "name": "backend",
   "type": "module",
+  "exports": {
+    "./app-type": {
+      "types": "./dist/types/app.d.ts"
+    }
+  },
   "scripts": {
-    "predev": "tsc -p ../packages/shared/tsconfig.json",
-    "dev": "tsx watch --env-file-if-exists=../.env src/server.ts",
-    "prebuild": "tsc -p ../packages/shared/tsconfig.json",
+    "predev": "tsc -p ../packages/shared/tsconfig.build.json",
+    "dev": "tsx watch --env-file-if-exists=../.env server.ts",
+    "prebuild": "tsc -p ../packages/shared/tsconfig.build.json",
     "build": "tsc",
-    "start": "node --env-file-if-exists=../.env dist/server.js"
+    "build:types": "tsc -p tsconfig.types.json",
+    "start": "node --env-file-if-exists=../.env dist/server.js",
+    "pretest": "tsc -p ../packages/shared/tsconfig.build.json",
+    "test": "vitest run",
+    "pretest:watch": "tsc -p ../packages/shared/tsconfig.build.json",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
     "@scheduleads-app/shared": "*",
     "better-auth": "^1.7.5",
+    "date-holidays": "^3.37.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.8",
     "postgres": "^3.4.9"
@@ -19,6 +30,7 @@
   "devDependencies": {
     "@types/node": "^26.6.1",
     "tsx": "^4.23.13",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
   }
 }

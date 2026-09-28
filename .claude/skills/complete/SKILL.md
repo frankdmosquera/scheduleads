@@ -1,6 +1,6 @@
 ---
 name: complete
-description: Complete a finished feature, fix, or rollback by running final gates, archiving its spec, updating plans, creating the work commit, and requesting approval before merging into main with a merge commit and pushing. Use for /complete or requests to finish, wrap up, merge, or close the current work item.
+description: Complete a finished feature, fix, or rollback by running final gates, archiving its spec, updating plans, creating the work commit, and requesting approval before merging into main with a merge commit, pushing, and deleting the branch. Use for /complete or requests to finish, wrap up, merge, or close the current work item.
 disable-model-invocation: true
 ---
 
@@ -19,8 +19,8 @@ Where this sits in the workflow:
 
 `/implement` built the feature, fix, or rollback on its branch, with a pushed
 commit per step. This skill closes it out: it logs the work, makes the
-work-level commit, merges into `main` with a merge commit, and pushes. Run it
-only when the work is done,
+work-level commit, merges into `main` with a merge commit, pushes, and deletes
+the branch. Run it only when the work is done,
 reviewed, and the documented `Verify` command, or the fallback build and tests,
 passes.
 
@@ -254,7 +254,9 @@ feature's commit. Skip this if the feature didn't consume prototypes.
 Before the commit, not after. In `blueprint/context/project-log.html`: close
 this feature's group off, with every step box ticked, all three gates passed,
 the status pill moved to done, and a final timeline entry naming what shipped.
-Flip the item to `done` in the roadmap view and update its three counts.
+Flip the item to `done` in the roadmap view and update its three counts. In
+the top bar, fold its step chips away so only its chip remains, marked
+`done`, and close its row's fold so it reads as one line.
 Republish to the URL in the project's `AGENTS.md`, passing it as `url`.
 
 The republished file is part of this feature's commit in Step 2, so the repo
@@ -275,8 +277,8 @@ never merges on its own, so the laptop and GitHub stay a mirror.
 
 1. Push the work branch so GitHub holds the Step 2 commit.
 2. Ask one question that names every action: merge `<branch>` into `main`, tag
-   it, and push `main` and the tag. Do nothing below without an explicit yes to
-   that question in the current chat.
+   it, push `main` and the tag, and delete the branch. Do nothing below without
+   an explicit yes to that question in the current chat.
 3. Switch to `main`. When it has an upstream, pull with `--ff-only` first; stop
    and report if it cannot fast-forward.
 4. Merge with a merge commit, never a squash:
@@ -287,10 +289,14 @@ never merges on its own, so the laptop and GitHub stay a mirror.
    the build-plan number. Fixes and rollbacks are not tagged.
 6. Push `main` and the tag. If the repo has no remote or upstream, say so
    loudly: the work then exists on this machine only.
-7. Keep the branch. Never delete it.
-8. Report a sync line for `main` and the work branch, comparing the local and
-   remote commit for each (`git rev-parse <ref>` against `git ls-remote origin
-   <ref>`), and say which side is ahead when they differ.
+7. Once `main` is pushed, delete the branch: locally with
+   `git branch -d <branch>` and on GitHub with
+   `git push origin --delete <branch>`. Never `-D`: `-d` refuses a branch that
+   is not merged, which is the safety check. The merge commit keeps every step,
+   so only the name goes. If `main` was not pushed, keep the branch and say so.
+8. Report a sync line for `main`, comparing the local and remote commit
+   (`git rev-parse main` against `git ls-remote origin main`), say which side
+   is ahead when they differ, and confirm the branch is gone on both sides.
 
 Then point the user at `/feature`, `/fix`, or `/rollback` for the next thing.
 
@@ -303,8 +309,8 @@ that command can read the archived feature after `current-feature.md` is reset.
 ## Rules
 
 - The work item is the unit of history: one merge commit on main per feature,
-  fix, or rollback, with every step commit kept beneath it. Never squash, and
-  never delete the branch.
+  fix, or rollback, with every step commit kept beneath it. Never squash. The
+  branch is deleted once `main` is pushed; the merge commit keeps its history.
 - A rollback preserves the original feature archive and adds a separate rollback
   archive. Never rewrite history to make the feature look as if it never existed.
 - Don't merge unfinished or failing work. The documented `Verify` command, or
@@ -318,10 +324,10 @@ that command can read the archived feature after `current-feature.md` is reset.
   is missing, pending, changes-requested, malformed, or stale. The user may
   explicitly cancel a manual review before completion, but the agent never
   resets or waives it on the user's behalf.
-- Merging and pushing are the user's calls. The Step 3 question names the
-  merge, the tag and the push together, so one explicit yes to it covers all
-  three. Do not treat `/complete`, "looks good", or a yes to a question that did
-  not name the push as permission to push.
+- Merging, pushing and deleting the branch are the user's calls. The Step 3
+  question names the merge, the tag, the push and the branch deletion together,
+  so one explicit yes to it covers all four. Do not treat `/complete`, "looks
+  good", or a yes to a question that did not name the push as permission to push.
 - One item per completion. If a parent feature still has unchecked sub-features,
   leave the parent unchecked.
 

@@ -2,6 +2,11 @@
 
 **Status: proposal. Not approved, not an instruction.**
 
+**Sorted 2026-09-27 (Frank):** what is already true, what is kept for later and
+what is rejected is on the build log's Project view, "Retail and client sites".
+Nothing here was added to the roadmap. Read that section first; this file is
+the record of the original reasoning, with paths and numbers from Sep 22.
+
 Nothing in this file has been agreed. It is written to be reviewed, argued
 with, and either applied or thrown out. Do not treat any section as settled,
 and do not apply the plan edits in section 6 until Frank has read them and
@@ -14,9 +19,9 @@ with Frank about how the clinic's product store should work. It touches this
 repo because the conclusion was that the store does not belong in the clinic's
 site at all.
 
-The same material with diagrams is at
-https://claude.ai/artifact/K9MqXZ6me95FwSePbQxLvU (private to Frank's account).
-This file is the version that lives in the repo, and it is the one that counts.
+The same material once had a diagram page of its own; it was deleted on
+2026-09-27 after its diagrams moved to the build log. This file is the version
+that lives in the repo, and it is the one that counts.
 
 ---
 

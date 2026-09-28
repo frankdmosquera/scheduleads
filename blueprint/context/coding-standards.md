@@ -33,7 +33,11 @@ Conventions for this monorepo: a Next.js 16 frontend, a Hono API, and
 ## File Organization
 
 No `src/` directory. The scaffolder passes `--no-src-dir`, so everything sits at
-the project root. In a monorepo these paths are relative to `frontend/`.
+the project root. In a monorepo these paths are relative to `frontend/`. The
+backend has none either (Frank, 2026-09-26): `app.ts` (every route, and
+`AppType`), `server.ts` (only starts the API), `lib/`, `middleware/` and
+`routes/` (a group of routes, one file each) sit straight in `backend/`, and
+its `tsconfig.json` excludes `dist` and the tests so nothing else compiles.
 
 - Components: `components/[feature]/ComponentName.tsx`
 - Pages: `app/[route]/page.tsx`
@@ -45,15 +49,34 @@ the project root. In a monorepo these paths are relative to `frontend/`.
   `@/src/lib/utils`
 
 `packages/shared` holds what both sides need: the Drizzle schema and
-migrations, the Zod schemas, the API contract (the Hono `AppType`) and the
-crypto. It compiles to `dist/` and its subpath exports point there, not at
-source. The two workspaces disagree about extensions - the backend's NodeNext
-resolution wants `./file.js` where the frontend's bundler wants none - and
-building the package sidesteps that instead of forcing one of them to bend.
-Both apps build it first through their own `predev` and `prebuild` hooks, so
-neither ever consumes it as TypeScript. Do not add an export that points at
-`src/`; it breaks both builds. Import from the package rather than redeclaring
-a shape on either side.
+migrations, the Zod schemas and the crypto. It compiles to `dist/` and its
+subpath exports point there, not at source. The two workspaces disagree about
+extensions - the backend's NodeNext resolution wants `./file.js` where the
+frontend's bundler wants none - and building the package sidesteps that
+instead of forcing one of them to bend. Both apps build it first through their
+own `predev` and `prebuild` hooks, so neither ever consumes it as TypeScript.
+Do not add an export that points at a `.ts` source file; it breaks both
+builds. Import from the package rather than redeclaring a shape on either
+side.
+
+The API contract, the Hono `AppType`, is not in `packages/shared`: it is the
+type of the app in `backend/app.ts`, and shared would have to import the
+backend to hold it. The backend writes its declarations
+(`npm run build:types --workspace=backend`, into `dist/types/`) and exposes
+them as the types-only entry `backend/app-type`; the frontend depends on the
+workspace (`"backend": "*"`) and imports it with `import type`. The frontend's
+`predev` and `prebuild` write them fresh, because Vercel builds only the
+frontend.
+
+It has no `src/` either (Frank, 2026-09-26): `db/`, `helpers/`,
+`subscriptions/` and `zod-validation/` sit straight in `packages/shared/`, next
+to `migrations/` (every change to the tables, in order), `scripts/` (the dev
+seed) and `drizzle.config.ts`. Two TypeScript configs keep that apart:
+`tsconfig.json` is the editor's view, type-checking everything with Node's
+types and emitting nothing; `tsconfig.build.json` compiles only the four code
+folders to `dist/`, and it is what `build` and both apps' `predev` and
+`prebuild` run. A new code folder is added to both `include` lists and gets its
+own subpath export.
 
 ## Naming
 
@@ -75,10 +98,43 @@ a shape on either side.
   one object per form (`signInEmailValidationSchema` in
   `sign-in-email-validation-schema.ts`). Frank reads the import and knows what
   it is without opening anything
-- `packages/shared/src` is organised by kind, then area, then one file per
-  export: `zod-validation/auth/sign-in-email-validation-schema.ts`. Each kind
-  folder is one import (`@scheduleads-app/shared/zod-validation`, through its
-  `index.ts`). The Drizzle tables are `db/drizzle-schema.ts`
+- `packages/shared` is organised by kind, then area, then one file per
+  export: `zod-validation/auth-validation-schemas/sign-in-email-validation-schema.ts`.
+  An area folder says what it holds even seen alone (Frank, 2026-09-27), so it
+  is named `<area>-validation-schemas/` or `<area>-tables/`, never a bare
+  `auth/`. Each kind folder is one import
+  (`@scheduleads-app/shared/zod-validation`, through its `index.ts`). The
+  Drizzle tables follow the same rule: one table per file,
+  `db/booking-tables/resource-table.ts`, re-exported by `db/index.ts` and
+  imported as `@scheduleads-app/shared/db`. A helper both
+  apps use lives in `helpers/` (`toSlug`, imported from
+  `@scheduleads-app/shared/helpers`), never inside `zod-validation/`, which
+  holds only validation schemas
+- `backend` follows the same rule (Frank, 2026-09-26): kind, then area,
+  then one file per export. Every middleware is named as one
+  (`requireOrganizationMiddleware`) and lives in
+  `middleware/<area>-middleware/<name>.ts`, so a folder seen on its own
+  still says it holds middleware; plain functions live in
+  `lib/<area>/<name>.ts`; a group of routes lives in
+  `routes/<area>-routes.ts`, exporting one Hono app that `app.ts` mounts
+  (`publicBookingLinksRoutes`). A type sits in the file of the function that
+  produces it. Frank navigates by folder and file name, not by scrolling
+- A name says what it means, with no guessing: an area folder names what is
+  in it before it is opened, and the functions inside use the same words.
+  `auth` (who is signed in, and for which business), `bookable-hours` (when
+  customers can book online; "availability" was dropped because it leaves
+  open "available for what"), `errors` (what the API sends back when it
+  says no). A folder named after a single thing inside it
+  (`organization/`, `refusal/`) says nothing and is not used. The database
+  keeps its own names (`availability_rule`): renaming a table costs a
+  migration. Today's areas: `lib/auth`, `lib/bookable-hours`, `lib/errors`,
+  `middleware/auth-middleware`, `middleware/dashboard-middleware`,
+  `middleware/public-middleware`, `middleware/subscription-middleware`, and
+  `routes/public-booking-links-routes.ts`
+- Helpers: one used across several areas goes in a shared `helpers/`
+  folder; one used in a single place stays beside the code that uses it
+- `frontend` is judged case by case: a piece with real logic gets its own
+  file, a component that is mostly markup and CSS stays whole, however long
 
 ## Styling
 
@@ -96,8 +152,8 @@ a shape on either side.
 
 ## Database
 
-- Use Drizzle for all database operations. Schema lives in one file, not spread
-  across call sites.
+- Use Drizzle for all database operations. The schema lives only in
+  `packages/shared/db/`, one table per file, never spread across call sites.
 - Generate migrations with `drizzle-kit generate`, apply with `drizzle-kit migrate`.
   Do not use `push` against anything but a local scratch database.
 - Check the generated SQL before committing a migration. Drizzle will happily
@@ -109,9 +165,15 @@ a shape on either side.
 
 - The dashboard is an app behind a login, not a public site: nothing in it
   needs SEO. Data is fetched in the browser, from client components, through
-  the Hono client typed by the `AppType` in `packages/shared`, and React Query
-  owns caching and refetching once it arrives. A Server Action proxy is used
-  only when a call must stay off the browser
+  the Hono client typed by the backend's `AppType`, and React Query owns
+  caching and refetching once it arrives. A Server Action proxy is used only
+  when a call must stay off the browser
+- `frontend/lib/api-client.ts` holds two clients from that one type, matching
+  the backend's two CORS rules: `dashboardApiClient` sends the login cookie
+  (dashboard routes), `publicApiClient` never does (`/public/*`, whose rule
+  refuses credentials, so the browser would drop the answer). A call to our
+  own API goes through one of them, never through a bare `fetch` with a
+  hand-written response type
 - No data fetching in server components, and no Next caching features
   (`"use cache"`, `revalidate`, `force-static`, `fetch` cache options). Next
   only serves the page shell. A server-side fetch can be run once at
@@ -133,12 +195,22 @@ a shape on either side.
     push (server-sent events) only when a real need appears
 - Every signed-in API response carries `Cache-Control: no-store`, so no
   browser or proxy keeps one business's data. New dashboard routes mount the
-  same `dashboardNoStore` middleware as `/me` in `backend/src/server.ts`
+  same `dashboardNoStoreMiddleware` as `/me`
+  (`backend/middleware/dashboard-middleware/dashboard-no-store-middleware.ts`)
 - Validate with the Zod schemas in `packages/shared` at both ends: the form
   before it sends, the route before it touches the database
 - Every app table is organization-scoped and the scope is a security boundary.
   `organizationId` is derived server-side from the Better Auth session, never
   read from anything a client sends
+- The one exception is a public route, which a stranger calls with no session
+  (step 2.4, `routes/public-booking-links-routes.ts`). It may take the business
+  from the URL slug, on four conditions: it is read-only until a later spec
+  says otherwise; the business is looked up by slug first, and every later
+  query filters on the id that lookup returned; no row is ever found by its id
+  alone; and every "not here" (no such business, a plan without the module, a
+  missing, inactive or other business's row) answers the identical `404`, so a
+  stranger cannot tell them apart. The answer never carries `organizationId` or
+  anything about people or logins
 - Whether the booking widget calls the API from the browser or proxies through
   the host site's Server Action is open until Phase 3 (`project-plan.md`,
   open question 5)
@@ -264,6 +336,12 @@ obvious code, or a long block at the top that explains lines far below it.
 - Keep doc comments minimal: a one-line purpose on an exported type or function is
   plenty; don't write JSDoc that just repeats the signature.
 - When in doubt, leave the comment out.
+- **The balance (Frank, 2026-09-27):** he likes comments, but not a paragraph
+  where a line will do. Most comments are one or two lines; a file header is two
+  or three. No history in code comments (step numbers, finding numbers, "the
+  first repo did"): that lives in the build log. Keep what the code cannot say:
+  why, the trap, the security rule, the other file that must change with this
+  one, and units or formats (minutes from midnight, `YYYY-MM-DD`).
 
 ## Writing
 
@@ -310,7 +388,7 @@ permanent truth.
   screen that depends on a business role calls Better Auth's organization
   `hasPermission` (for example `{ member: ["delete"] }`) and never compares
   `role === "owner"`. The roles and what they grant are defined once, in
-  `customStatements` and the `newRole` blocks in `backend/src/lib/auth-server.ts`.
+  `customStatements` and the `newRole` blocks in `backend/lib/auth/auth-server.ts`.
   This keeps Better Auth's dynamic access control (roles a business defines
   for itself) a clean switch to turn on later: a hard-coded role name would
   silently ignore every custom role.

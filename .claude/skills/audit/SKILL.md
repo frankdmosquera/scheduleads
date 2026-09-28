@@ -115,7 +115,10 @@ request and receipt keep both execution fields absent.
    The current full `HEAD` must be the approved review checkpoint, including the
    verified spec. Never create that commit inside Audit. If work is dirty, stop
    and ask the user to approve a review checkpoint through `/implement`, even
-   when normal checkpoint commits are disabled.
+   when normal checkpoint commits are disabled. Where the project's `AGENTS.md`
+   records a standing yes for step commits on feature branches (this project
+   does), `/implement` commits the checkpoint without asking; Audit still never
+   commits.
 2. Read installed adapters from `blueprint/.state/manifest.json` when valid.
    For older installs, detect `.agents/skills` as `codex` and `.claude/skills`
    as `claude`. These files prove project support, not that the external runtime
@@ -212,7 +215,8 @@ Use this phase when a current pending request exists.
    from the reviewer session.
 
 After changes are requested, the builder repairs through `/implement`, obtains
-approval for a new checkpoint, and prepares a new request. The next reviewer
+approval for a new checkpoint (already given where `AGENTS.md` records a
+standing yes for feature-branch commits), and prepares a new request. The next reviewer
 pass reviews the complete new delta, not only the old findings.
 
 ## Step 1 - gather context

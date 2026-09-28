@@ -1,0 +1,2 @@
+ALTER TABLE "availability_rule" DROP CONSTRAINT "availability_rule_horizon_check";--> statement-breakpoint
+ALTER TABLE "availability_rule" ADD CONSTRAINT "availability_rule_horizon_check" CHECK ("availability_rule"."horizonDays" between 1 and 365);

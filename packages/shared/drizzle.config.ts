@@ -8,14 +8,14 @@ import { defineConfig } from "drizzle-kit";
 try {
   process.loadEnvFile("../../.env");
 } catch {
-  // No local .env. Real environments set DATABASE_URL directly.
+  // no local .env
 }
 
 // db:generate needs no database. db:migrate and db:studio connect to whatever .env
 // names: locally scheduleads_dev; Railway only through its tunnel on 127.0.0.1:5433.
 export default defineConfig({
-  schema: "./src/db/drizzle-schema.ts",
-  out: "./drizzle",
+  schema: "./db/*-tables/*-table.ts", // one table per file; db/index.ts re-exports them for the apps
+  out: "./migrations",
   // This repo's own migration ledger. The first repo's ledger stays in the database
   // untouched; mixing the two would make both wrong.
   migrations: {

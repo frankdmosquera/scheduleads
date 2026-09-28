@@ -67,12 +67,15 @@ later would cost a migration; splitting now costs one subdomain.
 
 **Type safety front to back is Hono RPC**, not tRPC: the backend exports
 `AppType`, the frontend uses `hc<AppType>` from `hono/client`, which ships with
-Hono. No extra dependency, no codegen. It is not wired yet and that is
-deliberate - feature 1's only frontend-to-backend traffic goes through the
-Better Auth client, which is already typed. It arrives at item 2 with the first
-real route, and must be **proved** there by breaking a route on purpose and
-confirming the frontend stops compiling. The first repo declared `AppType` and
-never consumed it once; do not inherit that claim unproven.
+Hono. No extra dependency, no codegen. Wired in step 2.5 (2026-09-27) and
+**proved** there: a renamed route and a renamed field each made
+`npm run build --workspace=frontend` fail with a type error, and it passed
+again once restored. The backend writes the routes' declarations
+(`build:types`, run by the frontend's `predev` and `prebuild`, because Vercel
+builds only the frontend), and `frontend/lib/api-client.ts` builds two clients
+from one `AppType`: one sends the login cookie, the public one never does. The
+first repo declared `AppType` and never consumed it once; every new route is
+called through these clients, never a bare `fetch`.
 
 **Environment variables.** One gitignored `.env` at the repo root in
 development, because both `backend` and `packages/shared` read it. In
@@ -133,6 +136,69 @@ This is `workflow.stepReview: "every"` in `blueprint/config.json`, and
 `/implement` carries it out. A small project sets `"feature"` instead and
 reviews once per feature.
 
+### A spec is approved one step at a time
+
+**Decided by Frank, 2026-09-25.** This overrides the Blueprint default, where
+the whole spec is approved once before any step is built.
+
+1. Before the first step, Frank sees the whole feature once, as one picture
+   of what each step is for and how the steps feed each other. That is the
+   only whole-feature pass. It is not a yes to every line of the spec.
+2. Each step's plan (what it does, its pieces, its `Done when`) is gone
+   through with him and gets its own yes just before it is built.
+3. If a later step shows an earlier one was wrong, the spec and that step
+   are amended then, before anything else builds on it.
+
+Why: a yes to a whole spec meant approving pages he had not been through,
+and going over six steps at once is the "too many things at a time" that
+loses him. Every yes should be on something he has seen.
+
+### After the green light, nothing stops until the review
+
+**Decided by Frank, 2026-09-26.** His time goes into the plan. Once a step's
+plan (both parts) has his yes, the step runs straight through: build, tests
+and checks, tick the box, publish the page, commit and push to the feature
+branch, `/audit`, independent review. The one planned stop is after the
+review, where its findings are talked through.
+
+Only three things stop a step earlier:
+
+1. **The agreed plan turns out wrong** while building, and the choice changes
+   what gets built (the spec and step are amended with him, then work
+   resumes).
+2. **A line only he crosses**: installing a package, touching Railway or real
+   data, `main`, a merge, a force push, deleting anything.
+3. **Blocking review findings** (P0/P1): fixed by default; leaving one unfixed
+   is his call.
+
+Everything else is decided without asking and named in the step report, so
+nothing is decided silently. Never ask for a yes on something not built yet
+(on 2026-09-26 a commit yes asked before 2.4 existed read as if something had
+already been built).
+
+### How to present reviews and steps
+
+**Decided by Frank, 2026-09-25.** Applies to audits, reviews, walkthroughs, and
+every build step (planning it, reporting it, going through its findings). One
+point at a time, every reply in this shape:
+
+1. **Where we are**, one line: the feature and its state, and which point is open.
+2. **The point**, told as a plain story from the business ("does the booking
+   show on Primo's phone?"), not as architecture.
+3. **One small diagram** for that point. Often it is the only part read.
+4. **Two or three short lines.** No long prose.
+5. **What's left**: a short table of the open points only. Settled points drop
+   off the table but are still tracked and applied.
+6. **One yes or no question.**
+
+Words: issues are `#N`, features "feature N" (never "item N", which means the
+same thing), steps "step N.M". Never a bare number. Never ask again about
+something already agreed. A note for a later feature is said as "only a note
+for later, we stay on feature N".
+
+Why: long answers and several points at once lost Frank; one contained point,
+a little graph and what's left is what he can decide on.
+
 ### Git: the laptop does the work, GitHub mirrors it
 
 **Decided by Frank, 2026-09-24.** Written here because the same rules used to
@@ -142,14 +208,21 @@ not to read. That is how this repo went a week with no GitHub remote at all.
 - **GitHub is the main copy.** The repo is `frankdmosquera/scheduleads`. On
   any machine, pull before starting. A missing remote or unpushed commits get
   said out loud at the start of a session.
-- **One branch per feature**, off `main`. Steps are commits on it, never
-  branches. Small chores go on whichever feature branch is open.
+- **One branch per feature**, off `main`, named for the feature so the branch
+  alone says which one is open: `feature/booking-links-resources-and-availability-rules`.
+  Steps are commits on it, never branches. Small chores go on whichever
+  feature branch is open.
 - **One commit per step, pushed straight after.** The step number goes in the
-  message: `feat: 2.3 availability rules api`. `/implement` asks once per
-  feature whether it may; the yes covers that branch only.
+  message: `feat: 2.3 availability rules api`. **Standing yes, Frank,
+  2026-09-26:** a step that passes its checks is committed and pushed to its
+  feature branch without asking, and so is the commit of review fixes he has
+  agreed to. Nothing stops between the build and the independent review; the
+  stop is after the review, where the findings are talked through. The yes
+  covers feature branches only, never `main`, a merge, a force push or a
+  deleted branch, each of which still needs its own yes.
 - **Merging is Frank's call, every time.** `/complete` merges locally with a
   merge commit (`--no-ff`), never a squash, tags `item-NN-done`, and pushes
-  `main` and the tag, all on one explicit yes. The branch is kept.
+  `main` and the tag, all on one explicit yes, then deletes the branch.
 - **Every step and merge ends with a sync line** comparing the local and GitHub
   commit, so "it's pushed" is checked, never assumed.
 
@@ -276,11 +349,76 @@ their plans and outcomes), **Why this item exists**, **Decisions**,
 **Contracts**, **Log**, **Notes**. Closed, the row is one line in a list of 28.
 Open, it is the whole record without leaving the page.
 
-The page therefore has two views and two buttons: **Roadmap**, which is home and
-what loads, and **The project**, the eight planning answers. It used to have a
-third view per feature, which meant the same steps were maintained in two places
-and silently drifted. Never reintroduce that. If something seems to belong in
-two places, one of them links to the other rather than restating it.
+**Each step holds everything about that step.** Decided by Frank, 2026-09-25,
+so he never has to piece a step together from the item's general log. Inside
+a step, in this order: **The plan**, **What actually happened** (the planned
+pieces, each a green check, an unplanned one tagged "added"; then one blue
+**How it was proved** box holding two white cards: **Saved tests and checks
+by hand** (tests added, how they were proved able to fail, what was only
+proved by hand, and the "Passed." result of the Done when) and **Independent
+review** (Frank, 2026-09-26: five numbered parts, always in this order:
+**1 What it checked** (the fixed list, then "For this step"), **2 Verdict**
+in the green result box, **3 Issues it found** in violet, **4 Earlier issues
+it closed**, and **5 After the fixes**, green once this step's issues are
+repaired and how that was proved, grey "Not yet" until then. The issues sit
+inside the same card: every finding the independent review raised, in plain words, with
+its F-number and state; moved inside on Frank's call, 2026-09-26, because the
+issues are the review's answer, not a drawer of their own). The planned
+pieces and each card carry their own small violet **What bit** block when
+something caught us out there, and none when nothing did), **What changed in
+the code**. A step has no Log of its own (Frank, 2026-09-26: the plan and
+what actually happened already tell the step's story). Every entry, a step's
+built, reviewed and fixed included, goes in the item's one **Log**, newest
+first, titled with its step number when it belongs to one ("Step 2.4 built:
+..."). The Log builds up for one feature only: a closed feature's row folds
+to one line with its Log inside, and the next feature starts a fresh one.
+
+**A step's plan comes in two parts** (Frank, 2026-09-26), each its own
+colored chunk with its state and date: **Part 1, What it builds** (the
+numbered pieces, each with its picture) and **Part 2, Done when** (the checks
+agreed now, run once it is built). A piece that needs his call is a
+**blocker**: it comes first in Part 1, because nothing is built until he
+answers it, tagged "blocker, waiting on you" while open and "blocker, answered"
+with the answer and its date once decided. It keeps its place and number, so a
+reader later sees it was his decision and that it came first. The
+numbers count pieces of the plan, never work done: the step says "nothing
+built yet" until it is built. The chat uses the same names.
+
+**Pictures live with what they explain** (Frank, 2026-09-26; there is no
+separate Diagrams drawer any more). The plan opens with one picture of the
+whole step, and each planned piece has its own picture in a small closed
+drawer under it. When a piece ends up different from its picture, **What
+actually happened** may add a closed pair under that piece, "Planned" and
+"What we ended up with", only when a picture makes the change clearer; the
+plan's own pictures are never redrawn.
+
+The page therefore has three views and three buttons: **Roadmap**, which is home
+and what loads, **The project**, the eight planning answers, and
+**Architecture** (Frank, 2026-09-26): how the system is built, not what is
+being built. Architecture holds the code map (which part talks to which, and
+where things live), every route the API answers, and **How it all fits
+together**, the booking model with its versions, and **How a step is built**,
+the build, commit, independent review, fix order every step follows (Frank,
+2026-09-26). A step that adds a route, a
+folder or a table updates the Architecture view in the same publish. Each view
+has its own menu in the top bar: the item chips on the Roadmap, section links
+on the other two.
+
+It used to have a view per feature, which meant the same steps were maintained
+in two places and silently drifted. Never reintroduce that: Architecture is one
+view for the whole system, never one per feature. If something seems to belong
+in two places, one of them links to the other rather than restating it.
+
+**The page is where a plan is read; the chat is where it is debated.**
+Decided by Frank, 2026-09-26. Before a step is built, its plan on the roadmap
+carries everything the chat explained: one picture of the whole step as a
+request or flow, then each planned piece with its own picture right under it
+in a small closed drawer (a diagram, or a drawn file tree with each file's
+`new` or `changed` tag and what it is for). Anything drawn in chat while
+planning goes onto the step in the same turn, so a week later the page still
+holds the whole reasoning and the chat never has to be scrolled back. The
+Architecture view keeps only whole-system pictures; a step's own pictures live
+in the step.
 
 **Plan first, then plan against reality.** A step is published with its plan
 before the work starts: what it does and why, its concrete pieces, its
@@ -306,6 +444,51 @@ instruction that turned out wrong. Short, with the reason, no drama and no
 padding. Keep these separate from the piece-level marks above: the marks say
 what changed, this says what it cost to find out. These are the part worth
 reading back in six months, and they are written whether or not anyone asks.
+
+**What actually happened mirrors the plan, code included.** Decided by Frank,
+2026-09-26, from step 2.4 on. It lists the plan's pieces with the same
+numbers, each with its outcome (kept, changed, added, dropped) and, in a closed
+drawer under it, the code that piece touched: every changed file is placed
+under the piece it served, so what was built and what code it touched are read
+together. Unplanned pieces ("added") carry their code the same way. A file
+that served two pieces appears under each with only its own lines. Then **How
+it was proved** runs the Done when, with the independent review and the
+issues it found in its own card at the end. Steps 2.1 to 2.3
+were regrouped this way on Sep 26, sliced by the real line numbers.
+
+**And it shows the code.** Decided by Frank, 2026-09-25: the project is big
+and he wants full control, so every closing step shows its real code: from
+step 2.4 under each piece, as above; before it in one closed drawer, **What
+changed in the code**, holding one closed drawer per changed file. The
+real code, as it reads in the editor, never a summary line: a new file is
+shown whole; a changed file shows the old block, then the new one, with a few
+lines around them. Real line numbers from the file. New lines get a thin green
+bar on the left and removed lines a thin red one; no `+` or `-` signs, because
+he reads code, not diffs. Coloured by Shiki, loaded by the page from
+`cdn.jsdelivr.net`, which uses VS Code's own grammars, in VS Code's **Dark
+2026** exactly as his editor resolves it, so the page and his editor match.
+Checked against his screen on 2026-09-25: `import` purple, type names green.
+The theme is built by `node blueprint/scripts/code-theme.mjs` from the theme
+files in his VS Code install; rerun it when VS Code changes the theme. Ends
+with a link to the step's commit on GitHub for the full diff, pinned to
+commits (`compare/<base>...<step commit>`), never to the branch name, which
+keeps moving and would show later steps too.
+
+Build the drawer with `node blueprint/scripts/code-drawer.mjs` (usage at the top
+of the file), never by hand, so the line numbers are the file's own. The page
+already carries the viewer that colours and numbers it.
+
+Only the project's own code goes in the drawer: what sits in `frontend/`,
+`backend/` and `packages/shared/`, tests included, and the SQL of a migration.
+Never `node_modules`, `package-lock.json`, `dist/`, Drizzle's snapshot JSON or
+anything else generated. A changed dependency is one line naming the package,
+not the manifest.
+
+**Phone layout lives in two pages.** On screens up to 760px the page makes
+diagrams, file trees and code full width and the top bar one row (Frank,
+2026-09-28, ported from asset-engine's build log). The same CSS block and
+script are in `asset-engine/blueprint/context/project-log.html`; a change to
+either page's phone layout goes into both.
 
 **One numbering, everywhere.** Roadmap item N owns steps N.1 to N.k, so a step
 number always says which item it belongs to. Never number a feature's steps from
@@ -448,8 +631,11 @@ ledger:
 Development runs against a local PostgreSQL 18, the same major version as
 Railway, in a database named `scheduleads_dev` on 127.0.0.1:5432, and `.env`
 points `DATABASE_URL` there. `db:migrate` builds a fresh one and `db:seed`
-makes it usable: it creates `admin@example.com`, the platform admin, and
-`owner@example.com`, an ordinary owner, each owning one business. Signup is
+makes it usable: it creates `admin@example.com`, the platform admin, owning
+Summit Painting (dev) (`painting-dev`, shaped like Primo), and
+`owner@example.com`, an ordinary owner, owning Riverbend Clinic (dev)
+(`clinic-dev`, shaped like Face and Body: six practitioners, five rooms, ten
+treatments). The full cast is in `packages/shared/scripts/seed-dev.ts`. Signup is
 closed, so without the seed a new database has no way in. Login codes print in
 the API's console. The seed refuses any database that is not on this machine
 or whose name does not end in `_dev`.
@@ -467,11 +653,33 @@ generating against one database is how a migration ledger forks.
 No separate typecheck script: `next build` typechecks the frontend and the
 backend build is `tsc`. `packages/shared` compiles to `dist/` and both apps
 build it first through their own `predev` and `prebuild` hooks, so neither
-consumes it as TypeScript source.
+consumes it as TypeScript source. The frontend's hooks also run
+`npm run build:types --workspace=backend`, which writes the API's route types
+for the typed client, so a type error anywhere `backend/app.ts` reaches stops
+`npm run dev --workspace=frontend` and the frontend build too.
 
-No unit test runner is configured, so no test gate applies. Run `/tests` to
-add one and record the real test command here. There is no `Verify` command
-and no GitHub check yet; `/ci` sets those up when wanted.
+Unit tests run on Vitest, a dev dependency of the workspace that holds the
+code under test. Test files sit beside the code as `*.test.ts` and are
+excluded from `tsc`, so they never reach `dist/`. The test gate applies: a
+step that adds logic adds its tests, and every step reruns them.
+
+- Shared package tests: `npm run test --workspace=@scheduleads-app/shared`
+- Shared package tests, rerunning on save: `npm run test:watch --workspace=@scheduleads-app/shared`
+- Backend tests: `npm run test --workspace=backend`
+- Backend tests, rerunning on save: `npm run test:watch --workspace=backend`
+
+Both backend commands rebuild `packages/shared` first (their `pre` scripts),
+because the route tests load its code, not only its types. Since step 2.4 the
+backend tests also need the local Postgres running with `db:migrate` and
+`db:seed` done: the public route tests call the real app against the seeded
+`scheduleads_dev`, add their own rows and remove them, and refuse any database
+that is not local and `*_dev`. With Postgres stopped they fail; they never skip.
+
+The frontend has no test script yet; it gets one with its first test, so no
+workspace ever carries a test command that finds nothing to run.
+
+There is no `Verify` command and no GitHub check yet; `/ci` sets those up when
+wanted.
 
 Browser testing is also opt-in. Run `/browser-tests` or `$browser-tests` to add
 or normalize a browser harness and document its exact command as `Browser

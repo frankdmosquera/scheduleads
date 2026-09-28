@@ -1,16 +1,22 @@
-// Frontend: calls to our own API (everything that is not Better Auth).
-// The types below are written by hand until item 2 wires Hono RPC, which replaces them.
+// Frontend: calls to our own API (everything that is not Better Auth), typed from the
+// backend's routes (AppType), so a renamed route or a changed answer fails this build.
 
-import type { SubscriptionLimitsType } from "@scheduleads-app/shared/subscriptions";
+import { hc, type InferResponseType } from "hono/client";
+
+import type { AppType } from "backend/app-type";
 
 import { API_URL } from "./auth-client";
 
-export type MeType = {
-  user: { id: string; email: string; name: string };
-  organization: { id: string; name: string; slug: string; plan: string };
-  role: string;
-  limits: SubscriptionLimitsType;
-};
+// Two clients, matching the backend's two CORS rules: the public routes refuse the login
+// cookie, and the browser discards any answer to a request that sent it.
+const dashboardApiClient = hc<AppType>(API_URL, {
+  init: { credentials: "include" }, // send the login cookie, same reason as in auth-client.ts
+});
+const publicApiClient = hc<AppType>(API_URL);
+
+const notResponding = "The API is not responding. Check that it is running.";
+
+export type MeType = InferResponseType<typeof dashboardApiClient.me.$get, 200>;
 
 // One state per screen, so the user sees "sign in" or "pick a business" instead of a
 // generic "something went wrong".
@@ -27,28 +33,18 @@ export type RefusalType = {
 };
 
 export async function fetchMe(): Promise<MeResultType> {
-  let response: Response;
+  const response = await dashboardApiClient.me.$get().catch(() => null);
+  if (!response) return { state: "unreachable", message: notResponding }; // the API is not answering at all
 
-  try {
-    response = await fetch(`${API_URL}/me`, {
-      credentials: "include", // send the login cookie, same reason as in auth-client.ts
-      headers: { Accept: "application/json" },
-    });
-  } catch {
-    // The API is not answering at all.
-    return {
-      state: "unreachable",
-      message: "The API is not responding. Check that it is running.",
-    };
-  }
+  if (response.ok) return { state: "ok", me: await response.json() };
 
-  if (response.ok) {
-    return { state: "ok", me: (await response.json()) as MeType };
-  }
+  // The 401 and 403 come from the middleware, which the route's type does not list,
+  // so the status is read as a plain number here.
+  const status: number = response.status;
 
-  if (response.status === 401) return { state: "signed-out" };
+  if (status === 401) return { state: "signed-out" };
 
-  if (response.status === 403) {
+  if (status === 403) {
     const body = (await response.json().catch(() => ({}))) as RefusalType;
     const code = body.error?.code;
 
@@ -63,8 +59,39 @@ export async function fetchMe(): Promise<MeResultType> {
     }
   }
 
-  // Anything unexpected is shown as-is, not dressed up as a known refusal that would
-  // tell the user to do something that cannot help.
+  // Shown as-is, never dressed up as a known refusal.
+  return {
+    state: "unreachable",
+    message: `The API answered with an unexpected status (${status}).`,
+  };
+}
+
+const bookingLinksRoute = publicApiClient.public[":slug"]["booking-links"];
+
+export type BookingLinkType = InferResponseType<
+  typeof bookingLinksRoute.$get,
+  200
+>["bookingLinks"][number];
+
+export type BookingLinksResultType =
+  | { state: "ok"; bookingLinks: BookingLinkType[] }
+  | { state: "not-bookable" }
+  | { state: "unreachable"; message: string };
+
+// A business's active booking links, from the public route a client site will call too.
+export async function fetchBookingLinks(slug: string): Promise<BookingLinksResultType> {
+  const response = await bookingLinksRoute.$get({ param: { slug } }).catch(() => null);
+  if (!response) return { state: "unreachable", message: notResponding };
+
+  if (response.status === 200) {
+    const { bookingLinks } = await response.json();
+    return { state: "ok", bookingLinks };
+  }
+
+  // The slug came from /me, so the business exists: a 404 means not open for online
+  // booking yet (no hours, or no booking in its plan). Not an error; retrying cannot help.
+  if (response.status === 404) return { state: "not-bookable" };
+
   return {
     state: "unreachable",
     message: `The API answered with an unexpected status (${response.status}).`,
