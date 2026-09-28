@@ -1318,6 +1318,60 @@
   pre.code .ln .n { flex: none; display: inline-block; width: 3.4em; padding-right: 1.1em; text-align: right; color: #858889; user-select: none; }
   pre.code .ln.added { background: rgba(52, 125, 57, 0.18); border-left-color: #72C892; }
   pre.code .ln.removed { background: rgba(201, 60, 55, 0.18); border-left-color: #F28772; }
+
+  /* Small screens (Frank, Sep 28): a box inside a box inside a box stacked about 100px of
+     left padding on a 375px phone, leaving code a 218px column. Here the nested boxes stop
+     adding their own side padding, and every diagram, file tree and code file runs edge to
+     edge (.is-bleed, set by the script at the bottom, since how deep it sits varies). */
+  @media (max-width: 760px) {
+    .shell { padding-left: 10px; padding-right: 10px; }
+    .item { padding-left: 0; padding-right: 0; }
+    .item:has(> .item-body > .item-fold[open]) > .pill { right: 0; }
+    /* A feature's own drawers lose their side walls and padding: the steps inside already
+       sit in boxes of their own, so one wall is enough. */
+    .item-fold[open] > .drawer { border-left-width: 0; border-right-width: 0; border-radius: 0; margin-right: 0; }
+    .item-fold > .drawer > .drawer-body { padding-left: 0; padding-right: 0; }
+    .item-steps { padding-left: 0; border-left: 0; }
+    .rstep-body { padding-left: 0; }
+    .drawer-body { padding: 10px 8px; }
+    .drawer > summary { padding: 10px 8px; }
+    .plan-part { padding: 10px 8px 12px; border-left-width: 3px; }
+    .tests, .proof-card, .snags, .review-fixed, .review-issues { padding: 9px 8px; }
+    .card-head { margin: -9px -8px 4px; padding: 8px; }
+    .substeps li { padding-left: 16px; }
+    .snags li { padding-left: 20px; }
+    .piece-state { white-space: normal; } /* a long label such as "question - Docker on this laptop, or Railway only?" ran off the screen */
+    .ft-name { white-space: normal; overflow-wrap: anywhere; } /* long file paths in a file tree ran off the screen */
+    .wire-row { flex-wrap: wrap; } .wire-row .btn { white-space: normal; } /* so did the buttons in a layout sketch */
+    .fig { padding: 8px; }
+    .piece-fig > .fig, .piece-fig > .ftree { margin: 8px 0 0; }
+    .piece-code-body, .codefile-body { padding: 6px 0 0; }
+    #view-project > section, #view-architecture > section { padding: 14px 10px 16px; }
+    .is-bleed { border-left-width: 0 !important; border-right-width: 0 !important; border-radius: 0 !important; }
+    .is-bleed pre.code, .is-bleed .fig, .is-bleed .ftree { border-left-width: 0; border-right-width: 0; border-radius: 0; }
+    .ft-row { padding-left: calc(8px + var(--d) * 14px); background-size: calc(var(--d) * 14px) 100%; background-position: 14px 0; }
+
+    /* The top bar on a phone (Frank, Sep 28): one slim row that stays fixed at the top, never
+       hiding, instead of a block covering half the screen. The Roadmap menu shows only the feature being
+       built (opened into its steps), the one before it and the one after it (.is-near, set by
+       the script at the bottom). Project and Architecture keep all their buttons in one row
+       that slides sideways. */
+    .topbar { position: sticky; padding: 8px 10px; transition: none; }
+    .topbar.is-hidden { transform: none; }
+    .bar { flex-wrap: nowrap; justify-content: flex-start; align-items: center; gap: 3px; overflow-x: auto; scrollbar-width: none; }
+    .bar::-webkit-scrollbar { display: none; }
+    .bar .switch { width: auto; margin: 0 4px 0 0; gap: 3px; align-self: center; }
+    .bar .nav-link { padding: 5px 5px; font-size: 10px; letter-spacing: 0; }
+    .bar .cell { min-width: 22px; padding: 4px 3px; }
+    .bar .cell--step { min-width: 24px; }
+    .bar .bar-plan { flex: none; flex-wrap: nowrap; gap: 4px; }
+    .bar .strip-label { display: none; }
+    .bar .strip-cells, .bar nav[data-menu="project"] .strip-cells, .bar nav[data-menu="architecture"] .strip-cells { flex-wrap: nowrap; align-items: center; }
+    .bar nav[data-menu="roadmap"] .strip-cells > .cell:not(.is-near) { display: none; }
+    .bar nav[data-menu="roadmap"] .strip-phase:not(:has(.is-near, .cell-open)) { display: none; }
+    .cell-open { margin: 0 2px; }
+    .item, .rstep, #view-architecture section, #view-project section, #arch-booking-model, #arch-versions, #arch-not-in-model, #arch-folders { scroll-margin-top: 60px; }
+  }
 </style>
 
 <!-- One bar, one row, across the whole window: the three views, then the
@@ -10516,6 +10570,7 @@ describe("holidays the owner picked", () =&gt; {
   // An open code file stretches from where it starts to the screen's right edge, so every
   // file ends at the same place and a long line only wraps at the edge of the screen.
   function widenCodeFiles(root) {
+    if (window.matchMedia("(max-width: 760px)").matches) { document.querySelectorAll(".codefile").forEach(function (f) { f.style.width = ""; }); return; } // on a phone every code file already runs edge to edge (below)
     var screenRight = document.documentElement.clientWidth - 16;
     var files = root && root.matches && root.matches(".codefile") ? [root] : [];
     (root || document).querySelectorAll(".codefile").forEach(function (file) { files.push(file); });
@@ -10532,6 +10587,56 @@ describe("holidays the owner picked", () =&gt; {
   window.addEventListener("resize", function () { widenCodeFiles(); });
   window.addEventListener("code-coloured", function () { widenCodeFiles(); });
   widenCodeFiles();
+</script>
+<script>
+  // Small screens: every diagram, file tree and code file runs the full width of the screen,
+  // however many boxes it sits inside. Each one is pulled left by exactly how far in it
+  // starts, and given the screen's width. Only the outermost one moves; anything inside it
+  // is already full width. Re-measured whenever a drawer opens or closes, the view
+  // changes, or the screen turns.
+  var smallScreen = window.matchMedia("(max-width: 760px)");
+
+  // The top bar on a phone shows only the feature being built (its chip opened into steps)
+  // and the features either side of it. Worked out from the bar itself, so it follows the
+  // build without anyone remembering to update it. With nothing being built, every chip shows.
+  (function markNearChips() {
+    var menu = document.querySelector('.bar nav[data-menu="roadmap"]');
+    if (!menu) return;
+    var current = menu.querySelector('.cell-open [data-goto^="item-"]');
+    if (!current) { menu.querySelectorAll("a.cell").forEach(function (chip) { chip.classList.add("is-near"); }); return; }
+    var n = Number(current.dataset.goto.slice(5));
+    [n - 1, n + 1].forEach(function (k) {
+      var chip = menu.querySelector('.strip-cells > a.cell[data-goto="item-' + k + '"]');
+      if (chip) chip.classList.add("is-near");
+    });
+  })();
+  function bleedFigures() {
+    var targets = document.querySelectorAll(".piece-fig, figure.fig, .codefile");
+    targets.forEach(function (el) { el.style.marginLeft = ""; el.style.width = ""; el.classList.remove("is-bleed"); });
+    if (!smallScreen.matches) return;
+    var screen = document.documentElement.clientWidth;
+    targets.forEach(function (el) {
+      if (el.parentElement.closest(".piece-fig, figure.fig, .codefile")) return; // moves with its outer box
+      if (!el.offsetParent) return; // inside a closed drawer or a hidden view
+      var left = el.getBoundingClientRect().left;
+      var margin = parseFloat(getComputedStyle(el).marginLeft) || 0;
+      el.style.marginLeft = (margin - left) + "px";
+      el.style.width = screen + "px";
+      el.classList.add("is-bleed");
+    });
+  }
+  var bleedQueued = false;
+  function queueBleed() {
+    if (bleedQueued) return;
+    bleedQueued = true;
+    requestAnimationFrame(function () { bleedQueued = false; bleedFigures(); });
+  }
+  document.addEventListener("toggle", queueBleed, true);
+  document.addEventListener("click", function (event) { if (event.target.closest(".nav-link, [data-goto]")) queueBleed(); });
+  window.addEventListener("resize", queueBleed);
+  window.addEventListener("code-coloured", queueBleed);
+  smallScreen.addEventListener("change", function () { queueBleed(); widenCodeFiles(); });
+  queueBleed();
 </script>
 <script>
   // Hide-on-scroll for the top bar at iPad and phone widths, ported from Face and Body's
