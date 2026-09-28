@@ -324,7 +324,7 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   where a one-off date opens them like any closed date. **Nothing is closed
   by default: we build the functionality, the client decides their schedule**
   (Frank, 2026-09-28). The picker screen is feature 12.
-  **Plan, rewritten 2026-09-28 (not agreed yet), five pieces.** The first
+  **Plan, rewritten 2026-09-28, five pieces.** The first
   version (2026-09-27) closed Alberta's nine statutory holidays for every
   business automatically, following version 8's "the whole year on by
   default". Frank reversed that: none closes until the owner picks it.
@@ -381,22 +381,36 @@ number (`feat: 2.1 ...`). The build log is republished at every step.
   route to show Family Day and Canada Day, but no business books that far
   ahead (60 and 120 days end late November and late January), so those are
   proved by saved tests with a fixed date.
+  **Approved by Frank, 2026-09-28**, in two parts: what it builds (pieces 1
+  to 5, the holiday-source blocker first, answered yes); this Done when.
+  **Built 2026-09-28** (`5a30d47`), all five pieces as planned, plus one
+  addition: picks need a country, refused by the database
+  (`availability_rule_holidays_need_country_check`) and the form check.
+  Migration `0002_closed_holidays`. 8 saved tests on the rules and 4 on the
+  form check, three planted faults caught. **Review fixes, 2026-09-28:**
+  F-31, the horizon is at most 365 days (migration `0003`); F-32 carried to
+  feature 12; F-33, this block and the Files list brought up to date.
 
 ## Files / areas
 
 - `packages/shared/db/booking-tables/` - three tables, one file each (split from
   `drizzle-schema.ts` on 2026-09-27)
-- `packages/shared/migrations/` - one generated migration, plus the backfill
+- `packages/shared/migrations/` - `0001` (the three tables, plus the backfill),
+  `0002_closed_holidays`, `0003_horizon_at_most_a_year`
 - `packages/shared/zod-validation/availability-validation-schemas/` - three validation
   schemas, exported from `zod-validation/index.ts`
 - `packages/shared/scripts/seed-dev.ts`
 - `backend/lib/auth/auth-server.ts` (the first-person hook),
   `backend/app.ts` (new), `backend/server.ts` (reduced),
-  `backend/routes/public-booking-links.ts`,
+  `backend/routes/public-booking-links-routes.ts` and its test,
+  `backend/middleware/public-middleware/public-cors-middleware.ts`,
   `backend/lib/bookable-hours/resolve-bookable-hours.ts`,
-  `backend/lib/bookable-hours/apply-bookable-hours-rules.ts` and its test, `backend/package.json`,
-  `backend/tsconfig.json`
+  `backend/lib/bookable-hours/apply-bookable-hours-rules.ts` and its test,
+  `backend/lib/bookable-hours/closed-holidays.ts` (2.6),
+  `backend/package.json` (`date-holidays`), `backend/tsconfig.json`,
+  `backend/tsconfig.types.json`
 - `frontend/lib/api-client.ts`, `frontend/app/page.tsx`,
+  `frontend/components/booking-links/booking-links-list.tsx`,
   `frontend/package.json`
 - `.env.example`, `blueprint/context/coding-standards.md`
 
@@ -598,8 +612,6 @@ build for the typed seam. Final gate: the tests,
   query filters on its id. Never look a link up by id alone.
 - **CORS.** The dashboard rule sends credentials; the public rule never does.
   Keep them separate, as the comment in `server.ts` already warns.
-- **Holidays depend on Open question 2.** Build 2.1 to 2.5 first; 2.6 waits
-  for the answer.
 - **No new packages without Frank's yes.** `hono` in `frontend` and any
   holiday source are both asks.
 

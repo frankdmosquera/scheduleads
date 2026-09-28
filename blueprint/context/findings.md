@@ -469,7 +469,7 @@ the display name. Worth a note on feature 12 now so it is not rediscovered.
 **Resolution:** Carried to feature 12 on Frank's call, 2026-09-28, noted on
 item 12 in `build-plan.md`. Stays unverified until then.
 
-### F-33 [P3] open - The spec still says step 2.6's plan is "not agreed yet" and records neither its approval nor what was built
+### F-33 [P3] fixed - The spec still says step 2.6's plan is "not agreed yet" and records neither its approval nor what was built
 
 **File:** blueprint/context/current-feature.md:327
 **Found:** 2026-09-28 by /audit independent (scope: current; lens: quality)
@@ -487,4 +487,12 @@ is corrected before the next step builds on it.
 add a short "Built 2026-09-28" line like 2.4's (the lockfile gained
 `date-holidays` and twelve helpers; 43 MB on disk), and correct the Files /
 areas list.
-**Resolution:**
+**Resolution:** Fixed on Frank's yes, 2026-09-28. Step 2.6 now reads "Plan,
+rewritten 2026-09-28" with an "Approved by Frank, 2026-09-28" line, a "Built
+2026-09-28 (`5a30d47`)" line naming the added country check and the tests,
+and a line for the review fixes (F-31, F-32, F-33). The Files / areas list
+names the three migrations, `public-booking-links-routes.ts` and its test,
+the public CORS middleware, `closed-holidays.ts`, `tsconfig.types.json` and
+`booking-links-list.tsx`, each checked to exist. The stale Notes line "2.6
+waits for Open question 2" was removed. Docs only. For the next review to
+close.

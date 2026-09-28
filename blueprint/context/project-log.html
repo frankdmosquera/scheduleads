@@ -1400,7 +1400,7 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.6 reviewed; F-31 fixed, F-32 to feature 12, F-33 with you</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.6 reviewed and its issues settled; feature 2 ready for /complete, your call</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
                 <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="done" title="2.4 The public routes - done">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" data-state="done" title="2.5 The typed seam, proved by breaking it - done">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" data-state="next" title="2.6 Holidays the owner picks - built and reviewed">2.6</a></span>
@@ -9687,15 +9687,15 @@ describe("holidays the owner picked", () =&gt; {
                                 <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>A fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests; this step against its own Done when; the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</p><p><b>For this step:</b> Reran every test, both builds, lint and the format check; planted three faults of its own in <code>closed-holidays.ts</code> (no province check, no national list, one year only) and saw each caught by exactly the right test; checked every Canadian province's holidays against the national list for 2026 to 2030; tried the database refusals inside a transaction it rolled back; read both public routes today; and checked the lockfile and the frontend bundle.</p></div>
                                 <div class="review-part"><div class="review-part-head">2 &middot; Verdict</div><div class="rstep-when">Passed, Sep 28, commit <code>5a30d47</code>. Nothing serious. Three small issues.</div></div>
                                 <div class="review-issues">
-                                  <div class="review-issues-head">3 &middot; Issues it found: 3 &middot; F-31 fixed, F-32 carried to feature 12, F-33 open</div>
+                                  <div class="review-issues-head">3 &middot; Issues it found: 3 &middot; F-31 and F-33 fixed, F-32 carried to feature 12</div>
                                   <div class="rows">
                               <div class="row"><div class="row-key">F-31 &middot; P3 &middot; fixed</div><div class="row-val">The holiday dates are worked out again on every public request. Cheap today (about 1 ms for 60 days), but the booking window has no upper limit, so once owners set their own in feature 12 a very long one gets slower. Suggested: a limit on how far ahead, in feature 12.</div></div>
                               <div class="row"><div class="row-key">F-32 &middot; P3 &middot; carried to feature 12</div><div class="row-val">A pick is saved as the package's own name. If a package update or a province renames or drops a picked holiday, the guard stops with an error and that business's booking page fails until the pick is fixed. Worth settling in feature 12: check picks when they are saved, or save a name that never changes.</div></div>
-                              <div class="row"><div class="row-key">F-33 &middot; P3 &middot; open</div><div class="row-val">The spec still says step 2.6's plan is "not agreed yet", has no approved or built line like 2.1 to 2.5, and its Files list misses <code>closed-holidays.ts</code> and migration <code>0002</code>.</div></div>
+                              <div class="row"><div class="row-key">F-33 &middot; P3 &middot; fixed</div><div class="row-val">The spec still says step 2.6's plan is "not agreed yet", has no approved or built line like 2.1 to 2.5, and its Files list misses <code>closed-holidays.ts</code> and migration <code>0002</code>.</div></div>
                             </div>
                                 </div>
                                 <div class="review-part"><div class="review-part-head">4 &middot; Earlier issues it closed</div><p>F-29 and F-30 from step 2.5, each repair re-read in its file.</p></div>
-                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p><b>F-31, fixed on your call, Sep 28:</b> customers can book at most a year ahead. The database refuses more than 365 days (migration <code>0003</code>) and so does the form check; a saved test accepts 365 and refuses 366, and fails with the limit taken out; 366 refused by the database by hand, rolled back. Measured with all nine holidays picked: about 1 ms for a month, 1.5 ms for a year. The one-month starting value goes on feature 12's settings screen, pre-filled for the owner to change. <b>F-32, your call:</b> carried to feature 12, noted on item 12 in the build plan. <b>F-33:</b> not yet. The next review closes F-31.</p></div>
+                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p><b>F-31, fixed on your call, Sep 28:</b> customers can book at most a year ahead. The database refuses more than 365 days (migration <code>0003</code>) and so does the form check; a saved test accepts 365 and refuses 366, and fails with the limit taken out; 366 refused by the database by hand, rolled back. Measured with all nine holidays picked: about 1 ms for a month, 1.5 ms for a year. The one-month starting value goes on feature 12's settings screen, pre-filled for the owner to change. <b>F-32, your call:</b> carried to feature 12, noted on item 12 in the build plan. <b>F-33, your yes, Sep 28:</b> the spec's step 2.6 now says it was approved and built, with its review fixes, and its Files list names every file the feature touched, each checked to exist. Docs only. The next review closes F-31 and F-33.</p></div>
                               </div>
                             </div>
                           </div>
@@ -9942,9 +9942,16 @@ describe("holidays the owner picked", () =&gt; {
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">38 entries, newest first, each titled with its step when it has one</span></summary>
+                <summary>Log <span class="tag-drift">39 entries, newest first, each titled with its step when it has one</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="fix">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.6: F-33 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 28</span></div>
+                        <p class="entry-text">Your yes, fixed now because <code>/complete</code> archives the spec. Step 2.6 in the spec no longer says "not agreed yet": it records your approval, what was built and the review fixes, like 2.1 to 2.5. The Files list now names the three migrations, the holiday file, the public routes and their CORS rule, and the home's booking links list, each checked to exist. Docs only, no code touched. All three of 2.6's issues are now settled.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="fix">
                       <div class="dot"></div>
                       <div class="entry-body">
