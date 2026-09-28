@@ -1394,7 +1394,7 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.6 reviewed, its three small issues with you</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.6 reviewed; F-31 fixed, F-32 to feature 12, F-33 with you</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
                 <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="done" title="2.4 The public routes - done">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" data-state="done" title="2.5 The typed seam, proved by breaking it - done">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" data-state="next" title="2.6 Holidays the owner picks - built and reviewed">2.6</a></span>
@@ -1616,7 +1616,7 @@
         <figure class="fig"><svg viewBox="0 0 680 320" role="img"><title>The Sep 22 plan, sorted against today</title><desc>Already true here: one API and one database, client sites own no data, the dashboard is this app, the typed client, and the proxy question still open for Phase 3. Kept for later: retail as a module, two Stripe jobs, a narrowed type for client sites, payment fields on the first sale table, one owner of the stock count, and three questions for the clinic. Rejected: a Neon database, an admin panel on her marketing site, retail items on the roadmap now, and the stale paths and numbers.</desc><g><rect x="20" y="20" width="190" height="270" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="36" y="44" dominant-baseline="central">Already true here</text><text class="ts" x="36" y="76" dominant-baseline="central">One API, one database</text><text class="ts" x="36" y="98" dominant-baseline="central">Client sites own no data</text><text class="ts" x="36" y="120" dominant-baseline="central">Her dashboard is this app</text><text class="ts" x="36" y="142" dominant-baseline="central">Typed client, step 2.5</text><text class="ts" x="36" y="164" dominant-baseline="central">Proxy or browser: still</text><text class="ts" x="36" y="186" dominant-baseline="central">open until Phase 3</text></g><g><rect x="225" y="20" width="240" height="270" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="241" y="44" dominant-baseline="central">Kept for later</text><text class="ts" x="241" y="76" dominant-baseline="central">Retail as a module:</text><text class="ts" x="241" y="98" dominant-baseline="central">a counter sale is a paid quote</text><text class="ts" x="241" y="120" dominant-baseline="central">Two Stripe jobs, not one</text><text class="ts" x="241" y="142" dominant-baseline="central">A narrow type for client sites</text><text class="ts" x="241" y="164" dominant-baseline="central">Payment fields on the first</text><text class="ts" x="241" y="186" dominant-baseline="central">sale table</text><text class="ts" x="241" y="208" dominant-baseline="central">One owner of the stock count</text><text class="ts" x="241" y="230" dominant-baseline="central">Three questions for the clinic</text><text class="ts" x="241" y="252" dominant-baseline="central">Meanwhile: reserve for pickup</text></g><g><rect x="480" y="20" width="180" height="270" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="496" y="44" dominant-baseline="central">Rejected</text><text class="ts" x="496" y="76" dominant-baseline="central">A Neon database</text><text class="ts" x="496" y="98" dominant-baseline="central">An admin panel on her</text><text class="ts" x="496" y="120" dominant-baseline="central">marketing site</text><text class="ts" x="496" y="142" dominant-baseline="central">Retail items on the</text><text class="ts" x="496" y="164" dominant-baseline="central">roadmap now</text><text class="ts" x="496" y="186" dominant-baseline="central">Its old paths and numbers</text></g><text class="ts" x="340" y="308" text-anchor="middle" dominant-baseline="central">Nothing here changes the roadmap. Retail gets items only when something depends on it.</text></svg><figcaption>The "One backend, many sites" page from the face-and-body session, Sep 22, sorted Sep 27.</figcaption></figure>
         <h3>Already true here</h3>
         <div class="rows">
-            <div class="row"><div class="row-key">One API, one database</div><div class="row-val">Client sites own no data and never open Postgres; the Hono API is the only writer. Already the settled architecture in <code>AGENTS.md</code>.<details class="piece-fig" open><summary>The whole request path</summary><figure class="fig"><svg viewBox="0 0 680 380" role="img"><title>Four sites, one API, one database</title><desc>A visitor's browser on face-and-body calls the site's own server action, which holds the key and calls the scheduleads API. The API is the only writer to Postgres. Three more client sites use the same pattern, the dashboard calls the same API, and Stripe posts its webhook straight to the API as a route.</desc><defs><marker id="rtw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><rect x="250" y="20" width="180" height="40" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="340" y="40" text-anchor="middle" dominant-baseline="central">Stripe</text><line x1="340" y1="60" x2="340" y2="106" class="arr" marker-end="url(#rtw)"/><text class="ts" x="350" y="78" text-anchor="start" dominant-baseline="central">webhook: a route,</text><text class="ts" x="350" y="94" text-anchor="start" dominant-baseline="central">never an action</text><rect x="10" y="100" width="225" height="84" rx="10" fill="none" style="stroke:var(--ink-3)" stroke-width="1" stroke-dasharray="4 4"/><text class="ts" x="14" y="90" text-anchor="start" dominant-baseline="central">face-and-body, on Vercel</text><rect x="20" y="116" width="80" height="52" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="60" y="142" text-anchor="middle" dominant-baseline="central">browser</text><rect x="112" y="116" width="114" height="52" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="169" y="132" text-anchor="middle" dominant-baseline="central">server action</text><text class="ts" x="169" y="152" text-anchor="middle" dominant-baseline="central">holds the key</text><line x1="100" y1="142" x2="110" y2="142" class="arr" marker-end="url(#rtw)"/><rect x="250" y="108" width="180" height="76" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="136" text-anchor="middle" dominant-baseline="central">scheduleads API</text><text class="ts" x="340" y="156" text-anchor="middle" dominant-baseline="central">Hono, Railway</text><line x1="226" y1="142" x2="248" y2="142" class="arr" marker-end="url(#rtw)"/><rect x="490" y="114" width="170" height="60" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="575" y="134" text-anchor="middle" dominant-baseline="central">Postgres</text><text class="ts" x="575" y="154" text-anchor="middle" dominant-baseline="central">Railway</text><line x1="430" y1="144" x2="488" y2="144" class="arr" style="stroke:var(--fig-teal)" stroke-width="1.5" marker-end="url(#rtw)"/><text class="ts" x="459" y="130" text-anchor="middle" dominant-baseline="central">only writer</text><text class="ts" x="112" y="204" text-anchor="start" dominant-baseline="central">three more, same pattern</text><rect x="112" y="216" width="114" height="28" rx="6" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="ts" x="169" y="230" text-anchor="middle" dominant-baseline="central">primo-painters</text><rect x="112" y="252" width="114" height="28" rx="6" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="ts" x="169" y="266" text-anchor="middle" dominant-baseline="central">agents-web</text><rect x="112" y="288" width="114" height="28" rx="6" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="ts" x="169" y="302" text-anchor="middle" dominant-baseline="central">latam-painters</text><path d="M226 230 L238 230 M226 266 L238 266 M226 302 L238 302 M238 302 L238 170 L248 170" fill="none" class="arr" marker-end="url(#rtw)"/><rect x="250" y="252" width="180" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="340" y="268" text-anchor="middle" dominant-baseline="central">her dashboard</text><text class="ts" x="340" y="288" text-anchor="middle" dominant-baseline="central">this app, the CRM</text><line x1="340" y1="252" x2="340" y2="186" class="arr" marker-end="url(#rtw)"/><text class="ts" x="350" y="222" text-anchor="start" dominant-baseline="central">same API</text><text class="ts" x="340" y="342" text-anchor="middle" dominant-baseline="central">The server action in the middle is what Sep 22 leaned to; step 2.4 built the browser path.</text><text class="ts" x="340" y="362" text-anchor="middle" dominant-baseline="central">Which one client sites use is open question 15, decided at Phase 3.</text></svg><figcaption>The first diagram of the Sep 22 page, redrawn. Nothing reaches Postgres except through the API.</figcaption></figure></details></div></div>
+            <div class="row"><div class="row-key">One API, one database</div><div class="row-val">Client sites own no data and never open Postgres; the Hono API is the only writer. Already the settled architecture in <code>AGENTS.md</code>.<details class="piece-fig"><summary>The whole request path</summary><figure class="fig"><svg viewBox="0 0 680 380" role="img"><title>Four sites, one API, one database</title><desc>A visitor's browser on face-and-body calls the site's own server action, which holds the key and calls the scheduleads API. The API is the only writer to Postgres. Three more client sites use the same pattern, the dashboard calls the same API, and Stripe posts its webhook straight to the API as a route.</desc><defs><marker id="rtw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><rect x="250" y="20" width="180" height="40" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="340" y="40" text-anchor="middle" dominant-baseline="central">Stripe</text><line x1="340" y1="60" x2="340" y2="106" class="arr" marker-end="url(#rtw)"/><text class="ts" x="350" y="78" text-anchor="start" dominant-baseline="central">webhook: a route,</text><text class="ts" x="350" y="94" text-anchor="start" dominant-baseline="central">never an action</text><rect x="10" y="100" width="225" height="84" rx="10" fill="none" style="stroke:var(--ink-3)" stroke-width="1" stroke-dasharray="4 4"/><text class="ts" x="14" y="90" text-anchor="start" dominant-baseline="central">face-and-body, on Vercel</text><rect x="20" y="116" width="80" height="52" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="60" y="142" text-anchor="middle" dominant-baseline="central">browser</text><rect x="112" y="116" width="114" height="52" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="169" y="132" text-anchor="middle" dominant-baseline="central">server action</text><text class="ts" x="169" y="152" text-anchor="middle" dominant-baseline="central">holds the key</text><line x1="100" y1="142" x2="110" y2="142" class="arr" marker-end="url(#rtw)"/><rect x="250" y="108" width="180" height="76" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="136" text-anchor="middle" dominant-baseline="central">scheduleads API</text><text class="ts" x="340" y="156" text-anchor="middle" dominant-baseline="central">Hono, Railway</text><line x1="226" y1="142" x2="248" y2="142" class="arr" marker-end="url(#rtw)"/><rect x="490" y="114" width="170" height="60" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="575" y="134" text-anchor="middle" dominant-baseline="central">Postgres</text><text class="ts" x="575" y="154" text-anchor="middle" dominant-baseline="central">Railway</text><line x1="430" y1="144" x2="488" y2="144" class="arr" style="stroke:var(--fig-teal)" stroke-width="1.5" marker-end="url(#rtw)"/><text class="ts" x="459" y="130" text-anchor="middle" dominant-baseline="central">only writer</text><text class="ts" x="112" y="204" text-anchor="start" dominant-baseline="central">three more, same pattern</text><rect x="112" y="216" width="114" height="28" rx="6" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="ts" x="169" y="230" text-anchor="middle" dominant-baseline="central">primo-painters</text><rect x="112" y="252" width="114" height="28" rx="6" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="ts" x="169" y="266" text-anchor="middle" dominant-baseline="central">agents-web</text><rect x="112" y="288" width="114" height="28" rx="6" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="ts" x="169" y="302" text-anchor="middle" dominant-baseline="central">latam-painters</text><path d="M226 230 L238 230 M226 266 L238 266 M226 302 L238 302 M238 302 L238 170 L248 170" fill="none" class="arr" marker-end="url(#rtw)"/><rect x="250" y="252" width="180" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="340" y="268" text-anchor="middle" dominant-baseline="central">her dashboard</text><text class="ts" x="340" y="288" text-anchor="middle" dominant-baseline="central">this app, the CRM</text><line x1="340" y1="252" x2="340" y2="186" class="arr" marker-end="url(#rtw)"/><text class="ts" x="350" y="222" text-anchor="start" dominant-baseline="central">same API</text><text class="ts" x="340" y="342" text-anchor="middle" dominant-baseline="central">The server action in the middle is what Sep 22 leaned to; step 2.4 built the browser path.</text><text class="ts" x="340" y="362" text-anchor="middle" dominant-baseline="central">Which one client sites use is open question 15, decided at Phase 3.</text></svg><figcaption>The first diagram of the Sep 22 page, redrawn. Nothing reaches Postgres except through the API.</figcaption></figure></details></div></div>
             <div class="row"><div class="row-key">Her dashboard</div><div class="row-val">Is this app, the CRM, not an admin bolted onto her marketing site. Face and Body joins at feature 17 with the same login every client gets.</div></div>
             <div class="row"><div class="row-key">Typed client</div><div class="row-val">Built and proved in step 2.5: rename a route and the frontend build fails.</div></div>
             <div class="row"><div class="row-key">Proxy or browser</div><div class="row-val">Whether a client site calls the API from the browser or through its own server action is open question 15, decided at Phase 3 as planned. The Sep 22 page leaned to the server action; step 2.4 built the browser path with its own CORS rule. Both stay possible.</div></div>
@@ -1965,7 +1965,7 @@
           <span class="gate-chip" data-state="pass">Built &amp; verified</span>
           <span class="gate-chip" data-state="pass">Commit granted</span>
         </div>
-            <details class="drawer" data-kind="plan" open>
+            <details class="drawer" data-kind="plan">
               <summary>Steps <span class="tag-drift">all six done &middot; reviewed and completed</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">The work, cut into pieces small enough to review one at a time. Each step opens into what was planned, and once it is done, what actually happened.</p>
@@ -5469,7 +5469,7 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
               </div>
             </details>
 
-            <details class="rstep" id="step-1-6" data-state="done" open>
+            <details class="rstep" id="step-1-6" data-state="done">
               <summary><span class="sn">1.6</span><span class="sm"></span><span>The second organization, and the env record</span><span class="ss">Done</span></summary>
               <div class="rstep-body">
                 <p class="rstep-what">Proves the point of the whole item: a second business, created entirely through the app with nobody touching the database, that cannot see the first one. Then writes down the environment variables and commands the next person needs.</p>
@@ -5495,7 +5495,7 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
                   </div>
                 </details>
 
-                <details class="drawer" data-kind="reality" open>
+                <details class="drawer" data-kind="reality">
                   <summary>What actually happened <span class="tag-drift">2 of 4 pieces moved &middot; 1 gate could not be met as written</span></summary>
                   <div class="drawer-body">
                     <p class="drawer-what">The isolation proof is the part that mattered and it passed cleanly. The gate's own wording turned out to be unmeetable, for a reason nobody could have known when it was written.</p>
@@ -6288,7 +6288,7 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
           <div class="item" id="item-2" data-state="active">
             <div class="item-num">2</div>
             <div class="item-body">
-              <details class="item-fold" open>
+              <details class="item-fold">
               <summary class="item-name">Booking links, resources and availability rules</summary>
               <p class="item-text">The three scheduling primitives everything after this reads: booking links (one per service, with its length and buffers), resources (the people and places that do the work, the first one made automatically), and bookable hours. Served on a public, read-only route a stranger's browser can call, resolved through one function every later item reuses, and called from the frontend through the typed client, proved by a build that breaks on purpose. Rewritten Sep 25 to match version 8 of the booking model.</p>
 
@@ -6298,7 +6298,7 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
                 <span class="gate-chip">Commit granted</span>
               </div>
 
-              <details class="drawer" data-kind="plan" open>
+              <details class="drawer" data-kind="plan">
                 <summary>Steps <span class="tag-drift">approved one step at a time &middot; 2.1 to 2.6 done and reviewed</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number.</p>
@@ -6343,7 +6343,7 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
                           </div>
                         </details>
 
-                        <details class="drawer" data-kind="reality" open>
+                        <details class="drawer" data-kind="reality">
                           <summary>What actually happened <span class="tag-drift">7 kept, 3 added &middot; review passed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">Every planned piece went in as written. The three additions are small, and each one closes a gap the plan left open.</p>
@@ -7082,7 +7082,7 @@ describe("availabilityRuleValidationSchema", () =&gt; {
                           </div>
                         </details>
 
-                        <details class="drawer" data-kind="reality" open>
+                        <details class="drawer" data-kind="reality">
                           <summary>What actually happened <span class="tag-drift">4 kept, 4 added &middot; review passed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">All four rules went in as planned. The additions are the split you approved, and one check the plan had wrong.</p>
@@ -7492,7 +7492,7 @@ describe("applyAvailabilityRules", () =&gt; {
                       </div>
                     </details>
 
-                    <details class="rstep" id="step-2-3" data-state="done" open>
+                    <details class="rstep" id="step-2-3" data-state="done">
                       <summary><span class="sn">2.3</span><span class="sm"></span><span>The seeds</span><span class="ss">Done</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what">Your local database gets two made-up businesses shaped like your real clients: a painting company like Primo and a bigger clinic like Face and Body. Every later feature is then built and tested against realistic shapes, not a toy. Only the local database; real clients always set their own hours in the app.</p>
@@ -7514,7 +7514,7 @@ describe("applyAvailabilityRules", () =&gt; {
                             <p class="rstep-what"><strong>Approved by you, Sep 25,</strong> point by point: the two made-up businesses and the clinic's five rooms; the command for real clients dropped (a client's hours are always their own, set in the app; the one gap, your own business in feature 10, is noted there); this Done when, including rebuilding the local database.</p>
                           </div>
                         </details>
-                        <details class="drawer" data-kind="reality" open>
+                        <details class="drawer" data-kind="reality">
                           <summary>What actually happened <span class="tag-drift">4 kept, 1 added &middot; review passed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">All four planned pieces went in as agreed. The one addition is a line of docs that still described the old businesses.</p>
@@ -7970,7 +7970,7 @@ const db = drizzle(client, { schema });</code></pre>
                       </div>
                     </details>
 
-                    <details class="rstep" id="step-2-4" data-state="done" open>
+                    <details class="rstep" id="step-2-4" data-state="done">
                       <summary><span class="sn">2.4</span><span class="sm"></span><span>The public routes</span><span class="ss">Built &middot; reviewed</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what">The first routes a stranger can call: a business's list of booking links, and one link with its hours. Read-only, no login, and built so a stranger learns nothing they should not, including whether a switched-off link ever existed. Planned in two parts, below: what it builds, then the checks that will prove it done. A piece that needs your call is a blocker: it comes first and nothing is built until you answer it. Piece 1 was one. Both parts agreed with you, Sep 26.</p>
@@ -8020,7 +8020,7 @@ const db = drizzle(client, { schema });</code></pre>
                           
                           </div>
                         </details>
-                        <details class="drawer" data-kind="reality" open>
+                        <details class="drawer" data-kind="reality">
                           <summary>What actually happened <span class="tag-drift">6 kept &middot; review passed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">Every planned piece went in as agreed, numbered as in the plan, with the code each one touched under it. The saved tests Part 2 asked for are piece 6.</p>
@@ -8671,7 +8671,7 @@ describe("the login cookie is never allowed", () =&gt; {
                             </div>
                           </div>
                         </details>
-                        <details class="drawer" data-kind="reality" open>
+                        <details class="drawer" data-kind="reality">
                           <summary>What actually happened <span class="tag-drift">5 kept, 1 added &middot; review passed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">Every planned piece went in as agreed, numbered as in the plan, with the code each one touched under it. One small addition: <code>AGENTS.md</code> still said the typed client was "not wired yet".</p>
@@ -9063,7 +9063,7 @@ Failed to type check.</pre>
                       </div>
                     </details>
 
-                    <details class="rstep" id="step-2-6" data-state="active" open>
+                    <details class="rstep" id="step-2-6" data-state="active">
                       <summary><span class="sn">2.6</span><span class="sm"></span><span>Holidays the owner picks</span><span class="ss">Built &middot; reviewed</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what">Primo decides which holidays close online booking, and nobody else does. The owner picks from Alberta's holidays and Canada's national ones: all the main ones in one click, or one by one. Nothing is closed until they pick it (your rule, Sep 28: we build the functionality, the client decides their schedule). This step saves the picks and turns them into closed dates every year; the picker screen is feature 12. A one-off date still opens a picked holiday for one person, like any closed day. Planned in two parts, below. Piece 1 was a blocker, answered Sep 28: <code>date-holidays</code>. Both parts agreed with you, Sep 28, and built the same day.</p>
@@ -9073,7 +9073,7 @@ Failed to type check.</pre>
                             <div class="plan-part" data-part="build">
                               <div class="plan-part-head"><span class="plan-part-title">Part 1 &middot; What it builds</span><span class="plan-part-state">rewritten and agreed Sep 28 &middot; built</span></div>
                               <p class="rstep-what"><strong>Rewritten Sep 28.</strong> The first version closed Alberta's nine statutory holidays for every business automatically, following version 8's "the whole year on by default". You reversed it: we never decide a client's schedule, so nothing closes until the owner picks it. Pieces 2 to 5 and Part 2 are the rewrite; piece 1 is unchanged.</p>
-                              <details class="piece-fig" open><summary>The whole step, as one question: is this date open?</summary><figure class="fig"><svg viewBox="0 0 680 450" role="img"><title>Step 2.6: from a province to closed dates</title><desc>The business's row says Canada, Alberta. The holidays the owner picked, none by default, become dates inside the booking horizon. They join the business's own closed days, minus any one-off date, and the public route answers with them in closedDates.</desc><defs><marker id="s26flow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="180" y="20" width="320" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="340" y="40" text-anchor="middle" dominant-baseline="central">The business's row</text><text class="ts" x="340" y="60" text-anchor="middle" dominant-baseline="central">country CA, province AB</text></g><line x1="340" y1="76" x2="340" y2="102" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="104" width="320" height="56" rx="8" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="th" x="340" y="124" text-anchor="middle" dominant-baseline="central">Where the dates come from</text><text class="ts" x="340" y="144" text-anchor="middle" dominant-baseline="central">piece 1, date-holidays</text></g><line x1="340" y1="160" x2="340" y2="186" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="188" width="320" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="208" text-anchor="middle" dominant-baseline="central">The holidays the owner picked</text><text class="ts" x="340" y="228" text-anchor="middle" dominant-baseline="central">none by default, piece 2</text></g><text class="ts" x="512" y="208" dominant-baseline="central">the owner's picks,</text><text class="ts" x="512" y="226" dominant-baseline="central">never ours</text><line x1="340" y1="244" x2="340" y2="270" class="arr" marker-end="url(#s26flow)"/><g><rect x="20" y="272" width="140" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="90" y="292" text-anchor="middle" dominant-baseline="central">Own closed days</text><text class="ts" x="90" y="312" text-anchor="middle" dominant-baseline="central">already there</text></g><line x1="160" y1="300" x2="178" y2="300" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="272" width="320" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="292" text-anchor="middle" dominant-baseline="central">Closed days, holidays included</text><text class="ts" x="340" y="312" text-anchor="middle" dominant-baseline="central">a one-off date still opens one, piece 3</text></g><line x1="340" y1="328" x2="340" y2="354" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="356" width="320" height="56" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="340" y="376" text-anchor="middle" dominant-baseline="central">The public route answers</text><text class="ts" x="340" y="396" text-anchor="middle" dominant-baseline="central">closedDates now carries them</text></g><text class="ts" x="340" y="434" text-anchor="middle" dominant-baseline="central">Nothing new for a caller to learn: the answer keeps its shape, with more dates in it.</text></svg><figcaption>The whole step. Each piece below is one box of this picture.</figcaption></figure></details>
+                              <details class="piece-fig"><summary>The whole step, as one question: is this date open?</summary><figure class="fig"><svg viewBox="0 0 680 450" role="img"><title>Step 2.6: from a province to closed dates</title><desc>The business's row says Canada, Alberta. The holidays the owner picked, none by default, become dates inside the booking horizon. They join the business's own closed days, minus any one-off date, and the public route answers with them in closedDates.</desc><defs><marker id="s26flow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="180" y="20" width="320" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="340" y="40" text-anchor="middle" dominant-baseline="central">The business's row</text><text class="ts" x="340" y="60" text-anchor="middle" dominant-baseline="central">country CA, province AB</text></g><line x1="340" y1="76" x2="340" y2="102" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="104" width="320" height="56" rx="8" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="th" x="340" y="124" text-anchor="middle" dominant-baseline="central">Where the dates come from</text><text class="ts" x="340" y="144" text-anchor="middle" dominant-baseline="central">piece 1, date-holidays</text></g><line x1="340" y1="160" x2="340" y2="186" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="188" width="320" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="208" text-anchor="middle" dominant-baseline="central">The holidays the owner picked</text><text class="ts" x="340" y="228" text-anchor="middle" dominant-baseline="central">none by default, piece 2</text></g><text class="ts" x="512" y="208" dominant-baseline="central">the owner's picks,</text><text class="ts" x="512" y="226" dominant-baseline="central">never ours</text><line x1="340" y1="244" x2="340" y2="270" class="arr" marker-end="url(#s26flow)"/><g><rect x="20" y="272" width="140" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="90" y="292" text-anchor="middle" dominant-baseline="central">Own closed days</text><text class="ts" x="90" y="312" text-anchor="middle" dominant-baseline="central">already there</text></g><line x1="160" y1="300" x2="178" y2="300" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="272" width="320" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="292" text-anchor="middle" dominant-baseline="central">Closed days, holidays included</text><text class="ts" x="340" y="312" text-anchor="middle" dominant-baseline="central">a one-off date still opens one, piece 3</text></g><line x1="340" y1="328" x2="340" y2="354" class="arr" marker-end="url(#s26flow)"/><g><rect x="180" y="356" width="320" height="56" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="340" y="376" text-anchor="middle" dominant-baseline="central">The public route answers</text><text class="ts" x="340" y="396" text-anchor="middle" dominant-baseline="central">closedDates now carries them</text></g><text class="ts" x="340" y="434" text-anchor="middle" dominant-baseline="central">Nothing new for a caller to learn: the answer keeps its shape, with more dates in it.</text></svg><figcaption>The whole step. Each piece below is one box of this picture.</figcaption></figure></details>
                               <ul class="substeps">
                               <li><b>1. Where the dates come from.</b> <span class="piece-state" data-state="answered">blocker &middot; answered yes, Sep 28</span> Recommended: the <code>date-holidays</code> package, in the backend only. It knows every Canadian province and territory, Easter-based days included, and its maintainers update it when a province changes a holiday (last updated Sep 20, 2026). The cost: about 11 MB on disk and four helper packages it brings with it (<code>lodash</code>, <code>js-yaml</code>, and two of its own). Nothing reaches the frontend or a customer's browser. The alternative is a table we write for Alberta, with the Easter arithmetic, kept right by us forever and redone for every new province.
                                 <p style="margin-top:8px"><b>Your answer, Sep 28: yes, the whole package.</b> Added to the backend as <code>date-holidays ^3.37.0</code>. <b>The size above was wrong:</b> 11 MB was the package alone. With what it brings, it is 43 MB on disk and twelve packages, because it covers the whole world, lunar calendars included. None runs an install script. What matters on Railway is memory, and measured it is small: about 3 MB on top of the running API, which sits at about 215 MB. Its own <code>--pick CA,US</code> option was weighed and left out: it only trims memory, and needs a hook that fails quietly. It is the library people use: about a million downloads a week, since 2016.</p>
@@ -9123,7 +9123,7 @@ Failed to type check.</pre>
                             </div>
                           </div>
                         </details>
-                        <details class="drawer" data-kind="reality" open>
+                        <details class="drawer" data-kind="reality">
                           <summary>What actually happened <span class="tag-drift">6 kept, 1 added &middot; review passed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">Every planned piece went in as agreed, numbered as in the plan, with the code each one touched under it. One small addition: the database and the form check both refuse picks with no country.</p>
@@ -9681,15 +9681,15 @@ describe("holidays the owner picked", () =&gt; {
                                 <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>A fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests; this step against its own Done when; the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</p><p><b>For this step:</b> Reran every test, both builds, lint and the format check; planted three faults of its own in <code>closed-holidays.ts</code> (no province check, no national list, one year only) and saw each caught by exactly the right test; checked every Canadian province's holidays against the national list for 2026 to 2030; tried the database refusals inside a transaction it rolled back; read both public routes today; and checked the lockfile and the frontend bundle.</p></div>
                                 <div class="review-part"><div class="review-part-head">2 &middot; Verdict</div><div class="rstep-when">Passed, Sep 28, commit <code>5a30d47</code>. Nothing serious. Three small issues.</div></div>
                                 <div class="review-issues">
-                                  <div class="review-issues-head">3 &middot; Issues it found: 3, all open</div>
+                                  <div class="review-issues-head">3 &middot; Issues it found: 3 &middot; F-31 fixed, F-32 carried to feature 12, F-33 open</div>
                                   <div class="rows">
-                              <div class="row"><div class="row-key">F-31 &middot; P3 &middot; open</div><div class="row-val">The holiday dates are worked out again on every public request. Cheap today (about 1 ms for 60 days), but the booking window has no upper limit, so once owners set their own in feature 12 a very long one gets slower. Suggested: a limit on how far ahead, in feature 12.</div></div>
-                              <div class="row"><div class="row-key">F-32 &middot; P3 &middot; unverified</div><div class="row-val">A pick is saved as the package's own name. If a package update or a province renames or drops a picked holiday, the guard stops with an error and that business's booking page fails until the pick is fixed. Worth settling in feature 12: check picks when they are saved, or save a name that never changes.</div></div>
+                              <div class="row"><div class="row-key">F-31 &middot; P3 &middot; fixed</div><div class="row-val">The holiday dates are worked out again on every public request. Cheap today (about 1 ms for 60 days), but the booking window has no upper limit, so once owners set their own in feature 12 a very long one gets slower. Suggested: a limit on how far ahead, in feature 12.</div></div>
+                              <div class="row"><div class="row-key">F-32 &middot; P3 &middot; carried to feature 12</div><div class="row-val">A pick is saved as the package's own name. If a package update or a province renames or drops a picked holiday, the guard stops with an error and that business's booking page fails until the pick is fixed. Worth settling in feature 12: check picks when they are saved, or save a name that never changes.</div></div>
                               <div class="row"><div class="row-key">F-33 &middot; P3 &middot; open</div><div class="row-val">The spec still says step 2.6's plan is "not agreed yet", has no approved or built line like 2.1 to 2.5, and its Files list misses <code>closed-holidays.ts</code> and migration <code>0002</code>.</div></div>
                             </div>
                                 </div>
                                 <div class="review-part"><div class="review-part-head">4 &middot; Earlier issues it closed</div><p>F-29 and F-30 from step 2.5, each repair re-read in its file.</p></div>
-                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p>Not yet: the three issues are to go through with you.</p></div>
+                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p><b>F-31, fixed on your call, Sep 28:</b> customers can book at most a year ahead. The database refuses more than 365 days (migration <code>0003</code>) and so does the form check; a saved test accepts 365 and refuses 366, and fails with the limit taken out; 366 refused by the database by hand, rolled back. Measured with all nine holidays picked: about 1 ms for a month, 1.5 ms for a year. The one-month starting value goes on feature 12's settings screen, pre-filled for the owner to change. <b>F-32, your call:</b> carried to feature 12, noted on item 12 in the build plan. <b>F-33:</b> not yet. The next review closes F-31.</p></div>
                               </div>
                             </div>
                           </div>
@@ -9936,9 +9936,16 @@ describe("holidays the owner picked", () =&gt; {
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">37 entries, newest first, each titled with its step when it has one</span></summary>
+                <summary>Log <span class="tag-drift">38 entries, newest first, each titled with its step when it has one</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="fix">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 2.6: F-31 fixed, F-32 carried to feature 12</span><span class="kind-tag">Fix</span><span class="stamp">Sep 28</span></div>
+                        <p class="entry-text">Your calls. Customers can book at most a year ahead: the database and the form check both refuse more than 365 days, proved by a saved test and by hand. At a year the holiday lookup costs about 1.5 ms, the same as 120 days, because the cost grows with calendar years, not days. Feature 12's settings screen will offer one month, pre-filled, for the owner to change. F-32, a renamed holiday breaking a booking page, waits for feature 12's picker, noted on item 12. Marked fixed; the next review closes F-31.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="done">
                       <div class="dot"></div>
                       <div class="entry-body">
@@ -10371,12 +10378,12 @@ describe("holidays the owner picked", () =&gt; {
          Closed, the row is one line among 28. Open, it is the whole
          record. Only the item being built carries drawers; planned
          items stay a title and a sentence. The row folds on its name
-         (.item-fold): open while it is being built, closed once done.
+         (.item-fold). Every drawer starts closed on load; a chip opens its way in.
 
     <div class="item" data-state="active">
       <div class="item-num">N</div>
       <div class="item-body">
-        <details class="item-fold" open>
+        <details class="item-fold">
         <summary class="item-name">Item name</summary>
         <p class="item-text">The one-line plan, then a short paragraph on why this item exists at all.</p>
 
@@ -10386,7 +10393,7 @@ describe("holidays the owner picked", () =&gt; {
           <span class="gate-chip">Commit granted</span>
         </div>
 
-        <details class="drawer" data-kind="plan" open>
+        <details class="drawer" data-kind="plan">
           <summary>Steps <span class="tag-drift">N.1 done &middot; N.2 now &middot; k in this item</span></summary>
           <div class="drawer-body">
             <div class="item-steps">
@@ -10567,6 +10574,11 @@ describe("holidays the owner picked", () =&gt; {
 </script>
 
 <script>
+  // Every drawer starts closed on load, whatever the markup says, so the page opens as a
+  // list to scan. A chip in the top bar opens only the drawers around its target.
+  document.querySelectorAll("details[open]").forEach(function (drawer) { drawer.open = false; });
+</script>
+<script>
   // An open code file stretches from where it starts to the screen's right edge, so every
   // file ends at the same place and a long line only wraps at the edge of the screen.
   function widenCodeFiles(root) {
@@ -10610,14 +10622,19 @@ describe("holidays the owner picked", () =&gt; {
       if (chip) chip.classList.add("is-near");
     });
   })();
-  function bleedFigures() {
-    var targets = document.querySelectorAll(".piece-fig, figure.fig, .codefile");
-    targets.forEach(function (el) { el.style.marginLeft = ""; el.style.width = ""; el.classList.remove("is-bleed"); });
+  // With a root (a drawer that just opened), only the figures inside it are placed: the ones
+  // already placed never move sideways when a drawer opens. Without one, every figure is
+  // re-measured, for a new width or a view switch. Resetting every figure while a jump is
+  // scrolling is what stopped the scroll on a phone, so nothing placed is touched then.
+  function bleedFigures(root) {
+    var targets = (root || document).querySelectorAll(".piece-fig, figure.fig, .codefile");
+    if (!root) targets.forEach(function (el) { el.style.marginLeft = ""; el.style.width = ""; el.classList.remove("is-bleed"); });
     if (!smallScreen.matches) return;
     var screen = document.documentElement.clientWidth;
     targets.forEach(function (el) {
+      if (el.classList.contains("is-bleed")) return; // already placed
       if (el.parentElement.closest(".piece-fig, figure.fig, .codefile")) return; // moves with its outer box
-      if (!el.offsetParent) return; // inside a closed drawer or a hidden view
+      if (!el.offsetParent || el.parentElement.closest("details:not([open])")) return; // inside a closed drawer or a hidden view
       var left = el.getBoundingClientRect().left;
       var margin = parseFloat(getComputedStyle(el).marginLeft) || 0;
       el.style.marginLeft = (margin - left) + "px";
@@ -10625,16 +10642,28 @@ describe("holidays the owner picked", () =&gt; {
       el.classList.add("is-bleed");
     });
   }
-  var bleedQueued = false;
-  function queueBleed() {
-    if (bleedQueued) return;
-    bleedQueued = true;
-    requestAnimationFrame(function () { bleedQueued = false; bleedFigures(); });
+  var bleedRoots = null; // drawers opened since the last frame, or "all" for a full pass
+  function queueBleed(root) {
+    var first = bleedRoots === null;
+    if (!root) bleedRoots = "all";
+    else if (bleedRoots !== "all") (bleedRoots = bleedRoots || []).push(root);
+    if (!first) return;
+    requestAnimationFrame(function () {
+      var roots = bleedRoots;
+      bleedRoots = null;
+      if (roots === "all") bleedFigures();
+      else roots.forEach(function (drawer) { bleedFigures(drawer); });
+    });
   }
-  document.addEventListener("toggle", queueBleed, true);
-  document.addEventListener("click", function (event) { if (event.target.closest(".nav-link, [data-goto]")) queueBleed(); });
-  window.addEventListener("resize", queueBleed);
-  window.addEventListener("code-coloured", queueBleed);
+  document.addEventListener("toggle", function (event) { if (event.target.open) queueBleed(event.target); }, true);
+  document.addEventListener("click", function (event) { if (event.target.closest(".nav-link")) queueBleed(); });
+  var bleedWidth = document.documentElement.clientWidth;
+  window.addEventListener("resize", function () {
+    var width = document.documentElement.clientWidth;
+    if (width === bleedWidth) return; // a phone's address bar showing or hiding changes only the height
+    bleedWidth = width;
+    queueBleed();
+  });
   smallScreen.addEventListener("change", function () { queueBleed(); widenCodeFiles(); });
   queueBleed();
 </script>
@@ -10741,6 +10770,33 @@ describe("holidays the owner picked", () =&gt; {
   selectView(initial);
   markCurrentSection();
 
+  // A jump scrolls smoothly, then checks where it landed once the page stops moving, and
+  // goes the rest of the way: a phone can stop a smooth scroll part way. The reader's own
+  // touch, wheel or key cancels the check, so it never fights them.
+  var jumpTimer = null;
+  function stopJumpCheck() { clearInterval(jumpTimer); jumpTimer = null; }
+  ["touchstart", "wheel", "keydown"].forEach(function (type) {
+    window.addEventListener(type, stopJumpCheck, { passive: true });
+  });
+  function jumpTo(target) {
+    function destination() {
+      var margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+      var bottom = document.documentElement.scrollHeight - window.innerHeight;
+      return Math.max(0, Math.min(bottom, Math.round(target.getBoundingClientRect().top + window.scrollY - margin)));
+    }
+    stopJumpCheck();
+    window.scrollTo({ top: destination(), behavior: "smooth" });
+    var lastY = -1, stillFor = 0, checks = 0;
+    jumpTimer = setInterval(function () {
+      var y = Math.round(window.scrollY);
+      stillFor = y === lastY ? stillFor + 1 : 0;
+      lastY = y;
+      if (stillFor < 3 && ++checks < 50) return; // still moving: look again, for up to 5 seconds
+      stopJumpCheck();
+      if (Math.abs(destination() - window.scrollY) > 2) window.scrollTo(0, destination());
+    }, 100);
+  }
+
   // A chip in the bar jumps to its item or step: switch to the roadmap,
   // open every drawer around the target, then scroll to it.
   document.querySelectorAll("[data-goto]").forEach(function (chip) {
@@ -10755,7 +10811,8 @@ describe("holidays the owner picked", () =&gt; {
       }
       var fold = target.querySelector(":scope > .item-body > .item-fold");
       if (fold) fold.open = true;
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (typeof bleedFigures === "function") bleedFigures(); // settle the layout before measuring
+      jumpTo(target);
     });
   });
 </script>

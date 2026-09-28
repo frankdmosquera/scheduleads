@@ -449,7 +449,7 @@ stored time.
 | `dateHours` | jsonb, not null, default `[]` | one-off dates, shape below |
 | `timezone` | text | business's row only; IANA name; every minute and date is local to it |
 | `minimumNoticeMinutes` | integer | business's row only; check `>= 0` |
-| `horizonDays` | integer | business's row only; check `> 0`; no default, a writer sets it |
+| `horizonDays` | integer | business's row only; check `between 1 and 365` (at most a year ahead, since 2.6's review, F-31); no default, a writer sets it |
 | `closedDates` | jsonb | business's row only; `YYYY-MM-DD` list |
 | `holidayCountry` | text, nullable | business's row only; ISO 3166-1 alpha-2; null = no holidays |
 | `holidayRegion` | text, nullable | business's row only; the province, e.g. `AB`; needs a country |

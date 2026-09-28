@@ -221,7 +221,13 @@ without Frank touching the database.
     closed by default; all the main ones in one click, or one by one
     (Frank, 2026-09-28: we build the functionality, the client decides
     their schedule).
-  - Notice, how far ahead and time zone, once for the business.
+  - Notice, how far ahead and time zone, once for the business. How far
+    ahead is at most a year (the database refuses more since step 2.6,
+    F-31); the screen offers one month, pre-filled, for the owner to change.
+  - From step 2.6's review, F-32: a holiday pick is saved as the package's
+    name, so a renamed holiday would break that business's booking page.
+    Decide here: check picks when they are saved, or save a name that never
+    changes.
   - Changing a service's length or someone's hours keeps existing bookings
     and warns the owner which ones now fall outside.
   - Opening hours for the public (the website, the Google profile) are a

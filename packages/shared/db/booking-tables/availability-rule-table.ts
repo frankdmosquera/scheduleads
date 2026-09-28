@@ -84,7 +84,8 @@ export const availabilityRule = pgTable(
       )`
     ),
     check("availability_rule_notice_check", sql`${table.minimumNoticeMinutes} >= 0`),
-    check("availability_rule_horizon_check", sql`${table.horizonDays} > 0`),
+    // At most a year ahead: the holiday lookup and every later slot search walk the whole window.
+    check("availability_rule_horizon_check", sql`${table.horizonDays} between 1 and 365`),
     check(
       "availability_rule_region_needs_country_check",
       sql`${table.holidayRegion} is null or ${table.holidayCountry} is not null`

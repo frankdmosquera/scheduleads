@@ -128,6 +128,13 @@ describe("availabilityRuleValidationSchema", () => {
     expect(availabilityRuleValidationSchema.safeParse(row).success).toBe(false);
   });
 
+  test("accepts booking a year ahead and refuses more", () => {
+    const aYear = { ...primoBusinessRow, horizonDays: 365 };
+    const moreThanAYear = { ...primoBusinessRow, horizonDays: 366 };
+    expect(availabilityRuleValidationSchema.safeParse(aYear).success).toBe(true);
+    expect(availabilityRuleValidationSchema.safeParse(moreThanAYear).success).toBe(false);
+  });
+
   test("picks no holidays unless the owner picks some", () => {
     const parsed = availabilityRuleValidationSchema.parse(primoBusinessRow);
     expect("closedHolidays" in parsed && parsed.closedHolidays).toEqual([]);

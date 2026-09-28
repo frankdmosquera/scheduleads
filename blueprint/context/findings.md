@@ -412,7 +412,7 @@ committed) says the frontend's hooks also run
 `npm run build:types --workspace=backend` and that a backend type error stops
 the frontend's dev server and build. No new defect.
 
-### F-31 [P3] open - Holiday dates are recomputed on every public request, with work that grows with an unbounded horizon
+### F-31 [P3] fixed - Holiday dates are recomputed on every public request, with work that grows with an unbounded horizon
 
 **File:** backend/lib/bookable-hours/closed-holidays.ts:45
 **Found:** 2026-09-28 by /audit independent (scope: current; lens: performance)
@@ -433,7 +433,16 @@ nothing.
 and the database check (for example 365 or 730) when feature 12 adds its
 writer, and optionally cache each list's holidays per year in the module (the
 lists are already cached; the years are not).
-**Resolution:**
+**Resolution:** Fixed 2026-09-28 on Frank's call: customers can book at most a
+year ahead. `availability_rule_horizon_check` is now `horizonDays between 1
+and 365` (migration `0003_horizon_at_most_a_year`) and the shared schema has
+`.max(365)`, with a saved test (365 accepted, 366 refused) that fails with the
+maximum removed; 366 was refused by the database by hand, in a rolled-back
+transaction. Measured on the built backend with all nine holidays picked: about
+1 ms for 30 and 60 days, 1.5 ms for 120 and 365, so the cap bounds the cost.
+Per-year caching was not added: at a year it would save about a millisecond.
+The one-month starting value belongs to feature 12's settings screen,
+pre-filled for the owner to change. For the next review to close.
 
 ### F-32 [P3] unverified - A pick is the package's display name, so a renamed holiday would take a business's booking page down
 
@@ -457,7 +466,8 @@ province.
 validate picks against the list at write time and keep a test over every name
 the picker can offer, or store a stable key (the package's `rule` string) with
 the display name. Worth a note on feature 12 now so it is not rediscovered.
-**Resolution:**
+**Resolution:** Carried to feature 12 on Frank's call, 2026-09-28, noted on
+item 12 in `build-plan.md`. Stays unverified until then.
 
 ### F-33 [P3] open - The spec still says step 2.6's plan is "not agreed yet" and records neither its approval nor what was built
 

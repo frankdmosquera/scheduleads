@@ -23,7 +23,7 @@ export const businessAvailabilityRuleValidationSchema = z
     dateHours: dateHoursValidationSchema.default([]),
     timezone: z.string().refine(isRealTimezone, { message: "That is not a time zone." }),
     minimumNoticeMinutes: z.int().min(0),
-    horizonDays: z.int().min(1),
+    horizonDays: z.int().min(1).max(365, "Customers can book at most a year ahead."),
     closedDates: z.array(z.iso.date()).refine((dates) => new Set(dates).size === dates.length, {
       message: "The same closed date is listed twice.",
     }),
