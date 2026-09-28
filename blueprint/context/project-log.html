@@ -1093,6 +1093,22 @@
   .drawer[open] > summary::after { content: "\2212"; }
   .drawer[open] > summary { border-bottom: 1px solid var(--rule); }
 
+  /* A feature's own drawers (Steps, Why, Decisions, Log...) read as buttons (Frank, 2026-09-28):
+     a taller bar, a round + on the right, and clear room between one and the next. */
+  .item-fold > .drawer, .item-fold > details.callout, .item-fold > .item-steps { margin-top: 12px; } /* margins, not gap: a details element lays its content out in its own box */
+  .item-fold > .drawer > summary { padding: 14px 16px; font-size: 11px; }
+  .item-fold > .drawer > summary::after, .item-fold > details.callout > summary::after {
+    display: inline-grid; place-items: center; flex: none;
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--ink) 22%, var(--surface));
+    background: var(--surface); color: var(--ink-2);
+    font-family: var(--mono); font-size: 15px; line-height: 1; letter-spacing: 0;
+  }
+  .item-fold > .drawer > summary:hover::after, .item-fold > details.callout > summary:hover::after { border-color: var(--accent); color: var(--accent); }
+  .item-fold > .drawer:not([open]) { box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 10%, transparent); }
+  .item-fold > .drawer:not([open]):hover { border-color: color-mix(in srgb, var(--ink) 30%, var(--surface)); }
+  @media (max-width: 760px) { .item-fold > .drawer > summary { padding: 13px 10px; } }
+
   .drawer-body > h3 {
     font-family: var(--mono);
     font-size: 10.5px; font-weight: 700;
@@ -1965,8 +1981,8 @@
 
         <div class="stage">
           <div class="stage-head"><span class="stage-name">Phase 1 &middot; Foundation, carried over</span><span class="stage-note">Exit: a second org created through the app, sign-in lands on it, a gated route refuses the wrong rung, free/busy proven on Frank's calendar, a client the agency provisioned reaches only their own business</span></div>
-          <div class="item" id="item-1" data-state="done"><div class="item-num">1</div><div class="item-body"><details class="item-fold"><summary class="item-name">Multi-tenant auth, with the org fix</summary><p class="item-text">Email-OTP sign-in, create-organization, the admin role, the auto-active organization hook, and the package gate with the one rung.</p>
-          <p class="item-text">Four businesses will eventually sign into the same app and must never see each other's leads. This item decides where the answer to "which business is this?" comes from, and the answer is: the session on the server, never the request. Everything from item 2 to item 26 inherits that decision, which is why it is first and why it is worth getting slowly right.</p>          <div class="gates">
+          <div class="item" id="item-1" data-state="done"><div class="item-num">1</div><div class="item-body"><details class="item-fold"><summary class="item-name">Multi-tenant auth, with the org fix</summary>
+          <div class="gates">
           <span class="gate-chip" data-state="pass">Spec agreed</span>
           <span class="gate-chip" data-state="pass">Built &amp; verified</span>
           <span class="gate-chip" data-state="pass">Commit granted</span>
@@ -5602,6 +5618,8 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
               <summary>Why this item exists <span class="tag-drift">and what it locks in for items 2 to 26</span></summary>
               <div class="drawer-body">
                 <p class="drawer-what">What this item is for, and the line between what it covers and what a later item covers instead.</p>
+                <p>Email-OTP sign-in, create-organization, the admin role, the auto-active organization hook, and the package gate with the one rung.</p>
+                <p>Four businesses will eventually sign into the same app and must never see each other's leads. This item decides where the answer to "which business is this?" comes from, and the answer is: the session on the server, never the request. Everything from item 2 to item 26 inherits that decision, which is why it is first and why it is worth getting slowly right.</p>
 <p>A second organization can be created through the app with no database touch, sign-in lands on that organization without a workaround, and a route behind the package gate refuses an organization whose rung does not include it. This is the feature that decides where the trusted actor comes from: every item from 2 to 26 reads its <code>organizationId</code> from whatever this one establishes.</p>
 <div class="scope">
           <div class="scope-in">
@@ -6296,7 +6314,6 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
             <div class="item-body">
               <details class="item-fold">
               <summary class="item-name">Booking links, resources and availability rules</summary>
-              <p class="item-text">The three scheduling primitives everything after this reads: booking links (one per service, with its length and buffers), resources (the people and places that do the work, the first one made automatically), and bookable hours. Served on a public, read-only route a stranger's browser can call, resolved through one function every later item reuses, and called from the frontend through the typed client, proved by a build that breaks on purpose. Rewritten Sep 25 to match version 8 of the booking model.</p>
 
               <div class="gates">
                 <span class="gate-chip" data-state="waiting">Spec agreed</span>
@@ -9711,6 +9728,7 @@ describe("holidays the owner picked", () =&gt; {
               <details class="drawer" data-kind="plan">
                 <summary>Why this item exists <span class="tag-drift">and what it locks in</span></summary>
                 <div class="drawer-body">
+                  <p>The three scheduling primitives everything after this reads: booking links (one per service, with its length and buffers), resources (the people and places that do the work, the first one made automatically), and bookable hours. Served on a public, read-only route a stranger's browser can call, resolved through one function every later item reuses, and called from the frontend through the typed client, proved by a build that breaks on purpose. Rewritten Sep 25 to match version 8 of the booking model.</p>
                   <p>Booking needs three facts about a business before anything can be booked: what it offers, who does the work, and when. This item stores all three, with room for each person's own hours from the first migration, so a clinic with three practitioners never needs the tables rebuilt. It also ends guessing between the two apps: from here on the frontend is typed from the backend's real routes.</p>
                   <figure class="fig">
                           <svg viewBox="0 0 680 280" role="img" aria-labelledby="fig2map-t">
@@ -10398,7 +10416,6 @@ describe("holidays the owner picked", () =&gt; {
       <div class="item-body">
         <details class="item-fold">
         <summary class="item-name">Item name</summary>
-        <p class="item-text">The one-line plan, then a short paragraph on why this item exists at all.</p>
 
         <div class="gates">
           <span class="gate-chip" data-state="pass">Spec agreed</span>
@@ -10462,6 +10479,7 @@ describe("holidays the owner picked", () =&gt; {
         <details class="drawer" data-kind="plan">
           <summary>Why this item exists <span class="tag-drift">and what it locks in</span></summary>
           <div class="drawer-body">
+            <p>The one-line plan, then a short paragraph on why this item exists at all.</p>
             <p>The goal, in plain words.</p>
             <div class="scope">
               <div class="scope-in"><div class="scope-head">In</div><ul><li>...</li></ul></div>
@@ -10791,11 +10809,21 @@ describe("holidays the owner picked", () =&gt; {
   ["touchstart", "wheel", "keydown"].forEach(function (type) {
     window.addEventListener(type, stopJumpCheck, { passive: true });
   });
+  // Where a jump lands. A step short enough to fit between the top bar and the bottom of the
+  // screen sits in the middle of that space, so its top and bottom lines are both in view and
+  // there is page above and below it. A longer step, or a feature, starts just under the bar.
   function jumpTo(target) {
     function destination() {
-      var margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+      var rect = target.getBoundingClientRect();
+      var bar = document.querySelector(".topbar").offsetHeight;
+      var margin = Math.max(parseFloat(getComputedStyle(target).scrollMarginTop) || 0, bar + 12); // never under a two-row bar
+      var top = rect.top + window.scrollY - margin;
+      if (target.matches(".rstep")) {
+        var room = window.innerHeight - bar;
+        if (rect.height <= room - 32) top = rect.top + window.scrollY - bar - (room - rect.height) / 2;
+      }
       var bottom = document.documentElement.scrollHeight - window.innerHeight;
-      return Math.max(0, Math.min(bottom, Math.round(target.getBoundingClientRect().top + window.scrollY - margin)));
+      return Math.max(0, Math.min(bottom, Math.round(top)));
     }
     stopJumpCheck();
     window.scrollTo({ top: destination(), behavior: "smooth" });
@@ -10811,8 +10839,9 @@ describe("holidays the owner picked", () =&gt; {
   }
 
   // One step open at a time: opening a step closes the others, and opening a feature closes
-  // the other features. Opened by tapping its title, the page keeps that title where it was,
-  // so closing a long step above it never moves the reader somewhere else.
+  // the other features. Opened by tapping its title, the page first keeps that title where it
+  // was, so closing a long step above it never throws the reader somewhere else; an opened
+  // step then glides to the middle of the screen (see jumpTo).
   function closeOthers(opening) {
     var kind = opening.matches(".rstep") ? ".rstep" : opening.matches(".item-fold") ? ".item-fold" : null;
     if (!kind) return;
@@ -10826,6 +10855,8 @@ describe("holidays the owner picked", () =&gt; {
     var before = summary.getBoundingClientRect().top;
     closeOthers(summary.parentElement);
     window.scrollBy(0, summary.getBoundingClientRect().top - before);
+    var step = summary.parentElement;
+    if (step.matches(".rstep")) setTimeout(function () { jumpTo(step); }, 0); // once the click has opened it
   });
 
   // The open step's chip in the top bar carries a line under it: you are here.
