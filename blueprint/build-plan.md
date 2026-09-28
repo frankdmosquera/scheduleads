@@ -45,7 +45,7 @@ else.
   middleware: `organization.plan`, the subscription-limits config with the one tier
   `agency`, and the check every module route calls. The rule that tenant
   code never reads across organizations starts here
-- [ ] 2. **Booking links, resources and availability rules** - the three
+- [x] 2. **Booking links, resources and availability rules** - the three
   tables, the public read route, the dev seed, and the shared-package layout.
   (The seed CLI for real clients was dropped on 2026-09-25: a client's hours
   are always set by the client in the app.)

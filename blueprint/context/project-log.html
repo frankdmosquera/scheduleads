@@ -1341,6 +1341,24 @@
   pre.code .ln.added { background: rgba(52, 125, 57, 0.18); border-left-color: #72C892; }
   pre.code .ln.removed { background: rgba(201, 60, 55, 0.18); border-left-color: #F28772; }
 
+  /* The top bar is one slim row at every width (Frank, Sep 28), as on a phone: the views, then
+     the chips in one line that slides sideways, scrolled so the feature being built sits in the
+     middle. A wider screen just shows more chips either side; a phone shows only its neighbours
+     (below). The phase names and the now note leave the bar; the now note becomes the hover
+     text of the feature's chip (script at the bottom). */
+  .topbar { padding: 8px 16px; transition: none; }
+  .topbar.is-hidden { transform: none; }
+  .bar { flex-wrap: nowrap; justify-content: flex-start; align-items: center; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+  .bar::-webkit-scrollbar { display: none; }
+  .bar .switch { width: auto; margin: 0 10px 0 0; gap: 4px; align-self: center; flex: none; }
+  .bar .bar-plan { flex: none; flex-wrap: nowrap; gap: 4px; align-items: center; }
+  .bar .strip-label { display: none; }
+  .bar .strip-phase { flex-direction: row; align-items: center; }
+  .bar .strip-cells, .bar nav[data-menu="project"] .strip-cells, .bar nav[data-menu="architecture"] .strip-cells { flex-wrap: nowrap; align-items: center; }
+  .cell-open { margin: 0 2px; }
+  @media (min-width: 761px) { .bar .strip-phase + .strip-phase { border-left: 1px solid var(--rule); padding-left: 8px; margin-left: 4px; } }
+  .item, .rstep, #view-architecture section, #view-project section, #arch-booking-model, #arch-versions, #arch-not-in-model, #arch-folders { scroll-margin-top: 70px; }
+
   /* Small screens (Frank, Sep 28): a box inside a box inside a box stacked about 100px of
      left padding on a 375px phone, leaving code a 218px column. Here the nested boxes stop
      adding their own side padding, and every diagram, file tree and code file runs edge to
@@ -1416,10 +1434,10 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: 2.6 reviewed and its issues settled; feature 2 ready for /complete, your call</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: feature 2 done; feature 3 is next</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
-                <span class="cell-open" title="Item 2 is being built; its steps follow"><a class="cell" href="#item-2" data-goto="item-2" data-state="active" title="2 Booking links, resources and availability rules - being built">2</a><a class="cell cell--step" href="#step-2-1" data-goto="step-2-1" data-state="done" title="2.1 The three tables, the first person, and their validation - done">2.1</a><a class="cell cell--step" href="#step-2-2" data-goto="step-2-2" data-state="done" title="2.2 The one function that resolves hours - done">2.2</a><a class="cell cell--step" href="#step-2-3" data-goto="step-2-3" data-state="done" title="2.3 The seeds - done">2.3</a><a class="cell cell--step" href="#step-2-4" data-goto="step-2-4" data-state="done" title="2.4 The public routes - done">2.4</a><a class="cell cell--step" href="#step-2-5" data-goto="step-2-5" data-state="done" title="2.5 The typed seam, proved by breaking it - done">2.5</a><a class="cell cell--step" href="#step-2-6" data-goto="step-2-6" data-state="next" title="2.6 Holidays the owner picks - built and reviewed">2.6</a></span>
+                <a class="cell" href="#item-2" data-goto="item-2" data-state="done" title="2 Booking links, resources and availability rules - done">2</a>
                 <a class="cell" href="#item-3" data-goto="item-3" title="3 Calendar connection">3</a>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
@@ -1953,8 +1971,8 @@
           the running app, not when its boxes are ticked.
         </p>
         <div class="tally">
-          <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b, 1</span></span>
-          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">2</span></span>
+          <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b, 1, 2</span></span>
+          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">nothing yet, 3 is next</span></span>
           <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">3, 3b, then 4 through 26, with 12b</span></span>
         </div>
         <details class="callout callout--open">
@@ -6309,16 +6327,16 @@ function SignOutLink({ onSignedOut }: { onSignedOut?: () =&gt; void }) {
               </div>
             </details>
           <p class="item-was">Better Auth mounts on the Hono API, not in Next as the first repo had it. Archived at <code>blueprint/history/features/01-multi-tenant-auth-with-the-org-fix.md</code>.</p></details></div><span class="pill pill--done">Done</span></div>
-          <div class="item" id="item-2" data-state="active">
+          <div class="item" id="item-2" data-state="done">
             <div class="item-num">2</div>
             <div class="item-body">
               <details class="item-fold">
               <summary class="item-name">Booking links, resources and availability rules</summary>
 
               <div class="gates">
-                <span class="gate-chip" data-state="waiting">Spec agreed</span>
-                <span class="gate-chip">Built &amp; verified</span>
-                <span class="gate-chip">Commit granted</span>
+                <span class="gate-chip" data-state="pass">Spec agreed</span>
+                <span class="gate-chip" data-state="pass">Built &amp; verified</span>
+                <span class="gate-chip" data-state="pass">Commit granted</span>
               </div>
 
               <details class="drawer" data-kind="plan">
@@ -7994,7 +8012,7 @@ const db = drizzle(client, { schema });</code></pre>
                     </details>
 
                     <details class="rstep" id="step-2-4" data-state="done">
-                      <summary><span class="sn">2.4</span><span class="sm"></span><span>The public routes</span><span class="ss">Built &middot; reviewed</span></summary>
+                      <summary><span class="sn">2.4</span><span class="sm"></span><span>The public routes</span><span class="ss">Done</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what">The first routes a stranger can call: a business's list of booking links, and one link with its hours. Read-only, no login, and built so a stranger learns nothing they should not, including whether a switched-off link ever existed. Planned in two parts, below: what it builds, then the checks that will prove it done. A piece that needs your call is a blocker: it comes first and nothing is built until you answer it. Piece 1 was one. Both parts agreed with you, Sep 26.</p>
                         <details class="drawer" data-kind="plan">
@@ -8649,7 +8667,7 @@ describe("the login cookie is never allowed", () =&gt; {
                     </details>
 
                     <details class="rstep" id="step-2-5" data-state="done">
-                      <summary><span class="sn">2.5</span><span class="sm"></span><span>The typed seam, proved by breaking it</span><span class="ss">Built &middot; reviewed</span></summary>
+                      <summary><span class="sn">2.5</span><span class="sm"></span><span>The typed seam, proved by breaking it</span><span class="ss">Done</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what">Primo's owner signs in and the home lists the services customers can book. The frontend gets them through a client typed from the backend's own routes, so if someone renames a route or changes an answer, the frontend build fails instead of the owner's screen breaking. The first repo declared this and never used it once, so this step only closes on a build that fails on purpose. Planned in two parts, below: what it builds, then the checks that will prove it done. Piece 1 was one. Both parts agreed with you, Sep 27.</p>
                         <details class="drawer" data-kind="plan">
@@ -9086,8 +9104,8 @@ Failed to type check.</pre>
                       </div>
                     </details>
 
-                    <details class="rstep" id="step-2-6" data-state="active">
-                      <summary><span class="sn">2.6</span><span class="sm"></span><span>Holidays the owner picks</span><span class="ss">Built &middot; reviewed</span></summary>
+                    <details class="rstep" id="step-2-6" data-state="done">
+                      <summary><span class="sn">2.6</span><span class="sm"></span><span>Holidays the owner picks</span><span class="ss">Done</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what">Primo decides which holidays close online booking, and nobody else does. The owner picks from Alberta's holidays and Canada's national ones: all the main ones in one click, or one by one. Nothing is closed until they pick it (your rule, Sep 28: we build the functionality, the client decides their schedule). This step saves the picks and turns them into closed dates every year; the picker screen is feature 12. A one-off date still opens a picked holiday for one person, like any closed day. Planned in two parts, below. Piece 1 was a blocker, answered Sep 28: <code>date-holidays</code>. Both parts agreed with you, Sep 28, and built the same day.</p>
                         <details class="drawer" data-kind="plan">
@@ -9704,15 +9722,15 @@ describe("holidays the owner picked", () =&gt; {
                                 <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>A fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests; this step against its own Done when; the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</p><p><b>For this step:</b> Reran every test, both builds, lint and the format check; planted three faults of its own in <code>closed-holidays.ts</code> (no province check, no national list, one year only) and saw each caught by exactly the right test; checked every Canadian province's holidays against the national list for 2026 to 2030; tried the database refusals inside a transaction it rolled back; read both public routes today; and checked the lockfile and the frontend bundle.</p></div>
                                 <div class="review-part"><div class="review-part-head">2 &middot; Verdict</div><div class="rstep-when">Passed, Sep 28, commit <code>5a30d47</code>. Nothing serious. Three small issues.</div></div>
                                 <div class="review-issues">
-                                  <div class="review-issues-head">3 &middot; Issues it found: 3 &middot; F-31 and F-33 fixed, F-32 carried to feature 12</div>
+                                  <div class="review-issues-head">3 &middot; Issues it found: 3 &middot; F-31 and F-33 fixed and closed, F-32 carried to feature 12</div>
                                   <div class="rows">
-                              <div class="row"><div class="row-key">F-31 &middot; P3 &middot; fixed</div><div class="row-val">The holiday dates are worked out again on every public request. Cheap today (about 1 ms for 60 days), but the booking window has no upper limit, so once owners set their own in feature 12 a very long one gets slower. Suggested: a limit on how far ahead, in feature 12.</div></div>
+                              <div class="row"><div class="row-key">F-31 &middot; P3 &middot; closed</div><div class="row-val">The holiday dates are worked out again on every public request. Cheap today (about 1 ms for 60 days), but the booking window has no upper limit, so once owners set their own in feature 12 a very long one gets slower. Suggested: a limit on how far ahead, in feature 12.</div></div>
                               <div class="row"><div class="row-key">F-32 &middot; P3 &middot; carried to feature 12</div><div class="row-val">A pick is saved as the package's own name. If a package update or a province renames or drops a picked holiday, the guard stops with an error and that business's booking page fails until the pick is fixed. Worth settling in feature 12: check picks when they are saved, or save a name that never changes.</div></div>
-                              <div class="row"><div class="row-key">F-33 &middot; P3 &middot; fixed</div><div class="row-val">The spec still says step 2.6's plan is "not agreed yet", has no approved or built line like 2.1 to 2.5, and its Files list misses <code>closed-holidays.ts</code> and migration <code>0002</code>.</div></div>
+                              <div class="row"><div class="row-key">F-33 &middot; P3 &middot; closed</div><div class="row-val">The spec still says step 2.6's plan is "not agreed yet", has no approved or built line like 2.1 to 2.5, and its Files list misses <code>closed-holidays.ts</code> and migration <code>0002</code>.</div></div>
                             </div>
                                 </div>
                                 <div class="review-part"><div class="review-part-head">4 &middot; Earlier issues it closed</div><p>F-29 and F-30 from step 2.5, each repair re-read in its file.</p></div>
-                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p><b>F-31, fixed on your call, Sep 28:</b> customers can book at most a year ahead. The database refuses more than 365 days (migration <code>0003</code>) and so does the form check; a saved test accepts 365 and refuses 366, and fails with the limit taken out; 366 refused by the database by hand, rolled back. Measured with all nine holidays picked: about 1 ms for a month, 1.5 ms for a year. The one-month starting value goes on feature 12's settings screen, pre-filled for the owner to change. <b>F-32, your call:</b> carried to feature 12, noted on item 12 in the build plan. <b>F-33, your yes, Sep 28:</b> the spec's step 2.6 now says it was approved and built, with its review fixes, and its Files list names every file the feature touched, each checked to exist. Docs only. The next review closes F-31 and F-33.</p></div>
+                                <div class="review-fixed" data-state="done"><div class="review-part-head">5 &middot; After the fixes</div><p><b>Closed by feature 2's final review, Sep 28.</b> <b>F-31, fixed on your call, Sep 28:</b> customers can book at most a year ahead. The database refuses more than 365 days (migration <code>0003</code>) and so does the form check; a saved test accepts 365 and refuses 366, and fails with the limit taken out; 366 refused by the database by hand, rolled back. Measured with all nine holidays picked: about 1 ms for a month, 1.5 ms for a year. The one-month starting value goes on feature 12's settings screen, pre-filled for the owner to change. <b>F-32, your call:</b> carried to feature 12, noted on item 12 in the build plan. <b>F-33, your yes, Sep 28:</b> the spec's step 2.6 now says it was approved and built, with its review fixes, and its Files list names every file the feature touched, each checked to exist. Docs only. The final review read both repairs, reran the checks and closed F-31 and F-33.</p></div>
                               </div>
                             </div>
                           </div>
@@ -9960,9 +9978,17 @@ describe("holidays the owner picked", () =&gt; {
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">39 entries, newest first, each titled with its step when it has one</span></summary>
+                <summary>Log <span class="tag-drift">44 entries, newest first, each titled with its step when it has one</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Feature 2 done: final review passed, archived</span><span class="kind-tag">Done</span><span class="stamp">Sep 28</span></div>
+                        <p class="entry-text">What shipped: every business has its booking links, its people and places, and its bookable hours in the database; two public routes a stranger's browser can read; one function that works out anyone's hours; holidays that close only when the owner picks them; and a frontend typed from the backend's real routes. A fresh reviewer read the whole feature at <code>9ff399f</code> and passed it, closing F-31 and F-33. The build log changed while it ran, so a second fresh review checked that one page commit (<code>a29bfc0</code>) and passed it too, with nothing new found.</p>
+                        <p class="entry-text">Archived at <code>blueprint/history/features/02-booking-links-resources-and-availability-rules.md</code>, with its walkthrough PDF beside it. Still open in the ledger: F-12, F-13, F-14 and F-16 from feature 1, F-32 (for feature 12) and F-34 (three config comments carrying history). Before feature 3 is specced, <code>/overview</code> should be rerun: it still describes the older two-table model.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="fix">
                       <div class="dot"></div>
                       <div class="entry-body">
@@ -10314,9 +10340,10 @@ describe("holidays the owner picked", () =&gt; {
                 </ul></div></div>
               </details>
 
+              <p class="item-was">Archived at <code>blueprint/history/features/02-booking-links-resources-and-availability-rules.md</code>.</p>
               </details>
             </div>
-            <span class="pill pill--ask">Your review</span>
+            <span class="pill pill--done">Done</span>
           </div>
           <div class="item" id="item-3" data-state="planned"><div class="item-num">3</div><div class="item-body"><div class="item-name">Calendar connection</div><p class="item-text">The table, the cipher, OAuth connect and disconnect, the provider seam, free/busy verified against a real event. Every Google calendar belongs to one person, the first to the business owner, and stays optional. One connection asks to read busy times and to add each booking, so it shows on that person's phone. Not a two-way sync: bookings are moved in the app.</p></div><span class="pill pill--plan">Planned</span></div>
           <div class="item" id="item-3b" data-state="planned"><div class="item-num">3b</div><div class="item-body"><div class="item-name">Client access: provisioning</div><p class="item-text">The agency creates a client's account and puts them in the business it made for them, using pieces Better Auth already ships. Nobody new can get in until this exists.</p><p class="item-was">Added Sep 23 while reviewing item 1. Nothing in the plan had ever answered how a client reaches their own business, and every test had run as the admin. It started as two halves, provisioning and closing signup; signup was closed early, which left this as a hard prerequisite for Phase 5. Sep 25: a client's business is created under the client's email, so they are its business owner and first person; the platform admin never is.</p></div><span class="pill pill--plan">Planned</span></div>
@@ -10380,7 +10407,7 @@ describe("holidays the owner picked", () =&gt; {
       </section>
 
       <footer>
-        <span>Updated Sep 26, 2026</span>
+        <span>Updated Sep 28, 2026</span>
         <span>&middot;</span>
         <span>Source: blueprint/build-plan.md</span>
       </footer>
@@ -10784,6 +10811,7 @@ describe("holidays the owner picked", () =&gt; {
     links.forEach(function (link) {
       link.classList.toggle("is-current", link === current);
     });
+    if (current && offEdge(current)) centerChip(current);
     var currentTarget = current && document.getElementById(current.dataset.goto);
     var section = currentTarget && currentTarget.closest("section");
     if (section) section.classList.add("is-current-section");
@@ -10849,11 +10877,17 @@ describe("holidays the owner picked", () =&gt; {
       if (other !== opening && !other.contains(opening) && !opening.contains(other)) other.open = false;
     });
   }
+  // A step or feature that opens starts fresh: nothing inside it is left open from last time,
+  // so the reader picks the plan or what actually happened (Frank, Sep 28).
+  function resetInside(opening) {
+    opening.querySelectorAll("details[open]").forEach(function (inner) { inner.open = false; });
+  }
   document.addEventListener("click", function (event) {
     var summary = event.target.closest(".rstep > summary, .item-fold > summary");
     if (!summary || summary.parentElement.open) return; // closing one needs nothing
     var before = summary.getBoundingClientRect().top;
     closeOthers(summary.parentElement);
+    resetInside(summary.parentElement);
     window.scrollBy(0, summary.getBoundingClientRect().top - before);
     var step = summary.parentElement;
     if (step.matches(".rstep")) setTimeout(function () { jumpTo(step); }, 0); // once the click has opened it
@@ -10866,13 +10900,46 @@ describe("holidays the owner picked", () =&gt; {
       var chip = document.querySelector('.bar a[data-goto="' + step.id + '"]');
       if (!chip) return;
       chip.classList.add("is-here");
-      // On a phone the row slides sideways: bring the chip into the middle of it if it is off the edge.
-      var bar = chip.closest(".bar"), c = chip.getBoundingClientRect(), b = bar.getBoundingClientRect();
-      if (c.left < b.left || c.right > b.right) bar.scrollLeft += c.left - b.left - (b.width - c.width) / 2;
+      if (offEdge(chip)) centerChip(chip);
     });
   }
+
+  // The bar is one row that slides sideways: a chip off its edge is brought to the middle.
+  function offEdge(chip) {
+    var c = chip.getBoundingClientRect(), b = chip.closest(".bar").getBoundingClientRect();
+    return c.left < b.left || c.right > b.right;
+  }
+  function centerChip(chip) {
+    if (!chip || !chip.offsetParent) return;
+    var bar = chip.closest(".bar"), c = chip.getBoundingClientRect(), b = bar.getBoundingClientRect();
+    bar.scrollLeft += c.left - b.left - (b.width - c.width) / 2;
+  }
+  // On load, on a view switch and on a resize: the open step, else the feature being built,
+  // else the section on screen, goes to the middle of the bar if it is out of view. In view,
+  // the bar stays put, so the view buttons at its start are not pushed off.
+  function centerBar() {
+    var menu = document.querySelector(".bar nav[data-menu]:not([hidden])");
+    var chip = menu && menu.querySelector(".cell.is-here, .cell-open, .cell.is-current");
+    if (chip && chip.offsetParent && offEdge(chip)) centerChip(chip);
+  }
+  document.querySelectorAll(".nav-link").forEach(function (link) { link.addEventListener("click", centerBar); });
+  window.addEventListener("resize", centerBar);
+  // A mouse wheel over the bar slides it sideways, so every chip is reachable without a trackpad.
+  document.querySelector(".bar").addEventListener("wheel", function (event) {
+    var bar = event.currentTarget;
+    if (bar.scrollWidth <= bar.clientWidth || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+    bar.scrollLeft += event.deltaY;
+    event.preventDefault();
+  }, { passive: false });
+  // The now note left the bar with the phase names; it lives on as the feature chip's hover text.
+  (function () {
+    var note = document.querySelector('.bar nav[data-menu="roadmap"] .now-note');
+    var open = document.querySelector('.bar nav[data-menu="roadmap"] .cell-open');
+    if (note && open) open.title = note.textContent.replace(/^[^a-z0-9]+/i, "");
+  })();
   document.addEventListener("toggle", function (event) { if (event.target.matches(".rstep, .item-fold")) markHere(); }, true);
   markHere();
+  centerBar();
 
   // A chip in the bar jumps to its item or step: switch to the roadmap,
   // open every drawer around the target, then scroll to it.
@@ -10883,11 +10950,12 @@ describe("holidays the owner picked", () =&gt; {
       event.preventDefault();
       var holder = target.closest("main > div[id^='view-']");
       selectView(holder ? holder.id.replace("view-", "") : "roadmap");
+      if (target.tagName === "DETAILS" && !target.open) resetInside(target); // already open: left as the reader has it
       for (var node = target; node; node = node.parentElement) {
         if (node.tagName === "DETAILS") { node.open = true; closeOthers(node); }
       }
       var fold = target.querySelector(":scope > .item-body > .item-fold");
-      if (fold) { fold.open = true; closeOthers(fold); }
+      if (fold) { if (!fold.open) resetInside(fold); fold.open = true; closeOthers(fold); }
       if (typeof bleedFigures === "function") bleedFigures(); // settle the layout before measuring
       jumpTo(target);
     });
