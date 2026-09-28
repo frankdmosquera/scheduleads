@@ -4,10 +4,11 @@
 
 **Branch:** `feature/booking-links-resources-and-availability-rules`
 
-**Status:** approved step by step (decided 2026-09-25; see `AGENTS.md`,
-"A spec is approved one step at a time"). The whole-feature picture is
-agreed; each step's plan gets Frank's yes just before it is built. 2.1
-approved.
+**Status:** verified
+
+Approved step by step (decided 2026-09-25; see `AGENTS.md`, "A spec is
+approved one step at a time"): each of steps 2.1 to 2.6 got Frank's yes just
+before it was built. Verified 2026-09-28 by `/complete`'s final safety pass.
 Rewritten 2026-09-25 to match version 8 of the booking
 model, which Frank approved that day (the build log's "How it all fits
 together", and `project-plan.md` decisions 20 to 29). Where this spec and an
