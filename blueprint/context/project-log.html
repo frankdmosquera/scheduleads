@@ -1445,11 +1445,11 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: step 3.1 done and reviewed; step 3.2's plan next</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: step 3.2 built and pushed; its review next</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
                 <a class="cell" href="#item-2" data-goto="item-2" data-state="done" title="2 Booking links, resources and availability rules - done">2</a>
-                <span class="cell-open" title="Step 3.1 done and reviewed; step 3.2's plan next"><a class="cell" href="#item-3" data-goto="item-3" data-state="active" title="3 Calendar connection - specced">3</a><a class="cell cell--step" href="#step-3-1" data-goto="step-3-1" data-state="done" title="3.1 Groundwork: a person knows its login, the connection table, the lock - done">3.1</a><a class="cell cell--step" href="#step-3-2" data-goto="step-3-2" data-state="next" title="3.2 Connect a Google calendar - next">3.2</a><a class="cell cell--step" href="#step-3-3" data-goto="step-3-3" title="3.3 The seam and busy times">3.3</a><a class="cell cell--step" href="#step-3-4" data-goto="step-3-4" title="3.4 Disconnect, and the card&apos;s other states">3.4</a></span>
+                <span class="cell-open" title="Step 3.2 built and pushed; its review next"><a class="cell" href="#item-3" data-goto="item-3" data-state="active" title="3 Calendar connection - specced">3</a><a class="cell cell--step" href="#step-3-1" data-goto="step-3-1" data-state="done" title="3.1 Groundwork: a person knows its login, the connection table, the lock - done">3.1</a><a class="cell cell--step" href="#step-3-2" data-goto="step-3-2" data-state="done" title="3.2 Connect a Google calendar - built, review next">3.2</a><a class="cell cell--step" href="#step-3-3" data-goto="step-3-3" data-state="next" title="3.3 The seam and busy times - next">3.3</a><a class="cell cell--step" href="#step-3-4" data-goto="step-3-4" title="3.4 Disconnect, and the card&apos;s other states">3.4</a></span>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
           </div>
@@ -1724,14 +1724,14 @@
         <h2>Where things live</h2>
         <div class="rows">
             <div class="row"><div class="row-key"><code>frontend/app/</code></div><div class="row-val">The screens: sign in, create a business, the dashboard home.</div></div>
-            <div class="row"><div class="row-key"><code>frontend/components/</code></div><div class="row-val">Pieces of screens. <code>ui/</code> is shadcn's; <code>booking-links/</code> holds the home's list of booking links (step 2.5).</div></div>
+            <div class="row"><div class="row-key"><code>frontend/components/</code></div><div class="row-val">Pieces of screens. <code>ui/</code> is shadcn's; <code>booking-links/</code> holds the home's list of booking links (step 2.5); <code>calendar/</code> the home's calendar card (step 3.2).</div></div>
             <div class="row"><div class="row-key"><code>frontend/lib/</code></div><div class="row-val"><code>auth-client.ts</code> (Better Auth's routes), <code>api-client.ts</code> (our own routes, through two clients typed from the backend's <code>AppType</code>: one sends the login cookie, the public one never does; step 2.5), <code>utils.ts</code> (shadcn's helper, a name its tool expects).</div></div>
             <div class="row"><div class="row-key"><code>backend/app.ts</code></div><div class="row-val">Every route the API answers, as one chain, and <code>AppType</code>, the frontend's typed view of them (step 2.5). Importing it starts nothing.</div></div>
             <div class="row"><div class="row-key"><code>backend/tsconfig.types.json</code></div><div class="row-val">Writes only the routes' type into <code>dist/types/</code>, exposed to the frontend as <code>backend/app-type</code>. Run by the frontend's own build, since Vercel never runs the backend's (step 2.5).</div></div>
             <div class="row"><div class="row-key"><code>backend/server.ts</code></div><div class="row-val">Only starts the API. Split from <code>app.ts</code> in step 2.4.</div></div>
-            <div class="row"><div class="row-key"><code>backend/routes/</code></div><div class="row-val">Groups of routes, one file each. Today one: <code>public-booking-links-routes.ts</code>, the routes a stranger can call.</div></div>
+            <div class="row"><div class="row-key"><code>backend/routes/</code></div><div class="row-val">Groups of routes, one file each: <code>public-booking-links-routes.ts</code>, the routes a stranger can call, and <code>calendar-routes.ts</code>, connecting a person's own calendar (step 3.2).</div></div>
             <div class="row"><div class="row-key"><code>backend/middleware/</code></div><div class="row-val">Checks that run before a route, one per file: <code>auth-middleware/</code> (who is signed in, may they do this), <code>dashboard-middleware/</code> (cookie rule, never cache), <code>subscription-middleware/</code> (what the plan unlocks), <code>public-middleware/</code> (who may read the public routes: listed sites, never the cookie).</div></div>
-            <div class="row"><div class="row-key"><code>backend/lib/</code></div><div class="row-val">Plain functions: <code>auth/</code> (Better Auth setup, the login code, which business a session acts for), <code>bookable-hours/</code> (when customers can book), <code>errors/</code> (the one refusal shape, with <code>not_found</code> and <code>bad_request</code> since step 2.4).</div></div>
+            <div class="row"><div class="row-key"><code>backend/lib/</code></div><div class="row-val">Plain functions: <code>auth/</code> (Better Auth setup, the login code, which business a session acts for), <code>bookable-hours/</code> (when customers can book), <code>errors/</code> (the one refusal shape, with <code>not_found</code> and <code>bad_request</code> since step 2.4, <code>no_person</code> since 3.2), <code>calendar/</code> (the talk with Google in plain <code>fetch</code>, the one-time ticket, finishing a connect, saving a connection locked; step 3.2).</div></div>
             <div class="row"><div class="row-key"><code>backend/database.ts</code></div><div class="row-val">The database connection. Becomes a folder only when something else about the database needs a home.</div></div>
             <div class="row"><div class="row-key"><code>packages/shared/db/</code></div><div class="row-val">The tables (Drizzle), one per file: <code>auth-tables/</code> for Better Auth&apos;s seven, <code>booking-tables/</code> for the booking model&apos;s, the calendar connection and its one-time ticket included (step 3.1). <code>index.ts</code> is the front door. Used by the backend only (split Sep 27).</div></div>
             <div class="row"><div class="row-key"><code>packages/shared/zod-validation/</code></div><div class="row-val">Form checks, used by both apps, one per file in folders named for what they hold (<code>auth-validation-schemas/</code> and so on). <code>index.ts</code> is the folder's front door, so an app imports the folder, not each file.</div></div>
@@ -1753,6 +1753,9 @@
             <div class="row"><div class="row-key"><code>GET /me</code></div><div class="row-val">Signed in. Who you are, your business, your role, and what your plan unlocks. Called by <code>fetchMe</code> in <code>frontend/lib/api-client.ts</code>, through the dashboard client, typed from the route since step 2.5. Runs the two dashboard middleware, then <code>requireOrganizationMiddleware</code> and <code>requireKnownSubscriptionMiddleware</code>.</div></div>
             <div class="row"><div class="row-key"><code>GET /public/:slug/booking-links</code></div><div class="row-val">Anyone, never the cookie. A business's active services, by name, found by its slug. <code>backend/routes/public-booking-links-routes.ts</code>. Runs <code>publicCorsMiddleware</code> (the sites in <code>WIDGET_ORIGINS</code> plus the dashboard, <code>GET</code> only). Since step 2.4. Called by the dashboard's home through the public client since step 2.5; by client sites from feature 9.</div></div>
             <div class="row"><div class="row-key"><code>GET /public/:slug/booking-links/:bookingLinkId</code></div><div class="row-val">Anyone, never the cookie. One service and the business's bookable hours, the service looked for only inside that business. The same 404 for every "not here" (no such business, no booking in its plan, no hours yet, no such service, switched off, another business's); 400 for a malformed address. Same file and CORS rule. Since step 2.4.</div></div>
+            <div class="row"><div class="row-key"><code>GET /calendar/connection</code></div><div class="row-val">Signed in, a real plan, booking. Your person and your calendar connection (Google, the Gmail, status, last read), never the tokens or permissions; <code>person: null</code> for a login with no person. <code>backend/routes/calendar-routes.ts</code>. Runs the dashboard's CORS and no-store. Called by the home's calendar card through the dashboard client. Since step 3.2.</div></div>
+            <div class="row"><div class="row-key"><code>POST /calendar/connect</code></div><div class="row-val">Signed in, a real plan, booking, and a person for your login (else 409 <code>no_person</code>). Saves a ten-minute one-time ticket and answers Google's consent address. Same file and rules. Since step 3.2.</div></div>
+            <div class="row"><div class="row-key"><code>GET /calendar/callback</code></div><div class="row-val">Where Google sends the browser back. Reads the session itself and always answers a redirect to the dashboard, <code>/?calendar=</code> one of <code>connected</code>, <code>denied</code>, <code>expired</code>, <code>missing_permission</code>, <code>failed</code>; the address is fixed, never taken from the request. Uses the ticket up, swaps the code, checks both permissions, saves the tokens locked. Same file. Since step 3.2.</div></div>
         </div>
       </section>
 
@@ -1984,7 +1987,7 @@
         </p>
         <div class="tally">
           <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b, 1, 2</span></span>
-          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">3: 3.1 done; 3.2 next</span></span>
+          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">3: 3.1 done; 3.2 built, review next</span></span>
           <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">3b, then 4 through 26, with 12b</span></span>
         </div>
         <details class="callout callout--open">
@@ -10370,7 +10373,7 @@ describe("holidays the owner picked", () =&gt; {
               </div>
 
               <details class="drawer" data-kind="plan">
-                <summary>Steps <span class="tag-drift">whole feature agreed Sep 28 &middot; approved one step at a time &middot; 3.1 done &middot; 3.2 next</span></summary>
+                <summary>Steps <span class="tag-drift">whole feature agreed Sep 28 &middot; approved one step at a time &middot; 3.1 done &middot; 3.2 built, review next</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number. Each step's plan is gone through with you just before it is built; a blocker comes first and nothing is built until you answer it.</p>
                   <div class="item-steps">
@@ -11027,31 +11030,1546 @@ GOOGLE_CLIENT_SECRET=</code></pre>
                       </div>
                     </details>
 
-                    <details class="rstep" id="step-3-2" data-state="planned">
-                      <summary><span class="sn">3.2</span><span class="sm"></span><span>Connect a Google calendar</span><span class="ss">Planned</span></summary>
+                    <details class="rstep" id="step-3-2" data-state="done">
+                      <summary><span class="sn">3.2</span><span class="sm"></span><span>Connect a Google calendar</span><span class="ss">Done</span></summary>
                       <div class="rstep-body">
-                        <p class="rstep-what">You press Connect on the dashboard, Google asks you once, and your calendar is linked. Google must grant both permissions, reading your busy times and adding events, or nothing is saved: Google quietly drops a permission it does not recognise, and you could untick one. The tokens are stored locked. Its plan is gone through with you after 3.1's review.</p>
+                        <p class="rstep-what">You press Connect on the dashboard, Google asks you once, and your calendar is linked. Google must grant both permissions, reading your busy times and adding events, or nothing is saved: Google quietly drops a permission it does not recognise, and you could untick one. The tokens are stored locked. Planned with you piece by piece and built Sep 28; you connected your real Google the same night.</p>
                         <details class="drawer" data-kind="plan">
-                          <summary>The plan <span class="tag-drift">written Sep 28 &middot; to go through with you before it is built</span></summary>
+                          <summary>The plan <span class="tag-drift">two parts &middot; agreed Sep 28 &middot; built Sep 28</span></summary>
                           <div class="drawer-body">
                             <div class="plan-part" data-part="build">
-                              <div class="plan-part-head"><span class="plan-part-title">Part 1 &middot; What it builds</span><span class="plan-part-state">first draft</span></div>
+                              <div class="plan-part-head"><span class="plan-part-title">Part 1 &middot; What it builds</span><span class="plan-part-state">agreed Sep 28 &middot; piece 1 answered fetch, piece 2 done by you, pieces 3 to 6 agreed</span></div>
                               <details class="piece-fig"><summary>The whole step, as one press of Connect</summary><figure class="fig"><svg viewBox="0 0 680 400" role="img"><title>Step 3.2: connecting a Google calendar</title><desc>The dashboard asks the API for a one-time ticket. Google asks the owner. Google sends the browser back to the callback, which uses the ticket up and checks both permissions. With both, the tokens are saved locked and the dashboard says connected. Missing one, the tokens are handed back to Google and nothing is saved.</desc><defs><marker id="s32w" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="40" y="20" width="180" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="130" y="40" text-anchor="middle" dominant-baseline="central">Your dashboard</text><text class="ts" x="130" y="60" text-anchor="middle" dominant-baseline="central">you press Connect</text></g><line x1="220" y1="48" x2="248" y2="48" class="arr" marker-end="url(#s32w)"/><g><rect x="250" y="20" width="180" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="40" text-anchor="middle" dominant-baseline="central">/calendar/connect</text><text class="ts" x="340" y="60" text-anchor="middle" dominant-baseline="central">a one-time ticket</text></g><line x1="430" y1="48" x2="458" y2="48" class="arr" marker-end="url(#s32w)"/><g><rect x="460" y="20" width="180" height="56" rx="8" style="fill:var(--fig-purple-soft);stroke:var(--fig-purple)"/><text class="th" x="550" y="40" text-anchor="middle" dominant-baseline="central">Google</text><text class="ts" x="550" y="60" text-anchor="middle" dominant-baseline="central">asks you once</text></g><line x1="550" y1="76" x2="550" y2="118" class="arr" marker-end="url(#s32w)"/><g><rect x="460" y="120" width="180" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="550" y="140" text-anchor="middle" dominant-baseline="central">/calendar/callback</text><text class="ts" x="550" y="160" text-anchor="middle" dominant-baseline="central">the ticket used up</text></g><line x1="460" y1="148" x2="432" y2="148" class="arr" marker-end="url(#s32w)"/><g><rect x="250" y="120" width="180" height="56" rx="8" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="th" x="340" y="140" text-anchor="middle" dominant-baseline="central">Both permissions?</text><text class="ts" x="340" y="160" text-anchor="middle" dominant-baseline="central">busy times and events</text></g><line x1="250" y1="148" x2="222" y2="148" class="arr" style="stroke:var(--alert)" marker-end="url(#s32w)"/><g><rect x="40" y="120" width="180" height="56" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="130" y="140" text-anchor="middle" dominant-baseline="central">Nothing saved</text><text class="ts" x="130" y="160" text-anchor="middle" dominant-baseline="central">handed back to Google</text></g><text class="ts" x="236" y="190" text-anchor="middle" dominant-baseline="central">no</text><line x1="340" y1="176" x2="340" y2="218" class="arr" marker-end="url(#s32w)"/><text class="ts" x="352" y="198" dominant-baseline="central">yes</text><g><rect x="250" y="220" width="180" height="56" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="340" y="240" text-anchor="middle" dominant-baseline="central">Saved, locked</text><text class="ts" x="340" y="260" text-anchor="middle" dominant-baseline="central">one row for your person</text></g><line x1="340" y1="276" x2="340" y2="318" class="arr" marker-end="url(#s32w)"/><g><rect x="250" y="320" width="180" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="340" y="340" text-anchor="middle" dominant-baseline="central">Back on the dashboard</text><text class="ts" x="340" y="360" text-anchor="middle" dominant-baseline="central">connected as your Gmail</text></g><text class="ts" x="560" y="330" dominant-baseline="central">A reused, expired or</text><text class="ts" x="560" y="348" dominant-baseline="central">someone else's ticket:</text><text class="ts" x="560" y="366" dominant-baseline="central">"expired", nothing saved</text></svg><figcaption>The whole step. The callback always ends back on the dashboard, with the outcome in plain words.</figcaption></figure></details>
                               <ul class="substeps">
-                                <li><b>1. Talk to Google with plain <code>fetch</code>, or add Google's <code>google-auth-library</code>.</b> <span class="piece-state">blocker &middot; waiting on you</span> Recommended: plain <code>fetch</code>. Four documented calls (the consent address, swapping the code, refreshing, revoking), no package, and the ticket and its safety check are ours either way.</li>
-                                <li><b>2. Your Google Cloud client.</b> <span class="piece-state">to do, you</span> An OAuth client in Google Cloud, in Testing mode, with your Gmail as a test user and the return address <code>http://localhost:3001/calendar/callback</code>. Its two values go into <code>.env</code>. The step walks you through it.</li>
-                                <li><b>3. <code>POST /calendar/connect</code></b> saves a one-time ticket for your person for ten minutes and answers with Google's consent address.</li>
-                                <li><b>4. <code>GET /calendar/callback</code></b> uses the ticket up in one statement (it must be unexpired and yours), swaps Google's code for tokens, checks both permissions or hands them back and saves nothing, and stores them locked. It always ends back on the dashboard with an outcome.</li>
-                                <li><b>5. <code>GET /calendar/connection</code></b> gives the dashboard your person and your connection, never the tokens.</li>
-                                <li><b>6. The dashboard card</b>, in the settings mockup's shape: Connect, the outcome after Google sends you back, and "Google Calendar &middot; your Gmail" once connected.</li>
+                                <li><b>1. Talk to Google with plain <code>fetch</code>, or add Google's <code>google-auth-library</code>.</b> <span class="piece-state" data-state="answered">blocker &middot; answered plain fetch, Sep 28</span> Four documented calls (the consent address, swapping the code, refreshing, revoking), no package, and the ticket and its safety check are ours either way. The library is Google's standard way and was passed over on purpose: its main job, keeping tokens in memory and refreshing them, does not fit ours, which sit locked in the database, one row per person; and free/busy (3.3) is plain <code>fetch</code> either way. The price: we write the four calls, about 80 lines with saved tests; we read Google's errors ourselves (<code>invalid_grant</code> means reconnect); and a changed Google address is ours to fix. Your words: if it is a little bit of code, a hundred percent.
+                                <details class="piece-fig"><summary>What plain fetch costs, and how each cost is covered</summary><figure class="fig"><svg viewBox="0 0 680 300" role="img"><title>The price of plain fetch</title><desc>Three costs of plain fetch instead of Google's library: we write about 80 lines, covered by saved tests with Google faked; we read Google's errors, covered by the Done when tests; a changed Google address is ours to fix, and these four have stayed the same for years.</desc><text class="th" x="40" y="30" dominant-baseline="central">What we pay</text><text class="th" x="400" y="30" dominant-baseline="central">How it is covered</text><g><rect x="40" y="50" width="320" height="60" rx="8" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="th" x="56" y="70" dominant-baseline="central">1. We write the code</text><text class="ts" x="56" y="92" dominant-baseline="central">4 small functions, about 80 lines</text></g><g><rect x="400" y="50" width="240" height="60" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="ts" x="416" y="70" dominant-baseline="central">Saved tests on each,</text><text class="ts" x="416" y="92" dominant-baseline="central">Google faked in the tests</text></g><g><rect x="40" y="126" width="320" height="60" rx="8" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="th" x="56" y="146" dominant-baseline="central">2. We read Google's errors</text><text class="ts" x="56" y="168" dominant-baseline="central">invalid_grant means reconnect</text></g><g><rect x="400" y="126" width="240" height="60" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="ts" x="416" y="146" dominant-baseline="central">The Done when tests prove</text><text class="ts" x="416" y="168" dominant-baseline="central">each refusal saves nothing</text></g><g><rect x="40" y="202" width="320" height="60" rx="8" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="th" x="56" y="222" dominant-baseline="central">3. A changed Google address</text><text class="ts" x="56" y="244" dominant-baseline="central">is ours to fix; the library would absorb it</text></g><g><rect x="400" y="202" width="240" height="60" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="ts" x="416" y="222" dominant-baseline="central">These four addresses have</text><text class="ts" x="416" y="244" dominant-baseline="central">stayed the same for years</text></g><text class="ts" x="340" y="284" text-anchor="middle" dominant-baseline="central">The library would still need our storage and error handling around it, plus your yes to install.</text></svg><figcaption>Drawn in chat when you asked what the price is.</figcaption></figure></details></li>
+                                <li><b>2. Your Google Cloud client.</b> <span class="piece-state" data-state="answered">done by you, Sep 28</span> An OAuth client in Google Cloud, in Testing mode, with your Gmail as a test user and the return address <code>http://localhost:3001/calendar/callback</code>. Its two values go into <code>.env</code>. You reused the client you had made earlier, gave it a new secret (Google shows a secret only once), and saved the settings. Both values are in the root <code>.env</code>, checked without printing them. The first real connect proves the Google side: a wrong address shows <code>redirect_uri_mismatch</code>, a missing test user "Access blocked".</li>
+                                <li><b>3. <code>POST /calendar/connect</code></b> saves a one-time ticket for your person for ten minutes and answers with Google's consent address. <span class="piece-state" data-state="answered">agreed Sep 28</span> Behind the dashboard's rules: signed in, a real plan, and the booking module. It finds your person (the one in this business linked to your login) and refuses plainly if there is none. The ticket keeps only a fingerprint of the value sent to Google, plus the PKCE secret, so a copy of the database cannot finish anyone's connect; making a new ticket clears your expired ones. The address asks Google for your email and the two calendar permissions: <code>calendar.events.freebusy</code> (busy times) and <code>calendar.events.owned</code> (add and change events on calendars you own), the narrowest pair Google offers, checked against Google's scope list on Sep 28. The API also refuses to start without the two Google values, like the lock's key.
+                                <details class="piece-fig"><summary>What pressing Connect does</summary><figure class="fig"><svg viewBox="0 0 680 360" role="img"><title>Piece 3: pressing Connect</title><desc>The dashboard posts to /calendar/connect. The route checks you are signed in, your plan includes booking, and your login has a person in this business; any failure is refused. It saves a one-time ticket for ten minutes, keeping only a fingerprint of the value and the PKCE secret, and answers with Google's consent address asking for your email, busy times and events on calendars you own. The browser goes to Google.</desc><defs><marker id="s32c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="40" y="20" width="180" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="130" y="40" text-anchor="middle" dominant-baseline="central">You press Connect</text><text class="ts" x="130" y="60" text-anchor="middle" dominant-baseline="central">the dashboard card</text></g><line x1="220" y1="48" x2="248" y2="48" class="arr" marker-end="url(#s32c)"/><g><rect x="250" y="20" width="180" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="40" text-anchor="middle" dominant-baseline="central">POST /calendar/connect</text><text class="ts" x="340" y="60" text-anchor="middle" dominant-baseline="central">the login cookie goes</text></g><line x1="340" y1="76" x2="340" y2="104" class="arr" marker-end="url(#s32c)"/><g><rect x="250" y="106" width="180" height="64" rx="8" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="th" x="340" y="126" text-anchor="middle" dominant-baseline="central">Three checks</text><text class="ts" x="340" y="146" text-anchor="middle" dominant-baseline="central">signed in, booking plan,</text><text class="ts" x="340" y="162" text-anchor="middle" dominant-baseline="central">your person here</text></g><line x1="430" y1="138" x2="458" y2="138" class="arr" style="stroke:var(--alert)" marker-end="url(#s32c)"/><g><rect x="460" y="106" width="180" height="64" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="550" y="126" text-anchor="middle" dominant-baseline="central">Refused, plainly</text><text class="ts" x="550" y="146" text-anchor="middle" dominant-baseline="central">401, 403, or "no person</text><text class="ts" x="550" y="162" text-anchor="middle" dominant-baseline="central">for your login here"</text></g><line x1="340" y1="170" x2="340" y2="198" class="arr" marker-end="url(#s32c)"/><g><rect x="250" y="200" width="180" height="64" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="220" text-anchor="middle" dominant-baseline="central">A one-time ticket</text><text class="ts" x="340" y="240" text-anchor="middle" dominant-baseline="central">10 minutes; a fingerprint</text><text class="ts" x="340" y="256" text-anchor="middle" dominant-baseline="central">and the PKCE secret</text></g><line x1="430" y1="232" x2="458" y2="232" class="arr" marker-end="url(#s32c)"/><g><rect x="460" y="200" width="180" height="64" rx="8" style="fill:var(--fig-purple-soft);stroke:var(--fig-purple)"/><text class="th" x="550" y="220" text-anchor="middle" dominant-baseline="central">Google's address</text><text class="ts" x="550" y="240" text-anchor="middle" dominant-baseline="central">email, busy times,</text><text class="ts" x="550" y="256" text-anchor="middle" dominant-baseline="central">events you own</text></g><line x1="550" y1="264" x2="550" y2="292" class="arr" marker-end="url(#s32c)"/><g><rect x="460" y="294" width="180" height="50" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="550" y="319" text-anchor="middle" dominant-baseline="central">Your browser goes there</text></g><text class="ts" x="40" y="232" dominant-baseline="central">Nothing is saved about</text><text class="ts" x="40" y="250" dominant-baseline="central">Google yet: that is the</text><text class="ts" x="40" y="268" dominant-baseline="central">callback, piece 4.</text></svg><figcaption>Drawn in chat when piece 3 was gone through.</figcaption></figure></details>
+                                <details class="piece-fig"><summary>The files it touches</summary><div class="ftree">
+<div class="ft-row ft-dir" style="--d:0"><span class="ft-name">backend/</span><span></span><span class="ft-what"></span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">app.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">Mounts <code>/calendar</code> with the dashboard's CORS and no-store.</span></div>
+<div class="ft-row ft-dir" style="--d:1"><span class="ft-name">routes/</span><span></span><span class="ft-what"></span></div>
+<div class="ft-row ft-file" style="--d:2"><span class="ft-name">calendar-routes.ts</span><span class="ft-tag" data-change="new">new</span><span class="ft-what">The calendar routes; <code>connect</code> first, the callback and the connection join it in pieces 4 and 5.</span></div>
+<div class="ft-row ft-dir" style="--d:1"><span class="ft-name">lib/calendar/</span><span class="ft-tag" data-change="new">new</span><span class="ft-what"></span></div>
+<div class="ft-row ft-file" style="--d:2"><span class="ft-name">google-oauth.ts</span><span class="ft-tag" data-change="new">new</span><span class="ft-what">The plain <code>fetch</code> talk with Google (piece 1): the consent address now, the swap and revoke in piece 4.</span></div>
+<div class="ft-row ft-file" style="--d:2"><span class="ft-name">find-signed-in-person.ts</span><span class="ft-tag" data-change="new">new</span><span class="ft-what">The person in the active business linked to the session's login, or none.</span></div>
+<div class="ft-row ft-file" style="--d:2"><span class="ft-name">create-oauth-ticket.ts</span><span class="ft-tag" data-change="new">new</span><span class="ft-what">The ten-minute ticket: value, fingerprint, PKCE secret; clears your expired ones.</span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">server.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">Refuses to start without <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code>.</span></div>
+</div></details></li>
+                                <li><b>4. <code>GET /calendar/callback</code></b> uses the ticket up in one statement (it must be unexpired and yours), swaps Google's code for tokens, checks both permissions or hands them back and saves nothing, and stores them locked. It always ends back on the dashboard with an outcome. <span class="piece-state" data-state="answered">agreed Sep 28</span> Five outcomes, and the dashboard address is fixed, never taken from the request: <b>connected</b>; <b>denied</b> (you pressed Cancel at Google); <b>expired</b> (no ticket, older than ten minutes, already used, someone else's, or signed out); <b>missing_permission</b> (a box unticked: the tokens are handed back); <b>failed</b> (Google did not answer, or sent no long-lived token: handed back too). Your Gmail is read from the sign-in token Google sends straight back to the API. A reconnect replaces your row. <b>Also, the reviewer's note from 3.1:</b> the lock is tied to its person, so a stored value copied onto someone else's row will not open; a small change to the lock and its tests.
+                                <details class="piece-fig"><summary>Coming back from Google</summary><figure class="fig"><svg viewBox="0 0 680 400" role="img"><title>Piece 4: coming back from Google</title><desc>Google sends the browser to /calendar/callback. Pressed Cancel: denied. The ticket is used up in one statement, and must be unexpired and yours, else expired. The code is swapped for tokens, else failed. Both permissions must be granted, else the tokens are handed back: missing_permission. Then the tokens are locked, tied to your person, and saved: connected. Every outcome ends on the dashboard.</desc><defs><marker id="s32d" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="200" y="16" width="220" height="48" rx="8" style="fill:var(--fig-purple-soft);stroke:var(--fig-purple)"/><text class="th" x="310" y="40" text-anchor="middle" dominant-baseline="central">Google sends you back</text></g><line x1="310" y1="64" x2="310" y2="84" class="arr" marker-end="url(#s32d)"/><g><rect x="200" y="86" width="220" height="44" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="310" y="108" text-anchor="middle" dominant-baseline="central">Pressed Cancel?</text></g><line x1="420" y1="108" x2="478" y2="108" class="arr" style="stroke:var(--alert)" marker-end="url(#s32d)"/><g><rect x="480" y="88" width="160" height="40" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="560" y="108" text-anchor="middle" dominant-baseline="central">denied</text></g><line x1="310" y1="130" x2="310" y2="150" class="arr" marker-end="url(#s32d)"/><g><rect x="200" y="152" width="220" height="44" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="310" y="174" text-anchor="middle" dominant-baseline="central">Ticket used up: yours, fresh?</text></g><line x1="420" y1="174" x2="478" y2="174" class="arr" style="stroke:var(--alert)" marker-end="url(#s32d)"/><g><rect x="480" y="154" width="160" height="40" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="560" y="174" text-anchor="middle" dominant-baseline="central">expired</text></g><line x1="310" y1="196" x2="310" y2="216" class="arr" marker-end="url(#s32d)"/><g><rect x="200" y="218" width="220" height="44" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="310" y="240" text-anchor="middle" dominant-baseline="central">Code swapped for tokens?</text></g><line x1="420" y1="240" x2="478" y2="240" class="arr" style="stroke:var(--alert)" marker-end="url(#s32d)"/><g><rect x="480" y="220" width="160" height="40" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="560" y="240" text-anchor="middle" dominant-baseline="central">failed</text></g><line x1="310" y1="262" x2="310" y2="282" class="arr" marker-end="url(#s32d)"/><g><rect x="200" y="284" width="220" height="44" rx="8" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="th" x="310" y="306" text-anchor="middle" dominant-baseline="central">Both permissions?</text></g><line x1="420" y1="306" x2="478" y2="306" class="arr" style="stroke:var(--alert)" marker-end="url(#s32d)"/><g><rect x="480" y="286" width="160" height="40" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="560" y="306" text-anchor="middle" dominant-baseline="central">missing_permission</text></g><line x1="310" y1="328" x2="310" y2="348" class="arr" marker-end="url(#s32d)"/><g><rect x="200" y="350" width="220" height="40" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="310" y="370" text-anchor="middle" dominant-baseline="central">Locked, saved: connected</text></g><text class="ts" x="40" y="240" dominant-baseline="central">handed back</text><text class="ts" x="40" y="258" dominant-baseline="central">to Google on</text><text class="ts" x="40" y="276" dominant-baseline="central">failed and</text><text class="ts" x="40" y="294" dominant-baseline="central">missing</text><text class="ts" x="560" y="370" text-anchor="middle" dominant-baseline="central">all five end on</text><text class="ts" x="560" y="388" text-anchor="middle" dominant-baseline="central">the dashboard</text></svg><figcaption>Drawn in chat when piece 4 was gone through.</figcaption></figure></details>
+                                <details class="piece-fig"><summary>The files it touches</summary><div class="ftree">
+<div class="ft-row ft-dir" style="--d:0"><span class="ft-name">backend/</span><span></span><span class="ft-what"></span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">routes/calendar-routes.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">The callback, beside connect.</span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">lib/calendar/google-oauth.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">Swapping the code, reading your Gmail from the sign-in token, handing tokens back.</span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">lib/calendar/use-oauth-ticket.ts</span><span class="ft-tag" data-change="new">new</span><span class="ft-what">Uses the ticket up in one statement: yours and fresh, or nothing.</span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">lib/calendar/save-calendar-connection.ts</span><span class="ft-tag" data-change="new">new</span><span class="ft-what">Locks the tokens and writes your row; a reconnect replaces it.</span></div>
+<div class="ft-row ft-dir" style="--d:0"><span class="ft-name">packages/shared/crypto/</span><span></span><span class="ft-what"></span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">token-cipher.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">The lock takes the person it belongs to; another person's row cannot open it.</span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">token-cipher.test.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">A test that a value moved to another person is refused.</span></div>
+</div></details></li>
+                                <li><b>5. <code>GET /calendar/connection</code></b> gives the dashboard your person and your connection, never the tokens. <span class="piece-state" data-state="answered">agreed Sep 28</span> Behind the same rules as connect. It answers your person's name, and your connection if there is one: which calendar (Google), its Gmail, connected or needs reconnecting, and when it was last read. Never the tokens and never the permission list: a saved test checks the answer holds neither. A login with no person gets <code>person: null</code> rather than an error, so the card can say why there is no Connect. Called through the typed client, like <code>/me</code>.
+                                <details class="piece-fig"><summary>What the card is told</summary><figure class="fig"><svg viewBox="0 0 680 280" role="img"><title>Piece 5: what the card is told</title><desc>The card asks /calendar/connection. The answer has your person's name, and if connected: provider Google, your Gmail, status and when it was last read. The locked tokens and the permission list never leave the backend.</desc><defs><marker id="s32e" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" style="stroke:context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g><rect x="40" y="30" width="170" height="56" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="125" y="50" text-anchor="middle" dominant-baseline="central">The card asks</text><text class="ts" x="125" y="70" text-anchor="middle" dominant-baseline="central">typed client</text></g><line x1="210" y1="58" x2="248" y2="58" class="arr" marker-end="url(#s32e)"/><g><rect x="250" y="30" width="180" height="56" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="340" y="50" text-anchor="middle" dominant-baseline="central">/calendar/connection</text><text class="ts" x="340" y="70" text-anchor="middle" dominant-baseline="central">same rules as connect</text></g><line x1="430" y1="58" x2="458" y2="58" class="arr" marker-end="url(#s32e)"/><g><rect x="460" y="20" width="180" height="140" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="550" y="42" text-anchor="middle" dominant-baseline="central">The answer</text><text class="ts" x="476" y="70" dominant-baseline="central">your person's name</text><text class="ts" x="476" y="92" dominant-baseline="central">Google, your Gmail</text><text class="ts" x="476" y="114" dominant-baseline="central">connected / reconnect</text><text class="ts" x="476" y="136" dominant-baseline="central">last read</text></g><g><rect x="250" y="130" width="180" height="56" rx="8" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="th" x="340" y="150" text-anchor="middle" dominant-baseline="central">Never sent</text><text class="ts" x="340" y="170" text-anchor="middle" dominant-baseline="central">tokens, permission list</text></g><text class="ts" x="340" y="226" text-anchor="middle" dominant-baseline="central">No person for your login: person is null, and the card says why.</text><text class="ts" x="340" y="248" text-anchor="middle" dominant-baseline="central">No connection yet: connection is null, and the card shows Connect.</text></svg><figcaption>Drawn in chat when piece 5 was gone through.</figcaption></figure></details></li>
+                                <li><b>6. The dashboard card</b>, in the settings mockup's shape: Connect, the outcome after Google sends you back, and "Google Calendar &middot; your Gmail" once connected. <span class="piece-state" data-state="answered">agreed Sep 28</span> On the dashboard home, under the booking links, until Settings arrives in feature 12. Connect asks piece 3 for Google's address and sends the browser there. Back from Google, the card reads the outcome from the address, says it in plain words, and clears it from the address bar so a refresh does not repeat it. Connected, it shows "Google Calendar &middot; your Gmail". A login with no person gets a line saying why, and no button. While it asks, one "Loading" line; Disconnect, needs reconnecting and the API-down state are step 3.4.
+                                <details class="piece-fig"><summary>The card, and what each outcome says</summary><figure class="fig"><svg viewBox="0 0 680 420" role="img"><title>Piece 6: the calendar card</title><desc>Not connected: a line and a Connect button. Connected: Google Calendar and your Gmail. After coming back from Google, a notice above the card says the outcome in plain words: connected, cancelled, took too long, both boxes needed, or Google did not answer.</desc><g><rect x="40" y="20" width="290" height="110" rx="8" style="fill:var(--surface);stroke:var(--rule)"/><text class="ts" x="56" y="40" dominant-baseline="central" style="fill:var(--ink-3)">not connected</text><text class="th" x="56" y="64" dominant-baseline="central">Calendar</text><text class="ts" x="56" y="88" dominant-baseline="central">Not connected. Your busy times</text><text class="ts" x="56" y="106" dominant-baseline="central">are not read yet.</text><rect x="236" y="76" width="80" height="28" rx="6" style="fill:var(--accent);stroke:var(--accent)"/><text class="ts" x="276" y="90" text-anchor="middle" dominant-baseline="central" style="fill:var(--surface)">Connect</text></g><g><rect x="350" y="20" width="290" height="110" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="ts" x="366" y="40" dominant-baseline="central" style="fill:var(--ink-3)">connected</text><text class="th" x="366" y="64" dominant-baseline="central">Calendar</text><text class="ts" x="366" y="88" dominant-baseline="central">Google Calendar &#183; your Gmail</text><text class="ts" x="366" y="106" dominant-baseline="central">Connected.</text></g><text class="th" x="40" y="166" dominant-baseline="central">Back from Google: the notice above the card</text><g><rect x="40" y="182" width="600" height="34" rx="6" style="fill:var(--done-soft);stroke:var(--done)"/><text class="ts" x="56" y="199" dominant-baseline="central">connected: Your Google calendar is connected.</text></g><g><rect x="40" y="224" width="600" height="34" rx="6" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="ts" x="56" y="241" dominant-baseline="central">denied: You cancelled at Google. Nothing was connected.</text></g><g><rect x="40" y="266" width="600" height="34" rx="6" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="ts" x="56" y="283" dominant-baseline="central">expired: That took too long, or the link was already used. Press Connect again.</text></g><g><rect x="40" y="308" width="600" height="34" rx="6" style="fill:var(--pending-soft);stroke:var(--pending)"/><text class="ts" x="56" y="325" dominant-baseline="central">missing_permission: Leave both boxes ticked at Google: busy times and adding bookings.</text></g><g><rect x="40" y="350" width="600" height="34" rx="6" style="fill:var(--alert-soft);stroke:var(--alert)"/><text class="ts" x="56" y="367" dominant-baseline="central">failed: Google did not answer properly. Nothing was saved. Try again in a minute.</text></g><text class="ts" x="340" y="404" text-anchor="middle" dominant-baseline="central">The notice goes from the address bar at once, so a refresh does not show it again.</text></svg><figcaption>Drawn in chat when piece 6 was gone through. Words are a first draft; the settings mockup's lines are the model.</figcaption></figure></details>
+                                <details class="piece-fig"><summary>The files it touches</summary><div class="ftree">
+<div class="ft-row ft-dir" style="--d:0"><span class="ft-name">frontend/</span><span></span><span class="ft-what"></span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">components/calendar/calendar-connection-card.tsx</span><span class="ft-tag" data-change="new">new</span><span class="ft-what">The card: Connect, the outcome notice, connected.</span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">lib/api-client.ts</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">Asking for the connection and starting a connect, through the dashboard client.</span></div>
+<div class="ft-row ft-file" style="--d:1"><span class="ft-name">app/page.tsx</span><span class="ft-tag" data-change="changed">changed</span><span class="ft-what">Shows the card under the booking links.</span></div>
+</div></details></li>
                               </ul>
                             </div>
                             <div class="plan-part" data-part="proof">
-                              <div class="plan-part-head"><span class="plan-part-title">Part 2 &middot; Done when</span><span class="plan-part-state">first draft</span></div>
+                              <div class="plan-part-head"><span class="plan-part-title">Part 2 &middot; Done when</span><span class="plan-part-state">agreed Sep 28 &middot; passed, see How it was proved</span></div>
                               <ul class="substeps">
-                                <li><b>Saved tests</b>, with Google's side faked: no session is 401; a plan without booking is 403; a login with no person is refused plainly; an unknown, expired, reused or someone else's ticket ends in "expired" and saves nothing; a consent missing either permission hands the tokens back and saves nothing; a full consent saves one row whose stored value does not contain the token in plain text.</li>
-                                <li><b>By hand:</b> signed in as <code>admin@example.com</code>, you connect your real Google and the card shows your Gmail.</li>
+                              <details class="piece-fig"><summary>How it is proved: saved tests with Google faked, then your real Google by hand</summary><figure class="fig"><svg viewBox="0 0 680 380" role="img"><title>How step 3.2 is proved</title><desc>Saved tests call the real app against the local database with Google faked: connect's refusals and its address; every callback outcome and that nothing is saved on a failure; the connection answer without tokens; the lock refusing a value moved to another person. Planted faults prove the tests can fail. By hand, you connect your real Google, press Cancel once, and the API refuses to start without the Google values. Then every test, both builds, lint and format.</desc><g><rect x="20" y="20" width="400" height="300" rx="8" style="fill:var(--fig-teal-soft);stroke:var(--fig-teal)"/><text class="th" x="220" y="44" text-anchor="middle" dominant-baseline="central">Saved tests, Google faked</text><text class="ts" x="220" y="66" text-anchor="middle" dominant-baseline="central">the real app, the local database</text><text class="ts" x="40" y="98" dominant-baseline="central">1. connect: 401, 403, no person; the right address</text><text class="ts" x="40" y="122" dominant-baseline="central">2. the ticket: a fingerprint, 10 minutes, old ones cleared</text><text class="ts" x="40" y="146" dominant-baseline="central">3. callback: denied, expired (4 ways), failed</text><text class="ts" x="40" y="170" dominant-baseline="central">4. missing permission: handed back, nothing saved</text><text class="ts" x="40" y="194" dominant-baseline="central">5. connected: one row, tokens unreadable, your Gmail</text><text class="ts" x="40" y="218" dominant-baseline="central">6. reconnect: still one row; always the fixed address</text><text class="ts" x="40" y="242" dominant-baseline="central">7. connection: no tokens, no permission list</text><text class="ts" x="40" y="266" dominant-baseline="central">8. the lock: a value on another person's row refused</text><text class="ts" x="40" y="296" dominant-baseline="central">faults planted: each caught by the right test</text></g><g><rect x="440" y="20" width="220" height="196" rx="8" style="fill:var(--surface-2);stroke:color-mix(in srgb, var(--ink-3) 45%, var(--surface))"/><text class="th" x="550" y="44" text-anchor="middle" dominant-baseline="central">By hand, you</text><text class="ts" x="456" y="78" dominant-baseline="central">Connect your real Google:</text><text class="ts" x="456" y="98" dominant-baseline="central">the card shows your Gmail</text><text class="ts" x="456" y="130" dominant-baseline="central">Cancel once: "You</text><text class="ts" x="456" y="150" dominant-baseline="central">cancelled at Google"</text><text class="ts" x="456" y="182" dominant-baseline="central">no Google values: the</text><text class="ts" x="456" y="202" dominant-baseline="central">API will not start</text></g><g><rect x="440" y="232" width="220" height="88" rx="8" style="fill:var(--done-soft);stroke:var(--done)"/><text class="th" x="550" y="258" text-anchor="middle" dominant-baseline="central">Rerun everything</text><text class="ts" x="550" y="282" text-anchor="middle" dominant-baseline="central">tests, both builds,</text><text class="ts" x="550" y="302" text-anchor="middle" dominant-baseline="central">lint, format</text></g><text class="ts" x="340" y="350" text-anchor="middle" dominant-baseline="central">Only the by-hand connect talks to the real Google; the saved tests never do.</text></svg><figcaption>Drawn in chat when Part 2 was gone through.</figcaption></figure></details>
+                              <ul class="substeps">
+                                <li><b>Saved tests</b>, calling the real app against the local seeded database, with Google's side faked so they never reach Google. <b>Connect:</b> no session is 401; a plan without booking is 403; a login with no person is refused plainly; otherwise the answer is Google's address with our client, the exact return address, both calendar permissions, the PKCE check and a ticket.</li>
+                                <li><b>Saved tests, the ticket:</b> the database keeps a fingerprint, never the value sent to Google; it runs out after ten minutes; making one clears your expired ones.</li>
+                                <li><b>Saved tests, the callback:</b> Cancel at Google ends in "denied"; an unknown, expired, reused or someone else's ticket, or no session, ends in "expired"; Google not swapping the code ends in "failed"; each saves nothing. A missing permission, or no long-lived token, hands the tokens back to Google and saves nothing. A full consent saves one row whose stored value holds no token in plain text, with your Gmail from Google's sign-in token; a reconnect still leaves one row; every outcome goes to the fixed dashboard address.</li>
+                                <li><b>Saved tests, the connection:</b> no connection gives <code>connection: null</code>; a connection is answered without the tokens or the permission list; a login with no person gives <code>person: null</code>.</li>
+                                <li><b>Saved test, the lock:</b> a value locked for one person does not open for another.</li>
+                                <li><b>Proved they can fail:</b> faults planted one at a time: the ticket not used up (the reuse test fails), the permission check removed (the missing-permission test fails), the lock not tied to its person (the moved-value test fails).</li>
+                                <li><b>By hand, you:</b> signed in as <code>admin@example.com</code>, you connect your real Google and the card shows your Gmail; you press Cancel once and see "You cancelled at Google". The API refuses to start without the two Google values.</li>
+                                <li>All saved tests, both builds, the frontend lint and the format check pass.</li>
                               </ul>
+                            </div>
+                          </div>
+                        </details>
+                        <details class="drawer" data-kind="reality">
+                          <summary>What actually happened <span class="tag-drift">5 kept, 1 changed, 1 added &middot; review next</span></summary>
+                          <div class="drawer-body">
+                            <p class="drawer-what">Every planned piece went in, numbered as in the plan, with the code each one touched under it. One changed: the Google talk became one object, <code>googleOAuthClient</code>, because the code standard wants one export per file. The saved tests Part 2 asked for are piece 7.</p>
+                            <div class="verdict">
+                              <span class="v-kept">5 as planned</span>
+                              <span class="v-changed">1 changed</span>
+                              <span class="v-added">1 added</span>
+                            </div>
+                            <ul class="substeps">
+                              <li data-outcome="changed"><b>1.</b> Plain <code>fetch</code>, no package: the consent address, the code swap, reading your Gmail from Google's sign-in token, and handing tokens back, each with a ten-second limit so a Google that hangs ends in "failed"
+                                <em class="why">Changed: planned as <code>google-oauth.ts</code> with several functions; built as <code>google-oauth-client.ts</code>, one exported object, to follow the one-export-per-file rule. The same calls in one place, which is also the shape the 3.3 Google plug needs.</em>
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/lib/calendar/google-oauth-client.ts</code> <span class="tag-drift">new &middot; 142 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: the conversation with Google's sign-in service, in plain fetch: the consent
+// address, swapping the code for tokens, and handing tokens back. No Google package: its
+// main job, holding tokens in memory and refreshing them, does not fit tokens stored
+// locked per person.
+
+import { apiOrigin } from "../auth/auth-server.js";
+
+const CONSENT_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+const TOKEN_URL = "https://oauth2.googleapis.com/token";
+const REVOKE_URL = "https://oauth2.googleapis.com/revoke";
+const TIMEOUT_MS = 10_000; // a Google that hangs ends in "failed", not a spinning dashboard
+
+// Both are required for a connection to count. freebusy reads busy times; events.owned
+// adds bookings to calendars the person owns (feature 5). The narrowest pair Google offers.
+const CALENDAR_SCOPES = [
+  "https://www.googleapis.com/auth/calendar.events.freebusy",
+  "https://www.googleapis.com/auth/calendar.events.owned",
+];
+
+export type GoogleTokensType = {
+  accessToken: string;
+  accessTokenExpiresAt: Date;
+  refreshToken: string | null; // null when Google sent none: the caller treats that as failed
+  grantedScopes: string[];
+  idToken: string | null;
+};
+
+export type GoogleIdentityType = { email: string };
+
+function settings() {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must both be set. They come from the OAuth " +
+        "client in Google Cloud (Google Auth Platform, Clients); see .env.example."
+    );
+  }
+  return { clientId, clientSecret, redirectUri: `${apiOrigin}/calendar/callback` };
+}
+
+export const googleOAuthClient = {
+  // server.ts calls this at start, so a missing value stops the API, not someone's Connect.
+  assertConfigured(): void {
+    settings();
+  },
+
+  consentUrl({ state, codeChallenge }: { state: string; codeChallenge: string }): string {
+    const { clientId, redirectUri } = settings();
+    const url = new URL(CONSENT_URL);
+    url.search = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope: ["openid", "email", ...CALENDAR_SCOPES].join(" "),
+      access_type: "offline", // a long-lived refresh token, so busy times can be read later
+      prompt: "consent", // asks every time, so Google sends a refresh token every time
+      state,
+      code_challenge: codeChallenge,
+      code_challenge_method: "S256",
+    }).toString();
+    return url.toString();
+  },
+
+  hasBothCalendarScopes(grantedScopes: string[]): boolean {
+    return CALENDAR_SCOPES.every((scope) =&gt; grantedScopes.includes(scope));
+  },
+
+  // Throws on any answer but a usable token set; the callback turns that into "failed".
+  async exchangeCode({
+    code,
+    codeVerifier,
+  }: {
+    code: string;
+    codeVerifier: string;
+  }): Promise&lt;GoogleTokensType&gt; {
+    const { clientId, clientSecret, redirectUri } = settings();
+    const response = await fetch(TOKEN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        code_verifier: codeVerifier,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!response.ok) throw new Error(`Google refused the code swap (${response.status}).`);
+
+    const body = (await response.json()) as Record&lt;string, unknown&gt;;
+    if (typeof body.access_token !== "string" || typeof body.expires_in !== "number") {
+      throw new Error("Google's token answer had no access token.");
+    }
+
+    return {
+      accessToken: body.access_token,
+      accessTokenExpiresAt: new Date(Date.now() + body.expires_in * 1000),
+      refreshToken: typeof body.refresh_token === "string" ? body.refresh_token : null,
+      grantedScopes: typeof body.scope === "string" ? body.scope.split(" ") : [],
+      idToken: typeof body.id_token === "string" ? body.id_token : null,
+    };
+  },
+
+  // The Gmail from the sign-in token. It came straight from Google's token endpoint over
+  // HTTPS, so its signature needs no check (OpenID Connect Core 1.0, 3.1.3.7); the audience
+  // and issuer still must be ours and Google's, and the address must be verified.
+  readIdentity(idToken: string | null): GoogleIdentityType | null {
+    const payloadPart = idToken?.split(".")[1];
+    if (!payloadPart) return null;
+
+    try {
+      const claims = JSON.parse(Buffer.from(payloadPart, "base64url").toString("utf8"));
+      const fromGoogle = ["accounts.google.com", "https://accounts.google.com"].includes(
+        claims.iss
+      );
+      const forUs = claims.aud === settings().clientId;
+      if (!fromGoogle || !forUs || claims.email_verified !== true) return null;
+      return typeof claims.email === "string" ? { email: claims.email } : null;
+    } catch {
+      return null; // not a readable token
+    }
+  },
+
+  // Hands a token back so Google forgets the permission. Best effort: returns whether Google
+  // confirmed, never throws, because it only runs on the way out of a failed connect.
+  async revoke(token: string): Promise&lt;boolean&gt; {
+    try {
+      const response = await fetch(REVOKE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ token }),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  },
+};</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>2.</b> Your Google Cloud client: your earlier client reused with a new secret, both values in <code>.env</code>. <code>.env.example</code> now says where each comes from and that the API will not start without them
+                                <details class="piece-fig piece-code"><summary>The code &middot; 1 file</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>.env.example</code> <span class="tag-drift">changed &middot; +7 &minus;5</span></summary><div class="codefile-body">
+<div class="code-label">Before &middot; line 6</div><pre class="code" data-lang="typescript" data-start="6" data-mark="9,10" data-kind="removed"><code># by Next, which only loads env files from inside frontend/. See its note.
+#
+# Every variable listed here is either read by code that exists today or says
+# which build-plan item claims it. Three are the second kind, RESEND_API_KEY
+# and the two GOOGLE_* names, and each says so at its own entry. A variable in an example
+# file that nothing reads and nothing claims teaches the next person to
+# configure something that does nothing, so the scaffolder's ImageKit, S3 and
+# volume blocks were removed at build-plan step 1.6 rather than left empty.</code></pre>
+<div class="code-label">After &middot; line 6</div><pre class="code" data-lang="typescript" data-start="6" data-mark="9,10" data-kind="added"><code># by Next, which only loads env files from inside frontend/. See its note.
+#
+# Every variable listed here is either read by code that exists today or says
+# which build-plan item claims it. One is the second kind, RESEND_API_KEY,
+# and it says so at its own entry. A variable in an example
+# file that nothing reads and nothing claims teaches the next person to
+# configure something that does nothing, so the scaffolder's ImageKit, S3 and
+# volume blocks were removed at build-plan step 1.6 rather than left empty.</code></pre>
+<div class="code-label">Before &middot; line 76</div><pre class="code" data-lang="typescript" data-start="76" data-mark="79,80,81" data-kind="removed"><code># unreadable and everyone connects again, so keep it with the other secrets.
+CALENDAR_TOKEN_KEY=
+
+# Google's OAuth client for connecting a calendar. Claimed by build-plan item 3,
+# step 3.2, which walks through making it in Google Cloud (Testing mode, the
+# redirect http://localhost:3001/calendar/callback); nothing reads them yet.
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=</code></pre>
+<div class="code-label">After &middot; line 76</div><pre class="code" data-lang="typescript" data-start="76" data-mark="79,80,81,82,83" data-kind="added"><code># unreadable and everyone connects again, so keep it with the other secrets.
+CALENDAR_TOKEN_KEY=
+
+# Google's OAuth client for connecting a calendar, from Google Cloud: Google Auth
+# Platform, Clients, a "Web application" client in Testing mode, your Gmail as a
+# test user, and the redirect http://localhost:3001/calendar/callback. Google
+# shows the secret once; a lost one is replaced with "Add secret". The API
+# refuses to start without both.
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>3.</b> <code>POST /calendar/connect</code>: sign-in, a real plan and booking; your person or a plain 409 <code>no_person</code>; a ten-minute ticket keeping only a fingerprint and the PKCE secret, your expired ones cleared; Google's address with the two narrowest calendar permissions. The API refuses to start without the Google values
+                                <details class="piece-fig piece-code"><summary>The code &middot; 8 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/routes/calendar-routes.ts</code> <span class="tag-drift">new &middot; 92 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: connecting a person's own calendar. The business and the person always come from
+// the session, never from the request. Google is the only calendar today.
+
+import { and, eq } from "drizzle-orm";
+import { Hono } from "hono";
+
+import { calendarConnection } from "@scheduleads-app/shared/db";
+
+import { db } from "../database.js";
+import { appOrigin, auth } from "../lib/auth/auth-server.js";
+import { createOauthTicket } from "../lib/calendar/create-oauth-ticket.js";
+import { findSignedInPerson } from "../lib/calendar/find-signed-in-person.js";
+import {
+  finishGoogleConnect,
+  type ConnectOutcomeType,
+} from "../lib/calendar/finish-google-connect.js";
+import { googleOAuthClient } from "../lib/calendar/google-oauth-client.js";
+import { refuse } from "../lib/errors/refuse.js";
+import { requireOrganizationMiddleware } from "../middleware/auth-middleware/require-organization-middleware.js";
+import { requireKnownSubscriptionMiddleware } from "../middleware/subscription-middleware/require-known-subscription-middleware.js";
+import { requireModuleMiddleware } from "../middleware/subscription-middleware/require-module-middleware.js";
+
+const noPersonMessage = "Your login is not linked to anyone on this business's calendar.";
+
+export const calendarRoutes = new Hono()
+  // Your person and your connection, for the dashboard card. Never the tokens.
+  .get(
+    "/connection",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    async (c) =&gt; {
+      const activeOrganization = c.get("organization");
+      const person = await findSignedInPerson(activeOrganization.organizationId, c.get("user").id);
+      if (!person) return c.json({ person: null, connection: null }, 200);
+
+      const [connection] = await db
+        .select({
+          provider: calendarConnection.provider,
+          accountEmail: calendarConnection.accountEmail,
+          status: calendarConnection.status,
+          lastCheckedAt: calendarConnection.lastCheckedAt,
+        })
+        .from(calendarConnection)
+        .where(
+          and(
+            eq(calendarConnection.organizationId, activeOrganization.organizationId),
+            eq(calendarConnection.resourceId, person.id)
+          )
+        )
+        .limit(1);
+
+      return c.json({ person, connection: connection ?? null }, 200);
+    }
+  )
+
+  // Pressing Connect: a ten-minute ticket, and Google's consent address to send the browser to.
+  .post(
+    "/connect",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    async (c) =&gt; {
+      const activeOrganization = c.get("organization");
+      const userId = c.get("user").id;
+      const person = await findSignedInPerson(activeOrganization.organizationId, userId);
+      if (!person) return c.json(refuse("no_person", noPersonMessage), 409);
+
+      const ticket = await createOauthTicket({
+        userId,
+        organizationId: activeOrganization.organizationId,
+        resourceId: person.id,
+      });
+
+      return c.json({ url: googleOAuthClient.consentUrl(ticket) }, 200);
+    }
+  )
+
+  // Google sends the browser back here. Always ends on the dashboard with one outcome; the
+  // address is fixed, never taken from the request, so this can't redirect anywhere else.
+  .get("/callback", async (c) =&gt; {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+
+    const outcome: ConnectOutcomeType = await finishGoogleConnect({
+      userId: session?.user.id ?? null,
+      state: c.req.query("state"),
+      code: c.req.query("code"),
+      error: c.req.query("error"),
+    }).catch(() =&gt; "failed" as const);
+
+    return c.redirect(`${appOrigin}/?calendar=${outcome}`, 302);
+  });</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/lib/calendar/find-signed-in-person.ts</code> <span class="tag-drift">new &middot; 29 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: "you" on the calendar. The person in the active business linked to the
+// session's login, or null when the login has no person there.
+
+import { and, eq } from "drizzle-orm";
+
+import { resource } from "@scheduleads-app/shared/db";
+
+import { db } from "../../database.js";
+
+export type SignedInPersonType = { id: string; name: string };
+
+export async function findSignedInPerson(
+  organizationId: string, // from the session, never from the request
+  userId: string
+): Promise&lt;SignedInPersonType | null&gt; {
+  const [person] = await db
+    .select({ id: resource.id, name: resource.name })
+    .from(resource)
+    .where(
+      and(
+        eq(resource.organizationId, organizationId),
+        eq(resource.userId, userId),
+        eq(resource.kind, "person")
+      )
+    )
+    .limit(1); // the database allows one login at most one person per business
+
+  return person ?? null;
+}</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/lib/calendar/create-oauth-ticket.ts</code> <span class="tag-drift">new &middot; 48 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: the one-time ticket for a trip to Google and back. The state value only ever
+// travels in Google's address; the database keeps its SHA-256, so a copy of the table
+// cannot finish anyone's connect. Lives ten minutes, used up once (use-oauth-ticket.ts).
+
+import { createHash, randomBytes } from "node:crypto";
+
+import { and, eq, lt } from "drizzle-orm";
+
+import { calendarOauthState } from "@scheduleads-app/shared/db";
+
+import { db } from "../../database.js";
+import { oauthStateFingerprint } from "./oauth-state-fingerprint.js";
+
+const TICKET_MINUTES = 10;
+
+export type OauthTicketType = { state: string; codeChallenge: string };
+
+export async function createOauthTicket({
+  userId,
+  organizationId,
+  resourceId,
+}: {
+  userId: string;
+  organizationId: string;
+  resourceId: string;
+}): Promise&lt;OauthTicketType&gt; {
+  const state = randomBytes(32).toString("base64url");
+  const codeVerifier = randomBytes(32).toString("base64url"); // PKCE: 43 characters, as the spec asks
+  const codeChallenge = createHash("sha256").update(codeVerifier).digest("base64url");
+
+  // Your expired tickets go, so the table never grows with abandoned trips to Google.
+  await db
+    .delete(calendarOauthState)
+    .where(
+      and(eq(calendarOauthState.userId, userId), lt(calendarOauthState.expiresAt, new Date()))
+    );
+
+  await db.insert(calendarOauthState).values({
+    id: oauthStateFingerprint(state),
+    userId,
+    organizationId,
+    resourceId,
+    codeVerifier,
+    expiresAt: new Date(Date.now() + TICKET_MINUTES * 60_000),
+  });
+
+  return { state, codeChallenge };
+}</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/lib/calendar/oauth-state-fingerprint.ts</code> <span class="tag-drift">new &middot; 6 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: what the ticket table keeps instead of the state value itself (SHA-256, hex).
+
+import { createHash } from "node:crypto";
+
+export const oauthStateFingerprint = (state: string) =&gt;
+  createHash("sha256").update(state).digest("hex");</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/app.ts</code> <span class="tag-drift">changed &middot; +3 &minus;0</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 9</div><pre class="code" data-lang="typescript" data-start="9" data-mark="12,19" data-kind="added"><code>import { dashboardNoStoreMiddleware } from "./middleware/dashboard-middleware/dashboard-no-store-middleware.js";
+import { publicCorsMiddleware } from "./middleware/public-middleware/public-cors-middleware.js";
+import { requireKnownSubscriptionMiddleware } from "./middleware/subscription-middleware/require-known-subscription-middleware.js";
+import { calendarRoutes } from "./routes/calendar-routes.js";
+import { publicBookingLinksRoutes } from "./routes/public-booking-links-routes.js";
+
+export const app = new Hono()
+  // Every dashboard route mounts both.
+  .use("/api/auth/*", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
+  .use("/me", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
+  .use("/calendar/*", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
+  // Anyone may read these, never with the login cookie: a CORS rule of their own.
+  .use("/public/*", publicCorsMiddleware)
+</code></pre>
+<div class="code-label">Added &middot; line 45</div><pre class="code" data-lang="typescript" data-start="45" data-mark="48" data-kind="added"><code>    });
+  })
+
+  .route("/calendar", calendarRoutes)
+  .route("/public", publicBookingLinksRoutes)
+
+  // For Railway. No database on purpose: an outage there should not restart a healthy API.</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/server.ts</code> <span class="tag-drift">changed &middot; +4 &minus;1</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 7</div><pre class="code" data-lang="typescript" data-start="7" data-mark="10" data-kind="added"><code>
+import { app } from "./app.js";
+import { appOrigin } from "./lib/auth/auth-server.js";
+import { googleOAuthClient } from "./lib/calendar/google-oauth-client.js";
+
+const port = Number(process.env.PORT ?? 3001); // 3000 is the frontend's
+</code></pre>
+<div class="code-label">Before &middot; line 14</div><pre class="code" data-lang="typescript" data-start="14" data-mark="17" data-kind="removed"><code>  throw new Error(`PORT must be a valid port number, received: ${process.env.PORT}`);
+}
+
+readTokenKey(); // a missing or wrong calendar key stops the API here, not at someone's first Connect
+
+serve({ fetch: app.fetch, port }, (info) =&gt; {
+  console.log(`[api] listening on http://localhost:${info.port}`);</code></pre>
+<div class="code-label">After &middot; line 15</div><pre class="code" data-lang="typescript" data-start="15" data-mark="18,19,20" data-kind="added"><code>  throw new Error(`PORT must be a valid port number, received: ${process.env.PORT}`);
+}
+
+// A missing or wrong calendar setting stops the API here, not at someone's first Connect.
+readTokenKey();
+googleOAuthClient.assertConfigured();
+
+serve({ fetch: app.fetch, port }, (info) =&gt; {
+  console.log(`[api] listening on http://localhost:${info.port}`);</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/lib/auth/auth-server.ts</code> <span class="tag-drift">changed &middot; +5 &minus;1</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 42</div><pre class="code" data-lang="typescript" data-start="42" data-mark="45,46,47,48" data-kind="added"><code>// CORS middleware reads the same value.
+export const appOrigin = settingWithDevDefault("APP_ORIGIN", "http://localhost:3000");
+
+// The API's own address. Better Auth builds its URLs from it, and so does the calendar's
+// return address from Google.
+export const apiOrigin = settingWithDevDefault("BETTER_AUTH_URL", "http://localhost:3001");
+
+// Every action a business role can be granted. Written out instead of importing Better
+// Auth's defaultStatements, which adds `team` and `ac` rows we don't use.
+const customStatements = {</code></pre>
+<div class="code-label">Before &middot; line 74</div><pre class="code" data-lang="typescript" data-start="74" data-mark="77" data-kind="removed"><code>
+export const auth = betterAuth({
+  secret: process.env.BETTER_AUTH_SECRET,
+  baseURL: settingWithDevDefault("BETTER_AUTH_URL", "http://localhost:3001"), // the API's, not the dashboard's
+  basePath: "/api/auth",
+
+  // Schema passed explicitly, so a missing table fails at boot, not at the first query.</code></pre>
+<div class="code-label">After &middot; line 78</div><pre class="code" data-lang="typescript" data-start="78" data-mark="81" data-kind="added"><code>
+export const auth = betterAuth({
+  secret: process.env.BETTER_AUTH_SECRET,
+  baseURL: apiOrigin, // the API's, not the dashboard's
+  basePath: "/api/auth",
+
+  // Schema passed explicitly, so a missing table fails at boot, not at the first query.</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/lib/errors/refuse.ts</code> <span class="tag-drift">changed &middot; +2 &minus;1</span></summary><div class="codefile-body">
+<div class="code-label">Before &middot; line 7</div><pre class="code" data-lang="typescript" data-start="7" data-mark="10" data-kind="removed"><code>  | "plan_unrecognised" // the tier is not in the config: a misconfiguration
+  | "plan_required" // a real tier that does not include this module
+  | "not_found" // public routes: one answer for every "not here", so none can be told apart
+  | "bad_request"; // a malformed value in the request, such as a slug or an id
+
+export type RefusalType = {
+  error: {</code></pre>
+<div class="code-label">After &middot; line 7</div><pre class="code" data-lang="typescript" data-start="7" data-mark="10,11" data-kind="added"><code>  | "plan_unrecognised" // the tier is not in the config: a misconfiguration
+  | "plan_required" // a real tier that does not include this module
+  | "not_found" // public routes: one answer for every "not here", so none can be told apart
+  | "bad_request" // a malformed value in the request, such as a slug or an id
+  | "no_person"; // signed in, but no person in this business is linked to the login
+
+export type RefusalType = {
+  error: {</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>4.</b> <code>GET /calendar/callback</code>: the ticket used up in one statement, your person checked again, the code swapped, both permissions and a long-lived token required or the tokens handed back, then locked, tied to your person, and saved; five outcomes, always to the fixed dashboard address. The lock now takes the person it belongs to
+                                <details class="piece-fig piece-code"><summary>The code &middot; 4 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/lib/calendar/finish-google-connect.ts</code> <span class="tag-drift">new &middot; 89 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: everything that happens when Google sends the browser back, reduced to one of
+// five outcomes the dashboard shows in plain words. Nothing is saved unless every check
+// passes; tokens Google already issued are handed back before giving up.
+
+import { and, eq } from "drizzle-orm";
+
+import { resource } from "@scheduleads-app/shared/db";
+
+import { db } from "../../database.js";
+import { googleOAuthClient } from "./google-oauth-client.js";
+import { saveCalendarConnection } from "./save-calendar-connection.js";
+import { useOauthTicket } from "./use-oauth-ticket.js";
+
+export type ConnectOutcomeType =
+  | "connected"
+  | "denied" // pressed Cancel at Google
+  | "expired" // no ticket, stale, used, someone else's, or signed out
+  | "missing_permission" // a permission box unticked
+  | "failed"; // Google did not answer usefully
+
+export async function finishGoogleConnect({
+  userId,
+  state,
+  code,
+  error,
+}: {
+  userId: string | null; // null when the browser came back signed out
+  state: string | undefined;
+  code: string | undefined;
+  error: string | undefined;
+}): Promise&lt;ConnectOutcomeType&gt; {
+  // Used up first, whatever else Google said, so a ticket never outlives its trip.
+  const ticket = userId &amp;&amp; state ? await useOauthTicket(state, userId) : null;
+
+  if (error) return error === "access_denied" ? "denied" : "failed";
+  if (!ticket || !userId) return "expired";
+  if (!code) return "failed";
+
+  // The person may have been unlinked from this login in the ten minutes at Google.
+  const [person] = await db
+    .select({ id: resource.id })
+    .from(resource)
+    .where(
+      and(
+        eq(resource.id, ticket.resourceId),
+        eq(resource.organizationId, ticket.organizationId),
+        eq(resource.userId, userId)
+      )
+    )
+    .limit(1);
+  if (!person) return "expired";
+
+  const tokens = await googleOAuthClient
+    .exchangeCode({ code, codeVerifier: ticket.codeVerifier })
+    .catch(() =&gt; null);
+  if (!tokens) return "failed";
+
+  const handBack = () =&gt; googleOAuthClient.revoke(tokens.refreshToken ?? tokens.accessToken);
+
+  if (!googleOAuthClient.hasBothCalendarScopes(tokens.grantedScopes)) {
+    await handBack();
+    return "missing_permission";
+  }
+
+  const identity = googleOAuthClient.readIdentity(tokens.idToken);
+  if (!tokens.refreshToken || !identity) {
+    await handBack(); // without a refresh token nothing could be read tomorrow
+    return "failed";
+  }
+
+  try {
+    await saveCalendarConnection({
+      organizationId: ticket.organizationId,
+      resourceId: ticket.resourceId,
+      accountEmail: identity.email,
+      grantedScopes: tokens.grantedScopes,
+      credentials: {
+        refreshToken: tokens.refreshToken,
+        accessToken: tokens.accessToken,
+        accessTokenExpiresAt: tokens.accessTokenExpiresAt.toISOString(),
+      },
+    });
+  } catch {
+    await handBack(); // not saved, so Google should not keep the permission either
+    return "failed";
+  }
+
+  return "connected";
+}</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/lib/calendar/use-oauth-ticket.ts</code> <span class="tag-drift">new &middot; 38 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: uses a ticket up, in one statement. Only a fresh ticket of this login comes
+// back; unknown, expired, used or someone else's gives null. One DELETE, so two returns
+// from Google with the same state cannot both succeed.
+
+import { and, eq, gt } from "drizzle-orm";
+
+import { calendarOauthState } from "@scheduleads-app/shared/db";
+
+import { db } from "../../database.js";
+import { oauthStateFingerprint } from "./oauth-state-fingerprint.js";
+
+export type UsedOauthTicketType = {
+  organizationId: string;
+  resourceId: string;
+  codeVerifier: string;
+};
+
+export async function useOauthTicket(
+  state: string,
+  userId: string
+): Promise&lt;UsedOauthTicketType | null&gt; {
+  const [ticket] = await db
+    .delete(calendarOauthState)
+    .where(
+      and(
+        eq(calendarOauthState.id, oauthStateFingerprint(state)),
+        eq(calendarOauthState.userId, userId), // someone else's ticket is not touched
+        gt(calendarOauthState.expiresAt, new Date())
+      )
+    )
+    .returning({
+      organizationId: calendarOauthState.organizationId,
+      resourceId: calendarOauthState.resourceId,
+      codeVerifier: calendarOauthState.codeVerifier,
+    });
+
+  return ticket ?? null;
+}</code></pre>
+</div></details>
+<details class="codefile"><summary><code>backend/lib/calendar/save-calendar-connection.ts</code> <span class="tag-drift">new &middot; 48 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// Backend: locks a person's Google tokens and writes their connection. A reconnect
+// replaces the row, so a person never has two.
+
+import { randomUUID } from "node:crypto";
+
+import { calendarConnection } from "@scheduleads-app/shared/db";
+import { encryptCredentials, readTokenKey } from "@scheduleads-app/shared/crypto";
+
+import { db } from "../../database.js";
+
+export type CalendarCredentialsType = {
+  refreshToken: string;
+  accessToken: string;
+  accessTokenExpiresAt: string; // ISO 8601
+};
+
+export async function saveCalendarConnection({
+  organizationId,
+  resourceId,
+  accountEmail,
+  grantedScopes,
+  credentials,
+}: {
+  organizationId: string;
+  resourceId: string;
+  accountEmail: string;
+  grantedScopes: string[];
+  credentials: CalendarCredentialsType;
+}): Promise&lt;void&gt; {
+  // Sealed to the person, so the value cannot be moved onto another person's row and read.
+  const locked = encryptCredentials(JSON.stringify(credentials), readTokenKey(), resourceId);
+  const fields = {
+    provider: "google",
+    accountEmail,
+    credentials: locked,
+    grantedScopes: grantedScopes.join(" "),
+    status: "connected",
+    lastCheckedAt: null, // nothing read yet with these tokens (step 3.3 sets it)
+  };
+
+  await db
+    .insert(calendarConnection)
+    .values({ id: randomUUID(), organizationId, resourceId, ...fields })
+    .onConflictDoUpdate({
+      target: calendarConnection.resourceId,
+      set: { ...fields, updatedAt: new Date() },
+    });
+}</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/crypto/token-cipher.ts</code> <span class="tag-drift">changed &middot; +10 &minus;5</span></summary><div class="codefile-body">
+<div class="code-label">Before &middot; line 33</div><pre class="code" data-lang="typescript" data-start="33" data-mark="36,37" data-kind="removed"><code>  if (key.length !== KEY_BYTES) throw new Error(`The token key must be ${KEY_BYTES} bytes.`);
+}
+
+// Returns v1.&lt;iv&gt;.&lt;ciphertext&gt;.&lt;tag&gt;, each part base64url.
+export function encryptCredentials(plaintext: string, key: Buffer): string {
+  assertKeyLength(key);
+  const iv = randomBytes(IV_BYTES);
+  const cipher = createCipheriv(ALGORITHM, key, iv, { authTagLength: TAG_BYTES });
+  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+</code></pre>
+<div class="code-label">After &middot; line 33</div><pre class="code" data-lang="typescript" data-start="33" data-mark="36,37,38,39,43" data-kind="added"><code>  if (key.length !== KEY_BYTES) throw new Error(`The token key must be ${KEY_BYTES} bytes.`);
+}
+
+// Returns v1.&lt;iv&gt;.&lt;ciphertext&gt;.&lt;tag&gt;, each part base64url. `boundTo` names the owner of the
+// value (a calendar connection's person): it is sealed in, not stored, so the value only
+// opens when read back for that same owner, and a copy moved onto another row is refused.
+export function encryptCredentials(plaintext: string, key: Buffer, boundTo: string): string {
+  assertKeyLength(key);
+  const iv = randomBytes(IV_BYTES);
+  const cipher = createCipheriv(ALGORITHM, key, iv, { authTagLength: TAG_BYTES });
+  cipher.setAAD(Buffer.from(boundTo, "utf8"));
+  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+</code></pre>
+<div class="code-label">Before &middot; line 46</div><pre class="code" data-lang="typescript" data-start="46" data-mark="49,50" data-kind="removed"><code>    .join(".");
+}
+
+// Throws on a changed value, the wrong key or an unknown version; never returns garbage.
+export function decryptCredentials(value: string, key: Buffer): string {
+  assertKeyLength(key);
+  const [version, ivPart, ciphertextPart, tagPart, ...rest] = value.split(".");
+  if (</code></pre>
+<div class="code-label">After &middot; line 49</div><pre class="code" data-lang="typescript" data-start="49" data-mark="52,53,54" data-kind="added"><code>    .join(".");
+}
+
+// Throws on a changed value, the wrong key, another owner or an unknown version; never
+// returns garbage.
+export function decryptCredentials(value: string, key: Buffer, boundTo: string): string {
+  assertKeyLength(key);
+  const [version, ivPart, ciphertextPart, tagPart, ...rest] = value.split(".");
+  if (</code></pre>
+<div class="code-label">Before &middot; line 68</div><pre class="code" data-lang="typescript" data-start="68" data-mark="73" data-kind="removed"><code>
+  const decipher = createDecipheriv(ALGORITHM, key, iv, { authTagLength: TAG_BYTES });
+  decipher.setAuthTag(tag);
+  const plaintext = Buffer.concat([
+    decipher.update(Buffer.from(ciphertextPart, "base64url")),
+    decipher.final(), // throws when the value or the key is wrong
+  ]);
+
+  return plaintext.toString("utf8");</code></pre>
+<div class="code-label">After &middot; line 72</div><pre class="code" data-lang="typescript" data-start="72" data-mark="75,78" data-kind="added"><code>
+  const decipher = createDecipheriv(ALGORITHM, key, iv, { authTagLength: TAG_BYTES });
+  decipher.setAuthTag(tag);
+  decipher.setAAD(Buffer.from(boundTo, "utf8"));
+  const plaintext = Buffer.concat([
+    decipher.update(Buffer.from(ciphertextPart, "base64url")),
+    decipher.final(), // throws when the value, the key or the owner is wrong
+  ]);
+
+  return plaintext.toString("utf8");</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="kept"><b>5.</b> <code>GET /calendar/connection</code>: your person, and your connection's calendar, Gmail, status and last read; never the tokens or the permission list; <code>person: null</code> for a login with no person. Its code is the first route in <code>calendar-routes.ts</code>, under piece 3
+                                <em class="why">One field dropped from the plan: <code>connectedAt</code>. A reconnect replaces the row in place, so the row has no honest "connected at"; the card does not need it.</em></li>
+                              <li data-outcome="kept"><b>6.</b> The dashboard card on the home: Connect, the outcome in plain words (then cleared from the address bar), and "Google Calendar &middot; your Gmail"
+                                <details class="piece-fig piece-code"><summary>The code &middot; 3 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>frontend/components/calendar/calendar-connection-card.tsx</code> <span class="tag-drift">new &middot; 141 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="tsx" data-start="1" data-mark="all" data-kind="added"><code>// Frontend: the dashboard home's calendar card. Connect, the outcome after Google sends the
+// browser back, and the connected line. Disconnect and "needs reconnecting" come next.
+
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { Notice } from "@/components/auth-card";
+import { Button } from "@/components/ui/button";
+import {
+  fetchCalendarConnection,
+  startCalendarConnect,
+  type CalendarConnectionResultType,
+} from "@/lib/api-client";
+
+// The API's ?calendar= outcomes, in the words the owner reads.
+const OUTCOMES: Record&lt;string, { tone: "info" | "error"; text: string }&gt; = {
+  connected: { tone: "info", text: "Your Google calendar is connected." },
+  denied: { tone: "info", text: "You cancelled at Google. Nothing was connected." },
+  expired: {
+    tone: "error",
+    text: "That took too long, or the link was already used. Press Connect again.",
+  },
+  missing_permission: {
+    tone: "error",
+    text: "Leave both boxes ticked at Google: seeing when you are busy, and adding bookings. Press Connect again.",
+  },
+  failed: {
+    tone: "error",
+    text: "Google did not answer properly. Nothing was saved. Try again in a minute.",
+  },
+};
+
+export function CalendarConnectionCard() {
+  const [result, setResult] = useState&lt;CalendarConnectionResultType | null&gt;(null);
+  // The card only mounts in the browser, after the dashboard loaded, so the address is there.
+  const [outcome] = useState(() =&gt; new URL(window.location.href).searchParams.get("calendar"));
+  const [refusal, setRefusal] = useState&lt;string | null&gt;(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() =&gt; {
+    // Read once above, then taken out of the address bar so a refresh does not show it again.
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("calendar")) {
+      url.searchParams.delete("calendar");
+      window.history.replaceState(null, "", url);
+    }
+
+    // `live` stops a late answer from updating a page the user already left.
+    let live = true;
+    fetchCalendarConnection().then((next) =&gt; {
+      if (live) setResult(next);
+    });
+    return () =&gt; {
+      live = false;
+    };
+  }, []);
+
+  async function connect() {
+    setRefusal(null);
+    setBusy(true);
+    const started = await startCalendarConnect();
+    if (started.state === "ok") {
+      window.location.assign(started.url); // off to Google; the page is left behind
+      return;
+    }
+    setBusy(false);
+    setRefusal(started.message);
+  }
+
+  const notice = outcome ? OUTCOMES[outcome] : undefined;
+
+  return (
+    &lt;section className="mt-4 rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-md)]"&gt;
+      &lt;h2 className="text-base font-semibold tracking-tight text-foreground"&gt;Calendar&lt;/h2&gt;
+      &lt;p className="mt-1 text-sm text-muted-foreground"&gt;
+        Your own calendar, so customers are never offered a time you are busy.
+      &lt;/p&gt;
+
+      {notice ? (
+        &lt;div className="mt-6"&gt;
+          &lt;Notice tone={notice.tone}&gt;{notice.text}&lt;/Notice&gt;
+        &lt;/div&gt;
+      ) : null}
+
+      &lt;div className="mt-6"&gt;
+        &lt;CalendarConnectionBody result={result} busy={busy} onConnect={connect} /&gt;
+        {refusal ? (
+          &lt;div className="mt-4"&gt;
+            &lt;Notice&gt;{refusal}&lt;/Notice&gt;
+          &lt;/div&gt;
+        ) : null}
+      &lt;/div&gt;
+    &lt;/section&gt;
+  );
+}
+
+function CalendarConnectionBody({
+  result,
+  busy,
+  onConnect,
+}: {
+  result: CalendarConnectionResultType | null;
+  busy: boolean;
+  onConnect: () =&gt; void;
+}) {
+  if (!result) return &lt;p className="text-sm text-muted-foreground"&gt;Loading…&lt;/p&gt;;
+
+  if (result.state === "unreachable") return &lt;Notice&gt;{result.message}&lt;/Notice&gt;;
+
+  const { person, connection } = result.answer;
+
+  if (!person) {
+    return (
+      &lt;p className="text-sm text-muted-foreground"&gt;
+        Your login is not linked to anyone on this business&amp;apos;s calendar, so there is nothing to
+        connect yet.
+      &lt;/p&gt;
+    );
+  }
+
+  if (connection) {
+    return (
+      &lt;div className="rounded-lg border border-border px-4 py-3 text-sm"&gt;
+        &lt;p className="font-medium text-foreground"&gt;Google Calendar · {connection.accountEmail}&lt;/p&gt;
+        &lt;p className="mt-1 text-muted-foreground"&gt;Connected.&lt;/p&gt;
+      &lt;/div&gt;
+    );
+  }
+
+  return (
+    &lt;div className="flex items-center justify-between gap-4"&gt;
+      &lt;p className="text-sm text-muted-foreground"&gt;
+        Not connected. Your busy times are not read yet.
+      &lt;/p&gt;
+      &lt;Button onClick={onConnect} disabled={busy}&gt;
+        {busy ? "Opening Google…" : "Connect"}
+      &lt;/Button&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+</div></details>
+<details class="codefile"><summary><code>frontend/lib/api-client.ts</code> <span class="tag-drift">changed &middot; +42 &minus;0</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 97</div><pre class="code" data-lang="typescript" data-start="97" data-mark="100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141" data-kind="added"><code>    message: `The API answered with an unexpected status (${response.status}).`,
+  };
+}
+
+const calendarRoutes = dashboardApiClient.calendar;
+
+export type CalendarConnectionAnswerType = InferResponseType&lt;
+  typeof calendarRoutes.connection.$get,
+  200
+&gt;;
+
+export type CalendarConnectionResultType =
+  { state: "ok"; answer: CalendarConnectionAnswerType } | { state: "unreachable"; message: string };
+
+// The signed-in person and their calendar connection, for the dashboard card. Never tokens.
+export async function fetchCalendarConnection(): Promise&lt;CalendarConnectionResultType&gt; {
+  const response = await calendarRoutes.connection.$get().catch(() =&gt; null);
+  if (!response) return { state: "unreachable", message: notResponding };
+
+  if (response.status === 200) return { state: "ok", answer: await response.json() };
+
+  return {
+    state: "unreachable",
+    message: `The API answered with an unexpected status (${response.status}).`,
+  };
+}
+
+export type StartCalendarConnectResultType =
+  { state: "ok"; url: string } | { state: "refused"; message: string };
+
+// Pressing Connect: the API makes a one-time ticket and answers with Google's address.
+export async function startCalendarConnect(): Promise&lt;StartCalendarConnectResultType&gt; {
+  const response = await calendarRoutes.connect.$post().catch(() =&gt; null);
+  if (!response) return { state: "refused", message: notResponding };
+
+  if (response.status === 200) return { state: "ok", url: (await response.json()).url };
+
+  // Refusals come from the middleware or the route, which the route's type only partly lists.
+  const body = (await response.json().catch(() =&gt; ({}))) as RefusalType;
+  return {
+    state: "refused",
+    message:
+      body.error?.message ?? `The API answered with an unexpected status (${response.status}).`,
+  };
+}</code></pre>
+</div></details>
+<details class="codefile"><summary><code>frontend/app/page.tsx</code> <span class="tag-drift">changed &middot; +3 &minus;0</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 8</div><pre class="code" data-lang="tsx" data-start="8" data-mark="11" data-kind="added"><code>
+import { AuthCard, Notice } from "@/components/auth-card";
+import { BookingLinksList } from "@/components/booking-links/booking-links-list";
+import { CalendarConnectionCard } from "@/components/calendar/calendar-connection-card";
+import { Button } from "@/components/ui/button";
+import { authClient } from "@/lib/auth-client";
+import { fetchMe, type MeResultType } from "@/lib/api-client";</code></pre>
+<div class="code-label">Added &middot; line 224</div><pre class="code" data-lang="tsx" data-start="224" data-mark="227,228" data-kind="added"><code>
+        &lt;BookingLinksList slug={me.organization.slug} /&gt;
+
+        &lt;CalendarConnectionCard /&gt;
+
+        &lt;div className="mt-4 text-center text-sm text-muted-foreground"&gt;
+          &lt;SignOutLink onSignedOut={onSignedOut} /&gt;
+        &lt;/div&gt;</code></pre>
+</div></details>
+</div></details></li>
+                              <li data-outcome="added"><b>7.</b> The saved tests from Part 2: 17 route tests with Google faked, and one on the lock
+                                <em class="why">Part 2's tests, listed as a piece as in 2.4 and 2.6. Every business, login and person in them is a throwaway made and removed by the test, so a real connection is never touched.</em>
+                                <details class="piece-fig piece-code"><summary>The code &middot; 2 files</summary><div class="piece-code-body">
+<details class="codefile"><summary><code>backend/routes/calendar-routes.test.ts</code> <span class="tag-drift">new &middot; 401 lines</span></summary><div class="codefile-body">
+<pre class="code" data-lang="typescript" data-start="1" data-mark="all" data-kind="added"><code>// The calendar routes, called through the real app against the local database, with
+// Google faked: no test ever reaches Google. Every business, login and person here is a
+// throwaway made below and removed after, so a real connection is never touched.
+
+import { createHash, randomUUID } from "node:crypto";
+
+import { eq, inArray } from "drizzle-orm";
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+
+try {
+  process.loadEnvFile(new URL("../../.env", import.meta.url)); // the root .env, before the app reads it
+} catch {
+  // No .env: the environment must already carry DATABASE_URL and the Google values.
+}
+
+// Like the seed: only a database on this machine whose name ends in _dev.
+const databaseUrl = new URL(process.env.DATABASE_URL ?? "postgresql://missing/none");
+const localHosts = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+if (!localHosts.has(databaseUrl.hostname) || !databaseUrl.pathname.endsWith("_dev")) {
+  throw new Error(
+    `Refusing to run the calendar route tests against ${databaseUrl.hostname}${databaseUrl.pathname}. ` +
+      "They only run against a local database whose name ends in _dev."
+  );
+}
+
+// Imported after the env is loaded: they read it the moment they load.
+const { app } = await import("../app.js");
+const { db } = await import("../database.js");
+const { apiOrigin, appOrigin } = await import("../lib/auth/auth-server.js");
+const { calendarConnection, calendarOauthState, member, organization, resource, user } =
+  await import("@scheduleads-app/shared/db");
+const { decryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
+
+const FREEBUSY = "https://www.googleapis.com/auth/calendar.events.freebusy";
+const EVENTS_OWNED = "https://www.googleapis.com/auth/calendar.events.owned";
+const BOTH_SCOPES = `openid https://www.googleapis.com/auth/userinfo.email ${FREEBUSY} ${EVENTS_OWNED}`;
+
+const tag = randomUUID().slice(0, 8);
+const makeTenant = (letter: string, plan = "agency") =&gt; ({
+  userId: randomUUID(),
+  email: `calendar-${letter}-${tag}@example.com`,
+  organizationId: randomUUID(),
+  slug: `test-calendar-${letter}-${tag}-dev`,
+  plan,
+  personId: randomUUID(),
+});
+const ana = makeTenant("a"); // connects her calendar
+const ben = makeTenant("b"); // another business, for "someone else's ticket"
+const noBooking = makeTenant("d", "no-booking-test"); // no real tier lacks booking yet
+const noPerson = { userId: randomUUID(), email: `calendar-c-${tag}@example.com` }; // in Ana's business, no person
+
+const cookies = new Map&lt;string, string&gt;();
+
+// Signs in the real way: asks for a login code and reads it where the API prints it.
+async function signIn(email: string): Promise&lt;string&gt; {
+  const log = vi.spyOn(console, "log").mockImplementation(() =&gt; {});
+  const headers = { "Content-Type": "application/json", Origin: appOrigin };
+  await app.request("/api/auth/email-otp/send-verification-otp", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ email, type: "sign-in" }),
+  });
+  const line = log.mock.calls.map((call) =&gt; String(call[0])).find((text) =&gt; text.includes(email));
+  log.mockRestore();
+  const otp = line?.split(": ").pop();
+  if (!otp) throw new Error(`No login code was printed for ${email}.`);
+
+  const response = await app.request("/api/auth/sign-in/email-otp", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ email, otp }),
+  });
+  return response.headers
+    .getSetCookie()
+    .map((cookie) =&gt; cookie.split(";")[0])
+    .join("; ");
+}
+
+const request = (path: string, email?: string, method = "GET") =&gt;
+  app.request(path, {
+    method,
+    headers: email ? { Cookie: cookies.get(email)!, Origin: appOrigin } : { Origin: appOrigin },
+  });
+
+async function startConnect(email: string): Promise&lt;string&gt; {
+  const response = await request("/calendar/connect", email, "POST");
+  const { url } = await response.json();
+  return new URL(url).searchParams.get("state")!;
+}
+
+async function callback(query: string, email?: string): Promise&lt;string | null&gt; {
+  const response = await request(`/calendar/callback?${query}`, email);
+  expect(response.status).toBe(302);
+  return response.headers.get("Location");
+}
+
+const outcome = (name: string) =&gt; `${appOrigin}/?calendar=${name}`;
+const fingerprint = (state: string) =&gt; createHash("sha256").update(state).digest("hex");
+
+const connectionsOf = (personId: string) =&gt;
+  db.select().from(calendarConnection).where(eq(calendarConnection.resourceId, personId));
+
+// Google's side, faked: the token answer each test sets, and every token handed back.
+let tokenAnswer: () =&gt; Response = () =&gt; new Response("", { status: 500 });
+const revoked: string[] = [];
+
+const idToken = (email: string) =&gt;
+  [
+    { alg: "none" },
+    {
+      iss: "https://accounts.google.com",
+      aud: process.env.GOOGLE_CLIENT_ID,
+      email,
+      email_verified: true,
+    },
+  ]
+    .map((part) =&gt; Buffer.from(JSON.stringify(part)).toString("base64url"))
+    .concat("signature")
+    .join(".");
+
+const googleTokens = ({
+  scope = BOTH_SCOPES,
+  refreshToken = "1//refresh-token-from-google" as string | null,
+  email = "ana.owner@gmail.com",
+} = {}) =&gt;
+  new Response(
+    JSON.stringify({
+      access_token: "ya29.access-token-from-google",
+      expires_in: 3599,
+      scope,
+      token_type: "Bearer",
+      id_token: idToken(email),
+      ...(refreshToken ? { refresh_token: refreshToken } : {}),
+    }),
+    { status: 200, headers: { "Content-Type": "application/json" } }
+  );
+
+beforeAll(async () =&gt; {
+  const tenants = [ana, ben, noBooking];
+  await db
+    .insert(user)
+    .values([
+      ...tenants.map((t) =&gt; ({ id: t.userId, name: "", email: t.email, emailVerified: true })),
+      { id: noPerson.userId, name: "", email: noPerson.email, emailVerified: true },
+    ]);
+  await db
+    .insert(organization)
+    .values(
+      tenants.map((t) =&gt; ({ id: t.organizationId, name: t.slug, slug: t.slug, plan: t.plan }))
+    );
+  await db.insert(member).values([
+    ...tenants.map((t) =&gt; ({
+      id: randomUUID(),
+      organizationId: t.organizationId,
+      userId: t.userId,
+      role: "owner",
+    })),
+    {
+      id: randomUUID(),
+      organizationId: ana.organizationId,
+      userId: noPerson.userId,
+      role: "member",
+    },
+  ]);
+  await db.insert(resource).values(
+    tenants.map((t) =&gt; ({
+      id: t.personId,
+      organizationId: t.organizationId,
+      name: t.slug,
+      kind: "person",
+      userId: t.userId,
+    }))
+  );
+
+  for (const email of [ana.email, ben.email, noBooking.email, noPerson.email]) {
+    cookies.set(email, await signIn(email));
+  }
+
+  vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) =&gt; {
+    const url = String(input instanceof Request ? input.url : input);
+    if (url.startsWith("https://oauth2.googleapis.com/token")) return tokenAnswer();
+    if (url.startsWith("https://oauth2.googleapis.com/revoke")) {
+      revoked.push(new URLSearchParams(String(init?.body)).get("token") ?? "");
+      return new Response("", { status: 200 });
+    }
+    throw new Error(`A test tried to reach ${url}.`);
+  });
+});
+
+beforeEach(() =&gt; {
+  revoked.length = 0;
+  tokenAnswer = () =&gt; googleTokens();
+});
+
+afterAll(async () =&gt; {
+  vi.unstubAllGlobals();
+  // Their people, tickets and connections go with the businesses (cascade); sessions with the logins.
+  await db
+    .delete(organization)
+    .where(
+      inArray(organization.id, [ana.organizationId, ben.organizationId, noBooking.organizationId])
+    );
+  await db
+    .delete(user)
+    .where(inArray(user.id, [ana.userId, ben.userId, noBooking.userId, noPerson.userId]));
+  await db.$client.end();
+});
+
+describe("POST /calendar/connect", () =&gt; {
+  test("no session is refused with 401", async () =&gt; {
+    expect((await request("/calendar/connect", undefined, "POST")).status).toBe(401);
+  });
+
+  test("a plan without booking is refused with 403", async () =&gt; {
+    // An unrecognised plan stands in: no real tier lacks booking until feature 23.
+    expect((await request("/calendar/connect", noBooking.email, "POST")).status).toBe(403);
+  });
+
+  test("a login with no person in the business is refused plainly", async () =&gt; {
+    const response = await request("/calendar/connect", noPerson.email, "POST");
+    expect(response.status).toBe(409);
+    expect((await response.json()).error.code).toBe("no_person");
+  });
+
+  test("answers Google's address with our client, return address, both permissions and PKCE", async () =&gt; {
+    const response = await request("/calendar/connect", ana.email, "POST");
+    expect(response.status).toBe(200);
+    const url = new URL((await response.json()).url);
+    const params = url.searchParams;
+
+    expect(url.origin + url.pathname).toBe("https://accounts.google.com/o/oauth2/v2/auth");
+    expect(params.get("client_id")).toBe(process.env.GOOGLE_CLIENT_ID);
+    expect(params.get("redirect_uri")).toBe(`${apiOrigin}/calendar/callback`);
+    expect(params.get("scope")?.split(" ")).toEqual(["openid", "email", FREEBUSY, EVENTS_OWNED]);
+    expect(params.get("access_type")).toBe("offline");
+    expect(params.get("prompt")).toBe("consent");
+    expect(params.get("code_challenge_method")).toBe("S256");
+    expect(params.get("code_challenge")).toMatch(/^[\w-]{43}$/);
+    expect(params.get("state")).toMatch(/^[\w-]{43}$/);
+  });
+});
+
+describe("the one-time ticket", () =&gt; {
+  test("keeps a fingerprint, never the value sent to Google, for ten minutes", async () =&gt; {
+    const state = await startConnect(ana.email);
+    const rows = await db
+      .select()
+      .from(calendarOauthState)
+      .where(inArray(calendarOauthState.id, [state, fingerprint(state)]));
+
+    expect(rows.map((row) =&gt; row.id)).toEqual([fingerprint(state)]);
+    const minutesLeft = (rows[0].expiresAt.getTime() - Date.now()) / 60_000;
+    expect(minutesLeft).toBeGreaterThan(9);
+    expect(minutesLeft).toBeLessThanOrEqual(10);
+  });
+
+  test("making a new one clears your expired ones", async () =&gt; {
+    const stale = randomUUID();
+    await db.insert(calendarOauthState).values({
+      id: stale,
+      userId: ana.userId,
+      organizationId: ana.organizationId,
+      resourceId: ana.personId,
+      codeVerifier: "stale",
+      expiresAt: new Date(Date.now() - 60_000),
+    });
+    await startConnect(ana.email);
+
+    const left = await db.select().from(calendarOauthState).where(eq(calendarOauthState.id, stale));
+    expect(left).toEqual([]);
+  });
+});
+
+describe("GET /calendar/callback", () =&gt; {
+  test("Cancel at Google ends in denied, and uses the ticket up", async () =&gt; {
+    const state = await startConnect(ana.email);
+    expect(await callback(`state=${state}&amp;error=access_denied`, ana.email)).toBe(outcome("denied"));
+
+    const left = await db
+      .select()
+      .from(calendarOauthState)
+      .where(eq(calendarOauthState.id, fingerprint(state)));
+    expect(left).toEqual([]);
+  });
+
+  test("an unknown, expired, reused or someone else's ticket, or no session, ends in expired", async () =&gt; {
+    expect(await callback(`state=unknown-${tag}&amp;code=abc`, ana.email)).toBe(outcome("expired"));
+
+    const stale = await startConnect(ana.email);
+    await db
+      .update(calendarOauthState)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(calendarOauthState.id, fingerprint(stale)));
+    expect(await callback(`state=${stale}&amp;code=abc`, ana.email)).toBe(outcome("expired"));
+
+    const anas = await startConnect(ana.email);
+    expect(await callback(`state=${anas}&amp;code=abc`, ben.email)).toBe(outcome("expired"));
+    expect(await callback(`state=${anas}&amp;code=abc`)).toBe(outcome("expired"));
+
+    tokenAnswer = () =&gt; new Response("", { status: 400 }); // so the first use stops before saving
+    await callback(`state=${anas}&amp;code=abc`, ana.email);
+    expect(await callback(`state=${anas}&amp;code=abc`, ana.email)).toBe(outcome("expired"));
+
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("Google refusing the code ends in failed and saves nothing", async () =&gt; {
+    tokenAnswer = () =&gt; new Response(JSON.stringify({ error: "invalid_grant" }), { status: 400 });
+    const state = await startConnect(ana.email);
+
+    expect(await callback(`state=${state}&amp;code=abc`, ana.email)).toBe(outcome("failed"));
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("a missing permission hands the tokens back and saves nothing", async () =&gt; {
+    tokenAnswer = () =&gt; googleTokens({ scope: `openid ${FREEBUSY}` }); // "add events" unticked
+    const state = await startConnect(ana.email);
+
+    expect(await callback(`state=${state}&amp;code=abc`, ana.email)).toBe(
+      outcome("missing_permission")
+    );
+    expect(revoked).toEqual(["1//refresh-token-from-google"]);
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("no long-lived token hands the access token back, fails, and saves nothing", async () =&gt; {
+    tokenAnswer = () =&gt; googleTokens({ refreshToken: null });
+    const state = await startConnect(ana.email);
+
+    expect(await callback(`state=${state}&amp;code=abc`, ana.email)).toBe(outcome("failed"));
+    expect(revoked).toEqual(["ya29.access-token-from-google"]);
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("a full consent saves one row, tokens unreadable, with the Gmail from Google", async () =&gt; {
+    const state = await startConnect(ana.email);
+    // An extra return address in the request is ignored: the dashboard address is fixed.
+    const location = await callback(
+      `state=${state}&amp;code=abc&amp;redirect=https://elsewhere.example`,
+      ana.email
+    );
+    expect(location).toBe(outcome("connected"));
+
+    const rows = await connectionsOf(ana.personId);
+    expect(rows).toHaveLength(1);
+    const [row] = rows;
+    expect(row.accountEmail).toBe("ana.owner@gmail.com");
+    expect(row.status).toBe("connected");
+    expect(row.grantedScopes.split(" ")).toEqual(expect.arrayContaining([FREEBUSY, EVENTS_OWNED]));
+    expect(row.credentials).not.toContain("refresh-token-from-google");
+    expect(row.credentials).not.toContain("access-token-from-google");
+
+    const opened = JSON.parse(decryptCredentials(row.credentials, readTokenKey(), ana.personId));
+    expect(opened.refreshToken).toBe("1//refresh-token-from-google");
+    expect(() =&gt; decryptCredentials(row.credentials, readTokenKey(), ben.personId)).toThrow();
+  });
+
+  test("a reconnect replaces the row: still one", async () =&gt; {
+    tokenAnswer = () =&gt; googleTokens({ email: "ana.second@gmail.com" });
+    const state = await startConnect(ana.email);
+
+    expect(await callback(`state=${state}&amp;code=abc`, ana.email)).toBe(outcome("connected"));
+    const rows = await connectionsOf(ana.personId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].accountEmail).toBe("ana.second@gmail.com");
+  });
+});
+
+describe("GET /calendar/connection", () =&gt; {
+  test("a login with no person gets person: null", async () =&gt; {
+    const response = await request("/calendar/connection", noPerson.email);
+    expect(await response.json()).toEqual({ person: null, connection: null });
+  });
+
+  test("a person with no connection gets connection: null", async () =&gt; {
+    const response = await request("/calendar/connection", ben.email);
+    expect(await response.json()).toEqual({
+      person: { id: ben.personId, name: ben.slug },
+      connection: null,
+    });
+  });
+
+  test("a connection comes without the tokens or the permission list", async () =&gt; {
+    const response = await request("/calendar/connection", ana.email);
+    const text = await response.text();
+
+    expect(JSON.parse(text).connection).toEqual({
+      provider: "google",
+      accountEmail: "ana.second@gmail.com",
+      status: "connected",
+      lastCheckedAt: null,
+    });
+    expect(text).not.toContain("credentials");
+    expect(text).not.toContain("grantedScopes");
+    expect(text).not.toContain("v1.");
+  });
+
+  test("no session is refused with 401", async () =&gt; {
+    expect((await request("/calendar/connection")).status).toBe(401);
+  });
+});</code></pre>
+</div></details>
+<details class="codefile"><summary><code>packages/shared/crypto/token-cipher.test.ts</code> <span class="tag-drift">changed &middot; +22 &minus;14</span></summary><div class="codefile-body">
+<div class="code-label">Added &middot; line 4</div><pre class="code" data-lang="typescript" data-start="4" data-mark="7" data-kind="added"><code>import { decryptCredentials, encryptCredentials, readTokenKey } from "./token-cipher.js";
+
+const key = randomBytes(32);
+const person = "resource-ana"; // the connection's person the value is sealed to
+const credentials = JSON.stringify({
+  refreshToken: "1//refresh-token",
+  accessToken: "ya29.access-token",</code></pre>
+<div class="code-label">Before &middot; line 20</div><pre class="code" data-lang="typescript" data-start="20" data-mark="23,24,28" data-kind="removed"><code>
+describe("encryptCredentials and decryptCredentials", () =&gt; {
+  test("a value locked with the key opens with the same key", () =&gt; {
+    const stored = encryptCredentials(credentials, key);
+    expect(decryptCredentials(stored, key)).toBe(credentials);
+  });
+
+  test("the stored value does not contain the tokens in plain text", () =&gt; {
+    const stored = encryptCredentials(credentials, key);
+    expect(stored.startsWith("v1.")).toBe(true);
+    expect(stored).not.toContain("refresh-token");
+    expect(stored).not.toContain("access-token");</code></pre>
+<div class="code-label">After &middot; line 21</div><pre class="code" data-lang="typescript" data-start="21" data-mark="24,25,29" data-kind="added"><code>
+describe("encryptCredentials and decryptCredentials", () =&gt; {
+  test("a value locked with the key opens with the same key", () =&gt; {
+    const stored = encryptCredentials(credentials, key, person);
+    expect(decryptCredentials(stored, key, person)).toBe(credentials);
+  });
+
+  test("the stored value does not contain the tokens in plain text", () =&gt; {
+    const stored = encryptCredentials(credentials, key, person);
+    expect(stored.startsWith("v1.")).toBe(true);
+    expect(stored).not.toContain("refresh-token");
+    expect(stored).not.toContain("access-token");</code></pre>
+<div class="code-label">Before &middot; line 33</div><pre class="code" data-lang="typescript" data-start="33" data-mark="36,40,42,47,48,52,53,54,55,59,61" data-kind="removed"><code>
+  test("the same value locked twice looks different each time", () =&gt; {
+    // A fresh random start per value; a repeated one would leak which rows hold the same tokens.
+    expect(encryptCredentials(credentials, key)).not.toBe(encryptCredentials(credentials, key));
+  });
+
+  test("a changed ciphertext, start or tag is refused", () =&gt; {
+    const stored = encryptCredentials(credentials, key);
+    for (const partIndex of [1, 2, 3]) {
+      expect(() =&gt; decryptCredentials(changePart(stored, partIndex), key)).toThrow();
+    }
+  });
+
+  test("the wrong key is refused", () =&gt; {
+    const stored = encryptCredentials(credentials, key);
+    expect(() =&gt; decryptCredentials(stored, randomBytes(32))).toThrow();
+  });
+
+  test("an unknown version or a broken shape is refused", () =&gt; {
+    const stored = encryptCredentials(credentials, key);
+    expect(() =&gt; decryptCredentials(stored.replace(/^v1\./, "v2."), key)).toThrow();
+    expect(() =&gt; decryptCredentials(`${stored}.extra`, key)).toThrow();
+    expect(() =&gt; decryptCredentials("not-a-stored-value", key)).toThrow();
+  });
+
+  test("a key of the wrong length is refused", () =&gt; {
+    expect(() =&gt; encryptCredentials(credentials, randomBytes(16))).toThrow();
+    expect(() =&gt;
+      decryptCredentials(encryptCredentials(credentials, key), randomBytes(31))
+    ).toThrow();
+  });
+});</code></pre>
+<div class="code-label">After &middot; line 34</div><pre class="code" data-lang="typescript" data-start="34" data-mark="37,38,39,43,45,50,51,55,56,57,58,59,60,61,62,63,67,69" data-kind="added"><code>
+  test("the same value locked twice looks different each time", () =&gt; {
+    // A fresh random start per value; a repeated one would leak which rows hold the same tokens.
+    expect(encryptCredentials(credentials, key, person)).not.toBe(
+      encryptCredentials(credentials, key, person)
+    );
+  });
+
+  test("a changed ciphertext, start or tag is refused", () =&gt; {
+    const stored = encryptCredentials(credentials, key, person);
+    for (const partIndex of [1, 2, 3]) {
+      expect(() =&gt; decryptCredentials(changePart(stored, partIndex), key, person)).toThrow();
+    }
+  });
+
+  test("the wrong key is refused", () =&gt; {
+    const stored = encryptCredentials(credentials, key, person);
+    expect(() =&gt; decryptCredentials(stored, randomBytes(32), person)).toThrow();
+  });
+
+  test("an unknown version or a broken shape is refused", () =&gt; {
+    const stored = encryptCredentials(credentials, key, person);
+    expect(() =&gt; decryptCredentials(stored.replace(/^v1\./, "v2."), key, person)).toThrow();
+    expect(() =&gt; decryptCredentials(`${stored}.extra`, key, person)).toThrow();
+    expect(() =&gt; decryptCredentials("not-a-stored-value", key, person)).toThrow();
+  });
+
+  test("a value moved onto another person's row is refused", () =&gt; {
+    const stored = encryptCredentials(credentials, key, person);
+    expect(() =&gt; decryptCredentials(stored, key, "resource-luis")).toThrow();
+  });
+
+  test("a key of the wrong length is refused", () =&gt; {
+    expect(() =&gt; encryptCredentials(credentials, randomBytes(16), person)).toThrow();
+    expect(() =&gt;
+      decryptCredentials(encryptCredentials(credentials, key, person), randomBytes(31), person)
+    ).toThrow();
+  });
+});</code></pre>
+</div></details>
+</div></details></li>
+                            </ul>
+                            <p class="rstep-what"><a href="STEP_LINK">This step's full diff on GitHub</a></p>
+                            <div class="snags">
+                              <div class="snags-head">What bit</div>
+                              <ul>
+                                <li><b>Google's "Access blocked" was the client's return address, three times.</b> Your client still carried the first repo's <code>/api/calendar/google/callback</code>; the new address first went into the JavaScript origins box, then onto the old path on port 3001. Found by comparing what we send with Google's own error details and the client page, not by guessing.</li>
+                                <li><b>"Plan without booking" cannot be shown for real yet.</b> Every real tier includes booking until feature 23, so an unrecognised plan stands in, as in 2.4.</li>
+                              </ul>
+                            </div>
+                            <div class="tests">
+                              <div class="tests-head">How it was proved</div>
+                              <div class="proof-card">
+                                <div class="card-head">Saved tests and checks by hand</div>
+                                <ul>
+                                  <li><b>Added:</b> 17 saved route tests calling the real app against the local database, with Google faked: connect's refusals and its address; the ticket's fingerprint, its ten minutes and the cleanup; every callback outcome, each failure saving nothing and handing tokens back where Google issued them; one row after a full consent, tokens unreadable, your Gmail from the sign-in token; a reconnect still one row; the fixed dashboard address; the connection answer without tokens or permissions. Plus one on the lock: a value moved to another person is refused. 55 backend and 42 shared tests pass.</li>
+                                  <li><b>Proved they can fail:</b> three faults planted one at a time, each file restored from a copy and compared after. The ticket not used up: the Cancel and expired tests failed. The permission check weakened to "either one": the missing-permission test failed. The lock not tied to its person: the moved-value tests failed, in the shared package and in the routes.</li>
+                                  <li><b>By hand, you:</b> signed in as <code>admin@example.com</code>, pressed Connect, got past Google's Testing-mode warning, ticked both permissions, and landed on "Your Google calendar is connected". The database then held one connection for Summit Painting's first person, <code>frankdmosquera@gmail.com</code>, both calendar permissions, the long-lived token present and unreadable in the stored value, opening only for its own person; no tickets left.</li>
+                                  <li><b>Not done by hand:</b> pressing Cancel. You went straight to Allow, and once connected the card has no Connect until 3.4 adds Disconnect. "denied" is proved by its saved test; it gets its by-hand look in 3.4.</li>
+                                  <li><b>By hand, the start-up check:</b> the built API with an empty <code>GOOGLE_CLIENT_ID</code> stopped with "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must both be set"; with both, it started.</li>
+                                </ul>
+                                <div class="rstep-when">Passed, with one check moved: every saved test, the real connect and the start-up check passed; the by-hand Cancel waits for 3.4. Both builds, the frontend lint and the format check pass.</div>
+                              </div>
+                              <div class="proof-card">
+                                <div class="card-head">Independent review</div>
+                                <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>A fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests; this step against its own Done when; the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</p></div>
+                                <div class="review-part"><div class="review-part-head">2 &middot; Verdict</div><p>Not yet: runs after the commit.</p></div>
+                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p>Not yet.</p></div>
+                              </div>
                             </div>
                           </div>
                         </details>
@@ -11190,7 +12708,7 @@ GOOGLE_CLIENT_SECRET=</code></pre>
                   <h3>Waiting on you</h3>
                   <div class="notes"><ul>
                     <li><strong>&#10003; 1. Step 3.1: how the app knows which person is you: answered A, Sep 28.</strong> A person is linked to a login; B, the oldest person, was rejected as a guess.</li>
-                    <li><strong>2. Step 3.2: plain <code>fetch</code> or <code>google-auth-library</code>.</strong> Recommended: <code>fetch</code>, no package.</li>
+                    <li><strong>&#10003; 2. Step 3.2: plain <code>fetch</code> or <code>google-auth-library</code>: answered plain fetch, Sep 28.</strong> Four small calls we write and test ourselves; the library's in-memory tokens do not fit our locked rows.</li>
                     <li><strong>3. Step 3.3: which of your Google calendars count as busy.</strong> Recommended: the main one only.</li>
                   </ul></div>
                 </div>
@@ -11211,9 +12729,24 @@ GOOGLE_CLIENT_SECRET=</code></pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">8 entries, newest first</span></summary>
+                <summary>Log <span class="tag-drift">10 entries, newest first</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 3.2 built: your Google calendar is connected</span><span class="kind-tag">Done</span><span class="stamp">Sep 28</span></div>
+                        <p class="entry-text">You pressed Connect, ticked both permissions at Google, and the card said your calendar is connected: one row for Summit Painting's first person, <code>frankdmosquera@gmail.com</code>, the tokens locked and tied to that person. 18 new saved tests, Google faked; three planted faults each caught by the right test. The one check not done by hand, Cancel, waits for 3.4's Disconnect; its saved test passes.</p>
+                        <p class="entry-text"><strong>Decided on the way, without asking</strong> (small calls, named here): the Google talk is one object, <code>googleOAuthClient</code>, for the one-export rule; the callback's logic has its own file, <code>finish-google-connect.ts</code>; if saving fails after Google issued tokens, they are handed back; <code>connectedAt</code> dropped from the connection answer, since a reconnect keeps the row. <strong>What bit:</strong> your client still had the first repo's return address; fixed together, three tries.</p>
+                      </div>
+                    </div>
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 3.2 piece 1: plain fetch, no package</span><span class="kind-tag">Decided</span><span class="stamp">Sep 28</span></div>
+                        <p class="entry-text">Your yes, once the price was on the table. Google's own <code>google-auth-library</code> is the standard way and was passed over on purpose: it keeps tokens in memory, ours sit locked in the database per person. We write the four calls ourselves (about 80 lines, each with saved tests), read Google's errors ourselves, and fix an address if Google ever changes one. Nothing to install.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="decided">
                       <div class="dot"></div>
                       <div class="entry-body">

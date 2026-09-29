@@ -33,11 +33,14 @@ function assertKeyLength(key: Buffer): void {
   if (key.length !== KEY_BYTES) throw new Error(`The token key must be ${KEY_BYTES} bytes.`);
 }
 
-// Returns v1.<iv>.<ciphertext>.<tag>, each part base64url.
-export function encryptCredentials(plaintext: string, key: Buffer): string {
+// Returns v1.<iv>.<ciphertext>.<tag>, each part base64url. `boundTo` names the owner of the
+// value (a calendar connection's person): it is sealed in, not stored, so the value only
+// opens when read back for that same owner, and a copy moved onto another row is refused.
+export function encryptCredentials(plaintext: string, key: Buffer, boundTo: string): string {
   assertKeyLength(key);
   const iv = randomBytes(IV_BYTES);
   const cipher = createCipheriv(ALGORITHM, key, iv, { authTagLength: TAG_BYTES });
+  cipher.setAAD(Buffer.from(boundTo, "utf8"));
   const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
 
@@ -46,8 +49,9 @@ export function encryptCredentials(plaintext: string, key: Buffer): string {
     .join(".");
 }
 
-// Throws on a changed value, the wrong key or an unknown version; never returns garbage.
-export function decryptCredentials(value: string, key: Buffer): string {
+// Throws on a changed value, the wrong key, another owner or an unknown version; never
+// returns garbage.
+export function decryptCredentials(value: string, key: Buffer, boundTo: string): string {
   assertKeyLength(key);
   const [version, ivPart, ciphertextPart, tagPart, ...rest] = value.split(".");
   if (
@@ -68,9 +72,10 @@ export function decryptCredentials(value: string, key: Buffer): string {
 
   const decipher = createDecipheriv(ALGORITHM, key, iv, { authTagLength: TAG_BYTES });
   decipher.setAuthTag(tag);
+  decipher.setAAD(Buffer.from(boundTo, "utf8"));
   const plaintext = Buffer.concat([
     decipher.update(Buffer.from(ciphertextPart, "base64url")),
-    decipher.final(), // throws when the value or the key is wrong
+    decipher.final(), // throws when the value, the key or the owner is wrong
   ]);
 
   return plaintext.toString("utf8");

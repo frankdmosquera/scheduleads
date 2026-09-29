@@ -9,12 +9,14 @@ import { dashboardCorsMiddleware } from "./middleware/dashboard-middleware/dashb
 import { dashboardNoStoreMiddleware } from "./middleware/dashboard-middleware/dashboard-no-store-middleware.js";
 import { publicCorsMiddleware } from "./middleware/public-middleware/public-cors-middleware.js";
 import { requireKnownSubscriptionMiddleware } from "./middleware/subscription-middleware/require-known-subscription-middleware.js";
+import { calendarRoutes } from "./routes/calendar-routes.js";
 import { publicBookingLinksRoutes } from "./routes/public-booking-links-routes.js";
 
 export const app = new Hono()
   // Every dashboard route mounts both.
   .use("/api/auth/*", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
   .use("/me", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
+  .use("/calendar/*", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
   // Anyone may read these, never with the login cookie: a CORS rule of their own.
   .use("/public/*", publicCorsMiddleware)
 
@@ -43,6 +45,7 @@ export const app = new Hono()
     });
   })
 
+  .route("/calendar", calendarRoutes)
   .route("/public", publicBookingLinksRoutes)
 
   // For Railway. No database on purpose: an outage there should not restart a healthy API.

@@ -120,26 +120,91 @@ real data, `main`), or a P0/P1 finding. Each step commit is
     wrong key refused, a key of the wrong length refused at start); the shared
     and backend tests and both builds pass.
 
-- [ ] **3.2 Connect a Google calendar.**
-  - Blocker, waiting on Frank: **talk to Google with plain `fetch`, or add
-    Google's `google-auth-library` package.** Recommended: plain `fetch`. Four
-    documented calls (build the consent URL, swap the code, refresh, revoke),
-    no package, and PKCE and the state are ours either way.
-  - To do, Frank: an OAuth client in Google Cloud (Testing mode, Frank's
-    Gmail as a test user, redirect `http://localhost:3001/calendar/callback`),
-    its two values in `.env`. The step walks through it.
+- [x] **3.2 Connect a Google calendar.** Built 2026-09-28, Frank's plan yes
+  the same day. Differences from the plan: `google-oauth.ts` became
+  `google-oauth-client.ts` (one export, an object, per the one-export-per-file
+  rule); `finish-google-connect.ts` (the callback's logic) and
+  `oauth-state-fingerprint.ts` added; `connectedAt` dropped from
+  `/calendar/connection` (a reconnect keeps the row, so no honest value);
+  "a plan without booking" proved with an unrecognised plan, as in 2.4. By
+  hand: Frank connected `frankdmosquera@gmail.com` for `admin@example.com`
+  after fixing the client's redirect URI (the old
+  `/api/calendar/google/callback` path); the by-hand Cancel was not done
+  (he went straight to Allow; "denied" is proved by a saved test and can be
+  seen by hand once 3.4 adds Disconnect).
+  - Blocker, answered by Frank 2026-09-28: **plain `fetch`, no package.**
+    Four documented calls (build the consent URL, swap the code, refresh,
+    revoke), and PKCE and the state are ours either way. `google-auth-library`
+    is Google's standard client and was passed over on purpose: its main job,
+    holding tokens in memory and refreshing them, does not fit tokens stored
+    encrypted per person, and free/busy is plain `fetch` either way. The price,
+    said out loud: we write the four calls (roughly 80 lines, each with saved
+    tests), we read Google's error answers ourselves (`invalid_grant` means
+    reconnect), and a changed Google URL is ours to fix.
+  - Done by Frank 2026-09-28: an OAuth client in Google Cloud (Testing mode,
+    Frank's Gmail as a test user, redirect
+    `http://localhost:3001/calendar/callback`), its two values in the root
+    `.env` (checked set, not printed). An existing client was reused with a
+    new secret; the first real connect proves the Google-side settings.
   - `POST /calendar/connect`: for the signed-in person, a single-use state and
     a PKCE verifier are saved for ten minutes, and the Google consent URL is
-    returned.
+    returned. Planned in detail 2026-09-28 (being gone through with Frank):
+    dashboard CORS and no-store, sign-in, a known plan and the booking module;
+    the signed-in person is the resource in the active business whose
+    `userId` is the session user, none is a plain refusal; the ticket row
+    keeps the SHA-256 of the state (the value lives only in the URL) and the
+    PKCE verifier, and making one deletes that user's expired tickets; scopes
+    `openid email https://www.googleapis.com/auth/calendar.events.freebusy
+    https://www.googleapis.com/auth/calendar.events.owned` (events.owned is
+    the narrowest write scope: events on calendars the person owns; checked
+    against Google's scope list 2026-09-28); the API refuses to start without
+    `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Files:
+    `backend/routes/calendar-routes.ts`, `backend/lib/calendar/google-oauth.ts`,
+    `find-signed-in-person.ts`, `create-oauth-ticket.ts`; `app.ts` and
+    `server.ts` changed.
   - `GET /calendar/callback`: the state is used up in one statement, must be
     unexpired and belong to the signed-in login; the code is swapped; both
     permissions must be present or the tokens are revoked and nothing is
     saved; the tokens are stored encrypted. Always ends in a redirect to the
-    dashboard with an outcome, never a JSON page.
+    dashboard with an outcome, never a JSON page. Planned in detail
+    2026-09-28: five outcomes to the fixed `APP_ORIGIN` address, `connected`,
+    `denied` (Google's `error=access_denied`), `expired` (no, stale, used or
+    other login's ticket, or no session), `missing_permission` (revoked),
+    `failed` (swap error, or no refresh token: revoked). The ticket is used up
+    with one `DELETE ... WHERE id = sha256(state) AND userId = session AND
+    expiresAt > now() RETURNING`. The Google email comes from the `id_token`
+    returned directly by the token endpoint over TLS (no signature check
+    needed there, OpenID Connect Core 3.1.3.7), `email_verified` required. A
+    reconnect upserts on `resourceId`. The cipher gains an associated-data
+    argument, the connection's `resourceId`, so a value moved to another row
+    fails (the 3.1 reviewer's note). Files: `use-oauth-ticket.ts`,
+    `save-calendar-connection.ts` new; `calendar-routes.ts`,
+    `google-oauth.ts`, `token-cipher.ts` and its test changed.
   - `GET /calendar/connection`: the signed-in person and their connection, if
-    any, without tokens.
+    any, without tokens. Planned 2026-09-28 (pieces 3 and 4 agreed by Frank,
+    and "Google first, other plugs once it works" confirmed): same middleware
+    as connect; answers `{ person: { id, name } | null, connection: {
+    provider, accountEmail, status, lastCheckedAt, connectedAt } | null }`,
+    never `credentials` or `grantedScopes` (a saved test checks); a login
+    with no person gets `person: null`, not an error; called through
+    `dashboardApiClient`.
   - The dashboard card: Connect, the outcome notice after Google sends the
-    browser back, and the connected line.
+    browser back, and the connected line. Planned 2026-09-28 (piece 5
+    agreed): on the home under the booking links until feature 12;
+    `frontend/components/calendar/calendar-connection-card.tsx`; Connect posts
+    through `dashboardApiClient` and assigns `window.location`; the
+    `?calendar=` outcome is shown in plain words and removed with
+    `history.replaceState`; `person: null` shows a line and no button; a
+    one-line loading state only (3.4 adds needs reconnecting, Disconnect and
+    API down).
+  - Part 1 agreed by Frank 2026-09-28 (piece 6 included). Part 2 rewritten
+    the same day to match the pieces, being gone through: the saved tests
+    below plus the ticket fingerprint and cleanup, `denied` and `failed`
+    outcomes, no refresh token revoked, reconnect keeps one row, the fixed
+    redirect, `/calendar/connection` without tokens or scopes, `person: null`,
+    the lock refusing a value moved to another person, planted faults (ticket
+    not used up, scope check removed, lock not bound); by hand also Cancel
+    once and the API refusing to start without the Google values.
   - **Done when:** route tests against the local database, with Google's
     endpoints faked, prove: no session is 401; a plan without booking is 403;
     a login with no person gets a clear refusal; an unknown, expired, reused
@@ -197,11 +262,14 @@ real data, `main`), or a P0/P1 finding. Each step commit is
   (changed: the `crypto` folder and its export)
 - `packages/shared/scripts/seed-dev.ts` (changed: link first people)
 - `backend/lib/auth/auth-server.ts` (changed: the hook links the creator)
-- `backend/lib/calendar/` (new): `calendar-provider.ts`,
-  `google-calendar-provider.ts`, `google-oauth.ts`, `get-busy-times.ts`,
-  `find-own-person.ts`, and their tests
+- `backend/lib/calendar/` (new): 3.2 `google-oauth-client.ts`,
+  `find-signed-in-person.ts`, `create-oauth-ticket.ts`, `use-oauth-ticket.ts`,
+  `oauth-state-fingerprint.ts`, `save-calendar-connection.ts`,
+  `finish-google-connect.ts`; 3.3 `calendar-provider.ts`,
+  `google-calendar-provider.ts`, `get-busy-times.ts`, and their tests
 - `backend/routes/calendar-routes.ts` and `calendar-routes.test.ts` (new)
-- `backend/app.ts` (changed: mounts `/calendar`, CORS and no-store)
+- `backend/app.ts` (changed: mounts `/calendar`, CORS and no-store),
+  `backend/server.ts` (changed: refuses to start without the Google values)
 - `backend/lib/errors/refuse.ts` (changed: one new code, `no_person`)
 - `backend/scripts/calendar-check.ts` (new), `backend/package.json` (changed:
   `calendar:check`)

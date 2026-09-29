@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 
 import { AuthCard, Notice } from "@/components/auth-card";
 import { BookingLinksList } from "@/components/booking-links/booking-links-list";
+import { CalendarConnectionCard } from "@/components/calendar/calendar-connection-card";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { fetchMe, type MeResultType } from "@/lib/api-client";
@@ -222,6 +223,8 @@ function SignedIn({
         </div>
 
         <BookingLinksList slug={me.organization.slug} />
+
+        <CalendarConnectionCard />
 
         <div className="mt-4 text-center text-sm text-muted-foreground">
           <SignOutLink onSignedOut={onSignedOut} />

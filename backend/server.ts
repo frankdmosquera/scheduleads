@@ -7,6 +7,7 @@ import { readTokenKey } from "@scheduleads-app/shared/crypto";
 
 import { app } from "./app.js";
 import { appOrigin } from "./lib/auth/auth-server.js";
+import { googleOAuthClient } from "./lib/calendar/google-oauth-client.js";
 
 const port = Number(process.env.PORT ?? 3001); // 3000 is the frontend's
 
@@ -14,7 +15,9 @@ if (!Number.isInteger(port) || port <= 0 || port > 65535) {
   throw new Error(`PORT must be a valid port number, received: ${process.env.PORT}`);
 }
 
-readTokenKey(); // a missing or wrong calendar key stops the API here, not at someone's first Connect
+// A missing or wrong calendar setting stops the API here, not at someone's first Connect.
+readTokenKey();
+googleOAuthClient.assertConfigured();
 
 serve({ fetch: app.fetch, port }, (info) => {
   console.log(`[api] listening on http://localhost:${info.port}`);

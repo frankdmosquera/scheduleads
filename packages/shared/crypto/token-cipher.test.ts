@@ -4,6 +4,7 @@ import { describe, expect, test } from "vitest";
 import { decryptCredentials, encryptCredentials, readTokenKey } from "./token-cipher.js";
 
 const key = randomBytes(32);
+const person = "resource-ana"; // the connection's person the value is sealed to
 const credentials = JSON.stringify({
   refreshToken: "1//refresh-token",
   accessToken: "ya29.access-token",
@@ -20,12 +21,12 @@ function changePart(value: string, partIndex: number): string {
 
 describe("encryptCredentials and decryptCredentials", () => {
   test("a value locked with the key opens with the same key", () => {
-    const stored = encryptCredentials(credentials, key);
-    expect(decryptCredentials(stored, key)).toBe(credentials);
+    const stored = encryptCredentials(credentials, key, person);
+    expect(decryptCredentials(stored, key, person)).toBe(credentials);
   });
 
   test("the stored value does not contain the tokens in plain text", () => {
-    const stored = encryptCredentials(credentials, key);
+    const stored = encryptCredentials(credentials, key, person);
     expect(stored.startsWith("v1.")).toBe(true);
     expect(stored).not.toContain("refresh-token");
     expect(stored).not.toContain("access-token");
@@ -33,32 +34,39 @@ describe("encryptCredentials and decryptCredentials", () => {
 
   test("the same value locked twice looks different each time", () => {
     // A fresh random start per value; a repeated one would leak which rows hold the same tokens.
-    expect(encryptCredentials(credentials, key)).not.toBe(encryptCredentials(credentials, key));
+    expect(encryptCredentials(credentials, key, person)).not.toBe(
+      encryptCredentials(credentials, key, person)
+    );
   });
 
   test("a changed ciphertext, start or tag is refused", () => {
-    const stored = encryptCredentials(credentials, key);
+    const stored = encryptCredentials(credentials, key, person);
     for (const partIndex of [1, 2, 3]) {
-      expect(() => decryptCredentials(changePart(stored, partIndex), key)).toThrow();
+      expect(() => decryptCredentials(changePart(stored, partIndex), key, person)).toThrow();
     }
   });
 
   test("the wrong key is refused", () => {
-    const stored = encryptCredentials(credentials, key);
-    expect(() => decryptCredentials(stored, randomBytes(32))).toThrow();
+    const stored = encryptCredentials(credentials, key, person);
+    expect(() => decryptCredentials(stored, randomBytes(32), person)).toThrow();
   });
 
   test("an unknown version or a broken shape is refused", () => {
-    const stored = encryptCredentials(credentials, key);
-    expect(() => decryptCredentials(stored.replace(/^v1\./, "v2."), key)).toThrow();
-    expect(() => decryptCredentials(`${stored}.extra`, key)).toThrow();
-    expect(() => decryptCredentials("not-a-stored-value", key)).toThrow();
+    const stored = encryptCredentials(credentials, key, person);
+    expect(() => decryptCredentials(stored.replace(/^v1\./, "v2."), key, person)).toThrow();
+    expect(() => decryptCredentials(`${stored}.extra`, key, person)).toThrow();
+    expect(() => decryptCredentials("not-a-stored-value", key, person)).toThrow();
+  });
+
+  test("a value moved onto another person's row is refused", () => {
+    const stored = encryptCredentials(credentials, key, person);
+    expect(() => decryptCredentials(stored, key, "resource-luis")).toThrow();
   });
 
   test("a key of the wrong length is refused", () => {
-    expect(() => encryptCredentials(credentials, randomBytes(16))).toThrow();
+    expect(() => encryptCredentials(credentials, randomBytes(16), person)).toThrow();
     expect(() =>
-      decryptCredentials(encryptCredentials(credentials, key), randomBytes(31))
+      decryptCredentials(encryptCredentials(credentials, key, person), randomBytes(31), person)
     ).toThrow();
   });
 });

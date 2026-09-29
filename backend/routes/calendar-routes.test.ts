@@ -1,0 +1,401 @@
+// The calendar routes, called through the real app against the local database, with
+// Google faked: no test ever reaches Google. Every business, login and person here is a
+// throwaway made below and removed after, so a real connection is never touched.
+
+import { createHash, randomUUID } from "node:crypto";
+
+import { eq, inArray } from "drizzle-orm";
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+
+try {
+  process.loadEnvFile(new URL("../../.env", import.meta.url)); // the root .env, before the app reads it
+} catch {
+  // No .env: the environment must already carry DATABASE_URL and the Google values.
+}
+
+// Like the seed: only a database on this machine whose name ends in _dev.
+const databaseUrl = new URL(process.env.DATABASE_URL ?? "postgresql://missing/none");
+const localHosts = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+if (!localHosts.has(databaseUrl.hostname) || !databaseUrl.pathname.endsWith("_dev")) {
+  throw new Error(
+    `Refusing to run the calendar route tests against ${databaseUrl.hostname}${databaseUrl.pathname}. ` +
+      "They only run against a local database whose name ends in _dev."
+  );
+}
+
+// Imported after the env is loaded: they read it the moment they load.
+const { app } = await import("../app.js");
+const { db } = await import("../database.js");
+const { apiOrigin, appOrigin } = await import("../lib/auth/auth-server.js");
+const { calendarConnection, calendarOauthState, member, organization, resource, user } =
+  await import("@scheduleads-app/shared/db");
+const { decryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
+
+const FREEBUSY = "https://www.googleapis.com/auth/calendar.events.freebusy";
+const EVENTS_OWNED = "https://www.googleapis.com/auth/calendar.events.owned";
+const BOTH_SCOPES = `openid https://www.googleapis.com/auth/userinfo.email ${FREEBUSY} ${EVENTS_OWNED}`;
+
+const tag = randomUUID().slice(0, 8);
+const makeTenant = (letter: string, plan = "agency") => ({
+  userId: randomUUID(),
+  email: `calendar-${letter}-${tag}@example.com`,
+  organizationId: randomUUID(),
+  slug: `test-calendar-${letter}-${tag}-dev`,
+  plan,
+  personId: randomUUID(),
+});
+const ana = makeTenant("a"); // connects her calendar
+const ben = makeTenant("b"); // another business, for "someone else's ticket"
+const noBooking = makeTenant("d", "no-booking-test"); // no real tier lacks booking yet
+const noPerson = { userId: randomUUID(), email: `calendar-c-${tag}@example.com` }; // in Ana's business, no person
+
+const cookies = new Map<string, string>();
+
+// Signs in the real way: asks for a login code and reads it where the API prints it.
+async function signIn(email: string): Promise<string> {
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  const headers = { "Content-Type": "application/json", Origin: appOrigin };
+  await app.request("/api/auth/email-otp/send-verification-otp", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ email, type: "sign-in" }),
+  });
+  const line = log.mock.calls.map((call) => String(call[0])).find((text) => text.includes(email));
+  log.mockRestore();
+  const otp = line?.split(": ").pop();
+  if (!otp) throw new Error(`No login code was printed for ${email}.`);
+
+  const response = await app.request("/api/auth/sign-in/email-otp", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ email, otp }),
+  });
+  return response.headers
+    .getSetCookie()
+    .map((cookie) => cookie.split(";")[0])
+    .join("; ");
+}
+
+const request = (path: string, email?: string, method = "GET") =>
+  app.request(path, {
+    method,
+    headers: email ? { Cookie: cookies.get(email)!, Origin: appOrigin } : { Origin: appOrigin },
+  });
+
+async function startConnect(email: string): Promise<string> {
+  const response = await request("/calendar/connect", email, "POST");
+  const { url } = await response.json();
+  return new URL(url).searchParams.get("state")!;
+}
+
+async function callback(query: string, email?: string): Promise<string | null> {
+  const response = await request(`/calendar/callback?${query}`, email);
+  expect(response.status).toBe(302);
+  return response.headers.get("Location");
+}
+
+const outcome = (name: string) => `${appOrigin}/?calendar=${name}`;
+const fingerprint = (state: string) => createHash("sha256").update(state).digest("hex");
+
+const connectionsOf = (personId: string) =>
+  db.select().from(calendarConnection).where(eq(calendarConnection.resourceId, personId));
+
+// Google's side, faked: the token answer each test sets, and every token handed back.
+let tokenAnswer: () => Response = () => new Response("", { status: 500 });
+const revoked: string[] = [];
+
+const idToken = (email: string) =>
+  [
+    { alg: "none" },
+    {
+      iss: "https://accounts.google.com",
+      aud: process.env.GOOGLE_CLIENT_ID,
+      email,
+      email_verified: true,
+    },
+  ]
+    .map((part) => Buffer.from(JSON.stringify(part)).toString("base64url"))
+    .concat("signature")
+    .join(".");
+
+const googleTokens = ({
+  scope = BOTH_SCOPES,
+  refreshToken = "1//refresh-token-from-google" as string | null,
+  email = "ana.owner@gmail.com",
+} = {}) =>
+  new Response(
+    JSON.stringify({
+      access_token: "ya29.access-token-from-google",
+      expires_in: 3599,
+      scope,
+      token_type: "Bearer",
+      id_token: idToken(email),
+      ...(refreshToken ? { refresh_token: refreshToken } : {}),
+    }),
+    { status: 200, headers: { "Content-Type": "application/json" } }
+  );
+
+beforeAll(async () => {
+  const tenants = [ana, ben, noBooking];
+  await db
+    .insert(user)
+    .values([
+      ...tenants.map((t) => ({ id: t.userId, name: "", email: t.email, emailVerified: true })),
+      { id: noPerson.userId, name: "", email: noPerson.email, emailVerified: true },
+    ]);
+  await db
+    .insert(organization)
+    .values(
+      tenants.map((t) => ({ id: t.organizationId, name: t.slug, slug: t.slug, plan: t.plan }))
+    );
+  await db.insert(member).values([
+    ...tenants.map((t) => ({
+      id: randomUUID(),
+      organizationId: t.organizationId,
+      userId: t.userId,
+      role: "owner",
+    })),
+    {
+      id: randomUUID(),
+      organizationId: ana.organizationId,
+      userId: noPerson.userId,
+      role: "member",
+    },
+  ]);
+  await db.insert(resource).values(
+    tenants.map((t) => ({
+      id: t.personId,
+      organizationId: t.organizationId,
+      name: t.slug,
+      kind: "person",
+      userId: t.userId,
+    }))
+  );
+
+  for (const email of [ana.email, ben.email, noBooking.email, noPerson.email]) {
+    cookies.set(email, await signIn(email));
+  }
+
+  vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input instanceof Request ? input.url : input);
+    if (url.startsWith("https://oauth2.googleapis.com/token")) return tokenAnswer();
+    if (url.startsWith("https://oauth2.googleapis.com/revoke")) {
+      revoked.push(new URLSearchParams(String(init?.body)).get("token") ?? "");
+      return new Response("", { status: 200 });
+    }
+    throw new Error(`A test tried to reach ${url}.`);
+  });
+});
+
+beforeEach(() => {
+  revoked.length = 0;
+  tokenAnswer = () => googleTokens();
+});
+
+afterAll(async () => {
+  vi.unstubAllGlobals();
+  // Their people, tickets and connections go with the businesses (cascade); sessions with the logins.
+  await db
+    .delete(organization)
+    .where(
+      inArray(organization.id, [ana.organizationId, ben.organizationId, noBooking.organizationId])
+    );
+  await db
+    .delete(user)
+    .where(inArray(user.id, [ana.userId, ben.userId, noBooking.userId, noPerson.userId]));
+  await db.$client.end();
+});
+
+describe("POST /calendar/connect", () => {
+  test("no session is refused with 401", async () => {
+    expect((await request("/calendar/connect", undefined, "POST")).status).toBe(401);
+  });
+
+  test("a plan without booking is refused with 403", async () => {
+    // An unrecognised plan stands in: no real tier lacks booking until feature 23.
+    expect((await request("/calendar/connect", noBooking.email, "POST")).status).toBe(403);
+  });
+
+  test("a login with no person in the business is refused plainly", async () => {
+    const response = await request("/calendar/connect", noPerson.email, "POST");
+    expect(response.status).toBe(409);
+    expect((await response.json()).error.code).toBe("no_person");
+  });
+
+  test("answers Google's address with our client, return address, both permissions and PKCE", async () => {
+    const response = await request("/calendar/connect", ana.email, "POST");
+    expect(response.status).toBe(200);
+    const url = new URL((await response.json()).url);
+    const params = url.searchParams;
+
+    expect(url.origin + url.pathname).toBe("https://accounts.google.com/o/oauth2/v2/auth");
+    expect(params.get("client_id")).toBe(process.env.GOOGLE_CLIENT_ID);
+    expect(params.get("redirect_uri")).toBe(`${apiOrigin}/calendar/callback`);
+    expect(params.get("scope")?.split(" ")).toEqual(["openid", "email", FREEBUSY, EVENTS_OWNED]);
+    expect(params.get("access_type")).toBe("offline");
+    expect(params.get("prompt")).toBe("consent");
+    expect(params.get("code_challenge_method")).toBe("S256");
+    expect(params.get("code_challenge")).toMatch(/^[\w-]{43}$/);
+    expect(params.get("state")).toMatch(/^[\w-]{43}$/);
+  });
+});
+
+describe("the one-time ticket", () => {
+  test("keeps a fingerprint, never the value sent to Google, for ten minutes", async () => {
+    const state = await startConnect(ana.email);
+    const rows = await db
+      .select()
+      .from(calendarOauthState)
+      .where(inArray(calendarOauthState.id, [state, fingerprint(state)]));
+
+    expect(rows.map((row) => row.id)).toEqual([fingerprint(state)]);
+    const minutesLeft = (rows[0].expiresAt.getTime() - Date.now()) / 60_000;
+    expect(minutesLeft).toBeGreaterThan(9);
+    expect(minutesLeft).toBeLessThanOrEqual(10);
+  });
+
+  test("making a new one clears your expired ones", async () => {
+    const stale = randomUUID();
+    await db.insert(calendarOauthState).values({
+      id: stale,
+      userId: ana.userId,
+      organizationId: ana.organizationId,
+      resourceId: ana.personId,
+      codeVerifier: "stale",
+      expiresAt: new Date(Date.now() - 60_000),
+    });
+    await startConnect(ana.email);
+
+    const left = await db.select().from(calendarOauthState).where(eq(calendarOauthState.id, stale));
+    expect(left).toEqual([]);
+  });
+});
+
+describe("GET /calendar/callback", () => {
+  test("Cancel at Google ends in denied, and uses the ticket up", async () => {
+    const state = await startConnect(ana.email);
+    expect(await callback(`state=${state}&error=access_denied`, ana.email)).toBe(outcome("denied"));
+
+    const left = await db
+      .select()
+      .from(calendarOauthState)
+      .where(eq(calendarOauthState.id, fingerprint(state)));
+    expect(left).toEqual([]);
+  });
+
+  test("an unknown, expired, reused or someone else's ticket, or no session, ends in expired", async () => {
+    expect(await callback(`state=unknown-${tag}&code=abc`, ana.email)).toBe(outcome("expired"));
+
+    const stale = await startConnect(ana.email);
+    await db
+      .update(calendarOauthState)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(calendarOauthState.id, fingerprint(stale)));
+    expect(await callback(`state=${stale}&code=abc`, ana.email)).toBe(outcome("expired"));
+
+    const anas = await startConnect(ana.email);
+    expect(await callback(`state=${anas}&code=abc`, ben.email)).toBe(outcome("expired"));
+    expect(await callback(`state=${anas}&code=abc`)).toBe(outcome("expired"));
+
+    tokenAnswer = () => new Response("", { status: 400 }); // so the first use stops before saving
+    await callback(`state=${anas}&code=abc`, ana.email);
+    expect(await callback(`state=${anas}&code=abc`, ana.email)).toBe(outcome("expired"));
+
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("Google refusing the code ends in failed and saves nothing", async () => {
+    tokenAnswer = () => new Response(JSON.stringify({ error: "invalid_grant" }), { status: 400 });
+    const state = await startConnect(ana.email);
+
+    expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(outcome("failed"));
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("a missing permission hands the tokens back and saves nothing", async () => {
+    tokenAnswer = () => googleTokens({ scope: `openid ${FREEBUSY}` }); // "add events" unticked
+    const state = await startConnect(ana.email);
+
+    expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(
+      outcome("missing_permission")
+    );
+    expect(revoked).toEqual(["1//refresh-token-from-google"]);
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("no long-lived token hands the access token back, fails, and saves nothing", async () => {
+    tokenAnswer = () => googleTokens({ refreshToken: null });
+    const state = await startConnect(ana.email);
+
+    expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(outcome("failed"));
+    expect(revoked).toEqual(["ya29.access-token-from-google"]);
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("a full consent saves one row, tokens unreadable, with the Gmail from Google", async () => {
+    const state = await startConnect(ana.email);
+    // An extra return address in the request is ignored: the dashboard address is fixed.
+    const location = await callback(
+      `state=${state}&code=abc&redirect=https://elsewhere.example`,
+      ana.email
+    );
+    expect(location).toBe(outcome("connected"));
+
+    const rows = await connectionsOf(ana.personId);
+    expect(rows).toHaveLength(1);
+    const [row] = rows;
+    expect(row.accountEmail).toBe("ana.owner@gmail.com");
+    expect(row.status).toBe("connected");
+    expect(row.grantedScopes.split(" ")).toEqual(expect.arrayContaining([FREEBUSY, EVENTS_OWNED]));
+    expect(row.credentials).not.toContain("refresh-token-from-google");
+    expect(row.credentials).not.toContain("access-token-from-google");
+
+    const opened = JSON.parse(decryptCredentials(row.credentials, readTokenKey(), ana.personId));
+    expect(opened.refreshToken).toBe("1//refresh-token-from-google");
+    expect(() => decryptCredentials(row.credentials, readTokenKey(), ben.personId)).toThrow();
+  });
+
+  test("a reconnect replaces the row: still one", async () => {
+    tokenAnswer = () => googleTokens({ email: "ana.second@gmail.com" });
+    const state = await startConnect(ana.email);
+
+    expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(outcome("connected"));
+    const rows = await connectionsOf(ana.personId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].accountEmail).toBe("ana.second@gmail.com");
+  });
+});
+
+describe("GET /calendar/connection", () => {
+  test("a login with no person gets person: null", async () => {
+    const response = await request("/calendar/connection", noPerson.email);
+    expect(await response.json()).toEqual({ person: null, connection: null });
+  });
+
+  test("a person with no connection gets connection: null", async () => {
+    const response = await request("/calendar/connection", ben.email);
+    expect(await response.json()).toEqual({
+      person: { id: ben.personId, name: ben.slug },
+      connection: null,
+    });
+  });
+
+  test("a connection comes without the tokens or the permission list", async () => {
+    const response = await request("/calendar/connection", ana.email);
+    const text = await response.text();
+
+    expect(JSON.parse(text).connection).toEqual({
+      provider: "google",
+      accountEmail: "ana.second@gmail.com",
+      status: "connected",
+      lastCheckedAt: null,
+    });
+    expect(text).not.toContain("credentials");
+    expect(text).not.toContain("grantedScopes");
+    expect(text).not.toContain("v1.");
+  });
+
+  test("no session is refused with 401", async () => {
+    expect((await request("/calendar/connection")).status).toBe(401);
+  });
+});
