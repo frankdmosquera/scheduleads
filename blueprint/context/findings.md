@@ -153,3 +153,45 @@ config file copies.
 keep the why ("declarations only, because Vercel builds only the frontend"; "no
 src/ folder, so the code sits beside the build output").
 **Resolution:**
+
+### F-35 [P3] open - On a renamed seeded business the backfill links a worker to the owner, and the seed then crashes
+
+**File:** packages/shared/migrations/0004_calendar_connection.sql:51
+**Found:** 2026-09-28 by /audit independent (scope: step 3.1; lens: all)
+**Why it matters:** When no person carries the business's current name, the
+backfill falls back to the oldest person, and on seed-made data every person
+shares one `createdAt`, so the pick is the lowest random id. Reproduced on a
+throwaway database at 0003 holding a seed-shaped `painting-dev` whose business
+had been renamed ("Summit Painting"): migration 0004 linked
+`admin@example.com` to "Marco (estimator)", and the next `db:seed` then
+aborted with `resource_organization_user_unique`, because its link at
+`scripts/seed-dev.ts:330` targets the person named after the business while the
+login is already on another person in that business. An owner can rename a
+business today (the `owner` role has `organization: ["update"]`), though no
+screen offers it. Production is not affected in practice: a real first person
+was made by 0001 or the hook, before anyone else, so "oldest" is right there.
+All other edge cases behaved: two owners and a business with only places stay
+unlinked, the person beats an older place of the same name, the named person
+beats an older one, and a renamed business with real ages links the oldest.
+**Suggested fix:** Either link in the migration only when a person carries the
+business's name (leave the rest unlinked, as for two owners, which is what the
+comment's "rather than guess" promises), or have the seed skip the link with a
+printed note when the login is already on another person in that business.
+**Resolution:**
+
+### F-36 [P3] open - Two comments in this step break the comment standard
+
+**File:** .env.example:63
+**Found:** 2026-09-28 by /audit independent (scope: step 3.1; lens: quality)
+**Why it matters:** `coding-standards.md` (Comments, "The balance") keeps
+history out of code comments and most comments to one or two lines. This step
+rewrote the `WIDGET_ORIGINS` note to "Read by the public routes since step
+2.4" (history, a step number), and grew the `afterCreateOrganization` comment
+(`backend/lib/auth/auth-server.ts:105-109`) to five lines covering three
+separate points. Harmless at runtime; it is the pattern the next edit copies,
+as F-34 found for the tsconfigs.
+**Suggested fix:** "Read by the public booking routes." for the first. For the
+hook, keep two lines beside the code: why the person is named after the
+business and linked to the owner, and why it sits outside the create
+transaction; the note about item 3b fits in one short clause or the build log.
+**Resolution:**
