@@ -1445,11 +1445,11 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: step 3.1 reviewed, two small issues to talk through</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: step 3.1 done and reviewed; step 3.2's plan next</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
                 <a class="cell" href="#item-2" data-goto="item-2" data-state="done" title="2 Booking links, resources and availability rules - done">2</a>
-                <span class="cell-open" title="Step 3.1 reviewed, two small issues to talk through"><a class="cell" href="#item-3" data-goto="item-3" data-state="active" title="3 Calendar connection - specced">3</a><a class="cell cell--step" href="#step-3-1" data-goto="step-3-1" data-state="active" title="3.1 Groundwork: a person knows its login, the connection table, the lock - reviewed, two small issues">3.1</a><a class="cell cell--step" href="#step-3-2" data-goto="step-3-2" title="3.2 Connect a Google calendar">3.2</a><a class="cell cell--step" href="#step-3-3" data-goto="step-3-3" title="3.3 The seam and busy times">3.3</a><a class="cell cell--step" href="#step-3-4" data-goto="step-3-4" title="3.4 Disconnect, and the card&apos;s other states">3.4</a></span>
+                <span class="cell-open" title="Step 3.1 done and reviewed; step 3.2's plan next"><a class="cell" href="#item-3" data-goto="item-3" data-state="active" title="3 Calendar connection - specced">3</a><a class="cell cell--step" href="#step-3-1" data-goto="step-3-1" data-state="done" title="3.1 Groundwork: a person knows its login, the connection table, the lock - done">3.1</a><a class="cell cell--step" href="#step-3-2" data-goto="step-3-2" data-state="next" title="3.2 Connect a Google calendar - next">3.2</a><a class="cell cell--step" href="#step-3-3" data-goto="step-3-3" title="3.3 The seam and busy times">3.3</a><a class="cell cell--step" href="#step-3-4" data-goto="step-3-4" title="3.4 Disconnect, and the card&apos;s other states">3.4</a></span>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
           </div>
@@ -1984,7 +1984,7 @@
         </p>
         <div class="tally">
           <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b, 1, 2</span></span>
-          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">3: 3.1 built and reviewed</span></span>
+          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">3: 3.1 done; 3.2 next</span></span>
           <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">3b, then 4 through 26, with 12b</span></span>
         </div>
         <details class="callout callout--open">
@@ -10370,13 +10370,13 @@ describe("holidays the owner picked", () =&gt; {
               </div>
 
               <details class="drawer" data-kind="plan">
-                <summary>Steps <span class="tag-drift">whole feature agreed Sep 28 &middot; approved one step at a time &middot; 3.1 built and reviewed</span></summary>
+                <summary>Steps <span class="tag-drift">whole feature agreed Sep 28 &middot; approved one step at a time &middot; 3.1 done &middot; 3.2 next</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number. Each step's plan is gone through with you just before it is built; a blocker comes first and nothing is built until you answer it.</p>
                   <div class="item-steps">
 
-                    <details class="rstep" id="step-3-1" data-state="active">
-                      <summary><span class="sn">3.1</span><span class="sm"></span><span>Groundwork: a person knows its login, the connection table, the lock</span><span class="ss">Reviewed &middot; 2 small issues</span></summary>
+                    <details class="rstep" id="step-3-1" data-state="done">
+                      <summary><span class="sn">3.1</span><span class="sm"></span><span>Groundwork: a person knows its login, the connection table, the lock</span><span class="ss">Done</span></summary>
                       <div class="rstep-body">
                         <p class="rstep-what">Before anything talks to Google, the app has to know which person on the calendar is you, and have a safe place to keep what Google hands back. This step links the business's first person to its owner's login, adds the table a connection lives in, and builds the lock that keeps Google's tokens unreadable in the database. Nothing talks to Google yet.</p>
                         <details class="drawer" data-kind="plan">
@@ -11012,14 +11012,14 @@ GOOGLE_CLIENT_SECRET=</code></pre>
                                 <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>A fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests; this step against its own Done when; the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</p><p><b>For this step:</b> Read the hook against Better Auth's own code, so the right login is linked; regenerated the migration and found it matches the tables; started the built API with a missing, short and wrong key (refused each time, never printing the key) and with the real one; planted six faults of its own in the lock, five caught by the right test and the sixth refused by Node itself; tried every database refusal inside a transaction it rolled back; and built four throwaway databases to push the migration through its edge cases: two owners, only places, a renamed business, a database seeded before this step. All dropped after.</p></div>
                                 <div class="review-part"><div class="review-part-head">2 &middot; Verdict</div><div class="rstep-when">Passed, Sep 28, commit <code>9eba7b5</code>. Nothing serious. Two small issues.</div></div>
                                 <div class="review-issues">
-                                  <div class="review-issues-head">3 &middot; Issues it found: 2 &middot; F-35 fixed, F-36 open</div>
+                                  <div class="review-issues-head">3 &middot; Issues it found: 2, both fixed</div>
                                   <div class="rows">
                               <div class="row"><div class="row-key">F-35 &middot; P3 &middot; fixed</div><div class="row-val">If a made-up business on the practice database was renamed, no person carries its name any more, and every seeded person was made in the same instant, so the migration links the owner's login to a random worker, and the next seed crashes. Only practice data: a real business's first person really is its oldest.</div></div>
-                              <div class="row"><div class="row-key">F-36 &middot; P3 &middot; open</div><div class="row-val">Two comments break the comment standard: the <code>.env.example</code> note says "since step 2.4" (history), and the hook's comment grew to five lines for three points.</div></div>
+                              <div class="row"><div class="row-key">F-36 &middot; P3 &middot; fixed</div><div class="row-val">Two comments break the comment standard: the <code>.env.example</code> note says "since step 2.4" (history), and the hook's comment grew to five lines for three points.</div></div>
                             </div>
                                 </div>
                                 <div class="review-part"><div class="review-part-head">4 &middot; Earlier issues it closed</div><p>None: feature 2's issues were all settled at its final review, and nothing older was touched by this step.</p></div>
-                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p><b>F-35, fixed on your yes, Sep 28:</b> the migration links only a person named after the business; nobody of that name means nobody linked. Proved on a throwaway database built as it was before this step, with a renamed made-up business: the business stayed unlinked, the clinic's named person was linked over a colleague made in the same instant, and the seed then linked the right person and finished. The same data under the old migration linked Marco, so the check can fail. <b>F-36:</b> still to talk through. Closed by the next review.</p></div>
+                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p><b>F-35, fixed on your yes, Sep 28:</b> the migration links only a person named after the business; nobody of that name means nobody linked. Proved on a throwaway database built as it was before this step, with a renamed made-up business: the business stayed unlinked, the clinic's named person was linked over a colleague made in the same instant, and the seed then linked the right person and finished. The same data under the old migration linked Marco, so the check can fail. <b>F-36, your call, Sep 28:</b> the comment rule is a guide, not a line count: a comment only where it helps, beside its line, as long as it needs. So the <code>.env.example</code> note lost its step number and the hook's comment stays. The coding standard now says so. Both closed by the next review.</p></div>
                               </div>
                             </div>
                           </div>
@@ -11211,9 +11211,16 @@ GOOGLE_CLIENT_SECRET=</code></pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">7 entries, newest first</span></summary>
+                <summary>Log <span class="tag-drift">8 entries, newest first</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="decided">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 3.1: F-36 closed by clarifying the comment rule</span><span class="kind-tag">Decided</span><span class="stamp">Sep 28</span></div>
+                        <p class="entry-text">Your words: you like comments where they belong, you do not need everything commented, and a comment that says nothing is the problem, not a count of lines. The coding standard now reads that way: a comment only where it helps, beside its line, as long as it needs; a review raises comments that say nothing or pile up, not a few needed lines. So the hook's comment stays, and the <code>.env.example</code> note only lost its "since step 2.4". Marked fixed; the next review closes it.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="fix">
                       <div class="dot"></div>
                       <div class="entry-body">

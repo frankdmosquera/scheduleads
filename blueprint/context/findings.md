@@ -187,7 +187,7 @@ clinic's named person over a same-instant colleague, and the next db:seed
 linked the named person and finished; the committed 0004 (9eba7b5) on the same
 data linked "Marco (estimator)". Throwaway database dropped.
 
-### F-36 [P3] open - Two comments in this step break the comment standard
+### F-36 [P3] fixed - Two comments in this step break the comment standard
 
 **File:** .env.example:63
 **Found:** 2026-09-28 by /audit independent (scope: step 3.1; lens: quality)
@@ -202,4 +202,9 @@ as F-34 found for the tsconfigs.
 hook, keep two lines beside the code: why the person is named after the
 business and linked to the owner, and why it sits outside the create
 transaction; the note about item 3b fits in one short clause or the build log.
-**Resolution:**
+**Resolution:** Fixed 2026-09-28, half by change and half by clarifying the
+rule with Frank. The `.env.example` note now reads "Read by the public booking
+routes." with no step number. The hook comment stays: Frank clarified that the
+comment rule is a guide, not a line count (comments only where they help,
+beside their line, as long as needed), and those lines each explain a why at
+the line they describe. `coding-standards.md` "The balance" now says so.
