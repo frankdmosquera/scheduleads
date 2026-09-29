@@ -341,7 +341,9 @@ obvious code, or a long block at the top that explains lines far below it.
   it helps: why, the trap, the security rule, the other file that must change
   with this one, units or formats (minutes from midnight, `YYYY-MM-DD`). Clear
   code gets none; a comment that repeats the code is noise, and so is one that
-  explains what a known tool is ("a shadcn component; shadcn is..."). It is as long as it
+  explains what a known tool is ("a shadcn component; shadcn is..."). The
+  exception is a tool Frank is still learning (Better Auth, 2026-09-28): a short
+  note on what its call does is welcome until he says he knows it. It is as long as it
   needs to be and no longer, usually a line or two, never a paragraph about code
   far below. A guide, not a line count: a review raises comments that say
   nothing or pile up, not a few needed lines. No history in code comments (step
