@@ -19,6 +19,10 @@
     "./helpers": {
       "types": "./dist/helpers/to-slug.d.ts",
       "default": "./dist/helpers/to-slug.js"
+    },
+    "./crypto": {
+      "types": "./dist/crypto/token-cipher.d.ts",
+      "default": "./dist/crypto/token-cipher.js"
     }
   },
   "scripts": {

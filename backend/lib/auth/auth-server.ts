@@ -104,14 +104,17 @@ export const auth = betterAuth({
 
       organizationHooks: {
         // Every business gets its first person, named after the business (not whoever
-        // clicked create, today the platform admin). Outside the create transaction: if it
-        // fails, the business cannot take a booking, which fails safe.
-        afterCreateOrganization: async ({ organization: createdOrganization }) => {
+        // clicked create, today the platform admin), and linked to its owner's login so
+        // the app knows whose calendar that person is. Item 3b makes the owner the client.
+        // Outside the create transaction: if it fails, the business cannot take a booking,
+        // which fails safe.
+        afterCreateOrganization: async ({ organization: createdOrganization, member: owner }) => {
           await db.insert(resource).values({
             id: randomUUID(),
             organizationId: createdOrganization.id,
             name: createdOrganization.name,
             kind: "person",
+            userId: owner.userId,
           });
         },
       },

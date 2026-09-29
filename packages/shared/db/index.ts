@@ -11,3 +11,5 @@ export * from "./auth-tables/invitation-table.js";
 export * from "./booking-tables/resource-table.js";
 export * from "./booking-tables/booking-link-table.js";
 export * from "./booking-tables/availability-rule-table.js";
+export * from "./booking-tables/calendar-connection-table.js";
+export * from "./booking-tables/calendar-oauth-state-table.js";

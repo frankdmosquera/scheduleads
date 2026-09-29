@@ -325,6 +325,14 @@ try {
       // Better Auth hook that normally makes it.
       const firstPerson = await ensureResource(tx, organizationId, business.name, "person");
 
+      // Linked to its owner's login, as the create hook does. Also on a database seeded
+      // before the link existed, so no machine needs a rebuild.
+      const linked = await tx
+        .update(resource)
+        .set({ userId })
+        .where(and(eq(resource.id, firstPerson.id), isNull(resource.userId)))
+        .returning({ id: resource.id });
+
       // Parsed before writing: the jsonb columns would accept a bad week.
       const [existingBusinessHours] = await tx
         .select({
@@ -415,6 +423,7 @@ try {
         !existingOrg && "business",
         !existingMember && "membership",
         firstPerson.made && "first person",
+        linked.length && "first person's login link",
         !existingBusinessHours && "business hours",
         holidaysAdded && "holiday picks",
         peopleMade && `${peopleMade} people and places`,
