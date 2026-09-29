@@ -208,6 +208,10 @@ without Frank touching the database.
 - [ ] 12. **Settings** - hours with several windows a day, services,
   resources, blackout dates, statutory holidays, the booking horizon, and
   the calendar connection, replacing direct edits to `availability_rule`.
+  The calendar connection includes which of the owner's Google calendars
+  count as busy, the owner's pick (item 3 reads only the main one; the list
+  needs `calendar.calendarlist.readonly`, added here, before any client
+  connects).
   From version 8:
   - Services with their length and buffers; people and places.
   - Who does what: the owner ticks each person's services and the rooms

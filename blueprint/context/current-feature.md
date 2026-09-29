@@ -216,10 +216,13 @@ real data, `main`), or a P0/P1 finding. Each step commit is
     Google address.
 
 - [ ] **3.3 The provider seam and busy times.**
-  - Blocker, waiting on Frank: **which of his Google calendars count as
-    busy.** Recommended: his main calendar only (no extra permission). The
-    other answer, every calendar he owns, needs one more permission, asked
-    now or never without reconnecting.
+  - Blocker: **which of his Google calendars count as busy. Answered A,
+    Frank, 2026-09-29: the main calendar only**, no new permission. Every
+    calendar he owns would need `calendar.calendarlist.readonly` and a
+    filter for subscribed ones (a holiday calendar would block whole days).
+    Which calendars count is the owner's choice, so the picker is feature 12's;
+    nobody real connects before feature 13, so adding that permission then
+    costs no client a reconnect.
   - `backend/lib/calendar/calendar-provider.ts`: the seam's type.
     `google-calendar-provider.ts`: free/busy, refresh, revoke.
     `get-busy-times.ts`: loads the person's connection, refreshes when needed,
@@ -367,7 +370,7 @@ real data, `main`), or a P0/P1 finding. Each step commit is
   permission (Testing mode's seven days, or access removed): `needs_reconnect`.
 - Revoke: `https://oauth2.googleapis.com/revoke`.
 - Free/busy: `POST https://www.googleapis.com/calendar/v3/freeBusy` with
-  `items: [{ id: "primary" }]` (step 3.3's blocker may change the list).
+  `items: [{ id: "primary" }]`: the main calendar only (3.3's blocker, answered A).
 
 ### Routes
 
@@ -440,5 +443,5 @@ Each is a blocker on its own step, answered when that step is planned:
 1. Step 3.1: how the app knows which person is you. **Answered A, Frank,
    2026-09-28**: link a person to a login.
 2. Step 3.2: plain `fetch` or `google-auth-library` (recommended: `fetch`).
-3. Step 3.3: which of his Google calendars count as busy (recommended: the
-   main one only).
+3. Step 3.3: which of his Google calendars count as busy. **Answered A,
+   Frank, 2026-09-29**: the main one only; the owner's picker is feature 12.
