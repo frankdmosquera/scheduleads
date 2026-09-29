@@ -317,21 +317,26 @@ real data, `main`), or a P0/P1 finding. Each step commit is
   (composite FK as above).
 - `codeVerifier` text: the PKCE verifier (43 base64url characters).
 - `expiresAt` timestamptz: ten minutes after it is made.
-- Used up by `DELETE ... WHERE id = $1 RETURNING *`, so two callbacks with the
-  same state cannot both succeed. Expired rows are deleted when a new state is
+- Used up by one `DELETE ... WHERE id = sha256(state) AND userId = <session's
+  user> AND expiresAt > now() RETURNING ...`, so two callbacks with the same
+  state cannot both succeed, and another login's or a stale ticket is never
+  touched. Expired rows are deleted when a new state is
   made for the same login.
 
 ### The cipher
 
-- `encryptCredentials(plaintext: string, key: Buffer): string` and
-  `decryptCredentials(value: string, key: Buffer): string`.
+- `encryptCredentials(plaintext: string, key: Buffer, boundTo: string): string`
+  and `decryptCredentials(value: string, key: Buffer, boundTo: string): string`.
+  `boundTo` is the connection's `resourceId`, sealed in as GCM additional data
+  and not stored: a value only opens for the person it was locked for, so one
+  copied onto another person's row is refused.
 - Output: `v1.<iv>.<ciphertext>.<tag>`, each base64url; a fresh 12-byte IV per
   call; 16-byte tag. `v1` lets the key or format change later without
   guessing.
 - `readTokenKey()`: `CALENDAR_TOKEN_KEY` is 32 bytes, base64. Missing or the
   wrong length stops the API at start, like `BETTER_AUTH_SECRET`.
-- A tampered value, a wrong key or an unknown version throws; never returns
-  garbage.
+- A tampered value, a wrong key, another person or an unknown version throws;
+  never returns garbage.
 
 ### Google
 
@@ -342,9 +347,10 @@ real data, `main`), or a P0/P1 finding. Each step commit is
   already the API's own origin, so no new variable.
 - Scopes: `openid`, `email`,
   `https://www.googleapis.com/auth/calendar.events.freebusy` (read busy
-  times; not `calendar.freebusy`, the first repo's trap), and the add-and-edit
-  events scope, whose exact string is checked against Google's scope list in
-  step 3.2 before it is written.
+  times; not `calendar.freebusy`, the first repo's trap), and
+  `https://www.googleapis.com/auth/calendar.events.owned` (add and change
+  events on calendars the person owns), checked against Google's scope list
+  on Sep 28.
 - Required to count as connected: both calendar scopes present in the granted
   list. `openid email` alone, or one calendar scope, is a half-connection.
 - Token swap and refresh: `https://oauth2.googleapis.com/token`. A refresh
@@ -371,7 +377,7 @@ in the active business whose `userId` is the session's user.
 | `POST /calendar/disconnect` | 200 `{ revokedAtGoogle: boolean }`; 404 `not_found` when there is nothing to disconnect; 409 `no_person` |
 
 Callback outcomes, the only values `?calendar=` ever carries: `connected`,
-`declined` (the person pressed Cancel at Google), `missing_permission`,
+`denied` (the person pressed Cancel at Google), `missing_permission`,
 `expired` (state unknown, expired, used, or another login's; or no session),
 `failed` (Google did not answer or refused the code). The redirect target is
 fixed; nothing from the request picks it, so there is no open redirect.

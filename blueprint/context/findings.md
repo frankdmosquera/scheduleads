@@ -295,7 +295,7 @@ them (see F-41).
 `packages/shared` so both sides import it.
 **Resolution:**
 
-### F-41 [P3] open - The spec's contracts still describe the shapes step 3.2 changed
+### F-41 [P3] fixed - The spec's contracts still describe the shapes step 3.2 changed
 
 **File:** blueprint/context/current-feature.md:374
 **Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: quality)
@@ -309,7 +309,14 @@ requires the same login and an unexpired ticket. The project's rule is that a
 wrong spec is corrected before the next step builds on it.
 **Suggested fix:** Update those three lines to match the code before 3.3's
 plan is written.
-**Resolution:**
+**Resolution:** Fixed 2026-09-28 on Frank's yes, docs only. The spec's
+outcomes now say `denied`; the cipher signatures carry `boundTo` (the
+connection's `resourceId`, sealed in as GCM additional data) and "another
+person" joins the refusals; the ticket is used up by one DELETE on its
+fingerprint, the session's user and an unexpired `expiresAt`. Found on the way
+and fixed with it: the Google section still said the events scope "is checked
+before it is written"; it now names `calendar.events.owned`. The build log's
+Contracts row for the lock says the same. Waits for the next review to close.
 
 ### F-42 [P3] open - Two names in the calendar folder read differently from their neighbours
 
