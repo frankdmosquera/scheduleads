@@ -10426,7 +10426,7 @@ describe("holidays the owner picked", () =&gt; {
                               <li data-outcome="kept"><b>1.</b> A person is linked to a login, your answer A, Sep 28
                                 <span class="no-code">Its code is pieces 2 to 4: the <code>userId</code> column and its two rules, and the three places that set it.</span></li>
                               <li data-outcome="changed"><b>2.</b> Migration <code>0004_calendar_connection</code>: <code>resource.userId</code> (one login at most one person in a business, a place never linked), the <code>calendar_connection</code> table (one per person) and <code>calendar_oauth_state</code> (the ten-minute ticket for 3.2). Existing businesses: the first person linked to the owner when there is exactly one
-                                <em class="why">Changed: the plan said "the oldest person". Your practice database showed every seeded person with the exact same creation time, so "oldest" would have been a coin toss, the very guess option A rejected. The migration now takes the person named after the business first (that is how migration 0001 and the hook always make the first person), and age only breaks a tie.</em>
+                                <em class="why">Changed: the plan said "the oldest person". Your practice database showed every seeded person with the exact same creation time, so "oldest" would have been a coin toss, the very guess option A rejected. The migration now takes only the person named after the business (that is how migration 0001 and the hook always make the first person); with nobody of that name it links no one. The review found the first version still fell back to a guess (F-35), fixed the same day.</em>
                                 <details class="piece-fig piece-code"><summary>The code &middot; 5 files</summary><div class="piece-code-body">
 <details class="codefile"><summary><code>packages/shared/db/booking-tables/resource-table.ts</code> <span class="tag-drift">changed &middot; +14 &minus;1</span></summary><div class="codefile-body">
 <div class="code-label">Before &middot; line 3</div><pre class="code" data-lang="typescript" data-start="3" data-mark="6" data-kind="removed"><code>// person, made by migration 0001 or the hook in auth-server.ts.
@@ -11012,14 +11012,14 @@ GOOGLE_CLIENT_SECRET=</code></pre>
                                 <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>A fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests; this step against its own Done when; the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</p><p><b>For this step:</b> Read the hook against Better Auth's own code, so the right login is linked; regenerated the migration and found it matches the tables; started the built API with a missing, short and wrong key (refused each time, never printing the key) and with the real one; planted six faults of its own in the lock, five caught by the right test and the sixth refused by Node itself; tried every database refusal inside a transaction it rolled back; and built four throwaway databases to push the migration through its edge cases: two owners, only places, a renamed business, a database seeded before this step. All dropped after.</p></div>
                                 <div class="review-part"><div class="review-part-head">2 &middot; Verdict</div><div class="rstep-when">Passed, Sep 28, commit <code>9eba7b5</code>. Nothing serious. Two small issues.</div></div>
                                 <div class="review-issues">
-                                  <div class="review-issues-head">3 &middot; Issues it found: 2, both open</div>
+                                  <div class="review-issues-head">3 &middot; Issues it found: 2 &middot; F-35 fixed, F-36 open</div>
                                   <div class="rows">
-                              <div class="row"><div class="row-key">F-35 &middot; P3 &middot; open</div><div class="row-val">If a made-up business on the practice database was renamed, no person carries its name any more, and every seeded person was made in the same instant, so the migration links the owner's login to a random worker, and the next seed crashes. Only practice data: a real business's first person really is its oldest.</div></div>
+                              <div class="row"><div class="row-key">F-35 &middot; P3 &middot; fixed</div><div class="row-val">If a made-up business on the practice database was renamed, no person carries its name any more, and every seeded person was made in the same instant, so the migration links the owner's login to a random worker, and the next seed crashes. Only practice data: a real business's first person really is its oldest.</div></div>
                               <div class="row"><div class="row-key">F-36 &middot; P3 &middot; open</div><div class="row-val">Two comments break the comment standard: the <code>.env.example</code> note says "since step 2.4" (history), and the hook's comment grew to five lines for three points.</div></div>
                             </div>
                                 </div>
                                 <div class="review-part"><div class="review-part-head">4 &middot; Earlier issues it closed</div><p>None: feature 2's issues were all settled at its final review, and nothing older was touched by this step.</p></div>
-                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p>Not yet. Both issues are talked through with you first.</p></div>
+                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p><b>F-35, fixed on your yes, Sep 28:</b> the migration links only a person named after the business; nobody of that name means nobody linked. Proved on a throwaway database built as it was before this step, with a renamed made-up business: the business stayed unlinked, the clinic's named person was linked over a colleague made in the same instant, and the seed then linked the right person and finished. The same data under the old migration linked Marco, so the check can fail. <b>F-36:</b> still to talk through. Closed by the next review.</p></div>
                               </div>
                             </div>
                           </div>
@@ -11211,9 +11211,16 @@ GOOGLE_CLIENT_SECRET=</code></pre>
               </details>
 
               <details class="drawer" data-kind="reality">
-                <summary>Log <span class="tag-drift">6 entries, newest first</span></summary>
+                <summary>Log <span class="tag-drift">7 entries, newest first</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="fix">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 3.1: F-35 fixed</span><span class="kind-tag">Fix</span><span class="stamp">Sep 28</span></div>
+                        <p class="entry-text">Your yes: the migration no longer guesses. It links only the person named after the business, and a business with nobody of that name (renamed since) stays unlinked, like one with two owners. Migration 0004 had only run on this laptop, with the right result, so it was corrected before it ever reaches Railway. Proved on a throwaway database; the old version on the same data linked a random worker, so the check can fail. Marked fixed; the next review closes it.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="done">
                       <div class="dot"></div>
                       <div class="entry-body">

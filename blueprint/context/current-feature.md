@@ -98,10 +98,11 @@ real data, `main`), or a P0/P1 finding. Each step commit is
     first person is linked to the member whose role is `owner`, when there is
     exactly one; otherwise it stays unlinked and the card says so. The first
     person is the one named after the business (how migration 0001 and the
-    hook make it), the oldest only breaking a tie. Changed while building:
-    the plan said "the oldest person", but the seed makes a whole cast in one
-    transaction, so everyone shares one `createdAt` and "oldest" was a coin
-    toss.
+    hook make it); with no person of that name (a renamed business) it stays
+    unlinked too, never a guess. Changed while building: the plan said "the
+    oldest person", but the seed makes a whole cast in one transaction, so
+    everyone shares one `createdAt` and "oldest" was a coin toss. The name-only
+    rule is F-35's fix, on Frank's yes, 2026-09-28.
   - The `afterCreateOrganization` hook links the new first person to the
     business's owner, read from the membership Better Auth has just made
     (today the platform admin; item 3b makes it the client, with no change to

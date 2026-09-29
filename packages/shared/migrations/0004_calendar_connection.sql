@@ -34,7 +34,7 @@ ALTER TABLE "calendar_oauth_state" ADD CONSTRAINT "calendar_oauth_state_resource
 ALTER TABLE "resource" ADD CONSTRAINT "resource_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "resource_organization_user_unique" ON "resource" USING btree ("organizationId","userId") WHERE "resource"."userId" is not null;--> statement-breakpoint
 ALTER TABLE "resource" ADD CONSTRAINT "resource_user_is_person_check" CHECK ("resource"."userId" is null or "resource"."kind" = 'person');--> statement-breakpoint
--- Added by hand: in every business that already exists, the first person is linked to the owner, when there is exactly one; otherwise it stays unlinked rather than guess. The first person is the one migration 0001 or the create hook made, named after the business; oldest only breaks a tie, because the seed makes all its people in one transaction with the same createdAt. New businesses get the link from the afterCreateOrganization hook in backend/lib/auth/auth-server.ts.
+-- Added by hand: in every business that already exists, the first person (the one migration 0001 or the create hook made, named after the business) is linked to the owner, when there is exactly one. Anything else stays unlinked rather than guess: no owner or two, or no person with the business's name (renamed since). Oldest only breaks a tie between two people with that name. New businesses get the link from the afterCreateOrganization hook in backend/lib/auth/auth-server.ts.
 UPDATE "resource" SET "userId" = "owner"."userId"
 FROM (
 	SELECT "organizationId", min("userId") AS "userId"
@@ -47,8 +47,8 @@ FROM (
 	SELECT DISTINCT ON ("resource"."organizationId") "resource"."id", "resource"."organizationId"
 	FROM "resource"
 	JOIN "organization" ON "organization"."id" = "resource"."organizationId"
-	WHERE "resource"."kind" = 'person'
-	ORDER BY "resource"."organizationId", ("resource"."name" = "organization"."name") DESC, "resource"."createdAt", "resource"."id"
+	WHERE "resource"."kind" = 'person' AND "resource"."name" = "organization"."name"
+	ORDER BY "resource"."organizationId", "resource"."createdAt", "resource"."id"
 ) AS "first_person"
 WHERE "resource"."id" = "first_person"."id"
 	AND "first_person"."organizationId" = "owner"."organizationId";

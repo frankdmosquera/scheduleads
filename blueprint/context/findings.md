@@ -154,7 +154,7 @@ keep the why ("declarations only, because Vercel builds only the frontend"; "no
 src/ folder, so the code sits beside the build output").
 **Resolution:**
 
-### F-35 [P3] open - On a renamed seeded business the backfill links a worker to the owner, and the seed then crashes
+### F-35 [P3] fixed - On a renamed seeded business the backfill links a worker to the owner, and the seed then crashes
 
 **File:** packages/shared/migrations/0004_calendar_connection.sql:51
 **Found:** 2026-09-28 by /audit independent (scope: step 3.1; lens: all)
@@ -177,7 +177,15 @@ beats an older one, and a renamed business with real ages links the oldest.
 business's name (leave the rest unlinked, as for two owners, which is what the
 comment's "rather than guess" promises), or have the seed skip the link with a
 printed note when the login is already on another person in that business.
-**Resolution:**
+**Resolution:** Fixed 2026-09-28 on Frank's yes, the first option: migration
+0004 links only a person named after the business, oldest breaking a tie
+between two of that name; no such person leaves the business unlinked. 0004
+had only run on the local dev database (with the right result), so it was
+corrected before reaching Railway. Proved on a throwaway database at 0003 with
+a renamed seed-shaped business: the fixed 0004 left it unlinked, linked the
+clinic's named person over a same-instant colleague, and the next db:seed
+linked the named person and finished; the committed 0004 (9eba7b5) on the same
+data linked "Marco (estimator)". Throwaway database dropped.
 
 ### F-36 [P3] open - Two comments in this step break the comment standard
 
