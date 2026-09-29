@@ -154,7 +154,7 @@ keep the why ("declarations only, because Vercel builds only the frontend"; "no
 src/ folder, so the code sits beside the build output").
 **Resolution:**
 
-### F-35 [P3] fixed - On a renamed seeded business the backfill links a worker to the owner, and the seed then crashes
+### F-35 [P3] closed - On a renamed seeded business the backfill links a worker to the owner, and the seed then crashes
 
 **File:** packages/shared/migrations/0004_calendar_connection.sql:51
 **Found:** 2026-09-28 by /audit independent (scope: step 3.1; lens: all)
@@ -186,8 +186,15 @@ a renamed seed-shaped business: the fixed 0004 left it unlinked, linked the
 clinic's named person over a same-instant colleague, and the next db:seed
 linked the named person and finished; the committed 0004 (9eba7b5) on the same
 data linked "Marco (estimator)". Throwaway database dropped.
+Closed 2026-09-28 by /audit independent (scope: step 3.2, re-examining 7c6b593):
+the backfill at lines 38-55 now picks only a person whose name equals the
+business's name, oldest then id breaking a tie, and joins it to a business with
+exactly one owner; a renamed business matches no row and stays unlinked, so the
+guess is gone and the seed's link to the named person can no longer collide.
+The repair adds nothing new: the unique index and the person-only check above
+it are unchanged, and the shared and backend tests pass.
 
-### F-36 [P3] fixed - Two comments in this step break the comment standard
+### F-36 [P3] closed - Two comments in this step break the comment standard
 
 **File:** .env.example:63
 **Found:** 2026-09-28 by /audit independent (scope: step 3.1; lens: quality)
@@ -208,3 +215,113 @@ routes." with no step number. The hook comment stays: Frank clarified that the
 comment rule is a guide, not a line count (comments only where they help,
 beside their line, as long as needed), and those lines each explain a why at
 the line they describe. `coding-standards.md` "The balance" now says so.
+Closed 2026-09-28 by /audit independent (scope: step 3.2): `.env.example:63`
+reads "Read by the public booking routes." with no step number, and the step
+3.2 edits to the same file carry none either. The hook comment in
+`auth-server.ts` is unchanged and, under the clarified rule ("a guide, not a
+line count"), each of its lines explains a why beside the code it describes,
+so it no longer breaks the standard. Kept on Frank's call, not the reviewer's.
+
+### F-37 [P3] open - Switching to another Google account leaves the old account's permission live at Google
+
+**File:** backend/lib/calendar/save-calendar-connection.ts:44
+**Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: security)
+**Why it matters:** When a person connects again, the new tokens simply
+overwrite the old ones. If the second connect is a different Google account
+(the saved test "a reconnect replaces the row" does exactly that), the first
+account's permission is never handed back: Google still lists the app under
+that account's third-party access, and we no longer hold the token that could
+remove it, so step 3.4's Disconnect cannot either. Nothing leaks (we threw the
+old token away), but the owner is left with a permission they cannot see from
+the dashboard. Today the card only offers Connect when there is no connection,
+so this is reached by the API or by 3.4's Reconnect.
+**Suggested fix:** In the save (or in `finish-google-connect.ts` just before
+it), read the existing row; when its account email differs from the new one,
+open the old credentials and hand the old refresh token back, best effort,
+after the new row is saved. Leave the same-account case alone: that is one
+permission at Google, and revoking it would kill the new tokens too.
+**Resolution:**
+
+### F-38 [P3] open - When Google refuses a connect, nobody can see why
+
+**File:** backend/lib/calendar/finish-google-connect.ts:55
+**Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: quality)
+**Why it matters:** Every way the trip back from Google can go wrong ends in
+the same "failed" and nothing is written anywhere. The code swap's error
+(`Google refused the code swap (401)`, a wrong secret or redirect) is thrown
+away at line 55, a failed save at line 83, and anything unexpected at
+`calendar-routes.ts:89`. The owner sees "try again in a minute", and the
+person fixing it has no clue whether it was the client secret, the redirect
+address, the token key or the database. The step's own by-hand connect needed
+a redirect fix; the next one on Railway will have only this.
+**Suggested fix:** One `console.warn` at each of those three catches with the
+outcome and Google's HTTP status or error code (`invalid_client`,
+`invalid_grant`), never a token or the code itself.
+**Resolution:**
+
+### F-39 [P3] open - The Google identity check and three give-up paths have no saved test
+
+**File:** backend/lib/calendar/google-oauth-client.ts:110
+**Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: tests)
+**Why it matters:** `readIdentity` decides which Google address is saved and
+shown on the card, and refuses a sign-in token meant for another app, from
+another issuer or with an unverified address. No test sends any of those, so
+removing the audience or `email_verified` check would pass the whole suite.
+The same holds for three other paths in `finish-google-connect.ts`: the person
+unlinked from the login during the ten minutes at Google (line 51, should be
+`expired`), a Google error other than Cancel (line 35, `failed`), and a save
+that fails (line 83, tokens handed back). Separately, the "connection comes
+without the tokens" test (`calendar-routes.test.ts:383`) only passes because
+the reconnect test above it ran first, so running it alone fails.
+**Suggested fix:** Add route tests with the fake token answer carrying a wrong
+`aud`, a wrong `iss` and `email_verified: false` (each ends in `failed`, hands
+the token back, saves nothing), plus one each for the unlinked person and
+`error=server_error`. Have the connection test make its own connection first.
+**Resolution:**
+
+### F-40 [P3] open - The card's list of outcomes is not tied to the API's, and a made-up one shows an empty red box
+
+**File:** frontend/components/calendar/calendar-connection-card.tsx:17
+**Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: quality)
+**Why it matters:** `OUTCOMES` is a plain `Record<string, ...>` looked up with
+whatever `?calendar=` says (line 71). An inherited name such as
+`/?calendar=constructor` finds a built-in function, so the card shows an empty
+error box. Harmless, but it also means the five words are typed only on the
+backend (`ConnectOutcomeType`): rename one there and the card silently shows
+nothing, and the build does not notice. The spec already disagrees on one of
+them (see F-41).
+**Suggested fix:** Type the map's keys as the five outcomes and look up with
+`Object.hasOwn(OUTCOMES, outcome)`; ideally the outcome list lives once in
+`packages/shared` so both sides import it.
+**Resolution:**
+
+### F-41 [P3] open - The spec's contracts still describe the shapes step 3.2 changed
+
+**File:** blueprint/context/current-feature.md:374
+**Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: quality)
+**Why it matters:** Steps 3.3 and 3.4 build on the Data / contracts section,
+and three lines there no longer match the code: the Routes table names the
+Cancel outcome `declined` while the API and card say `denied` (line 374); the
+cipher is still written with two arguments, without the person it is now
+sealed to (line 326), which 3.3 needs to open the tokens; and the ticket is
+said to be used up by id alone (line 320), while the code (rightly) also
+requires the same login and an unexpired ticket. The project's rule is that a
+wrong spec is corrected before the next step builds on it.
+**Suggested fix:** Update those three lines to match the code before 3.3's
+plan is written.
+**Resolution:**
+
+### F-42 [P3] open - Two names in the calendar folder read differently from their neighbours
+
+**File:** backend/lib/calendar/use-oauth-ticket.ts:18
+**Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: quality)
+**Why it matters:** The folder spells the same word two ways:
+`googleOAuthClient` beside `createOauthTicket`, `useOauthTicket`,
+`oauthStateFingerprint` and the `calendarOauthState` table. And
+`useOauthTicket` starts with `use`, which in this repo's frontend means a
+React hook; read from an import line it looks like one. Frank reviews names,
+and these are the ones 3.3 and 3.4 will import next to them.
+**Suggested fix:** One spelling across the folder (`Oauth`, matching the table
+whose name costs a migration to change), and a verb that says what happens,
+such as `redeemOauthTicket` in `redeem-oauth-ticket.ts`.
+**Resolution:**

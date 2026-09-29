@@ -1445,11 +1445,11 @@
             </div>
           </div>
           <div class="strip-phase">
-            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: step 3.2 built and pushed; its review next</span></div>
+            <div class="strip-label">Ph 1 Foundation <span class="now-note">&middot; now: step 3.2 reviewed, passed; its six small issues next</span></div>
             <div class="strip-cells">
                 <a class="cell" href="#item-1" data-goto="item-1" data-state="done" title="1 Multi-tenant auth - done">1</a>
                 <a class="cell" href="#item-2" data-goto="item-2" data-state="done" title="2 Booking links, resources and availability rules - done">2</a>
-                <span class="cell-open" title="Step 3.2 built and pushed; its review next"><a class="cell" href="#item-3" data-goto="item-3" data-state="active" title="3 Calendar connection - specced">3</a><a class="cell cell--step" href="#step-3-1" data-goto="step-3-1" data-state="done" title="3.1 Groundwork: a person knows its login, the connection table, the lock - done">3.1</a><a class="cell cell--step" href="#step-3-2" data-goto="step-3-2" data-state="done" title="3.2 Connect a Google calendar - built, review next">3.2</a><a class="cell cell--step" href="#step-3-3" data-goto="step-3-3" data-state="next" title="3.3 The seam and busy times - next">3.3</a><a class="cell cell--step" href="#step-3-4" data-goto="step-3-4" title="3.4 Disconnect, and the card&apos;s other states">3.4</a></span>
+                <span class="cell-open" title="Step 3.2 reviewed, passed; its six small issues next"><a class="cell" href="#item-3" data-goto="item-3" data-state="active" title="3 Calendar connection - specced">3</a><a class="cell cell--step" href="#step-3-1" data-goto="step-3-1" data-state="done" title="3.1 Groundwork: a person knows its login, the connection table, the lock - done">3.1</a><a class="cell cell--step" href="#step-3-2" data-goto="step-3-2" data-state="done" title="3.2 Connect a Google calendar - done, reviewed">3.2</a><a class="cell cell--step" href="#step-3-3" data-goto="step-3-3" data-state="next" title="3.3 The seam and busy times - next">3.3</a><a class="cell cell--step" href="#step-3-4" data-goto="step-3-4" title="3.4 Disconnect, and the card&apos;s other states">3.4</a></span>
                 <a class="cell" href="#item-3b" data-goto="item-3b" title="3b Client access: provisioning">3b</a>
             </div>
           </div>
@@ -1987,7 +1987,7 @@
         </p>
         <div class="tally">
           <span class="tally-part" data-state="done"><span class="tally-key">Done</span><span class="tally-val">0a, 0b, 1, 2</span></span>
-          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">3: 3.1 done; 3.2 built, review next</span></span>
+          <span class="tally-part" data-state="active"><span class="tally-key">Building</span><span class="tally-val">3: 3.1 done; 3.2 done and reviewed</span></span>
           <span class="tally-part" data-state="planned"><span class="tally-key">To go</span><span class="tally-val">3b, then 4 through 26, with 12b</span></span>
         </div>
         <details class="callout callout--open">
@@ -10373,7 +10373,7 @@ describe("holidays the owner picked", () =&gt; {
               </div>
 
               <details class="drawer" data-kind="plan">
-                <summary>Steps <span class="tag-drift">whole feature agreed Sep 28 &middot; approved one step at a time &middot; 3.1 done &middot; 3.2 built, review next</span></summary>
+                <summary>Steps <span class="tag-drift">whole feature agreed Sep 28 &middot; approved one step at a time &middot; 3.1 done &middot; 3.2 done and reviewed</span></summary>
                 <div class="drawer-body">
                   <p class="drawer-what">Each step is committed and pushed, then gets its own audit and independent review before the next one starts. Commit messages start with the step number. Each step's plan is gone through with you just before it is built; a blocker comes first and nothing is built until you answer it.</p>
                   <div class="item-steps">
@@ -11099,7 +11099,7 @@ GOOGLE_CLIENT_SECRET=</code></pre>
                           </div>
                         </details>
                         <details class="drawer" data-kind="reality">
-                          <summary>What actually happened <span class="tag-drift">5 kept, 1 changed, 1 added &middot; review next</span></summary>
+                          <summary>What actually happened <span class="tag-drift">5 kept, 1 changed, 1 added &middot; reviewed, passed</span></summary>
                           <div class="drawer-body">
                             <p class="drawer-what">Every planned piece went in, numbered as in the plan, with the code each one touched under it. One changed: the Google talk became one object, <code>googleOAuthClient</code>, because the code standard wants one export per file. The saved tests Part 2 asked for are piece 7.</p>
                             <div class="verdict">
@@ -12566,9 +12566,21 @@ describe("encryptCredentials and decryptCredentials", () =&gt; {
                               </div>
                               <div class="proof-card">
                                 <div class="card-head">Independent review</div>
-                                <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>A fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests; this step against its own Done when; the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</p></div>
-                                <div class="review-part"><div class="review-part-head">2 &middot; Verdict</div><p>Not yet: runs after the commit.</p></div>
-                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p>Not yet.</p></div>
+                                <div class="review-part"><div class="review-part-head">1 &middot; What it checked</div><p>A fresh agent with none of our conversation, working through the same list every time: quality, security, speed and tests; this step against its own Done when; the tests and builds run again from scratch. It reads the whole feature branch, so it also re-checks repairs from earlier steps.</p><p><b>For this step:</b> Walked the trip to Google and back looking for a way in: the ticket is tied to your login, kept only as a fingerprint, used up in one statement and short-lived; PKCE is used; the return address is fixed; every failed path hands the tokens back; no answer carries a token or the permission list; the lock opens only for its own person; the business and the person always come from your session. Checked that the card reading the browser's address is safe where it sits today. Reran all 55 backend and 42 shared tests, both builds, the lint and the format check: all pass.</p></div>
+                                <div class="review-part"><div class="review-part-head">2 &middot; Verdict</div><div class="rstep-when">Passed, Sep 28, commit <code>78887e4</code>. Nothing serious. Six small issues.</div></div>
+                                <div class="review-issues">
+                                  <div class="review-issues-head">3 &middot; Issues it found: 6, all small, to go through with you</div>
+                                  <div class="rows">
+                              <div class="row"><div class="row-key">F-37 &middot; P3 &middot; open</div><div class="row-val">Connecting again with a different Google account overwrites the old one without handing its permission back, so the old account still lists the app at Google and nothing on our side, 3.4's Disconnect included, can remove it.</div></div>
+                              <div class="row"><div class="row-key">F-38 &middot; P3 &middot; open</div><div class="row-val">Every way the trip back from Google can fail ends in the same "failed" with nothing written down, so a wrong secret, a wrong return address or a database error all look alike to whoever fixes it.</div></div>
+                              <div class="row"><div class="row-key">F-39 &middot; P3 &middot; open</div><div class="row-val">No saved test sends Google a sign-in meant for another app or an unverified address, so removing that check would still pass; three give-up paths are untested too, and one test only passes because the test before it ran first.</div></div>
+                              <div class="row"><div class="row-key">F-40 &middot; P3 &middot; open</div><div class="row-val">The card's list of outcomes is typed by hand, not tied to the API's: rename one on the backend and the card silently says nothing, and a made-up one in the address shows an empty red box.</div></div>
+                              <div class="row"><div class="row-key">F-41 &middot; P3 &middot; open</div><div class="row-val">Three lines of the spec's contracts no longer match the code (<code>declined</code> vs <code>denied</code>, the lock now taking its person, the ticket checked for login and age too). 3.3 builds on them.</div></div>
+                              <div class="row"><div class="row-key">F-42 &middot; P3 &middot; open</div><div class="row-val">Two names read differently from their neighbours: <code>googleOAuthClient</code> spells OAuth unlike the rest of the folder, and <code>useOauthTicket</code> reads like a React hook.</div></div>
+                            </div>
+                                </div>
+                                <div class="review-part"><div class="review-part-head">4 &middot; Earlier issues it closed</div><p><b>F-35 closed:</b> migration 0004 now links only the person named after the business; a renamed business stays unlinked, so the guess and the seed crash are gone. <b>F-36 closed:</b> the <code>.env.example</code> note has no step number, and the hook's comment fits the clarified rule.</p></div>
+                                <div class="review-fixed" data-state="waiting"><div class="review-part-head">5 &middot; After the fixes</div><p>Not yet: the six issues are gone through with you one at a time.</p></div>
                               </div>
                             </div>
                           </div>
@@ -12732,6 +12744,13 @@ describe("encryptCredentials and decryptCredentials", () =&gt; {
                 <summary>Log <span class="tag-drift">10 entries, newest first</span></summary>
                 <div class="drawer-body">
                   <div class="log">
+                    <div class="entry" data-kind="done">
+                      <div class="dot"></div>
+                      <div class="entry-body">
+                        <div class="entry-top"><span class="entry-title">Step 3.2 reviewed: passed</span><span class="kind-tag">Review</span><span class="stamp">Sep 28</span></div>
+                        <p class="entry-text">A fresh reviewer walked the trip to Google and back looking for a way in and found none; it reran all 97 saved tests, both builds, the lint and the format check. Nothing serious. Six small issues (F-37 to F-42): a switched Google account keeps its old permission at Google, failures leave no trace, the Google identity check has no saved test, the card's outcome list is not tied to the API's, three spec contracts are out of date, and two names read unlike their neighbours. It closed F-35 and F-36 from 3.1.</p>
+                      </div>
+                    </div>
                     <div class="entry" data-kind="done">
                       <div class="dot"></div>
                       <div class="entry-body">
