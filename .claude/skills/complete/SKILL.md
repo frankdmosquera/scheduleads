@@ -249,27 +249,21 @@ into the app - delete the `prototypes/` folder now. The tokens live in the real
 stylesheet and the HTML mockups were always throwaway; fold the deletion into this
 feature's commit. Skip this if the feature didn't consume prototypes.
 
-## Step 1b - publish the build log
+## Step 1b - close the feature in the build log
 
-Before the commit, not after. In `blueprint/context/project-log.html`: close
-this feature's group off, with every step box ticked, all three gates passed,
-the status pill moved to done, and a final timeline entry naming what shipped.
-Flip the item to `done` in the roadmap view and update its three counts. In
-the top bar, keep its step chips beside its chip and mark the group and every
-chip `done` (`<span class="cell-open" data-state="done">`): it is still the
-feature being worked on until the next one starts, and only then does it fold
-back to its single chip (Frank, 2026-09-28). Close its row's fold so it reads as
-one line.
-Republish to the URL in the project's `AGENTS.md`, passing it as `url`.
+Before the commit, not after. In the project's build log folder (its
+`AGENTS.md` names it; how to write it is in `buildlogs/logs/README.md`): every
+step `done`, all gates passed, the feature's `state` and pill moved to done, a
+final Log entry naming what shipped, and the tally updated. Then commit that
+folder to buildlogs' `main` and push it, as the guide says.
 
-The republished file is part of this feature's commit in Step 2, so the repo
-source and the live page never disagree. A commit that closes a feature while
-the page still shows it in progress is the rule in `AGENTS.md` already broken.
+A commit that closes a feature while the build log still shows it in progress
+is the rule in `AGENTS.md` already broken.
 
 ## Step 2 - make the work commit
 
 Stage everything on the branch (any uncommitted step work plus the Step 1 logging
-changes and the Step 1b republished page) and make one conventional work commit
+changes) and make one conventional work commit
 (for example `feat: <feature>`, `fix: <name>`, or `revert: roll back <feature>`).
 `Verify`, or the fallback build and tests, must pass first.
 

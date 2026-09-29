@@ -1,5 +1,5 @@
-# Prettier formats code only. Docs, the published build log page, the
-# Blueprint skills and generated files keep the layout they were written in.
+# Prettier formats code only. Docs, the Blueprint skills and generated files
+# keep the layout they were written in.
 blueprint/
 prototypes/
 .claude/

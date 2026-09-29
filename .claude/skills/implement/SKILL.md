@@ -33,10 +33,10 @@ contains the product contract and applicable conventions. Read one targeted
 section only when the spec explicitly depends on a missing detail. Read findings
 and review state once at the final handoff.
 
-This economy does not extend to the published build log. Its rule and URL are in
+This economy does not extend to the build log. Its rule and folder are in
 `AGENTS.md`, which is always loaded, so skipping `ai-interaction.md` is no
-excuse for skipping the publish in step 6 of the build loop. Read
-`ai-interaction.md` when you need the page's markers or layout conventions.
+excuse for skipping step 6 of the build loop. How to write an entry is in
+`buildlogs/logs/README.md`.
 
 Inspect the implementation surface in one targeted, batched read before editing.
 Use one additional read batch only when an exact dependency remains unknown and
@@ -107,16 +107,12 @@ For each step:
    error handling, accidental scope, and unrelated changes.
 5. Check the step box only after its code and focused check pass. Mark a repaired
    finding `fixed`, never `closed`.
-6. **Publish the build log before reporting the step in chat.** Everything for
-   this item lives in its own row on the roadmap in
-   `blueprint/context/project-log.html`; there is no per-feature view, so do not
-   create one. In that row: add the entry at the top of the **Log** drawer,
-   update the step's `<details>` inside the **Steps** drawer with its state and
-   its `Done when` result, close the finished step and open the next one, update
-   the gates and the step count, and update the top bar: in the item's opened
-   chip group, mark the finished step's chip `done` and the next one `next`,
-   and rewrite the now note above them. Then republish to the URL in the
-   project's `AGENTS.md`, passing it as `url`.
+6. **Write the build log before reporting the step in chat.** In the project's
+   log folder, as `buildlogs/logs/README.md` describes: add the entry at the top
+   of the feature's **Log**, write the step's file (its outcome and its
+   `Done when` result), mark the finished step `done` and the next one `active`
+   in `roadmap.json`, and update the gates and the tally. Then commit that
+   folder to buildlogs' `main` and push it, as the guide says.
    Never rewrite a closing step's planned pieces to match what happened. Mark
    each one `kept`, `changed`, `added` or `dropped` with the reason for
    anything that is not `kept`, and update the verdict counts. The drift is the

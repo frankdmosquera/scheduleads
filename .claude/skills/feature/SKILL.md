@@ -60,11 +60,10 @@ during normal planned-feature work. Do not create scratch code or run
 implementation probes while writing a spec. Put a check in the relevant build
 step when a repository detail cannot be confirmed from existing evidence.
 
-Two exceptions to that economy, both about the published build log:
-`blueprint/context/project-log.html`, which this skill writes a feature group
-into before reporting the spec, and `ai-interaction.md`, read when you need that
-page's marker and layout conventions. The rule and the URL are in `AGENTS.md`,
-which is always loaded. Neither read counts against the four rounds.
+One exception to that economy: the build log. Read `buildlogs/logs/README.md`
+before writing the feature's entry, and only the files in the project's log
+folder you change. The rule and the folder are in `AGENTS.md`, which is always
+loaded. Neither read counts against the four rounds.
 
 The plans and overview define product intent. The repository defines current
 reality. Do not invent presets, defaults, limits, permissions, money rules,
@@ -175,27 +174,20 @@ If a prerequisite is absent, incomplete, untracked, or unverified, say which one
 the evidence shows. Do not bury repair inside this feature. Stop with the exact
 `/fix` or user decision required.
 
-Otherwise write the tightened spec, then **publish the spec to the build log
+Otherwise write the tightened spec, then **write the spec into the build log
 before reporting it in chat.** A spec that exists only in `current-feature.md`
 has not been shown to the user.
 
-Everything goes in the item's own row on the roadmap in
-`blueprint/context/project-log.html`. There is no per-feature view; do not
-create one. Flip the item to `active`, and in the top bar open its chip into
-its step chips (N.1 to N.k, the first marked `next`, each jumping to
-`step-N-k`) with a now note above them. Update the tally, and build its row
-from the stencil at the bottom of that file, with `id="item-N"` on the row and
-`id="step-N-k"` on each step: the
-gates, then collapsed `<details>` drawers for **Steps** (open), **Why this item
-exists**, **Decisions**, **Contracts**, **Log** and **Notes**.
-
-Steps are numbered N.1 to N.k inside the Steps drawer, each opening into what it
-does and why, its concrete pieces, and its `Done when`. Leave the first step
-`open`. Never leave bare step titles: a reader who opens only the roadmap must
-learn what each step actually is. Record every decision with why the rejected
-options lost, in the Decisions drawer, as option cards when they compare
-alternatives. Then republish to the URL in the project's `AGENTS.md`, passing it
-as `url`.
+In the project's log folder, as `buildlogs/logs/README.md` describes: the
+feature's `state` becomes `active` in `roadmap.json`, its one-line `bodyHtml`
+gives way to its gates and drawers (**Steps**, **Why this item exists**,
+**Decisions**, **Contracts**, **Log**, **Notes**), each step N.1 to N.k gets its
+entry (the first `active`) and its own file opening into what it does and why,
+its concrete pieces and its `Done when`, and the tally is updated. Never leave
+bare step titles: a reader who opens only the roadmap must learn what each step
+actually is. Record every decision with why the rejected options lost, in the
+Decisions drawer, as option cards when they compare alternatives. Then commit
+that folder to buildlogs' `main` and push it, as the guide says.
 
 Then update activity to `ready`, and stop for review. Lead with a short note
 naming what the critique changed, or say that it found no material change.
