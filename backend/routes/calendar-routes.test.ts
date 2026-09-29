@@ -5,7 +5,7 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import { eq, inArray } from "drizzle-orm";
-import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
 try {
   process.loadEnvFile(new URL("../../.env", import.meta.url)); // the root .env, before the app reads it
@@ -110,6 +110,9 @@ const connectionsOf = (personId: string) =>
 // Google's side, faked: the token answer each test sets, and every token handed back.
 let tokenAnswer: () => Response = () => new Response("", { status: 500 });
 const revoked: string[] = [];
+// Every warning the API logged during a test, and what must never be in one.
+const warnings: string[] = [];
+const secrets = ["refresh-token-from-google", "access-token-from-google", "v1."];
 
 // `claims` overrides what Google would say, for the sign-ins that must be refused.
 const idToken = (email: string, claims: Record<string, unknown> = {}) =>
@@ -199,9 +202,19 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   revoked.length = 0;
+  warnings.length = 0;
+  vi.spyOn(console, "warn").mockImplementation((...parts) => {
+    warnings.push(parts.join(" "));
+  });
   tokenAnswer = () => googleTokens();
   // Every test starts with Ana unconnected, so none depends on what an earlier one saved.
   await db.delete(calendarConnection).where(eq(calendarConnection.resourceId, ana.personId));
+});
+
+afterEach(() => {
+  vi.mocked(console.warn).mockRestore();
+  for (const warning of warnings)
+    for (const secret of secrets) expect(warning).not.toContain(secret);
 });
 
 afterAll(async () => {
@@ -322,6 +335,9 @@ describe("GET /calendar/callback", () => {
 
     expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(outcome("failed"));
     expect(await connectionsOf(ana.personId)).toEqual([]);
+    expect(warnings).toEqual([
+      "[calendar] connect failed at the code swap: Google refused the code swap (400 invalid_grant).",
+    ]);
   });
 
   test("a missing permission hands the tokens back and saves nothing", async () => {
@@ -342,6 +358,7 @@ describe("GET /calendar/callback", () => {
     expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(outcome("failed"));
     expect(revoked).toEqual(["ya29.access-token-from-google"]);
     expect(await connectionsOf(ana.personId)).toEqual([]);
+    expect(warnings).toEqual(["[calendar] connect failed at the token check: no refresh token"]);
   });
 
   test.each([
@@ -355,6 +372,9 @@ describe("GET /calendar/callback", () => {
     expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(outcome("failed"));
     expect(revoked).toEqual(["1//refresh-token-from-google"]);
     expect(await connectionsOf(ana.personId)).toEqual([]);
+    expect(warnings).toEqual([
+      "[calendar] connect failed at the token check: the sign-in token was not ours, not Google's, or unverified",
+    ]);
   });
 
   test("a person unlinked from the login while at Google ends in expired", async () => {
@@ -371,6 +391,7 @@ describe("GET /calendar/callback", () => {
   test("a Google error other than Cancel ends in failed, and uses the ticket up", async () => {
     const state = await startConnect(ana.email);
     expect(await callback(`state=${state}&error=server_error`, ana.email)).toBe(outcome("failed"));
+    expect(warnings).toEqual(["[calendar] connect failed at google: server_error"]);
 
     const left = await db
       .select()
@@ -390,6 +411,9 @@ describe("GET /calendar/callback", () => {
     }
     expect(revoked).toEqual(["1//refresh-token-from-google"]);
     expect(await connectionsOf(ana.personId)).toEqual([]);
+    expect(warnings).toEqual([
+      "[calendar] connect failed at the save: CALENDAR_TOKEN_KEY must be 32 random bytes, written in base64.",
+    ]);
   });
 
   test("a full consent saves one row, tokens unreadable, with the Gmail from Google", async () => {
@@ -400,6 +424,7 @@ describe("GET /calendar/callback", () => {
       ana.email
     );
     expect(location).toBe(outcome("connected"));
+    expect(warnings).toEqual([]); // a connect that works leaves no warning
 
     const rows = await connectionsOf(ana.personId);
     expect(rows).toHaveLength(1);

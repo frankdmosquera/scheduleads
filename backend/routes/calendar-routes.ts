@@ -14,7 +14,8 @@ import {
   finishGoogleConnect,
   type ConnectOutcomeType,
 } from "../lib/calendar/finish-google-connect.js";
-import { googleOAuthClient } from "../lib/calendar/google-oauth-client.js";
+import { googleOauthClient } from "../lib/calendar/google-oauth-client.js";
+import { warnConnectFailed } from "../lib/calendar/warn-connect-failed.js";
 import { refuse } from "../lib/errors/refuse.js";
 import { requireOrganizationMiddleware } from "../middleware/auth-middleware/require-organization-middleware.js";
 import { requireKnownSubscriptionMiddleware } from "../middleware/subscription-middleware/require-known-subscription-middleware.js";
@@ -72,7 +73,7 @@ export const calendarRoutes = new Hono()
         resourceId: person.id,
       });
 
-      return c.json({ url: googleOAuthClient.consentUrl(ticket) }, 200);
+      return c.json({ url: googleOauthClient.consentUrl(ticket) }, 200);
     }
   )
 
@@ -86,7 +87,10 @@ export const calendarRoutes = new Hono()
       state: c.req.query("state"),
       code: c.req.query("code"),
       error: c.req.query("error"),
-    }).catch(() => "failed" as const);
+    }).catch((unexpected: unknown) => {
+      warnConnectFailed("the callback", unexpected);
+      return "failed" as const;
+    });
 
     return c.redirect(`${appOrigin}/?calendar=${outcome}`, 302);
   });

@@ -1,6 +1,6 @@
 // Backend: the one-time ticket for a trip to Google and back. The state value only ever
 // travels in Google's address; the database keeps its SHA-256, so a copy of the table
-// cannot finish anyone's connect. Lives ten minutes, used up once (use-oauth-ticket.ts).
+// cannot finish anyone's connect. Lives ten minutes, used up once (redeem-oauth-ticket.ts).
 
 import { createHash, randomBytes } from "node:crypto";
 

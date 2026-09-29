@@ -39,7 +39,7 @@ function settings() {
   return { clientId, clientSecret, redirectUri: `${apiOrigin}/calendar/callback` };
 }
 
-export const googleOAuthClient = {
+export const googleOauthClient = {
   // server.ts calls this at start, so a missing value stops the API, not someone's Connect.
   assertConfigured(): void {
     settings();
@@ -88,7 +88,15 @@ export const googleOAuthClient = {
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    if (!response.ok) throw new Error(`Google refused the code swap (${response.status}).`);
+    if (!response.ok) {
+      // Google's own word for why (invalid_client: the secret; redirect_uri_mismatch: the
+      // address). Only a plain code word is kept, never the free-text description.
+      const refusal = (await response.json().catch(() => ({}))) as { error?: unknown };
+      const why = typeof refusal.error === "string" && /^[a-z_]+$/.test(refusal.error);
+      throw new Error(
+        `Google refused the code swap (${response.status}${why ? ` ${refusal.error}` : ""}).`
+      );
+    }
 
     const body = (await response.json()) as Record<string, unknown>;
     if (typeof body.access_token !== "string" || typeof body.expires_in !== "number") {

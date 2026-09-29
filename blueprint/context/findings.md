@@ -240,9 +240,9 @@ it), read the existing row; when its account email differs from the new one,
 open the old credentials and hand the old refresh token back, best effort,
 after the new row is saved. Leave the same-account case alone: that is one
 permission at Google, and revoking it would kill the new tokens too.
-**Resolution:**
+**Resolution:** Carried to step 3.4 on Frank's call, 2026-09-29: it belongs with Disconnect and Reconnect, which 3.4 builds. Written into 3.4's plan and Done when in the spec.
 
-### F-38 [P3] open - When Google refuses a connect, nobody can see why
+### F-38 [P3] fixed - When Google refuses a connect, nobody can see why
 
 **File:** backend/lib/calendar/finish-google-connect.ts:55
 **Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: quality)
@@ -257,7 +257,7 @@ a redirect fix; the next one on Railway will have only this.
 **Suggested fix:** One `console.warn` at each of those three catches with the
 outcome and Google's HTTP status or error code (`invalid_client`,
 `invalid_grant`), never a token or the code itself.
-**Resolution:**
+**Resolution:** Fixed 2026-09-29 on Frank's yes. Every "failed" path of the callback now leaves one line, `[calendar] connect failed at <step>: <reason>`, through `backend/lib/calendar/warn-connect-failed.ts`: Google's error other than Cancel, no code, the code swap (now carrying Google's own code word, e.g. `400 invalid_grant`, never its free text), the token check (no refresh token, or a sign-in token refused), the save, and the route's last catch. A database error is logged as its Postgres code only, because its message carries the query and its values. Denied, expired and missing permission are the person's own doing and log nothing. Tests: each failed route test checks its exact line, the full consent checks there is none, every test checks no token or locked value reaches a warning, and a unit test checks a failed query logs only `database error 23505`. Five faults planted (raw message logged, swap line removed, Google's word dropped, save line removed, a token put in a line), each caught. 63 backend tests pass. Waits for the next review to close.
 
 ### F-39 [P3] fixed - The Google identity check and three give-up paths have no saved test
 
@@ -293,7 +293,7 @@ them (see F-41).
 **Suggested fix:** Type the map's keys as the five outcomes and look up with
 `Object.hasOwn(OUTCOMES, outcome)`; ideally the outcome list lives once in
 `packages/shared` so both sides import it.
-**Resolution:**
+**Resolution:** Carried to step 3.4 on Frank's call, 2026-09-29: 3.4 reworks the card's states anyway. Written into 3.4's plan and Done when in the spec.
 
 ### F-41 [P3] fixed - The spec's contracts still describe the shapes step 3.2 changed
 
@@ -318,7 +318,7 @@ and fixed with it: the Google section still said the events scope "is checked
 before it is written"; it now names `calendar.events.owned`. The build log's
 Contracts row for the lock says the same. Waits for the next review to close.
 
-### F-42 [P3] open - Two names in the calendar folder read differently from their neighbours
+### F-42 [P3] fixed - Two names in the calendar folder read differently from their neighbours
 
 **File:** backend/lib/calendar/use-oauth-ticket.ts:18
 **Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: quality)
@@ -331,4 +331,4 @@ and these are the ones 3.3 and 3.4 will import next to them.
 **Suggested fix:** One spelling across the folder (`Oauth`, matching the table
 whose name costs a migration to change), and a verb that says what happens,
 such as `redeemOauthTicket` in `redeem-oauth-ticket.ts`.
-**Resolution:**
+**Resolution:** Fixed 2026-09-29 on Frank's yes: `googleOAuthClient` is `googleOauthClient`, matching the table and every other `Oauth` name; `useOauthTicket` is `redeemOauthTicket` in `redeem-oauth-ticket.ts` (its type `RedeemedOauthTicketType`), so it no longer reads like a React hook. The spec follows. The code drawers on the build log keep the old names: they show the step as committed. Waits for the next review to close.

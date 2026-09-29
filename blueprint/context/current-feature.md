@@ -177,7 +177,7 @@ real data, `main`), or a P0/P1 finding. Each step commit is
     needed there, OpenID Connect Core 3.1.3.7), `email_verified` required. A
     reconnect upserts on `resourceId`. The cipher gains an associated-data
     argument, the connection's `resourceId`, so a value moved to another row
-    fails (the 3.1 reviewer's note). Files: `use-oauth-ticket.ts`,
+    fails (the 3.1 reviewer's note). Files: `redeem-oauth-ticket.ts`,
     `save-calendar-connection.ts` new; `calendar-routes.ts`,
     `google-oauth.ts`, `token-cipher.ts` and its test changed.
   - `GET /calendar/connection`: the signed-in person and their connection, if
@@ -244,11 +244,20 @@ real data, `main`), or a P0/P1 finding. Each step commit is
     so the card can tell him to remove access in his Google account.
   - The card: needs reconnecting (with Reconnect, the same connect flow),
     loading, and the API not answering.
+  - Carried from 3.2's review, on Frank's call: **F-37**, a reconnect with a
+    different Google account hands the old account's permission back to Google
+    (best effort, after the new row is saved; the same account is left alone);
+    **F-40**, the card's outcome words are typed to the API's five outcomes
+    and looked up only as the card's own keys, so a made-up `?calendar=` shows
+    nothing and a renamed outcome fails the build.
   - **Done when:** tests prove disconnect calls revoke and deletes the row,
     still deletes it when revoke fails and reports that, and refuses a login
     with no person. By hand: Disconnect empties the card, and Google's "Your
     connections to third-party apps" page no longer lists the app; a
     connection set to `needs_reconnect` in the database shows Reconnect.
+    F-37: a test reconnects with another Gmail and sees the old refresh token
+    handed back, and the same Gmail not. F-40: a renamed outcome fails the
+    frontend build; `?calendar=constructor` shows no notice.
 
 ## Files / areas
 
@@ -263,9 +272,9 @@ real data, `main`), or a P0/P1 finding. Each step commit is
 - `packages/shared/scripts/seed-dev.ts` (changed: link first people)
 - `backend/lib/auth/auth-server.ts` (changed: the hook links the creator)
 - `backend/lib/calendar/` (new): 3.2 `google-oauth-client.ts`,
-  `find-signed-in-person.ts`, `create-oauth-ticket.ts`, `use-oauth-ticket.ts`,
+  `find-signed-in-person.ts`, `create-oauth-ticket.ts`, `redeem-oauth-ticket.ts`,
   `oauth-state-fingerprint.ts`, `save-calendar-connection.ts`,
-  `finish-google-connect.ts`; 3.3 `calendar-provider.ts`,
+  `finish-google-connect.ts`, `warn-connect-failed.ts` (+ test, F-38); 3.3 `calendar-provider.ts`,
   `google-calendar-provider.ts`, `get-busy-times.ts`, and their tests
 - `backend/routes/calendar-routes.ts` and `calendar-routes.test.ts` (new)
 - `backend/app.ts` (changed: mounts `/calendar`, CORS and no-store),

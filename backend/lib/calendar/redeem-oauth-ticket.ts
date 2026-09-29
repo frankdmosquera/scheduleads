@@ -9,16 +9,16 @@ import { calendarOauthState } from "@scheduleads-app/shared/db";
 import { db } from "../../database.js";
 import { oauthStateFingerprint } from "./oauth-state-fingerprint.js";
 
-export type UsedOauthTicketType = {
+export type RedeemedOauthTicketType = {
   organizationId: string;
   resourceId: string;
   codeVerifier: string;
 };
 
-export async function useOauthTicket(
+export async function redeemOauthTicket(
   state: string,
   userId: string
-): Promise<UsedOauthTicketType | null> {
+): Promise<RedeemedOauthTicketType | null> {
   const [ticket] = await db
     .delete(calendarOauthState)
     .where(

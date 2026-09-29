@@ -7,9 +7,10 @@ import { and, eq } from "drizzle-orm";
 import { resource } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
-import { googleOAuthClient } from "./google-oauth-client.js";
+import { googleOauthClient } from "./google-oauth-client.js";
 import { saveCalendarConnection } from "./save-calendar-connection.js";
-import { useOauthTicket } from "./use-oauth-ticket.js";
+import { redeemOauthTicket } from "./redeem-oauth-ticket.js";
+import { warnConnectFailed } from "./warn-connect-failed.js";
 
 export type ConnectOutcomeType =
   | "connected"
@@ -30,11 +31,18 @@ export async function finishGoogleConnect({
   error: string | undefined;
 }): Promise<ConnectOutcomeType> {
   // Used up first, whatever else Google said, so a ticket never outlives its trip.
-  const ticket = userId && state ? await useOauthTicket(state, userId) : null;
+  const ticket = userId && state ? await redeemOauthTicket(state, userId) : null;
 
-  if (error) return error === "access_denied" ? "denied" : "failed";
+  if (error === "access_denied") return "denied";
+  if (error) {
+    warnConnectFailed("google", /^[a-z_]+$/.test(error) ? new Error(error) : undefined);
+    return "failed";
+  }
   if (!ticket || !userId) return "expired";
-  if (!code) return "failed";
+  if (!code) {
+    warnConnectFailed("google", new Error("no code in the return address"));
+    return "failed";
+  }
 
   // The person may have been unlinked from this login in the ten minutes at Google.
   const [person] = await db
@@ -50,21 +58,28 @@ export async function finishGoogleConnect({
     .limit(1);
   if (!person) return "expired";
 
-  const tokens = await googleOAuthClient
+  const tokens = await googleOauthClient
     .exchangeCode({ code, codeVerifier: ticket.codeVerifier })
-    .catch(() => null);
+    .catch((swapError: unknown) => {
+      warnConnectFailed("the code swap", swapError);
+      return null;
+    });
   if (!tokens) return "failed";
 
-  const handBack = () => googleOAuthClient.revoke(tokens.refreshToken ?? tokens.accessToken);
+  const handBack = () => googleOauthClient.revoke(tokens.refreshToken ?? tokens.accessToken);
 
-  if (!googleOAuthClient.hasBothCalendarScopes(tokens.grantedScopes)) {
+  if (!googleOauthClient.hasBothCalendarScopes(tokens.grantedScopes)) {
     await handBack();
     return "missing_permission";
   }
 
-  const identity = googleOAuthClient.readIdentity(tokens.idToken);
+  const identity = googleOauthClient.readIdentity(tokens.idToken);
   if (!tokens.refreshToken || !identity) {
     await handBack(); // without a refresh token nothing could be read tomorrow
+    const why = tokens.refreshToken
+      ? "the sign-in token was not ours, not Google's, or unverified"
+      : "no refresh token";
+    warnConnectFailed("the token check", new Error(why));
     return "failed";
   }
 
@@ -80,8 +95,9 @@ export async function finishGoogleConnect({
         accessTokenExpiresAt: tokens.accessTokenExpiresAt.toISOString(),
       },
     });
-  } catch {
+  } catch (saveError) {
     await handBack(); // not saved, so Google should not keep the permission either
+    warnConnectFailed("the save", saveError);
     return "failed";
   }
 
