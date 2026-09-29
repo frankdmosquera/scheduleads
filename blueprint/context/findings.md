@@ -259,7 +259,7 @@ outcome and Google's HTTP status or error code (`invalid_client`,
 `invalid_grant`), never a token or the code itself.
 **Resolution:**
 
-### F-39 [P3] open - The Google identity check and three give-up paths have no saved test
+### F-39 [P3] fixed - The Google identity check and three give-up paths have no saved test
 
 **File:** backend/lib/calendar/google-oauth-client.ts:110
 **Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: tests)
@@ -277,7 +277,7 @@ the reconnect test above it ran first, so running it alone fails.
 `aud`, a wrong `iss` and `email_verified: false` (each ends in `failed`, hands
 the token back, saves nothing), plus one each for the unlinked person and
 `error=server_error`. Have the connection test make its own connection first.
-**Resolution:**
+**Resolution:** Fixed 2026-09-28 on Frank's yes, tests only (`backend/routes/calendar-routes.test.ts`). Six new route tests: a sign-in token for another app, from another issuer, or with an unverified email each end in `failed`, hand the refresh token back and save nothing; a person unlinked during the trip ends in `expired`; `error=server_error` ends in `failed` and uses the ticket up; a save that fails (the lock given a bad key for that one call) hands the tokens back and ends in `failed`. The connection and reconnect tests now make their own connections, and every test starts with Ana unconnected (a `beforeEach` delete), so none depends on another: each passes run alone. Proved: six faults planted one at a time (audience, issuer and verified-email checks removed, the person re-check removed, every Google error treated as Cancel, no hand-back after a failed save), each failing exactly its own test and nothing else; files restored and compared. 61 backend and 42 shared tests, both builds, lint and format pass. Waits for the next review to close.
 
 ### F-40 [P3] open - The card's list of outcomes is not tied to the API's, and a made-up one shows an empty red box
 

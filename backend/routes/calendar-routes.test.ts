@@ -94,6 +94,13 @@ async function callback(query: string, email?: string): Promise<string | null> {
   return response.headers.get("Location");
 }
 
+// A full, successful connect as this login, with the Gmail Google reports.
+async function connect(email: string, gmail: string): Promise<void> {
+  tokenAnswer = () => googleTokens({ email: gmail });
+  const state = await startConnect(email);
+  expect(await callback(`state=${state}&code=abc`, email)).toBe(outcome("connected"));
+}
+
 const outcome = (name: string) => `${appOrigin}/?calendar=${name}`;
 const fingerprint = (state: string) => createHash("sha256").update(state).digest("hex");
 
@@ -104,7 +111,8 @@ const connectionsOf = (personId: string) =>
 let tokenAnswer: () => Response = () => new Response("", { status: 500 });
 const revoked: string[] = [];
 
-const idToken = (email: string) =>
+// `claims` overrides what Google would say, for the sign-ins that must be refused.
+const idToken = (email: string, claims: Record<string, unknown> = {}) =>
   [
     { alg: "none" },
     {
@@ -112,6 +120,7 @@ const idToken = (email: string) =>
       aud: process.env.GOOGLE_CLIENT_ID,
       email,
       email_verified: true,
+      ...claims,
     },
   ]
     .map((part) => Buffer.from(JSON.stringify(part)).toString("base64url"))
@@ -122,6 +131,7 @@ const googleTokens = ({
   scope = BOTH_SCOPES,
   refreshToken = "1//refresh-token-from-google" as string | null,
   email = "ana.owner@gmail.com",
+  claims = {} as Record<string, unknown>,
 } = {}) =>
   new Response(
     JSON.stringify({
@@ -129,7 +139,7 @@ const googleTokens = ({
       expires_in: 3599,
       scope,
       token_type: "Bearer",
-      id_token: idToken(email),
+      id_token: idToken(email, claims),
       ...(refreshToken ? { refresh_token: refreshToken } : {}),
     }),
     { status: 200, headers: { "Content-Type": "application/json" } }
@@ -187,9 +197,11 @@ beforeAll(async () => {
   });
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   revoked.length = 0;
   tokenAnswer = () => googleTokens();
+  // Every test starts with Ana unconnected, so none depends on what an earlier one saved.
+  await db.delete(calendarConnection).where(eq(calendarConnection.resourceId, ana.personId));
 });
 
 afterAll(async () => {
@@ -332,6 +344,54 @@ describe("GET /calendar/callback", () => {
     expect(await connectionsOf(ana.personId)).toEqual([]);
   });
 
+  test.each([
+    ["meant for another app", { aud: "another-apps-client-id" }],
+    ["not from Google", { iss: "https://accounts.example.com" }],
+    ["with an unverified email", { email_verified: false }],
+  ])("a sign-in token %s is refused: failed, handed back, nothing saved", async (_name, claims) => {
+    tokenAnswer = () => googleTokens({ claims });
+    const state = await startConnect(ana.email);
+
+    expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(outcome("failed"));
+    expect(revoked).toEqual(["1//refresh-token-from-google"]);
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("a person unlinked from the login while at Google ends in expired", async () => {
+    const state = await startConnect(ana.email);
+    await db.update(resource).set({ userId: null }).where(eq(resource.id, ana.personId));
+    try {
+      expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(outcome("expired"));
+      expect(await connectionsOf(ana.personId)).toEqual([]);
+    } finally {
+      await db.update(resource).set({ userId: ana.userId }).where(eq(resource.id, ana.personId));
+    }
+  });
+
+  test("a Google error other than Cancel ends in failed, and uses the ticket up", async () => {
+    const state = await startConnect(ana.email);
+    expect(await callback(`state=${state}&error=server_error`, ana.email)).toBe(outcome("failed"));
+
+    const left = await db
+      .select()
+      .from(calendarOauthState)
+      .where(eq(calendarOauthState.id, fingerprint(state)));
+    expect(left).toEqual([]);
+  });
+
+  test("a save that fails hands the tokens back and ends in failed", async () => {
+    const state = await startConnect(ana.email);
+    const realKey = process.env.CALENDAR_TOKEN_KEY;
+    process.env.CALENDAR_TOKEN_KEY = "not-a-key"; // the lock refuses it, so the save throws
+    try {
+      expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(outcome("failed"));
+    } finally {
+      process.env.CALENDAR_TOKEN_KEY = realKey;
+    }
+    expect(revoked).toEqual(["1//refresh-token-from-google"]);
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
   test("a full consent saves one row, tokens unreadable, with the Gmail from Google", async () => {
     const state = await startConnect(ana.email);
     // An extra return address in the request is ignored: the dashboard address is fixed.
@@ -356,10 +416,9 @@ describe("GET /calendar/callback", () => {
   });
 
   test("a reconnect replaces the row: still one", async () => {
-    tokenAnswer = () => googleTokens({ email: "ana.second@gmail.com" });
-    const state = await startConnect(ana.email);
+    await connect(ana.email, "ana.owner@gmail.com"); // its own first connection, not the test above's
+    await connect(ana.email, "ana.second@gmail.com");
 
-    expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(outcome("connected"));
     const rows = await connectionsOf(ana.personId);
     expect(rows).toHaveLength(1);
     expect(rows[0].accountEmail).toBe("ana.second@gmail.com");
@@ -381,6 +440,7 @@ describe("GET /calendar/connection", () => {
   });
 
   test("a connection comes without the tokens or the permission list", async () => {
+    await connect(ana.email, "ana.second@gmail.com"); // its own, so it passes run alone
     const response = await request("/calendar/connection", ana.email);
     const text = await response.text();
 
