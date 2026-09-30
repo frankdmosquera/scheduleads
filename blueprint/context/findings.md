@@ -337,7 +337,7 @@ such as `redeemOauthTicket` in `redeem-oauth-ticket.ts`.
 **Resolution:** Fixed 2026-09-29 on Frank's yes: `googleOAuthClient` is `googleOauthClient`, matching the table and every other `Oauth` name; `useOauthTicket` is `redeemOauthTicket` in `redeem-oauth-ticket.ts` (its type `RedeemedOauthTicketType`), so it no longer reads like a React hook. The spec follows. The code drawers on the build log keep the old names: they show the step as committed. Waits for the next review to close.
 Closed 2026-09-30 by /audit independent (scope: step 3.3): no `googleOAuthClient`, `useOauthTicket` or `use-oauth-ticket` is left in backend, frontend or shared source; the folder spells `Oauth` throughout, and step 3.3's new files import `googleOauthClient` under that name.
 
-### F-43 [P3] open - Two of the busy-times safeguards can be deleted and every test still passes
+### F-43 [P3] fixed - Two of the busy-times safeguards can be deleted and every test still passes
 
 **File:** backend/lib/calendar/get-busy-times.ts:72
 **Found:** 2026-09-30 by /audit independent (scope: step 3.3; lens: tests)
@@ -358,4 +358,4 @@ and then answers `invalid_grant`: the row must stay `connected` with the new
 keys, and free/busy must be asked with the reconnected access token. For the
 time-out, have the fake free/busy honour `init.signal` (wait for its abort) and
 run it under fake timers, or assert the request carries a signal.
-**Resolution:**
+**Resolution:** Fixed 2026-09-30 on Frank's yes, tests only, no product code, in `backend/lib/calendar/get-busy-times.test.ts`. New test: the token answer reconnects the person and then answers `invalid_grant`; the row stays `connected` with the reconnected keys and free/busy is asked with the reconnected token. The old time-out test is replaced: the fake free/busy never answers and ends only when the request's own signal aborts (rejecting at once when there is none), and `AbortSignal.timeout` is replaced for the test by an already-expired signal, with a check that it was asked for 10000 ms. Proved: the mark matched by id alone fails the reconnect test; the signal line removed from `google-calendar-provider.ts` fails the time-out test; each file restored and compared. 46 shared and 80 backend tests pass. Waits for the next review to close.

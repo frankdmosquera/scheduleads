@@ -35,7 +35,7 @@ const range = {
 };
 
 // Google's side, faked: the answers each test sets, and every call made.
-type AnswerType = () => Response | Promise<Response>;
+type AnswerType = (init?: RequestInit) => Response | Promise<Response>;
 let tokenAnswer: AnswerType;
 let freeBusyAnswer: AnswerType;
 const tokenCalls: URLSearchParams[] = [];
@@ -97,7 +97,7 @@ beforeAll(async () => {
         authorization: headers.get("Authorization"),
         body: JSON.parse(String(init?.body)),
       });
-      return freeBusyAnswer();
+      return freeBusyAnswer(init);
     }
     throw new Error(`A test tried to reach ${url}.`);
   });
@@ -206,12 +206,29 @@ describe("getBusyTimes", () => {
     await expect(getBusyTimes(range)).rejects.toThrow("Google's free/busy failed (500).");
   });
 
-  test("a time-out on free/busy throws", async () => {
+  test("a Google that hangs on free/busy is cut off after ten seconds and throws", async () => {
     await connect();
-    freeBusyAnswer = () => {
-      throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
-    };
-    await expect(getBusyTimes(range)).rejects.toThrow("timeout");
+    // The ten seconds pass at once: the time limit handed out is already used up.
+    const timeout = vi.spyOn(AbortSignal, "timeout").mockImplementation(() => {
+      const limit = new AbortController();
+      limit.abort(new DOMException("The operation was aborted due to timeout", "TimeoutError"));
+      return limit.signal;
+    });
+    // Google never answers; only the request's own time limit can end the wait.
+    freeBusyAnswer = (init) =>
+      new Promise((_, reject) => {
+        const signal = init?.signal;
+        if (!signal) return reject(new Error("The request to Google had no time limit."));
+        if (signal.aborted) return reject(signal.reason);
+        signal.addEventListener("abort", () => reject(signal.reason));
+      });
+
+    try {
+      await expect(getBusyTimes(range)).rejects.toThrow("aborted due to timeout");
+      expect(timeout).toHaveBeenCalledWith(10_000);
+    } finally {
+      timeout.mockRestore();
+    }
   });
 
   test("a calendar Google could not read throws, although its busy list is empty", async () => {
@@ -240,6 +257,26 @@ describe("getBusyTimes", () => {
     const stored = await storedConnection();
     expect(stored.unlocked.accessToken).toBe("ya29.reconnected-access");
     expect(stored.unlocked.refreshToken).toBe("1//reconnected-refresh");
+    expect(freeBusyCalls.map((call) => call.authorization)).toEqual([
+      "Bearer ya29.reconnected-access",
+    ]);
+  });
+
+  test("Google refusing the old key while the person reconnects leaves the new connection connected", async () => {
+    await connect({ expiresInMs: 0 });
+    tokenAnswer = async () => {
+      // The person reconnects while Google is refusing the old key.
+      await connect({
+        accessToken: "ya29.reconnected-access",
+        refreshToken: "1//reconnected-refresh",
+      });
+      return json({ error: "invalid_grant" }, 400);
+    };
+
+    await getBusyTimes(range);
+    const stored = await storedConnection();
+    expect(stored.status).toBe("connected");
+    expect(stored.unlocked.accessToken).toBe("ya29.reconnected-access");
     expect(freeBusyCalls.map((call) => call.authorization)).toEqual([
       "Bearer ya29.reconnected-access",
     ]);
