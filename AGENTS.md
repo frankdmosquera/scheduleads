@@ -304,218 +304,39 @@ Deployment is also explicit. `/release` can prepare local Render or Vercel confi
 and run readiness checks, but it must stop before deploy, remote service changes,
 push, or publish unless the user gives a separate yes in the current chat.
 
-## The published build log (Artifact)
+## The build log
 
-**Published at: https://claude.ai/artifact/R4QgeshVPpKB45BP67xQGF**
+**It lives in the buildlogs app**, in `ai-web-agency/buildlogs`, folder
+`buildlogs/logs/scheduleads/`. Frank reads it at http://localhost:3100 on the
+laptop and online on his phone. How to write it, what a step looks like and
+when to save it are in `buildlogs/logs/README.md`: read that before writing
+any entry. Decided by Frank, 2026-09-29: the single-page `project-log.html`
+and its Artifact are retired, because publishing it meant reading the whole
+1.3 MB page first, about 400k tokens every session.
 
-Source: `blueprint/context/project-log.html`, tracked in the repo. The Artifact
-is that file published. It does not update itself and nothing regenerates it.
-Editing the file and republishing it to that URL is the only thing that moves
-it.
+Frank reads three places: the code, the build log and the chat. He does not
+read the files under `blueprint/`, so a decision, risk or open question that
+lives only in `current-feature.md` has not been communicated to him.
 
-Frank reads three places: the code, this page, and the chat. He does not read
-the files under `blueprint/`. A decision, risk or open question that lives only
-in `current-feature.md` has not been communicated to him. He opens the page
-first and reads status off it in seconds, so a stale page is worse than a
-missing update: he arrives holding a wrong model and plans from it.
-
-**The rule.** No build step is reported in chat, and no commit closes one, until
-the page is republished in the same turn. Order, every time:
+**The rule.** No build step is reported in chat until its log entry is written.
+Order, every time:
 
 1. the step's own check passes
 2. tick the box in `blueprint/context/current-feature.md`
-3. add the entry at the top of that feature's timeline in
-   `project-log.html` and republish, passing the URL above as `url`
-4. commit the step and push it (see Git above)
+3. write the step's entry in `buildlogs/logs/scheduleads/` (its file, its state
+   in `roadmap.json`, the feature's Log), then commit that folder to buildlogs'
+   `main` and push it, as the guide says
+4. commit the step here and push it (see Git above)
 5. only then report the step in chat
 
-`/feature` publishes the feature's group when it writes a spec, including each
-decision and why the rejected option was rejected. `/implement` publishes at
-every step. `/complete` publishes before the final commit.
-
-**The roadmap has to stand alone.** Someone reading only the Roadmap view, and
-opening nothing else, should know what is being built and what each step of it
-actually does. A step title is not that: "1.2 Better Auth on the Hono backend"
-names a thing without saying anything about it. So the item being built carries
-its steps inline on the roadmap, each one a `<details>` that opens into the same
-plan the chat got - what it does and why, its concrete pieces, and its
-`Done when`. Collapsed it stays a list you can scan; the current step is left
-`open`.
-
-**One item, one place.** There is no separate page per feature. Everything about
-the item being built lives in its own row on the roadmap, as collapsed
-`<details>` drawers under its title: **Steps** (open, the numbered steps with
-their plans and outcomes), **Why this item exists**, **Decisions**,
-**Contracts**, **Log**, **Notes**. Closed, the row is one line in a list of 28.
-Open, it is the whole record without leaving the page.
-
-**Each step holds everything about that step.** Decided by Frank, 2026-09-25,
-so he never has to piece a step together from the item's general log. Inside
-a step, in this order: **The plan**, **What actually happened** (the planned
-pieces, each a green check, an unplanned one tagged "added"; then one blue
-**How it was proved** box holding two white cards: **Saved tests and checks
-by hand** (tests added, how they were proved able to fail, what was only
-proved by hand, and the "Passed." result of the Done when) and **Independent
-review** (Frank, 2026-09-26: five numbered parts, always in this order:
-**1 What it checked** (the fixed list, then "For this step"), **2 Verdict**
-in the green result box, **3 Issues it found** in violet, **4 Earlier issues
-it closed**, and **5 After the fixes**, green once this step's issues are
-repaired and how that was proved, grey "Not yet" until then. The issues sit
-inside the same card: every finding the independent review raised, in plain words, with
-its F-number and state; moved inside on Frank's call, 2026-09-26, because the
-issues are the review's answer, not a drawer of their own). The planned
-pieces and each card carry their own small violet **What bit** block when
-something caught us out there, and none when nothing did), **What changed in
-the code**. A step has no Log of its own (Frank, 2026-09-26: the plan and
-what actually happened already tell the step's story). Every entry, a step's
-built, reviewed and fixed included, goes in the item's one **Log**, newest
-first, titled with its step number when it belongs to one ("Step 2.4 built:
-..."). The Log builds up for one feature only: a closed feature's row folds
-to one line with its Log inside, and the next feature starts a fresh one.
-
-**A step's plan comes in two parts** (Frank, 2026-09-26), each its own
-colored chunk with its state and date: **Part 1, What it builds** (the
-numbered pieces, each with its picture) and **Part 2, Done when** (the checks
-agreed now, run once it is built). A piece that needs his call is a
-**blocker**: it comes first in Part 1, because nothing is built until he
-answers it, tagged "blocker, waiting on you" while open and "blocker, answered"
-with the answer and its date once decided. It keeps its place and number, so a
-reader later sees it was his decision and that it came first. The
-numbers count pieces of the plan, never work done: the step says "nothing
-built yet" until it is built. The chat uses the same names.
-
-**Pictures live with what they explain** (Frank, 2026-09-26; there is no
-separate Diagrams drawer any more). The plan opens with one picture of the
-whole step, and each planned piece has its own picture in a small closed
-drawer under it. When a piece ends up different from its picture, **What
-actually happened** may add a closed pair under that piece, "Planned" and
-"What we ended up with", only when a picture makes the change clearer; the
-plan's own pictures are never redrawn.
-
-The page therefore has three views and three buttons: **Roadmap**, which is home
-and what loads, **The project**, the eight planning answers, and
-**Architecture** (Frank, 2026-09-26): how the system is built, not what is
-being built. Architecture holds the code map (which part talks to which, and
-where things live), every route the API answers, and **How it all fits
-together**, the booking model with its versions, and **How a step is built**,
-the build, commit, independent review, fix order every step follows (Frank,
-2026-09-26). A step that adds a route, a
-folder or a table updates the Architecture view in the same publish. Each view
-has its own menu in the top bar: the item chips on the Roadmap, section links
-on the other two. On the Roadmap, only the feature being worked on opens into
-its steps beside its chip (N.1 ... N.k): the one being built, or when none is,
-the last one finished, its steps in the done colour. `/complete` leaves them
-open; they fold back to one chip when the next feature starts. On a feature's
-last step, once the next feature's steps are planned, they open too. Arrows
-either side of the bar move it for a mouse with no sideways scroll (Frank,
-2026-09-28).
-
-It used to have a view per feature, which meant the same steps were maintained
-in two places and silently drifted. Never reintroduce that: Architecture is one
-view for the whole system, never one per feature. If something seems to belong
-in two places, one of them links to the other rather than restating it.
-
-**The page is where a plan is read; the chat is where it is debated.**
-Decided by Frank, 2026-09-26. Before a step is built, its plan on the roadmap
-carries everything the chat explained: one picture of the whole step as a
-request or flow, then each planned piece with its own picture right under it
-in a small closed drawer (a diagram, or a drawn file tree with each file's
-`new` or `changed` tag and what it is for). Anything drawn in chat while
-planning goes onto the step in the same turn, so a week later the page still
-holds the whole reasoning and the chat never has to be scrolled back. The
-Architecture view keeps only whole-system pictures; a step's own pictures live
-in the step.
-
-**Plan first, then plan against reality.** A step is published with its plan
-before the work starts: what it does and why, its concrete pieces, its
-`Done when`. When it closes, that plan is **not rewritten to match what
-happened** - rewriting it hides the only interesting part. Each planned piece
-instead gets marked with what became of it, and the reason when it is not
-`kept`:
-
-| Mark | Means |
-|---|---|
-| `kept` | done as planned |
-| `changed` | done differently, with why |
-| `added` | not planned, with what forced it |
-| `dropped` | planned and abandoned, with why |
-
-A short verdict row carries the counts, so a reader sees the size of the drift
-before reading any of it.
-
-**And it says what bit.** Listing what got built reads like a plan that went
-perfectly, and none of them do. A closing step records the wrong assumption, the
-trap inherited from an older repo, the check that proved nothing, the spec
-instruction that turned out wrong. Short, with the reason, no drama and no
-padding. Keep these separate from the piece-level marks above: the marks say
-what changed, this says what it cost to find out. These are the part worth
-reading back in six months, and they are written whether or not anyone asks.
-
-**What actually happened mirrors the plan, code included.** Decided by Frank,
-2026-09-26, from step 2.4 on. It lists the plan's pieces with the same
-numbers, each with its outcome (kept, changed, added, dropped) and, in a closed
-drawer under it, the code that piece touched: every changed file is placed
-under the piece it served, so what was built and what code it touched are read
-together. Unplanned pieces ("added") carry their code the same way. A file
-that served two pieces appears under each with only its own lines. Then **How
-it was proved** runs the Done when, with the independent review and the
-issues it found in its own card at the end. Steps 2.1 to 2.3
-were regrouped this way on Sep 26, sliced by the real line numbers.
-
-**And it shows the code.** Decided by Frank, 2026-09-25: the project is big
-and he wants full control, so every closing step shows its real code: from
-step 2.4 under each piece, as above; before it in one closed drawer, **What
-changed in the code**, holding one closed drawer per changed file. The
-real code, as it reads in the editor, never a summary line: a new file is
-shown whole; a changed file shows the old block, then the new one, with a few
-lines around them. Real line numbers from the file. New lines get a thin green
-bar on the left and removed lines a thin red one; no `+` or `-` signs, because
-he reads code, not diffs. Coloured by Shiki, loaded by the page from
-`cdn.jsdelivr.net`, which uses VS Code's own grammars, in VS Code's **Dark
-2026** exactly as his editor resolves it, so the page and his editor match.
-Checked against his screen on 2026-09-25: `import` purple, type names green.
-The theme is built by `node blueprint/scripts/code-theme.mjs` from the theme
-files in his VS Code install; rerun it when VS Code changes the theme. Ends
-with a link to the step's commit on GitHub for the full diff, pinned to
-commits (`compare/<base>...<step commit>`), never to the branch name, which
-keeps moving and would show later steps too.
-
-Build the drawer with `node blueprint/scripts/code-drawer.mjs` (usage at the top
-of the file), never by hand, so the line numbers are the file's own. The page
-already carries the viewer that colours and numbers it.
-
-Only the project's own code goes in the drawer: what sits in `frontend/`,
-`backend/` and `packages/shared/`, tests included, and the SQL of a migration.
-Never `node_modules`, `package-lock.json`, `dist/`, Drizzle's snapshot JSON or
-anything else generated. A changed dependency is one line naming the package,
-not the manifest.
-
-**Phone layout lives in two pages.** On screens up to 760px the page makes
-diagrams, file trees and code full width and the top bar one row (Frank,
-2026-09-28, ported from asset-engine's build log). The same CSS block and
-script are in `asset-engine/blueprint/context/project-log.html`; a change to
-either page's phone layout goes into both.
-
-**One numbering, everywhere.** Roadmap item N owns steps N.1 to N.k, so a step
-number always says which item it belongs to. Never number a feature's steps from
-1, and never put a bare count beside a numbered list: "2 done" next to items
-numbered 1, 2, 3 reads as "item 2 is done". Name the items instead, as in
-"Done 0a, 0b / Building 1 / To go 2 through 26".
-
-Republish by passing that URL as `url`. Publishing the path without it creates a
-separate artifact and orphans the real one.
-
-Fuller conventions, markers and page shape live in
-`blueprint/context/ai-interaction.md`. This section is duplicated here on
-purpose: the `feature` and `implement` skills both instruct the agent not to
-read that file, which is how the page went stale three times. Everything above
-has to survive without it.
+`/feature` writes the feature's entry when it writes a spec, `/implement` at
+every step, `/complete` before the final commit.
 
 ## Dashboard activity
 
 This is **not** the build log above, and nothing in this project renders it. It
 is one line of machine state for a host that may display the running command.
-Writing it never substitutes for publishing the Artifact.
+Writing it never substitutes for writing the build log entry.
 
 The dashboard can show the active or most recent substantial Blueprint command
 from `blueprint/.state/run.json`. This file is generated local state, ignored by
@@ -608,8 +429,8 @@ formatter, which covers the whole repo:
 - Check formatting without changing anything: `npm run format:check`
 
 Prettier is a root dev dependency, configured in `.prettierrc`. `.prettierignore`
-keeps it to code: docs, the build log page, the Blueprint skills and generated
-files are never reformatted.
+keeps it to code: docs, the Blueprint skills and generated files are never
+reformatted.
 
 - Frontend dev server: `npm run dev --workspace=frontend` (http://localhost:3000)
 - Backend dev server: `npm run dev --workspace=backend` (http://localhost:3001)
@@ -645,6 +466,14 @@ treatments). The full cast is in `packages/shared/scripts/seed-dev.ts`. Signup i
 closed, so without the seed a new database has no way in. Login codes print in
 the API's console. The seed refuses any database that is not on this machine
 or whose name does not end in `_dev`.
+
+- Print a login's busy times from their connected calendar: `npm run calendar:check --workspace=backend -- <login email> [days]`
+
+It reads the real calendar through the saved connection, 7 days by default and
+at most 31, in the business's time zone, and prints no tokens. It refuses the
+same databases the seed does. That guard lives in one place,
+`packages/shared/helpers/assert-local-dev-database.ts`, used by the seed, the
+database tests and this command.
 
 Railway is reached only on purpose: open the tunnel with
 `railway connect Postgres --tunnel-only --port 5433`, leave it running, and

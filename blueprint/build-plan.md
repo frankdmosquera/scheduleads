@@ -75,7 +75,7 @@ else.
   carry a `Done when` that renames the route on purpose and confirms the
   frontend stops compiling. The first repo exported `AppType` and never
   consumed it once; this item is where that stops being true
-- [ ] 3. **Calendar connection** - the table, the cipher, OAuth connect and
+- [x] 3. **Calendar connection** - the table, the cipher, OAuth connect and
   disconnect, the provider seam, and the free/busy query verified against a
   real event. **Every Google calendar belongs to one person**, never to "the
   business": a calendar for the business cannot say which worker is busy.
@@ -208,6 +208,10 @@ without Frank touching the database.
 - [ ] 12. **Settings** - hours with several windows a day, services,
   resources, blackout dates, statutory holidays, the booking horizon, and
   the calendar connection, replacing direct edits to `availability_rule`.
+  The calendar connection includes which of the owner's Google calendars
+  count as busy, the owner's pick (item 3 reads only the main one; the list
+  needs `calendar.calendarlist.readonly`, added here, before any client
+  connects).
   From version 8:
   - Services with their length and buffers; people and places.
   - Who does what: the owner ticks each person's services and the rooms

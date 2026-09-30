@@ -140,9 +140,8 @@ time this skill regenerates the overview.
   cannot fit, stop and identify which plan section needs to be split or moved to
   a focused reference instead of writing an oversized overview.
 - **Write one generated context file.** This skill writes
-  `blueprint/context/project-overview.md`, fills the two generated views of
-  `blueprint/context/project-log.html` (Step 4), and any user-approved plan
-  cleanup only.
+  `blueprint/context/project-overview.md`, fills the build log's roadmap and
+  Project view (Step 4), and any user-approved plan cleanup only.
   Never create additional generated context files such as `data-model.md`,
   `architecture.md`, or `open-questions.md` unless the user explicitly requests
   a separately scoped artifact.
@@ -156,28 +155,26 @@ still feels unsettled, also mention that `/prototype` is available before
 `/feature`: it writes throwaway static HTML/CSS mockups to `prototypes/` and does
 not modify the main app code.
 
-## Step 4 - fill and publish the build log
+## Step 4 - fill the build log
 
-`blueprint/context/project-log.html` ships with the scaffold as a starter. Fill
-it from the same two plans, in the same pass:
+The build log lives in the buildlogs app, in the folder the project's
+`AGENTS.md` names; how to write it is in `buildlogs/logs/README.md`. If the
+folder does not exist yet, create it. Fill it from the same two plans, in the
+same pass:
 
-- **The project view.** Replace each of the eight placeholder rows with a short
-  summary of the matching `project-plan.md` section and drop the `placeholder`
-  class. Fill Locked decisions from the overview's locks.
-- **The roadmap view.** One `.item` per `build-plan.md` line, grouped under the
-  plan's milestone headings, with `data-state` set to `done`, `active`, or
-  `planned`. Update the three counts in the header.
-- **Leave feature groups alone.** Any `view-feature-N` block already on the
-  page belongs to `/feature` and `/implement`. A rerun refreshes the two views
-  above and touches nothing else.
-- **Publish.** If `ai-interaction.md` reads `Published at: not yet published`,
-  publish the page for the first time with the Artifact tool and write the
-  returned URL into that line. Otherwise republish passing the existing URL as
-  `url`, so the link never changes. Set the page footers to today's date.
+- **The Project view** (`fragments/view-project.html`): a short summary of each
+  `project-plan.md` section, and Locked decisions from the overview's locks.
+- **The roadmap** (`roadmap.json`): one feature per `build-plan.md` line,
+  grouped under the plan's milestone headings as phases, each `planned`,
+  `active` or `done` with its one-line `bodyHtml`, and the tally updated.
+- **Leave feature entries alone.** A feature that already has drawers belongs
+  to `/feature` and `/implement`. A rerun refreshes the two parts above and
+  touches nothing else.
+- **Save.** Commit the folder to buildlogs' `main` and push it, as the guide
+  says.
 
-The page is the user's orientation surface, and `ai-interaction.md` explains
-why a stale one is worse than none. Do not report this skill as finished while
-the page still shows placeholder rows.
+The build log is the user's orientation surface, and a stale one is worse than
+none. Do not report this skill as finished while it still shows placeholders.
 
 ## Step 5 - offer the initial planning baseline commit
 

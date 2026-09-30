@@ -12,5 +12,14 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": ["db", "helpers", "subscriptions", "zod-validation", "scripts", "drizzle.config.ts"]
+  "include": [
+    "db",
+    "crypto",
+    "calendar",
+    "helpers",
+    "subscriptions",
+    "zod-validation",
+    "scripts",
+    "drizzle.config.ts"
+  ]
 }

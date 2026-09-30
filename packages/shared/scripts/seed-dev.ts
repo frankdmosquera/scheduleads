@@ -24,30 +24,8 @@ import {
   type DateHoursType,
   type WeeklyHoursType,
 } from "@scheduleads-app/shared/zod-validation";
+import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
 import { toSlug } from "@scheduleads-app/shared/helpers";
-
-const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
-
-// Two conditions, not one: the Railway tunnel ALSO listens on 127.0.0.1, so a host check
-// alone would seed the real database. The name must end in _dev too (Railway's is "railway").
-function assertLocalDevelopmentDatabase(url: string | undefined): string {
-  if (!url) {
-    throw new Error("DATABASE_URL is not set. It is read from the root .env.");
-  }
-
-  const parsed = new URL(url);
-  const database = parsed.pathname.replace(/^\//, "");
-
-  if (!LOOPBACK.has(parsed.hostname) || !database.endsWith("_dev")) {
-    throw new Error(
-      `Refusing to seed ${parsed.hostname}:${parsed.port || "5432"}/${database}. ` +
-        "The seed only runs against a database on this machine whose name ends in _dev. " +
-        "Check which DATABASE_URL line is active in .env."
-    );
-  }
-
-  return database;
-}
 
 // Minutes from midnight, so 9:30 reads as at(9, 30) instead of 570.
 const at = (hour: number, minute = 0) => hour * 60 + minute;
@@ -256,7 +234,7 @@ async function ensureResource(
   return { id, made: true };
 }
 
-const database = assertLocalDevelopmentDatabase(process.env.DATABASE_URL);
+const database = assertLocalDevDatabase(process.env.DATABASE_URL, "seed");
 const client = postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () => {} });
 const db = drizzle(client, { schema });
 
@@ -324,6 +302,14 @@ try {
       // The first person. Made here because inserting the business directly skips the
       // Better Auth hook that normally makes it.
       const firstPerson = await ensureResource(tx, organizationId, business.name, "person");
+
+      // Linked to its owner's login, as the create hook does. Also on a database seeded
+      // before the link existed, so no machine needs a rebuild.
+      const linked = await tx
+        .update(resource)
+        .set({ userId })
+        .where(and(eq(resource.id, firstPerson.id), isNull(resource.userId)))
+        .returning({ id: resource.id });
 
       // Parsed before writing: the jsonb columns would accept a bad week.
       const [existingBusinessHours] = await tx
@@ -415,6 +401,7 @@ try {
         !existingOrg && "business",
         !existingMember && "membership",
         firstPerson.made && "first person",
+        linked.length && "first person's login link",
         !existingBusinessHours && "business hours",
         holidaysAdded && "holiday picks",
         peopleMade && `${peopleMade} people and places`,

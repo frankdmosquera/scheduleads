@@ -41,95 +41,12 @@ everywhere.
 - **Lead with the answer** - state the result or the state first, supporting detail after.
 - **Don't over-format** - no deep bullet nests or decorative headers on a two-line reply. Concise still wins.
 
-## The published build log (Artifact)
+## The build log
 
-Every project keeps a live build log published as an Artifact. It is not a
-nice-to-have progress log.
-
-Published at: https://claude.ai/artifact/R4QgeshVPpKB45BP67xQGF
-
-`/overview` publishes it the first time and writes the URL on that line. Every
-later republish passes that URL as `url`, so the link never changes.
-
-**Frank reads three places: the code, the Artifact, and the chat.** He does
-*not* read the files under `blueprint/`. Anything he needs in order to follow
-the work or make a decision has to reach him through one of those three. A
-decision, risk, trade-off, or open question that lives only in
-`current-feature.md` or a history archive **has not been communicated to him.**
-Writing it in the spec is bookkeeping; putting it on the page or in the chat is
-telling him.
-
-**Chat is where the work happens. The Artifact is how he prepares for it.**
-Chat is the more important channel - decisions get made there. But he opens the
-page *first* and reads overall status off it in seconds: what is done, what is
-running, what is blocked. Rebuilding that picture by scrolling the transcript
-takes several times longer. He runs two or three projects at once and bounces
-between them, so the page is how he *reloads* a project after being away.
-
-**A stale page is therefore worse than a missing update.** He does not merely
-lack news - he arrives already holding a *wrong model* of where things stand,
-and plans from it.
-
-### The rule, enforced by coupling rather than memory
-
-**No commit that closes a build step without publishing the Artifact in the
-same turn.** The publish is the last tool call before the commit; the chat
-message reporting the step describes what is *already* live.
-
-Order, every time:
-
-1. the step's own check passes
-2. tick the box in `current-feature.md`
-3. add the entry at the top of that feature's timeline and republish
-4. offer/make the checkpoint commit
-5. *only then* report the step in chat
-
-This is deliberately mechanical. Stating it more emphatically has already
-failed: it was written into project docs *and* into agent memory, and was still
-missed twice in one session on 2026-09-08 - both times caught by Frank opening
-the link rather than by the agent. Coupled to the commit it becomes checkable:
-about to commit without having published means the rule is already broken.
-
-### Markers
-
-Four markers, each a glyph **and** a colour, with a key in the sidebar. The
-glyph sits **inside** the timeline dot, so the page reads without relying on
-colour at all.
-
-| Marker | Colour | `data-kind` | Means |
-| --- | --- | --- | --- |
-| `!` | red | `decision` | **Blocked on Frank.** Work stops until he answers |
-| `?` | amber | `question` | Open question. The build continues |
-| `✓` | green | `done`, `decided`, `change` | Done, or a decision he approved |
-| `↻` | violet | `fix` | A real fault found and repaired |
-
-Render them from `data-kind` via `.dot::before` so entry markup never carries a
-glyph and new entries get theirs automatically. **Do not use a teal or blue
-accent for fixes** - it is indistinguishable from green at dot size and is
-usually already the link colour.
-
-**A page that is complete but not scannable has failed at its job.** Status must
-be legible at a glance - step rails, counts, markers, a status pill - not buried
-in prose. Prose carries the *why*; the glance layer carries *where things stand*.
-
-### Shape and storage
-
-One group per topic, switched client-side, listed in a sidebar: two standing
-groups (**The project** and **Roadmap**) plus **one group per feature**, created
-the moment that feature becomes current. Inside a feature group: status header
-and step rail, the build log newest entry first, then goal, build steps, scope,
-contracts and notes.
-
-**Specs are presented in the artifact, not just in chat** - status pill, branch,
-`0 of N steps`, the step rail, a green `decided` entry recording each decision
-*and why the rejected option was rejected*, then Goal, Build steps each with a
-`Done when` gate, Scope in/out, Contracts.
-
-Keep the page source tracked in the repo at
-`blueprint/context/project-log.html` and republish it **passing the existing
-artifact URL as `url`**, so the link never changes. Publishing a path the
-conversation has not published, without `url`, creates a *separate* artifact and
-orphans the real one.
+The build log lives in the buildlogs app, folder `buildlogs/logs/scheduleads/`.
+Everything about writing it (what a step looks like, its markers and pictures,
+when to save) is in `buildlogs/logs/README.md`; the rule for when is in
+`AGENTS.md`. The single-page `project-log.html` and its Artifact are retired.
 
 ## Workflow
 

@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash 3e673de208c0c76379bb2db8e268cd25e1689db3d634bee28d7084c289c0f899 -->
+<!-- blueprint:source-hash 25cedf40bc793d8507d8f044bd7f2ae9bc2057a698c95d233ab2d7ba6b235be0 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -19,16 +19,18 @@ and paid." This product does, starting with the booking.
 
 ## Users
 
-- **Owner/operator** - runs a small local service business. Signs in a few
-  times a week. Wants to know who booked, when, what they want, and where
-  every lead stands. Sees only their organization.
+- **Owner/operator (business owner)** - runs a small local service business.
+  Signs in a few times a week. Wants to know who booked, when, what they want,
+  and where every lead stands. Sees only their organization. Is also the
+  business's first person.
 - **Customer/lead** - books on the business's own site. Never authenticates,
   never sees the product's name. Public routes only.
-- **Frank, as the agency** - two hats. As a business, organization number one,
-  no special case anywhere. As the platform, the Better Auth `admin` role and
-  a separate admin area that reads across organizations. Only role that can
-  delete an organization.
-- **Crew member** - later, assigned to jobs. No sign-in until asked for.
+- **Frank, two hats** - as a business, organization number one, no special case
+  anywhere. As the **platform admin**, the Better Auth `admin` role and a
+  separate admin area that reads across organizations; the only role that can
+  delete an organization. Never a client business's owner: a client's business
+  is created under the client's email.
+- **Crew member** - later, assigned to jobs. No sign-in until a business asks.
 - **Self-serve customer** - Phase 9. Signs up and pays without the agency.
 
 Tenants, in order: agents-web (tenant zero), primo-painters (first paying
@@ -37,283 +39,273 @@ the-latam-painters (after its site is finished).
 
 ## Features
 
-Build-plan order, 26 items. Items 1 to 3 are ports of the first repo's
-features 1 to 3.
+Build-plan order. Items 1 to 3 are ports of the first repo's features 1 to 3.
 The headline feature is 5, booking creation: the first moment a stranger's
-booking becomes the business's lead.
+booking becomes the business's lead. **Done: 0a, 0b, 1, 2. Next: 3.**
 
-- **0b. Design pass** - static mockups of the modal in two themes, the leads
-  list, the board and settings. Runs through `/prototype`, not `/feature`.
-1. **Multi-tenant auth, with the org fix** - email-OTP sign-in,
-   create-organization, the `admin` role, the auto-active-organization hook,
-   and the subscription middleware with the one tier `agency`.
-2. **Booking links and availability rules** - the two tables, the public read
-   route, the seed CLI, the shared-package layout. Also the typed RPC seam:
-   the backend exports `AppType`, the frontend consumes it with `hc<AppType>`,
-   proved by renaming a route and watching the frontend fail to compile.
-3. **Calendar connection** - encrypted Google OAuth, connect and disconnect,
-   the provider seam, free/busy verified against a real event.
-4. **CRM spine** - `contact`, `pipeline_stage`, `resource`, `activity` and
-   their routes. Nothing visible yet.
-5. **Booking creation** - validate a slot against rules, free resources and
-   the live calendar; create contact, lead, booking and timeline entry.
+- **0a. Commercial position** - done. Booking sits in the $240/mo plan.
+- **0b. Design pass** - done. Static mockups in `prototypes/`, via `/prototype`.
+1. **Multi-tenant auth, with the org fix** - done. Email-OTP sign-in, the
+   `admin` role, the auto-active-organization hook, the subscription
+   middleware with the one tier `agency`. Signup closed.
+2. **Booking links, resources and availability rules** - done. Three tables,
+   the public read route, the dev seed, the typed `hc<AppType>` seam proved by
+   a rename that broke the frontend build. One resolution function for
+   bookable hours that every later item calls.
+3. **Calendar connection** - one Google calendar per person, never per
+   business; the first is the business owner's, each optional. One connection
+   asks to read busy times and to add and edit events. Cipher, OAuth connect
+   and disconnect, provider seam, free/busy verified against a real event. Not
+   a two-way sync.
+- **3b. Client access: provisioning** - the admin path that creates a client
+  user and puts them in the business made for them, under their email. Hard
+  prerequisite for Phase 5 and any client-facing deploy.
+4. **CRM spine** - `contact`, `pipeline_stage`, `activity` and their routes.
+   Nothing visible yet.
+5. **Booking creation** - validate a slot against bookable hours, who does
+   what, free people and places, and Google busy times; the commitments table;
+   create contact, lead, booking and timeline entry. Owner-made bookings too.
 6. **Confirmations** - `.ics` email to the customer, notification to the
-   business.
-7. **Self-serve cancel and reschedule** - tokenized link in the confirmation.
+   business, always from the business.
+7. **Self-serve cancel and reschedule** - tokenized link; cancel removes the
+   Google event.
 8. **Scheduled messages** - the background job runner, the confirmation text
-   and the reminder the evening before. The runner is the load-bearing half:
-   nothing else in the plan creates one, and reminders, follow-ups and the
-   calendar token refresh all need it.
+   and the reminder the evening before. The runner is the load-bearing half.
 9. **The booking component** - unstyled trigger, themed modal, one provider
    per host, the face-and-body contract, layout stored on the booking link.
 10. **Tenant zero wired: agents-web** - siteConfig slug, the contact seam
     calls the API, the site's theme reaches the modal.
-11. **Leads list and contact page** - every lead with its stage, the contact's
-    timeline and open next steps, and adding a lead by hand.
-12. **Settings** - hours with several windows a day, services, resources,
-    blackout dates, statutory holidays, the booking horizon, the calendar.
+11. **Leads list and contact page** - leads with stages, the contact's
+    timeline and next steps, adding a lead by hand.
+12. **Settings** - services and buffers, people and places, who does what,
+    bookable hours and one-off dates, one-click closed and opened days, the
+    holiday picker (none by default), notice, horizon, time zone, calendar.
+- **12b. Calendars** - every person and place has an in-app calendar; the
+  owner adds phone estimates, walk-ins and time off by hand.
 13. **Primo Painters** - the first paying client swaps Calendly for the modal.
+    Needs item 22's calendar half first.
 14. **Pipeline board** - drag and drop between stages the business names.
-15. **Email from the CRM** - templated sends via Resend, logged; BCC capture
-    files replies on the contact.
-16. **Quotes** - line items, a total, and a tokenized link the customer opens
-    in the business's own theme to accept.
-17. **Face and Body** - Cal.com out, 45 services in, practitioners as
-    resources.
-18. **The Latam Painters** - after its site is finished and its siteConfig
-    exists.
-19. **Crew and job scheduling** - jobs on resources across days.
+15. **Email from the CRM** - Resend sends logged on the timeline; BCC capture.
+16. **Quotes** - line items, a total, a tokenized accept link.
+17. **Face and Body** - Cal.com out; 45 services, practitioners, rooms.
+18. **The Latam Painters** - after its site and siteConfig exist.
+19. **Crew and job scheduling** - jobs of daily visits, crews as saved lists.
 20. **Reports** - bookings per week, pipeline by stage, lead sources.
 21. **WhatsApp** - Meta verification, a number, approved templates.
-22. **Google OAuth verification** - calendar scopes, then Gmail's restricted
-    scopes.
-23. **Packages ladder and the admin area** - tiers above `agency`, who is on
-    what, move a client up.
+22. **Google OAuth verification** - calendar scopes (before 13), then Gmail's.
+23. **Packages ladder and the admin area** - tiers above `agency`.
 24. **Hosted booking page** - `/book/<slug>`.
-25. **Self-serve onboarding and billing** - Stripe hosted checkout, webhook
-    writes `organization.plan`.
+25. **Self-serve onboarding and billing** - Stripe checkout, webhook.
 26. **Two-way Gmail sync** - after 22.
 
 ## Data model
 
-Postgres through Drizzle. Every app table carries `organizationId` and that
-scope is a security boundary: it comes from the session on the server, never
-from a client. All ids are text (Better Auth style); timestamps are `timestamptz`.
+Postgres through Drizzle, schema and the one migration ledger in
+`packages/shared` (one table per file under `db/*-tables/`). Every app table
+carries `organizationId`, and that scope is a security boundary: it comes from
+the session on the server, never from a client. Ids are text; timestamps are
+`timestamptz`; built tables carry `createdAt` and `updatedAt`.
 
-### Better Auth tables
+### Better Auth tables (built, feature 1)
 
 `user`, `session`, `account`, `verification`, `organization`, `member`,
-`invitation`. Managed by the `organization`, `emailOTP` and `admin` plugins.
-One added field:
+`invitation`, from the `organization`, `emailOTP` and `admin` plugins. Added:
 
 - `organization.plan` (text, default `agency`) - the package tier. Server-set
-  only. Read by the subscription middleware on every module route.
+  only; read by the subscription middleware.
 
-### booking_link
+### booking_link (built, feature 2)
 
-An event type, the per-service handle a host site stores as `Service.bookingId`.
+A service, the handle a host site stores as `Service.bookingId`.
 
-- `id`, `organizationId` (FK organization)
-- `name` (text), `slug` (text, unique per organization)
-- `durationMinutes` (int), `description` (text, nullable)
-- `active` (bool), `createdAt`
+- `organizationId` (FK organization), `name`, `slug` (unique per organization)
+- `description` (nullable), `durationMinutes` (int, > 0)
+- `bufferBeforeMinutes`, `bufferAfterMinutes` (int, >= 0, default 0)
+- `active` (bool; inactive reads as absent publicly)
 
-### availability_rule
+### resource (built, feature 2)
 
-One per organization, enforced unique. Shared by every booking link.
+One person or one place, never a group; a crew is a saved list of people.
+Every business has at least one, its first person, made automatically.
 
-- `id`, `organizationId` (FK, unique)
-- `timezone` (IANA text)
-- `weeklyHours` (json: weekday to a list of `{ startMinute, endMinute }`).
-  Several windows a day is the normal case. Primo's live schedule is Sunday
-  daytime, three evenings, two early mornings and Saturday afternoon.
-- `minNoticeMinutes` (int), `bufferMinutes` (int)
-- `horizonDays` (int) - how far ahead a customer may book
-- `holidayCountry` (text, nullable) - statutory holidays resolved from it
-- `blackoutDates` (date[])
+- `organizationId` (FK), `name`, `kind` (`person` | `place`), `active`
+- unique (`organizationId`, `id`), so rules can name a person of their own
+  business
 
-### calendar_connection
+### availability_rule (built, feature 2)
 
-One per organization. Only Google is implemented; other providers are new
-files behind the same interface.
+**Bookable hours**: when customers can book online, not opening hours. A null
+`resourceId` is the business's row (one per business); a set one is that
+person's (one per person). A person without a week follows the business's.
 
-- `id`, `organizationId` (FK, unique)
-- `provider` (text: `google`)
-- `credentials` (text, AES-256-GCM under `CALENDAR_TOKEN_KEY`)
-- `grantedScope` (text), `status` (text: `connected`, `needs_reconnect`,
-  `disconnected`)
-- `createdAt`, `updatedAt`
+- `organizationId` (FK), `resourceId` (FK resource, same organization, nullable)
+- `weeklyHours` (json: weekday to minute windows; several a day is normal;
+  null on a person's row means follow the business)
+- `dateHours` (json, default `[]`) - one-off dates with their hours
+- Business row only, refused on a person's row: `timezone` (IANA),
+  `minimumNoticeMinutes` (>= 0), `horizonDays` (1 to 365), `closedDates`
+  (`YYYY-MM-DD` list), `holidayCountry`, `holidayRegion` (province),
+  `closedHolidays` (holiday names the owner picked, default `[]`)
+- A closed date or picked holiday closes booking for everyone; a one-off date
+  opens it again, for one person or the whole business.
 
-### contact
+### calendar_connection (feature 3)
 
-- `id`, `organizationId` (FK)
-- `name` (text), `email` (text), `phone` (text, nullable)
-- `createdAt`
+One per person, never one for the business. Only Google is implemented;
+Microsoft, CalDAV and ICS are new files behind the same interface.
 
-### pipeline_stage
+- `organizationId` (FK), the person it belongs to (a `resource` of kind
+  `person`, one connection each)
+- `provider` (`google`), `credentials` (AES-256-GCM under `CALENDAR_TOKEN_KEY`)
+- `grantedScope` - must hold both read busy times and add and edit events;
+  a half-connection is refused
+- `status` (`connected`, `needs_reconnect`, `disconnected`)
 
-Seeded with new, contacted, booked, done at provisioning. A table, not a fixed
-set, so a business can rename and reorder.
+### contact, pipeline_stage, activity (feature 4)
 
-- `id`, `organizationId` (FK)
-- `name` (text), `position` (int)
+- `contact`: `organizationId`, `name`, `email`, `phone` (nullable)
+- `pipeline_stage`: `organizationId`, `name`, `position`. Seeded new,
+  contacted, booked, done at provisioning; renamed and reordered per business.
+- `activity`: the timeline **and the next-step queue**. `organizationId`,
+  `contactId`, `type` (`booking_created`, `stage_changed`, `email_sent`,
+  `email_received`, `note`, `sms_sent`, `call`, `task`), `payload` (json),
+  `actorUserId` (nullable), `occurredAt` for a thing that happened, or
+  `dueAt` and `doneAt` for a thing still to do.
 
-### lead
+### lead, booking, commitment (feature 5)
 
-- `id`, `organizationId` (FK), `contactId` (FK contact)
-- `stageId` (FK pipeline_stage)
-- `source` (text: `widget`, `hosted`, `manual`), `details` (text)
-- `createdAt`, `updatedAt`
+- `lead`: `organizationId`, `contactId`, `stageId`, `source` (`widget`,
+  `hosted`, `manual`), `details`
+- `booking`: `organizationId`, `leadId`, `bookingLinkId`, the people it holds
+  and a place when the service needs one, `startsAt`, `endsAt`, `status`
+  (`confirmed`, `cancelled`, `rescheduled`), `location` (the customer's
+  address, required), `calendarEventId`, `cancelToken` (unique). Made by a
+  customer online or by the owner; the same booking either way.
+- `commitment`: one row per person or place for every booking and every
+  stretch of time off, buffers inside its time. The database refuses two
+  overlapping active rows for the same person or place. Cancelled rows stop
+  blocking.
 
-### resource
+### quote, quote_item (feature 16)
 
-A crew, a practitioner, an estimator. Capacity is the number of resources free
-at a time; an organization with none behaves as one.
+- `quote`: `organizationId`, `leadId`, `status` (`draft`, `sent`, `accepted`,
+  `declined`, `expired`), `currency`, `taxRate`, `subtotal`, `tax`, `total`,
+  `expiresOn`, `acceptToken` (unique), `openedCount`, `sentAt`, `acceptedAt`
+- `quote_item`: `quoteId`, `position`, `description`, `note`, `quantity`,
+  `unit`, `rate`, `amount`
 
-- `id`, `organizationId` (FK)
-- `name` (text), `active` (bool)
+### job (feature 19)
 
-### booking
+A lead that became work, from an accepted quote or by hand, made of visits,
+one per day, each with its own people. How visits sit beside `commitment` is
+decided in item 19's spec.
 
-- `id`, `organizationId` (FK), `leadId` (FK lead), `bookingLinkId` (FK)
-- `resourceId` (FK resource, nullable until resources exist)
-- `startsAt`, `endsAt` (timestamptz)
-- `status` (text: `confirmed`, `cancelled`, `rescheduled`)
-- `location` (text) - the customer's own address, typed at booking. A trade
-  travels to the job, so this is required, not optional.
-- `calendarEventId` (text, nullable), `cancelToken` (text, unique)
-- `createdAt`
-
-### activity
-
-The timeline **and the next-step queue**. Every module writes here; the CRM
-screens read here. Two kinds of row in one table: most record something that
-already happened, while a row carrying `dueAt` is something still to do.
-
-- `id`, `organizationId` (FK), `contactId` (FK contact)
-- `type` (text: `booking_created`, `stage_changed`, `email_sent`,
-  `email_received`, `note`, `sms_sent`, `call`, `task`)
-- `payload` (json), `actorUserId` (FK user, nullable)
-- `occurredAt` (timestamptz, nullable) - set on a thing that happened
-- `dueAt`, `doneAt` (timestamptz, nullable) - set on a thing still to do
-- `createdAt`
-
-### quote (item 16)
-
-- `id`, `organizationId` (FK), `leadId` (FK lead)
-- `status` (text: `draft`, `sent`, `accepted`, `declined`, `expired`)
-- `currency` (text), `taxRate` (numeric), `subtotal`, `tax`, `total` (numeric)
-- `expiresOn` (date), `acceptToken` (text, unique), `openedCount` (int)
-- `sentAt`, `acceptedAt`, `createdAt`
-
-### quote_item
-
-- `id`, `quoteId` (FK quote), `position` (int)
-- `description` (text), `note` (text, nullable)
-- `quantity` (numeric), `unit` (text), `rate` (numeric), `amount` (numeric)
-
-### job (Phase 9)
-
-- `id`, `organizationId`, `leadId`, `resourceId`, `startsOn`, `endsOn`, `status`
-
-> **Locked.** Organization scope on every table. `availability_rule` is
-> org-scoped, not per booking link; per-resource hours come later on top of it.
-> Stages, resources and the timeline are tables from item 4 onward so later
-> modules never migrate an enum. `activity` carries both what happened and
-> what is still owed, from item 4, so the next-step queue is never a second
-> table bolted on. The booking layout is a stored value on the booking link
-> from item 9, never a hardcoded shape.
+> **Locked.** Organization scope on every table. `availability_rule` is scoped
+> to a business and optionally one person, never to a booking link, and
+> business-wide settings live only on the business's row. Stages, resources
+> and the timeline are tables, never enums. `activity` carries both what
+> happened and what is still owed. One `commitment` table refuses overlaps.
+> The booking layout is a stored value on the booking link from item 9.
+> Nothing about a business's schedule is fixed or on by default (decision 30).
 
 ## Tech stack
 
-- **Next.js 16 + React 19** (`frontend`) - the CRM, the admin area, later the
-  hosted booking page. Tailwind v4, shadcn v4 on Base UI.
+- **Next.js 16 + React 19** (`frontend`, Vercel) - the CRM, the admin area,
+  later the hosted booking page. Tailwind v4, shadcn.
 - **Hono** (`backend`, Railway) - the one API the widget and the CRM call.
-  Persistent Node: database pool and calendar token refresh live here.
+  Persistent Node: the database pool, token refresh and the job runner live
+  here.
+- **Hono RPC** - the backend exports `AppType`; `frontend/lib/api-client.ts`
+  builds a signed-in client and a public one that never sends the cookie.
 - **npm workspaces** - `frontend`, `backend`, `packages/shared` (Drizzle
-  schema, migrations, Zod schemas, the Hono `AppType`, the crypto). Subpath
+  schema, migrations, Zod schemas, subscription limits, the crypto). Subpath
   exports to the compiled `dist/`, no barrel.
-- **PostgreSQL + Drizzle** on Railway. Development uses a local PostgreSQL 18
-  seeded by `db:seed`; Railway only through its tunnel, on purpose. When port
-  5433 listens but every query resets, restart the tunnel.
-- **Better Auth** - `organization`, `emailOTP`, `admin` plugins. Codestash's
-  config is the reference, owner role without `organization:delete`.
+- **PostgreSQL + Drizzle** - Railway in production; local PostgreSQL 18
+  (`scheduleads_dev`) in development, seeded by `db:seed`. Railway only through
+  its tunnel, on purpose.
+- **Better Auth** on the backend - `organization`, `emailOTP`, `admin`.
+- **date-holidays** (backend) - the holiday names a business can pick.
+- **Vitest** - unit and route tests beside the code.
 - **Resend + React Email** - confirmations, `.ics`, notifications, CRM sends.
-- **Google Calendar API** - OAuth plus live free/busy at booking time.
-- **Twilio** - SMS in Phase 2; WhatsApp can ride the same account later.
-- **TanStack Query, dnd-kit, shadcn charts** - installed at the feature that
-  needs them (14, 14, 19), asked first. No state manager until one is needed.
+- **Google Calendar API** - OAuth, live free/busy at booking time, and writing
+  each booking into the booked person's calendar.
+- **Twilio** - SMS in Phase 2; WhatsApp can ride the same account.
+- **TanStack Query, dnd-kit** (item 14), **shadcn charts** (item 20) - asked
+  first. No state manager until one is needed.
 
-Carried over as ports, not copies: the first repo's features 1 to 3,
-codestash's `use-auto-active-organization`, `require-org-role` and
-`plan-limits` shapes, Primo's `calendly-provider` architecture and
-`contact-lead` email, face-and-body's swappable-booking contract, and
-agents-web's contact-inquiry seam.
+Carried over as ports: the first repo's features 1 to 3, codestash's
+auto-active-organization hook, `requireOrgRole` and plan-limits shape, Primo's
+provider architecture and `contact-lead` email, face-and-body's
+swappable-booking contract, agents-web's contact-inquiry seam.
+
+Traps not to relearn: Google silently drops an unknown scope (it is
+`calendar.events.freebusy`, not `calendar.freebusy`); a `"use server"` module
+exports only async functions.
 
 ## Monetization
 
 Agency-provisioned first. The product ships inside the agency's monthly plan;
 Frank creates the organization and bills as the agency. The $240/mo plan is
-the first tier of a ladder of packages; each tier unlocks modules through the
+the first tier of a ladder; each tier unlocks modules through the
 subscription-limits config, and moving a client up is Frank changing
 `organization.plan` until Stripe arrives in Phase 9. Primo pays the first tier;
 the clinic pays cost-cover privately. Off-page SEO stays Frank's work; the tool
-only reports it. Self-serve with Stripe hosted checkout and a webhook writing
-`organization.plan` is Phase 9.
+only reports it.
 
 ## UI/UX
 
 The widget is unstyled behaviour plus a themed modal: the trigger brings the
 action, the host site brings the look, and the modal never names its provider.
-The widget takes the Calendly shape: two screens, pick the time then answer
-the questions, with a rail carrying the business's logo, the service and the
-duration, gaining the chosen slot on screen two. The one-screen week strip is
-parked behind the stored layout value, not dropped.
+Calendly shape: two screens, pick the time then answer the questions, with a
+rail carrying the logo, the service, the duration and the chosen slot. The
+one-screen week strip is parked behind the stored layout value.
 
-The login is the CRM with Pipedrive and Salesmate as the reference feel.
-Mockups are done, in `prototypes/`, off one `theme.css`: deep indigo accent,
-roomy light default, an explicit light/dark toggle with no system setting.
-Reference links live in `blueprint/reference/links.md` and screenshots of
-Primo's live Calendly and of Pipedrive in `blueprint/reference/`.
+The login is the CRM, Pipedrive and Salesmate the reference feel. Mockups in
+`prototypes/` off one `theme.css`: deep indigo accent, roomy light default, an
+explicit light/dark toggle. Every schedule choice is the owner's: pickers,
+switches and one-click presets, nothing on by default.
 
 Frontend routes, final names decided at `/feature`:
 
-- `/sign-in`, `/create-organization` - email OTP, first organization
-- `/leads` - the list; `/leads/[id]` - contact page with timeline and composer
-- `/pipeline` - the board (item 14)
-- `/settings` - hours, services, resources, blackout dates, calendar
-- `/admin/*` - platform hat, `admin` role only (item 22)
-- `/book/[slug]` - hosted booking page (item 23)
+- `/sign-in` - email OTP (signup closed)
+- `/leads`, `/leads/[id]` - list, contact page with timeline (item 11)
+- `/settings` - item 12; `/calendar` - item 12b; `/pipeline` - item 14
+- `/admin/*` - platform admin only (item 23); `/book/[slug]` - item 24
 
-API shape (`backend`), public routes keyed by organization slug:
+API (`backend/app.ts`, one chain so `AppType` carries every route):
 
-- `GET /public/:slug/booking-links`, `GET /public/:slug/availability`,
-  `POST /public/:slug/bookings`
-- `GET|POST /bookings/:cancelToken` - cancel and reschedule
-- authenticated CRUD under `/leads`, `/contacts`, `/stages`, `/resources`,
-  `/settings`, plus `/calendar/connect`, `/calendar/callback`,
-  `/calendar/disconnect`
+- Built: `/api/auth/*` (Better Auth), `GET /me`,
+  `GET /public/:slug/booking-links`,
+  `GET /public/:slug/booking-links/:bookingLinkId`, `GET /health`
+- Planned: calendar connect, callback and disconnect (item 3),
+  `POST /public/:slug/bookings` (item 5), cancel and reschedule by token
+  (item 7), authenticated CRUD for leads, contacts, stages, resources and
+  settings
 
 ## Deployment
 
-- **frontend** on Vercel, **backend** on Railway, **Postgres** on Railway. All
-  provisioned in the first repo's time.
-- Build and start: `npm run build --workspace=frontend`,
-  `npm run build --workspace=backend` then `npm run start --workspace=backend`.
+- **frontend** on Vercel (Root Directory `frontend`), **backend** and
+  **Postgres** on Railway (Root Directory `backend`). Provisioned.
+- Build: `npm run build --workspace=frontend`; `npm run build
+  --workspace=backend` then `npm run start --workspace=backend`. Each builds
+  `packages/shared` first; the frontend also builds the backend's route types.
+- Health: `GET /health`, no database on purpose.
 - Env, names only: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
-  `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CALENDAR_TOKEN_KEY`,
-  `RESEND_API_KEY`, `TWILIO_*`, `PORT`, `WIDGET_ORIGINS`,
-  `NEXT_PUBLIC_API_URL`. Losing `CALENDAR_TOKEN_KEY` makes every stored
-  calendar connection undecryptable.
-- CORS allow-list from `WIDGET_ORIGINS`. Whether the host calls the API from
-  the browser or proxies through its own server action is decided in Phase 3.
-- Google OAuth consent stays in Testing until Phase 9; refresh tokens expire
-  after seven days in that mode. Gmail's restricted scopes need verification
-  plus an annual security assessment.
-- A failed calendar check never reports "free."
+  `APP_ORIGIN`, `COOKIE_DOMAIN`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+  `CALENDAR_TOKEN_KEY`, `RESEND_API_KEY`, `TWILIO_*`, `PORT`, `WIDGET_ORIGINS`;
+  the frontend gets only `NEXT_PUBLIC_API_URL`. Losing `CALENDAR_TOKEN_KEY`
+  makes every stored calendar connection undecryptable.
+- CORS: public routes allow `WIDGET_ORIGINS` and the dashboard, never with
+  credentials; dashboard routes allow only `APP_ORIGIN`, with the cookie. Browser-to-API or proxied through the host's
+  server action is decided in Phase 3.
+- Google OAuth stays in Testing until item 22's calendar half, finished
+  before item 13: Testing-mode tokens expire after seven days. Gmail's
+  restricted scopes need verification plus an annual security assessment.
+- A failed calendar check never reports "free": the booking fails with
+  "temporarily unavailable" and the business is emailed to reconnect.
 
-> TODO: health path for the Railway service, and the inbound email path for
-> the BCC capture address (Resend inbound or Cloudflare Email Routing).
+> TODO: the inbound email path for the BCC capture address (Resend inbound or
+> Cloudflare Email Routing), decided in item 15.
 
 ## Open questions
 
@@ -324,16 +316,28 @@ Carried from the plans, each with the moment it gets answered:
 - Whether the clinic takes deposits at booking. At her onboarding, before 17.
 - Which analytics source feeds the visitor package. When that package exists.
 - What Primo needs on day one beyond booking and the leads list. Before 13.
-- The inbound path for the BCC capture address. Item 15's spec.
-- Which job runner carries item 8. A table-backed poller in the Hono process
-  is the cheap answer on Railway; decided in that item's spec.
+- The inbound path for the BCC capture address. Item 15.
+- How the agency's own business gets its services and hours before Settings.
+  Item 10.
+- Whether buffers may fall outside bookable hours, and how "any available"
+  picks a person. Item 5.
+- How a holiday pick survives a renamed holiday (F-32). Item 12.
 
-Plan-shape notes, not conflicts:
+Found between the plans on this run, for Frank to settle in the plans:
 
-- Item 0b is a design pass, not a feature. It stays in the checklist as the
-  Phase 0 exit gate and runs through `/prototype`; `/feature` should skip it.
-- Item 4 is data and routes only. It is deliberate: item 5 reads it the next
-  day.
-- Item 8 carries a runner as well as two messages. It is the one item whose
-  hidden half other items depend on, so it should not be cut when Phase 2
-  runs long. Cut the WhatsApp item instead; it is already in Phase 8.
+- **Who connects a second person's calendar (item 3).** The build plan says
+  "others connect their own," but crew members have no sign-in (project plan
+  §2, and crew sign-in is named, not planned). A person is a `resource` with
+  no link to a user, so the spec must say who presses connect for them.
+- **The project plan still says the platform admin seeds a client's services
+  and hours** (§2), while item 2 and decision 30 say the client always sets
+  them in the app.
+- **The project plan's Carried over table is stale for items 2 and 3**: it
+  lists the seed CLI (dropped Sep 25) and "None" as the fix for
+  `calendar_connection`, which is now per person and asks for the write
+  permission too.
+- **No table is named yet for who does what (skills, rooms) or for standby**,
+  both read in item 5. Item 5's spec names them.
+- **Item 9 leaves open whether the customer picks the person**, while item 5
+  already says the customer picks a person or "any available". Item 9's
+  question may already be answered by item 5.

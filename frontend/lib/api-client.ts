@@ -97,3 +97,69 @@ export async function fetchBookingLinks(slug: string): Promise<BookingLinksResul
     message: `The API answered with an unexpected status (${response.status}).`,
   };
 }
+
+const calendarRoutes = dashboardApiClient.calendar;
+
+export type CalendarConnectionAnswerType = InferResponseType<
+  typeof calendarRoutes.connection.$get,
+  200
+>;
+
+export type CalendarConnectionResultType =
+  { state: "ok"; answer: CalendarConnectionAnswerType } | { state: "unreachable"; message: string };
+
+// The signed-in person and their calendar connection, for the dashboard card. Never tokens.
+export async function fetchCalendarConnection(): Promise<CalendarConnectionResultType> {
+  const response = await calendarRoutes.connection.$get().catch(() => null);
+  if (!response) return { state: "unreachable", message: notResponding };
+
+  if (response.status === 200) return { state: "ok", answer: await response.json() };
+
+  return {
+    state: "unreachable",
+    message: `The API answered with an unexpected status (${response.status}).`,
+  };
+}
+
+export type StartCalendarConnectResultType =
+  { state: "ok"; url: string } | { state: "refused"; message: string };
+
+export type DisconnectCalendarResultType =
+  | {
+      state: "ok";
+      atProvider: InferResponseType<typeof calendarRoutes.disconnect.$post, 200>["atProvider"];
+    }
+  | { state: "refused"; message: string };
+
+// Pressing Disconnect: the API hands the permission back and deletes the connection.
+export async function disconnectCalendar(): Promise<DisconnectCalendarResultType> {
+  const response = await calendarRoutes.disconnect.$post().catch(() => null);
+  if (!response) return { state: "refused", message: notResponding };
+
+  if (response.status === 200) {
+    return { state: "ok", atProvider: (await response.json()).atProvider };
+  }
+
+  const body = (await response.json().catch(() => ({}))) as RefusalType;
+  return {
+    state: "refused",
+    message:
+      body.error?.message ?? `The API answered with an unexpected status (${response.status}).`,
+  };
+}
+
+// Pressing Connect: the API makes a one-time ticket and answers with Google's address.
+export async function startCalendarConnect(): Promise<StartCalendarConnectResultType> {
+  const response = await calendarRoutes.connect.$post().catch(() => null);
+  if (!response) return { state: "refused", message: notResponding };
+
+  if (response.status === 200) return { state: "ok", url: (await response.json()).url };
+
+  // Refusals come from the middleware or the route, which the route's type only partly lists.
+  const body = (await response.json().catch(() => ({}))) as RefusalType;
+  return {
+    state: "refused",
+    message:
+      body.error?.message ?? `The API answered with an unexpected status (${response.status}).`,
+  };
+}

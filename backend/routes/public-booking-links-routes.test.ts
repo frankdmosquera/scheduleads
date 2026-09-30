@@ -6,22 +6,16 @@ import { randomUUID } from "node:crypto";
 import { inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
+import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
+
 try {
   process.loadEnvFile(new URL("../../.env", import.meta.url)); // the root .env, before the app reads it
 } catch {
   // No .env: the environment must already carry DATABASE_URL.
 }
 
-// Like the seed: only a database on this machine whose name ends in _dev. These tests add
-// rows and remove them, which must never happen anywhere else.
-const databaseUrl = new URL(process.env.DATABASE_URL ?? "postgresql://missing/none");
-const localHosts = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
-if (!localHosts.has(databaseUrl.hostname) || !databaseUrl.pathname.endsWith("_dev")) {
-  throw new Error(
-    `Refusing to run the public route tests against ${databaseUrl.hostname}${databaseUrl.pathname}. ` +
-      "They only run against a local database whose name ends in _dev."
-  );
-}
+// These tests add rows and remove them, which must never happen anywhere else.
+assertLocalDevDatabase(process.env.DATABASE_URL, "run the public route tests");
 
 // Imported after the env is loaded: both read it the moment they load.
 const { app } = await import("../app.js");

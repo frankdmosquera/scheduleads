@@ -42,6 +42,10 @@ function settingWithDevDefault(name: string, developmentDefault: string): string
 // CORS middleware reads the same value.
 export const appOrigin = settingWithDevDefault("APP_ORIGIN", "http://localhost:3000");
 
+// The API's own address. Better Auth builds its URLs from it, and so does the calendar's
+// return address from Google.
+export const apiOrigin = settingWithDevDefault("BETTER_AUTH_URL", "http://localhost:3001");
+
 // Every action a business role can be granted. Written out instead of importing Better
 // Auth's defaultStatements, which adds `team` and `ac` rows we don't use.
 const customStatements = {
@@ -74,7 +78,7 @@ const orgMember = accessControl.newRole({
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: settingWithDevDefault("BETTER_AUTH_URL", "http://localhost:3001"), // the API's, not the dashboard's
+  baseURL: apiOrigin, // the API's, not the dashboard's
   basePath: "/api/auth",
 
   // Schema passed explicitly, so a missing table fails at boot, not at the first query.
@@ -104,14 +108,17 @@ export const auth = betterAuth({
 
       organizationHooks: {
         // Every business gets its first person, named after the business (not whoever
-        // clicked create, today the platform admin). Outside the create transaction: if it
-        // fails, the business cannot take a booking, which fails safe.
-        afterCreateOrganization: async ({ organization: createdOrganization }) => {
+        // clicked create, today the platform admin), and linked to its owner's login so
+        // the app knows whose calendar that person is. Item 3b makes the owner the client.
+        // Outside the create transaction: if it fails, the business cannot take a booking,
+        // which fails safe.
+        afterCreateOrganization: async ({ organization: createdOrganization, member: owner }) => {
           await db.insert(resource).values({
             id: randomUUID(),
             organizationId: createdOrganization.id,
             name: createdOrganization.name,
             kind: "person",
+            userId: owner.userId,
           });
         },
       },
