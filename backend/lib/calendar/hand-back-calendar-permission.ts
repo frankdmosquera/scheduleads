@@ -2,13 +2,10 @@
 // provider keeps one permission per account for our app, so while another connection
 // still uses the same account it is kept: handing it back would cut that one off too.
 
-import { and, eq, ne, sql } from "drizzle-orm";
-
-import { calendarConnection } from "@scheduleads-app/shared/db";
 import { decryptCredentials, readTokenKey } from "@scheduleads-app/shared/crypto";
 
-import { db } from "../../database.js";
 import { findCalendarProvider } from "./find-calendar-provider.js";
+import { isCalendarAccountInUse } from "./is-calendar-account-in-use.js";
 import type { CalendarCredentialsType } from "./save-calendar-connection.js";
 
 export type CalendarHandBackResultType =
@@ -27,19 +24,9 @@ export async function handBackCalendarPermission({
   lockedCredentials: string;
   resourceId: string;
 }): Promise<CalendarHandBackResultType> {
-  // Across every business: the same Gmail can be one person in two businesses.
-  const [otherUse] = await db
-    .select({ id: calendarConnection.id })
-    .from(calendarConnection)
-    .where(
-      and(
-        eq(calendarConnection.provider, provider),
-        sql`lower(${calendarConnection.accountEmail}) = lower(${accountEmail})`,
-        ne(calendarConnection.resourceId, resourceId)
-      )
-    )
-    .limit(1);
-  if (otherUse) return "still_used";
+  if (await isCalendarAccountInUse({ provider, accountEmail, exceptResourceId: resourceId })) {
+    return "still_used";
+  }
 
   let credentials: CalendarCredentialsType;
   try {

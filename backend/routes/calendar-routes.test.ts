@@ -500,6 +500,32 @@ describe("GET /calendar/callback", () => {
       "[calendar] a reconnect with another account could not hand the old one back",
     ]);
   });
+
+  test("a connect that gives up keeps a Gmail another business uses", async () => {
+    await connect(ben.email, "shared@gmail.com", "1//bens-refresh");
+    revoked.length = 0;
+    tokenAnswer = () => googleTokens({ scope: `openid ${FREEBUSY}`, email: "shared@gmail.com" }); // a box unticked
+    const state = await startConnect(ana.email);
+
+    expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(
+      outcome("missing_permission")
+    );
+    expect(revoked).toEqual([]);
+    expect(await connectionsOf(ben.personId)).toHaveLength(1);
+  });
+
+  test("your own reconnect that gives up keeps your working connection", async () => {
+    await connect(ana.email, "ana.owner@gmail.com", "1//working-refresh");
+    revoked.length = 0;
+    tokenAnswer = () => googleTokens({ scope: `openid ${FREEBUSY}`, email: "ana.owner@gmail.com" }); // a box unticked
+    const state = await startConnect(ana.email);
+
+    expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(
+      outcome("missing_permission")
+    );
+    expect(revoked).toEqual([]);
+    expect(await connectionsOf(ana.personId)).toHaveLength(1);
+  });
 });
 
 describe("POST /calendar/disconnect", () => {

@@ -10,6 +10,7 @@ import { calendarConnection, resource } from "@scheduleads-app/shared/db";
 import { db } from "../../database.js";
 import { googleOauthClient } from "./google-oauth-client.js";
 import { handBackCalendarPermission } from "./hand-back-calendar-permission.js";
+import { isCalendarAccountInUse } from "./is-calendar-account-in-use.js";
 import { saveCalendarConnection } from "./save-calendar-connection.js";
 import { redeemOauthTicket } from "./redeem-oauth-ticket.js";
 import { warnConnectFailed } from "./warn-connect-failed.js";
@@ -61,14 +62,26 @@ export async function finishGoogleConnect({
     });
   if (!tokens) return "failed";
 
-  const handBack = () => googleOauthClient.revoke(tokens.refreshToken ?? tokens.accessToken);
+  const identity = googleOauthClient.readIdentity(tokens.idToken);
+
+  // Giving up hands the new tokens back, unless that Gmail is connected anywhere, this
+  // person's own working connection included: it is one permission at Google, so handing
+  // it back would cancel that connection too. An unreadable sign-in token names no Gmail.
+  const handBack = async () => {
+    if (
+      identity &&
+      (await isCalendarAccountInUse({ provider: "google", accountEmail: identity.email }))
+    ) {
+      return;
+    }
+    await googleOauthClient.revoke(tokens.refreshToken ?? tokens.accessToken);
+  };
 
   if (!googleOauthClient.hasBothCalendarScopes(tokens.grantedScopes)) {
     await handBack();
     return "missing_permission";
   }
 
-  const identity = googleOauthClient.readIdentity(tokens.idToken);
   if (!tokens.refreshToken || !identity) {
     await handBack(); // without a refresh token nothing could be read tomorrow
     const why = tokens.refreshToken

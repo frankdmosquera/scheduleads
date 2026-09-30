@@ -363,7 +363,7 @@ run it under fake timers, or assert the request carries a signal.
 **Resolution:** Fixed 2026-09-30 on Frank's yes, tests only, no product code, in `backend/lib/calendar/get-busy-times.test.ts`. New test: the token answer reconnects the person and then answers `invalid_grant`; the row stays `connected` with the reconnected keys and free/busy is asked with the reconnected token. The old time-out test is replaced: the fake free/busy never answers and ends only when the request's own signal aborts (rejecting at once when there is none), and `AbortSignal.timeout` is replaced for the test by an already-expired signal, with a check that it was asked for 10000 ms. Proved: the mark matched by id alone fails the reconnect test; the signal line removed from `google-calendar-provider.ts` fails the time-out test; each file restored and compared. 46 shared and 80 backend tests pass. Waits for the next review to close.
 Closed 2026-09-30 by /audit independent (scope: step 3.4, re-examining fbf5ee1): `get-busy-times.test.ts` now has the reconnect-during-refusal test (the token answer reconnects, then answers `invalid_grant`; it asserts `connected`, the reconnected keys and the reconnected bearer), which fails if the mark at `get-busy-times.ts:67-71` matched by id alone because the call would throw; and the time-out test's fake free/busy only ends through the request's own signal, rejecting at once without one, with `AbortSignal.timeout` spied, checked for 10000 ms and restored in `finally`. Step 3.4 changed `get-busy-times.ts` only to look the plug up through `findCalendarProvider`, which leaves both guards as they were. Nothing new introduced; 93 backend tests pass.
 
-### F-44 [P3] open - A connect that gives up still hands back a Gmail another connection uses
+### F-44 [P3] fixed - A connect that gives up still hands back a Gmail another connection uses
 
 **File:** backend/lib/calendar/finish-google-connect.ts:67
 **Found:** 2026-09-30 by /audit independent (scope: step 3.4; lens: security)
@@ -385,7 +385,7 @@ connection already uses the same Gmail, with the same check
 unticked-box path, since it is read after the scope check today). One route
 test: Ben connected with `shared@gmail.com`, Ana's consent with the same Gmail
 missing a permission, nothing revoked.
-**Resolution:**
+**Resolution:** Fixed 2026-09-30 on Frank's yes, with his own connection included. Checking it found the sharper case: pressing Reconnect on your own calendar and unticking a box handed back the same Gmail and cancelled your own working connection. The check is now its own file, `backend/lib/calendar/is-calendar-account-in-use.ts`, used by `hand-back-calendar-permission.ts` (leaving out the person's own row, which is the one going away) and by `finish-google-connect.ts`'s give-up paths (counting every row, the person's own included). The sign-in token is read before the scope check, so the unticked-box path knows the Gmail; an unreadable sign-in token names no Gmail and is still handed back. Two route tests: a Gmail another business uses is kept, and your own working connection survives a failed reconnect. Proved: the check removed from the give-up path fails both; restored and compared. 95 backend tests pass. Waits for the next review to close.
 
 ### F-45 [P3] open - The disconnect and account-switch tests depend on Gmail addresses other tests leave in the database
 
