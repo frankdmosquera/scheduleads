@@ -4,9 +4,9 @@
 
 **Branch:** `feature/03-calendar-connection` (the workspace's `feature/NN-name` form)
 
-**Status:** whole feature seen and agreed by Frank 2026-09-28; steps 3.1 to
-3.3 built and reviewed; step 3.4 built 2026-09-30, its audit and independent
-review next; then `/complete`
+**Status:** verified. Whole feature seen and agreed by Frank 2026-09-28; steps
+3.1 to 3.4 built, checked by hand and reviewed step by step; step 3.4's review
+findings F-44 to F-46 fixed 2026-09-30. The checkpoint for the final review.
 
 Approved one step at a time (`AGENTS.md`, "A spec is approved one step at a
 time"): Frank sees the whole feature once, then each of steps 3.1 to 3.4 gets
