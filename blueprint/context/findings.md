@@ -406,7 +406,7 @@ passed, because the busy-times file usually finishes first.
 already do, so no test can meet another test's or an earlier run's rows.
 **Resolution:** Fixed 2026-09-30 on Frank's yes, tests only. Every made-up Gmail in `calendar-routes.test.ts` (30 uses: `ana.owner`, `Ana.Owner`, `ana.second`, `shared`, `coworker`) now comes from `gmail(name)`, which adds the run's tag; `get-busy-times.test.ts` tags its one. Proved: a leftover business with a connection for the old `ana.owner@gmail.com` was added to the local database; the route tests as they were before the fix failed 9 tests with it present, the fixed file passed all 38; the leftover and the temporary copy of the old file were removed after. 95 backend tests pass. Waits for the next review to close.
 
-### F-46 [P3] unverified - Disconnect accepts a request from any page that carries the login cookie
+### F-46 [P3] fixed - Disconnect accepts a request from any page that carries the login cookie
 
 **File:** backend/routes/calendar-routes.ts:80
 **Found:** 2026-09-30 by /audit independent (scope: step 3.4; lens: security)
@@ -426,4 +426,4 @@ confirm the dashboard's site holds nothing but the dashboard, or add Hono's
 built-in `csrf({ origin: appOrigin })` (ships with Hono, no new package) to
 the dashboard routes in `app.ts`, with one test that a form post from another
 origin is refused.
-**Resolution:**
+**Resolution:** Fixed 2026-09-30 on Frank's yes, now rather than at deploy. `backend/middleware/dashboard-middleware/dashboard-csrf-middleware.ts` is Hono's built-in `csrf({ origin: appOrigin })`, mounted in `app.ts` on `/calendar/*` between the CORS and no-store middleware; every later dashboard route that changes data mounts it the same way. It checks only requests a plain form could send (JSON needs a preflight, which the CORS rule already limits to the dashboard); a refused one gets Hono's plain 403, not the refusal shape, since no dashboard code ever receives it. `/api/auth/*` keeps Better Auth's own origin check. Test: a form-style Disconnect from another origin, and one with no Origin, are 403 and nothing is deleted; the dashboard's own still works. Proved: the middleware unmounted in `app.ts` fails the test; restored and compared. By hand: from the running dashboard, a real browser POST to `/calendar/connect` still answered 200 with Google's address. Only this change to `app.ts` was committed; Frank's uncommitted formatting edits there stay as they were. 96 backend tests pass. Waits for the next review to close.

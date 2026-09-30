@@ -627,6 +627,33 @@ describe("POST /calendar/disconnect", () => {
     expect((await response.json()).error.code).toBe("no_person");
   });
 
+  test("a disconnect sent from another website is refused, and nothing is deleted", async () => {
+    await connect(ana.email, gmail("ana.owner"));
+    revoked.length = 0;
+
+    // What a hidden form on another site would send, with Ana's login cookie riding along.
+    const fromElsewhere = await app.request("/calendar/disconnect", {
+      method: "POST",
+      headers: {
+        Cookie: cookies.get(ana.email)!,
+        Origin: "https://elsewhere.example",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "",
+    });
+    expect(fromElsewhere.status).toBe(403);
+    expect(revoked).toEqual([]);
+    expect(await connectionsOf(ana.personId)).toHaveLength(1);
+
+    // With no Origin at all it is refused too; the dashboard's own request goes through.
+    const withoutOrigin = await app.request("/calendar/disconnect", {
+      method: "POST",
+      headers: { Cookie: cookies.get(ana.email)! },
+    });
+    expect(withoutOrigin.status).toBe(403);
+    expect((await disconnect(ana.email)).status).toBe(200);
+  });
+
   test("no session is 401, and a plan without booking is 403", async () => {
     expect((await disconnect()).status).toBe(401);
     expect((await disconnect(noBooking.email)).status).toBe(403);
