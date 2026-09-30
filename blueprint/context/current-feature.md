@@ -4,8 +4,9 @@
 
 **Branch:** `feature/03-calendar-connection` (the workspace's `feature/NN-name` form)
 
-**Status:** whole feature seen and agreed by Frank 2026-09-28; step 3.1
-approved and built 2026-09-28, independent review next
+**Status:** whole feature seen and agreed by Frank 2026-09-28; steps 3.1 and
+3.2 built and reviewed; step 3.3 built 2026-09-30, its audit and independent
+review next
 
 Approved one step at a time (`AGENTS.md`, "A spec is approved one step at a
 time"): Frank sees the whole feature once, then each of steps 3.1 to 3.4 gets
@@ -215,7 +216,29 @@ real data, `main`), or a P0/P1 finding. Each step commit is
     `admin@example.com`, connects his real Google and the card shows his
     Google address.
 
-- [ ] **3.3 The provider seam and busy times.**
+- [x] **3.3 The provider seam and busy times.** Planned with Frank
+  2026-09-29 (pieces 1 to 4) and 2026-09-30 (Part 2, two tests added), built
+  2026-09-30. Agreed in the plan: the refresh call lives in
+  `google-oauth-client.ts` (it already owns the token address) and the plug
+  reuses it; a refused refresh is its own `CalendarReconnectNeededError`; a
+  key with under a minute left is refreshed; a connection already
+  `needs_reconnect` throws without calling Google; the fresh key (and the
+  `needs_reconnect` mark) is written only if the row is unchanged since it was
+  read, and a changed row is read once more; `calendar:check` defaults to 7
+  days, takes the time zone from the business's hours and refuses a business
+  without them; the local `*_dev` guard moved into one shared function,
+  `packages/shared/helpers/assert-local-dev-database.ts` (export
+  `./assert-local-dev-database`), used by the seed, the three database test
+  files and the command. Differences from the plan, added while building:
+  `calendar-reconnect-needed-error.ts` (one export per file);
+  `safe-error-reason.ts`, moved out of `warn-connect-failed.ts` so the command
+  prints a database error by its code only; `backend/scripts/find-calendar-check-target.ts`
+  and its test, so the refusals are testable; days capped at 31; a Google
+  refresh that fails for any reason but `invalid_grant` throws and leaves the
+  connection `connected` (Google down must not disconnect anyone); the busy
+  blocks are read from the one calendar Google returns, whatever key it uses.
+  By hand: Frank's event "tomorrow 8:00 to 9:00" (not 10 to 11, same proof)
+  printed as `Thu 1 Oct, 08:00 to 09:00` in America/Edmonton.
   - Blocker: **which of his Google calendars count as busy. Answered A,
     Frank, 2026-09-29: the main calendar only**, no new permission. Every
     calendar he owns would need `calendar.calendarlist.readonly` and a
@@ -236,7 +259,13 @@ real data, `main`), or a P0/P1 finding. Each step commit is
   - **Done when:** tests with Google faked prove: an expired access token is
     refreshed once and the new one saved; Google refusing the refresh marks
     the connection `needs_reconnect` and throws; a Google error, a time-out or
-    a per-calendar error throws; no connection returns an empty list. By hand
+    a per-calendar error throws; no connection returns an empty list. Added
+    2026-09-30 with Frank: a key with time left is not refreshed; a connection
+    already `needs_reconnect` throws without calling Google; a reconnect at the
+    same moment is not overwritten; `calendar:check` refuses a business with no
+    hours; the shared guard has its own test (the Railway tunnel refused).
+    Planted faults: a failure answering "free", the same-moment guard removed.
+    By hand
     (the Phase 1 exit): an event Frank creates tomorrow 10:00 to 11:00 in his
     Google calendar is printed by `calendar:check` as a busy block at those
     times.
@@ -278,7 +307,12 @@ real data, `main`), or a P0/P1 finding. Each step commit is
   `find-signed-in-person.ts`, `create-oauth-ticket.ts`, `redeem-oauth-ticket.ts`,
   `oauth-state-fingerprint.ts`, `save-calendar-connection.ts`,
   `finish-google-connect.ts`, `warn-connect-failed.ts` (+ test, F-38); 3.3 `calendar-provider.ts`,
-  `google-calendar-provider.ts`, `get-busy-times.ts`, and their tests
+  `google-calendar-provider.ts`, `get-busy-times.ts` (+ test),
+  `calendar-reconnect-needed-error.ts`, `safe-error-reason.ts`; `google-oauth-client.ts`
+  (changed: refresh)
+- 3.3 `packages/shared/helpers/assert-local-dev-database.ts` (+ test, new),
+  `packages/shared/scripts/seed-dev.ts` and the two route test files (changed:
+  use it), `backend/scripts/find-calendar-check-target.ts` (+ test, new)
 - `backend/routes/calendar-routes.ts` and `calendar-routes.test.ts` (new)
 - `backend/app.ts` (changed: mounts `/calendar`, CORS and no-store),
   `backend/server.ts` (changed: refuses to start without the Google values)

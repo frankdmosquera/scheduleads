@@ -20,6 +20,10 @@
       "types": "./dist/helpers/to-slug.d.ts",
       "default": "./dist/helpers/to-slug.js"
     },
+    "./assert-local-dev-database": {
+      "types": "./dist/helpers/assert-local-dev-database.d.ts",
+      "default": "./dist/helpers/assert-local-dev-database.js"
+    },
     "./crypto": {
       "types": "./dist/crypto/token-cipher.d.ts",
       "default": "./dist/crypto/token-cipher.js"

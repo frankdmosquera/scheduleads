@@ -7,21 +7,15 @@ import { createHash, randomUUID } from "node:crypto";
 import { eq, inArray } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
+import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
+
 try {
   process.loadEnvFile(new URL("../../.env", import.meta.url)); // the root .env, before the app reads it
 } catch {
   // No .env: the environment must already carry DATABASE_URL and the Google values.
 }
 
-// Like the seed: only a database on this machine whose name ends in _dev.
-const databaseUrl = new URL(process.env.DATABASE_URL ?? "postgresql://missing/none");
-const localHosts = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
-if (!localHosts.has(databaseUrl.hostname) || !databaseUrl.pathname.endsWith("_dev")) {
-  throw new Error(
-    `Refusing to run the calendar route tests against ${databaseUrl.hostname}${databaseUrl.pathname}. ` +
-      "They only run against a local database whose name ends in _dev."
-  );
-}
+assertLocalDevDatabase(process.env.DATABASE_URL, "run the calendar route tests");
 
 // Imported after the env is loaded: they read it the moment they load.
 const { app } = await import("../app.js");

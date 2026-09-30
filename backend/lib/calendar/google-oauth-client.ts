@@ -1,9 +1,11 @@
 // Backend: the conversation with Google's sign-in service, in plain fetch: the consent
-// address, swapping the code for tokens, and handing tokens back. No Google package: its
+// address, swapping the code for tokens, refreshing them, and handing them back. No Google package: its
 // main job, holding tokens in memory and refreshing them, does not fit tokens stored
 // locked per person.
 
 import { apiOrigin } from "../auth/auth-server.js";
+import type { FreshAccessTokenType } from "./calendar-provider.js";
+import { CalendarReconnectNeededError } from "./calendar-reconnect-needed-error.js";
 
 const CONSENT_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -26,6 +28,14 @@ export type GoogleTokensType = {
 };
 
 export type GoogleIdentityType = { email: string };
+
+// Google's own word for why, when it is a plain code word; never the free-text description.
+async function refusalCode(response: Response): Promise<string | null> {
+  const refusal = (await response.json().catch(() => ({}))) as { error?: unknown };
+  return typeof refusal.error === "string" && /^[a-z_]+$/.test(refusal.error)
+    ? refusal.error
+    : null;
+}
 
 function settings() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -89,13 +99,9 @@ export const googleOauthClient = {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!response.ok) {
-      // Google's own word for why (invalid_client: the secret; redirect_uri_mismatch: the
-      // address). Only a plain code word is kept, never the free-text description.
-      const refusal = (await response.json().catch(() => ({}))) as { error?: unknown };
-      const why = typeof refusal.error === "string" && /^[a-z_]+$/.test(refusal.error);
-      throw new Error(
-        `Google refused the code swap (${response.status}${why ? ` ${refusal.error}` : ""}).`
-      );
+      // invalid_client: the secret; redirect_uri_mismatch: the address.
+      const why = await refusalCode(response);
+      throw new Error(`Google refused the code swap (${response.status}${why ? ` ${why}` : ""}).`);
     }
 
     const body = (await response.json()) as Record<string, unknown>;
@@ -109,6 +115,39 @@ export const googleOauthClient = {
       refreshToken: typeof body.refresh_token === "string" ? body.refresh_token : null,
       grantedScopes: typeof body.scope === "string" ? body.scope.split(" ") : [],
       idToken: typeof body.id_token === "string" ? body.id_token : null,
+    };
+  },
+
+  // A new access token from the saved refresh token. invalid_grant means Google no longer
+  // accepts the permission; anything else (down, slow, our own settings) is a plain failure.
+  async refreshAccessToken(refreshToken: string): Promise<FreshAccessTokenType> {
+    const { clientId, clientSecret } = settings();
+    const response = await fetch(TOKEN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        refresh_token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: "refresh_token",
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      const why = await refusalCode(response);
+      if (why === "invalid_grant") throw new CalendarReconnectNeededError();
+      throw new Error(`Google refused the refresh (${response.status}${why ? ` ${why}` : ""}).`);
+    }
+
+    const body = (await response.json()) as Record<string, unknown>;
+    if (typeof body.access_token !== "string" || typeof body.expires_in !== "number") {
+      throw new Error("Google's refresh answer had no access token.");
+    }
+
+    return {
+      accessToken: body.access_token,
+      accessTokenExpiresAt: new Date(Date.now() + body.expires_in * 1000),
+      refreshToken: typeof body.refresh_token === "string" ? body.refresh_token : null,
     };
   },
 

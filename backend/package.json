@@ -16,7 +16,9 @@
     "pretest": "tsc -p ../packages/shared/tsconfig.build.json",
     "test": "vitest run",
     "pretest:watch": "tsc -p ../packages/shared/tsconfig.build.json",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "precalendar:check": "tsc -p ../packages/shared/tsconfig.build.json",
+    "calendar:check": "tsx --env-file-if-exists=../.env scripts/calendar-check.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",

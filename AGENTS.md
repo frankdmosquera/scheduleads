@@ -467,6 +467,14 @@ closed, so without the seed a new database has no way in. Login codes print in
 the API's console. The seed refuses any database that is not on this machine
 or whose name does not end in `_dev`.
 
+- Print a login's busy times from their connected calendar: `npm run calendar:check --workspace=backend -- <login email> [days]`
+
+It reads the real calendar through the saved connection, 7 days by default and
+at most 31, in the business's time zone, and prints no tokens. It refuses the
+same databases the seed does. That guard lives in one place,
+`packages/shared/helpers/assert-local-dev-database.ts`, used by the seed, the
+database tests and this command.
+
 Railway is reached only on purpose: open the tunnel with
 `railway connect Postgres --tunnel-only --port 5433`, leave it running, and
 switch the Railway `DATABASE_URL` line in `.env` back on. The tunnel also
