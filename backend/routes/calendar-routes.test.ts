@@ -24,6 +24,7 @@ const { apiOrigin, appOrigin } = await import("../lib/auth/auth-server.js");
 const { calendarConnection, calendarOauthState, member, organization, resource, user } =
   await import("@scheduleads-app/shared/db");
 const { decryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
+const { saveCalendarConnection } = await import("../lib/calendar/save-calendar-connection.js");
 
 const FREEBUSY = "https://www.googleapis.com/auth/calendar.events.freebusy";
 const EVENTS_OWNED = "https://www.googleapis.com/auth/calendar.events.owned";
@@ -42,6 +43,7 @@ const ana = makeTenant("a"); // connects her calendar
 const ben = makeTenant("b"); // another business, for "someone else's ticket"
 const noBooking = makeTenant("d", "no-booking-test"); // no real tier lacks booking yet
 const noPerson = { userId: randomUUID(), email: `calendar-c-${tag}@example.com` }; // in Ana's business, no person
+const coworkerId = randomUUID(); // another person in Ana's business, with no login
 
 const cookies = new Map<string, string>();
 
@@ -89,8 +91,12 @@ async function callback(query: string, email?: string): Promise<string | null> {
 }
 
 // A full, successful connect as this login, with the Gmail Google reports.
-async function connect(email: string, gmail: string): Promise<void> {
-  tokenAnswer = () => googleTokens({ email: gmail });
+async function connect(
+  email: string,
+  gmail: string,
+  refreshToken = "1//refresh-token-from-google"
+): Promise<void> {
+  tokenAnswer = () => googleTokens({ email: gmail, refreshToken });
   const state = await startConnect(email);
   expect(await callback(`state=${state}&code=abc`, email)).toBe(outcome("connected"));
 }
@@ -103,6 +109,7 @@ const connectionsOf = (personId: string) =>
 
 // Google's side, faked: the token answer each test sets, and every token handed back.
 let tokenAnswer: () => Response = () => new Response("", { status: 500 });
+let revokeAnswer: () => Response | Promise<Response> = () => new Response("", { status: 200 });
 const revoked: string[] = [];
 // Every warning the API logged during a test, and what must never be in one.
 const warnings: string[] = [];
@@ -178,6 +185,12 @@ beforeAll(async () => {
       userId: t.userId,
     }))
   );
+  await db.insert(resource).values({
+    id: coworkerId,
+    organizationId: ana.organizationId,
+    name: "Coworker",
+    kind: "person",
+  });
 
   for (const email of [ana.email, ben.email, noBooking.email, noPerson.email]) {
     cookies.set(email, await signIn(email));
@@ -188,7 +201,7 @@ beforeAll(async () => {
     if (url.startsWith("https://oauth2.googleapis.com/token")) return tokenAnswer();
     if (url.startsWith("https://oauth2.googleapis.com/revoke")) {
       revoked.push(new URLSearchParams(String(init?.body)).get("token") ?? "");
-      return new Response("", { status: 200 });
+      return revokeAnswer();
     }
     throw new Error(`A test tried to reach ${url}.`);
   });
@@ -201,8 +214,11 @@ beforeEach(async () => {
     warnings.push(parts.join(" "));
   });
   tokenAnswer = () => googleTokens();
-  // Every test starts with Ana unconnected, so none depends on what an earlier one saved.
-  await db.delete(calendarConnection).where(eq(calendarConnection.resourceId, ana.personId));
+  revokeAnswer = () => new Response("", { status: 200 });
+  // Every test starts with everyone unconnected, so none depends on what an earlier one saved.
+  await db
+    .delete(calendarConnection)
+    .where(inArray(calendarConnection.resourceId, [ana.personId, ben.personId, coworkerId]));
 });
 
 afterEach(() => {
@@ -441,6 +457,150 @@ describe("GET /calendar/callback", () => {
     const rows = await connectionsOf(ana.personId);
     expect(rows).toHaveLength(1);
     expect(rows[0].accountEmail).toBe("ana.second@gmail.com");
+  });
+
+  test("a reconnect with another Gmail hands the old one back, after the new one is saved", async () => {
+    await connect(ana.email, "ana.owner@gmail.com", "1//old-account-refresh");
+    revoked.length = 0;
+    let savedAtHandBack: string[] = [];
+    revokeAnswer = async () => {
+      savedAtHandBack = (await connectionsOf(ana.personId)).map((row) => row.accountEmail);
+      return new Response("", { status: 200 });
+    };
+
+    await connect(ana.email, "ana.second@gmail.com", "1//new-account-refresh");
+    expect(revoked).toEqual(["1//old-account-refresh"]);
+    expect(savedAtHandBack).toEqual(["ana.second@gmail.com"]); // the new one was already saved
+    expect(warnings).toEqual([]);
+  });
+
+  test("a reconnect with the same Gmail hands nothing back: it is one permission at Google", async () => {
+    await connect(ana.email, "ana.owner@gmail.com", "1//first-refresh");
+    revoked.length = 0;
+    await connect(ana.email, "Ana.Owner@gmail.com", "1//second-refresh"); // Google may change the case
+    expect(revoked).toEqual([]);
+  });
+
+  test("an old Gmail another connection still uses is kept at Google", async () => {
+    await connect(ben.email, "shared@gmail.com", "1//bens-refresh");
+    await connect(ana.email, "shared@gmail.com", "1//anas-old-refresh");
+    revoked.length = 0;
+
+    await connect(ana.email, "ana.second@gmail.com", "1//anas-new-refresh");
+    expect(revoked).toEqual([]);
+  });
+
+  test("Google silent on the old account: still connected, one log line, no token", async () => {
+    await connect(ana.email, "ana.owner@gmail.com", "1//old-account-refresh");
+    revokeAnswer = () => new Response("", { status: 503 });
+
+    await connect(ana.email, "ana.second@gmail.com", "1//new-account-refresh");
+    expect((await connectionsOf(ana.personId))[0].accountEmail).toBe("ana.second@gmail.com");
+    expect(warnings).toEqual([
+      "[calendar] a reconnect with another account could not hand the old one back",
+    ]);
+  });
+});
+
+describe("POST /calendar/disconnect", () => {
+  const disconnect = (email?: string) => request("/calendar/disconnect", email, "POST");
+
+  test("hands the permission back first, then deletes the row", async () => {
+    await connect(ana.email, "ana.owner@gmail.com", "1//anas-refresh");
+    revoked.length = 0;
+    let rowsAtHandBack = -1;
+    revokeAnswer = async () => {
+      rowsAtHandBack = (await connectionsOf(ana.personId)).length;
+      return new Response("", { status: 200 });
+    };
+
+    const response = await disconnect(ana.email);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ atProvider: "handed_back" });
+    expect(revoked).toEqual(["1//anas-refresh"]);
+    expect(rowsAtHandBack).toBe(1);
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("Google silent: the row is still deleted, and the answer says Google did not confirm", async () => {
+    await connect(ana.email, "ana.owner@gmail.com");
+    revokeAnswer = () => new Response("", { status: 503 });
+
+    expect(await (await disconnect(ana.email)).json()).toEqual({ atProvider: "not_confirmed" });
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("keys that cannot be opened: the row is still deleted, and nothing goes to Google", async () => {
+    await connect(ana.email, "ana.owner@gmail.com");
+    await db
+      .update(calendarConnection)
+      .set({ credentials: "v1.cannot.be.opened" })
+      .where(eq(calendarConnection.resourceId, ana.personId));
+    revoked.length = 0;
+
+    expect(await (await disconnect(ana.email)).json()).toEqual({ atProvider: "not_confirmed" });
+    expect(revoked).toEqual([]);
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("the same Gmail still used by another connection is kept at Google", async () => {
+    await connect(ben.email, "shared@gmail.com", "1//bens-refresh");
+    await connect(ana.email, "shared@gmail.com", "1//anas-refresh");
+    revoked.length = 0;
+
+    expect(await (await disconnect(ana.email)).json()).toEqual({ atProvider: "still_used" });
+    expect(revoked).toEqual([]);
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+    expect(await connectionsOf(ben.personId)).toHaveLength(1);
+  });
+
+  test("a connection Google had already stopped accepting says so", async () => {
+    await connect(ana.email, "ana.owner@gmail.com");
+    await db
+      .update(calendarConnection)
+      .set({ status: "needs_reconnect" })
+      .where(eq(calendarConnection.resourceId, ana.personId));
+    revokeAnswer = () => new Response(JSON.stringify({ error: "invalid_token" }), { status: 400 });
+
+    expect(await (await disconnect(ana.email)).json()).toEqual({ atProvider: "already_stopped" });
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("only your own: a coworker's connection in the same business stays", async () => {
+    await saveCalendarConnection({
+      organizationId: ana.organizationId,
+      resourceId: coworkerId,
+      accountEmail: "coworker@gmail.com",
+      grantedScopes: [FREEBUSY, EVENTS_OWNED],
+      credentials: {
+        refreshToken: "1//coworkers-refresh",
+        accessToken: "ya29.coworkers-access",
+        accessTokenExpiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+      },
+    });
+    await connect(ana.email, "ana.owner@gmail.com");
+    revoked.length = 0;
+
+    expect((await disconnect(ana.email)).status).toBe(200);
+    expect(await connectionsOf(coworkerId)).toHaveLength(1);
+    expect(revoked).not.toContain("1//coworkers-refresh");
+  });
+
+  test("nothing connected is 404", async () => {
+    const response = await disconnect(ana.email);
+    expect(response.status).toBe(404);
+    expect((await response.json()).error.code).toBe("not_found");
+  });
+
+  test("a login with no person is refused plainly", async () => {
+    const response = await disconnect(noPerson.email);
+    expect(response.status).toBe(409);
+    expect((await response.json()).error.code).toBe("no_person");
+  });
+
+  test("no session is 401, and a plan without booking is 403", async () => {
+    expect((await disconnect()).status).toBe(401);
+    expect((await disconnect(noBooking.email)).status).toBe(403);
   });
 });
 

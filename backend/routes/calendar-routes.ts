@@ -4,16 +4,15 @@
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 
+import type { CalendarConnectOutcomeType } from "@scheduleads-app/shared/calendar";
 import { calendarConnection } from "@scheduleads-app/shared/db";
 
 import { db } from "../database.js";
 import { appOrigin, auth } from "../lib/auth/auth-server.js";
 import { createOauthTicket } from "../lib/calendar/create-oauth-ticket.js";
+import { disconnectCalendar } from "../lib/calendar/disconnect-calendar.js";
 import { findSignedInPerson } from "../lib/calendar/find-signed-in-person.js";
-import {
-  finishGoogleConnect,
-  type ConnectOutcomeType,
-} from "../lib/calendar/finish-google-connect.js";
+import { finishGoogleConnect } from "../lib/calendar/finish-google-connect.js";
 import { googleOauthClient } from "../lib/calendar/google-oauth-client.js";
 import { warnConnectFailed } from "../lib/calendar/warn-connect-failed.js";
 import { refuse } from "../lib/errors/refuse.js";
@@ -77,12 +76,35 @@ export const calendarRoutes = new Hono()
     }
   )
 
+  // Pressing Disconnect: your own calendar only. The answer says what happened at Google.
+  .post(
+    "/disconnect",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    async (c) => {
+      const activeOrganization = c.get("organization");
+      const person = await findSignedInPerson(activeOrganization.organizationId, c.get("user").id);
+      if (!person) return c.json(refuse("no_person", noPersonMessage), 409);
+
+      const atProvider = await disconnectCalendar({
+        organizationId: activeOrganization.organizationId,
+        resourceId: person.id,
+      });
+      if (!atProvider) {
+        return c.json(refuse("not_found", "There is no calendar connected to disconnect."), 404);
+      }
+
+      return c.json({ atProvider }, 200);
+    }
+  )
+
   // Google sends the browser back here. Always ends on the dashboard with one outcome; the
   // address is fixed, never taken from the request, so this can't redirect anywhere else.
   .get("/callback", async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
 
-    const outcome: ConnectOutcomeType = await finishGoogleConnect({
+    const outcome: CalendarConnectOutcomeType = await finishGoogleConnect({
       userId: session?.user.id ?? null,
       state: c.req.query("state"),
       code: c.req.query("code"),

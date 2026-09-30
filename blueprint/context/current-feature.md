@@ -4,9 +4,9 @@
 
 **Branch:** `feature/03-calendar-connection` (the workspace's `feature/NN-name` form)
 
-**Status:** whole feature seen and agreed by Frank 2026-09-28; steps 3.1 and
-3.2 built and reviewed; step 3.3 built 2026-09-30, its audit and independent
-review next
+**Status:** whole feature seen and agreed by Frank 2026-09-28; steps 3.1 to
+3.3 built and reviewed; step 3.4 built 2026-09-30, its audit and independent
+review next; then `/complete`
 
 Approved one step at a time (`AGENTS.md`, "A spec is approved one step at a
 time"): Frank sees the whole feature once, then each of steps 3.1 to 3.4 gets
@@ -270,7 +270,28 @@ real data, `main`), or a P0/P1 finding. Each step commit is
     Google calendar is printed by `calendar:check` as a busy block at those
     times.
 
-- [ ] **3.4 Disconnect, and the card's other states.**
+- [x] **3.4 Disconnect, and the card's other states.** Planned with Frank and
+  built 2026-09-30. Agreed in the plan: the permission is handed back through
+  the seam (`findCalendarProvider`, moved out of `get-busy-times.ts`), then the
+  row is deleted whatever the provider said; **the shared-Gmail rule** (Frank's
+  yes, Sep 30): Google keeps one permission per Google account for our app, so
+  it is handed back only when no other connection (in any business) uses the
+  same Gmail, in Disconnect and in F-37 alike (`hand-back-calendar-permission.ts`);
+  keys that cannot be opened are still deleted; the answer names one of four
+  things (contract below); a connection already `needs_reconnect` says Google
+  had already stopped accepting it; the card shows "Last read ... ago", gets
+  Disconnect in both connected states (Reconnect too when it needs it), no
+  confirm box, Try again when the API does not answer; F-37 compares Gmail
+  addresses, not Google's account ID (rare address change heals on the next
+  reconnect); F-40's list is `packages/shared/calendar/calendar-connect-outcomes.ts`
+  (export `./calendar`) with `isCalendarConnectOutcome`, tested in shared, so
+  the frontend needs no test tool. Differences found while building: the
+  answer's field is `atProvider` (Disconnect goes through the seam), not
+  `atGoogle`; with the whole API down the dashboard shows its own "Cannot
+  reach the API" page first, so the card's own line only appears when the
+  calendar call alone fails (proved by blocking that one call in the browser).
+  By hand: Frank's Disconnect emptied the card and Google's apps page no longer
+  listed the app; his Reconnect came back connected, a new row.
   - `POST /calendar/disconnect`: revokes at Google, then deletes the row. If
     Google does not answer, the row is still deleted and the answer says so,
     so the card can tell him to remove access in his Google account.
@@ -289,7 +310,14 @@ real data, `main`), or a P0/P1 finding. Each step commit is
     connection set to `needs_reconnect` in the database shows Reconnect.
     F-37: a test reconnects with another Gmail and sees the old refresh token
     handed back, and the same Gmail not. F-40: a renamed outcome fails the
-    frontend build; `?calendar=constructor` shows no notice.
+    frontend build; `?calendar=constructor` shows no notice. Added 2026-09-30
+    with Frank: Google silent or keys unreadable still deletes; the shared-Gmail
+    rule in Disconnect and F-37; `already_stopped`; only your own connection is
+    deleted, a coworker's stays; 404, 401 and 403; F-37 with Google silent still
+    ends connected with one log line; planted faults (delete without handing
+    back, the shared-Gmail check removed, the same-Gmail check removed, an
+    outcome renamed in the list and the API but not the card); by hand also the
+    API down with Try again, and "Last read ... ago".
 
 ## Files / areas
 
@@ -313,6 +341,13 @@ real data, `main`), or a P0/P1 finding. Each step commit is
 - 3.3 `packages/shared/helpers/assert-local-dev-database.ts` (+ test, new),
   `packages/shared/scripts/seed-dev.ts` and the two route test files (changed:
   use it), `backend/scripts/find-calendar-check-target.ts` (+ test, new)
+- 3.4 `backend/lib/calendar/find-calendar-provider.ts`,
+  `hand-back-calendar-permission.ts`, `disconnect-calendar.ts` (new);
+  `finish-google-connect.ts`, `get-busy-times.ts`, `calendar-routes.ts` (+ test),
+  `refuse.ts` (changed); `packages/shared/calendar/calendar-connect-outcomes.ts`
+  (+ test, new) and the shared `package.json` and both tsconfigs (changed: the
+  `calendar` folder and its export); `frontend/components/calendar/calendar-connection-card.tsx`
+  and `frontend/lib/api-client.ts` (changed)
 - `backend/routes/calendar-routes.ts` and `calendar-routes.test.ts` (new)
 - `backend/app.ts` (changed: mounts `/calendar`, CORS and no-store),
   `backend/server.ts` (changed: refuses to start without the Google values)
@@ -420,9 +455,16 @@ in the active business whose `userId` is the session's user.
 | `GET /calendar/connection` | 200 `{ person: { id, name } \| null, connection: { provider, accountEmail, status, lastCheckedAt } \| null }` |
 | `POST /calendar/connect` | 200 `{ url }`; 409 `no_person` when the login has no person here |
 | `GET /calendar/callback` | always 302 to `${APP_ORIGIN}/?calendar=<outcome>` |
-| `POST /calendar/disconnect` | 200 `{ revokedAtGoogle: boolean }`; 404 `not_found` when there is nothing to disconnect; 409 `no_person` |
+| `POST /calendar/disconnect` | 200 `{ atProvider: "handed_back" \| "not_confirmed" \| "still_used" \| "already_stopped" }`; 404 `not_found` when there is nothing to disconnect; 409 `no_person` |
 
-Callback outcomes, the only values `?calendar=` ever carries: `connected`,
+`atProvider`: `handed_back` the provider confirmed; `not_confirmed` it did not
+answer, or our keys could not be opened; `still_used` another connection uses
+the same account, so the permission stays; `already_stopped` the connection was
+`needs_reconnect` and the hand-back was not confirmed. The row is deleted in
+every case.
+
+Callback outcomes, the only values `?calendar=` ever carries (written once in
+`packages/shared/calendar/calendar-connect-outcomes.ts`): `connected`,
 `denied` (the person pressed Cancel at Google), `missing_permission`,
 `expired` (state unknown, expired, used, or another login's; or no session),
 `failed` (Google did not answer or refused the code). The redirect target is

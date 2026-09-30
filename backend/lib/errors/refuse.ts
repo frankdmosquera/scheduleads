@@ -6,7 +6,7 @@ export type RefusalCodeType =
   | "forbidden" // their role does not grant this permission
   | "plan_unrecognised" // the tier is not in the config: a misconfiguration
   | "plan_required" // a real tier that does not include this module
-  | "not_found" // public routes: one answer for every "not here", so none can be told apart
+  | "not_found" // nothing there; public routes give one answer for every "not here", so none can be told apart
   | "bad_request" // a malformed value in the request, such as a slug or an id
   | "no_person"; // signed in, but no person in this business is linked to the login
 

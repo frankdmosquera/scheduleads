@@ -11,12 +11,11 @@ import {
 } from "@scheduleads-app/shared/crypto";
 
 import { db } from "../../database.js";
-import type { BusyBlockType, CalendarProviderType, TimeRangeType } from "./calendar-provider.js";
+import type { BusyBlockType, TimeRangeType } from "./calendar-provider.js";
 import { CalendarReconnectNeededError } from "./calendar-reconnect-needed-error.js";
-import { googleCalendarProvider } from "./google-calendar-provider.js";
+import { findCalendarProvider } from "./find-calendar-provider.js";
 import type { CalendarCredentialsType } from "./save-calendar-connection.js";
 
-const PROVIDERS: Record<string, CalendarProviderType> = { google: googleCalendarProvider };
 const REFRESH_MARGIN_MS = 60_000; // a key with under a minute left could expire mid-question
 const ATTEMPTS = 2; // one more read when a reconnect or another refresh changed the row meanwhile
 
@@ -42,8 +41,7 @@ export async function getBusyTimes({
     if (!connection) return []; // not connected: no calendar busy times, which is not a failure
     if (connection.status === "needs_reconnect") throw new CalendarReconnectNeededError();
 
-    const provider = PROVIDERS[connection.provider];
-    if (!provider) throw new Error(`No calendar plug for "${connection.provider}".`);
+    const provider = findCalendarProvider(connection.provider);
 
     const key = readTokenKey();
     const credentials = JSON.parse(

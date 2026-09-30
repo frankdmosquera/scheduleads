@@ -15,6 +15,7 @@
   "include": [
     "db",
     "crypto",
+    "calendar",
     "helpers",
     "subscriptions",
     "zod-validation",

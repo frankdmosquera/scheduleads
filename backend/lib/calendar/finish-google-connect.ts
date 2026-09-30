@@ -4,20 +4,15 @@
 
 import { and, eq } from "drizzle-orm";
 
-import { resource } from "@scheduleads-app/shared/db";
+import type { CalendarConnectOutcomeType } from "@scheduleads-app/shared/calendar";
+import { calendarConnection, resource } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
 import { googleOauthClient } from "./google-oauth-client.js";
+import { handBackCalendarPermission } from "./hand-back-calendar-permission.js";
 import { saveCalendarConnection } from "./save-calendar-connection.js";
 import { redeemOauthTicket } from "./redeem-oauth-ticket.js";
 import { warnConnectFailed } from "./warn-connect-failed.js";
-
-export type ConnectOutcomeType =
-  | "connected"
-  | "denied" // pressed Cancel at Google
-  | "expired" // no ticket, stale, used, someone else's, or signed out
-  | "missing_permission" // a permission box unticked
-  | "failed"; // Google did not answer usefully
 
 export async function finishGoogleConnect({
   userId,
@@ -29,7 +24,7 @@ export async function finishGoogleConnect({
   state: string | undefined;
   code: string | undefined;
   error: string | undefined;
-}): Promise<ConnectOutcomeType> {
+}): Promise<CalendarConnectOutcomeType> {
   // Used up first, whatever else Google said, so a ticket never outlives its trip.
   const ticket = userId && state ? await redeemOauthTicket(state, userId) : null;
 
@@ -83,6 +78,22 @@ export async function finishGoogleConnect({
     return "failed";
   }
 
+  // A reconnect replaces this row, so the old account is read before the save.
+  const [previous] = await db
+    .select({
+      provider: calendarConnection.provider,
+      accountEmail: calendarConnection.accountEmail,
+      credentials: calendarConnection.credentials,
+    })
+    .from(calendarConnection)
+    .where(
+      and(
+        eq(calendarConnection.organizationId, ticket.organizationId),
+        eq(calendarConnection.resourceId, ticket.resourceId)
+      )
+    )
+    .limit(1);
+
   try {
     await saveCalendarConnection({
       organizationId: ticket.organizationId,
@@ -99,6 +110,20 @@ export async function finishGoogleConnect({
     await handBack(); // not saved, so Google should not keep the permission either
     warnConnectFailed("the save", saveError);
     return "failed";
+  }
+
+  // Switched to another Google account: the old one's permission goes back, after the new
+  // one is safely saved. The same account is one permission at Google, so it is left alone.
+  if (previous && previous.accountEmail.toLowerCase() !== identity.email.toLowerCase()) {
+    const oldAccount = await handBackCalendarPermission({
+      provider: previous.provider,
+      accountEmail: previous.accountEmail,
+      lockedCredentials: previous.credentials,
+      resourceId: ticket.resourceId,
+    }).catch(() => "not_confirmed" as const);
+    if (oldAccount === "not_confirmed") {
+      console.warn("[calendar] a reconnect with another account could not hand the old one back");
+    }
   }
 
   return "connected";

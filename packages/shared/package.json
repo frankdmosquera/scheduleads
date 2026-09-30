@@ -27,6 +27,10 @@
     "./crypto": {
       "types": "./dist/crypto/token-cipher.d.ts",
       "default": "./dist/crypto/token-cipher.js"
+    },
+    "./calendar": {
+      "types": "./dist/calendar/calendar-connect-outcomes.d.ts",
+      "default": "./dist/calendar/calendar-connect-outcomes.js"
     }
   },
   "scripts": {
