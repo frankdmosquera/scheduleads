@@ -387,7 +387,7 @@ test: Ben connected with `shared@gmail.com`, Ana's consent with the same Gmail
 missing a permission, nothing revoked.
 **Resolution:** Fixed 2026-09-30 on Frank's yes, with his own connection included. Checking it found the sharper case: pressing Reconnect on your own calendar and unticking a box handed back the same Gmail and cancelled your own working connection. The check is now its own file, `backend/lib/calendar/is-calendar-account-in-use.ts`, used by `hand-back-calendar-permission.ts` (leaving out the person's own row, which is the one going away) and by `finish-google-connect.ts`'s give-up paths (counting every row, the person's own included). The sign-in token is read before the scope check, so the unticked-box path knows the Gmail; an unreadable sign-in token names no Gmail and is still handed back. Two route tests: a Gmail another business uses is kept, and your own working connection survives a failed reconnect. Proved: the check removed from the give-up path fails both; restored and compared. 95 backend tests pass. Waits for the next review to close.
 
-### F-45 [P3] open - The disconnect and account-switch tests depend on Gmail addresses other tests leave in the database
+### F-45 [P3] fixed - The disconnect and account-switch tests depend on Gmail addresses other tests leave in the database
 
 **File:** backend/routes/calendar-routes.test.ts:463
 **Found:** 2026-09-30 by /audit independent (scope: step 3.4; lens: tests)
@@ -404,7 +404,7 @@ passed, because the busy-times file usually finishes first.
 **Suggested fix:** Give every Gmail in both files the run's own `tag`
 (`ana.owner-${tag}@gmail.com`, `shared-${tag}@gmail.com`), as the login emails
 already do, so no test can meet another test's or an earlier run's rows.
-**Resolution:**
+**Resolution:** Fixed 2026-09-30 on Frank's yes, tests only. Every made-up Gmail in `calendar-routes.test.ts` (30 uses: `ana.owner`, `Ana.Owner`, `ana.second`, `shared`, `coworker`) now comes from `gmail(name)`, which adds the run's tag; `get-busy-times.test.ts` tags its one. Proved: a leftover business with a connection for the old `ana.owner@gmail.com` was added to the local database; the route tests as they were before the fix failed 9 tests with it present, the fixed file passed all 38; the leftover and the temporary copy of the old file were removed after. 95 backend tests pass. Waits for the next review to close.
 
 ### F-46 [P3] unverified - Disconnect accepts a request from any page that carries the login cookie
 
