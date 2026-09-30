@@ -242,7 +242,7 @@ after the new row is saved. Leave the same-account case alone: that is one
 permission at Google, and revoking it would kill the new tokens too.
 **Resolution:** Carried to step 3.4 on Frank's call, 2026-09-29: it belongs with Disconnect and Reconnect, which 3.4 builds. Written into 3.4's plan and Done when in the spec.
 
-### F-38 [P3] fixed - When Google refuses a connect, nobody can see why
+### F-38 [P3] closed - When Google refuses a connect, nobody can see why
 
 **File:** backend/lib/calendar/finish-google-connect.ts:55
 **Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: quality)
@@ -258,8 +258,9 @@ a redirect fix; the next one on Railway will have only this.
 outcome and Google's HTTP status or error code (`invalid_client`,
 `invalid_grant`), never a token or the code itself.
 **Resolution:** Fixed 2026-09-29 on Frank's yes. Every "failed" path of the callback now leaves one line, `[calendar] connect failed at <step>: <reason>`, through `backend/lib/calendar/warn-connect-failed.ts`: Google's error other than Cancel, no code, the code swap (now carrying Google's own code word, e.g. `400 invalid_grant`, never its free text), the token check (no refresh token, or a sign-in token refused), the save, and the route's last catch. A database error is logged as its Postgres code only, because its message carries the query and its values. Denied, expired and missing permission are the person's own doing and log nothing. Tests: each failed route test checks its exact line, the full consent checks there is none, every test checks no token or locked value reaches a warning, and a unit test checks a failed query logs only `database error 23505`. Five faults planted (raw message logged, swap line removed, Google's word dropped, save line removed, a token put in a line), each caught. 63 backend tests pass. Waits for the next review to close.
+Closed 2026-09-30 by /audit independent (scope: step 3.3, re-examining f9601b3): every failed path in `finish-google-connect.ts` (Google error, no code, the code swap, the token check, the save) and the route's last catch (`calendar-routes.ts:91`) still leaves one `[calendar] connect failed at ...` line. Step 3.3 moved the reason logic into `safe-error-reason.ts` unchanged (a failed query still logs only its Postgres code), and `warn-connect-failed.test.ts` plus the route tests that check each exact line and that no secret reaches a warning still pass. Nothing new introduced.
 
-### F-39 [P3] fixed - The Google identity check and three give-up paths have no saved test
+### F-39 [P3] closed - The Google identity check and three give-up paths have no saved test
 
 **File:** backend/lib/calendar/google-oauth-client.ts:110
 **Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: tests)
@@ -278,6 +279,7 @@ the reconnect test above it ran first, so running it alone fails.
 the token back, saves nothing), plus one each for the unlinked person and
 `error=server_error`. Have the connection test make its own connection first.
 **Resolution:** Fixed 2026-09-28 on Frank's yes, tests only (`backend/routes/calendar-routes.test.ts`). Six new route tests: a sign-in token for another app, from another issuer, or with an unverified email each end in `failed`, hand the refresh token back and save nothing; a person unlinked during the trip ends in `expired`; `error=server_error` ends in `failed` and uses the ticket up; a save that fails (the lock given a bad key for that one call) hands the tokens back and ends in `failed`. The connection and reconnect tests now make their own connections, and every test starts with Ana unconnected (a `beforeEach` delete), so none depends on another: each passes run alone. Proved: six faults planted one at a time (audience, issuer and verified-email checks removed, the person re-check removed, every Google error treated as Cancel, no hand-back after a failed save), each failing exactly its own test and nothing else; files restored and compared. 61 backend and 42 shared tests, both builds, lint and format pass. Waits for the next review to close.
+Closed 2026-09-30 by /audit independent (scope: step 3.3): the six tests are in `calendar-routes.test.ts:358-411` and assert the outcome, the hand-back, that nothing is saved and the exact warning; the connection and reconnect tests make their own connections and a `beforeEach` clears Ana's, so none depends on another. Step 3.3 only swapped the file's database guard for the shared one. 79 backend tests pass.
 
 ### F-40 [P3] open - The card's list of outcomes is not tied to the API's, and a made-up one shows an empty red box
 
@@ -295,7 +297,7 @@ them (see F-41).
 `packages/shared` so both sides import it.
 **Resolution:** Carried to step 3.4 on Frank's call, 2026-09-29: 3.4 reworks the card's states anyway. Written into 3.4's plan and Done when in the spec.
 
-### F-41 [P3] fixed - The spec's contracts still describe the shapes step 3.2 changed
+### F-41 [P3] closed - The spec's contracts still describe the shapes step 3.2 changed
 
 **File:** blueprint/context/current-feature.md:374
 **Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: quality)
@@ -317,8 +319,9 @@ fingerprint, the session's user and an unexpired `expiresAt`. Found on the way
 and fixed with it: the Google section still said the events scope "is checked
 before it is written"; it now names `calendar.events.owned`. The build log's
 Contracts row for the lock says the same. Waits for the next review to close.
+Closed 2026-09-30 by /audit independent (scope: step 3.3): the spec's Data / contracts now say `denied` (outcomes list and Routes), the cipher signatures carry `boundTo`, the ticket is used up by one DELETE on fingerprint, session user and `expiresAt`, and the Google section names `calendar.events.owned`. All match the code read in this pass.
 
-### F-42 [P3] fixed - Two names in the calendar folder read differently from their neighbours
+### F-42 [P3] closed - Two names in the calendar folder read differently from their neighbours
 
 **File:** backend/lib/calendar/use-oauth-ticket.ts:18
 **Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: quality)
@@ -332,3 +335,27 @@ and these are the ones 3.3 and 3.4 will import next to them.
 whose name costs a migration to change), and a verb that says what happens,
 such as `redeemOauthTicket` in `redeem-oauth-ticket.ts`.
 **Resolution:** Fixed 2026-09-29 on Frank's yes: `googleOAuthClient` is `googleOauthClient`, matching the table and every other `Oauth` name; `useOauthTicket` is `redeemOauthTicket` in `redeem-oauth-ticket.ts` (its type `RedeemedOauthTicketType`), so it no longer reads like a React hook. The spec follows. The code drawers on the build log keep the old names: they show the step as committed. Waits for the next review to close.
+Closed 2026-09-30 by /audit independent (scope: step 3.3): no `googleOAuthClient`, `useOauthTicket` or `use-oauth-ticket` is left in backend, frontend or shared source; the folder spells `Oauth` throughout, and step 3.3's new files import `googleOauthClient` under that name.
+
+### F-43 [P3] open - Two of the busy-times safeguards can be deleted and every test still passes
+
+**File:** backend/lib/calendar/get-busy-times.ts:72
+**Found:** 2026-09-30 by /audit independent (scope: step 3.3; lens: tests)
+**Why it matters:** The step promises two things the tests do not hold in
+place. First, when Google refuses a refresh at the same moment the owner
+reconnects, the fresh connection must not be marked "needs reconnecting". The
+code guards this (the mark only touches the row as it was read, then reads it
+again), but the only same-moment test uses a refresh Google accepts, so
+changing line 72 to match the row by id alone passes all 79 tests. The owner
+would reconnect and immediately be told to reconnect again. Second, a Google
+that hangs is cut off after ten seconds by `AbortSignal.timeout` in
+`google-calendar-provider.ts:36`; the "time-out" test makes the fake fetch
+throw at once, so deleting that line also passes, and a hung Google would then
+hold the booking check for minutes. Neither ever answers "free", so this is
+coverage, not a live bug.
+**Suggested fix:** Add one test where the token answer reconnects the person
+and then answers `invalid_grant`: the row must stay `connected` with the new
+keys, and free/busy must be asked with the reconnected access token. For the
+time-out, have the fake free/busy honour `init.signal` (wait for its abort) and
+run it under fake timers, or assert the request carries a signal.
+**Resolution:**
