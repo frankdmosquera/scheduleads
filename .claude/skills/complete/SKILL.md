@@ -254,8 +254,8 @@ feature's commit. Skip this if the feature didn't consume prototypes.
 Before the commit, not after. In the project's build log folder (its
 `AGENTS.md` names it; how to write it is in `buildlogs/logs/README.md`): every
 step `done`, all gates passed, the feature's `state` and pill moved to done, its
-`walkthroughUrl` pointing at the walkthrough PDF on GitHub's `main`, a final Log
-entry naming what shipped, and the tally updated. If the work changed
+Walkthrough drawer made from the archive (Frank reads the log, not PDFs), a
+final Log entry naming what shipped, and the tally updated. If the work changed
 `blueprint/context/coding-standards.md`, regenerate the log's Rules tab as the
 guide says. Then commit that folder to buildlogs' `main` and push it.
 
