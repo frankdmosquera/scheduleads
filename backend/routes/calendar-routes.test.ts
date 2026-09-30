@@ -529,6 +529,27 @@ describe("GET /calendar/callback", () => {
     expect(revoked).toEqual([]);
     expect(await connectionsOf(ana.personId)).toHaveLength(1);
   });
+
+  test("a reconnect that gives up hands the new key back when your connection was already dead", async () => {
+    await connect(ana.email, gmail("ana.owner"), "1//refused-refresh");
+    await db
+      .update(calendarConnection)
+      .set({ status: "needs_reconnect" })
+      .where(eq(calendarConnection.resourceId, ana.personId));
+    revoked.length = 0;
+    tokenAnswer = () =>
+      googleTokens({
+        scope: `openid ${FREEBUSY}`, // a box unticked
+        email: gmail("ana.owner"),
+        refreshToken: "1//new-unused-refresh",
+      });
+    const state = await startConnect(ana.email);
+
+    expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(
+      outcome("missing_permission")
+    );
+    expect(revoked).toEqual(["1//new-unused-refresh"]);
+  });
 });
 
 describe("POST /calendar/disconnect", () => {

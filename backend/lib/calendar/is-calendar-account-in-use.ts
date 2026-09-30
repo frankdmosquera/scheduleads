@@ -1,6 +1,6 @@
-// Backend: whether a calendar account is connected anywhere, across every business. The
-// provider keeps one permission per account for our app, so handing it back while it is
-// in use cancels that connection too.
+// Backend: whether a calendar account has a working connection anywhere, across every
+// business. The provider keeps one permission per account for our app, so handing it back
+// while it is in use cancels that connection too.
 
 import { and, eq, ne, sql } from "drizzle-orm";
 
@@ -24,6 +24,8 @@ export async function isCalendarAccountInUse({
       and(
         eq(calendarConnection.provider, provider),
         sql`lower(${calendarConnection.accountEmail}) = lower(${accountEmail})`,
+        // One that needs reconnecting holds a key the provider already refused: nothing to cut off.
+        eq(calendarConnection.status, "connected"),
         exceptResourceId ? ne(calendarConnection.resourceId, exceptResourceId) : undefined
       )
     )

@@ -222,7 +222,7 @@ reads "Read by the public booking routes." with no step number, and the step
 line count"), each of its lines explains a why beside the code it describes,
 so it no longer breaks the standard. Kept on Frank's call, not the reviewer's.
 
-### F-37 [P3] fixed - Switching to another Google account leaves the old account's permission live at Google
+### F-37 [P3] closed - Switching to another Google account leaves the old account's permission live at Google
 
 **File:** backend/lib/calendar/save-calendar-connection.ts:44
 **Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: security)
@@ -242,6 +242,7 @@ after the new row is saved. Leave the same-account case alone: that is one
 permission at Google, and revoking it would kill the new tokens too.
 **Resolution:** Carried to step 3.4 on Frank's call, 2026-09-29: it belongs with Disconnect and Reconnect, which 3.4 builds. Written into 3.4's plan and Done when in the spec.
 Repaired by step 3.4 (533b662), found so by /audit independent (scope: step 3.4), 2026-09-30, and set to `fixed` by that pass (the builder had left it `open`): `finish-google-connect.ts:82-95` reads the person's existing row before the save, and after a successful save (`:117-127`) a different Gmail (compared without case) hands the old refresh token back through `handBackCalendarPermission`, best effort, skipped when another connection still uses that Gmail, with one log line and no token when Google does not confirm. The same Gmail is left alone. Four route tests (`calendar-routes.test.ts:462-500`) cover the hand-back after the save, the same Gmail in another case, a Gmail still used elsewhere, and Google silent. The repair introduces nothing new of its own; the other hand-back paths in the same file are F-44. Waits for the next review to close.
+Closed 2026-09-30 by /audit independent (scope: current, feature 3's final review at d76d355): re-read `finish-google-connect.ts:94-140`. The old row is read before the save, the hand-back runs only after a successful save and only for a different Gmail (compared without case), goes through `handBackCalendarPermission` with the person's own row left out (which by then holds the new Gmail, so only other connections count), and its failures are caught into one log line with no token. Route tests `calendar-routes.test.ts:465-505` pass. Nothing new introduced.
 
 ### F-38 [P3] closed - When Google refuses a connect, nobody can see why
 
@@ -282,7 +283,7 @@ the token back, saves nothing), plus one each for the unlinked person and
 **Resolution:** Fixed 2026-09-28 on Frank's yes, tests only (`backend/routes/calendar-routes.test.ts`). Six new route tests: a sign-in token for another app, from another issuer, or with an unverified email each end in `failed`, hand the refresh token back and save nothing; a person unlinked during the trip ends in `expired`; `error=server_error` ends in `failed` and uses the ticket up; a save that fails (the lock given a bad key for that one call) hands the tokens back and ends in `failed`. The connection and reconnect tests now make their own connections, and every test starts with Ana unconnected (a `beforeEach` delete), so none depends on another: each passes run alone. Proved: six faults planted one at a time (audience, issuer and verified-email checks removed, the person re-check removed, every Google error treated as Cancel, no hand-back after a failed save), each failing exactly its own test and nothing else; files restored and compared. 61 backend and 42 shared tests, both builds, lint and format pass. Waits for the next review to close.
 Closed 2026-09-30 by /audit independent (scope: step 3.3): the six tests are in `calendar-routes.test.ts:358-411` and assert the outcome, the hand-back, that nothing is saved and the exact warning; the connection and reconnect tests make their own connections and a `beforeEach` clears Ana's, so none depends on another. Step 3.3 only swapped the file's database guard for the shared one. 79 backend tests pass.
 
-### F-40 [P3] fixed - The card's list of outcomes is not tied to the API's, and a made-up one shows an empty red box
+### F-40 [P3] closed - The card's list of outcomes is not tied to the API's, and a made-up one shows an empty red box
 
 **File:** frontend/components/calendar/calendar-connection-card.tsx:17
 **Found:** 2026-09-28 by /audit independent (scope: step 3.2; lens: quality)
@@ -298,6 +299,7 @@ them (see F-41).
 `packages/shared` so both sides import it.
 **Resolution:** Carried to step 3.4 on Frank's call, 2026-09-29: 3.4 reworks the card's states anyway. Written into 3.4's plan and Done when in the spec.
 Repaired by step 3.4 (533b662), found so by /audit independent (scope: step 3.4), 2026-09-30, and set to `fixed` by that pass (the builder had left it `open`): the five outcomes live once in `packages/shared/calendar/calendar-connect-outcomes.ts`; the backend's `finishGoogleConnect` and the callback route are typed by it, the card's `OUTCOMES` is a `Record` keyed by it (so a rename on either side fails a build), and the address value is looked up only after `isCalendarConnectOutcome`, an equality check against the list, so `constructor` or `__proto__` shows nothing (shared test `calendar-connect-outcomes.test.ts`). Nothing new introduced. Waits for the next review to close.
+Closed 2026-09-30 by /audit independent (scope: current, feature 3's final review at d76d355): re-read `calendar-connection-card.tsx:27-42,79-82`, `calendar-routes.ts:107` and `packages/shared/calendar/calendar-connect-outcomes.ts`. The card's map is keyed by `CalendarConnectOutcomeType`, the callback's outcome is typed by it, and the address value is used only after the equality check. The shared tests and the frontend build pass. Nothing new introduced.
 
 ### F-41 [P3] closed - The spec's contracts still describe the shapes step 3.2 changed
 
@@ -386,8 +388,9 @@ unticked-box path, since it is read after the scope check today). One route
 test: Ben connected with `shared@gmail.com`, Ana's consent with the same Gmail
 missing a permission, nothing revoked.
 **Resolution:** Fixed 2026-09-30 on Frank's yes, with his own connection included. Checking it found the sharper case: pressing Reconnect on your own calendar and unticking a box handed back the same Gmail and cancelled your own working connection. The check is now its own file, `backend/lib/calendar/is-calendar-account-in-use.ts`, used by `hand-back-calendar-permission.ts` (leaving out the person's own row, which is the one going away) and by `finish-google-connect.ts`'s give-up paths (counting every row, the person's own included). The sign-in token is read before the scope check, so the unticked-box path knows the Gmail; an unreadable sign-in token names no Gmail and is still handed back. Two route tests: a Gmail another business uses is kept, and your own working connection survives a failed reconnect. Proved: the check removed from the give-up path fails both; restored and compared. 95 backend tests pass. Waits for the next review to close.
+Re-examined 2026-09-30 by /audit independent (scope: current, feature 3's final review at d76d355), kept `fixed`: the original defect is gone (`finish-google-connect.ts:70-78` skips the hand-back while any connection uses the Gmail; route tests `calendar-routes.test.ts:507-532` pass). But the repair counts every row as "in use", including a connection Google has already stopped accepting, which opens F-47. It closes together with F-47's repair.
 
-### F-45 [P3] fixed - The disconnect and account-switch tests depend on Gmail addresses other tests leave in the database
+### F-45 [P3] closed - The disconnect and account-switch tests depend on Gmail addresses other tests leave in the database
 
 **File:** backend/routes/calendar-routes.test.ts:463
 **Found:** 2026-09-30 by /audit independent (scope: step 3.4; lens: tests)
@@ -405,8 +408,9 @@ passed, because the busy-times file usually finishes first.
 (`ana.owner-${tag}@gmail.com`, `shared-${tag}@gmail.com`), as the login emails
 already do, so no test can meet another test's or an earlier run's rows.
 **Resolution:** Fixed 2026-09-30 on Frank's yes, tests only. Every made-up Gmail in `calendar-routes.test.ts` (30 uses: `ana.owner`, `Ana.Owner`, `ana.second`, `shared`, `coworker`) now comes from `gmail(name)`, which adds the run's tag; `get-busy-times.test.ts` tags its one. Proved: a leftover business with a connection for the old `ana.owner@gmail.com` was added to the local database; the route tests as they were before the fix failed 9 tests with it present, the fixed file passed all 38; the leftover and the temporary copy of the old file were removed after. 95 backend tests pass. Waits for the next review to close.
+Closed 2026-09-30 by /audit independent (scope: current, feature 3's final review at d76d355): every made-up Gmail in `calendar-routes.test.ts` comes from `gmail(name)` (line 36, the run's `tag`), and `get-busy-times.test.ts:59` tags its one; no untagged `@gmail.com` is left in either file. The full backend run passed 96 of 96. Nothing new introduced.
 
-### F-46 [P3] fixed - Disconnect accepts a request from any page that carries the login cookie
+### F-46 [P3] closed - Disconnect accepts a request from any page that carries the login cookie
 
 **File:** backend/routes/calendar-routes.ts:80
 **Found:** 2026-09-30 by /audit independent (scope: step 3.4; lens: security)
@@ -427,3 +431,29 @@ built-in `csrf({ origin: appOrigin })` (ships with Hono, no new package) to
 the dashboard routes in `app.ts`, with one test that a form post from another
 origin is refused.
 **Resolution:** Fixed 2026-09-30 on Frank's yes, now rather than at deploy. `backend/middleware/dashboard-middleware/dashboard-csrf-middleware.ts` is Hono's built-in `csrf({ origin: appOrigin })`, mounted in `app.ts` on `/calendar/*` between the CORS and no-store middleware; every later dashboard route that changes data mounts it the same way. It checks only requests a plain form could send (JSON needs a preflight, which the CORS rule already limits to the dashboard); a refused one gets Hono's plain 403, not the refusal shape, since no dashboard code ever receives it. `/api/auth/*` keeps Better Auth's own origin check. Test: a form-style Disconnect from another origin, and one with no Origin, are 403 and nothing is deleted; the dashboard's own still works. Proved: the middleware unmounted in `app.ts` fails the test; restored and compared. By hand: from the running dashboard, a real browser POST to `/calendar/connect` still answered 200 with Google's address. Only this change to `app.ts` was committed; Frank's uncommitted formatting edits there stay as they were. 96 backend tests pass. Waits for the next review to close.
+Closed 2026-09-30 by /audit independent (scope: current, feature 3's final review at d76d355): `app.ts:20` mounts `dashboardCsrfMiddleware` on `/calendar/*`. Checked against the installed Hono 4.13.8: it skips GET (so Google's return to `/calendar/callback` is untouched), treats a request with no content type as a form, and then needs `Sec-Fetch-Site: same-origin` or `Origin` equal to `APP_ORIGIN`, so the dashboard's bodiless POSTs from its own origin pass and a cross-site form or no-Origin post is 403. Route test `calendar-routes.test.ts:630-655` passes. Nothing new introduced.
+
+### F-47 [P3] fixed - A Reconnect that gives up leaves a new Google permission nobody holds
+
+**File:** backend/lib/calendar/is-calendar-account-in-use.ts:20
+**Found:** 2026-09-30 by /audit independent (scope: current; lens: security)
+**Why it matters:** When Google has stopped accepting a calendar, the card
+says "Needs reconnecting". If the owner presses Reconnect and the connect then
+gives up (a box unticked at Google, no long-lived token, or a failed save), the
+fresh permission Google just granted should be handed back, because nothing is
+saved. It is not: the "is this Gmail still in use?" check
+(`finish-google-connect.ts:70-78`) counts the owner's own dead connection as a
+use, so the new permission is kept. The owner's Google account then lists the
+app with calendar access that no connection in the app holds. If they give up
+and press Disconnect, the answer says "Google had already stopped accepting
+this connection", while Google still shows the app. Rare, harmless in itself
+(the tokens are thrown away), and it heals on the next successful Reconnect,
+but it is the same leftover-permission problem F-37 fixed for account
+switches.
+**Suggested fix:** Count only connections Google still accepts: add
+`status = 'connected'` to the query in `is-calendar-account-in-use.ts` (a
+`needs_reconnect` row's permission is already refused, so keeping a new one
+for it protects nothing). One route test: Ana's connection set to
+`needs_reconnect`, a Reconnect with the same Gmail and a box unticked, the new
+token handed back.
+**Resolution:** Fixed 2026-09-30 on Frank's yes, before the merge. `is-calendar-account-in-use.ts` now counts only connections with `status = 'connected'`: a `needs_reconnect` one holds a key the provider already refused, so there is nothing to cut off. This applies to all three callers alike (Disconnect's and the account switch's shared-Gmail rule, and the give-up paths); working connections stay protected as before. Test: Ana's connection set to `needs_reconnect`, a Reconnect with the same Gmail and a box unticked, the new refresh token handed back. Proved: the status condition removed fails it; restored and compared. 97 backend tests pass. F-44 closes with this repair's review. Waits for the next review to close.
