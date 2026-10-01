@@ -87,7 +87,7 @@ reason in the spec preamble and build log so the next form knows which pattern
 is the standard.
 **Resolution:**
 
-### F-16 [P3] fixed - Better Auth endpoints already open two paths the spec reserves for later items
+### F-16 [P3] closed - Better Auth endpoints already open two paths the spec reserves for later items
 
 **File:** backend/src/lib/auth.ts:85
 **Found:** 2026-09-23 by /audit (scope: current; lens: security)
@@ -114,6 +114,7 @@ comments to say a platform admin can set it through the admin plugin's
 endpoint, or record either as accepted with the reason.
 **Resolution:**
 Repaired by step 3b.2, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.2's review to close. `owner` and `admin` now hold `invitation: []` (`auth-server.ts`), and a route test shows an owner's `/organization/invite-member` is 403 with no invitation row; the `user.role` comments (`auth-server.ts`, `user-table.ts`) now say the platform admin can set it through the admin plugin. Shown able to fail: with `invitation: ["create", "cancel"]` back, the invite test failed.
+Closed 2026-09-30 by /audit independent (scope: step 3b.2, re-examining ea23e45): `owner`, `admin` and `member` all hold `invitation: []` (`auth-server.ts:62-78`), and Better Auth's `/organization/invite-member` gates on `hasPermission` (`crud-invites.mjs:95`), so the route test's 403 with no invitation row is the real refusal; `addMember` has no HTTP path (`crud-members.mjs:25`, a pathless `createAuthEndpoint`). The `user.role` comments (`auth-server.ts:92-94`, `user-table.ts:15-16`) now match the admin plugin (`createUser` and `set-role` gate on `user:set-role`, `admin/routes.mjs`) and `input: false` (`db/schema.mjs:65-74`, a 400). Accepting an invitation made before this change is not role-gated; see F-47.
 
 ### F-32 [P3] unverified - A pick is the package's display name, so a renamed holiday would take a business's booking page down
 
@@ -156,7 +157,7 @@ keep the why ("declarations only, because Vercel builds only the frontend"; "no
 src/ folder, so the code sits beside the build output").
 **Resolution:**
 
-### F-35 [P2] fixed - A failure after Better Auth has saved the business leaves a business with no owner, and is reported as a taken name
+### F-35 [P2] closed - A failure after Better Auth has saved the business leaves a business with no owner, and is reported as a taken name
 
 **File:** backend/lib/admin/provision-client.ts:54
 **Found:** 2026-09-30 by /audit (scope: step 3b.1; lens: quality, security)
@@ -181,8 +182,9 @@ saved (for example a failing first-person insert) and asserts no business, no ne
 login and a 500.
 **Resolution:**
 Fixed 2026-09-30 on Frank's yes, in the step 3b.1 review-fix commit. On a failure, `removeBusinessMadeFor` (`provision-client.ts`) removes a business at the slug that has no member but this client (its owner row and first person go by cascade), then the login this setup made; `slug_taken` is answered only when a business with someone else in it holds the slug. Two route tests force a failure right after Better Auth's save: a new login (no business, no login left, 500) and a reused one (no business, login kept, the retry answers 201). Shown able to fail by removing the business delete: both failed. Waits for the next review to close.
+Closed 2026-09-30 by /audit independent (scope: step 3b.2, re-examining 76ef009 and ea23e45): Better Auth 1.7.5 saves the business, the owner row and then runs `afterCreateOrganization` as separate writes (`crud-org.mjs:74`, `:100`, `:137`); a failure after any of them now reaches `removeBusinessMadeFor` (`provision-client.ts:90`), which removes a business at the slug with no member but this client (zero members included, so a failed owner insert is covered too) and answers `slug_taken` only when someone else is in it. The slug was checked free under its lock at `:64`, so the business removed can only be this setup's. Both route tests pass (backend suite 119/119). Not introduced by the repair but worth knowing: if the clean-up itself fails the half setup stays, see F-44.
 
-### F-36 [P3] fixed - The spec still says broken JSON is answered with the refusal shape
+### F-36 [P3] closed - The spec still says broken JSON is answered with the refusal shape
 
 **File:** blueprint/context/current-feature.md:259
 **Found:** 2026-09-30 by /audit (scope: step 3b.1; lens: quality)
@@ -197,8 +199,9 @@ steps and `/complete` read, does not.
 **Resolution:**
 Carried to step 3b.2 on Frank's call, 2026-09-30. Written into that step's plan in the spec.
 Repaired by step 3b.2, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.2's review to close. The spec's Data / contracts and step 3b.1's route line now say malformed JSON is Hono's own plain-text 400 and a missing or wrong body is `400 bad_request`.
+Closed 2026-09-30 by /audit independent (scope: step 3b.2, re-examining ea23e45): the contract now matches hono 4.13.8 `validator/validator.js:14-21` (a JSON content type with an unparsable body throws `HTTPException(400, "Malformed JSON in request body")`; no JSON content type leaves `{}`, which the schema refuses as `bad_request`). One nuance, not worth reopening: an empty body sent as `application/json` is also Hono's plain 400, since `c.req.json()` fails on it.
 
-### F-37 [P3] fixed - No test proves the /admin routes carry the dashboard's guards
+### F-37 [P3] closed - No test proves the /admin routes carry the dashboard's guards
 
 **File:** backend/routes/admin-routes.test.ts:120
 **Found:** 2026-09-30 by /audit (scope: step 3b.1; lens: tests)
@@ -213,6 +216,7 @@ refused (403) and makes nothing.
 **Resolution:**
 Carried to step 3b.2 on Frank's call, 2026-09-30. Written into that step's plan in the spec.
 Repaired by step 3b.2, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.2's review to close. Two route tests: a 201 answer carries `Cache-Control: no-store`, and a form-encoded post from another origin with the platform admin's cookie is 403 and makes no login. Shown able to fail: without the `/admin/*` guard line in `app.ts`, both failed.
+Closed 2026-09-30 by /audit independent (scope: step 3b.2, re-examining ea23e45): `admin-routes.test.ts:395-415` asserts `Cache-Control: no-store` on a 201 and a 403 with no login for a cross-origin form post carrying the platform admin's cookie. The 403 can only come from the origin check: without `app.ts:22` the form body skips Hono's JSON validator (`validator.js:14`, non-JSON content type leaves `{}`) and the schema answers 400, so the test is not satisfied by any other guard.
 
 ### F-38 [P2] fixed - Two overlapping setups for one email can give the client two businesses, or delete the owner of a business reported as made
 
@@ -245,8 +249,9 @@ setups for one email and asserts one business, one owner, and no 201 for a
 deleted client.
 **Resolution:**
 Fixed 2026-09-30 on Frank's yes, in the step 3b.1 review-fix commit. `withSetupLocks` holds two Postgres advisory locks on one reserved connection for the whole setup, email first then address, so setups for one email (or one address) run one after another and the second sees the first's finished login as `email_taken`. The login clean-up also deletes only while the login belongs to no business (`removeLoginWithoutBusiness`); with the locks no request can reach that case, so no test exercises that guard. Two route tests hold the first setup 300 ms and start a second for the same email 50 ms later, with the same business and with another: one 201, one 409, one business, one owner. Shown able to fail by removing the locks: both failed. Waits for the next review to close.
+Not closed 2026-09-30 by /audit independent (scope: step 3b.2, re-examining 76ef009 and ea23e45): the original race is gone (the two overlap tests pass, and setups for one email now run one after another), but the repair introduced a new defect: each setup holds one of the pool's ten connections while it waits for, and then holds, its locks, so ten setups at once leave none for their own queries and the whole API stops answering (F-43, reproduced). F-42 is also a defect of this repair. Stays `fixed` until F-43 is resolved.
 
-### F-39 [P3] fixed - Finishing an unfinished setup ignores the client name sent with it
+### F-39 [P3] closed - Finishing an unfinished setup ignores the client name sent with it
 
 **File:** backend/lib/admin/provision-client.ts:40
 **Found:** 2026-09-30 by /audit independent (scope: step 3b.1; lens: quality)
@@ -264,6 +269,7 @@ and assert the chosen behaviour in the reuse test.
 **Resolution:**
 Carried to step 3b.2 on Frank's call, 2026-09-30. Written into that step's plan in the spec.
 Repaired by step 3b.2, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.2's review to close. `renameLogin` (`provision-client.ts`) writes the name typed now over the reused login's, and the answer returns it; the reuse test checks both. Shown able to fail: without the rename, the test failed.
+Closed 2026-09-30 by /audit independent (scope: step 3b.2, re-examining ea23e45): `renameLogin` (`provision-client.ts:121-125`) runs only on the reuse path, under the email lock, before the business is made, and the answer is built from its return; `admin-routes.test.ts:213-217` asserts the new name in both the answer and the stored login. A rename that survives a later failed business is intended (the next try keeps the correction).
 
 ### F-40 [P3] open - Two shared field schemas live in files named after other schemas
 
@@ -285,7 +291,7 @@ name message so it reads right on both forms.
 **Resolution:**
 Carried to step 3b.3, which deletes the create page the business-name rule's file is named after on Frank's call, 2026-09-30. Written into that step's plan in the spec.
 
-### F-41 [P3] fixed - A database error inside a setup may print the client's email in the API's log
+### F-41 [P3] closed - A database error inside a setup may print the client's email in the API's log
 
 **File:** backend/lib/admin/provision-client.ts:61
 **Found:** 2026-09-30 by /audit independent (scope: step 3b.1; lens: security), raised as a remaining risk and recorded by the builder
@@ -300,3 +306,120 @@ for the calendar) and rethrow a plain error without the query's parameters.
 **Resolution:**
 Carried to step 3b.2 on Frank's call, 2026-09-30. Written into that step's plan in the spec.
 Confirmed 2026-09-30 by a route test before any repair: a real duplicate-key error inside the login's creation reached Hono's error log as `Failed query: insert into "user" ...` with the client's email in its values. Repaired by step 3b.2, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.2's review to close. `provisionClient` now logs `[admin] a client setup failed: <safe reason>` (the database error reduced to its Postgres code by `safeErrorReason`, moved from `lib/calendar` to `lib/errors` now that two areas use it) and rethrows a plain error. The same test now passes; with the raw error rethrown it fails again.
+Closed 2026-09-30 by /audit independent (scope: step 3b.2, re-examining ea23e45): re-shown by planting `throw error` back in `provisionClient`'s catch (the F-41 test failed, 21 of 22 passed) and restoring it byte for byte. Every error out of the locked setup passes through that one catch (`provision-client.ts:30-37`), drizzle 0.45.2's `DrizzleQueryError` message starts with "Failed query" (`errors.js:12`) so `safeErrorReason` keeps only its Postgres code, and Better Auth logs nothing itself on a server-side `auth.api` call (its router `onError`, `api/index.mjs:212`, runs only for HTTP).
+
+### F-42 [P3] fixed - If releasing the setup locks fails, the reserved connection is never handed back and the real error is lost
+
+**File:** backend/lib/admin/provision-client.ts:52
+**Found:** 2026-09-30 by /audit (scope: step 3b.2 and step 3b.1's fixes; lens: quality, performance)
+**Why it matters:** `withSetupLocks` runs `pg_advisory_unlock_all()` and then
+`connection.release()` in one `finally`. If the unlock query throws (the
+connection dropped mid-setup), `release()` never runs, so that reserved
+connection may never return to the pool of ten, and the unlock error replaces
+whatever error the setup itself threw. Needs a dropped connection, so rare.
+**Suggested fix:** Release in its own `finally` (or `try { unlock } finally {
+release }`), and do not let an unlock failure replace the setup's own error; a
+dropped connection already frees its advisory locks.
+**Resolution:**
+Independent review 2026-09-30 (/audit independent, scope: step 3b.2): agreed, P3, with one correction. A dropped connection does go back: postgres.js 3.4.9's `onclose` (`cjs/src/index.js:421-427`) moves it to the closed list and clears `reserved`, so the pool reopens it. What stands is the error masking, and one case worse than described: when the setup itself succeeded, a failing unlock turns its 201 into a 500, and the retry the platform admin then makes is `email_taken`. Release and unlock should never be able to replace the setup's own result.
+Fixed 2026-09-30 on Frank's yes, in the step 3b.2 review-fix commit; waits for step 3b.3's review to close. `releaseSetupLocks` runs the unlock in its own try, logs a failure through `safeErrorReason` without throwing, and always releases the connection in `finally`, so an unlock failure can neither replace the setup's own error nor turn a finished setup into a 500. No test forces an unlock failure; checked by reading.
+
+### F-43 [P2] fixed - Ten setups at once take every pooled connection and freeze the whole API
+
+**File:** backend/lib/admin/provision-client.ts:45
+**Found:** 2026-09-30 by /audit independent (scope: step 3b.2; lens: performance)
+**Why it matters:** `withSetupLocks` reserves one of the pool's ten connections
+(`database.ts:19`, `max: 10`) for the whole setup, including while it waits on
+`pg_advisory_lock`, but the setup's own queries and Better Auth's run on other
+pool connections. With ten setups in flight (any emails), all ten connections
+are reserved, every setup's next query waits for a free one, none is ever
+released, and every other request in the API (sign-in, `/me`, the public
+booking pages of every tenant) waits behind them until the process restarts.
+Nothing times out. Reproduced against the local database with a throwaway probe
+calling `provisionClient` ten times at once: nothing finished in 8 s and a plain
+`select` on `db` then hung too; with nine, all nine answered 201. The probe was
+removed and left no rows or advisory locks. Only the platform admin can call
+the route and the form will disable its button, so it needs a script, a retry
+loop or a buggy client, but the cost is a full outage for every tenant, and the
+same holds for setups queued on one email, each holding a connection while it
+waits.
+**Suggested fix:** Keep the lock connection out of the query pool: a separate
+small `postgres()` client used only for the setup locks, or a cap on setups in
+flight below the pool size (one at a time is plenty for one platform admin),
+with a bounded wait (`pg_try_advisory_lock` in a short retry loop, or
+`lock_timeout` on the lock connection) so a stuck setup cannot queue others
+forever. Add a test that starts more setups at once than the pool holds and
+asserts they all answer.
+**Resolution:**
+Fixed 2026-09-30 on Frank's yes, in the step 3b.2 review-fix commit; waits for step 3b.3's review to close. The locks now take their connection from `advisoryLockClient` (`database.ts`, two connections of its own), never the API's pool of ten, so waiting setups queue there. A route test runs 14 setups at once: all 201, and `/health` still answers. Shown able to fail: with the lock back on `db.$client.reserve()`, that test timed out at 15 s and every test after it hung, the freeze reproduced.
+
+### F-44 [P3] fixed - A failed clean-up leaves a half-made setup that no retry can finish, and hides the real error
+
+**File:** backend/lib/admin/provision-client.ts:90
+**Found:** 2026-09-30 by /audit independent (scope: step 3b.2; lens: quality)
+**Why it matters:** The spec promises "A setup is never half made". The
+promise holds only while the clean-up's own queries work. The likeliest reason
+`createOrganization` fails after saving the business is a database fault, and
+then `removeBusinessMadeFor` (unguarded) usually fails too: its error replaces
+the original one in the log, and the business stays with the client as its
+owner and possibly no first person. Every retry is then `409 email_taken`,
+because the login now belongs to a business, and nothing in the product can
+remove it before feature 23. Not introduced by the F-35 repair (the earlier
+code ended the same way under a database fault), and it needs a database fault
+mid-setup, so P3.
+**Suggested fix:** Write the limit into the spec's "A setup is never half
+made" contract (it holds unless the database fails during the clean-up; the
+fix is then by hand), and log the setup's own safe reason before the clean-up
+runs, so a failing clean-up cannot hide it.
+**Resolution:**
+Fixed 2026-09-30 on Frank's yes, in the step 3b.2 review-fix commit; waits for step 3b.3's review to close. The clean-up runs in its own try: a failure there is logged with a safe reason and the setup's own error is the one rethrown. The spec's "A setup is never half made" now states the limit: if the clean-up itself fails, the half-made setup stays, a retry is `email_taken`, and it is removed by hand until feature 23. No test forces a failing clean-up; checked by reading.
+
+### F-45 [P3] fixed - The overlap tests start the second setup on a fixed 50 ms timer, not once the first holds the lock
+
+**File:** backend/routes/admin-routes.test.ts:331
+**Found:** 2026-09-30 by /audit independent (scope: step 3b.2; lens: tests)
+**Why it matters:** Both overlap tests assume the first request has taken its
+locks within 50 ms (session lookup, a connection reserved, two lock queries,
+two reads, `createUser`). If it has not, on a cold pool or a busy machine, the
+second request takes the locks first, the 300 ms hold (a `mockImplementationOnce`)
+lands on it instead, and the first answers 409: the tests then fail on
+`first.status` although the code is right. They pass today on the laptop.
+**Suggested fix:** Start the second setup from inside the mocked
+`createOrganization` (resolve a promise when the mock is entered, then wait on
+it), so it always overlaps a first setup that already holds both locks.
+**Resolution:**
+Fixed 2026-09-30 on Frank's yes, in the step 3b.2 review-fix commit; waits for step 3b.3's review to close. The overlap tests now send the second setup only once the first is inside its locks (the held `createOrganization` signals a promise the test awaits), with no fixed timer.
+
+### F-46 [P3] fixed - The new tests carry finding and step numbers in their comments and names
+
+**File:** backend/routes/admin-routes.test.ts:269
+**Found:** 2026-09-30 by /audit independent (scope: step 3b.2; lens: quality)
+**Why it matters:** `coding-standards.md` (Comments, "The balance") keeps
+history out of code, naming step and finding numbers. This delta adds `// F-35:`
+(`:269`), `// F-38:` (`:315`), `// F-41:` (`:369`) and the describe names "(F-37)"
+(`:395`) and "(step 3b.2)" (`:417`). The ledger is archived and reset by
+`/complete`, so these numbers point at nothing a reader can find later.
+**Suggested fix:** Keep the plain-words part of each comment and name, drop the
+numbers ("the old doors are closed", "the /admin routes keep the dashboard's
+guards").
+**Resolution:**
+Fixed 2026-09-30 on Frank's yes, in the step 3b.2 review-fix commit; waits for step 3b.3's review to close. No finding or step number is left in `admin-routes.test.ts` or `provision-client.ts`; the two describe blocks are named for what they prove.
+
+### F-47 [P3] open - The spec says accepting an invitation is refused, but Better Auth checks no role for it
+
+**File:** blueprint/context/current-feature.md:328
+**Found:** 2026-09-30 by /audit independent (scope: step 3b.2; lens: security)
+**Why it matters:** Data / contracts says `invite-member` "(and accepting
+one): refused, no role holds an invitation permission". Better Auth 1.7.5's
+`/organization/accept-invitation` checks only that the invitation is pending,
+unexpired and addressed to the signed-in user (`crud-invites.mjs:264-268`), never
+the inviter's or anyone's role. Closing `invitation` stops new invitations, so
+accepting is closed in practice only once no pending one exists. An invitation
+made before this change stays acceptable until it expires (48 hours by
+default), and its acceptance puts a client in a second business. Real clients
+cannot reach the product yet, so the live risk is close to nil.
+**Suggested fix:** Reword the contract line (accepting is closed because no
+invitation can be made any more), and before the first client-facing deploy
+confirm the production `invitation` table holds no pending row.
+**Resolution:**
+Carried on Frank's call, 2026-09-30: checked on the live database before the first client-facing deploy (the `invitation` table must be empty, or its rows cancelled). Nothing in code to change.

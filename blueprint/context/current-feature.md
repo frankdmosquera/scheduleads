@@ -310,6 +310,14 @@ No migration. Every table already exists.
   only while it belongs to no business. A login reused from an unfinished
   setup is kept for the next try. `409 slug_taken` is answered only when a
   business with someone else in it holds the address.
+- The limit: if that clean-up itself fails (the database failing twice in
+  one setup), the half-made setup stays, logged, and a retry is
+  `email_taken`. It is removed by hand until the admin area (feature 23) can
+  delete a client. The setup's own error is the one reported, never the
+  clean-up's.
+- The locks use two Postgres connections of their own
+  (`advisoryLockClient`), never the API's ten, so any number of waiting
+  setups leaves the rest of the API answering.
 
 **The server-side bypass, written down where it is used**
 

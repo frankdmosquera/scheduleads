@@ -18,7 +18,7 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the admin route tests");
 
 // Imported after the env is loaded: they read it the moment they load.
 const { app } = await import("../app.js");
-const { db } = await import("../database.js");
+const { advisoryLockClient, db } = await import("../database.js");
 const { appOrigin, auth } = await import("../lib/auth/auth-server.js");
 const { invitation, member, organization, resource, user } =
   await import("@scheduleads-app/shared/db");
@@ -114,6 +114,7 @@ afterAll(async () => {
   await db.delete(organization).where(like(organization.slug, `test-provision-%-${tag}`));
   await db.delete(user).where(like(user.email, `admin-%-${tag}@example.com`));
   await db.$client.end();
+  await advisoryLockClient.end();
 });
 
 describe("POST /admin/clients", () => {
@@ -266,7 +267,7 @@ describe("POST /admin/clients", () => {
       expect.objectContaining({ id: leftOver.id }),
     ]);
   });
-  // F-35: Better Auth saves the business, then fails (here, right after the save).
+  // Better Auth saves the business, then something fails (here, right after the save).
   test("a failure after the business is saved removes the business and the new login", async () => {
     const original = auth.api.createOrganization;
     const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -312,26 +313,31 @@ describe("POST /admin/clients", () => {
     expect((await setUp(body, platformAdmin.email)).status).toBe(201); // the retry finishes it
   });
 
-  // F-38: a double click. The first setup is held mid-way so the second truly overlaps it.
-  const slowFirstSetup = () => {
+  // A double click. The first setup is held mid-way, inside its locks, and the second is
+  // only sent once the first is in there, so the two truly overlap on any machine.
+  const holdFirstSetup = () => {
     const original = auth.api.createOrganization;
-    return vi
+    let firstIsInside: () => void = () => {};
+    const inside = new Promise<void>((resolve) => (firstIsInside = resolve));
+    const spy = vi
       .spyOn(auth.api, "createOrganization")
       .mockImplementationOnce(async (call: Parameters<typeof original>[0]) => {
+        firstIsInside();
         await new Promise((resolve) => setTimeout(resolve, 300));
         return original(call);
       });
+    return { inside, spy };
   };
 
   test("two overlapping setups for one email and one business make one business with its owner", async () => {
-    const slow = slowFirstSetup();
+    const held = holdFirstSetup();
+    const firstSent = setUp(client("double"), platformAdmin.email);
+    await held.inside;
     const [first, second] = await Promise.all([
+      firstSent,
       setUp(client("double"), platformAdmin.email),
-      new Promise<Response>((resolve) =>
-        setTimeout(() => resolve(setUp(client("double"), platformAdmin.email)), 50)
-      ),
     ]);
-    slow.mockRestore();
+    held.spy.mockRestore();
 
     expect(first.status).toBe(201);
     expect(second.status).toBe(409);
@@ -345,20 +351,14 @@ describe("POST /admin/clients", () => {
   });
 
   test("two overlapping setups for one email and two businesses give the client only one", async () => {
-    const slow = slowFirstSetup();
+    const held = holdFirstSetup();
+    const firstSent = setUp(client("twice-a"), platformAdmin.email);
+    await held.inside;
     const [first, second] = await Promise.all([
-      setUp(client("twice-a"), platformAdmin.email),
-      new Promise<Response>((resolve) =>
-        setTimeout(
-          () =>
-            resolve(
-              setUp({ ...client("twice-b"), clientEmail: email("twice-a") }, platformAdmin.email)
-            ),
-          50
-        )
-      ),
+      firstSent,
+      setUp({ ...client("twice-b"), clientEmail: email("twice-a") }, platformAdmin.email),
     ]);
-    slow.mockRestore();
+    held.spy.mockRestore();
 
     expect(first.status).toBe(201);
     expect(second.status).toBe(409);
@@ -366,7 +366,15 @@ describe("POST /admin/clients", () => {
     expect(await db.select().from(member).where(eq(member.userId, login.id))).toHaveLength(1);
     expect(await businessesWith(slugOf("twice-b"))).toHaveLength(0);
   });
-  // F-41: a real database error inside the login's creation must not print the email.
+
+  test("more setups at once than the API has connections all finish, and the API keeps answering", async () => {
+    const many = Array.from({ length: 14 }, (_, n) => client(`crowd-${n}`));
+    const answers = await Promise.all(many.map((body) => setUp(body, platformAdmin.email)));
+    expect(answers.map((answer) => answer.status)).toEqual(many.map(() => 201));
+    expect((await app.request("/health")).status).toBe(200);
+  }, 15_000);
+
+  // A real database error inside the login's creation must not print the client's email.
   test("a database error while making the login leaves no email in the log", async () => {
     const logged: string[] = [];
     const quiet = vi.spyOn(console, "error").mockImplementation((...parts) => {
@@ -392,7 +400,7 @@ describe("POST /admin/clients", () => {
   });
 });
 
-describe("the /admin routes keep the dashboard's guards (F-37)", () => {
+describe("the /admin routes keep the dashboard's guards", () => {
   test("an answer is never cached", async () => {
     const response = await setUp(client("cached"), platformAdmin.email);
     expect(response.status).toBe(201);
@@ -414,7 +422,7 @@ describe("the /admin routes keep the dashboard's guards (F-37)", () => {
   });
 });
 
-describe("the old doors are closed (step 3b.2)", () => {
+describe("Better Auth's own ways into a business are closed", () => {
   test("the platform admin's own Better Auth create is refused and makes nothing", async () => {
     const response = await app.request("/api/auth/organization/create", {
       method: "POST",

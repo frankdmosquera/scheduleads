@@ -7,7 +7,7 @@ import { member, organization, user } from "@scheduleads-app/shared/db";
 import { toSlug } from "@scheduleads-app/shared/helpers";
 import type { ProvisionClientInputType } from "@scheduleads-app/shared/zod-validation";
 
-import { db } from "../../database.js";
+import { advisoryLockClient, db } from "../../database.js";
 import { auth } from "../auth/auth-server.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 
@@ -39,17 +39,31 @@ export async function provisionClient(
 
 // One setup per email and per address at a time. Without it, a double click's second setup
 // would see the first one's new login, still without a business, as an unfinished setup and
-// take it over. Advisory locks live on one connection, so one is held for the whole setup;
-// the locks go when it is released, or when the connection dies with the API.
+// take it over. Advisory locks live on one connection, so one is held for the whole setup,
+// from the lock pool, never the API's own; the locks go when it is released, or when the
+// connection dies.
 async function withSetupLocks<T>(email: string, slug: string, run: () => Promise<T>): Promise<T> {
-  const connection = await db.$client.reserve();
+  const connection = await advisoryLockClient.reserve();
   try {
     // Always email first, then address, so two setups can never wait on each other.
     await connection`select pg_advisory_lock(hashtextextended(${`setup-email:${email}`}, 0))`;
     await connection`select pg_advisory_lock(hashtextextended(${`setup-slug:${slug}`}, 0))`;
     return await run();
   } finally {
+    await releaseSetupLocks(connection);
+  }
+}
+
+// A failed unlock is logged, never thrown: it must not turn a finished setup into an error.
+// If the connection dropped, its locks are already gone.
+async function releaseSetupLocks(
+  connection: Awaited<ReturnType<typeof advisoryLockClient.reserve>>
+): Promise<void> {
+  try {
     await connection`select pg_advisory_unlock_all()`;
+  } catch (error) {
+    console.error(`[admin] could not release the setup locks: ${safeErrorReason(error)}`);
+  } finally {
     connection.release();
   }
 }
@@ -87,8 +101,16 @@ async function setUp(
     // Better Auth saves the business, its owner and its first person as separate writes, so
     // a failure can come after the business exists. Everything this setup made goes again;
     // a login reused from an earlier unfinished setup stays, ready for the next try.
-    const takenBySomeoneElse = await removeBusinessMadeFor(slug, client.id);
-    if (!unfinishedLogin) await removeLoginWithoutBusiness(client.id);
+    let takenBySomeoneElse = false;
+    try {
+      takenBySomeoneElse = await removeBusinessMadeFor(slug, client.id);
+      if (!unfinishedLogin) await removeLoginWithoutBusiness(client.id);
+    } catch (cleanUpError) {
+      // Logged, and the setup's own error is the one that goes on.
+      console.error(
+        `[admin] clean-up after a failed setup failed: ${safeErrorReason(cleanUpError)}`
+      );
+    }
 
     if (takenBySomeoneElse) return { ok: false, code: "slug_taken" };
     throw error;
