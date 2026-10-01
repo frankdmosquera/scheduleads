@@ -3,6 +3,7 @@
 
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -12,6 +13,7 @@ import { CalendarConnectionCard } from "@/components/calendar/calendar-connectio
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { fetchMe, type MeResultType } from "@/lib/api-client";
+import { isPlatformAdmin } from "@/lib/is-platform-admin";
 
 export type OrganizationType = { id: string; name: string; slug: string };
 
@@ -95,34 +97,41 @@ function SignedOut() {
   );
 }
 
-// Signed in, but no single business picked. Two cases: no businesses at all (go create
-// one), or several (the API won't guess, so the user picks here).
+// Signed in, but no single business picked. Two cases: no businesses at all (the agency has
+// not set one up yet; the platform admin goes to set up a client), or several (the API
+// won't guess, so the user picks here).
 function PickOrganization({ onPicked }: { onPicked: () => void }) {
   const router = useRouter();
   const [organizations, setOrganizations] = useState<OrganizationType[] | null>(null);
+  const [noBusiness, setNoBusiness] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let live = true;
 
-    authClient.organization.list().then(({ data, error }) => {
-      if (!live) return;
+    Promise.all([authClient.organization.list(), authClient.getSession()]).then(
+      ([{ data, error }, session]) => {
+        if (!live) return;
 
-      if (error) {
-        setRefusal(error.message ?? "Could not load your businesses.");
-        setOrganizations([]);
-        return;
+        if (error) {
+          setRefusal(error.message ?? "Could not load your businesses.");
+          setOrganizations([]);
+          return;
+        }
+
+        const list = data ?? [];
+        if (list.length === 0) {
+          if (isPlatformAdmin(session.data?.user)) {
+            router.replace("/admin/clients/new");
+            return;
+          }
+          setNoBusiness(true);
+        }
+
+        setOrganizations(list);
       }
-
-      const list = data ?? [];
-      if (list.length === 0) {
-        router.replace("/create-organization");
-        return;
-      }
-
-      setOrganizations(list);
-    });
+    );
 
     return () => {
       live = false;
@@ -147,6 +156,18 @@ function PickOrganization({ onPicked }: { onPicked: () => void }) {
     return (
       <AuthCard title="One moment">
         <p className="text-sm text-muted-foreground">Looking up your businesses…</p>
+      </AuthCard>
+    );
+  }
+
+  if (noBusiness) {
+    return (
+      <AuthCard
+        title="Your login has no business yet"
+        lede="The agency sets up your business for you. Get in touch with them and it will be here the next time you sign in."
+        footer={<SignOutLink />}
+      >
+        <p className="text-sm text-muted-foreground">There is nothing to show until then.</p>
       </AuthCard>
     );
   }
@@ -191,6 +212,8 @@ function SignedIn({
   me: Extract<MeResultType, { state: "ok" }>["me"];
   onSignedOut: () => void;
 }) {
+  const { data: session } = authClient.useSession();
+
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-16">
       <div className="w-full max-w-2xl">
@@ -226,7 +249,15 @@ function SignedIn({
 
         <CalendarConnectionCard />
 
-        <div className="mt-4 text-center text-sm text-muted-foreground">
+        <div className="mt-4 flex justify-center gap-4 text-sm text-muted-foreground">
+          {isPlatformAdmin(session?.user) ? (
+            <Link
+              href="/admin/clients/new"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              Set up a client
+            </Link>
+          ) : null}
           <SignOutLink onSignedOut={onSignedOut} />
         </div>
       </div>

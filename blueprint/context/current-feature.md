@@ -207,7 +207,7 @@ merges with a merge commit on Frank's yes.
     a forced `createUser` failure leaves no email in the log (F-41). F-16,
     F-36, F-37, F-39 and F-41 set to `fixed`.
 
-- [ ] **3b.3 The admin screen, and nobody stuck.** The platform admin sets up
+- [x] **3b.3 The admin screen, and nobody stuck.** The platform admin sets up
   a client in the browser; a login with no business is told what to do.
   - `npx shadcn add input label` into `frontend/components/ui/`. If the CLI
     wants to install any package, stop and ask before it does.

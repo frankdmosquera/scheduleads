@@ -7,7 +7,7 @@
 > finding is `open` or `fixed`, then archives resolved findings with the work
 > and resets this file.
 
-### F-12 [P2] open - Comments still describe open signup, self-serve business creation and server-side validation the code does not have
+### F-12 [P2] fixed - Comments still describe open signup, self-serve business creation and server-side validation the code does not have
 
 **File:** frontend/app/sign-in/page.tsx:17
 **Found:** 2026-09-23 by /audit (scope: current; lens: quality)
@@ -46,8 +46,9 @@ until a route owned by this API validates with them, and `plan` silently
 discarded on both create and update.
 **Resolution:**
 Step 3b.2, 2026-09-30: the backend and shared lines are corrected (`auth-server.ts` sign-up and hook comments, `sign-in/page.tsx:36`, which no longer claims the API uses the same schema). The `plan` comment already matched the code. Left for step 3b.3: `app/page.tsx:98` ("go create one") and the create page, which 3b.3 deletes.
+Repaired by step 3b.3, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.3's review to close. The last line, `app/page.tsx`'s "go create one", now describes the no-business card and the platform admin's way to set up a client; the create page it pointed at is deleted. No comment in the touched files describes open signup or self-serve business creation.
 
-### F-13 [P3] open - A signed-in user with no business is sent to a create form that can only refuse them, with no way to sign out
+### F-13 [P3] fixed - A signed-in user with no business is sent to a create form that can only refuse them, with no way to sign out
 
 **File:** frontend/app/page.tsx:155
 **Found:** 2026-09-23 by /audit (scope: current; lens: quality)
@@ -67,6 +68,7 @@ live; Frank's walkthrough saw the refusal message itself for
 render an `AuthCard` saying the account has no business yet and to contact the
 agency, with `SignOutLink`. Add a sign-out control to the create page as well.
 **Resolution:**
+Repaired by step 3b.3, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.3's review to close. `PickOrganization` (`app/page.tsx`) shows an ordinary login with no business the card "Your login has no business yet" with Sign out, and sends the platform admin to `/admin/clients/new`; `/create-organization` is deleted. Checked in the browser against the local API: a test client whose business was removed saw the card and signed out.
 
 ### F-14 [P3] open - The sign-in and create-business forms bypass the project's form standard without saying so
 
@@ -86,6 +88,7 @@ react-hook-form (both already dependencies), or record the choice and its
 reason in the spec preamble and build log so the next form knows which pattern
 is the standard.
 **Resolution:**
+Step 3b.3, 2026-09-30: the create form is deleted, and the new Set up a client form follows the Forms standard (shadcn `Input` and `Label`, react-hook-form's `Controller`, the shared schema through `zodResolver`). Only the sign-in form still uses the hand-written `Field`; out of feature 3b's scope.
 
 ### F-16 [P3] closed - Better Auth endpoints already open two paths the spec reserves for later items
 
@@ -271,7 +274,7 @@ Carried to step 3b.2 on Frank's call, 2026-09-30. Written into that step's plan 
 Repaired by step 3b.2, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.2's review to close. `renameLogin` (`provision-client.ts`) writes the name typed now over the reused login's, and the answer returns it; the reuse test checks both. Shown able to fail: without the rename, the test failed.
 Closed 2026-09-30 by /audit independent (scope: step 3b.2, re-examining ea23e45): `renameLogin` (`provision-client.ts:121-125`) runs only on the reuse path, under the email lock, before the business is made, and the answer is built from its return; `admin-routes.test.ts:213-217` asserts the new name in both the answer and the stored login. A rename that survives a later failed business is intended (the next try keeps the correction).
 
-### F-40 [P3] open - Two shared field schemas live in files named after other schemas
+### F-40 [P3] fixed - Two shared field schemas live in files named after other schemas
 
 **File:** packages/shared/zod-validation/organization-validation-schemas/create-organization-validation-schema.ts:6
 **Found:** 2026-09-30 by /audit independent (scope: step 3b.1; lens: quality)
@@ -290,6 +293,7 @@ area folder, export them through `index.ts`, and remove
 name message so it reads right on both forms.
 **Resolution:**
 Carried to step 3b.3, which deletes the create page the business-name rule's file is named after on Frank's call, 2026-09-30. Written into that step's plan in the spec.
+Repaired by step 3b.3, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.3's review to close. `businessNameValidationSchema` lives in `business-name-validation-schema.ts` (the old create-organization file, renamed; `createOrganizationValidationSchema` is gone with its page) and `emailAddressValidationSchema` in `email-address-validation-schema.ts`; the business-name message reads "Enter the business's name."
 
 ### F-41 [P3] closed - A database error inside a setup may print the client's email in the API's log
 

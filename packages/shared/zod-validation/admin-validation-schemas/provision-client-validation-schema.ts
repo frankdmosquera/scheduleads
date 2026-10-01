@@ -3,8 +3,8 @@
 
 import { z } from "zod";
 
-import { emailAddressValidationSchema } from "../auth-validation-schemas/sign-in-email-validation-schema.js";
-import { businessNameValidationSchema } from "../organization-validation-schemas/create-organization-validation-schema.js";
+import { emailAddressValidationSchema } from "../auth-validation-schemas/email-address-validation-schema.js";
+import { businessNameValidationSchema } from "../organization-validation-schemas/business-name-validation-schema.js";
 
 export const provisionClientValidationSchema = z.object({
   businessName: businessNameValidationSchema,

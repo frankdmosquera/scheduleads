@@ -1,5 +1,5 @@
-// Frontend components: the centred card, input and notice shared by sign-in,
-// create-organization and every refusal screen.
+// Frontend components: the centred card, input and notice shared by sign-in, setting up a
+// client and every refusal screen.
 
 import type { ReactNode } from "react";
 
