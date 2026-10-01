@@ -12,8 +12,8 @@ export const user = pgTable("user", {
   createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).notNull().defaultNow(),
 
-  // The platform admin role (Frank). Set by hand in the database only: never add a
-  // route, form or action that writes it.
+  // The platform admin role (Frank). Never set by a sign-in or a form of ours: only the
+  // platform admin can, through Better Auth's admin plugin, or by hand in the database.
   role: text("role"),
   banned: boolean("banned").default(false),
   banReason: text("banReason"),

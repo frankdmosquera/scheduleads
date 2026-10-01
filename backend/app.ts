@@ -10,6 +10,7 @@ import { dashboardCsrfMiddleware } from "./middleware/dashboard-middleware/dashb
 import { dashboardNoStoreMiddleware } from "./middleware/dashboard-middleware/dashboard-no-store-middleware.js";
 import { publicCorsMiddleware } from "./middleware/public-middleware/public-cors-middleware.js";
 import { requireKnownSubscriptionMiddleware } from "./middleware/subscription-middleware/require-known-subscription-middleware.js";
+import { adminRoutes } from "./routes/admin-routes.js";
 import { calendarRoutes } from "./routes/calendar-routes.js";
 import { publicBookingLinksRoutes } from "./routes/public-booking-links-routes.js";
 
@@ -18,6 +19,7 @@ export const app = new Hono()
   .use("/api/auth/*", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
   .use("/me", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
   .use("/calendar/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
+  .use("/admin/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
   // Anyone may read these, never with the login cookie: a CORS rule of their own.
   .use("/public/*", publicCorsMiddleware)
 
@@ -46,6 +48,7 @@ export const app = new Hono()
     });
   })
 
+  .route("/admin", adminRoutes)
   .route("/calendar", calendarRoutes)
   .route("/public", publicBookingLinksRoutes)
 

@@ -3,15 +3,18 @@
 
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { AuthCard, Notice } from "@/components/auth-card";
 import { BookingLinksList } from "@/components/booking-links/booking-links-list";
 import { CalendarConnectionCard } from "@/components/calendar/calendar-connection-card";
+import { SignOutLink } from "@/components/sign-out-link";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { fetchMe, type MeResultType } from "@/lib/api-client";
+import { isPlatformAdmin } from "@/lib/is-platform-admin";
 
 export type OrganizationType = { id: string; name: string; slug: string };
 
@@ -95,34 +98,41 @@ function SignedOut() {
   );
 }
 
-// Signed in, but no single business picked. Two cases: no businesses at all (go create
-// one), or several (the API won't guess, so the user picks here).
+// Signed in, but no single business picked. Two cases: no businesses at all (the agency has
+// not set one up yet; the platform admin goes to set up a client), or several (the API
+// won't guess, so the user picks here).
 function PickOrganization({ onPicked }: { onPicked: () => void }) {
   const router = useRouter();
   const [organizations, setOrganizations] = useState<OrganizationType[] | null>(null);
+  const [noBusiness, setNoBusiness] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let live = true;
 
-    authClient.organization.list().then(({ data, error }) => {
-      if (!live) return;
+    Promise.all([authClient.organization.list(), authClient.getSession()]).then(
+      ([{ data, error }, session]) => {
+        if (!live) return;
 
-      if (error) {
-        setRefusal(error.message ?? "Could not load your businesses.");
-        setOrganizations([]);
-        return;
+        if (error) {
+          setRefusal(error.message ?? "Could not load your businesses.");
+          setOrganizations([]);
+          return;
+        }
+
+        const list = data ?? [];
+        if (list.length === 0) {
+          if (isPlatformAdmin(session.data?.user)) {
+            router.replace("/admin/clients/new");
+            return;
+          }
+          setNoBusiness(true);
+        }
+
+        setOrganizations(list);
       }
-
-      const list = data ?? [];
-      if (list.length === 0) {
-        router.replace("/create-organization");
-        return;
-      }
-
-      setOrganizations(list);
-    });
+    );
 
     return () => {
       live = false;
@@ -147,6 +157,18 @@ function PickOrganization({ onPicked }: { onPicked: () => void }) {
     return (
       <AuthCard title="One moment">
         <p className="text-sm text-muted-foreground">Looking up your businesses…</p>
+      </AuthCard>
+    );
+  }
+
+  if (noBusiness) {
+    return (
+      <AuthCard
+        title="Your login has no business yet"
+        lede="The agency sets up your business for you. Get in touch with them and it will be here the next time you sign in."
+        footer={<SignOutLink />}
+      >
+        <p className="text-sm text-muted-foreground">There is nothing to show until then.</p>
       </AuthCard>
     );
   }
@@ -191,6 +213,8 @@ function SignedIn({
   me: Extract<MeResultType, { state: "ok" }>["me"];
   onSignedOut: () => void;
 }) {
+  const { data: session } = authClient.useSession();
+
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-16">
       <div className="w-full max-w-2xl">
@@ -226,7 +250,15 @@ function SignedIn({
 
         <CalendarConnectionCard />
 
-        <div className="mt-4 text-center text-sm text-muted-foreground">
+        <div className="mt-4 flex justify-center gap-4 text-sm text-muted-foreground">
+          {isPlatformAdmin(session?.user) ? (
+            <Link
+              href="/admin/clients/new"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              Set up a client
+            </Link>
+          ) : null}
           <SignOutLink onSignedOut={onSignedOut} />
         </div>
       </div>
@@ -251,25 +283,5 @@ function OrgMark({ name }: { name: string }) {
     <span className="grid size-9 flex-none place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
       {name.trim().charAt(0).toUpperCase() || "?"}
     </span>
-  );
-}
-
-// On every signed-in screen, including the refusals, so nobody is ever stuck.
-function SignOutLink({ onSignedOut }: { onSignedOut?: () => void }) {
-  const router = useRouter();
-
-  return (
-    <button
-      type="button"
-      className="underline underline-offset-2 hover:text-foreground"
-      onClick={async () => {
-        await authClient.signOut();
-        if (onSignedOut) onSignedOut();
-        else router.push("/sign-in");
-        router.refresh();
-      }}
-    >
-      Sign out
-    </button>
   );
 }

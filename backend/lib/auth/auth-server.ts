@@ -57,17 +57,18 @@ const customStatements = {
 const accessControl = createAccessControl(customStatements);
 
 // No organization "delete": deleting a business destroys its leads and bookings, so only
-// the platform admin can (item 23 builds that screen).
+// the platform admin can (item 23 builds that screen). No invitations either: nobody joins a
+// business that way, and an accepted invite would put someone in a second business.
 const owner = accessControl.newRole({
   organization: ["update"],
   member: ["create", "update", "delete"],
-  invitation: ["create", "cancel"],
+  invitation: [],
 });
 
 const orgAdmin = accessControl.newRole({
   organization: ["update"],
   member: ["create", "update", "delete"],
-  invitation: ["create", "cancel"],
+  invitation: [],
 });
 
 const orgMember = accessControl.newRole({
@@ -88,8 +89,9 @@ export const auth = betterAuth({
 
   user: {
     additionalFields: {
-      // The platform admin role (Frank). input: false: no request can set it; it is set by
-      // hand in the database until item 23. A request that tries gets a 400.
+      // The platform admin role (Frank). input: false: no sign-in or profile request can
+      // set it (one that tries gets a 400). Only the platform admin can, through the admin
+      // plugin's /admin/set-role, or by hand in the database.
       role: { type: "string", required: false, input: false },
     },
   },
@@ -100,18 +102,16 @@ export const auth = betterAuth({
       roles: { owner, admin: orgAdmin, member: orgMember },
       creatorRole: "owner",
 
-      // Only the platform admin creates a business. Better Auth's default lets anyone
-      // signed in create unlimited businesses on the paid plan. Item 25 (self-serve)
-      // changes this line and disableSignUp below, together.
-      allowUserToCreateOrganization: async (user) =>
-        (user as { role?: string | null }).role === "admin",
+      // Nobody creates a business through Better Auth's own route, the platform admin
+      // included: it would make whoever asks the owner. A client's business is made by
+      // POST /admin/clients, under the client's login. Item 25 (self-serve) reopens this,
+      // together with disableSignUp below and an organizationLimit.
+      allowUserToCreateOrganization: false,
 
       organizationHooks: {
-        // Every business gets its first person, named after the business (not whoever
-        // clicked create, today the platform admin), and linked to its owner's login so
-        // the app knows whose calendar that person is. Item 3b makes the owner the client.
-        // Outside the create transaction: if it fails, the business cannot take a booking,
-        // which fails safe.
+        // Every business gets its first person, named after the business and linked to its
+        // owner's login (the client's), so the app knows whose calendar that person is.
+        // Outside Better Auth's writes: if it fails, provision-client.ts removes the business.
         afterCreateOrganization: async ({ organization: createdOrganization, member: owner }) => {
           await db.insert(resource).values({
             id: randomUUID(),
@@ -140,7 +140,8 @@ export const auth = betterAuth({
     }),
 
     emailOTP({
-      // Nobody signs themselves up: every account is one the agency created (item 3b).
+      // Nobody signs themselves up: every account is one the agency set up
+      // (POST /admin/clients).
       // An existing address gets its code as normal; an unknown one is told a code is on
       // its way and gets nothing, so the form can't be used to test who is a customer.
       disableSignUp: true,

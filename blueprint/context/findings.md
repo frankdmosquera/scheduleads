@@ -7,66 +7,6 @@
 > finding is `open` or `fixed`, then archives resolved findings with the work
 > and resets this file.
 
-### F-12 [P2] open - Comments still describe open signup, self-serve business creation and server-side validation the code does not have
-
-**File:** frontend/app/sign-in/page.tsx:17
-**Found:** 2026-09-23 by /audit (scope: current; lens: quality)
-**Why it matters:** The F-05 repair changed the security model and updated the
-comments beside the two lines it touched, but not the ones that describe the
-same model elsewhere. This project treats its comments as the record of why
-(`coding-standards.md`, Comments), so a comment stating the model backwards is
-a wrong instruction to the next item, and items 3b and 25 are the ones that
-will read these files to change exactly this behaviour.
-
-- `sign-in/page.tsx:17-20` says the emailOTP plugin "creates the account on
-  first successful code, so this one screen is both sign-in and sign-up". The
-  opposite is true since `disableSignUp: true` (`backend/src/lib/auth.ts:232`),
-  and the same file says so correctly at lines 63-71.
-- `sign-in/page.tsx:107-109`, `app/page.tsx:129-131` and
-  `create-organization/page.tsx:13` describe a user with no business being sent
-  to create their first one. Only the platform admin may create a business
-  (`auth.ts:174-175`); an ordinary user is refused there (see F-13).
-- `sign-in/page.tsx:43-44` ("the same schema the API validates against") and
-  `packages/shared/src/validation/auth.ts:6-7` ("the API validates the same
-  values a second time") claim server-side use of the shared schemas. Nothing
-  under `backend/src` imports `@scheduleads-app/shared/validation`; Better Auth
-  validates with its own rules (`z.email()` in `email-otp/routes.mjs:95`,
-  `min(1)` for an organization name in `crud-org.mjs`).
-- `backend/src/lib/auth.ts:184-190` says a `plan` sent on organization update
-  "throws". Read off better-auth 1.7.5, it is silently dropped instead:
-  `toZodSchema` omits `input: false` fields client-side (`db/to-zod.mjs:7`), the
-  `data` object strips unknown keys, and better-call replaces the body with the
-  parsed value (`better-call/dist/validator.mjs:17`). Still safe, but the comment
-  tells a reader that an update returning 200 would have been refused. Not
-  observed live, since it needs a signed-in owner.
-
-**Suggested fix:** Rewrite those comment lines to match the code: sign-in only,
-no self-serve business creation, the shared schemas used by the forms only
-until a route owned by this API validates with them, and `plan` silently
-discarded on both create and update.
-**Resolution:**
-
-### F-13 [P3] open - A signed-in user with no business is sent to a create form that can only refuse them, with no way to sign out
-
-**File:** frontend/app/page.tsx:155
-**Found:** 2026-09-23 by /audit (scope: current; lens: quality)
-**Why it matters:** `PickOrganization` sends any user whose organization list is
-empty to `/create-organization` (`page.tsx:155-157`). Since the F-05 repair only
-a platform admin can create one, so every ordinary user who lands there gets
-Better Auth's "You are not allowed to create a new organization" on submit, and
-`create-organization/page.tsx` renders no sign-out control, unlike every other
-signed-in state. Reachable today through the provisioning path the spec itself
-names: until item 3b, "a new user row is a manual database act"
-(`auth.ts:227-230`), so a user created before their membership, or one whose
-only business is deleted, lands on a dead end. Read off the code, not observed
-live; Frank's walkthrough saw the refusal message itself for
-`owner@example.com`.
-
-**Suggested fix:** When the list is empty and the user is not a platform admin,
-render an `AuthCard` saying the account has no business yet and to contact the
-agency, with `SignOutLink`. Add a sign-out control to the create page as well.
-**Resolution:**
-
 ### F-14 [P3] open - The sign-in and create-business forms bypass the project's form standard without saying so
 
 **File:** frontend/components/auth-card.tsx:240
@@ -85,33 +25,7 @@ react-hook-form (both already dependencies), or record the choice and its
 reason in the spec preamble and build log so the next form knows which pattern
 is the standard.
 **Resolution:**
-
-### F-16 [P3] open - Better Auth endpoints already open two paths the spec reserves for later items
-
-**File:** backend/src/lib/auth.ts:85
-**Found:** 2026-09-23 by /audit (scope: current; lens: security)
-**Why it matters:** Neither is a breach, since signup is closed and both need a
-consenting existing user or an existing platform admin, but each contradicts a
-written contract and is live over HTTP today.
-
-- The `owner` role is granted `invitation: ["create", "cancel"]`
-  (`auth.ts:88`), so `/organization/invite-member` and
-  `/organization/accept-invitation` (`organization/routes/crud-invites.mjs:42`,
-  `:246`) work now. An owner can invite any existing user, and if they accept
-  they join a second business. The spec's Out of scope reserves "any path at
-  all that puts a client user inside a business" for item 3b, and a second
-  membership is what drives a user into the pick-a-business state.
-- `admin()` exposes `/admin/set-role` and `/admin/create-user`
-  (`admin/routes.mjs:43`, `:133`) to any platform admin. The spec's data
-  contract says no request path may write `user.role` before item 23, and
-  `auth.ts:131-132` and `schema.ts:52-55` say promotion is a manual database
-  edit and nowhere else.
-
-**Suggested fix:** Give `owner` and `admin` an empty `invitation` list until
-item 3b decides the invitation flow, and correct the `user.role` contract and
-comments to say a platform admin can set it through the admin plugin's
-endpoint, or record either as accepted with the reason.
-**Resolution:**
+Step 3b.3, 2026-09-30: the create form is deleted, and the new Set up a client form follows the Forms standard (shadcn `Input` and `Label`, react-hook-form's `Controller`, the shared schema through `zodResolver`). Only the sign-in form still uses the hand-written `Field`; out of feature 3b's scope.
 
 ### F-32 [P3] unverified - A pick is the package's display name, so a renamed holiday would take a business's booking page down
 
@@ -152,4 +66,50 @@ config file copies.
 **Suggested fix:** Drop "step 2.5" and the two "(Frank, 2026-09-26)" asides and
 keep the why ("declarations only, because Vercel builds only the frontend"; "no
 src/ folder, so the code sits beside the build output").
+**Resolution:**
+
+### F-47 [P3] open - The spec says accepting an invitation is refused, but Better Auth checks no role for it
+
+**File:** blueprint/context/current-feature.md:328
+**Found:** 2026-09-30 by /audit independent (scope: step 3b.2; lens: security)
+**Why it matters:** Data / contracts says `invite-member` "(and accepting
+one): refused, no role holds an invitation permission". Better Auth 1.7.5's
+`/organization/accept-invitation` checks only that the invitation is pending,
+unexpired and addressed to the signed-in user (`crud-invites.mjs:264-268`), never
+the inviter's or anyone's role. Closing `invitation` stops new invitations, so
+accepting is closed in practice only once no pending one exists. An invitation
+made before this change stays acceptable until it expires (48 hours by
+default), and its acceptance puts a client in a second business. Real clients
+cannot reach the product yet, so the live risk is close to nil.
+**Suggested fix:** Reword the contract line (accepting is closed because no
+invitation can be made any more), and before the first client-facing deploy
+confirm the production `invitation` table holds no pending row.
+**Resolution:**
+Carried on Frank's call, 2026-09-30: checked on the live database before the first client-facing deploy (the `invitation` table must be empty, or its rows cancelled). Nothing in code to change.
+
+### F-52 [P3] open - Three comments still point at the advisory lock and at a role check that has moved
+
+**File:** backend/lib/admin/provision-client.ts:171
+**Found:** 2026-09-30 by /audit independent (scope: current; lens: quality)
+**Why it matters:** This project treats its comments and standards as the
+record of why, and each of these now sends the reader to something that is not
+there:
+- `provision-client.ts:171` says the address "was free when this setup checked,
+  under its lock". There is no lock any more; the address is held by a
+  `client_setup_claim` row, and that is exactly the reason the business removed
+  in the clean-up can only be this setup's.
+- `require-platform-admin-middleware.ts:15` calls itself "The one place a role
+  name is compared", but `provision-client.ts:143` also compares
+  `login.role === "admin"` (to refuse the platform admin's email), and
+  `frontend/lib/is-platform-admin.ts:5` does the same for the screen.
+- `coding-standards.md:402-403` names the platform-admin exception "(see
+  `allowUserToCreateOrganization`)". Since this feature that option is the
+  literal `false` and compares no role; the check lives in
+  `requirePlatformAdminMiddleware`.
+Harmless at runtime. It is the kind of drift F-12 recorded, and the next item
+that touches the setup path or the admin role reads these lines first.
+**Suggested fix:** Say "under its claim" at `:171`; reword the middleware line
+to "the platform admin is the one role compared by name (coding standards,
+Backend)"; point the standard at `requirePlatformAdminMiddleware` instead of
+`allowUserToCreateOrganization`.
 **Resolution:**
