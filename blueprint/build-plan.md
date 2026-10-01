@@ -233,7 +233,10 @@ without Frank touching the database.
   needs `calendar.calendarlist.readonly`, added here, before any client
   connects).
   From version 8:
-  - Services with their length and buffers; people and places.
+  - Services with their length and buffers; people and places. A person
+    or place with any `commitment` row, cancelled or past included, cannot
+    be deleted (5a.1, F-50): decide here whether removing one deactivates
+    it or clears its rows first.
   - Who does what: the owner ticks each person's services and the rooms
     each service needs (item 5 checks them).
   - Bookable hours per person, and one-off dates.

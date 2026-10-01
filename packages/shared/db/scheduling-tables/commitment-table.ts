@@ -1,10 +1,11 @@
 // Shared: the commitment table. One row says one person or place is taken from startsAt to
 // endsAt, by a booking or by time off. The database refuses two active rows for the same one
 // that overlap (commitment_no_overlap, added by hand in migration 0009: Drizzle cannot express
-// an exclusion constraint), so no code path can double-book.
+// an exclusion constraint), so no code path can double-book. The rule compares the business too,
+// so another business's person is refused as not theirs, never as busy.
 
 import { sql } from "drizzle-orm";
-import { check, foreignKey, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { check, foreignKey, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { organization } from "../auth-tables/organization-table.js";
 import { resource } from "../booking-tables/resource-table.js";
@@ -31,8 +32,8 @@ export const commitment = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
-    // Only a person or place of the same business. No action on delete: one that still holds
-    // time cannot be deleted, while deleting the whole business takes these rows.
+    // Only a person or place of the same business. No action on delete: one with any row here,
+    // cancelled or past included, cannot be deleted; deleting the whole business takes them.
     foreignKey({
       name: "commitment_resource_fk",
       columns: [table.organizationId, table.resourceId],
@@ -41,5 +42,7 @@ export const commitment = pgTable(
     check("commitment_kind_check", sql`${table.kind} in ('booking', 'time_off')`),
     check("commitment_status_check", sql`${table.status} in ('active', 'cancelled')`),
     check("commitment_time_order_check", sql`${table.endsAt} > ${table.startsAt}`),
+    // Serves the foreign key checks when a person or a business is deleted.
+    index("commitment_resource_index").on(table.organizationId, table.resourceId),
   ]
 );

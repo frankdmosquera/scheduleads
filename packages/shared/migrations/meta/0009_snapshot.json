@@ -1,5 +1,5 @@
 {
-  "id": "e1788997-770f-427c-b9ec-e10877456725",
+  "id": "0ac6a41c-f1c1-4e91-a13c-7db4701de244",
   "prevId": "18b9077c-aee1-42cc-b8a7-7311672073fd",
   "version": "7",
   "dialect": "postgresql",
@@ -1767,7 +1767,29 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "commitment_resource_index": {
+          "name": "commitment_resource_index",
+          "columns": [
+            {
+              "expression": "organizationId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "resourceId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "commitment_organizationId_organization_id_fk": {
           "name": "commitment_organizationId_organization_id_fk",

@@ -114,9 +114,10 @@ merges with a merge commit on Frank's yes.
 - `id` (text), `organizationId` (FK organization, cascade).
 - `resourceId` (text, not null): FK `(organizationId, resourceId)` to
   `resource(organizationId, id)`, **no action** on delete: a person or place
-  that still holds time cannot be deleted (feature 12 decides what deleting
-  one does), while deleting a whole business removes its rows through
-  `organizationId`.
+  with any row here, cancelled or past included, cannot be deleted (feature
+  12 decides what deleting one does), while deleting a whole business
+  removes its rows through `organizationId`. Indexed as
+  `commitment_resource_index` for those checks (F-49).
 - `kind` (text, not null, check `booking` | `time_off`).
 - `bookingId` (text, nullable): which booking holds it. Its link to `booking`
   and the rule "a booking row names its booking" arrive with 5d.
@@ -126,10 +127,13 @@ merges with a merge commit on Frank's yes.
   passes the widened range; 5c and 5d own the buffer arithmetic).
 - `status` (text, not null, default `active`, check `active` | `cancelled`).
 - `createdAt`, `updatedAt`.
-- **The rule:** `exclude using gist ("resourceId" with =,
-  tstzrange("startsAt", "endsAt", '[)') with &&) where (status = 'active')`,
-  named `commitment_no_overlap`. Resource ids are unique across businesses,
-  so the rule needs no business column. Concurrent inserts are serialized by
+- **The rule:** `exclude using gist ("organizationId" with =, "resourceId"
+  with =, tstzrange("startsAt", "endsAt", '[)') with &&) where (status =
+  'active')`, named `commitment_no_overlap`. The business is compared too
+  (F-48): without it, a row naming another business's busy person was
+  refused as busy, which tells the caller that person's schedule; with it,
+  that row never meets their time and is refused by `commitment_resource_fk`
+  as not theirs, busy or free. Concurrent inserts are serialized by
   Postgres itself: the second waits, then fails.
 
 **holdTime(organizationId, { resourceIds, startsAt, endsAt, kind, bookingId? })**

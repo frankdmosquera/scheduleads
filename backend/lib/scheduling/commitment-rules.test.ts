@@ -159,13 +159,27 @@ describe("commitment rules in the database", () => {
     expect(await commitmentsOf(theirs.ana)).toHaveLength(0);
   });
 
-  test("deleting a person who still holds time is refused", async () => {
-    const { business, ana } = await makeBusiness("keep-person");
+  test("another business's person who is busy is refused the same way, never as taken", async () => {
+    const mine = await makeBusiness("mine-busy");
+    const theirs = await makeBusiness("theirs-busy");
+    await db.insert(commitment).values(row(theirs.business, theirs.ana, "15:00", "16:00"));
+    await expect(
+      db.insert(commitment).values(row(mine.business, theirs.ana, "15:00", "16:00"))
+    ).rejects.toMatchObject(refusedBy("23503", "commitment_resource_fk"));
+  });
+
+  test("deleting a person who has ever held time is refused, cancelled time included", async () => {
+    const { business, ana, luis } = await makeBusiness("keep-person");
     await db.insert(commitment).values(row(business, ana, "15:00", "16:00"));
-    await expect(db.delete(resource).where(eq(resource.id, ana))).rejects.toMatchObject(
-      refusedBy("23503", "commitment_resource_fk")
-    );
-    expect(await db.select().from(resource).where(eq(resource.id, ana))).toHaveLength(1);
+    await db
+      .insert(commitment)
+      .values(row(business, luis, "15:00", "16:00", { status: "cancelled" }));
+    for (const person of [ana, luis]) {
+      await expect(db.delete(resource).where(eq(resource.id, person))).rejects.toMatchObject(
+        refusedBy("23503", "commitment_resource_fk")
+      );
+      expect(await db.select().from(resource).where(eq(resource.id, person))).toHaveLength(1);
+    }
   });
 
   test("deleting the whole business takes its commitments", async () => {
