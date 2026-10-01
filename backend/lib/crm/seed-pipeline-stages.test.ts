@@ -92,12 +92,18 @@ describe("pipeline_stage names", () => {
   });
 
   test("one business cannot have two stages of the same name, capitals ignored", async () => {
+    const business = await makeBusiness("capitals");
     const add = (name: string) =>
       db
         .insert(pipelineStage)
-        .values({ id: randomUUID(), organizationId: first, name, position: 9 });
-    await expect(add("New")).rejects.toThrow();
-    await expect(add("new")).rejects.toThrow();
-    await expect(add("NEW")).rejects.toThrow();
+        .values({ id: randomUUID(), organizationId: business, name, position: 9 });
+    await add("New");
+    // The name rule itself refuses, not any other failure.
+    const refused = {
+      cause: { code: "23505", constraint_name: "pipeline_stage_organization_name_unique" },
+    };
+    await expect(add("New")).rejects.toMatchObject(refused);
+    await expect(add("new")).rejects.toMatchObject(refused);
+    await expect(add("NEW")).rejects.toMatchObject(refused);
   });
 });

@@ -105,7 +105,7 @@ merges with a merge commit on Frank's yes.
     `db:seed`, Summit Painting (dev) and Riverbend Clinic (dev) each have the
     four. The backend builds.
 
-- [ ] **4.2 Contacts.** The people a business deals with.
+- [x] **4.2 Contacts.** The people a business deals with.
   - **Blocker, answered by Frank 2026-10-01: A.** The same email in the same
     business is the same contact (a repeat customer's bookings land on one
     timeline); no email is always a new contact; the first name given is
@@ -118,6 +118,11 @@ merges with a merge commit on Frank's yes.
     (trimmed, up to 40, optional).
   - `backend/lib/crm/find-or-create-contact.ts`, the function feature 5
     calls for every booking.
+  - **Plan approved by Frank 2026-10-01, with one tightening (3b's F-41
+    lesson):** no customer email in an error. A database error's message
+    carries the whole query, the email in it, and Hono logs what reaches it;
+    `findOrCreateContact` lets only a safe reason out (`safeErrorReason`).
+    Tested by forcing a real database error and checking the thrown message.
   - **Carried from step 4.1's review (Frank, 2026-10-01), F-53:** the
     capitals test in `seed-pipeline-stages.test.ts` seeds its own business and
     expects the refusal to come from `pipeline_stage_organization_name_unique`

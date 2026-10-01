@@ -50,6 +50,13 @@
       "when": 1790831245124,
       "tag": "0006_pipeline_stage",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790865886326,
+      "tag": "0007_contact",
+      "breakpoints": true
     }
   ]
 }

@@ -117,7 +117,7 @@ Backend)"; point the standard at `requirePlatformAdminMiddleware` instead of
 **Resolution:**
 Fixed 2026-10-01 on Frank's call (the pending tasks before step 4.2), in a chore commit on `feature/04-crm-spine`; waits for step 4.2's review to close. `provision-client.ts` says "under its claim"; the platform-admin middleware says the platform admin is the one role compared by name, not that it is the one place; `coding-standards.md` points the exception at `requirePlatformAdminMiddleware`.
 
-### F-53 [P3] open - The same-name test passes on any refusal and only after an earlier test has run
+### F-53 [P3] fixed - The same-name test passes on any refusal and only after an earlier test has run
 
 **File:** backend/lib/crm/seed-pipeline-stages.test.ts:92
 **Found:** 2026-09-30 by /audit independent (scope: step 4.1; lens: tests)
@@ -136,3 +136,4 @@ the refusal is the name index, for example
 (or the code `23505`), for all three inserts.
 **Resolution:**
 Carried to step 4.2 on Frank's call, 2026-10-01. Written into that step's plan in the spec.
+Fixed 2026-10-01 in step 4.2's commit; waits for step 4.2's review to close. The capitals test makes its own business, adds New, then expects each of New, new and NEW to be refused with Postgres code 23505 on `pipeline_stage_organization_name_unique`, not any failure.
