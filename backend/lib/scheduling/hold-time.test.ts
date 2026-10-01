@@ -108,6 +108,23 @@ describe("holdTime", () => {
     expect((await rowsOf(ana)).length + (await rowsOf(luis)).length).toBe(1);
   });
 
+  // Two inserts that clash at the same instant can deadlock inside Postgres (F-51); one is
+  // killed. Many tries, so the rare collision happens: every one must answer, never throw.
+  test("many simultaneous holds always answer held or taken, never fail", async () => {
+    const { business, ana, room } = await makeBusiness("deadlock");
+    const tries = 10;
+    for (let day = 0; day < tries; day++) {
+      const startsAt = new Date(Date.UTC(2027, 0, 1 + day, 15));
+      const endsAt = new Date(Date.UTC(2027, 0, 1 + day, 16));
+      const results = await Promise.all([
+        holdTime(business, { resourceIds: [ana, room], startsAt, endsAt, kind: "booking" }),
+        holdTime(business, { resourceIds: [room, ana], startsAt, endsAt, kind: "booking" }),
+      ]);
+      expect(results.filter((result) => result.held)).toHaveLength(1);
+    }
+    expect(await rowsOf(room)).toHaveLength(tries);
+  }, 60_000);
+
   test("another business's person is refused as not theirs, busy or free, never as taken", async () => {
     const mine = await makeBusiness("mine");
     const theirs = await makeBusiness("theirs");

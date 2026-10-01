@@ -133,14 +133,17 @@ merges with a merge commit on Frank's yes.
   (F-48): without it, a row naming another business's busy person was
   refused as busy, which tells the caller that person's schedule; with it,
   that row never meets their time and is refused by `commitment_resource_fk`
-  as not theirs, busy or free. Concurrent inserts are serialized by
-  Postgres itself: the second waits, then fails.
+  as not theirs, busy or free. Two inserts that clash at the same instant
+  can deadlock inside Postgres, which cancels one (`40P01`, F-51); nothing
+  of it was saved, and holdTime tries it again.
 
 **holdTime(organizationId, { resourceIds, startsAt, endsAt, kind, bookingId? })**
 
 - One row per resource, one transaction. Answers `{ held: true, ids }` or
   `{ held: false }` when the exclusion rule refused any of them (Postgres code
-  `23P01`). Anything else is rethrown as `Holding time failed: <safe reason>`.
+  `23P01`). A deadlock (`40P01`) is tried again, up to three attempts in all;
+  by then the other hold is saved, so the answer is "taken". Anything else is
+  rethrown as `Holding time failed: <safe reason>`.
 - `resourceIds` non-empty, without duplicates; times as `Date`s.
 
 **releaseTime(organizationId, ids)** sets `status = 'cancelled'` on those rows
