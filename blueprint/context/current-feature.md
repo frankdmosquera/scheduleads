@@ -67,7 +67,7 @@ merges with a merge commit on Frank's yes.
 
 ## Build steps
 
-- [ ] **5a.1 The commitments table and its rule.**
+- [x] **5a.1 The commitments table and its rule.**
   - **Blocker for this step's plan, Frank's yes:** switching on `btree_gist`
     (see Open questions).
   - `packages/shared/db/scheduling-tables/commitment-table.ts` and migration
