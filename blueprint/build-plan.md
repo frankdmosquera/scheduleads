@@ -156,7 +156,7 @@ and a second resource can hold the same time as the first.
     one-hour windows) is decided in this item's spec
   Split on 2026-10-01 into four items, each its own branch, merged and tagged
   as it lands; item 5 is done when all four are:
-  - [ ] 5a. **People's time** - the commitments table: one row per person or
+  - [x] 5a. **People's time** - the commitments table: one row per person or
     place for every booking and every stretch of time off, the database
     refusing two overlapping active rows for the same one, cancelled rows
     no longer blocking; and the functions that hold, release and read time
