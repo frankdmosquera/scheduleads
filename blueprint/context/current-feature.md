@@ -4,6 +4,10 @@
 
 **Branch:** feature/04-crm-spine
 
+**Status:** verified. Whole feature seen and agreed by Frank 2026-09-30;
+steps 4.1 to 4.3 built, tested and reviewed step by step; every review
+finding fixed, F-56 last on 2026-10-01. The checkpoint for the final review.
+
 Branch named in the workspace's `feature/NN-name` form, so one number finds the
 branch, the archive (`04-crm-spine.md`) and the tag (`item-04-done`).
 
