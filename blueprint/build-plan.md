@@ -123,7 +123,7 @@ lead in its first pipeline stage, the confirmation email with its `.ics`
 arrives, the calendar shows the event, the cancel link in that email works,
 and a second resource can hold the same time as the first.
 
-- [ ] 4. **CRM spine** - `contact`, `pipeline_stage` seeded with the four
+- [x] 4. **CRM spine** - `contact`, `pipeline_stage` seeded with the four
   defaults at provisioning, and `activity` carrying both the timeline and the
   next-step queue. The tables and the API routes the loop writes to.
   `resource` moved to item 2, because availability is defined per resource and
