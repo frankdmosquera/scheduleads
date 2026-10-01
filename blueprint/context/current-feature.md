@@ -4,6 +4,11 @@
 
 **Branch:** feature/05a-peoples-time
 
+**Status:** verified. Whole feature seen and agreed by Frank 2026-10-01;
+steps 5a.1 and 5a.2 built, tested and reviewed step by step; every blocking
+review finding fixed, F-51 last on 2026-10-01; F-52 (P3) carried to 5d.
+The checkpoint for the final review.
+
 Branch named in the workspace's `feature/NN-name` form, so one number finds the
 branch, the archive (`05a-peoples-time.md`) and the tag (`item-05a-done`).
 The first of feature 5's four parts (split 2026-10-01, Frank).
