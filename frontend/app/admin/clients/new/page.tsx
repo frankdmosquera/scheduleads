@@ -12,7 +12,7 @@ import { AuthCard } from "@/components/auth-card";
 import { authClient } from "@/lib/auth-client";
 import { isPlatformAdmin } from "@/lib/is-platform-admin";
 
-type ViewerType = "checking" | "platform-admin" | "someone-else";
+type ViewerType = "checking" | "someone-else" | { hasBusiness: boolean };
 
 export default function NewClientPage() {
   const router = useRouter();
@@ -22,14 +22,21 @@ export default function NewClientPage() {
     // `live` stops a late answer from updating a page the user already left.
     let live = true;
 
-    authClient.getSession().then(({ data }) => {
-      if (!live) return;
-      if (!data) {
-        router.replace("/sign-in");
-        return;
+    Promise.all([authClient.getSession(), authClient.organization.list()]).then(
+      ([{ data }, businesses]) => {
+        if (!live) return;
+        if (!data) {
+          router.replace("/sign-in");
+          return;
+        }
+        if (!isPlatformAdmin(data.user)) {
+          setViewer("someone-else");
+          return;
+        }
+        // With no business, the dashboard would only send the platform admin back here.
+        setViewer({ hasBusiness: (businesses.data ?? []).length > 0 });
       }
-      setViewer(isPlatformAdmin(data.user) ? "platform-admin" : "someone-else");
-    });
+    );
 
     return () => {
       live = false;
@@ -60,5 +67,5 @@ export default function NewClientPage() {
     );
   }
 
-  return <NewClientForm />;
+  return <NewClientForm hasBusiness={viewer.hasBusiness} />;
 }

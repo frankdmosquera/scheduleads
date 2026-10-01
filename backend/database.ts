@@ -20,8 +20,3 @@ const client = postgres(process.env.DATABASE_URL, {
 });
 
 export const db = drizzle(client, { schema });
-
-// Two connections of their own for Postgres advisory locks, which live on one connection for
-// as long as they are held. Waiting for a lock here never takes one of the ten above, so a
-// queue of waiting setups can never leave the rest of the API without a connection.
-export const advisoryLockClient = postgres(process.env.DATABASE_URL, { max: 2 });

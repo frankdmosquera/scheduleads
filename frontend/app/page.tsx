@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { AuthCard, Notice } from "@/components/auth-card";
 import { BookingLinksList } from "@/components/booking-links/booking-links-list";
 import { CalendarConnectionCard } from "@/components/calendar/calendar-connection-card";
+import { SignOutLink } from "@/components/sign-out-link";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { fetchMe, type MeResultType } from "@/lib/api-client";
@@ -282,25 +283,5 @@ function OrgMark({ name }: { name: string }) {
     <span className="grid size-9 flex-none place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
       {name.trim().charAt(0).toUpperCase() || "?"}
     </span>
-  );
-}
-
-// On every signed-in screen, including the refusals, so nobody is ever stuck.
-function SignOutLink({ onSignedOut }: { onSignedOut?: () => void }) {
-  const router = useRouter();
-
-  return (
-    <button
-      type="button"
-      className="underline underline-offset-2 hover:text-foreground"
-      onClick={async () => {
-        await authClient.signOut();
-        if (onSignedOut) onSignedOut();
-        else router.push("/sign-in");
-        router.refresh();
-      }}
-    >
-      Sign out
-    </button>
   );
 }

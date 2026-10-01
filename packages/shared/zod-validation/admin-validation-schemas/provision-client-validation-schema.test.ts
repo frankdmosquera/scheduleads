@@ -24,6 +24,7 @@ describe("provisionClientValidationSchema", () => {
 
   test.each([
     ["a blank business name", { businessName: "   " }],
+    ["a business name with no letters or digits", { businessName: "!! ??" }],
     ["an empty client name", { clientName: "  " }],
     ["a client name over 100 characters", { clientName: "a".repeat(101) }],
     ["a bad email", { clientEmail: "maria@" }],

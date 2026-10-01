@@ -1,13 +1,15 @@
 // Backend: sets up a client, their login and their business, with the client as its business
 // owner and first person. The platform admin who asks is never made a member.
 
-import { and, eq, ne, notExists } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 
-import { member, organization, user } from "@scheduleads-app/shared/db";
+import { and, eq, lt, ne, notExists, sql } from "drizzle-orm";
+
+import { clientSetupClaim, member, organization, user } from "@scheduleads-app/shared/db";
 import { toSlug } from "@scheduleads-app/shared/helpers";
 import type { ProvisionClientInputType } from "@scheduleads-app/shared/zod-validation";
 
-import { advisoryLockClient, db } from "../../database.js";
+import { db } from "../../database.js";
 import { auth } from "../auth/auth-server.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 
@@ -17,7 +19,7 @@ export type ProvisionClientResultType =
       organization: { id: string; name: string; slug: string };
       client: { id: string; name: string; email: string };
     }
-  | { ok: false; code: "bad_request" | "email_taken" | "slug_taken" };
+  | { ok: false; code: "bad_request" | "email_taken" | "slug_taken" | "setup_in_progress" };
 
 type LoginType = { id: string; name: string; email: string };
 
@@ -28,7 +30,8 @@ export async function provisionClient(
   if (!slug) return { ok: false, code: "bad_request" }; // only punctuation or emoji
 
   try {
-    return await withSetupLocks(input.clientEmail, slug, () => setUp(input, slug));
+    const result = await withSetupClaims(input.clientEmail, slug, () => setUp(input, slug));
+    return result === "in_progress" ? { ok: false, code: "setup_in_progress" } : result;
   } catch (error) {
     // Never rethrown as is: Hono logs what reaches it, and a database error names the
     // client's email in its query.
@@ -39,32 +42,42 @@ export async function provisionClient(
 
 // One setup per email and per address at a time. Without it, a double click's second setup
 // would see the first one's new login, still without a business, as an unfinished setup and
-// take it over. Advisory locks live on one connection, so one is held for the whole setup,
-// from the lock pool, never the API's own; the locks go when it is released, or when the
-// connection dies.
-async function withSetupLocks<T>(email: string, slug: string, run: () => Promise<T>): Promise<T> {
-  const connection = await advisoryLockClient.reserve();
+// take it over. A setup claims both as rows of client_setup_claim, so nothing holds a
+// database connection while it runs; a second setup for either is told to try again.
+async function withSetupClaims<T>(
+  email: string,
+  slug: string,
+  run: () => Promise<T>
+): Promise<T | "in_progress"> {
+  const claimId = randomUUID();
+  const keys = [`email:${email}`, `slug:${slug}`];
+
+  // A claim this old belongs to a setup that died before removing it.
+  await db
+    .delete(clientSetupClaim)
+    .where(lt(clientSetupClaim.claimedAt, sql`now() - interval '5 minutes'`));
+
+  const claimed = await db
+    .insert(clientSetupClaim)
+    .values(keys.map((key) => ({ key, claimId })))
+    .onConflictDoNothing()
+    .returning({ key: clientSetupClaim.key });
+
   try {
-    // Always email first, then address, so two setups can never wait on each other.
-    await connection`select pg_advisory_lock(hashtextextended(${`setup-email:${email}`}, 0))`;
-    await connection`select pg_advisory_lock(hashtextextended(${`setup-slug:${slug}`}, 0))`;
+    if (claimed.length < keys.length) return "in_progress"; // another setup holds one of them
     return await run();
   } finally {
-    await releaseSetupLocks(connection);
+    await releaseSetupClaims(claimId);
   }
 }
 
-// A failed unlock is logged, never thrown: it must not turn a finished setup into an error.
-// If the connection dropped, its locks are already gone.
-async function releaseSetupLocks(
-  connection: Awaited<ReturnType<typeof advisoryLockClient.reserve>>
-): Promise<void> {
+// Only this setup's own claims. A failure here is logged, never thrown, so it cannot turn a
+// finished setup into an error; the claims then expire after five minutes.
+async function releaseSetupClaims(claimId: string): Promise<void> {
   try {
-    await connection`select pg_advisory_unlock_all()`;
+    await db.delete(clientSetupClaim).where(eq(clientSetupClaim.claimId, claimId));
   } catch (error) {
-    console.error(`[admin] could not release the setup locks: ${safeErrorReason(error)}`);
-  } finally {
-    connection.release();
+    console.error(`[admin] could not release a setup's claims: ${safeErrorReason(error)}`);
   }
 }
 

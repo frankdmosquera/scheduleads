@@ -12,7 +12,10 @@ import {
   type ProvisionClientInputType,
 } from "@scheduleads-app/shared/zod-validation";
 
+import Link from "next/link";
+
 import { AuthCard, Notice } from "@/components/auth-card";
+import { SignOutLink } from "@/components/sign-out-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,7 +40,21 @@ const fields = [
   },
 ] as const;
 
-export function NewClientForm() {
+// Sign out always, and the way back when the platform admin has a dashboard to go back to.
+function AdminFooter({ hasBusiness }: { hasBusiness: boolean }) {
+  return (
+    <span className="flex justify-center gap-4">
+      {hasBusiness ? (
+        <Link href="/" className="underline underline-offset-2 hover:text-foreground">
+          Back to the dashboard
+        </Link>
+      ) : null}
+      <SignOutLink />
+    </span>
+  );
+}
+
+export function NewClientForm({ hasBusiness }: { hasBusiness: boolean }) {
   const [done, setDone] = useState<ProvisionedClientType | null>(null);
   const [refusal, setRefusal] = useState<string | null>(null);
 
@@ -65,6 +82,7 @@ export function NewClientForm() {
     return (
       <SetUpCard
         answer={done}
+        footer={<AdminFooter hasBusiness={hasBusiness} />}
         onAnother={() => {
           form.reset(emptyForm);
           setDone(null);
@@ -77,6 +95,7 @@ export function NewClientForm() {
     <AuthCard
       title="Set up a client"
       lede="Makes the client's login and their business together. The client is its owner; you are not a member."
+      footer={<AdminFooter hasBusiness={hasBusiness} />}
     >
       <form onSubmit={form.handleSubmit(submit)} noValidate className="flex flex-col gap-4">
         {fields.map((field) => (
@@ -122,9 +141,11 @@ export function NewClientForm() {
 function SetUpCard({
   answer,
   onAnother,
+  footer,
 }: {
   answer: ProvisionedClientType;
   onAnother: () => void;
+  footer: React.ReactNode;
 }) {
   const signInAddress = `${window.location.origin}/sign-in`;
 
@@ -132,6 +153,7 @@ function SetUpCard({
     <AuthCard
       title={`${answer.organization.name} is set up`}
       lede={`${answer.client.email} owns it and can sign in now.`}
+      footer={footer}
     >
       <div className="flex flex-col gap-4">
         <Notice tone="info">

@@ -3,7 +3,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import { eq, like } from "drizzle-orm";
+import { eq, like, or } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
@@ -18,9 +18,9 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the admin route tests");
 
 // Imported after the env is loaded: they read it the moment they load.
 const { app } = await import("../app.js");
-const { advisoryLockClient, db } = await import("../database.js");
+const { db } = await import("../database.js");
 const { appOrigin, auth } = await import("../lib/auth/auth-server.js");
-const { invitation, member, organization, resource, user } =
+const { clientSetupClaim, invitation, member, organization, resource, user } =
   await import("@scheduleads-app/shared/db");
 
 const tag = randomUUID().slice(0, 8);
@@ -113,8 +113,15 @@ afterAll(async () => {
   // Their members and people go with the businesses (cascade); sessions with the logins.
   await db.delete(organization).where(like(organization.slug, `test-provision-%-${tag}`));
   await db.delete(user).where(like(user.email, `admin-%-${tag}@example.com`));
+  await db
+    .delete(clientSetupClaim)
+    .where(
+      or(
+        like(clientSetupClaim.key, `email:admin-%-${tag}@example.com`),
+        like(clientSetupClaim.key, `slug:test-provision-%-${tag}`)
+      )
+    );
   await db.$client.end();
-  await advisoryLockClient.end();
 });
 
 describe("POST /admin/clients", () => {
@@ -313,7 +320,7 @@ describe("POST /admin/clients", () => {
     expect((await setUp(body, platformAdmin.email)).status).toBe(201); // the retry finishes it
   });
 
-  // A double click. The first setup is held mid-way, inside its locks, and the second is
+  // A double click. The first setup is held mid-way, holding its claims, and the second is
   // only sent once the first is in there, so the two truly overlap on any machine.
   const holdFirstSetup = () => {
     const original = auth.api.createOrganization;
@@ -329,6 +336,14 @@ describe("POST /admin/clients", () => {
     return { inside, spy };
   };
 
+  const claimsFor = (address: string, slug: string) =>
+    db
+      .select()
+      .from(clientSetupClaim)
+      .where(
+        or(eq(clientSetupClaim.key, `email:${address}`), eq(clientSetupClaim.key, `slug:${slug}`))
+      );
+
   test("two overlapping setups for one email and one business make one business with its owner", async () => {
     const held = holdFirstSetup();
     const firstSent = setUp(client("double"), platformAdmin.email);
@@ -341,13 +356,18 @@ describe("POST /admin/clients", () => {
 
     expect(first.status).toBe(201);
     expect(second.status).toBe(409);
-    expect((await second.json()).error.code).toBe("email_taken");
+    expect((await second.json()).error.code).toBe("setup_in_progress");
 
     const [login] = await loginsWith(email("double"));
     expect(login.id).toBe((await first.json()).client.id);
     const [business] = await businessesWith(slugOf("double"));
     const members = await db.select().from(member).where(eq(member.organizationId, business.id));
     expect(members).toEqual([expect.objectContaining({ userId: login.id, role: "owner" })]);
+
+    // Once the first is done its claims are gone, and the same setup again is simply taken.
+    expect(await claimsFor(email("double"), slugOf("double"))).toHaveLength(0);
+    const again = await setUp(client("double"), platformAdmin.email);
+    expect((await again.json()).error.code).toBe("email_taken");
   });
 
   test("two overlapping setups for one email and two businesses give the client only one", async () => {
@@ -362,9 +382,38 @@ describe("POST /admin/clients", () => {
 
     expect(first.status).toBe(201);
     expect(second.status).toBe(409);
+    expect((await second.json()).error.code).toBe("setup_in_progress");
     const [login] = await loginsWith(email("twice-a"));
     expect(await db.select().from(member).where(eq(member.userId, login.id))).toHaveLength(1);
     expect(await businessesWith(slugOf("twice-b"))).toHaveLength(0);
+  });
+
+  test("a claim held by another setup makes this one wait, and is left alone", async () => {
+    await db
+      .insert(clientSetupClaim)
+      .values({ key: `email:${email("claimed")}`, claimId: "other" });
+
+    const response = await setUp(client("claimed"), platformAdmin.email);
+
+    expect(response.status).toBe(409);
+    expect((await response.json()).error.code).toBe("setup_in_progress");
+    expect(await loginsWith(email("claimed"))).toHaveLength(0);
+    expect(await businessesWith(slugOf("claimed"))).toHaveLength(0);
+    // Its own address claim is released; the other setup's email claim stays.
+    expect(await claimsFor(email("claimed"), slugOf("claimed"))).toEqual([
+      expect.objectContaining({ key: `email:${email("claimed")}`, claimId: "other" }),
+    ]);
+  });
+
+  test("a claim older than five minutes belongs to a setup that died, and is cleared", async () => {
+    await db.insert(clientSetupClaim).values({
+      key: `email:${email("stale")}`,
+      claimId: "died",
+      claimedAt: new Date(Date.now() - 10 * 60 * 1000),
+    });
+
+    expect((await setUp(client("stale"), platformAdmin.email)).status).toBe(201);
+    expect(await claimsFor(email("stale"), slugOf("stale"))).toHaveLength(0);
   });
 
   test("more setups at once than the API has connections all finish, and the API keeps answering", async () => {

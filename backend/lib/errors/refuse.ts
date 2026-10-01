@@ -10,7 +10,8 @@ export type RefusalCodeType =
   | "bad_request" // a malformed value in the request, such as a slug or an id
   | "no_person" // signed in, but no person in this business is linked to the login
   | "email_taken" // setting up a client: that email's login already has a business
-  | "slug_taken"; // setting up a client: another business already has that address
+  | "slug_taken" // setting up a client: another business already has that address
+  | "setup_in_progress"; // setting up a client: another setup for that email or address is running
 
 export type RefusalType = {
   error: {

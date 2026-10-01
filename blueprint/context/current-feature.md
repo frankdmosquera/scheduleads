@@ -258,7 +258,8 @@ merges with a merge commit on Frank's yes.
 
 ## Data / contracts
 
-No migration. Every table already exists.
+One migration, `0005_client_setup_claim` (step 3b.3's review, F-49): the
+`client_setup_claim` table below. Every other table already exists.
 
 **`POST /admin/clients`**
 
@@ -275,7 +276,7 @@ No migration. Every table already exists.
   `401 unauthenticated`, `403 forbidden` (not the platform admin),
   `400 bad_request` (a missing or wrong body, a failed schema, a name with no
   letters or digits; malformed JSON gets Hono's own plain-text 400, because
-  the body is checked by Hono's validator, which types it for `AppType`), `409 email_taken`, `409 slug_taken`. Anything else is a 500 with
+  the body is checked by Hono's validator, which types it for `AppType`), `409 email_taken`, `409 slug_taken`, `409 setup_in_progress`. Anything else is a 500 with
   no detail.
 - Idempotency: a second identical request after a success is `409
   email_taken`. After a setup that died between its two creates, the same
@@ -299,12 +300,21 @@ No migration. Every table already exists.
 - On first sign-in the existing session hook makes it the active business,
   because the client belongs to exactly one.
 
-**A setup is never half made** (step 3b.1's review, F-35 and F-38)
+**A setup is never half made** (step 3b.1's review, F-35 and F-38; the
+claims replace the advisory locks after step 3b.3's review, F-49)
 
-- One setup per email and per address at a time: two Postgres advisory locks
-  on one reserved connection, email first then address, held for the whole
-  setup and released when it ends or its connection dies. A second setup for
-  the same email waits, then sees a login with a business: `409 email_taken`.
+- One setup per email and per address at a time, through
+  `client_setup_claim`: `key` (text, primary key: `email:<address>` or
+  `slug:<address>`), `claimId` (text, a random id per setup), `claimedAt`
+  (timestamptz, default now). A setup first deletes claims older than five
+  minutes (left by a setup that died), then inserts both keys in one
+  statement with `on conflict do nothing`. Short of both, it answers
+  `409 setup_in_progress` ("This client is already being set up. Try again
+  in a moment.") and makes nothing. It removes only its own claims when it
+  ends, whatever happened; a failed removal is logged and the claims expire.
+  No database connection is held while a setup runs: holding one (session or
+  transaction advisory locks) let postgres.js 3.4.9 crash the API when that
+  connection dropped.
 - On a failure after Better Auth saved the business, the business is removed
   when nobody but this client is in it, then the login this setup made, and
   only while it belongs to no business. A login reused from an unfinished
@@ -315,9 +325,6 @@ No migration. Every table already exists.
   `email_taken`. It is removed by hand until the admin area (feature 23) can
   delete a client. The setup's own error is the one reported, never the
   clean-up's.
-- The locks use two Postgres connections of their own
-  (`advisoryLockClient`), never the API's ten, so any number of waiting
-  setups leaves the rest of the API answering.
 
 **The server-side bypass, written down where it is used**
 

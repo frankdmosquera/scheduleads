@@ -14,6 +14,10 @@ const refusals = {
   bad_request: { status: 400, message: "Use at least a couple of letters or numbers in the name." },
   email_taken: { status: 409, message: "That email already has a login." },
   slug_taken: { status: 409, message: "A business with that name already exists." },
+  setup_in_progress: {
+    status: 409,
+    message: "This client is already being set up. Try again in a moment.",
+  },
 } as const;
 
 export const adminRoutes = new Hono()

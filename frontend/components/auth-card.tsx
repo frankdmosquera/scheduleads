@@ -37,20 +37,14 @@ export function Field({
   id,
   label,
   error,
-  hint,
   className,
   ...props
 }: {
   id: string;
   label: string;
   error?: string;
-  hint?: string;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   const errorId = `${id}-error`;
-  const hintId = `${id}-hint`;
-  // Links the error and hint to the input, so a screen reader announces them too.
-  const describedBy =
-    [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(" ") || undefined;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -60,7 +54,7 @@ export function Field({
       <input
         id={id}
         aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
+        aria-describedby={error ? errorId : undefined}
         className={cn(
           "h-10 w-full rounded-lg border border-border bg-muted px-3 text-sm text-foreground",
           "placeholder:text-[var(--faint)]",
@@ -72,11 +66,6 @@ export function Field({
         )}
         {...props}
       />
-      {hint ? (
-        <p id={hintId} className="text-xs text-muted-foreground">
-          {hint}
-        </p>
-      ) : null}
       {error ? (
         <p id={errorId} className="text-xs text-destructive">
           {error}
