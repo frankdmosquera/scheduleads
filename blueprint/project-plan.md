@@ -76,9 +76,10 @@ schedule and the reports grow around it. The journey from "I found you" to
   Never sees the word scheduleads. Sees the business's brand and a calendar.
 - **Frank, as the agency.** Two hats in one app. As a business, the agency is
   organization number one: its own leads and bookings live in the CRM exactly
-  like a client's. As the platform, Frank creates each organization, seeds
-  its services and hours, embeds the widget in the site he built, hands over
-  sign-in, and sees who is on which package. That hat is the Better Auth
+  like a client's. As the platform, Frank sets up each client's login and
+  business (item 3b), embeds the widget in the site he built, and sees who is
+  on which package. The client sets their own services and hours in the app
+  (decision 30). That hat is the Better Auth
   `admin` role and a separate admin area. The only person who can delete an
   organization.
 - **Crew member.** Later. Assigned to jobs through the crew schedule. Not a
@@ -402,7 +403,7 @@ parts come out, the architecture stays.
 between stages the business names, a contact page with its timeline and an
 email composer, and a settings page for hours, services, resources and the
 calendar connection. Pipedrive and Salesmate are the reference feel. Sign-in
-and create-organization already exist. The first draft said "two screens for
+and the platform admin's Set up a client page exist (item 3b). The first draft said "two screens for
 a long time"; the CRM decision replaced that.
 
 **Design happens once, before Phase 2, as static mockups.** The booking modal
@@ -456,8 +457,8 @@ with the known fix applied, not a copy.
 | From | What | Fix applied on the way |
 |---|---|---|
 | scheduleads feature 1 | Email-OTP sign-in, create-organization, route guards by session state | Add codestash's auto-active-organization hook so sign-in resolves the org. The first repo worked around this inside feature 3 |
-| scheduleads feature 2 | `booking_link`, `availability_rule`, the public read route, the seed CLI, the shared-package layout | None. Verified against Railway |
-| scheduleads feature 3, steps 1 to 4 | `calendar_connection`, AES-GCM token cipher, OAuth connect with signed single-use state, the scope check that refuses a half-connection, disconnect that revokes at Google | None. Verified against the real Google account nine ways |
+| scheduleads feature 2 | `booking_link`, `availability_rule`, the public read route, the shared-package layout | Done as item 2. The seed CLI for real clients was dropped on 2026-09-25: a client sets their own hours in the app. `resource` came in beside them |
+| scheduleads feature 3, steps 1 to 4 | `calendar_connection`, AES-GCM token cipher, OAuth connect with signed single-use state, the scope check that refuses a half-connection, disconnect that revokes at Google | Done as item 3, changed by version 8: one connection per person, never per business, asking to add and edit events as well as read busy times |
 | scheduleads feature 3, step 5 | The provider seam, free/busy query, token refresh, check script | Unverified. Phase 1 verifies it. The calendar was deliberately disconnected during the step 4 test and never reconnected |
 | codestash | `use-auto-active-organization.ts`, `require-org-role.ts`, the `plan-limits.ts` shape, the `admin` plugin superadmin, the owner role without delete | Port. Rename to this repo's naming standard |
 | primo-painters | `emails/contact-lead.tsx`, the `calendly-provider.tsx` architecture, `BookNowTrigger.tsx`, the three-gate server action | Take the pattern. Remove every Calendly-specific line |

@@ -50,3 +50,36 @@ invitation can be made any more), and before the first client-facing deploy
 confirm the production `invitation` table holds no pending row.
 **Resolution:**
 Carried on Frank's call, 2026-09-30: checked on the live database before the first client-facing deploy (the `invitation` table must be empty, or its rows cancelled). Nothing in code to change.
+
+### F-52 [P3] open - holdTime and releaseTime cannot join a caller's transaction, which 5d and feature 7 need
+
+**File:** backend/lib/scheduling/hold-time.ts:33
+**Found:** 2026-10-01 by /audit independent (scope: step 5a.2, 1def0b9..d5175ae; lens: quality)
+**Why it matters:** The declared deviation holds for this step: one
+`INSERT ... VALUES` is atomic in Postgres, and its foreign key checks run
+inside the same statement, so a refused row takes the whole hold with it (the
+cross-business test proves `mine.ana` gets no row). But both functions always
+use the global `db`. 5d writes the booking, its commitments and the timeline
+entry together, and feature 7's reschedule must release the old time and hold
+the new one together; neither can be all-or-nothing through these functions as
+written. Inside a transaction, a `23P01` also aborts the whole transaction, so
+answering `{ held: false }` there needs a savepoint.
+**Suggested fix:** Nothing to change in 5a. Decide in 5d's spec: let both take
+an optional executor (`db` or a transaction) and hold inside a nested
+transaction (savepoint) so "taken" leaves the caller's transaction usable.
+**Resolution:**
+
+### F-53 [P3] open - The deadlock test's comment carries a finding number, which the standards keep out of code
+
+**File:** backend/lib/scheduling/hold-time.test.ts:111
+**Found:** 2026-10-01 by /audit independent (scope: current, c01dd9c..da22890; lens: quality)
+**Why it matters:** The comment above the stress test reads "can deadlock
+inside Postgres (F-51)". `coding-standards.md` (Comments, the balance) says no
+history in code comments, naming "finding numbers" explicitly: that lives in
+the build log. It is the only finding number in backend or shared code apart
+from the older migration 0000, and test files are the pattern later steps copy
+(4/F-53 and 4/F-54 were exactly that). Once `/complete` archives this ledger,
+a bare `F-51` in code points at nothing.
+**Suggested fix:** Drop "(F-51)" from the comment; the sentence already says
+why the test exists.
+**Resolution:**
