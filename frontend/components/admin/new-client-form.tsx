@@ -4,6 +4,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -12,13 +13,9 @@ import {
   type ProvisionClientInputType,
 } from "@scheduleads-app/shared/zod-validation";
 
-import Link from "next/link";
-
-import { AuthCard, Notice } from "@/components/auth-card";
+import { AuthCard, Field, Notice } from "@/components/auth-card";
 import { SignOutLink } from "@/components/sign-out-link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { provisionClient, type ProvisionedClientType } from "@/lib/api-client";
 
 const emptyForm: ProvisionClientInputType = { businessName: "", clientName: "", clientEmail: "" };
@@ -103,29 +100,17 @@ export function NewClientForm({ hasBusiness }: { hasBusiness: boolean }) {
             key={field.name}
             name={field.name}
             control={form.control}
-            render={({ field: input, fieldState }) => {
-              const errorId = `${field.name}-error`;
-              return (
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor={field.name}>{field.label}</Label>
-                  <Input
-                    {...input}
-                    id={field.name}
-                    type={"type" in field ? field.type : "text"}
-                    placeholder={field.placeholder}
-                    autoComplete={field.autoComplete}
-                    aria-invalid={fieldState.error ? true : undefined}
-                    aria-describedby={fieldState.error ? errorId : undefined}
-                    className="h-10 bg-muted px-3"
-                  />
-                  {fieldState.error ? (
-                    <p id={errorId} className="text-xs text-destructive">
-                      {fieldState.error.message}
-                    </p>
-                  ) : null}
-                </div>
-              );
-            }}
+            render={({ field: input, fieldState }) => (
+              <Field
+                {...input}
+                id={field.name}
+                label={field.label}
+                type={"type" in field ? field.type : "text"}
+                placeholder={field.placeholder}
+                autoComplete={field.autoComplete}
+                error={fieldState.error?.message}
+              />
+            )}
           />
         ))}
         {refusal ? <Notice>{refusal}</Notice> : null}

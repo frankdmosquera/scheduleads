@@ -123,7 +123,7 @@ lead in its first pipeline stage, the confirmation email with its `.ics`
 arrives, the calendar shows the event, the cancel link in that email works,
 and a second resource can hold the same time as the first.
 
-- [ ] 4. **CRM spine** - `contact`, `pipeline_stage` seeded with the four
+- [x] 4. **CRM spine** - `contact`, `pipeline_stage` seeded with the four
   defaults at provisioning, and `activity` carrying both the timeline and the
   next-step queue. The tables and the API routes the loop writes to.
   `resource` moved to item 2, because availability is defined per resource and
@@ -249,6 +249,16 @@ without Frank touching the database.
   already gave away on the phone. After item 5 because it shows bookings,
   before item 13 because Primo takes phone calls. Numbered 12b so nothing
   after it renumbers
+- [ ] 12c. **Backups, restore and retention** - daily backups of the live
+  database, a nightly copy kept outside Railway, a restore actually tested
+  into a scratch database, protection against deleting the database by
+  mistake, and the retention rules: how long copies are kept, and what
+  happens to a business's data when a client leaves or a customer asks to be
+  removed. Added 2026-09-30 by Frank: one wrong click on Railway or a bad
+  migration would lose every client's leads and bookings with no way back.
+  Before item 13, the first real client's data. What Railway's own backups
+  cover on the current plan is checked when this item is specced. Numbered
+  12c so nothing after it renumbers
 
 ## Phase 5. The first paying client
 

@@ -400,6 +400,6 @@ permanent truth.
   for itself) a clean switch to turn on later: a hard-coded role name would
   silently ignore every custom role.
   The one exception is the platform admin, `user.role === "admin"` (see
-  `allowUserToCreateOrganization`). That is Frank's role above every
+  `requirePlatformAdminMiddleware`). That is Frank's role above every
   business, it belongs to the `admin` plugin, and dynamic roles never
   apply to it.

@@ -12,8 +12,8 @@ export const requirePlatformAdminMiddleware = createMiddleware(async (c, next) =
     return c.json(refuse("unauthenticated", "Sign in to continue."), 401);
   }
 
-  // The one place a role name is compared (coding standards, Backend): the platform admin
-  // sits above every business, and dynamic roles never apply to it.
+  // The platform admin is the one role compared by name (coding standards, Backend): it sits
+  // above every business, and dynamic roles never apply to it.
   const isPlatformAdmin = (session.user as { role?: string | null }).role === "admin";
   if (!isPlatformAdmin) {
     return c.json(refuse("forbidden", "Only the agency can do this."), 403);

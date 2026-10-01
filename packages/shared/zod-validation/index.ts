@@ -7,6 +7,7 @@ export * from "./auth-validation-schemas/sign-in-code-validation-schema.js";
 export * from "./organization-validation-schemas/business-name-validation-schema.js";
 export * from "./organization-validation-schemas/organization-slug-validation-schema.js";
 export * from "./admin-validation-schemas/provision-client-validation-schema.js";
+export * from "./crm-validation-schemas/contact-validation-schema.js";
 export * from "./booking-links-validation-schemas/booking-link-id-validation-schema.js";
 export * from "./availability-validation-schemas/weekly-hours-validation-schema.js";
 export * from "./availability-validation-schemas/date-hours-validation-schema.js";

@@ -168,7 +168,7 @@ async function isSlugTaken(slug: string): Promise<boolean> {
   return Boolean(row);
 }
 
-// The address was free when this setup checked, under its lock. A business there now with no
+// The address was free when this setup checked, under its claim. A business there now with no
 // member but this client is this setup's, half made: removed, with its owner row and first
 // person (cascade). One with anyone else in it was made another way: kept, and true is
 // returned so the answer says the name is taken.

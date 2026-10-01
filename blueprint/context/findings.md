@@ -7,26 +7,6 @@
 > finding is `open` or `fixed`, then archives resolved findings with the work
 > and resets this file.
 
-### F-14 [P3] open - The sign-in and create-business forms bypass the project's form standard without saying so
-
-**File:** frontend/components/auth-card.tsx:240
-**Found:** 2026-09-23 by /audit (scope: current; lens: quality)
-**Why it matters:** `coding-standards.md` (Forms) says to use shadcn `Input` and
-`Label` and to wire forms with react-hook-form. Both forms in this feature use
-`useState` and a hand-written `Field`, and `frontend/components/ui/` holds only
-`button.tsx`. That may well be the right call for two one-field forms, but the
-workspace rule "Do it the right way, out loud" requires the deviation to be
-named when it is taken, and neither the spec preamble nor the build log
-records it. Item 2 onward builds real forms and will copy whichever pattern it
-finds.
-
-**Suggested fix:** Either move both forms onto shadcn `Input`/`Label` with
-react-hook-form (both already dependencies), or record the choice and its
-reason in the spec preamble and build log so the next form knows which pattern
-is the standard.
-**Resolution:**
-Step 3b.3, 2026-09-30: the create form is deleted, and the new Set up a client form follows the Forms standard (shadcn `Input` and `Label`, react-hook-form's `Controller`, the shared schema through `zodResolver`). Only the sign-in form still uses the hand-written `Field`; out of feature 3b's scope.
-
 ### F-32 [P3] unverified - A pick is the package's display name, so a renamed holiday would take a business's booking page down
 
 **File:** backend/lib/bookable-hours/closed-holidays.ts:58
@@ -52,22 +32,6 @@ the display name. Worth a note on feature 12 now so it is not rediscovered.
 **Resolution:** Carried to feature 12 on Frank's call, 2026-09-28, noted on
 item 12 in `build-plan.md`. Stays unverified until then.
 
-### F-34 [P3] open - Three config comments carry history the comment standard keeps out of code
-
-**File:** backend/tsconfig.types.json:2
-**Found:** 2026-09-28 by /audit independent (scope: current; lens: quality)
-**Why it matters:** `coding-standards.md` (Comments, "The balance") says no
-history in code comments, naming step numbers as the first example: that lives
-in the build log. This feature added `backend/tsconfig.types.json:2` ("AppType,
-step 2.5"), `backend/tsconfig.json:14` and `packages/shared/tsconfig.build.json:3`
-("No src/ folder (Frank, 2026-09-26)"). The Sep 27 comment sweep covered the
-code files, not the tsconfigs. Harmless at runtime; it is the pattern the next
-config file copies.
-**Suggested fix:** Drop "step 2.5" and the two "(Frank, 2026-09-26)" asides and
-keep the why ("declarations only, because Vercel builds only the frontend"; "no
-src/ folder, so the code sits beside the build output").
-**Resolution:**
-
 ### F-47 [P3] open - The spec says accepting an invitation is refused, but Better Auth checks no role for it
 
 **File:** blueprint/context/current-feature.md:328
@@ -86,30 +50,3 @@ invitation can be made any more), and before the first client-facing deploy
 confirm the production `invitation` table holds no pending row.
 **Resolution:**
 Carried on Frank's call, 2026-09-30: checked on the live database before the first client-facing deploy (the `invitation` table must be empty, or its rows cancelled). Nothing in code to change.
-
-### F-52 [P3] open - Three comments still point at the advisory lock and at a role check that has moved
-
-**File:** backend/lib/admin/provision-client.ts:171
-**Found:** 2026-09-30 by /audit independent (scope: current; lens: quality)
-**Why it matters:** This project treats its comments and standards as the
-record of why, and each of these now sends the reader to something that is not
-there:
-- `provision-client.ts:171` says the address "was free when this setup checked,
-  under its lock". There is no lock any more; the address is held by a
-  `client_setup_claim` row, and that is exactly the reason the business removed
-  in the clean-up can only be this setup's.
-- `require-platform-admin-middleware.ts:15` calls itself "The one place a role
-  name is compared", but `provision-client.ts:143` also compares
-  `login.role === "admin"` (to refuse the platform admin's email), and
-  `frontend/lib/is-platform-admin.ts:5` does the same for the screen.
-- `coding-standards.md:402-403` names the platform-admin exception "(see
-  `allowUserToCreateOrganization`)". Since this feature that option is the
-  literal `false` and compares no role; the check lives in
-  `requirePlatformAdminMiddleware`.
-Harmless at runtime. It is the kind of drift F-12 recorded, and the next item
-that touches the setup path or the admin role reads these lines first.
-**Suggested fix:** Say "under its claim" at `:171`; reword the middleware line
-to "the platform admin is the one role compared by name (coding standards,
-Backend)"; point the standard at `requirePlatformAdminMiddleware` instead of
-`allowUserToCreateOrganization`.
-**Resolution:**
