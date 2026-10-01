@@ -13,6 +13,7 @@ import * as schema from "@scheduleads-app/shared/db";
 import { member, resource } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
+import { seedPipelineStages } from "../crm/seed-pipeline-stages.js";
 import { sendLoginCode } from "./send-login-code.js";
 
 if (!process.env.BETTER_AUTH_SECRET) {
@@ -110,7 +111,8 @@ export const auth = betterAuth({
 
       organizationHooks: {
         // Every business gets its first person, named after the business and linked to its
-        // owner's login (the client's), so the app knows whose calendar that person is.
+        // owner's login (the client's), so the app knows whose calendar that person is, and
+        // its four pipeline stages.
         // Outside Better Auth's writes: if it fails, provision-client.ts removes the business.
         afterCreateOrganization: async ({ organization: createdOrganization, member: owner }) => {
           await db.insert(resource).values({
@@ -120,6 +122,7 @@ export const auth = betterAuth({
             kind: "person",
             userId: owner.userId,
           });
+          await seedPipelineStages(createdOrganization.id);
         },
       },
       schema: {

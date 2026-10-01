@@ -43,6 +43,13 @@
       "when": 1790825035967,
       "tag": "0005_client_setup_claim",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790831245124,
+      "tag": "0006_pipeline_stage",
+      "breakpoints": true
     }
   ]
 }

@@ -9,12 +9,14 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
+import { DEFAULT_PIPELINE_STAGES } from "@scheduleads-app/shared/crm";
 import * as schema from "@scheduleads-app/shared/db";
 import {
   availabilityRule,
   bookingLink,
   member,
   organization,
+  pipelineStage,
   resource,
   user,
 } from "@scheduleads-app/shared/db";
@@ -311,6 +313,24 @@ try {
         .where(and(eq(resource.id, firstPerson.id), isNull(resource.userId)))
         .returning({ id: resource.id });
 
+      // The four default stages, as the create hook gives a new business. Only when it has
+      // none, so stages renamed by hand survive a reseed.
+      const [anyStage] = await tx
+        .select({ id: pipelineStage.id })
+        .from(pipelineStage)
+        .where(eq(pipelineStage.organizationId, organizationId))
+        .limit(1);
+      if (!anyStage) {
+        await tx.insert(pipelineStage).values(
+          DEFAULT_PIPELINE_STAGES.map((name, index) => ({
+            id: randomUUID(),
+            organizationId,
+            name,
+            position: index + 1,
+          }))
+        );
+      }
+
       // Parsed before writing: the jsonb columns would accept a bad week.
       const [existingBusinessHours] = await tx
         .select({
@@ -400,6 +420,7 @@ try {
         !existingUser && "account",
         !existingOrg && "business",
         !existingMember && "membership",
+        !anyStage && "pipeline stages",
         firstPerson.made && "first person",
         linked.length && "first person's login link",
         !existingBusinessHours && "business hours",

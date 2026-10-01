@@ -31,6 +31,10 @@
     "./calendar": {
       "types": "./dist/calendar/calendar-connect-outcomes.d.ts",
       "default": "./dist/calendar/calendar-connect-outcomes.js"
+    },
+    "./crm": {
+      "types": "./dist/crm/index.d.ts",
+      "default": "./dist/crm/index.js"
     }
   },
   "scripts": {

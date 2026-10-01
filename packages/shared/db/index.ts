@@ -14,3 +14,4 @@ export * from "./booking-tables/availability-rule-table.js";
 export * from "./booking-tables/calendar-connection-table.js";
 export * from "./booking-tables/calendar-oauth-state-table.js";
 export * from "./admin-tables/client-setup-claim-table.js";
+export * from "./crm-tables/pipeline-stage-table.js";

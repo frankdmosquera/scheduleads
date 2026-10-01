@@ -20,7 +20,7 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the admin route tests");
 const { app } = await import("../app.js");
 const { db } = await import("../database.js");
 const { appOrigin, auth } = await import("../lib/auth/auth-server.js");
-const { clientSetupClaim, invitation, member, organization, resource, user } =
+const { clientSetupClaim, invitation, member, organization, pipelineStage, resource, user } =
   await import("@scheduleads-app/shared/db");
 
 const tag = randomUUID().slice(0, 8);
@@ -168,6 +168,13 @@ describe("POST /admin/clients", () => {
 
     const members = await db.select().from(member).where(eq(member.organizationId, business.id));
     expect(members).toEqual([expect.objectContaining({ userId: login.id, role: "owner" })]);
+
+    const stages = await db
+      .select({ name: pipelineStage.name, position: pipelineStage.position })
+      .from(pipelineStage)
+      .where(eq(pipelineStage.organizationId, business.id))
+      .orderBy(pipelineStage.position);
+    expect(stages.map((stage) => stage.name)).toEqual(["New", "Contacted", "Booked", "Done"]);
 
     const people = await db.select().from(resource).where(eq(resource.organizationId, business.id));
     expect(people).toEqual([
