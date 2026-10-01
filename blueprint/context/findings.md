@@ -7,7 +7,7 @@
 > finding is `open` or `fixed`, then archives resolved findings with the work
 > and resets this file.
 
-### F-14 [P3] open - The sign-in and create-business forms bypass the project's form standard without saying so
+### F-14 [P3] fixed - The sign-in and create-business forms bypass the project's form standard without saying so
 
 **File:** frontend/components/auth-card.tsx:240
 **Found:** 2026-09-23 by /audit (scope: current; lens: quality)
@@ -26,6 +26,7 @@ reason in the spec preamble and build log so the next form knows which pattern
 is the standard.
 **Resolution:**
 Step 3b.3, 2026-09-30: the create form is deleted, and the new Set up a client form follows the Forms standard (shadcn `Input` and `Label`, react-hook-form's `Controller`, the shared schema through `zodResolver`). Only the sign-in form still uses the hand-written `Field`; out of feature 3b's scope.
+Fixed 2026-10-01 on Frank's call (the pending tasks before step 4.2), in a chore commit on `feature/04-crm-spine`; waits for step 4.2's review to close. The sign-in form now follows the Forms standard: `auth-card.tsx`'s `Field` is built on shadcn `Input` and `Label`, both sign-in steps are react-hook-form forms through `Controller` with the shared schemas via `zodResolver`, and the Set up a client form uses the same `Field`. Checked in the browser against the local API: a bad email and a short code each showed their message under the field with focus there; "Use a different email" kept the address; a typed " Admin@Example.com " was sent trimmed and lowercased; the dev admin signed in to Summit Painting; the Set up a client form still showed all three messages.
 
 ### F-32 [P3] unverified - A pick is the package's display name, so a renamed holiday would take a business's booking page down
 
@@ -52,7 +53,7 @@ the display name. Worth a note on feature 12 now so it is not rediscovered.
 **Resolution:** Carried to feature 12 on Frank's call, 2026-09-28, noted on
 item 12 in `build-plan.md`. Stays unverified until then.
 
-### F-34 [P3] open - Three config comments carry history the comment standard keeps out of code
+### F-34 [P3] fixed - Three config comments carry history the comment standard keeps out of code
 
 **File:** backend/tsconfig.types.json:2
 **Found:** 2026-09-28 by /audit independent (scope: current; lens: quality)
@@ -67,6 +68,7 @@ config file copies.
 keep the why ("declarations only, because Vercel builds only the frontend"; "no
 src/ folder, so the code sits beside the build output").
 **Resolution:**
+Fixed 2026-10-01 on Frank's call (the pending tasks before step 4.2), in a chore commit on `feature/04-crm-spine`; waits for step 4.2's review to close. `backend/tsconfig.types.json` no longer says "step 2.5", and `backend/tsconfig.json` and `packages/shared/tsconfig.build.json` no longer carry "(Frank, 2026-09-26)"; each keeps its why.
 
 ### F-47 [P3] open - The spec says accepting an invitation is refused, but Better Auth checks no role for it
 
@@ -87,7 +89,7 @@ confirm the production `invitation` table holds no pending row.
 **Resolution:**
 Carried on Frank's call, 2026-09-30: checked on the live database before the first client-facing deploy (the `invitation` table must be empty, or its rows cancelled). Nothing in code to change.
 
-### F-52 [P3] open - Three comments still point at the advisory lock and at a role check that has moved
+### F-52 [P3] fixed - Three comments still point at the advisory lock and at a role check that has moved
 
 **File:** backend/lib/admin/provision-client.ts:171
 **Found:** 2026-09-30 by /audit independent (scope: current; lens: quality)
@@ -113,3 +115,24 @@ to "the platform admin is the one role compared by name (coding standards,
 Backend)"; point the standard at `requirePlatformAdminMiddleware` instead of
 `allowUserToCreateOrganization`.
 **Resolution:**
+Fixed 2026-10-01 on Frank's call (the pending tasks before step 4.2), in a chore commit on `feature/04-crm-spine`; waits for step 4.2's review to close. `provision-client.ts` says "under its claim"; the platform-admin middleware says the platform admin is the one role compared by name, not that it is the one place; `coding-standards.md` points the exception at `requirePlatformAdminMiddleware`.
+
+### F-53 [P3] open - The same-name test passes on any refusal and only after an earlier test has run
+
+**File:** backend/lib/crm/seed-pipeline-stages.test.ts:92
+**Found:** 2026-09-30 by /audit independent (scope: step 4.1; lens: tests)
+**Why it matters:** The test that proves one business cannot have "New", "new"
+or "NEW" twice asserts a bare `rejects.toThrow()`, so any failed insert counts
+as proof of the unique index (a broken foreign key or a renamed column would
+pass it too). Every other rejection in the backend tests names the error it
+expects. It also relies on `first` having been seeded by a test in the other
+`describe` block: run on its own (`vitest -t "capitals ignored"`), `first` has
+no stages, the `add("New")` insert succeeds and the test fails for a reason
+unrelated to the rule. The rule itself is correct today (the index in
+migration 0006 is `("organizationId", lower("name"))`, and the suite passes).
+**Suggested fix:** Seed its own throwaway business inside the test, and assert
+the refusal is the name index, for example
+`rejects.toMatchObject({ cause: { constraint_name: "pipeline_stage_organization_name_unique" } })`
+(or the code `23505`), for all three inserts.
+**Resolution:**
+Carried to step 4.2 on Frank's call, 2026-10-01. Written into that step's plan in the spec.

@@ -3,6 +3,8 @@
 
 import type { ReactNode } from "react";
 
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 // Deliberately plain: prototypes/ has no mockup for these screens.
@@ -33,6 +35,8 @@ export function AuthCard({
   );
 }
 
+// One labelled input with its error, on shadcn's Input and Label (the Forms standard). Every
+// form spreads react-hook-form's Controller field into it; the error is linked for screen readers.
 export function Field({
   id,
   label,
@@ -43,28 +47,18 @@ export function Field({
   id: string;
   label: string;
   error?: string;
-} & React.InputHTMLAttributes<HTMLInputElement>) {
+} & React.ComponentProps<typeof Input>) {
   const errorId = `${id}-error`;
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-foreground">
-        {label}
-      </label>
-      <input
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        {...props}
         id={id}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
-        className={cn(
-          "h-10 w-full rounded-lg border border-border bg-muted px-3 text-sm text-foreground",
-          "placeholder:text-[var(--faint)]",
-          "outline-none transition-colors",
-          "focus-visible:border-[var(--accent-line)] focus-visible:ring-3 focus-visible:ring-ring/30",
-          "aria-invalid:border-destructive aria-invalid:ring-destructive/20",
-          "disabled:opacity-50",
-          className
-        )}
-        {...props}
+        className={cn("h-10 bg-muted px-3", className)}
       />
       {error ? (
         <p id={errorId} className="text-xs text-destructive">

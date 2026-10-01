@@ -1,6 +1,6 @@
 {
   // The build: only the seven folders the apps import, compiled to dist/ with their types.
-  // No src/ folder (Frank, 2026-09-26), so the list is written out: the seed, the drizzle
+  // No src/ folder, so the list is written out: the seed, the drizzle
   // config and the tests never reach dist/.
   "extends": "./tsconfig.json",
   "compilerOptions": {

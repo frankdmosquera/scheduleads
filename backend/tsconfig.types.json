@@ -1,5 +1,5 @@
 {
-  // The routes' type for the frontend (AppType, step 2.5): declarations only, no code, into
+  // The routes' type for the frontend (AppType): declarations only, no code, into
   // dist/types/. The frontend's own build runs this first, because Vercel never runs the
   // backend's build and an old copy would let a renamed route pass the frontend build.
   "extends": "./tsconfig.json",

@@ -106,9 +106,11 @@ merges with a merge commit on Frank's yes.
     four. The backend builds.
 
 - [ ] **4.2 Contacts.** The people a business deals with.
-  - **Blocker for this step's plan, Frank's call:** how contacts are matched
-    (see Open questions). Built as the recommended answer unless he chooses
-    otherwise.
+  - **Blocker, answered by Frank 2026-10-01: A.** The same email in the same
+    business is the same contact (a repeat customer's bookings land on one
+    timeline); no email is always a new contact; the first name given is
+    kept. Rejected, B: every booking a new contact (a split history, and
+    merging by hand is a screen no feature plans).
   - `packages/shared/db/crm-tables/contact-table.ts` and migration
     `0007_contact`.
   - `packages/shared/zod-validation/crm-validation-schemas/contact-validation-schema.ts`:
@@ -116,6 +118,10 @@ merges with a merge commit on Frank's yes.
     (trimmed, up to 40, optional).
   - `backend/lib/crm/find-or-create-contact.ts`, the function feature 5
     calls for every booking.
+  - **Carried from step 4.1's review (Frank, 2026-10-01), F-53:** the
+    capitals test in `seed-pipeline-stages.test.ts` seeds its own business and
+    expects the refusal to come from `pipeline_stage_organization_name_unique`
+    (Postgres code 23505), not any failed insert.
   - **Done when** the backend and shared tests pass, with tests proving the
     matching rule Frank picks; that a contact is only ever found inside its
     own business (the same email in two businesses is two contacts); that two
@@ -184,7 +190,7 @@ filters on it.
   nullable, stored as typed, trimmed).
 - Unique `(organizationId, id)`, so `activity` (and feature 5's `lead`) can
   point at a contact of its own business only.
-- Matching (recommended answer, see Open questions): unique `(organizationId,
+- Matching (Frank, 2026-10-01): unique `(organizationId,
   email)` where `email` is not null. `findOrCreateContact(organizationId,
   { name, email?, phone? })` returns `{ contact, created }`: with an email it
   inserts with `on conflict do nothing` and then reads the row, so two
@@ -248,11 +254,3 @@ new type is one migration and one line.
   whether it is required; this spec makes it optional on purpose (owner-made
   phone bookings in feature 5).
 
-## Open questions
-
-- **How contacts are matched** (step 4.2's blocker). Recommended: the same
-  email in the same business is the same contact, so a repeat customer's
-  bookings all land on one timeline; a contact without an email is always
-  new; the first name given is kept. The alternative: every booking makes a
-  new contact, and duplicates are merged by hand later, which no screen
-  plans for.
