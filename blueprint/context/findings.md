@@ -45,6 +45,7 @@ no self-serve business creation, the shared schemas used by the forms only
 until a route owned by this API validates with them, and `plan` silently
 discarded on both create and update.
 **Resolution:**
+Step 3b.2, 2026-09-30: the backend and shared lines are corrected (`auth-server.ts` sign-up and hook comments, `sign-in/page.tsx:36`, which no longer claims the API uses the same schema). The `plan` comment already matched the code. Left for step 3b.3: `app/page.tsx:98` ("go create one") and the create page, which 3b.3 deletes.
 
 ### F-13 [P3] open - A signed-in user with no business is sent to a create form that can only refuse them, with no way to sign out
 
@@ -86,7 +87,7 @@ reason in the spec preamble and build log so the next form knows which pattern
 is the standard.
 **Resolution:**
 
-### F-16 [P3] open - Better Auth endpoints already open two paths the spec reserves for later items
+### F-16 [P3] fixed - Better Auth endpoints already open two paths the spec reserves for later items
 
 **File:** backend/src/lib/auth.ts:85
 **Found:** 2026-09-23 by /audit (scope: current; lens: security)
@@ -112,6 +113,7 @@ item 3b decides the invitation flow, and correct the `user.role` contract and
 comments to say a platform admin can set it through the admin plugin's
 endpoint, or record either as accepted with the reason.
 **Resolution:**
+Repaired by step 3b.2, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.2's review to close. `owner` and `admin` now hold `invitation: []` (`auth-server.ts`), and a route test shows an owner's `/organization/invite-member` is 403 with no invitation row; the `user.role` comments (`auth-server.ts`, `user-table.ts`) now say the platform admin can set it through the admin plugin. Shown able to fail: with `invitation: ["create", "cancel"]` back, the invite test failed.
 
 ### F-32 [P3] unverified - A pick is the package's display name, so a renamed holiday would take a business's booking page down
 
@@ -180,7 +182,7 @@ login and a 500.
 **Resolution:**
 Fixed 2026-09-30 on Frank's yes, in the step 3b.1 review-fix commit. On a failure, `removeBusinessMadeFor` (`provision-client.ts`) removes a business at the slug that has no member but this client (its owner row and first person go by cascade), then the login this setup made; `slug_taken` is answered only when a business with someone else in it holds the slug. Two route tests force a failure right after Better Auth's save: a new login (no business, no login left, 500) and a reused one (no business, login kept, the retry answers 201). Shown able to fail by removing the business delete: both failed. Waits for the next review to close.
 
-### F-36 [P3] open - The spec still says broken JSON is answered with the refusal shape
+### F-36 [P3] fixed - The spec still says broken JSON is answered with the refusal shape
 
 **File:** blueprint/context/current-feature.md:259
 **Found:** 2026-09-30 by /audit (scope: step 3b.1; lens: quality)
@@ -193,8 +195,10 @@ steps and `/complete` read, does not.
 **Suggested fix:** Correct the contract line: malformed JSON is Hono's own plain
 400; a missing or wrong body is `400 bad_request`.
 **Resolution:**
+Carried to step 3b.2 on Frank's call, 2026-09-30. Written into that step's plan in the spec.
+Repaired by step 3b.2, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.2's review to close. The spec's Data / contracts and step 3b.1's route line now say malformed JSON is Hono's own plain-text 400 and a missing or wrong body is `400 bad_request`.
 
-### F-37 [P3] open - No test proves the /admin routes carry the dashboard's guards
+### F-37 [P3] fixed - No test proves the /admin routes carry the dashboard's guards
 
 **File:** backend/routes/admin-routes.test.ts:120
 **Found:** 2026-09-30 by /audit (scope: step 3b.1; lens: tests)
@@ -207,6 +211,8 @@ what `no-store` exists to keep out of caches.
 form-encoded post from another origin with the platform admin's cookie is
 refused (403) and makes nothing.
 **Resolution:**
+Carried to step 3b.2 on Frank's call, 2026-09-30. Written into that step's plan in the spec.
+Repaired by step 3b.2, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.2's review to close. Two route tests: a 201 answer carries `Cache-Control: no-store`, and a form-encoded post from another origin with the platform admin's cookie is 403 and makes no login. Shown able to fail: without the `/admin/*` guard line in `app.ts`, both failed.
 
 ### F-38 [P2] fixed - Two overlapping setups for one email can give the client two businesses, or delete the owner of a business reported as made
 
@@ -240,7 +246,7 @@ deleted client.
 **Resolution:**
 Fixed 2026-09-30 on Frank's yes, in the step 3b.1 review-fix commit. `withSetupLocks` holds two Postgres advisory locks on one reserved connection for the whole setup, email first then address, so setups for one email (or one address) run one after another and the second sees the first's finished login as `email_taken`. The login clean-up also deletes only while the login belongs to no business (`removeLoginWithoutBusiness`); with the locks no request can reach that case, so no test exercises that guard. Two route tests hold the first setup 300 ms and start a second for the same email 50 ms later, with the same business and with another: one 201, one 409, one business, one owner. Shown able to fail by removing the locks: both failed. Waits for the next review to close.
 
-### F-39 [P3] open - Finishing an unfinished setup ignores the client name sent with it
+### F-39 [P3] fixed - Finishing an unfinished setup ignores the client name sent with it
 
 **File:** backend/lib/admin/provision-client.ts:40
 **Found:** 2026-09-30 by /audit independent (scope: step 3b.1; lens: quality)
@@ -256,6 +262,8 @@ attempt, and the correction is dropped without a word. The reuse test
 `updateUser` with no headers), or write in the spec that the first name stands,
 and assert the chosen behaviour in the reuse test.
 **Resolution:**
+Carried to step 3b.2 on Frank's call, 2026-09-30. Written into that step's plan in the spec.
+Repaired by step 3b.2, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.2's review to close. `renameLogin` (`provision-client.ts`) writes the name typed now over the reused login's, and the answer returns it; the reuse test checks both. Shown able to fail: without the rename, the test failed.
 
 ### F-40 [P3] open - Two shared field schemas live in files named after other schemas
 
@@ -275,8 +283,9 @@ area folder, export them through `index.ts`, and remove
 `createOrganizationValidationSchema` with its page in 3b.3. Word the business
 name message so it reads right on both forms.
 **Resolution:**
+Carried to step 3b.3, which deletes the create page the business-name rule's file is named after on Frank's call, 2026-09-30. Written into that step's plan in the spec.
 
-### F-41 [P3] unverified - A database error inside a setup may print the client's email in the API's log
+### F-41 [P3] fixed - A database error inside a setup may print the client's email in the API's log
 
 **File:** backend/lib/admin/provision-client.ts:61
 **Found:** 2026-09-30 by /audit independent (scope: step 3b.1; lens: security), raised as a remaining risk and recorded by the builder
@@ -289,3 +298,5 @@ print the email. Not observed: no run produced such a log line.
 If it shows, log a safe reason (the project already has `safe-error-reason.ts`
 for the calendar) and rethrow a plain error without the query's parameters.
 **Resolution:**
+Carried to step 3b.2 on Frank's call, 2026-09-30. Written into that step's plan in the spec.
+Confirmed 2026-09-30 by a route test before any repair: a real duplicate-key error inside the login's creation reached Hono's error log as `Failed query: insert into "user" ...` with the client's email in its values. Repaired by step 3b.2, 2026-09-30, and set to `fixed` by the builder; waits for step 3b.2's review to close. `provisionClient` now logs `[admin] a client setup failed: <safe reason>` (the database error reduced to its Postgres code by `safeErrorReason`, moved from `lib/calendar` to `lib/errors` now that two areas use it) and rethrows a plain error. The same test now passes; with the raw error rethrown it fails again.

@@ -27,7 +27,7 @@ const { findCalendarCheckTarget } = await import("./find-calendar-check-target.j
 const { getBusyTimes } = await import("../lib/calendar/get-busy-times.js");
 const { CalendarReconnectNeededError } =
   await import("../lib/calendar/calendar-reconnect-needed-error.js");
-const { safeErrorReason } = await import("../lib/calendar/safe-error-reason.js");
+const { safeErrorReason } = await import("../lib/errors/safe-error-reason.js");
 
 // "Wed 30 Sep, 10:00 to 11:00", in the business's time zone, not the laptop's.
 function describeBlock({ start, end }: BusyBlockType, timeZone: string): string {

@@ -20,7 +20,8 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the admin route tests");
 const { app } = await import("../app.js");
 const { db } = await import("../database.js");
 const { appOrigin, auth } = await import("../lib/auth/auth-server.js");
-const { member, organization, resource, user } = await import("@scheduleads-app/shared/db");
+const { invitation, member, organization, resource, user } =
+  await import("@scheduleads-app/shared/db");
 
 const tag = randomUUID().slice(0, 8);
 const email = (name: string) => `admin-${name}-${tag}@example.com`;
@@ -209,7 +210,11 @@ describe("POST /admin/clients", () => {
       platformAdmin.email
     );
     expect(response.status).toBe(201);
-    expect((await response.json()).client.id).toBe(unfinished.id);
+    const answer = await response.json();
+    expect(answer.client).toMatchObject({ id: unfinished.id, name: "Client finished" });
+    expect(await loginsWith(unfinished.email)).toEqual([
+      expect.objectContaining({ id: unfinished.id, name: "Client finished" }), // was "Unfinished"
+    ]);
 
     const [business] = await businessesWith(slugOf("finished"));
     const members = await db.select().from(member).where(eq(member.organizationId, business.id));
@@ -360,5 +365,89 @@ describe("POST /admin/clients", () => {
     const [login] = await loginsWith(email("twice-a"));
     expect(await db.select().from(member).where(eq(member.userId, login.id))).toHaveLength(1);
     expect(await businessesWith(slugOf("twice-b"))).toHaveLength(0);
+  });
+  // F-41: a real database error inside the login's creation must not print the email.
+  test("a database error while making the login leaves no email in the log", async () => {
+    const logged: string[] = [];
+    const quiet = vi.spyOn(console, "error").mockImplementation((...parts) => {
+      logged.push(
+        parts
+          .map((part) => (part instanceof Error ? `${part.message} ${part.stack}` : String(part)))
+          .join(" ")
+      );
+    });
+    const failing = vi.spyOn(auth.api, "createUser").mockImplementationOnce(async () => {
+      // A duplicate id: Postgres refuses, and drizzle's error carries the query and its values.
+      await db.insert(user).values({ id: platformAdmin.id, name: "", email: email("logged") });
+      throw new Error("unreachable");
+    });
+
+    const response = await setUp(client("logged"), platformAdmin.email);
+
+    failing.mockRestore();
+    quiet.mockRestore();
+    expect(response.status).toBe(500);
+    expect(logged.length).toBeGreaterThan(0);
+    for (const line of logged) expect(line).not.toContain(email("logged"));
+  });
+});
+
+describe("the /admin routes keep the dashboard's guards (F-37)", () => {
+  test("an answer is never cached", async () => {
+    const response = await setUp(client("cached"), platformAdmin.email);
+    expect(response.status).toBe(201);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+  });
+
+  test("a form posted from another website with the platform admin's login is refused", async () => {
+    const response = await app.request("/admin/clients", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Origin: "https://another-site.example",
+        Cookie: cookies.get(platformAdmin.email)!,
+      },
+      body: new URLSearchParams(client("cross-site")).toString(),
+    });
+    expect(response.status).toBe(403);
+    expect(await loginsWith(email("cross-site"))).toHaveLength(0);
+  });
+});
+
+describe("the old doors are closed (step 3b.2)", () => {
+  test("the platform admin's own Better Auth create is refused and makes nothing", async () => {
+    const response = await app.request("/api/auth/organization/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: appOrigin,
+        Cookie: cookies.get(platformAdmin.email)!,
+      },
+      body: JSON.stringify({ name: businessName("direct"), slug: slugOf("direct") }),
+    });
+    expect(response.status).toBe(403);
+    expect(await businessesWith(slugOf("direct"))).toHaveLength(0);
+  });
+
+  test("an owner cannot invite anyone", async () => {
+    const response = await app.request("/api/auth/organization/invite-member", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: appOrigin,
+        Cookie: cookies.get(owner.email)!,
+      },
+      body: JSON.stringify({
+        email: email("invited"),
+        role: "member",
+        organizationId: owner.organizationId,
+      }),
+    });
+    expect(response.status).toBe(403);
+    const invitations = await db
+      .select()
+      .from(invitation)
+      .where(eq(invitation.organizationId, owner.organizationId));
+    expect(invitations).toHaveLength(0);
   });
 });

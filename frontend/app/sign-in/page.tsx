@@ -33,7 +33,7 @@ export default function SignInPage() {
     setFieldError(null);
     setRefusal(null);
 
-    // Same rules as the API, so the form never accepts what the server would reject.
+    // Checked here before sending; Better Auth checks the address again with its own rule.
     const parsed = signInEmailValidationSchema.safeParse({ email });
     if (!parsed.success) {
       setFieldError(parsed.error.issues[0]?.message ?? "Enter a valid email address.");

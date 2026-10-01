@@ -1,5 +1,5 @@
-// Backend: why a calendar call failed, in words safe to print. A database error's message
-// carries the whole query and its values (the locked tokens, the Gmail), so only its
+// Backend: why something failed, in words safe to print. A database error's message carries
+// the whole query and its values (locked tokens, a Gmail, a client's email), so only its
 // Postgres code is kept. Our own errors name no secret.
 
 export function safeErrorReason(error: unknown): string {

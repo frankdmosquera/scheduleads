@@ -153,8 +153,8 @@ merges with a merge commit on Frank's yes.
     `app.ts` with `dashboardCorsMiddleware`, `dashboardCsrfMiddleware` and
     `dashboardNoStoreMiddleware` on `/admin/*`, then
     `requirePlatformAdminMiddleware`. Validates the body with the shared
-    schema before any database call (malformed JSON or a failed parse is
-    `400 bad_request`). Answers `201`.
+    schema before any database call (a failed parse is `400 bad_request`;
+    malformed JSON is Hono's own plain 400, F-36). Answers `201`.
   - `backend/lib/errors/refuse.ts`: adds `email_taken` and `slug_taken`.
   - `backend/routes/admin-routes.test.ts` against the local `scheduleads_dev`,
     signing in the real way as the existing route tests do, cleaning up its
@@ -175,7 +175,7 @@ merges with a merge commit on Frank's yes.
     the new client signs in with a code and `GET /me` answers their business
     with role `owner`.
 
-- [ ] **3b.2 Close the old doors.** Only the provisioning route makes a
+- [x] **3b.2 Close the old doors.** Only the provisioning route makes a
   business, and nobody can invite.
   - `backend/lib/auth/auth-server.ts`: `allowUserToCreateOrganization: false`
     with its comment rewritten (no one creates a business over HTTP; the
@@ -188,10 +188,24 @@ merges with a merge commit on Frank's yes.
   - The F-12 comment lines in `auth-server.ts` and `sign-in/page.tsx` and
     the shared schema comments that claim server-side use, corrected to the
     code.
+  - **Carried from step 3b.1's review (Frank, 2026-09-30):**
+    - F-36: Data / contracts says malformed JSON is Hono's own plain 400,
+      and a missing or wrong body is `400 bad_request`.
+    - F-37: tests that `/admin` answers carry `Cache-Control: no-store`
+      and that a form-encoded post from another origin with the platform
+      admin's cookie is refused and makes nothing.
+    - F-39: finishing an unfinished setup writes the client's name just
+      typed over the one on the reused login, and the answer returns it.
+    - F-41: force a failing `createUser` and read the log; if the email
+      shows, log a safe reason instead and rethrow without the query's
+      parameters.
   - **Done when** backend tests prove: the platform admin's own
     `POST /api/auth/organization/create` is 403 and creates nothing; an
     owner's `POST /api/auth/organization/invite-member` is 403; and every 3b.1
-    test still passes, so provisioning is unaffected. F-16 set to `fixed`.
+    test still passes, so provisioning is unaffected; the F-37 tests pass; a
+    retried setup's answer and stored login carry the new name (F-39); and
+    a forced `createUser` failure leaves no email in the log (F-41). F-16,
+    F-36, F-37, F-39 and F-41 set to `fixed`.
 
 - [ ] **3b.3 The admin screen, and nobody stuck.** The platform admin sets up
   a client in the browser; a login with no business is told what to do.
@@ -210,6 +224,9 @@ merges with a merge commit on Frank's yes.
     (platform admin), never `/create-organization`.
   - `frontend/app/create-organization/page.tsx` deleted, and the now unused
     pieces of `auth-card.tsx` with it if nothing else uses them.
+  - F-40, carried from step 3b.1's review: the business-name rule and the
+    email rule each move to a file of their own name, and the business-name
+    message reads for either a client's business or your own.
   - **Done when** `npm run build --workspace=frontend` and `npm run lint
     --workspace=frontend` pass, and in the browser against the local API:
     the platform admin sets up a test client and sees the success card; that
@@ -217,7 +234,7 @@ merges with a merge commit on Frank's yes.
     own business as owner, with the calendar card showing their own person;
     `owner@example.com` opening `/admin/clients/new` sees the not-for-you
     card; an email already in use shows its message under the email field.
-    The test client is removed afterwards. F-13 set to `fixed`.
+    The test client is removed afterwards. F-13 and F-40 set to `fixed`.
 
 ## Files / areas
 
@@ -256,8 +273,9 @@ No migration. Every table already exists.
 - `201`: `{ organization: { id, name, slug }, client: { id, name, email } }`.
 - Refusals, all in the existing `{ error: { code, message } }` shape:
   `401 unauthenticated`, `403 forbidden` (not the platform admin),
-  `400 bad_request` (malformed JSON, failed schema, a name with no letters or
-  digits), `409 email_taken`, `409 slug_taken`. Anything else is a 500 with
+  `400 bad_request` (a missing or wrong body, a failed schema, a name with no
+  letters or digits; malformed JSON gets Hono's own plain-text 400, because
+  the body is checked by Hono's validator, which types it for `AppType`), `409 email_taken`, `409 slug_taken`. Anything else is a 500 with
   no detail.
 - Idempotency: a second identical request after a success is `409
   email_taken`. After a setup that died between its two creates, the same

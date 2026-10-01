@@ -9,6 +9,7 @@ import type { ProvisionClientInputType } from "@scheduleads-app/shared/zod-valid
 
 import { db } from "../../database.js";
 import { auth } from "../auth/auth-server.js";
+import { safeErrorReason } from "../errors/safe-error-reason.js";
 
 export type ProvisionClientResultType =
   | {
@@ -26,7 +27,14 @@ export async function provisionClient(
   const slug = toSlug(input.businessName);
   if (!slug) return { ok: false, code: "bad_request" }; // only punctuation or emoji
 
-  return withSetupLocks(input.clientEmail, slug, () => setUp(input, slug));
+  try {
+    return await withSetupLocks(input.clientEmail, slug, () => setUp(input, slug));
+  } catch (error) {
+    // Never rethrown as is: Hono logs what reaches it, and a database error names the
+    // client's email in its query.
+    console.error(`[admin] a client setup failed: ${safeErrorReason(error)}`);
+    throw new Error("A client setup failed; the reason is in the line before.");
+  }
 }
 
 // One setup per email and per address at a time. Without it, a double click's second setup
@@ -60,10 +68,10 @@ async function setUp(
   // makes the client the creator, so the business owner. So this function runs only behind
   // requirePlatformAdminMiddleware, and never gets the request's headers: with them, the
   // platform admin would become the owner.
-  const client: LoginType =
-    unfinishedLogin ??
-    (await auth.api.createUser({ body: { email: input.clientEmail, name: input.clientName } }))
-      .user;
+  const client: LoginType = unfinishedLogin
+    ? await renameLogin(unfinishedLogin, input.clientName)
+    : (await auth.api.createUser({ body: { email: input.clientEmail, name: input.clientName } }))
+        .user;
 
   try {
     const created = await auth.api.createOrganization({
@@ -107,6 +115,13 @@ async function findLoginForEmail(email: string): Promise<LoginType | "taken" | n
   if (membership) return "taken";
 
   return { id: login.id, name: login.name, email: login.email };
+}
+
+// Running a setup again is the way to correct it, so the name typed now replaces the old.
+async function renameLogin(login: LoginType, name: string): Promise<LoginType> {
+  if (login.name === name) return login;
+  await db.update(user).set({ name, updatedAt: new Date() }).where(eq(user.id, login.id));
+  return { ...login, name };
 }
 
 async function isSlugTaken(slug: string): Promise<boolean> {
@@ -155,7 +170,8 @@ async function removeLoginWithoutBusiness(userId: string): Promise<void> {
         )
       );
   } catch (error) {
-    const reason = error instanceof Error ? error.message : "unknown error";
-    console.error(`[admin] could not remove login ${userId} after a failed setup: ${reason}`);
+    console.error(
+      `[admin] could not remove login ${userId} after a failed setup: ${safeErrorReason(error)}`
+    );
   }
 }
