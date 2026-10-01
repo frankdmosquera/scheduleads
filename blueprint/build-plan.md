@@ -89,7 +89,7 @@ else.
   read back. Google keeps a Testing app's connection for seven days only,
   which is why item 22 is finished before item 13
 
-- [ ] 3b. **Client access: provisioning, and closing signup** - the two
+- [x] 3b. **Client access: provisioning, and closing signup** - the two
   halves of one door, which have to land together. Today any address that
   can receive mail may verify a code and get a user row, while only the
   platform admin may create a business. So an onboarded client ends up with
