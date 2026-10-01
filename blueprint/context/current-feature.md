@@ -4,6 +4,11 @@
 
 **Branch:** feature/03b-client-access-provisioning-and-closing-signup
 
+**Status:** verified. Whole feature seen and agreed by Frank 2026-09-30; steps
+3b.1 to 3b.3 built, checked and reviewed step by step; step 3b.3's review
+findings F-48 to F-51 fixed 2026-09-30, F-49 by the claim table on Frank's
+choice. The checkpoint for the final review.
+
 Branch named in the workspace's `feature/NN-name` form, as feature 3's was, so
 one number finds the branch, the archive (`03b-...md`) and the tag
 (`item-03b-done`).
