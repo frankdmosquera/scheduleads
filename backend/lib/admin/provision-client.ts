@@ -1,7 +1,7 @@
 // Backend: sets up a client, their login and their business, with the client as its business
 // owner and first person. The platform admin who asks is never made a member.
 
-import { eq } from "drizzle-orm";
+import { and, eq, ne, notExists } from "drizzle-orm";
 
 import { member, organization, user } from "@scheduleads-app/shared/db";
 import { toSlug } from "@scheduleads-app/shared/helpers";
@@ -26,6 +26,30 @@ export async function provisionClient(
   const slug = toSlug(input.businessName);
   if (!slug) return { ok: false, code: "bad_request" }; // only punctuation or emoji
 
+  return withSetupLocks(input.clientEmail, slug, () => setUp(input, slug));
+}
+
+// One setup per email and per address at a time. Without it, a double click's second setup
+// would see the first one's new login, still without a business, as an unfinished setup and
+// take it over. Advisory locks live on one connection, so one is held for the whole setup;
+// the locks go when it is released, or when the connection dies with the API.
+async function withSetupLocks<T>(email: string, slug: string, run: () => Promise<T>): Promise<T> {
+  const connection = await db.$client.reserve();
+  try {
+    // Always email first, then address, so two setups can never wait on each other.
+    await connection`select pg_advisory_lock(hashtextextended(${`setup-email:${email}`}, 0))`;
+    await connection`select pg_advisory_lock(hashtextextended(${`setup-slug:${slug}`}, 0))`;
+    return await run();
+  } finally {
+    await connection`select pg_advisory_unlock_all()`;
+    connection.release();
+  }
+}
+
+async function setUp(
+  input: ProvisionClientInputType,
+  slug: string
+): Promise<ProvisionClientResultType> {
   const unfinishedLogin = await findLoginForEmail(input.clientEmail);
   if (unfinishedLogin === "taken") return { ok: false, code: "email_taken" };
 
@@ -52,11 +76,13 @@ export async function provisionClient(
       client: { id: client.id, name: client.name, email: client.email },
     };
   } catch (error) {
-    // The two creates share no transaction, so a business that failed takes the login made
-    // for it away again. A login reused from an earlier unfinished setup is left alone.
-    if (!unfinishedLogin) await removeLogin(client.id);
+    // Better Auth saves the business, its owner and its first person as separate writes, so
+    // a failure can come after the business exists. Everything this setup made goes again;
+    // a login reused from an earlier unfinished setup stays, ready for the next try.
+    const takenBySomeoneElse = await removeBusinessMadeFor(slug, client.id);
+    if (!unfinishedLogin) await removeLoginWithoutBusiness(client.id);
 
-    if (await isSlugTaken(slug)) return { ok: false, code: "slug_taken" }; // taken in between
+    if (takenBySomeoneElse) return { ok: false, code: "slug_taken" };
     throw error;
   }
 }
@@ -92,11 +118,42 @@ async function isSlugTaken(slug: string): Promise<boolean> {
   return Boolean(row);
 }
 
-// Its sessions and accounts go with it (cascade). If even this fails, the login is left with
-// no business, and the next setup with the same email finishes it.
-async function removeLogin(userId: string): Promise<void> {
+// The address was free when this setup checked, under its lock. A business there now with no
+// member but this client is this setup's, half made: removed, with its owner row and first
+// person (cascade). One with anyone else in it was made another way: kept, and true is
+// returned so the answer says the name is taken.
+async function removeBusinessMadeFor(slug: string, clientId: string): Promise<boolean> {
+  const [business] = await db
+    .select({ id: organization.id })
+    .from(organization)
+    .where(eq(organization.slug, slug))
+    .limit(1);
+  if (!business) return false;
+
+  const [someoneElse] = await db
+    .select({ id: member.id })
+    .from(member)
+    .where(and(eq(member.organizationId, business.id), ne(member.userId, clientId)))
+    .limit(1);
+  if (someoneElse) return true;
+
+  await db.delete(organization).where(eq(organization.id, business.id));
+  return false;
+}
+
+// Only while it belongs to no business, so a login can never be taken from under one. Its
+// sessions and accounts go with it (cascade). If this fails, the login is left with no
+// business, and the next setup with the same email finishes it.
+async function removeLoginWithoutBusiness(userId: string): Promise<void> {
   try {
-    await db.delete(user).where(eq(user.id, userId));
+    await db
+      .delete(user)
+      .where(
+        and(
+          eq(user.id, userId),
+          notExists(db.select({ id: member.id }).from(member).where(eq(member.userId, userId)))
+        )
+      );
   } catch (error) {
     const reason = error instanceof Error ? error.message : "unknown error";
     console.error(`[admin] could not remove login ${userId} after a failed setup: ${reason}`);

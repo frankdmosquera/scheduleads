@@ -96,14 +96,12 @@ beforeAll(async () => {
     name: businessName("taken"),
     slug: slugOf("taken"),
   });
-  await db
-    .insert(member)
-    .values({
-      id: randomUUID(),
-      organizationId: owner.organizationId,
-      userId: owner.id,
-      role: "owner",
-    });
+  await db.insert(member).values({
+    id: randomUUID(),
+    organizationId: owner.organizationId,
+    userId: owner.id,
+    role: "owner",
+  });
 
   for (const address of [platformAdmin.email, owner.email]) {
     cookies.set(address, await signIn(address));
@@ -262,5 +260,105 @@ describe("POST /admin/clients", () => {
     expect(await loginsWith(leftOver.email)).toEqual([
       expect.objectContaining({ id: leftOver.id }),
     ]);
+  });
+  // F-35: Better Auth saves the business, then fails (here, right after the save).
+  test("a failure after the business is saved removes the business and the new login", async () => {
+    const original = auth.api.createOrganization;
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failing = vi
+      .spyOn(auth.api, "createOrganization")
+      .mockImplementationOnce(async (call: Parameters<typeof original>[0]) => {
+        await original(call);
+        throw new Error("the first person could not be saved");
+      });
+
+    const response = await setUp(client("half-made"), platformAdmin.email);
+
+    failing.mockRestore();
+    quiet.mockRestore();
+    expect(response.status).toBe(500);
+    expect(await businessesWith(slugOf("half-made"))).toHaveLength(0);
+    expect(await loginsWith(email("half-made"))).toHaveLength(0);
+  });
+
+  test("the same failure while finishing an unfinished setup keeps that login, ready to retry", async () => {
+    const leftOver = { id: randomUUID(), email: email("half-left") };
+    await db.insert(user).values({ id: leftOver.id, name: "Half left", email: leftOver.email });
+
+    const original = auth.api.createOrganization;
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failing = vi
+      .spyOn(auth.api, "createOrganization")
+      .mockImplementationOnce(async (call: Parameters<typeof original>[0]) => {
+        await original(call);
+        throw new Error("the first person could not be saved");
+      });
+
+    const body = { ...client("half-left"), clientEmail: leftOver.email };
+    const response = await setUp(body, platformAdmin.email);
+
+    failing.mockRestore();
+    quiet.mockRestore();
+    expect(response.status).toBe(500);
+    expect(await businessesWith(slugOf("half-left"))).toHaveLength(0);
+    expect(await loginsWith(leftOver.email)).toEqual([
+      expect.objectContaining({ id: leftOver.id }),
+    ]);
+    expect((await setUp(body, platformAdmin.email)).status).toBe(201); // the retry finishes it
+  });
+
+  // F-38: a double click. The first setup is held mid-way so the second truly overlaps it.
+  const slowFirstSetup = () => {
+    const original = auth.api.createOrganization;
+    return vi
+      .spyOn(auth.api, "createOrganization")
+      .mockImplementationOnce(async (call: Parameters<typeof original>[0]) => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        return original(call);
+      });
+  };
+
+  test("two overlapping setups for one email and one business make one business with its owner", async () => {
+    const slow = slowFirstSetup();
+    const [first, second] = await Promise.all([
+      setUp(client("double"), platformAdmin.email),
+      new Promise<Response>((resolve) =>
+        setTimeout(() => resolve(setUp(client("double"), platformAdmin.email)), 50)
+      ),
+    ]);
+    slow.mockRestore();
+
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(409);
+    expect((await second.json()).error.code).toBe("email_taken");
+
+    const [login] = await loginsWith(email("double"));
+    expect(login.id).toBe((await first.json()).client.id);
+    const [business] = await businessesWith(slugOf("double"));
+    const members = await db.select().from(member).where(eq(member.organizationId, business.id));
+    expect(members).toEqual([expect.objectContaining({ userId: login.id, role: "owner" })]);
+  });
+
+  test("two overlapping setups for one email and two businesses give the client only one", async () => {
+    const slow = slowFirstSetup();
+    const [first, second] = await Promise.all([
+      setUp(client("twice-a"), platformAdmin.email),
+      new Promise<Response>((resolve) =>
+        setTimeout(
+          () =>
+            resolve(
+              setUp({ ...client("twice-b"), clientEmail: email("twice-a") }, platformAdmin.email)
+            ),
+          50
+        )
+      ),
+    ]);
+    slow.mockRestore();
+
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(409);
+    const [login] = await loginsWith(email("twice-a"));
+    expect(await db.select().from(member).where(eq(member.userId, login.id))).toHaveLength(1);
+    expect(await businessesWith(slugOf("twice-b"))).toHaveLength(0);
   });
 });

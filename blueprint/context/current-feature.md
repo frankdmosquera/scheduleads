@@ -281,6 +281,18 @@ No migration. Every table already exists.
 - On first sign-in the existing session hook makes it the active business,
   because the client belongs to exactly one.
 
+**A setup is never half made** (step 3b.1's review, F-35 and F-38)
+
+- One setup per email and per address at a time: two Postgres advisory locks
+  on one reserved connection, email first then address, held for the whole
+  setup and released when it ends or its connection dies. A second setup for
+  the same email waits, then sees a login with a business: `409 email_taken`.
+- On a failure after Better Auth saved the business, the business is removed
+  when nobody but this client is in it, then the login this setup made, and
+  only while it belongs to no business. A login reused from an unfinished
+  setup is kept for the next try. `409 slug_taken` is answered only when a
+  business with someone else in it holds the address.
+
 **The server-side bypass, written down where it is used**
 
 `auth.api.createOrganization` called with a `userId` and no headers skips
