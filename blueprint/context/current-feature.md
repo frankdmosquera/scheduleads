@@ -134,7 +134,7 @@ merges with a merge commit on Frank's yes.
     email is stored lowercased; and that a contact with no email is always a
     new one. The backend builds.
 
-- [ ] **4.3 The activity table: timeline and next steps.**
+- [x] **4.3 The activity table: timeline and next steps.**
   - `packages/shared/crm/activity-types.ts`: the eight types, `booking_created`,
     `stage_changed`, `email_sent`, `email_received`, `note`, `sms_sent`,
     `call`, `task`, one list both sides import.
@@ -142,6 +142,11 @@ merges with a merge commit on Frank's yes.
     `0008_activity`.
   - `backend/lib/crm/record-activity.ts`: records something that happened on
     a contact's timeline.
+  - **Plan approved by Frank 2026-10-01, with two tightenings:** (1) the same
+    no-personal-data-in-an-error rule as contacts, because a payload can hold
+    a customer's words: `recordActivity` lets only a safe reason out; (2) a
+    test saves one row of every shared type and expects all eight accepted,
+    so the shared list and the database's check cannot drift apart.
   - **Done when** the backend tests pass, with tests proving: an entry is
     recorded with its type, payload, actor and time; an entry cannot name
     another business's contact (refused by the database, not only the code);
