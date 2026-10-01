@@ -154,6 +154,26 @@ and a second resource can hold the same time as the first.
   - Start times repeat every service length by default, and the owner can
     change it. Whether buffers may fall outside bookable hours (Primo's
     one-hour windows) is decided in this item's spec
+  Split on 2026-10-01 into four items, each its own branch, merged and tagged
+  as it lands; item 5 is done when all four are:
+  - [ ] 5a. **People's time** - the commitments table: one row per person or
+    place for every booking and every stretch of time off, the database
+    refusing two overlapping active rows for the same one, cancelled rows
+    no longer blocking; and the functions that hold, release and read time
+  - [ ] 5b. **Who does what** - which person can do which service (skills),
+    which place a service needs (rooms), and who is bookable or on standby,
+    the data the free-time check reads
+  - [ ] 5c. **Free times** - for a service, and a person or "any available",
+    the start times a customer can book: bookable hours minus bookings, time
+    off and Google busy, with buffers, notice and the horizon; the public
+    route the widget will call. How "any available" picks, whether buffers
+    may fall outside bookable hours, and how often start times repeat are
+    decided here
+  - [ ] 5d. **The booking** - the lead and booking tables, and the public
+    route that books a time: check it again, the contact, the lead in the
+    first stage, the booking with the customer's address, its commitments,
+    the timeline entry, and the event in the booked person's Google. The
+    same booking for one the owner makes
 - [ ] 6. **Confirmations** - email with `.ics` to the customer and a
   business-side notification, from Primo's template pattern. Customers only
   ever hear from the business, never from a worker's own address. A booked
