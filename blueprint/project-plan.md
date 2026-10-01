@@ -439,6 +439,11 @@ week, pipeline by stage, lead sources.
   `COOKIE_DOMAIN`. `CALENDAR_TOKEN_KEY` was generated
   once, lost when the env file was rewritten by hand, and regenerated. Losing
   it means every stored calendar connection stops decrypting.
+- **Client data is never lost by one mistake** (Frank, 2026-09-30): daily
+  backups, a nightly copy outside Railway, and a restore that has actually
+  been tested, all in place before the first real client's data (build-plan
+  item 12c, before item 13). Retention, how long copies are kept and what
+  happens to a business's data when it leaves, is decided in the same item.
 - A failed calendar check never reports "free." The booking fails safely
   with a "temporarily unavailable" message and the business gets an email to
   reconnect. Carried, and the fail-safe half is already built.
