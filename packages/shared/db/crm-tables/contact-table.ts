@@ -1,5 +1,5 @@
 // Shared: the contact table. The people a business deals with, one timeline each. The same
-// email in the same business is the same contact (Frank, 2026-10-01); no email is always new.
+// email in the same business is the same contact; no email is always new.
 
 import { sql } from "drizzle-orm";
 import { check, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";

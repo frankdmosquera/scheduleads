@@ -7,7 +7,7 @@
 > finding is `open` or `fixed`, then archives resolved findings with the work
 > and resets this file.
 
-### F-14 [P3] fixed - The sign-in and create-business forms bypass the project's form standard without saying so
+### F-14 [P3] closed - The sign-in and create-business forms bypass the project's form standard without saying so
 
 **File:** frontend/components/auth-card.tsx:240
 **Found:** 2026-09-23 by /audit (scope: current; lens: quality)
@@ -27,6 +27,7 @@ is the standard.
 **Resolution:**
 Step 3b.3, 2026-09-30: the create form is deleted, and the new Set up a client form follows the Forms standard (shadcn `Input` and `Label`, react-hook-form's `Controller`, the shared schema through `zodResolver`). Only the sign-in form still uses the hand-written `Field`; out of feature 3b's scope.
 Fixed 2026-10-01 on Frank's call (the pending tasks before step 4.2), in a chore commit on `feature/04-crm-spine`; waits for step 4.2's review to close. The sign-in form now follows the Forms standard: `auth-card.tsx`'s `Field` is built on shadcn `Input` and `Label`, both sign-in steps are react-hook-form forms through `Controller` with the shared schemas via `zodResolver`, and the Set up a client form uses the same `Field`. Checked in the browser against the local API: a bad email and a short code each showed their message under the field with focus there; "Use a different email" kept the address; a typed " Admin@Example.com " was sent trimmed and lowercased; the dev admin signed in to Summit Painting; the Set up a client form still showed all three messages.
+Closed 2026-10-01 by /audit independent (scope: step 4.2, re-examining 8fa63a3): `auth-card.tsx`'s `Field` now renders shadcn `Label` and `Input` (Base UI); both sign-in steps and the Set up a client form wire it through react-hook-form `Controller` with `zodResolver` and `noValidate`, and the submit handlers receive the schema's output (the email trimmed and lowercased). No form keeps a hand-written input. `npm run build --workspace=frontend` and `npm run lint --workspace=frontend` pass. No new defect found in the repair.
 
 ### F-32 [P3] unverified - A pick is the package's display name, so a renamed holiday would take a business's booking page down
 
@@ -53,7 +54,7 @@ the display name. Worth a note on feature 12 now so it is not rediscovered.
 **Resolution:** Carried to feature 12 on Frank's call, 2026-09-28, noted on
 item 12 in `build-plan.md`. Stays unverified until then.
 
-### F-34 [P3] fixed - Three config comments carry history the comment standard keeps out of code
+### F-34 [P3] closed - Three config comments carry history the comment standard keeps out of code
 
 **File:** backend/tsconfig.types.json:2
 **Found:** 2026-09-28 by /audit independent (scope: current; lens: quality)
@@ -69,6 +70,7 @@ keep the why ("declarations only, because Vercel builds only the frontend"; "no
 src/ folder, so the code sits beside the build output").
 **Resolution:**
 Fixed 2026-10-01 on Frank's call (the pending tasks before step 4.2), in a chore commit on `feature/04-crm-spine`; waits for step 4.2's review to close. `backend/tsconfig.types.json` no longer says "step 2.5", and `backend/tsconfig.json` and `packages/shared/tsconfig.build.json` no longer carry "(Frank, 2026-09-26)"; each keeps its why.
+Closed 2026-10-01 by /audit independent (scope: step 4.2, re-examining 8fa63a3): the three tsconfig comments carry no step number or dated aside and each keeps its reason; both builds pass. The same dated-aside pattern in two new step 4.2 files is a separate finding, F-55.
 
 ### F-47 [P3] open - The spec says accepting an invitation is refused, but Better Auth checks no role for it
 
@@ -89,7 +91,7 @@ confirm the production `invitation` table holds no pending row.
 **Resolution:**
 Carried on Frank's call, 2026-09-30: checked on the live database before the first client-facing deploy (the `invitation` table must be empty, or its rows cancelled). Nothing in code to change.
 
-### F-52 [P3] fixed - Three comments still point at the advisory lock and at a role check that has moved
+### F-52 [P3] closed - Three comments still point at the advisory lock and at a role check that has moved
 
 **File:** backend/lib/admin/provision-client.ts:171
 **Found:** 2026-09-30 by /audit independent (scope: current; lens: quality)
@@ -116,8 +118,9 @@ Backend)"; point the standard at `requirePlatformAdminMiddleware` instead of
 `allowUserToCreateOrganization`.
 **Resolution:**
 Fixed 2026-10-01 on Frank's call (the pending tasks before step 4.2), in a chore commit on `feature/04-crm-spine`; waits for step 4.2's review to close. `provision-client.ts` says "under its claim"; the platform-admin middleware says the platform admin is the one role compared by name, not that it is the one place; `coding-standards.md` points the exception at `requirePlatformAdminMiddleware`.
+Closed 2026-10-01 by /audit independent (scope: step 4.2, re-examining 8fa63a3): `provision-client.ts:171` says "under its claim", matching the `client_setup_claim` design; `require-platform-admin-middleware.ts:15` says the platform admin is the one role compared by name, which stays true with `provision-client.ts:143` and `frontend/lib/is-platform-admin.ts` comparing it too; `coding-standards.md:402` points at `requirePlatformAdminMiddleware`, where the check lives. No new defect.
 
-### F-53 [P3] fixed - The same-name test passes on any refusal and only after an earlier test has run
+### F-53 [P3] closed - The same-name test passes on any refusal and only after an earlier test has run
 
 **File:** backend/lib/crm/seed-pipeline-stages.test.ts:92
 **Found:** 2026-09-30 by /audit independent (scope: step 4.1; lens: tests)
@@ -137,3 +140,22 @@ the refusal is the name index, for example
 **Resolution:**
 Carried to step 4.2 on Frank's call, 2026-10-01. Written into that step's plan in the spec.
 Fixed 2026-10-01 in step 4.2's commit; waits for step 4.2's review to close. The capitals test makes its own business, adds New, then expects each of New, new and NEW to be refused with Postgres code 23505 on `pipeline_stage_organization_name_unique`, not any failure.
+Closed 2026-10-01 by /audit independent (scope: step 4.2, re-examining 1851c20): the test makes its own `capitals` business (removed by the file's `afterAll` through the run tag), inserts New, and expects New, new and NEW each refused with `cause` code 23505 on `pipeline_stage_organization_name_unique`. Run alone (`npm run test --workspace=backend -- lib/crm/seed-pipeline-stages.test.ts -t "capitals ignored"`) it passes, and the full backend suite passes (141 tests); no test business was left behind.
+
+### F-54 [P3] fixed - The contact tests lean on the first test's row, the order dependence F-53 just removed
+
+**File:** backend/lib/crm/find-or-create-contact.test.ts:138
+**Found:** 2026-10-01 by /audit independent (scope: step 4.2; lens: tests)
+**Why it matters:** Four tests (`:61`, `:72`, `:82`, and the database rule at `:138`, which sits in a different `describe` block) work only because the first test at `:47` already made Maria in `primo`. Run on its own, the rule test fails for a reason unrelated to the rule: `npm run test --workspace=backend -- lib/crm/find-or-create-contact.test.ts -t "cannot hold the same email twice"` inserts the row successfully and fails its `rejects` assertion (reproduced in this review). This is the second half of F-53, fixed in the stage tests in the same commit and reintroduced here, and step 4.3's activity tests will copy whichever pattern they find. The full suite passes today only because Vitest runs a file's tests in order.
+**Suggested fix:** Let no test depend on another having run: the database rule test makes its own throwaway business and inserts the first `maria@...` row itself before expecting the 23505; the matching tests either do the same or share one `beforeAll` that creates Maria in `primo`.
+**Resolution:**
+Fixed 2026-10-01 on Frank's yes, in the step 4.2 review-fix commit; waits for step 4.3's review to close. Every contact test makes its own businesses, and its own Maria through a `businessWithMaria` helper; each of the nine passes run on its own (`-t` one at a time). The three faults planted before (raw error out, lookup ignoring the business, no conflict handling) are each still caught.
+
+### F-55 [P3] fixed - Two new files put a dated "(Frank, 2026-10-01)" aside in code comments, the history F-34 just removed
+
+**File:** backend/lib/crm/find-or-create-contact.ts:2
+**Found:** 2026-10-01 by /audit independent (scope: step 4.2; lens: quality)
+**Why it matters:** `coding-standards.md` (Comments, "The balance") keeps history out of code comments, and F-34, closed in this same review, removed exactly this shape ("(Frank, 2026-09-26)") from three tsconfigs. Step 4.2 adds it again at `backend/lib/crm/find-or-create-contact.ts:2` and `packages/shared/db/crm-tables/contact-table.ts:2`. Harmless at runtime; the decision and its date already live in the spec and the build log, and the next table file copies whichever header it finds.
+**Suggested fix:** Keep the rule and drop the aside, for example "The same email in the same business is the same contact; no email is always new."
+**Resolution:**
+Fixed 2026-10-01 on Frank's yes, in the step 4.2 review-fix commit; waits for step 4.3's review to close. The two comments say "the same email in the same business is the same contact" with no dated aside.

@@ -1,5 +1,5 @@
 // Backend: finds a business's contact by email, or makes one. Called by feature 5 for every
-// booking. The same email in the same business is the same contact (Frank, 2026-10-01).
+// booking. The same email in the same business is the same contact.
 
 import { randomUUID } from "node:crypto";
 
