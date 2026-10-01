@@ -84,7 +84,7 @@ merges with a merge commit on Frank's yes.
     and `db:migrate` applies cleanly to the local database. The backend
     builds.
 
-- [ ] **5a.2 Hold, release and read time.**
+- [x] **5a.2 Hold, release and read time.**
   - `backend/lib/scheduling/hold-time.ts`: all the people and places of one
     booking or one stretch of time off, in one transaction: all held, or none
     and the answer says the time is taken.
