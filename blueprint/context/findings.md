@@ -142,7 +142,7 @@ Carried to step 4.2 on Frank's call, 2026-10-01. Written into that step's plan i
 Fixed 2026-10-01 in step 4.2's commit; waits for step 4.2's review to close. The capitals test makes its own business, adds New, then expects each of New, new and NEW to be refused with Postgres code 23505 on `pipeline_stage_organization_name_unique`, not any failure.
 Closed 2026-10-01 by /audit independent (scope: step 4.2, re-examining 1851c20): the test makes its own `capitals` business (removed by the file's `afterAll` through the run tag), inserts New, and expects New, new and NEW each refused with `cause` code 23505 on `pipeline_stage_organization_name_unique`. Run alone (`npm run test --workspace=backend -- lib/crm/seed-pipeline-stages.test.ts -t "capitals ignored"`) it passes, and the full backend suite passes (141 tests); no test business was left behind.
 
-### F-54 [P3] fixed - The contact tests lean on the first test's row, the order dependence F-53 just removed
+### F-54 [P3] closed - The contact tests lean on the first test's row, the order dependence F-53 just removed
 
 **File:** backend/lib/crm/find-or-create-contact.test.ts:138
 **Found:** 2026-10-01 by /audit independent (scope: step 4.2; lens: tests)
@@ -150,8 +150,9 @@ Closed 2026-10-01 by /audit independent (scope: step 4.2, re-examining 1851c20):
 **Suggested fix:** Let no test depend on another having run: the database rule test makes its own throwaway business and inserts the first `maria@...` row itself before expecting the 23505; the matching tests either do the same or share one `beforeAll` that creates Maria in `primo`.
 **Resolution:**
 Fixed 2026-10-01 on Frank's yes, in the step 4.2 review-fix commit; waits for step 4.3's review to close. Every contact test makes its own businesses, and its own Maria through a `businessWithMaria` helper; each of the nine passes run on its own (`-t` one at a time). The three faults planted before (raw error out, lookup ignoring the business, no conflict handling) are each still caught.
+Closed 2026-10-01 by /audit independent (scope: step 4.3, re-examining fa4c6b3): the shared `primo`/`clinic` and `beforeAll` are gone; each of the nine tests makes its own throwaway businesses (slugs `new`, `again`, `mine`, `clinic`, `both-primo`, `both-clinic`, `race`, `phone`, `lowercase`, `twice`, all distinct, removed by the tag `afterAll`), and the rule test at `:151` makes its own Maria through `businessWithMaria` before expecting 23505 on `contact_organization_email_unique`. Each of the nine run alone with `npm run test --workspace=backend -- lib/crm/find-or-create-contact.test.ts -t "<name>"` passes (1 passed, 8 skipped), and the full backend suite passes (151 tests). No new defect in the repair.
 
-### F-55 [P3] fixed - Two new files put a dated "(Frank, 2026-10-01)" aside in code comments, the history F-34 just removed
+### F-55 [P3] closed - Two new files put a dated "(Frank, 2026-10-01)" aside in code comments, the history F-34 just removed
 
 **File:** backend/lib/crm/find-or-create-contact.ts:2
 **Found:** 2026-10-01 by /audit independent (scope: step 4.2; lens: quality)
@@ -159,3 +160,13 @@ Fixed 2026-10-01 on Frank's yes, in the step 4.2 review-fix commit; waits for st
 **Suggested fix:** Keep the rule and drop the aside, for example "The same email in the same business is the same contact; no email is always new."
 **Resolution:**
 Fixed 2026-10-01 on Frank's yes, in the step 4.2 review-fix commit; waits for step 4.3's review to close. The two comments say "the same email in the same business is the same contact" with no dated aside.
+Closed 2026-10-01 by /audit independent (scope: step 4.3, re-examining fa4c6b3): `find-or-create-contact.ts:2` and `contact-table.ts:2` keep the rule with no dated aside, and a search of `backend/lib/crm`, `packages/shared/crm`, `packages/shared/db/crm-tables` and `0008_activity.sql` finds no "(Frank, ...)", step or finding number, nor any em dash, in step 4.3's new files either. Both builds pass. No new defect.
+
+### F-56 [P3] fixed - The actor's "set null" rule is the one activity database rule no test proves
+
+**File:** packages/shared/db/crm-tables/activity-table.ts:24
+**Found:** 2026-10-01 by /audit independent (scope: step 4.3; lens: tests)
+**Why it matters:** The spec's Testing section asks for a test of every database rule, and step 4.3 proves all of them except `activity_actorUserId_user_id_fk ... ON DELETE set null`. That rule is what keeps a customer's timeline when the login that wrote an entry is removed (a staff member leaving): if it were ever generated as `cascade`, removing a login would silently delete timeline rows, and with Postgres's default `no action` the login could not be removed at all. `record-activity.test.ts:49` deletes its test user only after the businesses (and their timelines) are already gone, so the rule is never exercised.
+**Suggested fix:** One test in `record-activity.test.ts`: record an entry with a throwaway actor, delete that user, and expect the entry still on the timeline with `actorUserId: null`.
+**Resolution:**
+Fixed 2026-10-01 on Frank's yes, in the step 4.3 review-fix commit; waits for the final review at /complete to close. `record-activity.test.ts` records a call by a login, deletes that login, and expects the entry kept with `actorUserId: null`; it passes run on its own, and the live constraint reads ON DELETE SET NULL. Not proved by breaking it: that would mean altering the local database's foreign key; with cascade the entry would vanish and with no action the delete would be refused, both of which the test catches. The review's note on the drift test is answered too: `activity-types.ts` now says only what the test proves.

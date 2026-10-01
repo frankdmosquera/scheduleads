@@ -1,5 +1,6 @@
 // Shared: every kind of entry on a contact's timeline. The database's check on activity.type
-// repeats this list; a test saves one of each, so the two cannot drift apart.
+// is generated from this list; a test saves one of each, so every type here is one the
+// database accepts. A type removed here shows up as a change at the next db:generate.
 
 export const ACTIVITY_TYPES = [
   "booking_created",

@@ -172,4 +172,19 @@ describe("activity rules in the database", () => {
     await db.delete(contact).where(eq(contact.id, contactId));
     expect(await timelineOf(contactId)).toHaveLength(0);
   });
+
+  test("removing a login keeps the entries it made, with no one named", async () => {
+    const { business, contactId } = await businessWithContact("leaver");
+    const actorUserId = randomUUID();
+    await db
+      .insert(user)
+      .values({ id: actorUserId, name: "Leaver", email: `activity-leaver-${tag}@example.com` });
+    const { id } = await recordActivity(business, { contactId, type: "call", actorUserId });
+
+    await db.delete(user).where(eq(user.id, actorUserId));
+
+    expect(await timelineOf(contactId)).toEqual([
+      expect.objectContaining({ id, type: "call", actorUserId: null }),
+    ]);
+  });
 });
