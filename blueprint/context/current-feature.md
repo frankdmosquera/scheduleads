@@ -99,7 +99,7 @@ commit, on Frank's yes.
     and 0 and -5 are refused by the database; the backend and frontend builds
     pass.
 
-- [ ] **5c.2 The free-time rules.** No database, every rule tested.
+- [x] **5c.2 The free-time rules.** No database, every rule tested.
   - `backend/lib/scheduling/local-time.ts`: a business date plus a minute of
     the day in its time zone, to an instant; null when that time does not
     exist (decision 6).

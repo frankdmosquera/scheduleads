@@ -3,6 +3,7 @@
 
 import type { DateHoursType, WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
 
+import { addDays, localDate } from "../scheduling/local-time.js";
 import { closedHolidayDates } from "./closed-holidays.js";
 
 // The business's row, with the settings the database guarantees are set on it.
@@ -33,25 +34,6 @@ export type ResolvedBookableHoursType = {
   horizonDays: number;
   closedDates: string[]; // closed dates and picked holidays inside the horizon, minus opened ones; sorted, unique
 };
-
-// Today's date where the business is, not where the server is: at 11pm in Edmonton
-// the server in UTC is already on tomorrow.
-function localDate(now: Date, timezone: string): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const part = (type: string) => parts.find((datePart) => datePart.type === type)?.value;
-  return `${part("year")}-${part("month")}-${part("day")}`;
-}
-
-// Calendar arithmetic on a plain YYYY-MM-DD, done in UTC so no daylight change can shift it.
-function addDays(date: string, days: number): string {
-  const [year, month, day] = date.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
-}
 
 export function applyBookableHoursRules(
   business: BusinessHoursInputType,
