@@ -550,6 +550,28 @@ describe("booking a time", () => {
     });
   });
 
+  test("an owner-made booking may start earlier today, never on an earlier day", async () => {
+    const clinic = await makeClinic("owner-today");
+    const owner = await makeOwner(clinic, "today");
+    const tenPastTen = new Date("2026-10-02T16:10:00Z"); // Friday 10:10 in Edmonton
+    const asOwner = (startsAt: Date, name: string) =>
+      ownerBooking(clinic, owner, { startsAt, now: tenPastTen, customer: { name } });
+
+    // A walk-in that began at 10:00 is entered at 10:10.
+    expect(
+      bookedOrThrow(await asOwner(new Date("2026-10-02T16:00:00Z"), "Walk-in")).startsAt
+    ).toEqual(new Date("2026-10-02T16:00:00Z"));
+    // Thursday, and a mistyped year, are refused.
+    const refused = { booked: false, reason: "in_the_past" };
+    expect(await asOwner(new Date("2026-10-01T16:00:00Z"), "Yesterday")).toEqual(refused);
+    expect(await asOwner(new Date("2020-10-02T16:00:00Z"), "Typo")).toEqual(refused);
+    // Just after midnight Friday in Edmonton (Friday 06:30 in UTC) still counts as today.
+    expect(bookedOrThrow(await asOwner(new Date("2026-10-02T06:30:00Z"), "Early")).personId).toBe(
+      clinic.ana
+    );
+    expect((await rowsOf(clinic.business)).bookings).toHaveLength(2);
+  });
+
   test("an owner-made booking over the person's Google busy time, a booking or time off answers time_taken", async () => {
     const clinic = await makeClinic("owner-busy");
     const owner = await makeOwner(clinic, "busy");

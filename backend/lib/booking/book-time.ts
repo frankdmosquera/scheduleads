@@ -59,7 +59,10 @@ export type BookedType = {
 
 export type BookTimeResultType =
   | { booked: true; booking: BookedType; alreadyBooked: boolean }
-  | { booked: false; reason: "not_found" | "time_taken" | "unavailable" | "request_key_used" };
+  | {
+      booked: false;
+      reason: "not_found" | "time_taken" | "unavailable" | "request_key_used" | "in_the_past";
+    };
 
 const DAY_MS = 86_400_000;
 const MINUTE_MS = 60_000;
@@ -67,6 +70,7 @@ const NOT_FOUND = { booked: false, reason: "not_found" } as const;
 const TIME_TAKEN = { booked: false, reason: "time_taken" } as const;
 const UNAVAILABLE = { booked: false, reason: "unavailable" } as const;
 const REQUEST_KEY_USED = { booked: false, reason: "request_key_used" } as const;
+const IN_THE_PAST = { booked: false, reason: "in_the_past" } as const;
 
 // The same form: the same service and start, and the same person when one was picked.
 const isSameRequest = (existing: BookedType, input: BookTimeInputType) =>
@@ -166,6 +170,8 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
   if (personId !== null && !offered.peopleIds.includes(personId)) return NOT_FOUND;
 
   const date = localDate(startsAt, timezone);
+  // The owner may enter a walk-in already under way, never an earlier day (decision 13).
+  if (source === "manual" && date < localDate(now, timezone)) return IN_THE_PAST;
   const { spanStart, spanEnd } = appointmentSpan(startsAt.getTime(), service);
   const span = { startsAt: new Date(spanStart), endsAt: new Date(spanEnd) };
   const endsAt = new Date(startsAt.getTime() + service.durationMinutes * MINUTE_MS);

@@ -105,6 +105,12 @@ lost):
     that time was taken while you were booking. Please pick another one."
     The widget (feature 9) shows it with the times still free. Rejected:
     "someone booked that time a moment before you", true only for the first.
+13. **The owner's own bookings start no earlier than today** (Frank,
+    2026-10-02, review F-82, option B). Any time from the start of today in
+    the business's zone, so a walk-in already under way can be entered; an
+    earlier day (or a mistyped year) answers `in_the_past`. Rejected: any
+    start (a typo goes straight through) and only from now on (a walk-in that
+    began ten minutes ago would be refused). Customers are never affected.
 
 ## Open questions
 
@@ -357,7 +363,8 @@ set, decision 7), `createdAt`, `updatedAt`. Its commitments find it through
 
 **bookTime** answers `{ booked: true; booking: BookedType; alreadyBooked:
 boolean }` or `{ booked: false; reason: "not_found" | "time_taken" |
-"unavailable" | "request_key_used" }`. "Any available" with nobody free and a
+"unavailable" | "request_key_used" | "in_the_past" }`, the last only for
+the owner (decision 13), whose route arrives with its screen. "Any available" with nobody free and a
 calendar that could not be read answers `unavailable`, never `time_taken`
 (review F-80). Nothing in its answer or its logs carries the customer's
 name, email, phone, address or words.

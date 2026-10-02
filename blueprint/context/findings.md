@@ -308,7 +308,7 @@ form books once and feature 9 must make a fresh key after every booking.
 Add the test either way.
 **Resolution:** Fixed 2026-10-02: a request key already booked answers that booking only for the same service and start (and the same person when one was picked); otherwise request_key_used, which 5d.5 turns into a 409 asking to reload. Tested with a different time, person and service (fails if any reuse returns the old booking).
 
-### F-82 [P3] open - An owner-made booking may start at any instant, the past included, and the spec does not say whether it should
+### F-82 [P3] fixed - An owner-made booking may start at any instant, the past included, and the spec does not say whether it should
 
 **File:** backend/lib/booking/book-time.ts:164-198 (spec: blueprint/context/current-feature.md, decision 11)
 **Found:** 2026-10-02 by independent review of step 5d.3 (scope: 4b04e58..285b930; lenses: quality)
@@ -324,7 +324,7 @@ code made it silently.
 or 12b, at the latest): either the owner may book the past (and later
 features skip messages for it), or bookTime refuses a start before `now`
 (and, perhaps, beyond some outer limit). Add the test for whichever.
-**Resolution:**
+**Resolution:** Fixed 2026-10-02 with Frank's answer (option B, decision 13): an owner-made booking may start any time from the start of today in the business's zone; an earlier day answers in_the_past. Tested with a walk-in begun at 10:00 entered at 10:10 (booked), yesterday and 2020 (refused), and just after local midnight (booked); the test fails both with no limit and with "only from now on".
 
 ### F-83 [P3] fixed - The try order is built by calling chooseAnyAvailable in loops with a stand-in person, and the choice type is declared twice
 
