@@ -431,7 +431,7 @@ is used as it is; an unreadable date fails this test and is renewed"),
 rewrap the two headers, sort the import.
 **Resolution:** Fixed 2026-10-02: the comment in get-fresh-access-token.ts now matches its condition; the two long header comments are rewrapped under 100 characters; book-time.ts's calendar imports are in order.
 
-### F-88 [P3] open - The POST preflight test passes even when the browser would be refused the JSON header every booking sends
+### F-88 [P3] fixed - The POST preflight test passes even when the browser would be refused the JSON header every booking sends
 
 **File:** backend/routes/public-bookings-routes.test.ts:322
 **Found:** 2026-10-02 by independent review of step 5d.5 (scope: 6906956..2663680; lenses: tests)
@@ -446,9 +446,9 @@ passed, while every real browser booking would be blocked. The Done when's
 "a preflight allows POST" is the one browser-facing promise of this step.
 **Suggested fix:** Assert that `Access-Control-Allow-Headers` includes
 `content-type` (case-insensitive) in the same test.
-**Resolution:**
+**Resolution:** Fixed in 5d.5's review fixes (5ac0594): the preflight test now also asserts Access-Control-Allow-Headers includes content-type. Proved able to fail: with allowHeaders ["x-nothing"] in publicCorsMiddleware the test fails.
 
-### F-89 [P3] open - CreateBookingInputType is exported and used nowhere; the typed client already carries the body type
+### F-89 [P3] fixed - CreateBookingInputType is exported and used nowhere; the typed client already carries the body type
 
 **File:** packages/shared/zod-validation/booking-links-validation-schemas/create-booking-validation-schema.ts:30
 **Found:** 2026-10-02 by independent review of step 5d.5 (scope: 6906956..2663680; lenses: quality)
@@ -459,9 +459,9 @@ not needed by the planned consumer either. The other booking-link schemas
 export no input type. "What breaks if we do not add this?" has no answer yet.
 **Suggested fix:** Remove the export; add it back if a consumer appears that
 the typed client does not serve.
-**Resolution:**
+**Resolution:** Fixed in 5d.5's review fixes (5ac0594): the unused CreateBookingInputType export is removed; the typed client takes the body type from the validator.
 
-### F-90 [P3] open - The public CORS header comment had a sentence inserted without rewrapping (139 characters)
+### F-90 [P3] fixed - The public CORS header comment had a sentence inserted without rewrapping (139 characters)
 
 **File:** backend/middleware/public-middleware/public-cors-middleware.ts:2
 **Found:** 2026-10-02 by independent review of step 5d.5 (scope: 6906956..2663680; lenses: quality)
@@ -470,9 +470,9 @@ but the header now runs to 139 characters against the 100 every other line
 keeps. Same pattern as F-87 (words added to a wrapped header in step 5d.4),
 so it is drift rather than a one-off.
 **Suggested fix:** Rewrap the three header lines under 100 characters.
-**Resolution:**
+**Resolution:** Fixed in 5d.5's review fixes (5ac0594): the header comment is rewrapped under 100 characters.
 
-### F-91 [P3] open - The step's Done when says the route tests run on clinic-dev; they run on a clinic of their own
+### F-91 [P3] fixed - The step's Done when says the route tests run on clinic-dev; they run on a clinic of their own
 
 **File:** blueprint/context/current-feature.md:309
 **Found:** 2026-10-02 by independent review of step 5d.5 (scope: 6906956..2663680; lenses: tests)
@@ -484,4 +484,4 @@ when still names clinic-dev, so the spec and the tests disagree on what was
 proved and where.
 **Suggested fix:** Change the Done when to "route tests on a clinic of their
 own (and clinic-dev for another business's service)".
-**Resolution:**
+**Resolution:** Fixed in 5d.5's review fixes (5ac0594): the Done when now says the route tests run on a clinic of their own, removed after, and why.
