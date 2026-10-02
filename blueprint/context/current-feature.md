@@ -95,7 +95,7 @@ merges with a merge commit on Frank's yes.
     foreign key; deleting the person or the business takes the rows;
     `db:migrate` and `db:seed` as in 5b.1. The backend builds.
 
-- [ ] **5b.3 The two reads 5c calls.**
+- [x] **5b.3 The two reads 5c calls.**
   - `backend/lib/scheduling/find-service-resources.ts` and
     `backend/lib/scheduling/find-standby-dates.ts`, tests beside each.
   - **Done when** backend tests prove `findServiceResources`: with nobody
