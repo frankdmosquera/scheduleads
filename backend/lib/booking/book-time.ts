@@ -1,0 +1,337 @@
+// Backend: books one time for a service, the one path every booking takes. A form already booked
+// answers that booking; the time is checked again; then the contact, a new lead in the first
+// stage, the booking, its held time and the timeline entry land in one transaction, or nothing
+// does. A customer gets only 5c's free times; the owner any time nobody is busy (decision 11).
+
+import { randomUUID } from "node:crypto";
+
+import { and, asc, eq, inArray } from "drizzle-orm";
+
+import { booking, bookingLink, lead, member, resource } from "@scheduleads-app/shared/db";
+import type { ContactInputType } from "@scheduleads-app/shared/zod-validation";
+
+import { db } from "../../database.js";
+import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
+import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error.js";
+import { getBusyTimes } from "../calendar/get-busy-times.js";
+import { findFirstPipelineStage } from "../crm/find-first-pipeline-stage.js";
+import { findOrCreateContact } from "../crm/find-or-create-contact.js";
+import { recordActivity } from "../crm/record-activity.js";
+import { safeErrorReason } from "../errors/safe-error-reason.js";
+import { localDate } from "../local-time/local-date.js";
+import { appointmentSpan } from "../scheduling/appointment-span.js";
+import { chooseAnyAvailable } from "../scheduling/choose-any-available.js";
+import { countBookingsThatDay } from "../scheduling/count-bookings-that-day.js";
+import { findCommitments } from "../scheduling/find-commitments.js";
+import { findFreeTimes } from "../scheduling/find-free-times.js";
+import { findServiceResources } from "../scheduling/find-service-resources.js";
+import { findStandbyDates } from "../scheduling/find-standby-dates.js";
+import { isRoomFree } from "../scheduling/is-room-free.js";
+import { overlapsAny } from "../scheduling/overlaps-any.js";
+import { type BookingChoiceType, holdFirstFreeChoice } from "./hold-first-free-choice.js";
+
+export type BookTimeInputType = {
+  organizationId: string; // from the business being booked, never from the request
+  bookingLinkId: string;
+  personId: string | null; // null = "any available"
+  startsAt: Date; // the appointment's own start, one 5c offered
+  requestKey: string | null; // one per booking form (decision 7); null when the owner books
+  customer: ContactInputType;
+  location: string; // the customer's address
+  details: string | null; // what they wrote
+  source: "widget" | "hosted" | "manual";
+  actorUserId: string | null; // the owner's login when source is manual, checked here
+  now: Date;
+};
+
+export type BookedType = {
+  id: string;
+  leadId: string;
+  contactId: string;
+  bookingLinkId: string;
+  personId: string;
+  placeId: string | null;
+  startsAt: Date;
+  endsAt: Date; // the appointment's end, without the buffer after
+  timezone: string; // the business's IANA zone
+};
+
+export type BookTimeResultType =
+  | { booked: true; booking: BookedType; alreadyBooked: boolean }
+  | { booked: false; reason: "not_found" | "time_taken" | "unavailable" };
+
+const DAY_MS = 86_400_000;
+const MINUTE_MS = 60_000;
+const NOT_FOUND = { booked: false, reason: "not_found" } as const;
+const TIME_TAKEN = { booked: false, reason: "time_taken" } as const;
+const UNAVAILABLE = { booked: false, reason: "unavailable" } as const;
+
+// Thrown inside the transaction when every choice was taken, so all of it is undone.
+class EveryChoiceTakenError extends Error {}
+
+const constraintOf = (error: unknown) =>
+  (error as { cause?: { constraint_name?: unknown } }).cause?.constraint_name;
+
+async function findBookedByRequestKey(
+  organizationId: string,
+  requestKey: string,
+  timezone: string
+): Promise<BookedType | null> {
+  const [row] = await db
+    .select({
+      id: booking.id,
+      leadId: booking.leadId,
+      contactId: lead.contactId,
+      bookingLinkId: booking.bookingLinkId,
+      personId: booking.personId,
+      placeId: booking.placeId,
+      startsAt: booking.startsAt,
+      endsAt: booking.endsAt,
+    })
+    .from(booking)
+    .innerJoin(
+      lead,
+      and(eq(lead.organizationId, booking.organizationId), eq(lead.id, booking.leadId))
+    )
+    .where(and(eq(booking.organizationId, organizationId), eq(booking.requestKey, requestKey)))
+    .limit(1);
+  return row ? { ...row, timezone } : null;
+}
+
+const namesOf = async (organizationId: string, ids: string[]) =>
+  ids.length === 0
+    ? []
+    : db
+        .select({ resourceId: resource.id, name: resource.name })
+        .from(resource)
+        .where(and(eq(resource.organizationId, organizationId), inArray(resource.id, ids)))
+        .orderBy(asc(resource.name), asc(resource.id));
+
+export async function bookTime(input: BookTimeInputType): Promise<BookTimeResultType> {
+  const { organizationId, bookingLinkId, personId, startsAt, requestKey, source, now } = input;
+  if (Number.isNaN(startsAt.getTime())) throw new Error("Booking failed: the start is not a time.");
+
+  // The owner's login must belong to this business; nothing else may book as the owner.
+  if (source === "manual") {
+    const [membership] = input.actorUserId
+      ? await db
+          .select({ id: member.id })
+          .from(member)
+          .where(
+            and(eq(member.organizationId, organizationId), eq(member.userId, input.actorUserId))
+          )
+          .limit(1)
+      : [];
+    if (!membership)
+      throw new Error("Booking failed: that login does not belong to this business.");
+  }
+
+  const hours = await resolveBookableHours(organizationId, null, now);
+  if (!hours) return NOT_FOUND;
+  const { timezone } = hours;
+
+  // Decision 7: a form already booked (a second request after a lost answer) gets that booking.
+  if (requestKey) {
+    const existing = await findBookedByRequestKey(organizationId, requestKey, timezone);
+    if (existing) return { booked: true, booking: existing, alreadyBooked: true };
+  }
+
+  const [service] = await db
+    .select({
+      durationMinutes: bookingLink.durationMinutes,
+      bufferBeforeMinutes: bookingLink.bufferBeforeMinutes,
+      bufferAfterMinutes: bookingLink.bufferAfterMinutes,
+    })
+    .from(bookingLink)
+    .where(
+      and(
+        eq(bookingLink.organizationId, organizationId),
+        eq(bookingLink.id, bookingLinkId),
+        eq(bookingLink.active, true)
+      )
+    )
+    .limit(1);
+  if (!service) return NOT_FOUND;
+  const offered = await findServiceResources(organizationId, bookingLinkId);
+  if (!offered) return NOT_FOUND;
+  if (personId !== null && !offered.peopleIds.includes(personId)) return NOT_FOUND;
+
+  const date = localDate(startsAt, timezone);
+  const { spanStart, spanEnd } = appointmentSpan(startsAt.getTime(), service);
+  const span = { startsAt: new Date(spanStart), endsAt: new Date(spanEnd) };
+  const endsAt = new Date(startsAt.getTime() + service.durationMinutes * MINUTE_MS);
+
+  // Check again. A customer: the start must still be one of 5c's free times. The owner: only real
+  // busy time counts, bookings, time off and the person's own Google (Google wins).
+  const isFree = async (id: string): Promise<"free" | "busy" | "unreadable"> => {
+    if (source !== "manual") {
+      try {
+        const answer = await findFreeTimes({
+          organizationId,
+          bookingLinkId,
+          personId: id,
+          fromDate: date,
+          toDate: date,
+          now,
+        });
+        return answer?.startTimes.includes(startsAt.toISOString()) ? "free" : "busy";
+      } catch (error) {
+        if (error instanceof CalendarUnavailableError) return "unreadable"; // the reason is logged there
+        throw error;
+      }
+    }
+    if ((await findCommitments(organizationId, [id], span.startsAt, span.endsAt)).length > 0) {
+      return "busy";
+    }
+    try {
+      const google = await getBusyTimes({
+        organizationId,
+        resourceId: id,
+        from: span.startsAt,
+        to: span.endsAt,
+      });
+      return overlapsAny(google, spanStart, spanEnd) ? "busy" : "free";
+    } catch (error) {
+      console.warn(`[booking] cannot read the calendar of ${id}: ${safeErrorReason(error)}`);
+      return "unreadable";
+    }
+  };
+  const candidates = personId === null ? offered.peopleIds : [personId];
+  const states = await Promise.all(candidates.map(isFree)); // side by side, as 5c reads them
+  if (personId !== null && states[0] === "unreadable") return UNAVAILABLE;
+  const freePeople = candidates.filter((_, i) => states[i] === "free");
+  if (freePeople.length === 0) return TIME_TAKEN;
+
+  // The rooms: the one room rule over the whole span; the owner may use a room on standby.
+  let freeRooms: { resourceId: string; name: string }[] | null = null;
+  if (offered.placeIds !== null) {
+    const [taken, standby, rooms] = await Promise.all([
+      findCommitments(organizationId, offered.placeIds, span.startsAt, span.endsAt),
+      source === "manual" ? [] : findStandbyDates(organizationId, offered.placeIds, date, date),
+      namesOf(organizationId, offered.placeIds),
+    ]);
+    freeRooms = rooms.filter((room) =>
+      isRoomFree(
+        {
+          busy: taken
+            .filter((row) => row.resourceId === room.resourceId)
+            .map((row) => ({ start: row.startsAt, end: row.endsAt })),
+          standbyDates: standby
+            .filter((row) => row.resourceId === room.resourceId)
+            .map((row) => row.date),
+        },
+        date,
+        spanStart,
+        spanEnd
+      )
+    );
+    if (freeRooms.length === 0) return TIME_TAKEN;
+  }
+
+  // The order to try: decision 2's (fewest bookings that day, then name, then id), each person
+  // with the free rooms by name, read off chooseAnyAvailable one pick at a time.
+  const dayRows = await findCommitments(
+    organizationId,
+    freePeople,
+    new Date(startsAt.getTime() - DAY_MS),
+    new Date(startsAt.getTime() + DAY_MS)
+  );
+  const counts = countBookingsThatDay(dayRows, date, timezone);
+  let peopleLeft = (await namesOf(organizationId, freePeople)).map((person) => ({
+    ...person,
+    bookingsThatDay: counts.get(person.resourceId) ?? 0,
+  }));
+  const people: string[] = [];
+  for (
+    let pick = chooseAnyAvailable(peopleLeft, null);
+    pick;
+    pick = chooseAnyAvailable(peopleLeft, null)
+  ) {
+    const chosen = pick.personId;
+    people.push(chosen);
+    peopleLeft = peopleLeft.filter((person) => person.resourceId !== chosen);
+  }
+  const rooms: (string | null)[] = [];
+  if (freeRooms === null) rooms.push(null);
+  else {
+    let roomsLeft = freeRooms;
+    const anyone = [{ resourceId: people[0], name: "", bookingsThatDay: 0 }];
+    for (
+      let pick = chooseAnyAvailable(anyone, roomsLeft);
+      pick?.placeId;
+      pick = chooseAnyAvailable(anyone, roomsLeft)
+    ) {
+      const chosen = pick.placeId;
+      rooms.push(chosen);
+      roomsLeft = roomsLeft.filter((room) => room.resourceId !== chosen);
+    }
+  }
+  const choices: BookingChoiceType[] = people.flatMap((id) =>
+    rooms.map((placeId) => ({ personId: id, placeId }))
+  );
+
+  const stage = await findFirstPipelineStage(organizationId);
+  if (!stage) throw new Error("Booking failed: the business has no pipeline stage.");
+
+  const bookingId = randomUUID();
+  const leadId = randomUUID();
+  try {
+    const written = await db.transaction(async (tx) => {
+      const { contact } = await findOrCreateContact(organizationId, input.customer, tx);
+      await tx.insert(lead).values({
+        id: leadId,
+        organizationId,
+        contactId: contact.id,
+        stageId: stage.id,
+        source,
+        details: input.details,
+      });
+      const [first] = choices;
+      await tx.insert(booking).values({
+        id: bookingId,
+        organizationId,
+        leadId,
+        bookingLinkId,
+        personId: first.personId,
+        placeId: first.placeId,
+        startsAt,
+        endsAt,
+        location: input.location,
+        requestKey,
+      });
+      const held = await holdFirstFreeChoice(organizationId, choices, span, bookingId, tx);
+      if (!held) throw new EveryChoiceTakenError();
+      if (held !== first) {
+        await tx
+          .update(booking)
+          .set({ personId: held.personId, placeId: held.placeId })
+          .where(and(eq(booking.organizationId, organizationId), eq(booking.id, bookingId)));
+      }
+      await recordActivity(
+        organizationId,
+        {
+          contactId: contact.id,
+          type: "booking_created",
+          payload: { leadId, bookingId, bookingLinkId, startsAt: startsAt.toISOString() },
+          actorUserId: source === "manual" ? input.actorUserId : null,
+        },
+        tx
+      );
+      return { contactId: contact.id, ...held };
+    });
+    return {
+      booked: true,
+      alreadyBooked: false,
+      booking: { id: bookingId, leadId, bookingLinkId, startsAt, endsAt, timezone, ...written },
+    };
+  } catch (error) {
+    if (error instanceof EveryChoiceTakenError) return TIME_TAKEN;
+    // Two copies of one form at the same instant: the database let the other one in; that is the answer.
+    if (requestKey && constraintOf(error) === "booking_request_key_unique") {
+      const existing = await findBookedByRequestKey(organizationId, requestKey, timezone);
+      if (existing) return { booked: true, booking: existing, alreadyBooked: true };
+    }
+    // Never the database's own error: its message carries the customer's details.
+    throw new Error(`Booking failed: ${safeErrorReason(error)}`);
+  }
+}

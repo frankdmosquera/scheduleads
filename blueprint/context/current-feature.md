@@ -84,6 +84,24 @@ lost):
    week that reads as fully booked. One readable person is enough for 200.
 10. **A public booking request is at most 16 KB**, checked with Hono's own
     `bodyLimit` before it is parsed (no new package).
+11. **The owner books any time someone is not busy** (Frank, 2026-10-02,
+    open question 2, option B; already the plan's word in feature 12b:
+    bookable hours only limit customers). An owner-made booking ignores
+    bookable hours, notice, the horizon and standby, but never goes over a
+    booking, time off or the person's own Google busy time: Google wins (a
+    dinner in Pedro's business calendar blocks his bookable evening, for
+    customers and for the owner). The room, when needed, must be free by the
+    same room rule, standby ignored. People often book themselves this way
+    rather than change their settings.
+12. **"Time taken" says it happened while they were booking** (Frank,
+    2026-10-02). The time can stop being free between seeing it and pressing
+    Book: another customer booked it, the owner booked or gave time off, the
+    person added something to their Google, or the page stayed open until the
+    notice passed. The server cannot always tell which, so the message is
+    true for all of them and says it is not the customer's fault: "Sorry,
+    that time was taken while you were booking. Please pick another one."
+    The widget (feature 9) shows it with the times still free. Rejected:
+    "someone booked that time a moment before you", true only for the first.
 
 ## Open questions
 
@@ -94,12 +112,7 @@ gone through, before it is built.
    yes, with the phone optional. Feature 6 sends the confirmation and feature
    7 the cancel link by email; without one the customer hears nothing. An
    owner-made booking keeps both optional, as `contact` allows.
-2. **Which rules does an owner-made booking skip?** (blocks 5d.3) Options:
-   A, the same rules as a customer; B (recommended), any time the person (and
-   room) is not taken, bookings, time off and Google included, outside
-   bookable hours, notice, horizon and standby; C, only bookings and time
-   off, Google ignored. Never a double booking either way: the database
-   refuses overlapping commitments for everyone.
+2. Answered 2026-10-02: decision 11.
 3. **What goes into the Google event?** (blocks 5d.4) Recommended: the title
    is the service and the customer's name, the location is their address, and
    the description holds their phone, email and what they wrote. The
@@ -186,14 +199,17 @@ commit, on Frank's yes.
     block, a touching block and the buffers; every existing test passes
     unchanged.
 
-- [ ] **5d.3 Booking a time.**
+- [x] **5d.3 Booking a time.**
   - `backend/lib/booking/book-time.ts`: `bookTime({ organizationId,
     bookingLinkId, personId, startsAt, customer, location, details, source,
     actorUserId, now })`, `personId` null for "any available". Answers
     `{ booked: true, booking, alreadyBooked }` or `{ booked: false, reason }`
     with `reason` one of `not_found`, `time_taken`, `unavailable`.
   - Check again with 5c's own reads: the start must be one `findFreeTimes`
-    offers for that person on that date (owner-made: open question 2). With
+    offers for that person on that date. Owner-made (decision 11): instead,
+    the span (`appointmentSpan`) must touch none of the person's bookings,
+    time off or Google busy time, and a needed room must pass `isRoomFree`
+    with standby ignored. With
     "any available", each offered person is checked; their order comes from
     `chooseAnyAvailable` with `countBookingsThatDay`, the rooms from
     `isRoomFree`. A picked person whose calendar cannot be read answers
@@ -225,7 +241,10 @@ commit, on Frank's yes.
     after is not chosen, and the held span is `appointmentSpan`'s (F-76);
     another
     business's service or person answers `not_found`; an owner-made booking
-    by someone outside the business is refused; open question 2's rule.
+    by someone outside the business is refused; an owner-made booking outside
+    bookable hours, on a standby date or within the notice is booked, and one
+    over the person's Google busy time, a booking or time off answers
+    `time_taken` (decision 11).
 
 - [ ] **5d.4 The event in the booked person's Google.**
   - The seam gains `createEvent(accessToken, event)`, answering the
@@ -263,7 +282,7 @@ commit, on Frank's yes.
     a start that is not an instant, an empty address, and open question 1's
     rule; 413 for a body over 16 KB; the one identical 404 for an unknown
     business, an inactive service and a person not offered; 409
-    `time_taken` for a time no longer free; 503 `unavailable` for an
+    `time_taken` with decision 12's message for a time no longer free; 503 `unavailable` for an
     unreadable picked calendar, and on the times route when every calendar
     is unreadable; a preflight allows `POST` without credentials;
     `npm run build --workspace=frontend` passes and the typed client sees the
@@ -328,7 +347,7 @@ set, decision 7), `createdAt`, `updatedAt`. Its commitments find it through
 | 201 | `{ booking: { id, startsAt, endsAt, timezone, service: { id, name }, person: { id, name } } }` (also when decision 7 answers an existing booking) |
 | 400 | `bad_request` with the first reason |
 | 404 | `not_found`, one identical answer for every "not here" |
-| 409 | `time_taken`: "That time is no longer free. Pick another." |
+| 409 | `time_taken`: "Sorry, that time was taken while you were booking. Please pick another one." (decision 12) |
 | 413 | the request is over 16 KB |
 | 503 | `unavailable`: "Times cannot be read right now. Try again shortly." |
 
