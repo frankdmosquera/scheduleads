@@ -119,7 +119,8 @@ commit, on Frank's yes.
     the window, and 7:30 refused when 8:30 to 8:45 is busy; the step (empty,
     then 15 minutes); notice and horizon; closed and one-off dates; standby;
     a needed room, none free, and no room check; touching busy blocks; the
-    spring and autumn clock changes in America/Edmonton.
+    spring and autumn clock changes in America/Denver (Alberta stopped
+    changing its clocks in 2026, so Edmonton has none to test).
 
 - [ ] **5c.3 Who gets "any available".** No database.
   - `backend/lib/scheduling/choose-any-available.ts`: given a start time,
