@@ -69,7 +69,7 @@ an optional executor (`db` or a transaction) and hold inside a nested
 transaction (savepoint) so "taken" leaves the caller's transaction usable.
 **Resolution:**
 
-### F-53 [P3] open - The deadlock test's comment carries a finding number, which the standards keep out of code
+### F-53 [P3] fixed - The deadlock test's comment carries a finding number, which the standards keep out of code
 
 **File:** backend/lib/scheduling/hold-time.test.ts:111
 **Found:** 2026-10-01 by /audit independent (scope: current, c01dd9c..da22890; lens: quality)
@@ -82,4 +82,4 @@ from the older migration 0000, and test files are the pattern later steps copy
 a bare `F-51` in code points at nothing.
 **Suggested fix:** Drop "(F-51)" from the comment; the sentence already says
 why the test exists.
-**Resolution:**
+**Resolution:** Fixed 2026-10-01 in step 5b.1: the comment above the deadlock test no longer names a finding.

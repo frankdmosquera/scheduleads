@@ -9,6 +9,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
@@ -35,6 +36,8 @@ export const bookingLink = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
+    // Exists only so a tick (booking_link_resource) can point at (business, service) together.
+    unique("booking_link_organization_id_unique").on(table.organizationId, table.id),
     uniqueIndex("booking_link_organization_slug_unique").on(table.organizationId, table.slug),
     check("booking_link_duration_check", sql`${table.durationMinutes} > 0`),
     check(

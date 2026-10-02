@@ -69,7 +69,7 @@ merges with a merge commit on Frank's yes.
 
 ## Build steps
 
-- [ ] **5b.1 Skills and rooms.**
+- [x] **5b.1 Skills and rooms.**
   - `packages/shared/db/scheduling-tables/booking-link-resource-table.ts`;
     `booking_link` gains `unique("booking_link_organization_id_unique")` on
     `(organizationId, id)`; migration `0010_booking_link_resource`, generated.
