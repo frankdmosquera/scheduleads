@@ -146,7 +146,7 @@ whose last date has hours and is offered; a 22:00 to 24:00 window offering
 22:00 and 23:00.
 **Resolution:** Fixed in 5c.2 review fixes: five cases added (a room checked over the buffers, busy time ending at the start, the horizon's last date, a window to midnight, and F-59's spring case); each shown able to fail by breaking its rule on purpose. Closed by independent review of step 5c.3 (2026-10-02): re-broken in a scratch copy, each case failed as claimed (room checked over the appointment only; busy end treated as blocking with `>=`; `date < lastDate`; the spring check removed). No new defect.
 
-### F-62 [P3] unverified - Each start costs four Intl calls, repeated for every person, which grows "any available" on a public route
+### F-62 [P3] open - Each start costs four Intl calls, repeated for every person, which grows "any available" on a public route
 
 **File:** backend/lib/scheduling/apply-free-times-rules.ts:71
 **Found:** 2026-10-02 by independent review of step 5c.2 (scope: cb29f51..b5bf8c4; lenses: all)
@@ -163,9 +163,9 @@ timed; 5c.4 does not exist yet.
 seeded clinic. If it matters, convert each (date, minute) once per request
 and share it across people, or work out each date's offset once and only fall
 back to `localTimeToMoment` on clock-change days.
-**Resolution:**
+**Resolution:** Confirmed (unverified to open) by independent review of step 5c.4 (2026-10-02). The cost is real and is synchronous work, so reading people side by side (Promise.all) shortens the database and Google waits but not this: each person's applyFreeTimesRules still runs one after another on the event loop. Measured in a scratch copy, the rules alone for 7 people over 31 dates (30 minutes, 15 after, one room): weekdays 9 to 17 every 15 minutes, about 73 ms; every day all day every 15 minutes, about 416 ms; every day all day every 5 minutes, about 1.15 s. The build log's 75 ms for the dev clinic matches the first case, so that request is almost all this work, not the reads. Fine for the four tenants' daytime hours; it grows with long windows and a small step (the database allows any step above 0), on a public route with no rate limit yet. Stays a P3, for feature 9 (first public traffic) or feature 12 (where an owner sets the step): work out each date's offset once per request and share it across people, or put a floor on the step.
 
-### F-63 [P3] fixed - A booking is counted on the day its buffer starts, not the day its appointment starts, and the counting helper is not in the spec
+### F-63 [P3] closed - A booking is counted on the day its buffer starts, not the day its appointment starts, and the counting helper is not in the spec
 
 **File:** backend/lib/scheduling/count-bookings-that-day.ts:14
 **Found:** 2026-10-02 by independent review of step 5c.3 (scope: 4d6d1ce..4858600; lenses: all)
@@ -184,7 +184,7 @@ areas, or Data / contracts, although 5d will need it to produce
 (buffer included), or say in decision 2 which start counts; and add
 `countBookingsThatDay(commitments, date, timezone)` to the spec's files and
 contracts so 5d calls it as specified.
-**Resolution:** Fixed in 5c.3 review fixes: the comment now says a booking belongs to the day its commitment starts on, buffer before included (only a buffer reaching back over midnight moves it), matching decision 2's wording; the spec's decision 2 says which start counts, and countBookingsThatDay is in step 5c.3, Files / areas and Data / contracts.
+**Resolution:** Fixed in 5c.3 review fixes: the comment now says a booking belongs to the day its commitment starts on, buffer before included (only a buffer reaching back over midnight moves it), matching decision 2's wording; the spec's decision 2 says which start counts, and countBookingsThatDay is in step 5c.3, Files / areas and Data / contracts. Closed by independent review of step 5c.4 (2026-10-02): count-bookings-that-day.ts:14-15 now says the commitment's start, buffer before included, which is what the code does (localDate of startsAt) and what decision 2 now says; the helper and its contract are in the spec's step 5c.3, Files / areas and Data / contracts. No new defect.
 
 ### F-64 [P3] open - chooseAnyAvailable needs "only the free rooms", but no code says which rooms are free, so 5d would rebuild the room rule
 
@@ -206,7 +206,7 @@ the room check out into one exported helper (for example
 `applyFreeTimesRules` and 5d, with `resourceId` on the room input.
 **Resolution:**
 
-### F-65 [P3] fixed - Step and decision history in the new code comments
+### F-65 [P3] closed - Step and decision history in the new code comments
 
 **File:** backend/lib/scheduling/count-bookings-that-day.ts:2
 **Found:** 2026-10-02 by independent review of step 5c.3 (scope: 4d6d1ce..4858600; lenses: all)
@@ -218,4 +218,74 @@ references elsewhere in the backend are common, but a step number and a dated
 decision are the history the standard names.
 **Suggested fix:** Drop "(5c.3)" and the date; keep the rule itself in the
 comment ("the fewest bookings that day, ties by name then id").
-**Resolution:** Fixed in 5c.3 review fixes: the step number and the date are gone from both headers; the rule stays.
+**Resolution:** Fixed in 5c.3 review fixes: the step number and the date are gone from both headers; the rule stays. Closed by independent review of step 5c.4 (2026-10-02): count-bookings-that-day.ts and choose-any-available.ts carry no step number or date, and the rule is kept. The same kind of comment remains in test files (choose-any-available.test.ts:6 and :15, and the new find-free-times.test.ts:1), recorded as F-69.
+
+### F-66 [P3] fixed - No test subtracts Google busy time or reaches the edges of the read window
+
+**File:** backend/lib/scheduling/find-free-times.test.ts:1 (code: find-free-times.ts:85-89 and :129)
+**Found:** 2026-10-02 by independent review of step 5c.4 (scope: 577bab2..d6ef7d9; lenses: all)
+**Why it matters:** Google busy time is half of what this step subtracts, yet
+no test gives a person a Google busy block: every test person is unconnected
+or needs reconnecting. Mutation probes in a scratch copy: dropping
+`...googleBusy` from the busy list (line 129) passes all 8 tests, and so does
+narrowing the read window by a day on each side (`- DAY_MS` removed, `2 *
+DAY_MS` to `DAY_MS`). The second would miss a booking or Google busy time on
+an Edmonton evening (after 18:00 local is the next UTC day) and offer a time
+that is taken. The code is right today; nothing would catch a later edit. The
+other probes (union, picked throw, picked not offered, rooms, standby, busy
+per person, the warning line) each fail a test, and dropping the service's
+active check is a double guard findServiceResources also holds.
+**Suggested fix:** Add two cases: a connected person with Google faked the way
+get-busy-times.test.ts does (a stubbed fetch and a saved connection), whose
+busy block removes a start; and a commitment late on the last date (an
+evening window, after midnight UTC) that removes the time it covers.
+**Resolution:** Fixed in 5c.4 review fixes: two tests added, a person's faked Google busy time removing the time it covers, and taken time late on the last date (Tuesday in UTC) still seen; each shown able to fail by dropping Google's busy time and by narrowing the read window by a day.
+
+### F-67 [P3] fixed - A picked person's unreadable calendar leaves no log line, and the reason is dropped
+
+**File:** backend/lib/scheduling/find-free-times.ts:118
+**Found:** 2026-10-02 by independent review of step 5c.4 (scope: 577bab2..d6ef7d9; lenses: all)
+**Why it matters:** With "any available" the failure is logged with its
+reason (needs reconnecting, Google's status, a bad token key, a database
+fault). When the customer picked that person, the same failure becomes a bare
+`CalendarUnavailableError` with no `cause` and nothing logged, so 5c.5 answers
+503 and whoever looks later cannot tell why; the route cannot log it either,
+since the reason is gone. For a one-person business every request is a picked
+one.
+**Suggested fix:** Log the same one warning line before throwing, or pass the
+original as `cause` (the constructor taking `ErrorOptions`) so 5c.5 logs it
+with `safeErrorReason`.
+**Resolution:** Fixed in 5c.4 review fixes: a picked person's unreadable calendar now logs the same one-line warning before throwing, and the original error travels as the CalendarUnavailableError's cause; the test checks both.
+
+### F-68 [P3] fixed - A range whose last date is before its first throws a database error, and 5c.5's clamp can make one
+
+**File:** backend/lib/scheduling/find-free-times.ts:85
+**Found:** 2026-10-02 by independent review of step 5c.4 (scope: 577bab2..d6ef7d9; lenses: all)
+**Why it matters:** The read window is built from the raw dates, so when
+`fromDate` is more than about two days after `toDate` the window is inverted
+and `findCommitments` fails ("Reading time failed: database error 22000",
+probed in a scratch copy with Oct 12 to Oct 5), a 500; were that read to pass,
+getBusyTimes would refuse the range too, which a picked person turns into a
+misleading 503. The route's Zod rule (`from <= to`) stops a raw inverted
+request, but decision 5 then clamps the range to today through today plus the
+horizon: a request wholly in the past (Sep 1 to Sep 15, clamped to start
+today) or wholly past the horizon inverts after clamping. Unclamped, Google
+and the commitments are also read for dates the rules will discard.
+**Suggested fix:** In 5c.5, answer an empty clamped range with no start times
+before calling findFreeTimes, and add that case to its Done when; or have
+findFreeTimes answer `startTimes: []` when `fromDate > toDate`, and say which
+in the spec's contract.
+**Resolution:** Fixed in 5c.4 review fixes: findFreeTimes answers no times, without reading anything, when fromDate is after toDate; test added and shown able to fail.
+
+### F-69 [P3] fixed - Step numbers in test file comments
+
+**File:** backend/lib/scheduling/find-free-times.test.ts:1
+**Found:** 2026-10-02 by independent review of step 5c.4 (scope: 577bab2..d6ef7d9; lenses: all)
+**Why it matters:** The comments standard says no history in code comments,
+step numbers included. The new test's header says "every reader 5c.4
+gathers", and two from step 5c.3 remain in choose-any-available.test.ts:6
+("step 5c.3's simulation") and :15 ("the commitment rows 5c.4 will read").
+**Suggested fix:** Drop the step numbers and keep what each comment says (for
+example "every reader free times gathers", "the commitment rows the free-time
+read gathers").
+**Resolution:** Fixed in 5c.4 review fixes: the step numbers are gone from the two test files' comments.

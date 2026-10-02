@@ -75,6 +75,8 @@ export async function findFreeTimes(input: FindFreeTimesInputType): Promise<Free
         .orderBy(asc(resource.name), asc(resource.id))
     : [];
   const timezone = businessHours.timezone;
+  // A range the wrong way round, as clamping to today can leave one, has nothing to offer.
+  if (fromDate > toDate) return { timezone, people, startTimes: [] };
   const candidates = personId === null ? offered.peopleIds : [personId];
   const placeIds = offered.placeIds ?? [];
 
@@ -115,11 +117,16 @@ export async function findFreeTimes(input: FindFreeTimesInputType): Promise<Free
     try {
       googleBusy = await getBusyTimes({ organizationId, resourceId: id, from, to });
     } catch (error) {
-      if (personId !== null) throw new CalendarUnavailableError();
-      // Never read as free: this person is left out of "any available".
-      console.warn(
-        `[free times] left out ${id}, whose calendar cannot be read: ${safeErrorReason(error)}`
-      );
+      // Never read as free: a picked person's times cannot be known, and with "any available"
+      // the person is left out. Either way the reason is logged, so the answer can be explained.
+      const reason = safeErrorReason(error);
+      if (personId !== null) {
+        console.warn(
+          `[free times] cannot answer for ${id}, whose calendar cannot be read: ${reason}`
+        );
+        throw new CalendarUnavailableError(undefined, { cause: error });
+      }
+      console.warn(`[free times] left out ${id}, whose calendar cannot be read: ${reason}`);
       return [];
     }
 

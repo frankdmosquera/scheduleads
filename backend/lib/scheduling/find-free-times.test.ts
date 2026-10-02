@@ -1,4 +1,4 @@
-// Free times for a service, against the local database: every reader 5c.4 gathers, together. Every
+// Free times for a service, against the local database: every reader it gathers, together. Every
 // business here is a throwaway carrying this run's tag, removed after (its rows go with it). Google is
 // never called: a person with no connection has no Google busy time, and the unreadable case is a
 // connection marked as needing reconnection.
@@ -32,6 +32,9 @@ const {
 const { findFreeTimes } = await import("./find-free-times.js");
 const { holdTime } = await import("./hold-time.js");
 const { CalendarUnavailableError } = await import("../calendar/calendar-unavailable-error.js");
+const { CalendarReconnectNeededError } =
+  await import("../calendar/calendar-reconnect-needed-error.js");
+const { saveCalendarConnection } = await import("../calendar/save-calendar-connection.js");
 
 const tag = randomUUID().slice(0, 8);
 const MONDAY = "2026-10-05";
@@ -265,11 +268,92 @@ describe("free times for a service", () => {
       toDate: MONDAY,
       now: fridayMorning,
     };
-    await expect(findFreeTimes({ ...base, personId: clinic.mei })).rejects.toBeInstanceOf(
-      CalendarUnavailableError
-    );
+    const picked = await findFreeTimes({ ...base, personId: clinic.mei }).catch((error) => error);
+    expect(picked).toBeInstanceOf(CalendarUnavailableError);
+    expect(picked.cause).toBeInstanceOf(CalendarReconnectNeededError); // the reason travels with it
     expect(await times({ ...base, personId: null })).toEqual([]);
-    expect(warn).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledTimes(2); // once when picked, once when left out
     warn.mockRestore();
+  });
+
+  test("a person's Google busy time removes the times it covers", async () => {
+    const clinic = await makeClinic("google");
+    await saveCalendarConnection({
+      organizationId: clinic.business,
+      resourceId: clinic.mei,
+      accountEmail: `mei-${tag}@gmail.com`,
+      grantedScopes: ["openid", "email"],
+      credentials: {
+        refreshToken: "1//saved-refresh",
+        accessToken: "ya29.saved-access",
+        accessTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      },
+    });
+    // Google, faked: Mei has an event 9:00 to 9:30 on Monday. No test ever reaches Google.
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url !== "https://www.googleapis.com/calendar/v3/freeBusy") {
+        throw new Error(`A test tried to reach ${url}.`);
+      }
+      const busy = [{ start: "2026-10-05T15:00:00Z", end: "2026-10-05T15:30:00Z" }];
+      return new Response(JSON.stringify({ calendars: { primary: { busy } } }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    try {
+      expect(
+        await times({
+          organizationId: clinic.business,
+          bookingLinkId: clinic.facial,
+          personId: clinic.mei,
+          fromDate: MONDAY,
+          toDate: MONDAY,
+          now: fridayMorning,
+        })
+      ).toEqual([iso("2026-10-05T16:15:00")]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  test("taken time late on the last date, already the next day in UTC, is still seen", async () => {
+    const clinic = await makeClinic("evening");
+    // Mei works 17:00 to 19:30 that Monday and is busy 18:30 to 19:30, which is Tuesday in UTC: it
+    // takes 18:15 away (its 15 after reaches 19:45) and leaves 17:00, which ends as it starts.
+    await db.insert(availabilityRule).values({
+      id: randomUUID(),
+      organizationId: clinic.business,
+      resourceId: clinic.mei,
+      dateHours: [{ date: MONDAY, windows: [{ startMinute: 1020, endMinute: 1170 }] }],
+    });
+    await holdTime(clinic.business, {
+      resourceIds: [clinic.mei],
+      startsAt: at("2026-10-06T00:30:00"),
+      endsAt: at("2026-10-06T01:30:00"),
+      kind: "booking",
+    });
+    expect(
+      await times({
+        organizationId: clinic.business,
+        bookingLinkId: clinic.facial,
+        personId: clinic.mei,
+        fromDate: MONDAY,
+        toDate: MONDAY,
+        now: fridayMorning,
+      })
+    ).toEqual([iso("2026-10-05T23:00:00")]);
+  });
+
+  test("a range the wrong way round has no times and no error", async () => {
+    const clinic = await makeClinic("backwards");
+    const answer = await findFreeTimes({
+      organizationId: clinic.business,
+      bookingLinkId: clinic.facial,
+      personId: null,
+      fromDate: "2026-10-12",
+      toDate: MONDAY,
+      now: fridayMorning,
+    });
+    expect(answer?.startTimes).toEqual([]);
   });
 });

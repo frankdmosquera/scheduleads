@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { chooseAnyAvailable } from "./choose-any-available.js";
 import { countBookingsThatDay } from "./count-bookings-that-day.js";
 
-// The six cases of step 5c.3's simulation (explorable-any-available.html in the build log), one test
+// The six cases of the any-available simulation (explorable-any-available.html in the build log), one test
 // each, named as on the page: who is free at 2:00 on Monday Oct 5, with their bookings and time off
 // that day, and which rooms are free.
 const MONDAY = "2026-10-05";
@@ -12,7 +12,7 @@ const ZONE = "America/Edmonton"; // UTC-6
 type CasePersonType = { name: string; bookings: number; timeOff?: number; free?: boolean };
 
 function choose(people: CasePersonType[], rooms: { name: string; free: boolean }[] | null) {
-  // Each booking and stretch of time off as the commitment rows 5c.4 will read, all on Monday.
+  // Each booking and stretch of time off as the commitment rows free times reads, all on Monday.
   const commitments = people.flatMap((person) => [
     ...Array.from({ length: person.bookings }, (_, i) => ({
       resourceId: person.name,
