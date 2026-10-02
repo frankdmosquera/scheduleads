@@ -19,6 +19,7 @@ export const lead = pgTable(
     stageId: text("stageId").notNull(),
     source: text("source").notNull(),
     details: text("details"), // the customer's own words; shown as text, never HTML
+    phone: text("phone"), // the phone given with this request; the contact keeps the first one given
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })
       .notNull()

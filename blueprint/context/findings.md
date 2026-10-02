@@ -371,7 +371,7 @@ or already has `calendarEventId` (or settle both in feature 8's spec). Add a
 test that writes twice and sees one event.
 **Resolution:** Fixed 2026-10-02: the event's id is the booking's without dashes (Google's a-v0-9 rule), so Google keeps one event; a 409 for that id is taken as the event already made; a booking already written answers its saved id without asking Google, and a cancelled one is not written. Tests: writing again makes no second call, a 409 saves the id, a cancelled booking gets no event; each fails with its guard removed.
 
-### F-85 [P3] open - A returning customer's phone typed on this booking never reaches the event
+### F-85 [P3] fixed - A returning customer's phone typed on this booking never reaches the event
 
 **File:** backend/lib/calendar/write-booking-event.ts:24-26 and :61 (cause: backend/lib/crm/find-or-create-contact.ts:70)
 **Found:** 2026-10-02 by independent review of step 5d.4 (scope: 7166169..ceb511c; lenses: quality)
@@ -387,7 +387,7 @@ likewise carries the first name ever given.
 (or replace it) in findOrCreateContact, or keep this booking's phone on the
 lead or booking and use it for the event; or write in decision 14 that the
 contact's stored details are what the event shows. Add the test either way.
-**Resolution:**
+**Resolution:** Fixed 2026-10-02 with Frank's answer (option A, decision 15): lead.phone (migration 0015) keeps the phone given with each request and the event shows it; findOrCreateContact fills a known contact's phone only when it had none. Tests: a returning customer's new phone reaches this booking's event (fails when the event reads the contact's phone), and a known contact is filled once, never replaced (fails when the empty-phone guard is removed).
 
 ### F-86 [P3] fixed - Two Done-when items cannot fail: the refresh test passes when writeBookingEvent never refreshes, and "each only when given" is never tested
 

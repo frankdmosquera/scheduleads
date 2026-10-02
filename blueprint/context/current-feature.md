@@ -117,6 +117,13 @@ lost):
     description: "Phone: ...", "Email: ..." (each only when given) and what
     they wrote. Never attendees. Rejected: the service and first name only,
     which leaves a painter on site without the address or phone.
+15. **A returning customer's phone travels with the booking** (Frank,
+    2026-10-02, review F-85, option A). The phone given with a request is kept
+    on its lead (`lead.phone`, migration 0015) and is the one its event shows;
+    the saved contact gets a phone only when it had none, so typing someone's
+    email on the public form never changes their saved details. Rejected:
+    the newest details always win (anyone could change a contact by typing
+    their email) and keeping only the first (the new phone was lost).
 
 ## Open questions
 
@@ -405,5 +412,5 @@ rule.
   address. Log lines carry ids and safe reasons only.
 - The Google scopes already granted (`calendar.events.owned`) allow writing
   an event to the person's own calendar; no reconnect is needed.
-- At deploy: confirm `btree_gist` on Railway and apply 0005 to 0014; the
+- At deploy: confirm `btree_gist` on Railway and apply 0005 to 0015; the
   server needs tzdata 2026c or newer (carried from 5c).

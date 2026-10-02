@@ -25,7 +25,8 @@ export async function writeBookingEvent(
       service: bookingLink.name,
       customer: contact.name,
       email: contact.email,
-      phone: contact.phone,
+      phone: lead.phone, // the one given with this booking (decision 15)
+      contactPhone: contact.phone,
       details: lead.details,
       timezone: availabilityRule.timezone,
     })
@@ -68,7 +69,8 @@ export async function writeBookingEvent(
   if (!access) return null; // no calendar connected: nothing to write
 
   // What the worker needs on site (decision 14): who, where, how to reach them, what they wrote.
-  const reach = [row.phone && `Phone: ${row.phone}`, row.email && `Email: ${row.email}`]
+  const phone = row.phone ?? row.contactPhone;
+  const reach = [phone && `Phone: ${phone}`, row.email && `Email: ${row.email}`]
     .filter(Boolean)
     .join("\n");
   const eventId = await access.provider.createEvent(access.accessToken, {

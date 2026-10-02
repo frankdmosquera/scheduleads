@@ -9,7 +9,10 @@ import { randomUUID } from "node:crypto";
 import { and, asc, eq, inArray } from "drizzle-orm";
 
 import { booking, bookingLink, lead, member, resource } from "@scheduleads-app/shared/db";
-import type { ContactInputType } from "@scheduleads-app/shared/zod-validation";
+import {
+  contactValidationSchema,
+  type ContactInputType,
+} from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
 import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
@@ -275,6 +278,8 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         stageId: stage.id,
         source,
         details: input.details,
+        // The phone given with this request, kept with it for its event (decision 15).
+        phone: contactValidationSchema.parse(input.customer).phone ?? null,
       });
       const [first] = choices;
       await tx.insert(booking).values({

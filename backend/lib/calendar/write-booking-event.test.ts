@@ -304,6 +304,20 @@ describe("the booking's event in Google", () => {
     expect(await eventIdOf(id)).toBe(googleIdOf(id));
   });
 
+  test("a returning customer's new phone reaches this booking's event", async () => {
+    const clinic = await makeClinic("returning");
+    await connect(clinic);
+    // Jane's saved phone is 403 555 0101; this time she gives 403 555 0199.
+    await bookedId(clinic);
+    calls.length = 0;
+    await bookedId(clinic, {
+      startsAt: new Date("2026-10-12T15:00:00Z"),
+      customer: { name: "Jane Doe", email: `jane-${tag}@example.com`, phone: "403 555 0199" },
+    });
+
+    expect(JSON.parse(eventCalls()[0].body).description).toContain("Phone: 403 555 0199");
+  });
+
   test("a cancelled booking gets no event", async () => {
     const clinic = await makeClinic("cancelled");
     const id = await bookedId(clinic);
