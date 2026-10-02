@@ -3,7 +3,8 @@
 
 import type { DateHoursType, WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
 
-import { addDays, localDate } from "../scheduling/local-time.js";
+import { addDays } from "../local-time/add-days.js";
+import { localDate } from "../local-time/local-date.js";
 import { closedHolidayDates } from "./closed-holidays.js";
 
 // The business's row, with the settings the database guarantees are set on it.

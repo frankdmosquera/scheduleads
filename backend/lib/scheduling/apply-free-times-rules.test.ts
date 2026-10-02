@@ -222,3 +222,53 @@ describe("clock changes in Denver", () => {
     ).toEqual(["2026-11-01T06:00:00.000Z", "2026-11-01T07:00:00.000Z", "2026-11-01T09:00:00.000Z"]);
   });
 });
+
+describe("edges", () => {
+  test("a room is checked over the buffers too, not only the appointment", () => {
+    // 9:00 runs to 10:15, then 15 after; the room is taken 10:15 to 10:30.
+    const withAfter = { ...facial, bufferAfterMinutes: 15 };
+    const roomTakenAfter = {
+      busy: [busy("2026-10-05T16:15:00", "2026-10-05T16:30:00")],
+      standbyDates: [],
+    };
+    // Checked over the appointment alone, 9:00 would wrongly pass; 10:15 overlaps the room itself.
+    expect(freeTimes({ service: withAfter, rooms: [roomTakenAfter] })).toEqual([]);
+  });
+
+  test("busy time that ends as the appointment starts does not block it", () => {
+    expect(freeTimes({ busy: [busy("2026-10-05T14:00:00", "2026-10-05T15:00:00")] })).toEqual([
+      "2026-10-05T15:00:00.000Z",
+      "2026-10-05T16:15:00.000Z",
+    ]);
+  });
+
+  test("the horizon's last date is still offered", () => {
+    // From Friday Oct 2, a 3-day horizon ends on Monday Oct 5.
+    expect(freeTimes({ hours: hours({ horizonDays: 3 }) })).toHaveLength(2);
+  });
+
+  test("a window running to midnight", () => {
+    const lateWindow = hours({ weeklyHours: { mon: [window(22, 24)] } });
+    expect(freeTimes({ hours: lateWindow, service: { ...facial, durationMinutes: 60 } })).toEqual([
+      "2026-10-06T04:00:00.000Z",
+      "2026-10-06T05:00:00.000Z",
+    ]);
+  });
+
+  test("the spring change cannot stretch an appointment past its window", () => {
+    // Denver, Mar 14, 2027: a 1:30 start lasting 60 real minutes ends at 3:30, past 3:00.
+    const sunday = hours({
+      timezone: "America/Denver",
+      weeklyHours: { sun: [{ startMinute: 90, endMinute: 180 }] },
+    });
+    expect(
+      freeTimes({
+        hours: sunday,
+        service: { ...facial, durationMinutes: 60 },
+        fromDate: "2027-03-14",
+        toDate: "2027-03-14",
+        now: at("2027-03-01T12:00:00"),
+      })
+    ).toEqual([]);
+  });
+});

@@ -5,7 +5,9 @@ import type { WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
 
 import type { ResolvedBookableHoursType } from "../bookable-hours/apply-bookable-hours-rules.js";
 import type { BusyBlockType } from "../calendar/calendar-provider.js";
-import { addDays, localDate, localTimeToMoment } from "./local-time.js";
+import { addDays } from "../local-time/add-days.js";
+import { localDate } from "../local-time/local-date.js";
+import { localTimeToMoment } from "../local-time/local-time-to-moment.js";
 
 export type FreeTimesServiceType = {
   durationMinutes: number;
@@ -62,6 +64,10 @@ export function applyFreeTimesRules(input: FreeTimesInputType): Date[] {
       [];
 
     for (const window of windows) {
+      // The window's end as a real moment, so the spring change cannot stretch an appointment past
+      // it; null when the end itself is the skipped hour, and then the clock count alone decides.
+      const windowEnd = localTimeToMoment(date, window.endMinute, hours.timezone)?.getTime();
+
       // Only the appointment has to fit inside the window; its buffers may run past it (decision 1).
       for (
         let minute = window.startMinute;
@@ -70,6 +76,9 @@ export function applyFreeTimesRules(input: FreeTimesInputType): Date[] {
       ) {
         const start = localTimeToMoment(date, minute, hours.timezone)?.getTime();
         if (start === undefined || start < earliest) continue;
+        if (windowEnd !== undefined && start + service.durationMinutes * MINUTE_MS > windowEnd) {
+          continue;
+        }
 
         // The appointment and both its buffers must be clear, for the person and for one room.
         const spanStart = start - service.bufferBeforeMinutes * MINUTE_MS;
