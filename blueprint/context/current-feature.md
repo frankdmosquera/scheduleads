@@ -100,9 +100,10 @@ commit, on Frank's yes.
     pass.
 
 - [x] **5c.2 The free-time rules.** No database, every rule tested.
-  - `backend/lib/scheduling/local-time.ts`: a business date plus a minute of
-    the day in its time zone, to an instant; null when that time does not
-    exist (decision 6).
+  - `backend/lib/local-time/` (one helper per file, after review F-60):
+    `localTimeToMoment`, a business date plus a minute of the day in its time
+    zone, to an instant, null when that time does not exist (decision 6); and
+    `localDate`, `addDays`, now shared with feature 2's bookable hours.
   - `backend/lib/scheduling/apply-free-times-rules.ts`: for one person, from
     their resolved bookable hours (`ResolvedBookableHoursType`), the service
     (length, buffers, step), their busy blocks (commitments and Google), their
@@ -177,7 +178,8 @@ commit, on Frank's yes.
   `packages/shared/scripts/seed-dev.ts`.
 - `packages/shared/zod-validation/booking-links-validation-schemas/`
   (the query schema, exported through `index.ts`).
-- `backend/lib/scheduling/`: `local-time.ts`, `apply-free-times-rules.ts`,
+- `backend/lib/local-time/`: the clock helpers, one per file (5c.2).
+- `backend/lib/scheduling/`: `apply-free-times-rules.ts`,
   `choose-any-available.ts`, `find-free-times.ts`, tests beside each.
 - `backend/lib/calendar/`: `CalendarUnavailableError` if no existing error
   fits (5c.4 checks).
@@ -197,7 +199,9 @@ ascending, unique. A start instant `s` is offered for one person when:
 - its local date `d` is in `[max(fromDate, today), min(toDate, today +
   horizonDays)]`, not in `closedDates`, not a standby date of the person;
 - `d`'s windows are the one-off date's windows if `d` has one, else the
-  weekday's; some window `[a, b)` has `a <= m` and `m + duration <= b`, where
+  weekday's; some window `[a, b)` has `a <= m` and `m + duration <= b`, and
+  the real end `s + duration` is no later than the moment the clock shows `b`
+  when that moment exists (review F-59, decision 6), where
   `m` is the start's minute of the day and `m = a + k * step` for a whole
   `k >= 0` (`step` = `slotIntervalMinutes ?? durationMinutes`);
 - `s >= now + minimumNoticeMinutes`;
