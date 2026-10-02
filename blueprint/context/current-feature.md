@@ -4,6 +4,10 @@
 
 **Branch:** feature/05b-who-does-what
 
+**Status:** verified. Whole feature seen and agreed by Frank 2026-10-01;
+steps 5b.1 to 5b.3 built, tested and reviewed step by step; every review
+finding fixed, F-57 last on 2026-10-01. The checkpoint for the final review.
+
 Branch named in the workspace's `feature/NN-name` form, so one number finds the
 branch, the archive (`05b-who-does-what.md`) and the tag (`item-05b-done`).
 The second of feature 5's four parts (split 2026-10-01, Frank).
