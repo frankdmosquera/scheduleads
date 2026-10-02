@@ -68,3 +68,23 @@ answering `{ held: false }` there needs a savepoint.
 an optional executor (`db` or a transaction) and hold inside a nested
 transaction (savepoint) so "taken" leaves the caller's transaction usable.
 **Resolution:**
+
+### F-58 [P3] open - The seed never gives an existing Chemical Peel its 15-minute step, so a migrated (not rebuilt) dev database keeps it empty
+
+**File:** packages/shared/scripts/seed-dev.ts:485
+**Found:** 2026-10-02 by independent review of step 5c.1 (scope: bf53ee6..d5a5878; lenses: all)
+**Why it matters:** The seed's find-or-make inserts a service only when its
+slug is missing (`if (!existingLink)`), so `slotIntervalMinutes: 15` reaches
+the database only on a fresh build. Checked read-only on the local
+`scheduleads_dev` after this step: migration 0012 is applied, yet every
+clinic service, Chemical Peel included, has `slotIntervalMinutes` null. The
+build log says so, and dev databases are disposable, so nothing is wrong in
+5c.1 itself. The risk is 5c.4 and 5c.5, whose tests run "on the seeded
+clinic": any test that leans on the peel's seeded 15 passes on a rebuilt
+database and fails on this one, or on any machine that only ran `db:migrate`
+and `db:seed`.
+**Suggested fix:** Nothing to change in 5c.1. Before 5c.4, rebuild the local
+`scheduleads_dev` (drop, migrate, seed), and have the 5c.4/5c.5 tests that
+need a step set it on a service they create themselves rather than read the
+seed's value.
+**Resolution:**
