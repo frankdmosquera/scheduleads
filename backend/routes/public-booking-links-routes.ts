@@ -3,17 +3,21 @@
 
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
+import { validator } from "hono/validator";
 
 import { availabilityRule, bookingLink, organization } from "@scheduleads-app/shared/db";
 import { subscriptionIncludes } from "@scheduleads-app/shared/subscriptions";
 import {
   bookingLinkIdValidationSchema,
+  freeTimesQueryValidationSchema,
   organizationSlugValidationSchema,
 } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../database.js";
 import { resolveBookableHours } from "../lib/bookable-hours/resolve-bookable-hours.js";
+import { CalendarUnavailableError } from "../lib/calendar/calendar-unavailable-error.js";
 import { refuse } from "../lib/errors/refuse.js";
+import { findFreeTimes } from "../lib/scheduling/find-free-times.js";
 
 const notFound = refuse("not_found", "Nothing is bookable here.");
 
@@ -93,4 +97,48 @@ export const publicBookingLinksRoutes = new Hono()
     // `source` stays out: it says whose week answered, which is about people.
     const { source: _source, ...availability } = hours;
     return c.json({ bookingLink: publicBookingLink, availability }, 200);
-  });
+  })
+  // The start times a customer can book for a service, with one person or "any available".
+  .get(
+    "/:slug/booking-links/:bookingLinkId/times",
+    validator("query", (value, c) => {
+      const parsed = freeTimesQueryValidationSchema.safeParse(value);
+      if (!parsed.success) {
+        const message = parsed.error.issues[0]?.message ?? "That is not a valid question.";
+        return c.json(refuse("bad_request", message), 400);
+      }
+      return parsed.data;
+    }),
+    async (c) => {
+      const slug = organizationSlugValidationSchema.safeParse(c.req.param("slug"));
+      const bookingLinkId = bookingLinkIdValidationSchema.safeParse(c.req.param("bookingLinkId"));
+      if (!slug.success || !bookingLinkId.success) {
+        return c.json(refuse("bad_request", "That is not a valid booking address."), 400);
+      }
+      const query = c.req.valid("query");
+
+      const organizationId = await findBookableOrganizationId(slug.data);
+      if (!organizationId) return c.json(notFound, 404);
+
+      // Today and the horizon are applied inside the rules, so the dates go in as asked.
+      try {
+        const freeTimes = await findFreeTimes({
+          organizationId,
+          bookingLinkId: bookingLinkId.data,
+          personId: query.person ?? null,
+          fromDate: query.from,
+          toDate: query.to,
+          now: new Date(),
+        });
+        if (!freeTimes) return c.json(notFound, 404);
+        return c.json(freeTimes, 200);
+      } catch (error) {
+        // Only the picked person's unreadable calendar is expected; anything else is a real fault.
+        if (!(error instanceof CalendarUnavailableError)) throw error;
+        return c.json(
+          refuse("unavailable", "Times cannot be read right now. Try again shortly."),
+          503
+        );
+      }
+    }
+  );

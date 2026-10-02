@@ -11,7 +11,8 @@ export type RefusalCodeType =
   | "no_person" // signed in, but no person in this business is linked to the login
   | "email_taken" // setting up a client: that email's login already has a business
   | "slug_taken" // setting up a client: another business already has that address
-  | "setup_in_progress"; // setting up a client: another setup for that email or address is running
+  | "setup_in_progress" // setting up a client: another setup for that email or address is running
+  | "unavailable"; // the answer depends on something that cannot be read right now; try again shortly
 
 export type RefusalType = {
   error: {

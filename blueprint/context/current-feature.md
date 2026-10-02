@@ -158,7 +158,7 @@ commit, on Frank's yes.
     whose connection needs reconnecting throws when picked and is left out of
     "any available".
 
-- [ ] **5c.5 The public route.**
+- [x] **5c.5 The public route.**
   - `GET /public/:slug/booking-links/:bookingLinkId/times?from=YYYY-MM-DD&to=YYYY-MM-DD&person=<id>`
     in `backend/routes/public-booking-links-routes.ts`, `person` omitted for
     "any available". The query is checked by a shared Zod schema
