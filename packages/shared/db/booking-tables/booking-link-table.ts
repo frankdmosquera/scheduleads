@@ -1,5 +1,6 @@
-// Shared: the booking_link table. A service a customer can book: its length and the
-// buffers around it. The handle a host site stores as Service.bookingId.
+// Shared: the booking_link table. A service a customer can book: its length, the buffers
+// around it and how often its start times repeat. The handle a host site stores as
+// Service.bookingId.
 
 import { sql } from "drizzle-orm";
 import {
@@ -28,6 +29,7 @@ export const bookingLink = pgTable(
     durationMinutes: integer("durationMinutes").notNull(),
     bufferBeforeMinutes: integer("bufferBeforeMinutes").notNull().default(0),
     bufferAfterMinutes: integer("bufferAfterMinutes").notNull().default(0),
+    slotIntervalMinutes: integer("slotIntervalMinutes"), // minutes between start times; null = every durationMinutes
     active: boolean("active").notNull().default(true), // inactive reads as absent publicly
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })
@@ -43,6 +45,10 @@ export const bookingLink = pgTable(
     check(
       "booking_link_buffers_check",
       sql`${table.bufferBeforeMinutes} >= 0 and ${table.bufferAfterMinutes} >= 0`
+    ),
+    check(
+      "booking_link_slot_interval_check",
+      sql`${table.slotIntervalMinutes} is null or ${table.slotIntervalMinutes} > 0`
     ),
   ]
 );
