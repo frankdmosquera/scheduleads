@@ -1,0 +1,148 @@
+// Backend: the start times a customer can book for a service, with one picked person or "any
+// available", over a range of the business's dates. Gathers who can do it and who is on standby,
+// each person's bookable hours, bookings, time off and Google busy time, and the rooms, then puts
+// each person through apply-free-times-rules.ts. Worked out on every request, never stored.
+
+import { and, asc, eq, inArray } from "drizzle-orm";
+
+import { bookingLink, resource } from "@scheduleads-app/shared/db";
+
+import { db } from "../../database.js";
+import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
+import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error.js";
+import type { BusyBlockType } from "../calendar/calendar-provider.js";
+import { getBusyTimes } from "../calendar/get-busy-times.js";
+import { safeErrorReason } from "../errors/safe-error-reason.js";
+import { applyFreeTimesRules } from "./apply-free-times-rules.js";
+import { findCommitments } from "./find-commitments.js";
+import { findServiceResources } from "./find-service-resources.js";
+import { findStandbyDates } from "./find-standby-dates.js";
+
+export type FreeTimesType = {
+  timezone: string; // the business's IANA zone
+  people: { id: string; name: string }[]; // who the customer can pick, by name
+  startTimes: string[]; // ISO 8601 instants in UTC, ascending, unique
+};
+
+export type FindFreeTimesInputType = {
+  organizationId: string; // from the business being booked, never from the request
+  bookingLinkId: string;
+  personId: string | null; // null = "any available"
+  fromDate: string; // YYYY-MM-DD in the business's zone, included
+  toDate: string; // YYYY-MM-DD in the business's zone, included
+  now: Date;
+};
+
+const DAY_MS = 86_400_000;
+const MINUTE_MS = 60_000;
+
+// null when the service is missing, inactive or another business's, the business has no hours,
+// or the picked person is not offered for the service. Throws CalendarUnavailableError when the
+// picked person's calendar cannot be read; with "any available" that person is left out instead.
+export async function findFreeTimes(input: FindFreeTimesInputType): Promise<FreeTimesType | null> {
+  const { organizationId, bookingLinkId, personId, fromDate, toDate, now } = input;
+
+  const [service] = await db
+    .select({
+      durationMinutes: bookingLink.durationMinutes,
+      bufferBeforeMinutes: bookingLink.bufferBeforeMinutes,
+      bufferAfterMinutes: bookingLink.bufferAfterMinutes,
+      slotIntervalMinutes: bookingLink.slotIntervalMinutes,
+    })
+    .from(bookingLink)
+    .where(
+      and(
+        eq(bookingLink.organizationId, organizationId),
+        eq(bookingLink.id, bookingLinkId),
+        eq(bookingLink.active, true)
+      )
+    )
+    .limit(1);
+  if (!service) return null;
+
+  const offered = await findServiceResources(organizationId, bookingLinkId);
+  const businessHours = await resolveBookableHours(organizationId, null, now);
+  if (!offered || !businessHours) return null;
+  if (personId !== null && !offered.peopleIds.includes(personId)) return null;
+
+  const people = offered.peopleIds.length
+    ? await db
+        .select({ id: resource.id, name: resource.name })
+        .from(resource)
+        .where(
+          and(eq(resource.organizationId, organizationId), inArray(resource.id, offered.peopleIds))
+        )
+        .orderBy(asc(resource.name), asc(resource.id))
+    : [];
+  const timezone = businessHours.timezone;
+  const candidates = personId === null ? offered.peopleIds : [personId];
+  const placeIds = offered.placeIds ?? [];
+
+  // Taken time is read a day wider than the range on each side, plus the buffers, so a buffer
+  // reaching past the range, or a clock a day ahead of UTC, still sees what it touches.
+  const [fromYear, fromMonth, fromDay] = fromDate.split("-").map(Number);
+  const [toYear, toMonth, toDay] = toDate.split("-").map(Number);
+  const from = new Date(
+    Date.UTC(fromYear, fromMonth - 1, fromDay) - DAY_MS - service.bufferBeforeMinutes * MINUTE_MS
+  );
+  const to = new Date(
+    Date.UTC(toYear, toMonth - 1, toDay) + 2 * DAY_MS + service.bufferAfterMinutes * MINUTE_MS
+  );
+
+  const watched = [...candidates, ...placeIds];
+  const [commitments, standby] = await Promise.all([
+    findCommitments(organizationId, watched, from, to),
+    findStandbyDates(organizationId, watched, fromDate, toDate),
+  ]);
+  const busyOf = (id: string): BusyBlockType[] =>
+    commitments
+      .filter((row) => row.resourceId === id)
+      .map((row) => ({ start: row.startsAt, end: row.endsAt }));
+  const standbyOf = (id: string) =>
+    standby.filter((row) => row.resourceId === id).map((row) => row.date);
+  const rooms =
+    offered.placeIds === null
+      ? null
+      : placeIds.map((id) => ({ busy: busyOf(id), standbyDates: standbyOf(id) }));
+
+  // Each person's own start times. People are read side by side, so six Google calendars cost
+  // about one call's wait, not six.
+  const timesOf = async (id: string): Promise<Date[]> => {
+    const hours = await resolveBookableHours(organizationId, id, now);
+    if (!hours) return [];
+
+    let googleBusy: BusyBlockType[];
+    try {
+      googleBusy = await getBusyTimes({ organizationId, resourceId: id, from, to });
+    } catch (error) {
+      if (personId !== null) throw new CalendarUnavailableError();
+      // Never read as free: this person is left out of "any available".
+      console.warn(
+        `[free times] left out ${id}, whose calendar cannot be read: ${safeErrorReason(error)}`
+      );
+      return [];
+    }
+
+    return applyFreeTimesRules({
+      hours,
+      service,
+      busy: [...busyOf(id), ...googleBusy],
+      standbyDates: standbyOf(id),
+      rooms,
+      fromDate,
+      toDate,
+      now,
+    });
+  };
+
+  const starts = new Set<number>();
+  for (const times of await Promise.all(candidates.map(timesOf))) {
+    for (const time of times) starts.add(time.getTime());
+  }
+
+  return {
+    timezone,
+    people,
+    startTimes: [...starts].sort((a, b) => a - b).map((time) => new Date(time).toISOString()),
+  };
+}

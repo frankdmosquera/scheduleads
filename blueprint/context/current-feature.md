@@ -136,7 +136,7 @@ commit, on Frank's yes.
     count as a booking; a tie goes by name, then id; the first free room by
     name; nobody free gives null; a needed room with none free gives null.
 
-- [ ] **5c.4 Free times for a service.**
+- [x] **5c.4 Free times for a service.**
   - `backend/lib/scheduling/find-free-times.ts`:
     `findFreeTimes({ organizationId, bookingLinkId, personId, fromDate,
     toDate, now })`. `personId` null is "any available". Reads the service,
