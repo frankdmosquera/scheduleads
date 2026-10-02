@@ -111,6 +111,12 @@ lost):
     earlier day (or a mistyped year) answers `in_the_past`. Rejected: any
     start (a typo goes straight through) and only from now on (a walk-in that
     began ten minutes ago would be refused). Customers are never affected.
+14. **The Google event carries what the worker needs on site** (Frank,
+    2026-10-02, open question 3, option A). Title: the service and the
+    customer's name ("Interior estimate: Jane Doe"); location: the address;
+    description: "Phone: ...", "Email: ..." (each only when given) and what
+    they wrote. Never attendees. Rejected: the service and first name only,
+    which leaves a painter on site without the address or phone.
 
 ## Open questions
 
@@ -122,12 +128,7 @@ gone through, before it is built.
    7 the cancel link by email; without one the customer hears nothing. An
    owner-made booking keeps both optional, as `contact` allows.
 2. Answered 2026-10-02: decision 11.
-3. **What goes into the Google event?** (blocks 5d.4) Recommended: the title
-   is the service and the customer's name, the location is their address, and
-   the description holds their phone, email and what they wrote. The
-   alternative is the service and first name only, everything else in the
-   dashboard; it keeps less customer data in a worker's own Google account,
-   but a painter on site would have no address or phone.
+3. Answered 2026-10-02: decision 14.
 
 ## Out of scope
 
@@ -255,7 +256,7 @@ commit, on Frank's yes.
     over the person's Google busy time, a booking or time off answers
     `time_taken` (decision 11).
 
-- [ ] **5d.4 The event in the booked person's Google.**
+- [x] **5d.4 The event in the booked person's Google.**
   - The seam gains `createEvent(accessToken, event)`, answering the
     provider's event id; the Google plug inserts into the primary calendar
     with a timeout, no attendees, times in the business's zone.
@@ -267,7 +268,7 @@ commit, on Frank's yes.
     `bookTime` calls it after the transaction commits; any failure keeps the
     booking and logs one warning line with a safe reason (decision 6).
   - **Done when** saved tests with Google faked prove: the event's title,
-    location, description (open question 3), start and end (the
+    location, description (decision 14), start and end (the
     appointment, not the buffers) and zone; its id saved on the booking; no
     connection makes no call; a connection needing reconnection, a Google
     error and a timeout each keep the booking, leave `calendarEventId` empty
@@ -370,8 +371,8 @@ calendar that could not be read answers `unavailable`, never `time_taken`
 name, email, phone, address or words.
 
 **The Google event**: no attendees; `start` and `end` the appointment with
-the business's `timeZone`; title, location and description per open question
-3; `calendarEventId` is Google's event id.
+the business's `timeZone`; title, location and description per decision
+14; `calendarEventId` is Google's event id.
 
 ## Testing
 

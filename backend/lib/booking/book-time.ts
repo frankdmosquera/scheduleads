@@ -1,7 +1,7 @@
 // Backend: books one time for a service, the one path every booking takes. A form already booked
 // answers that booking; the time is checked again; then the contact, a new lead in the first
 // stage, the booking, its held time and the timeline entry land in one transaction, or nothing
-// does. A customer gets only the free times they are offered; the owner any time nobody is busy
+// does; then the event goes into the booked person's Google. A customer gets only the free times they are offered; the owner any time nobody is busy
 // (decision 11).
 
 import { randomUUID } from "node:crypto";
@@ -14,6 +14,7 @@ import type { ContactInputType } from "@scheduleads-app/shared/zod-validation";
 import { db } from "../../database.js";
 import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
 import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error.js";
+import { writeBookingEvent } from "../calendar/write-booking-event.js";
 import { getBusyTimes } from "../calendar/get-busy-times.js";
 import { findFirstPipelineStage } from "../crm/find-first-pipeline-stage.js";
 import { findOrCreateContact } from "../crm/find-or-create-contact.js";
@@ -308,6 +309,15 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
       );
       return { contactId: contact.id, ...held };
     });
+    // Saved. Now the booked person's Google, outside the transaction: nothing there can be undone,
+    // and a failure keeps the booking; feature 8 writes the event again (decision 6).
+    try {
+      await writeBookingEvent(organizationId, bookingId);
+    } catch (error) {
+      console.warn(
+        `[booking] no Google event yet for booking ${bookingId}: ${safeErrorReason(error)}`
+      );
+    }
     return {
       booked: true,
       alreadyBooked: false,

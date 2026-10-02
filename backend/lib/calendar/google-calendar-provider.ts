@@ -1,10 +1,17 @@
-// Backend: the Google plug for the seam. Busy times come from Google's free/busy; refreshing
-// and handing back reuse the sign-in conversation in google-oauth-client.ts.
+// Backend: the Google plug for the seam. Busy times come from Google's free/busy, a booking goes
+// into the main calendar as an event; refreshing and handing back reuse the sign-in conversation
+// in google-oauth-client.ts.
 
-import type { BusyBlockType, CalendarProviderType, TimeRangeType } from "./calendar-provider.js";
+import type {
+  BusyBlockType,
+  CalendarEventType,
+  CalendarProviderType,
+  TimeRangeType,
+} from "./calendar-provider.js";
 import { googleOauthClient } from "./google-oauth-client.js";
 
 const FREEBUSY_URL = "https://www.googleapis.com/calendar/v3/freeBusy";
+const EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
 const TIMEOUT_MS = 10_000; // a Google that hangs throws, it never answers "free"
 
 type GoogleFreeBusyCalendarType = {
@@ -52,6 +59,29 @@ export const googleCalendarProvider: CalendarProviderType = {
       throw new Error(`Google could not read the calendar's busy times (${why}).`);
     }
     return (calendar.busy ?? []).map(toBusyBlock);
+  },
+
+  async createEvent(accessToken: string, event: CalendarEventType) {
+    const response = await fetch(EVENTS_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      // No attendees, so Google sends nobody an invitation.
+      body: JSON.stringify({
+        summary: event.title,
+        location: event.location,
+        description: event.description,
+        start: { dateTime: event.start.toISOString(), timeZone: event.timezone },
+        end: { dateTime: event.end.toISOString(), timeZone: event.timezone },
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!response.ok) throw new Error(`Google refused the event (${response.status}).`);
+
+    const body = (await response.json()) as { id?: unknown };
+    if (typeof body.id !== "string" || body.id === "") {
+      throw new Error("Google's answer to the event had no id.");
+    }
+    return body.id;
   },
 
   revoke: (token) => googleOauthClient.revoke(token),
