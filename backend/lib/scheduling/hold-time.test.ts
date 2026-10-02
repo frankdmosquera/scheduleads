@@ -108,7 +108,7 @@ describe("holdTime", () => {
     expect((await rowsOf(ana)).length + (await rowsOf(luis)).length).toBe(1);
   });
 
-  // Two inserts that clash at the same instant can deadlock inside Postgres (F-51); one is
+  // Two inserts that clash at the same instant can deadlock inside Postgres; one is
   // killed. Many tries, so the rare collision happens: every one must answer, never throw.
   test("many simultaneous holds always answer held or taken, never fail", async () => {
     const { business, ana, room } = await makeBusiness("deadlock");

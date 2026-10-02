@@ -14,10 +14,12 @@ import * as schema from "@scheduleads-app/shared/db";
 import {
   availabilityRule,
   bookingLink,
+  bookingLinkResource,
   member,
   organization,
   pipelineStage,
   resource,
+  standbyDate,
   user,
 } from "@scheduleads-app/shared/db";
 import {
@@ -42,12 +44,18 @@ function sundayAfterDays(days: number): string {
   date.setUTCDate(date.getUTCDate() + ((7 - date.getUTCDay()) % 7)); // forward to a Sunday
   return date.toISOString().slice(0, 10);
 }
+function mondayAfterDays(days: number): string {
+  const date = new Date(Date.now() + days * DAY_MS);
+  date.setUTCDate(date.getUTCDate() + ((8 - date.getUTCDay()) % 7)); // forward to a Monday
+  return date.toISOString().slice(0, 10);
+}
 
 export type ResourceSeedType = {
   name: string;
   kind: "person" | "place";
   weeklyHours?: WeeklyHoursType | null; // missing = no row, follows the business's week
   dateHours?: DateHoursType;
+  standbyDates?: string[]; // at work, hidden from customers on these dates
 };
 
 export type ServiceSeedType = {
@@ -55,6 +63,7 @@ export type ServiceSeedType = {
   durationMinutes: number;
   bufferBeforeMinutes?: number;
   bufferAfterMinutes?: number;
+  ticked?: string[]; // who does what: the people who can do it and the rooms it is done in, by name
 };
 
 // Alberta's nine main holidays, the picker's one-click set (feature 12).
@@ -72,6 +81,19 @@ const albertaMainHolidays = [
 
 // Primo's shape: estimates early morning and evenings on weekdays, daytime at weekends.
 const paintingWeekday = [between(at(7, 30), at(8, 30)), between(at(17), at(19, 30))];
+
+// The clinic's who does what: the practitioners who do each kind of treatment, and its rooms.
+const FACIALS = ["Sofia", "Ana", "Mei", "Room 3 (massage, facials)"];
+const MASSAGES = [
+  "Luis",
+  "Ana",
+  "Priya",
+  "Daniel",
+  "Room 1 (massage)",
+  "Room 2 (massage)",
+  "Room 3 (massage, facials)",
+  "Room 4 (massage, body)",
+];
 
 // Made by this seed before 2026-09-25; removed so another machine's database never mixes old and new.
 const RETIRED_DEV_SLUGS = ["agency-dev", "test-salon-dev"];
@@ -170,6 +192,7 @@ const ACCOUNTS = [
             wed: [between(at(9), at(17))],
             fri: [between(at(9), at(17))],
           },
+          standbyDates: [mondayAfterDays(7)], // a Monday she would otherwise be bookable
         },
         {
           name: "Luis",
@@ -196,18 +219,44 @@ const ACCOUNTS = [
         { name: "Room 5 (laser)", kind: "place" },
       ] satisfies ResourceSeedType[],
       // Face and Body's own treatments and lengths (face-and-body/data/servicesData.ts).
-      // Massages and the wrap leave 15 minutes after, to turn the room over.
+      // Massages and the wrap leave 15 minutes after, to turn the room over. Ticked like Face and
+      // Body; the peel ticks no one, so anyone can do it.
       services: [
-        { name: "Deep Cleansing Facial", durationMinutes: 75 },
-        { name: "Dermaplaning Facial", durationMinutes: 60 },
-        { name: "Hydra Spa Facial", durationMinutes: 70 },
-        { name: "Chemical Peel", durationMinutes: 30 },
-        { name: "Relaxation Massage", durationMinutes: 60, bufferAfterMinutes: 15 },
-        { name: "Relaxation Massage, 90 min", durationMinutes: 90, bufferAfterMinutes: 15 },
-        { name: "Deep Tissue Massage", durationMinutes: 75, bufferAfterMinutes: 15 },
-        { name: "Lymphatic Drainage Massage", durationMinutes: 60, bufferAfterMinutes: 15 },
-        { name: "Laser Hair Removal", durationMinutes: 10 },
-        { name: "Body Wrap", durationMinutes: 60, bufferAfterMinutes: 15 },
+        { name: "Deep Cleansing Facial", durationMinutes: 75, ticked: FACIALS },
+        { name: "Dermaplaning Facial", durationMinutes: 60, ticked: FACIALS },
+        { name: "Hydra Spa Facial", durationMinutes: 70, ticked: FACIALS },
+        { name: "Chemical Peel", durationMinutes: 30, ticked: ["Room 3 (massage, facials)"] },
+        {
+          name: "Relaxation Massage",
+          durationMinutes: 60,
+          bufferAfterMinutes: 15,
+          ticked: MASSAGES,
+        },
+        {
+          name: "Relaxation Massage, 90 min",
+          durationMinutes: 90,
+          bufferAfterMinutes: 15,
+          ticked: MASSAGES,
+        },
+        {
+          name: "Deep Tissue Massage",
+          durationMinutes: 75,
+          bufferAfterMinutes: 15,
+          ticked: MASSAGES,
+        },
+        {
+          name: "Lymphatic Drainage Massage",
+          durationMinutes: 60,
+          bufferAfterMinutes: 15,
+          ticked: MASSAGES,
+        },
+        { name: "Laser Hair Removal", durationMinutes: 10, ticked: ["Mei", "Room 5 (laser)"] },
+        {
+          name: "Body Wrap",
+          durationMinutes: 60,
+          bufferAfterMinutes: 15,
+          ticked: ["Priya", "Room 4 (massage, body)"],
+        },
       ] satisfies ServiceSeedType[],
     },
   },
@@ -370,6 +419,8 @@ try {
 
       let peopleMade = 0;
       let hoursMade = 0;
+      let standbyMade = 0;
+      const resourceIdsByName = new Map<string, string>([[business.name, firstPerson.id]]);
       for (const person of business.people as readonly ResourceSeedType[]) {
         const { id: resourceId, made } = await ensureResource(
           tx,
@@ -377,7 +428,19 @@ try {
           person.name,
           person.kind
         );
+        resourceIdsByName.set(person.name, resourceId);
         if (made) peopleMade++;
+
+        // A date already there stays; a rerun on a later day adds that day's Monday too.
+        if (person.standbyDates?.length) {
+          const madeDates = await tx
+            .insert(standbyDate)
+            .values(person.standbyDates.map((date) => ({ organizationId, resourceId, date })))
+            .onConflictDoNothing()
+            .returning({ date: standbyDate.date });
+          standbyMade += madeDates.length;
+        }
+
         // No row only when there is nothing to store: no week and no extra dates.
         if (person.weeklyHours === undefined && !person.dateHours?.length) continue;
 
@@ -403,17 +466,37 @@ try {
       }
 
       let servicesMade = 0;
-      for (const service of business.services as readonly ServiceSeedType[]) {
+      let ticksMade = 0;
+      for (const { ticked = [], ...service } of business.services as readonly ServiceSeedType[]) {
         const slug = toSlug(service.name);
         const [existingLink] = await tx
           .select({ id: bookingLink.id })
           .from(bookingLink)
           .where(and(eq(bookingLink.organizationId, organizationId), eq(bookingLink.slug, slug)))
           .limit(1);
-        if (existingLink) continue;
 
-        await tx.insert(bookingLink).values({ id: randomUUID(), organizationId, slug, ...service });
-        servicesMade++;
+        const bookingLinkId = existingLink?.id ?? randomUUID();
+        if (!existingLink) {
+          await tx
+            .insert(bookingLink)
+            .values({ id: bookingLinkId, organizationId, slug, ...service });
+          servicesMade++;
+        }
+
+        if (!ticked.length) continue;
+        const ticks = ticked.map((name) => {
+          const resourceId = resourceIdsByName.get(name);
+          if (!resourceId)
+            throw new Error(`The seed ticks "${name}", who is not in ${business.name}.`);
+          return { organizationId, bookingLinkId, resourceId };
+        });
+        // Only missing ticks: one removed by hand comes back, any added by hand stays.
+        const madeTicks = await tx
+          .insert(bookingLinkResource)
+          .values(ticks)
+          .onConflictDoNothing()
+          .returning({ resourceId: bookingLinkResource.resourceId });
+        ticksMade += madeTicks.length;
       }
 
       const made = [
@@ -427,7 +510,9 @@ try {
         holidaysAdded && "holiday picks",
         peopleMade && `${peopleMade} people and places`,
         hoursMade && `${hoursMade} people's own hours`,
+        standbyMade && `${standbyMade} standby dates`,
         servicesMade && `${servicesMade} services`,
+        ticksMade && `${ticksMade} who-does-what ticks`,
       ].filter(Boolean);
       console.log(
         `${account.email.padEnd(20)} ${account.role === "admin" ? "platform admin" : "ordinary owner"}, ` +

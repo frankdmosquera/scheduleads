@@ -68,18 +68,3 @@ answering `{ held: false }` there needs a savepoint.
 an optional executor (`db` or a transaction) and hold inside a nested
 transaction (savepoint) so "taken" leaves the caller's transaction usable.
 **Resolution:**
-
-### F-53 [P3] open - The deadlock test's comment carries a finding number, which the standards keep out of code
-
-**File:** backend/lib/scheduling/hold-time.test.ts:111
-**Found:** 2026-10-01 by /audit independent (scope: current, c01dd9c..da22890; lens: quality)
-**Why it matters:** The comment above the stress test reads "can deadlock
-inside Postgres (F-51)". `coding-standards.md` (Comments, the balance) says no
-history in code comments, naming "finding numbers" explicitly: that lives in
-the build log. It is the only finding number in backend or shared code apart
-from the older migration 0000, and test files are the pattern later steps copy
-(4/F-53 and 4/F-54 were exactly that). Once `/complete` archives this ledger,
-a bare `F-51` in code points at nothing.
-**Suggested fix:** Drop "(F-51)" from the comment; the sentence already says
-why the test exists.
-**Resolution:**

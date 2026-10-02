@@ -71,6 +71,20 @@
       "when": 1790879180920,
       "tag": "0009_commitment",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790904391831,
+      "tag": "0010_booking_link_resource",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790904746047,
+      "tag": "0011_standby_date",
+      "breakpoints": true
     }
   ]
 }

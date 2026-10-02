@@ -160,7 +160,7 @@ and a second resource can hold the same time as the first.
     place for every booking and every stretch of time off, the database
     refusing two overlapping active rows for the same one, cancelled rows
     no longer blocking; and the functions that hold, release and read time
-  - [ ] 5b. **Who does what** - which person can do which service (skills),
+  - [x] 5b. **Who does what** - which person can do which service (skills),
     which place a service needs (rooms), and who is bookable or on standby,
     the data the free-time check reads
   - [ ] 5c. **Free times** - for a service, and a person or "any available",
