@@ -4,6 +4,11 @@
 
 **Branch:** feature/05c-free-times
 
+**Status:** verified. Whole feature seen and agreed by Frank 2026-10-02;
+steps 5c.1 to 5c.5 built, tested and reviewed step by step; every blocking
+review finding fixed, F-70 to F-73 last on 2026-10-02. The checkpoint for the
+final review.
+
 ## Goal
 
 For a service, and either one person the customer picked or "any available",
