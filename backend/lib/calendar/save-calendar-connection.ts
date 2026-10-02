@@ -35,7 +35,7 @@ export async function saveCalendarConnection({
     credentials: locked,
     grantedScopes: grantedScopes.join(" "),
     status: "connected",
-    lastCheckedAt: null, // nothing read yet with these tokens (step 3.3 sets it)
+    lastCheckedAt: null, // nothing read yet with these tokens (getBusyTimes sets it)
   };
 
   await db

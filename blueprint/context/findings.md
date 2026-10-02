@@ -29,7 +29,7 @@ province.
 validate picks against the list at write time and keep a test over every name
 the picker can offer, or store a stable key (the package's `rule` string) with
 the display name. Worth a note on feature 12 now so it is not rediscovered.
-**Resolution:** Carried to feature 12 on Frank's call, 2026-09-28, noted on
+**Resolution:** Fixed 2026-10-01: the header names `findServiceResources` instead of a step. The same commit also clears the older "step 3.3" comment the reviewer saw in `backend/lib/calendar/save-calendar-connection.ts`. Fixed 2026-10-01 in 5b.1's review-fix commit, without asking, since it only makes the agreed rule hold (ticked but gone means nobody, never anyone): `booking_link_resource_resource_fk` is now `no action`, edited into 0010 (local only) and rebuilt. A ticked person or place cannot be deleted until unticked; a deleted service still takes its ticks; deleting the business still clears everything. The test "a ticked person or room cannot be deleted until unticked" failed against the cascade and passes now. Spec corrected. Feature 12 decides how Settings removes a ticked person (untick first, or deactivate). Carried to feature 12 on Frank's call, 2026-09-28, noted on
 item 12 in `build-plan.md`. Stays unverified until then.
 
 ### F-47 [P3] open - The spec says accepting an invitation is refused, but Better Auth checks no role for it
@@ -69,7 +69,7 @@ an optional executor (`db` or a transaction) and hold inside a nested
 transaction (savepoint) so "taken" leaves the caller's transaction usable.
 **Resolution:**
 
-### F-53 [P3] fixed - The deadlock test's comment carries a finding number, which the standards keep out of code
+### F-53 [P3] closed - The deadlock test's comment carries a finding number, which the standards keep out of code
 
 **File:** backend/lib/scheduling/hold-time.test.ts:111
 **Found:** 2026-10-01 by /audit independent (scope: current, c01dd9c..da22890; lens: quality)
@@ -83,3 +83,41 @@ a bare `F-51` in code points at nothing.
 **Suggested fix:** Drop "(F-51)" from the comment; the sentence already says
 why the test exists.
 **Resolution:** Fixed 2026-10-01 in step 5b.1: the comment above the deadlock test no longer names a finding.
+Closed 2026-10-01 by the step 5b.1 review (059cf0f..27d3d52): line 111 now reads "can deadlock
+inside Postgres; one is killed", no finding number is left, and the one-line change introduced
+nothing new in the file.
+
+### F-54 [P2] fixed - Deleting the last ticked person or room quietly opens a service to anyone, or drops its room check
+
+**File:** packages/shared/db/scheduling-tables/booking-link-resource-table.ts:30
+**Found:** 2026-10-01 by /audit (scope: step 5b.1, 059cf0f..27d3d52; lens: quality)
+**Why it matters:** Both foreign keys cascade, as the spec says ("ticks are
+settings, not history"), and the rules test proves deleting a person takes
+their ticks. But the rule 5b.3 reads is "nobody ticked means anyone, no place
+ticked means no room check". So when Laser Hair Removal ticks only Mei and
+Room 5, deleting Mei (a person with no bookings yet, which `commitment` does
+not block) leaves no person ticked and any practitioner is offered; deleting
+Room 5 leaves no place ticked and laser is booked with no room at all. 5b.3
+deliberately says all ticked people inactive gives nobody, "never anyone";
+deleting reaches exactly the "anyone" answer it rules out for deactivating.
+Nothing deletes a person or a service outside tests today, so it becomes
+reachable with feature 12's settings screen.
+**Suggested fix:** Decide before 5b.3 builds on it, with Frank. Smallest
+options: make `booking_link_resource_resource_fk` `no action`, so a ticked
+person or room cannot be deleted and is deactivated instead, as `commitment`
+already forces (0010 is applied nowhere real, so it can be regenerated); or
+keep cascade and write into feature 12 that removing someone refuses, or
+warns, when it would leave a service with no person or no room ticked.
+**Resolution:**
+
+### F-55 [P3] fixed - The new table's header comment names step 5b.3, which the standards keep out of code
+
+**File:** packages/shared/db/scheduling-tables/booking-link-resource-table.ts:3
+**Found:** 2026-10-01 by /audit (scope: step 5b.1, 059cf0f..27d3d52; lens: quality)
+**Why it matters:** The header ends "(decided where it is read, 5b.3)".
+`coding-standards.md` (Comments, the balance) keeps step numbers out of code
+comments, the same rule F-53 was fixed for in this very commit. Once the
+feature is archived, "5b.3" points at nothing; the function name would not.
+**Suggested fix:** Say "(decided where it is read, findServiceResources)", or
+drop the parenthesis.
+**Resolution:**

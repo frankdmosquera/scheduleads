@@ -80,8 +80,9 @@ merges with a merge commit on Frank's yes.
     and a place can be ticked for a service; the same tick twice is refused
     by the primary key; a tick cannot name another business's service or
     another business's person or place (both composite foreign keys, by
-    name); deleting a service or a person takes its ticks; deleting the
-    business takes everything; `db:migrate` applies cleanly and `db:seed`
+    name); deleting a service takes its ticks; a ticked person or place
+    cannot be deleted until unticked (F-54); deleting the business takes
+    everything; `db:migrate` applies cleanly and `db:seed`
     runs twice without changing anything the second time. The backend builds.
 
 - [ ] **5b.2 Standby dates.**
@@ -128,9 +129,12 @@ merges with a merge commit on Frank's yes.
 - Primary key `(bookingLinkId, resourceId)`: a tick exists or not.
 - FK `(organizationId, bookingLinkId)` to `booking_link(organizationId, id)`,
   cascade, named `booking_link_resource_booking_link_fk`; FK
-  `(organizationId, resourceId)` to `resource(organizationId, id)`, cascade,
-  named `booking_link_resource_resource_fk`. Ticks are settings, not history,
-  so they go with the service or the person.
+  `(organizationId, resourceId)` to `resource(organizationId, id)`, **no
+  action**, named `booking_link_resource_resource_fk`. A deleted service
+  takes its ticks; a ticked person or place cannot be deleted until
+  unticked (F-54): losing the only tick would turn "only them" into
+  "anyone", the very answer an inactive tick is refused (5b.3). Deleting
+  the business still clears everything.
 - The resource's own `kind` says what the tick means: a person can do the
   service, a place is a room it can be done in. Any one ticked person and any
   one ticked place is enough for one booking.

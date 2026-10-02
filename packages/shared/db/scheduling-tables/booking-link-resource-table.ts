@@ -1,6 +1,6 @@
 // Shared: the booking_link_resource table. Who does what: one row per tick, a person who can do
 // a service or a place it can be done in; the resource's own kind says which. Nobody ticked
-// means anyone can do it, no place ticked means no room check (decided where it is read, 5b.3).
+// means anyone can do it, no place ticked means no room check (findServiceResources reads it).
 
 import { foreignKey, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 
@@ -20,17 +20,19 @@ export const bookingLinkResource = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.bookingLinkId, table.resourceId] }), // a tick exists or not
-    // Only a service and a person or place of the same business. Ticks are settings, not
-    // history, so they go with either.
+    // Only a service and a person or place of the same business. A deleted service takes its
+    // ticks with it.
     foreignKey({
       name: "booking_link_resource_booking_link_fk",
       columns: [table.organizationId, table.bookingLinkId],
       foreignColumns: [bookingLink.organizationId, bookingLink.id],
     }).onDelete("cascade"),
+    // No action: a ticked person or place cannot be deleted until unticked, since losing the
+    // only tick would turn "only them" into "anyone". Deleting the business still clears all.
     foreignKey({
       name: "booking_link_resource_resource_fk",
       columns: [table.organizationId, table.resourceId],
       foreignColumns: [resource.organizationId, resource.id],
-    }).onDelete("cascade"),
+    }).onDelete("no action"),
   ]
 );

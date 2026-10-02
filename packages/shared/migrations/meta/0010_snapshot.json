@@ -1,5 +1,5 @@
 {
-  "id": "fb24db77-f8dd-4319-9fc5-7ccbed98c869",
+  "id": "8b095158-e82a-4353-ae4a-bd28401d5b13",
   "prevId": "0ac6a41c-f1c1-4e91-a13c-7db4701de244",
   "version": "7",
   "dialect": "postgresql",
@@ -1780,7 +1780,7 @@
             "organizationId",
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },

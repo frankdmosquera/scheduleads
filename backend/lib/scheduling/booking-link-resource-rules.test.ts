@@ -110,11 +110,20 @@ describe("who-does-what rules in the database", () => {
     expect(await ticksOf(facial)).toHaveLength(0);
   });
 
-  test("deleting a person takes their ticks, and leaves the rest", async () => {
-    const { business, facial, ana, room } = await makeBusiness("person-gone");
+  // Deleting the only one ticked would leave nobody ticked, which reads as anyone.
+  test("a ticked person or room cannot be deleted until unticked", async () => {
+    const { business, facial, ana, room } = await makeBusiness("person-kept");
     await db
       .insert(bookingLinkResource)
       .values([tick(business, facial, ana), tick(business, facial, room)]);
+    for (const ticked of [ana, room]) {
+      await expect(db.delete(resource).where(eq(resource.id, ticked))).rejects.toMatchObject(
+        refusedBy("23503", "booking_link_resource_resource_fk")
+      );
+    }
+    expect(await ticksOf(facial)).toHaveLength(2);
+
+    await db.delete(bookingLinkResource).where(eq(bookingLinkResource.resourceId, ana));
     await db.delete(resource).where(eq(resource.id, ana));
     expect((await ticksOf(facial)).map((row) => row.resourceId)).toEqual([room]);
   });
