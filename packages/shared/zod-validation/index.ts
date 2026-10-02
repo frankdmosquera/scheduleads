@@ -9,6 +9,7 @@ export * from "./organization-validation-schemas/organization-slug-validation-sc
 export * from "./admin-validation-schemas/provision-client-validation-schema.js";
 export * from "./crm-validation-schemas/contact-validation-schema.js";
 export * from "./booking-links-validation-schemas/booking-link-id-validation-schema.js";
+export * from "./booking-links-validation-schemas/free-times-query-validation-schema.js";
 export * from "./availability-validation-schemas/weekly-hours-validation-schema.js";
 export * from "./availability-validation-schemas/date-hours-validation-schema.js";
 export * from "./availability-validation-schemas/availability-rule-validation-schema.js";

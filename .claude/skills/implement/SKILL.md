@@ -112,7 +112,8 @@ For each step:
    of the feature's **Log**, write the step's file (its outcome and its
    `Done when` result), mark the finished step `done` and the next one `active`
    in `roadmap.json`, and update the gates and the tally. Then commit that
-   folder to buildlogs' `main` and push it, as the guide says.
+   folder to buildlogs' `main`, as the guide says. Do not push it: the log is
+   pushed once per feature, at `/complete` (Frank, 2026-10-02).
    Never rewrite a closing step's planned pieces to match what happened. Mark
    each one `kept`, `changed`, `added` or `dropped` with the reason for
    anything that is not `kept`, and update the verdict counts. The drift is the

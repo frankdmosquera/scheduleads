@@ -257,7 +257,9 @@ step `done`, all gates passed, the feature's `state` and pill moved to done, its
 Walkthrough drawer made from the archive (Frank reads the log, not PDFs), a
 final Log entry naming what shipped, and the tally updated. If the work changed
 `blueprint/context/coding-standards.md`, regenerate the log's Rules tab as the
-guide says. Then commit that folder to buildlogs' `main` and push it.
+guide says. Then commit that folder to buildlogs' `main` and push it: this is
+the one push of the feature's log (Frank, 2026-10-02), carrying every step's
+entries since the last one.
 
 A commit that closes a feature while the build log still shows it in progress
 is the rule in `AGENTS.md` already broken.

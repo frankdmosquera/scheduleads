@@ -170,8 +170,9 @@ same pass:
 - **Leave feature entries alone.** A feature that already has drawers belongs
   to `/feature` and `/implement`. A rerun refreshes the two parts above and
   touches nothing else.
-- **Save.** Commit the folder to buildlogs' `main` and push it, as the guide
-  says.
+- **Save.** Commit the folder to buildlogs' `main`, as the guide says; it is
+  pushed once per feature (Frank, 2026-10-02), so push this one only when Frank
+  asks to see it online.
 
 The build log is the user's orientation surface, and a stale one is worse than
 none. Do not report this skill as finished while it still shows placeholders.

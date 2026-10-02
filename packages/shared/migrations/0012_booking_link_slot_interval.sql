@@ -1,0 +1,2 @@
+ALTER TABLE "booking_link" ADD COLUMN "slotIntervalMinutes" integer;--> statement-breakpoint
+ALTER TABLE "booking_link" ADD CONSTRAINT "booking_link_slot_interval_check" CHECK ("booking_link"."slotIntervalMinutes" is null or "booking_link"."slotIntervalMinutes" > 0);

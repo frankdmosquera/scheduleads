@@ -63,6 +63,7 @@ export type ServiceSeedType = {
   durationMinutes: number;
   bufferBeforeMinutes?: number;
   bufferAfterMinutes?: number;
+  slotIntervalMinutes?: number; // minutes between start times; missing = every service length
   ticked?: string[]; // who does what: the people who can do it and the rooms it is done in, by name
 };
 
@@ -225,7 +226,12 @@ const ACCOUNTS = [
         { name: "Deep Cleansing Facial", durationMinutes: 75, ticked: FACIALS },
         { name: "Dermaplaning Facial", durationMinutes: 60, ticked: FACIALS },
         { name: "Hydra Spa Facial", durationMinutes: 70, ticked: FACIALS },
-        { name: "Chemical Peel", durationMinutes: 30, ticked: ["Room 3 (massage, facials)"] },
+        {
+          name: "Chemical Peel",
+          durationMinutes: 30,
+          slotIntervalMinutes: 15, // the one dev service whose start times repeat more often than its length
+          ticked: ["Room 3 (massage, facials)"],
+        },
         {
           name: "Relaxation Massage",
           durationMinutes: 60,

@@ -163,7 +163,7 @@ and a second resource can hold the same time as the first.
   - [x] 5b. **Who does what** - which person can do which service (skills),
     which place a service needs (rooms), and who is bookable or on standby,
     the data the free-time check reads
-  - [ ] 5c. **Free times** - for a service, and a person or "any available",
+  - [x] 5c. **Free times** - for a service, and a person or "any available",
     the start times a customer can book: bookable hours minus bookings, time
     off and Google busy, with buffers, notice and the horizon; the public
     route the widget will call. How "any available" picks, whether buffers
