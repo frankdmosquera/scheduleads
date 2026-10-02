@@ -17,6 +17,8 @@ export * from "./admin-tables/client-setup-claim-table.js";
 export * from "./crm-tables/pipeline-stage-table.js";
 export * from "./crm-tables/contact-table.js";
 export * from "./crm-tables/activity-table.js";
+export * from "./crm-tables/lead-table.js";
+export * from "./booking-tables/booking-table.js";
 export * from "./scheduling-tables/commitment-table.js";
 export * from "./scheduling-tables/booking-link-resource-table.js";
 export * from "./scheduling-tables/standby-date-table.js";

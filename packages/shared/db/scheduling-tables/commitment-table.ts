@@ -8,6 +8,7 @@ import { sql } from "drizzle-orm";
 import { check, foreignKey, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { organization } from "../auth-tables/organization-table.js";
+import { booking } from "../booking-tables/booking-table.js";
 import { resource } from "../booking-tables/resource-table.js";
 
 export const commitment = pgTable(
@@ -19,7 +20,7 @@ export const commitment = pgTable(
       .references(() => organization.id, { onDelete: "cascade" }),
     resourceId: text("resourceId").notNull(),
     kind: text("kind").notNull(),
-    bookingId: text("bookingId"), // its link to booking arrives with feature 5d
+    bookingId: text("bookingId"), // set for a booking's rows, null for time off
     // Half-open, [startsAt, endsAt): one ending at 3pm and the next starting at 3pm do not
     // overlap. A booking's buffers are already inside this range.
     startsAt: timestamp("startsAt", { withTimezone: true }).notNull(),
@@ -38,6 +39,12 @@ export const commitment = pgTable(
       name: "commitment_resource_fk",
       columns: [table.organizationId, table.resourceId],
       foreignColumns: [resource.organizationId, resource.id],
+    }).onDelete("no action"),
+    // Only a booking of the same business. No action: a booking keeps its rows, cancelled ones too.
+    foreignKey({
+      name: "commitment_booking_fk",
+      columns: [table.organizationId, table.bookingId],
+      foreignColumns: [booking.organizationId, booking.id],
     }).onDelete("no action"),
     check("commitment_kind_check", sql`${table.kind} in ('booking', 'time_off')`),
     check("commitment_status_check", sql`${table.status} in ('active', 'cancelled')`),

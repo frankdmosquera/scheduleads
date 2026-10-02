@@ -121,7 +121,7 @@ commit, on Frank's yes.
 
 ## Build steps
 
-- [ ] **5d.1 The lead and booking tables.**
+- [x] **5d.1 The lead and booking tables.**
   - `packages/shared/db/crm-tables/lead-table.ts`: `id`, `organizationId`,
     `contactId` (same business, cascade), `stageId` (same business, no
     action: a stage with leads cannot be deleted), `source` (`widget`,
