@@ -29,7 +29,7 @@ province.
 validate picks against the list at write time and keep a test over every name
 the picker can offer, or store a stable key (the package's `rule` string) with
 the display name. Worth a note on feature 12 now so it is not rediscovered.
-**Resolution:** Fixed 2026-10-01: the header names `findServiceResources` instead of a step. The same commit also clears the older "step 3.3" comment the reviewer saw in `backend/lib/calendar/save-calendar-connection.ts`. Fixed 2026-10-01 in 5b.1's review-fix commit, without asking, since it only makes the agreed rule hold (ticked but gone means nobody, never anyone): `booking_link_resource_resource_fk` is now `no action`, edited into 0010 (local only) and rebuilt. A ticked person or place cannot be deleted until unticked; a deleted service still takes its ticks; deleting the business still clears everything. The test "a ticked person or room cannot be deleted until unticked" failed against the cascade and passes now. Spec corrected. Feature 12 decides how Settings removes a ticked person (untick first, or deactivate). Carried to feature 12 on Frank's call, 2026-09-28, noted on
+**Resolution:** Carried to feature 12 on Frank's call, 2026-09-28, noted on
 item 12 in `build-plan.md`. Stays unverified until then.
 
 ### F-47 [P3] open - The spec says accepting an invitation is refused, but Better Auth checks no role for it
@@ -87,7 +87,7 @@ Closed 2026-10-01 by the step 5b.1 review (059cf0f..27d3d52): line 111 now reads
 inside Postgres; one is killed", no finding number is left, and the one-line change introduced
 nothing new in the file.
 
-### F-54 [P2] fixed - Deleting the last ticked person or room quietly opens a service to anyone, or drops its room check
+### F-54 [P2] closed - Deleting the last ticked person or room quietly opens a service to anyone, or drops its room check
 
 **File:** packages/shared/db/scheduling-tables/booking-link-resource-table.ts:30
 **Found:** 2026-10-01 by /audit (scope: step 5b.1, 059cf0f..27d3d52; lens: quality)
@@ -108,9 +108,23 @@ person or room cannot be deleted and is deactivated instead, as `commitment`
 already forces (0010 is applied nowhere real, so it can be regenerated); or
 keep cascade and write into feature 12 that removing someone refuses, or
 warns, when it would leave a service with no person or no room ticked.
-**Resolution:**
+**Resolution:** Fixed 2026-10-01 in 5b.1's review-fix commit, without asking, since it only
+makes the agreed rule hold (ticked but gone means nobody, never anyone):
+`booking_link_resource_resource_fk` is now `no action`, edited into 0010 (local only) and
+rebuilt. A ticked person or place cannot be deleted until unticked; a deleted service still
+takes its ticks; deleting the business still clears everything. The test "a ticked person or
+room cannot be deleted until unticked" failed against the cascade and passes now. Spec
+corrected. Feature 12 decides how Settings removes a ticked person (untick first, or
+deactivate).
+Closed 2026-10-01 by the step 5b.2 review (27d3d52..0c90b64): the table, 0010 and the 0010
+snapshot all say `no action`, and the local database holds it (`confdeltype` `a`). A
+rolled-back probe confirmed a ticked person is refused by `booking_link_resource_resource_fk`
+(their standby rows stay), and deleting the business in one statement still clears resource,
+ticks and standby rows. All migrations 0000 to 0011 apply cleanly to a fresh schema (rolled
+back). `db:generate` reports no changes. Nothing new introduced. (This resolution and F-55's
+had been written into F-32's Resolution by mistake; moved here, F-32 restored.)
 
-### F-55 [P3] fixed - The new table's header comment names step 5b.3, which the standards keep out of code
+### F-55 [P3] closed - The new table's header comment names step 5b.3, which the standards keep out of code
 
 **File:** packages/shared/db/scheduling-tables/booking-link-resource-table.ts:3
 **Found:** 2026-10-01 by /audit (scope: step 5b.1, 059cf0f..27d3d52; lens: quality)
@@ -120,4 +134,27 @@ comments, the same rule F-53 was fixed for in this very commit. Once the
 feature is archived, "5b.3" points at nothing; the function name would not.
 **Suggested fix:** Say "(decided where it is read, findServiceResources)", or
 drop the parenthesis.
+**Resolution:** Fixed 2026-10-01: the header names `findServiceResources` instead of a step.
+The same commit also clears the older "step 3.3" comment the reviewer saw in
+`backend/lib/calendar/save-calendar-connection.ts`.
+Closed 2026-10-01 by the step 5b.2 review (27d3d52..0c90b64): line 3 now ends
+"(findServiceResources reads it)", and save-calendar-connection.ts:38 names `getBusyTimes`,
+which does set `lastCheckedAt` (get-busy-times.ts:93). No step or finding number is left in
+any comment the range adds, and nothing new was introduced.
+
+### F-56 [P3] unverified - A database that applied the first 0010 fails on db:migrate after the regenerated one
+
+**File:** packages/shared/migrations/meta/_journal.json:78
+**Found:** 2026-10-01 by /audit (scope: step 5b.2, 27d3d52..0c90b64; lens: quality)
+**Why it matters:** 0010 was regenerated in place, so its journal `when` moved from
+1790903639726 to 1790904391831. The migrator runs every migration whose `when` is later than
+the newest `created_at` in the ledger (drizzle-orm 0.45.2 `pg-core/dialect.js:62`). A database
+that applied 27d3d52's 0010 (pushed to the feature branch) therefore re-runs 0010 on the next
+`db:migrate`, fails at the unique that already exists, and never reaches 0011. This laptop's
+`scheduleads_dev` was repaired by hand (its ledger holds the new 0010 and 0011 hashes), and
+Railway never had 0010. Not observed elsewhere; it bites only if another machine migrated
+between the two commits.
+**Suggested fix:** Nothing in code. On any other machine that migrated in that window, rebuild
+the dev database (or drop `booking_link_resource`, `booking_link_organization_id_unique` and
+the 0010 ledger row), then `db:migrate` and `db:seed`.
 **Resolution:**
