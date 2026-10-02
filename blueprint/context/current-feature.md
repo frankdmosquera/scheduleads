@@ -4,6 +4,11 @@
 
 **Branch:** feature/05d-the-booking
 
+**Status:** verified. Whole feature seen and agreed by Frank 2026-10-02;
+steps 5d.1 to 5d.5 built, tested and reviewed step by step; no P0 or P1 was
+ever open, the P3s from 5d.5's review (F-88 to F-91) fixed last on 2026-10-02.
+The checkpoint for the final review.
+
 ## Goal
 
 A customer picks one of 5c's free times and books it: the time is checked
