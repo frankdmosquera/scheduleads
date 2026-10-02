@@ -1,5 +1,5 @@
 // Backend: how many bookings each person has on one of the business's own dates, which decides who
-// gets an "any available" booking (5c.3). Time off is not a booking, so it never counts. No database.
+// gets an "any available" booking. Time off is not a booking, so it never counts. No database.
 
 import { localDate } from "../local-time/local-date.js";
 import type { CommitmentType } from "./find-commitments.js";
@@ -11,7 +11,8 @@ export function countBookingsThatDay(
 ): Map<string, number> {
   const counts = new Map<string, number>();
   for (const commitment of commitments) {
-    // A booking belongs to the day it starts on, in the business's zone.
+    // A booking belongs to the day its commitment starts on, buffer before included, in the
+    // business's zone; only a buffer reaching back over midnight can move it to the day before.
     if (commitment.kind !== "booking" || localDate(commitment.startsAt, timezone) !== date)
       continue;
     counts.set(commitment.resourceId, (counts.get(commitment.resourceId) ?? 0) + 1);

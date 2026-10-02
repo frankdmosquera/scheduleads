@@ -36,7 +36,8 @@ of these times and checks it again first.
    offered and 8:30 to 8:45 only has to be free.
 2. **"Any available" goes to whoever has the fewest bookings that day** (Frank,
    2026-10-02, B). Among the people free at that time: the fewest booking
-   commitments on that date in the business's time zone (time off does not
+   commitments starting on that date in the business's time zone (the
+   commitment's start, so its buffer before included; time off does not
    count); ties go by name, then id. A room goes to the first free one by
    name, then id. "Any available" offers a time when at least one person (and
    a room, when one is needed) is free then.
@@ -128,6 +129,9 @@ commit, on Frank's yes.
     the people free then with their booking count that day, and the free
     rooms, returns the person and the room (decision 2), or null when nobody
     is free.
+  - `backend/lib/scheduling/count-bookings-that-day.ts` (added while
+    building): each person's booking count on a date, from the commitment
+    rows 5c.4 reads.
   - **Done when** saved tests prove: fewest bookings wins; time off does not
     count as a booking; a tie goes by name, then id; the first free room by
     name; nobody free gives null; a needed room with none free gives null.
@@ -180,7 +184,8 @@ commit, on Frank's yes.
   (the query schema, exported through `index.ts`).
 - `backend/lib/local-time/`: the clock helpers, one per file (5c.2).
 - `backend/lib/scheduling/`: `apply-free-times-rules.ts`,
-  `choose-any-available.ts`, `find-free-times.ts`, tests beside each.
+  `choose-any-available.ts`, `count-bookings-that-day.ts`,
+  `find-free-times.ts`, tests beside each.
 - `backend/lib/calendar/`: `CalendarUnavailableError` if no existing error
   fits (5c.4 checks).
 - `backend/lib/errors/refuse.ts`, `backend/routes/public-booking-links-routes.ts`
@@ -214,6 +219,12 @@ ascending, unique. A start instant `s` is offered for one person when:
 }[], rooms: { resourceId, name }[] | null) => { personId: string; placeId:
 string | null } | null`. Inputs are only the free ones; people and rooms
 sorted inside, never trusted to arrive sorted.
+
+**countBookingsThatDay** (pure): `(commitments: { resourceId, kind, startsAt
+}[], date: YYYY-MM-DD, timezone) => Map<resourceId, count>`. Counts only
+`kind: "booking"` rows whose `startsAt` (buffer before included) falls on
+`date` in the business's zone. 5d reads the same rows, so the room rule it
+also needs is one helper to share (review F-64, for 5d's spec).
 
 **findFreeTimes** answers:
 

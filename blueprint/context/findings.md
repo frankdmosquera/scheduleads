@@ -89,7 +89,7 @@ need a step set it on a service they create themselves rather than read the
 seed's value.
 **Resolution:**
 
-### F-59 [P3] fixed - On the spring clock change an appointment can run past the end of its bookable window
+### F-59 [P3] closed - On the spring clock change an appointment can run past the end of its bookable window
 
 **File:** backend/lib/scheduling/apply-free-times-rules.ts:68
 **Found:** 2026-10-02 by independent review of step 5c.2 (scope: cb29f51..b5bf8c4; lenses: all)
@@ -107,9 +107,9 @@ decision 6, not a broken contract. Only windows that span the skipped hour
 window's end moment (`localTimeToMoment(date, window.endMinute)`, falling back
 to the clock check when that is null), or record in the spec that the fit is
 in clock minutes and accept it.
-**Resolution:** Fixed in 5c.2 review fixes: a start must also end, in real minutes, by the window end as a moment (when that moment exists); test "the spring change cannot stretch an appointment past its window" (Denver, 2027-03-14, 1:30 to 3:00, 60 minutes, now offers nothing), shown able to fail.
+**Resolution:** Fixed in 5c.2 review fixes: a start must also end, in real minutes, by the window end as a moment (when that moment exists); test "the spring change cannot stretch an appointment past its window" (Denver, 2027-03-14, 1:30 to 3:00, 60 minutes, now offers nothing), shown able to fail. Closed by independent review of step 5c.3 (2026-10-02): the check at apply-free-times-rules.ts:79 compares the real end with the window end as a moment; a scratch copy with that check disabled fails exactly this test (it offers 2027-03-14T08:30Z). Autumn and midnight window ends resolve to real moments (first occurrence, minute 1440), so no new refusal or offer appears; a window ending inside the skipped hour falls back to the clock count, as its comment says. No new defect.
 
-### F-60 [P3] fixed - local-time.ts holds three exports and is now imported across areas, against one file per export
+### F-60 [P3] closed - local-time.ts holds three exports and is now imported across areas, against one file per export
 
 **File:** backend/lib/scheduling/local-time.ts:36
 **Found:** 2026-10-02 by independent review of step 5c.2 (scope: cb29f51..b5bf8c4; lenses: all)
@@ -126,9 +126,9 @@ finding things by file name, which is how Frank navigates.
 `local-date.ts`, `add-days.ts`, `local-time-to-moment.ts`), and put the two
 that both areas use where shared helpers go, or say in the spec that
 `local-time.ts` is a deliberate exception.
-**Resolution:** Fixed in 5c.2 review fixes: split into backend/lib/local-time/ with one export per file (clock-as-utc, local-date, add-days, local-time-to-moment) and a test beside each; feature 2 and 5c both import from there, so neither reaches into the other area.
+**Resolution:** Fixed in 5c.2 review fixes: split into backend/lib/local-time/ with one export per file (clock-as-utc, local-date, add-days, local-time-to-moment) and a test beside each; feature 2 and 5c both import from there, so neither reaches into the other area. Closed by independent review of step 5c.3 (2026-10-02): backend/lib/scheduling/local-time.ts is gone, backend/lib/local-time/ holds one export per file, nothing imports the old path (grep), and the full backend suite (256 tests) passes. One small inaccuracy above: clock-as-utc.ts has no test of its own; it is covered through the three helpers' tests. No new defect.
 
-### F-61 [P3] fixed - A few edges of the free-time rules have no test: the room over the buffers, a block ending at the start, the last horizon date, a window ending at midnight
+### F-61 [P3] closed - A few edges of the free-time rules have no test: the room over the buffers, a block ending at the start, the last horizon date, a window ending at midnight
 
 **File:** backend/lib/scheduling/apply-free-times-rules.test.ts:134
 **Found:** 2026-10-02 by independent review of step 5c.2 (scope: cb29f51..b5bf8c4; lenses: all)
@@ -144,7 +144,7 @@ correctly, so this is a guard for later edits, not a defect.
 the after-buffer; busy ending at 9:00 with a 9:00 start offered; a horizon
 whose last date has hours and is offered; a 22:00 to 24:00 window offering
 22:00 and 23:00.
-**Resolution:** Fixed in 5c.2 review fixes: five cases added (a room checked over the buffers, busy time ending at the start, the horizon's last date, a window to midnight, and F-59's spring case); each shown able to fail by breaking its rule on purpose.
+**Resolution:** Fixed in 5c.2 review fixes: five cases added (a room checked over the buffers, busy time ending at the start, the horizon's last date, a window to midnight, and F-59's spring case); each shown able to fail by breaking its rule on purpose. Closed by independent review of step 5c.3 (2026-10-02): re-broken in a scratch copy, each case failed as claimed (room checked over the appointment only; busy end treated as blocking with `>=`; `date < lastDate`; the spring check removed). No new defect.
 
 ### F-62 [P3] unverified - Each start costs four Intl calls, repeated for every person, which grows "any available" on a public route
 
@@ -164,3 +164,58 @@ seeded clinic. If it matters, convert each (date, minute) once per request
 and share it across people, or work out each date's offset once and only fall
 back to `localTimeToMoment` on clock-change days.
 **Resolution:**
+
+### F-63 [P3] fixed - A booking is counted on the day its buffer starts, not the day its appointment starts, and the counting helper is not in the spec
+
+**File:** backend/lib/scheduling/count-bookings-that-day.ts:14
+**Found:** 2026-10-02 by independent review of step 5c.3 (scope: 4d6d1ce..4858600; lenses: all)
+**Why it matters:** The comment says "A booking belongs to the day it starts
+on", but a booking commitment's `startsAt` already includes the buffer before
+(commitment-table.ts:24, hold-time.ts:16). Probe: an appointment at 00:10 on
+Tuesday Oct 6 in Edmonton with 15 minutes before has a commitment starting
+Monday 23:55, and `countBookingsThatDay` counts it on Monday, not Tuesday. The
+code matches decision 2's literal wording ("booking commitments on that
+date"), so this is a wording gap, and only bookings within a buffer of
+midnight are affected, so the practical risk is very low. Separately,
+`count-bookings-that-day.ts` is not named in the spec's step 5c.3, Files /
+areas, or Data / contracts, although 5d will need it to produce
+`bookingsThatDay`.
+**Suggested fix:** Correct the comment to say the day the commitment starts
+(buffer included), or say in decision 2 which start counts; and add
+`countBookingsThatDay(commitments, date, timezone)` to the spec's files and
+contracts so 5d calls it as specified.
+**Resolution:** Fixed in 5c.3 review fixes: the comment now says a booking belongs to the day its commitment starts on, buffer before included (only a buffer reaching back over midnight moves it), matching decision 2's wording; the spec's decision 2 says which start counts, and countBookingsThatDay is in step 5c.3, Files / areas and Data / contracts.
+
+### F-64 [P3] open - chooseAnyAvailable needs "only the free rooms", but no code says which rooms are free, so 5d would rebuild the room rule
+
+**File:** backend/lib/scheduling/apply-free-times-rules.ts:87
+**Found:** 2026-10-02 by independent review of step 5c.3 (scope: 4d6d1ce..4858600; lenses: all)
+**Why it matters:** The contract trusts the caller to pass only free people
+and only free rooms. Free people can be found by running
+`applyFreeTimesRules` for one person and one date and checking the start is
+in the answer. Free rooms cannot: the room rule (not on standby that date,
+and no busy block over the appointment plus both buffers, half-open) lives
+inline at lines 87 to 95, and `FreeTimesRoomType` (line 20) has no
+`resourceId`, so nothing returns which rooms passed. 5d would have to write
+that rule a second time, and two copies of it can drift (for example one
+checking the buffers and one not), which would let a booking take a room the
+free-time list never offered.
+**Suggested fix:** When 5d is specced, name how it gets the free rooms: pull
+the room check out into one exported helper (for example
+`isRoomFree(room, date, spanStart, spanEnd)` in its own file) used by both
+`applyFreeTimesRules` and 5d, with `resourceId` on the room input.
+**Resolution:**
+
+### F-65 [P3] fixed - Step and decision history in the new code comments
+
+**File:** backend/lib/scheduling/count-bookings-that-day.ts:2
+**Found:** 2026-10-02 by independent review of step 5c.3 (scope: 4d6d1ce..4858600; lenses: all)
+**Why it matters:** The comments standard says no history in code comments
+(step numbers, finding numbers): that lives in the build log.
+`count-bookings-that-day.ts:2` says "(5c.3)" and
+`choose-any-available.ts:1` says "(decision 2, Frank, 2026-10-02)". Feature
+references elsewhere in the backend are common, but a step number and a dated
+decision are the history the standard names.
+**Suggested fix:** Drop "(5c.3)" and the date; keep the rule itself in the
+comment ("the fewest bookings that day, ties by name then id").
+**Resolution:** Fixed in 5c.3 review fixes: the step number and the date are gone from both headers; the rule stays.

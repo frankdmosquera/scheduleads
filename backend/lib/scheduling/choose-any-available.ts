@@ -1,6 +1,6 @@
-// Backend: who gets an "any available" booking (decision 2, Frank, 2026-10-02). Among the people
-// free at that time, the fewest bookings that day; a tie goes by name, then id, so two runs never
-// disagree. A room goes to the first free one by name. 5d calls it when it books. No database.
+// Backend: who gets an "any available" booking. Among the people free at that time, the fewest
+// bookings that day; a tie goes by name, then id, so two runs never disagree. A room goes to the
+// first free one by name. 5d calls it when it books. No database.
 
 export type AnyAvailablePersonType = { resourceId: string; name: string; bookingsThatDay: number };
 export type AnyAvailableRoomType = { resourceId: string; name: string };
