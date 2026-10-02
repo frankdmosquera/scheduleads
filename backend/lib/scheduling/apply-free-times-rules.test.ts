@@ -272,3 +272,48 @@ describe("edges", () => {
     ).toEqual([]);
   });
 });
+
+// The Simulate page's six cases (explorable-free-times.html in the build log), one test each, named
+// as on the page, so what the page shows is also what the real code is proved to give.
+describe("the Simulate page's cases", () => {
+  const withAfter = { ...facial, bufferAfterMinutes: 15 };
+  const estimate = { ...facial, durationMinutes: 60, bufferAfterMinutes: 15 };
+  const primo = hours({ weeklyHours: { mon: [{ startMinute: 450, endMinute: 510 }] } });
+  const anaBooked = busy("2026-10-05T16:15:00", "2026-10-05T17:30:00"); // 10:15 to 11:30
+
+  test("Ana, a facial: 9:00", () => {
+    expect(freeTimes({ busy: [anaBooked] })).toEqual(["2026-10-05T15:00:00.000Z"]);
+  });
+
+  test("Same, 15 after: no times", () => {
+    expect(freeTimes({ service: withAfter, busy: [anaBooked] })).toEqual([]);
+  });
+
+  test("Primo's estimate: 7:30", () => {
+    expect(freeTimes({ service: estimate, hours: primo })).toEqual(["2026-10-05T13:30:00.000Z"]);
+  });
+
+  test("Primo, 8:30 taken: no times", () => {
+    const googleAtEightThirty = busy("2026-10-05T14:30:00", "2026-10-05T15:15:00"); // 8:30 to 9:15
+    expect(freeTimes({ service: estimate, hours: primo, busy: [googleAtEightThirty] })).toEqual([]);
+  });
+
+  test("A peel, every 15: 9:45 and 10:00", () => {
+    const peel = { ...facial, durationMinutes: 30, slotIntervalMinutes: 15 };
+    const nineToTenThirty = hours({ weeklyHours: { mon: [{ startMinute: 540, endMinute: 630 }] } });
+    expect(
+      freeTimes({
+        service: peel,
+        hours: nineToTenThirty,
+        busy: [busy("2026-10-05T15:15:00", "2026-10-05T15:45:00")], // 9:15 to 9:45
+      })
+    ).toEqual(["2026-10-05T15:45:00.000Z", "2026-10-05T16:00:00.000Z"]);
+  });
+
+  test("Too soon: 10:15", () => {
+    const mondayEight = at("2026-10-05T14:00:00");
+    expect(freeTimes({ now: mondayEight, hours: hours({ minimumNoticeMinutes: 120 }) })).toEqual([
+      "2026-10-05T16:15:00.000Z",
+    ]);
+  });
+});
