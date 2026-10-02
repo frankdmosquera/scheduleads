@@ -8,6 +8,8 @@ import type { BusyBlockType } from "../calendar/calendar-provider.js";
 import { addDays } from "../local-time/add-days.js";
 import { localDate } from "../local-time/local-date.js";
 import { localTimeToMoment } from "../local-time/local-time-to-moment.js";
+import { isRoomFree, type RoomScheduleType } from "./is-room-free.js";
+import { overlapsAny } from "./overlaps-any.js";
 
 export type FreeTimesServiceType = {
   durationMinutes: number;
@@ -16,15 +18,12 @@ export type FreeTimesServiceType = {
   slotIntervalMinutes: number | null; // null = every durationMinutes
 };
 
-// A room the service can be done in: when it is taken, and the dates it is hidden from customers.
-export type FreeTimesRoomType = { busy: BusyBlockType[]; standbyDates: string[] };
-
 export type FreeTimesInputType = {
   hours: ResolvedBookableHoursType; // the person's, from resolveBookableHours
   service: FreeTimesServiceType;
   busy: BusyBlockType[]; // bookings, time off and Google, in any order
   standbyDates: string[]; // YYYY-MM-DD, hidden from customers on these dates
-  rooms: FreeTimesRoomType[] | null; // null = no room check; [] = a room is needed and none can be used
+  rooms: RoomScheduleType[] | null; // null = no room check; [] = a room is needed and none can be used
   fromDate: string; // YYYY-MM-DD in the business's zone, included
   toDate: string; // YYYY-MM-DD in the business's zone, included
   now: Date; // a parameter, not new Date() inside, so notice and the horizon can be tested
@@ -37,10 +36,6 @@ function weekdayOf(date: string): keyof WeeklyHoursType {
   const [year, month, day] = date.split("-").map(Number);
   return WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
 }
-
-// Half-open, like the commitments rule: busy time ending at 10:00 leaves a 10:00 start free.
-const overlapsAny = (busy: BusyBlockType[], start: number, end: number) =>
-  busy.some((block) => block.start.getTime() < end && block.end.getTime() > start);
 
 export function applyFreeTimesRules(input: FreeTimesInputType): Date[] {
   const { hours, service, busy, standbyDates, rooms, now } = input;
@@ -84,13 +79,7 @@ export function applyFreeTimesRules(input: FreeTimesInputType): Date[] {
         const spanStart = start - service.bufferBeforeMinutes * MINUTE_MS;
         const spanEnd = start + (service.durationMinutes + service.bufferAfterMinutes) * MINUTE_MS;
         if (overlapsAny(busy, spanStart, spanEnd)) continue;
-        if (
-          rooms !== null &&
-          !rooms.some(
-            (room) =>
-              !room.standbyDates.includes(date) && !overlapsAny(room.busy, spanStart, spanEnd)
-          )
-        ) {
+        if (rooms !== null && !rooms.some((room) => isRoomFree(room, date, spanStart, spanEnd))) {
           continue;
         }
 

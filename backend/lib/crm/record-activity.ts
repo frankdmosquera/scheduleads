@@ -8,6 +8,7 @@ import type { ActivityTypeType } from "@scheduleads-app/shared/crm";
 import { activity } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
+import type { DatabaseExecutorType } from "../../database-executor-type.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 
 export type RecordActivityInputType = {
@@ -26,10 +27,11 @@ export async function recordActivity(
     payload = {},
     actorUserId = null,
     occurredAt = new Date(),
-  }: RecordActivityInputType
+  }: RecordActivityInputType,
+  executor: DatabaseExecutorType = db
 ): Promise<{ id: string; occurredAt: Date }> {
   try {
-    const [recorded] = await db
+    const [recorded] = await executor
       .insert(activity)
       .values({
         id: randomUUID(),

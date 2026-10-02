@@ -165,7 +165,7 @@ commit, on Frank's yes.
     business is refused, the same key in another business and two bookings
     without a key are both allowed.
 
-- [ ] **5d.2 Writing as one: transactions and the room rule.**
+- [x] **5d.2 Writing as one: transactions and the room rule.**
   - `holdTime`, `releaseTime`, `findOrCreateContact` and `recordActivity`
     take an optional last argument, the executor (`db` or a transaction),
     default `db`. `holdTime` runs each attempt in a nested transaction

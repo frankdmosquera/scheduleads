@@ -12,6 +12,7 @@ import {
 } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
+import type { DatabaseExecutorType } from "../../database-executor-type.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 
 export type ContactType = {
@@ -30,14 +31,15 @@ const contactColumns = {
 
 export async function findOrCreateContact(
   organizationId: string,
-  input: ContactInputType
+  input: ContactInputType,
+  executor: DatabaseExecutorType = db
 ): Promise<{ contact: ContactType; created: boolean }> {
   const { name, email, phone } = contactValidationSchema.parse(input); // trimmed, email lowercased
 
   try {
     // Inserted first and read only if that changed nothing, so two bookings at the same
     // instant with one email still make one contact: the unique email index decides.
-    const [made] = await db
+    const [made] = await executor
       .insert(contact)
       .values({
         id: randomUUID(),
@@ -52,7 +54,7 @@ export async function findOrCreateContact(
     if (!email) throw new Error("A contact without an email was not saved.");
 
     // A known email: that contact, as it is. The name and phone first given are kept.
-    const [known] = await db
+    const [known] = await executor
       .select(contactColumns)
       .from(contact)
       .where(and(eq(contact.organizationId, organizationId), eq(contact.email, email)))
