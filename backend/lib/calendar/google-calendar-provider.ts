@@ -67,6 +67,7 @@ export const googleCalendarProvider: CalendarProviderType = {
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
       // No attendees, so Google sends nobody an invitation.
       body: JSON.stringify({
+        id: event.id,
         summary: event.title,
         location: event.location,
         description: event.description,
@@ -75,6 +76,8 @@ export const googleCalendarProvider: CalendarProviderType = {
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
+    // 409: an event with this id exists, written by an earlier try whose answer was lost.
+    if (response.status === 409) return event.id;
     if (!response.ok) throw new Error(`Google refused the event (${response.status}).`);
 
     const body = (await response.json()) as { id?: unknown };

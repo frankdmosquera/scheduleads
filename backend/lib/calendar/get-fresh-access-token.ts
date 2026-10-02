@@ -62,7 +62,8 @@ export async function getFreshAccessToken({
     );
 
     const expiresAt = new Date(credentials.accessTokenExpiresAt).getTime();
-    // Written as "not comfortably valid", so an unreadable date refreshes too.
+    // A key with more than a minute left is used as it is; anything else, an unreadable date too,
+    // is refreshed.
     if (expiresAt - Date.now() > REFRESH_MARGIN_MS) {
       return { connectionId: connection.id, provider, accessToken: credentials.accessToken };
     }

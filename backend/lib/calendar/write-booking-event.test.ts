@@ -97,7 +97,7 @@ const connect = (clinic: ClinicType, expiresInMs = 60 * 60 * 1000) =>
     },
   });
 
-const book = (clinic: ClinicType) =>
+const book = (clinic: ClinicType, changes: Partial<Parameters<typeof bookTime>[0]> = {}) =>
   bookTime({
     organizationId: clinic.business,
     bookingLinkId: clinic.estimate,
@@ -110,10 +110,14 @@ const book = (clinic: ClinicType) =>
     source: "widget",
     actorUserId: null,
     now: new Date("2026-10-02T14:00:00Z"),
+    ...changes,
   });
 
-const bookedId = async (clinic: ClinicType) => {
-  const result = await book(clinic);
+const bookedId = async (
+  clinic: ClinicType,
+  changes: Partial<Parameters<typeof bookTime>[0]> = {}
+) => {
+  const result = await book(clinic, changes);
   if (!result.booked) throw new Error(`expected a booking, got ${result.reason}`);
   return result.booking.id;
 };
@@ -122,6 +126,9 @@ const eventIdOf = async (bookingId: string) =>
   (
     await db.select({ id: booking.calendarEventId }).from(booking).where(eq(booking.id, bookingId))
   )[0]?.id;
+
+// The id Google is given: the booking's own, without its dashes.
+const googleIdOf = (bookingId: string) => bookingId.replace(/-/g, "");
 
 const eventCalls = () => calls.filter((call) => call.url.endsWith("/calendars/primary/events"));
 
@@ -160,11 +167,12 @@ describe("the booking's event in Google", () => {
   test("the event's title, address, description, times and zone", async () => {
     const clinic = await makeClinic("content");
     await connect(clinic);
-    await bookedId(clinic);
+    const id = await bookedId(clinic);
 
     const [call] = eventCalls();
     expect(call.authorization).toBe("Bearer ya29.saved-access");
     expect(JSON.parse(call.body)).toEqual({
+      id: googleIdOf(id),
       summary: "Interior estimate: Jane Doe",
       location: "12 Main Street, Calgary",
       description: `Phone: 403 555 0101\nEmail: jane-${tag}@example.com\n\nTwo bedrooms, ceilings too`,
@@ -248,12 +256,13 @@ describe("the booking's event in Google", () => {
 
   test("an expired token is refreshed through the one shared helper", async () => {
     const clinic = await makeClinic("refresh");
+    const id = await bookedId(clinic); // booked before connecting: only the event write needs a key
     await connect(clinic, 30_000); // under a minute left
-    await bookedId(clinic);
 
+    await writeBookingEvent(clinic.business, id);
     expect(calls.filter((call) => call.url === "https://oauth2.googleapis.com/token")).toHaveLength(
       1
-    ); // once, shared
+    );
     expect(eventCalls()[0].authorization).toBe("Bearer ya29.fresh-access");
     const [row] = await db
       .select()
@@ -261,5 +270,47 @@ describe("the booking's event in Google", () => {
       .where(eq(calendarConnection.organizationId, clinic.business));
     const saved = JSON.parse(decryptCredentials(row.credentials, readTokenKey(), clinic.ana));
     expect(saved.accessToken).toBe("ya29.fresh-access"); // kept, locked, for the next call
+  });
+
+  test("a phone, an email or a note left out leaves its line out", async () => {
+    const clinic = await makeClinic("only-given");
+    await connect(clinic);
+    await bookedId(clinic, {
+      customer: { name: "Sam", email: `sam-${tag}@example.com` },
+      details: null,
+    });
+
+    expect(JSON.parse(eventCalls()[0].body).description).toBe(`Email: sam-${tag}@example.com`);
+  });
+
+  test("writing the event again never makes a second one", async () => {
+    const clinic = await makeClinic("twice");
+    await connect(clinic);
+    const id = await bookedId(clinic);
+
+    // Written already: the saved id is the answer and Google is not asked again.
+    expect(await writeBookingEvent(clinic.business, id)).toBe("evt-123");
+    expect(eventCalls()).toHaveLength(1);
+  });
+
+  test("a retry after a lost answer finds the event Google already made", async () => {
+    const clinic = await makeClinic("lost-answer");
+    await connect(clinic);
+    // Google made the event on an earlier try, but its answer never arrived: now it says the id exists.
+    eventAnswer = () =>
+      json({ error: { code: 409, message: "The requested identifier already exists." } }, 409);
+    const id = await bookedId(clinic);
+
+    expect(await eventIdOf(id)).toBe(googleIdOf(id));
+  });
+
+  test("a cancelled booking gets no event", async () => {
+    const clinic = await makeClinic("cancelled");
+    const id = await bookedId(clinic);
+    await db.update(booking).set({ status: "cancelled" }).where(eq(booking.id, id));
+    await connect(clinic);
+
+    expect(await writeBookingEvent(clinic.business, id)).toBeNull();
+    expect(eventCalls()).toEqual([]);
   });
 });

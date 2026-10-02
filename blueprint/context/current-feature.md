@@ -372,7 +372,10 @@ name, email, phone, address or words.
 
 **The Google event**: no attendees; `start` and `end` the appointment with
 the business's `timeZone`; title, location and description per decision
-14; `calendarEventId` is Google's event id.
+14; `calendarEventId` is Google's event id. One event per booking (review F-84):
+the id Google is given is the booking's without its dashes, so a second write
+(feature 8's retry, a lost answer) finds the event already there; a booking
+already written or cancelled is not written.
 
 ## Testing
 

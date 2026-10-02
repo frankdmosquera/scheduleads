@@ -1,8 +1,8 @@
 // Backend: books one time for a service, the one path every booking takes. A form already booked
-// answers that booking; the time is checked again; then the contact, a new lead in the first
-// stage, the booking, its held time and the timeline entry land in one transaction, or nothing
-// does; then the event goes into the booked person's Google. A customer gets only the free times they are offered; the owner any time nobody is busy
-// (decision 11).
+// answers that booking; the time is checked again; then the contact, a new lead in the first stage,
+// the booking, its held time and the timeline entry land in one transaction, or nothing does; then
+// the event goes into the booked person's Google. A customer gets only the free times they are
+// offered; the owner any time nobody is busy (decision 11).
 
 import { randomUUID } from "node:crypto";
 
@@ -14,8 +14,8 @@ import type { ContactInputType } from "@scheduleads-app/shared/zod-validation";
 import { db } from "../../database.js";
 import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
 import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error.js";
-import { writeBookingEvent } from "../calendar/write-booking-event.js";
 import { getBusyTimes } from "../calendar/get-busy-times.js";
+import { writeBookingEvent } from "../calendar/write-booking-event.js";
 import { findFirstPipelineStage } from "../crm/find-first-pipeline-stage.js";
 import { findOrCreateContact } from "../crm/find-or-create-contact.js";
 import { recordActivity } from "../crm/record-activity.js";

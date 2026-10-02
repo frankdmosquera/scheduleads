@@ -108,7 +108,7 @@ and share it across people, or work out each date's offset once and only fall
 back to `localTimeToMoment` on clock-change days.
 **Resolution:** Confirmed (unverified to open) by independent review of step 5c.4 (2026-10-02). The cost is real and is synchronous work, so reading people side by side (Promise.all) shortens the database and Google waits but not this: each person's applyFreeTimesRules still runs one after another on the event loop. Measured in a scratch copy, the rules alone for 7 people over 31 dates (30 minutes, 15 after, one room): weekdays 9 to 17 every 15 minutes, about 73 ms; every day all day every 15 minutes, about 416 ms; every day all day every 5 minutes, about 1.15 s. The build log's 75 ms for the dev clinic matches the first case, so that request is almost all this work, not the reads. Fine for the four tenants' daytime hours; it grows with long windows and a small step (the database allows any step above 0), on a public route with no rate limit yet. Stays a P3, for feature 9 (first public traffic) or feature 12 (where an owner sets the step): work out each date's offset once per request and share it across people, or put a floor on the step.
 
-### F-64 [P3] fixed - chooseAnyAvailable needs "only the free rooms", but no code says which rooms are free, so 5d would rebuild the room rule
+### F-64 [P3] closed - chooseAnyAvailable needs "only the free rooms", but no code says which rooms are free, so 5d would rebuild the room rule
 
 **File:** backend/lib/scheduling/apply-free-times-rules.ts:87
 **Found:** 2026-10-02 by independent review of step 5c.3 (scope: 4d6d1ce..4858600; lenses: all)
@@ -126,7 +126,7 @@ free-time list never offered.
 the room check out into one exported helper (for example
 `isRoomFree(room, date, spanStart, spanEnd)` in its own file) used by both
 `applyFreeTimesRules` and 5d, with `resourceId` on the room input.
-**Resolution:** Fixed 2026-10-02 in step 5d.3: bookTime picks its rooms with isRoomFree over appointmentSpan's span (book-time.ts), the same rule and span as the free times; tested by "a room taken only during the buffer after is not chosen", which fails when the hold leaves the buffers out. Partly answered by step 5d.2, stays open: backend/lib/scheduling/is-room-free.ts is now the only copy of the rule and applyFreeTimesRules uses it (every 5c test unchanged and passing), and a room carrying its id still type-checks against RoomScheduleType, so 5d.3 can filter its own rooms. The booking, the second consumer this finding is about, does not exist yet; close it when bookTime picks its room with isRoomFree and a test shows it. See F-76 for the span the rule does not own. Not closed by the independent review of step 5d.3 (2026-10-02): the code does use isRoomFree (book-time.ts:214), but no saved test shows it. With isRoomFree mocked to always answer true, "a room taken only during the buffer after is not chosen" still passes (the database refuses Room 3 and decision 5 moves to Room 4), while a customer is booked into a room on standby; see F-79. Close it with F-79's test.
+**Resolution:** Fixed 2026-10-02 in step 5d.3: bookTime picks its rooms with isRoomFree over appointmentSpan's span (book-time.ts), the same rule and span as the free times; tested by "a room taken only during the buffer after is not chosen", which fails when the hold leaves the buffers out. Partly answered by step 5d.2, stays open: backend/lib/scheduling/is-room-free.ts is now the only copy of the rule and applyFreeTimesRules uses it (every 5c test unchanged and passing), and a room carrying its id still type-checks against RoomScheduleType, so 5d.3 can filter its own rooms. The booking, the second consumer this finding is about, does not exist yet; close it when bookTime picks its room with isRoomFree and a test shows it. See F-76 for the span the rule does not own. Not closed by the independent review of step 5d.3 (2026-10-02): the code does use isRoomFree (book-time.ts:214), but no saved test shows it. With isRoomFree mocked to always answer true, "a room taken only during the buffer after is not chosen" still passes (the database refuses Room 3 and decision 5 moves to Room 4), while a customer is booked into a room on standby; see F-79. Close it with F-79's test. Closed 2026-10-02 by independent review of step 5d.4 (7166169..ceb511c): bookTime still picks rooms with isRoomFree over appointmentSpan's span (book-time.ts:222-245), and with isRoomFree mocked to always answer true, book-time.test.ts fails "a room on standby that date is not chosen for a customer, but the owner may use it" (1 failed, 19 passed).
 
 ### F-74 [P3] open - "Any available" answers an empty week when every person's calendar is unreadable
 
@@ -241,7 +241,7 @@ room with `busy` and `standbyDates`; the booking filters its own id-carrying
 rooms with it), and say in 5d.3 where those rooms and their ids are loaded.
 **Resolution:** Fixed 2026-10-02: the spec's 5d.2 now says isRoomFree takes any room with its taken time and standby dates and a caller keeps its own ids, with appointmentSpan as the one span.
 
-### F-79 [P3] fixed - No saved test fails when bookTime stops filtering rooms with isRoomFree, so a room on standby could be booked for a customer unnoticed
+### F-79 [P3] closed - No saved test fails when bookTime stops filtering rooms with isRoomFree, so a room on standby could be booked for a customer unnoticed
 
 **File:** backend/lib/booking/book-time.ts:214 (test: backend/lib/booking/book-time.test.ts:395)
 **Found:** 2026-10-02 by independent review of step 5d.3 (scope: 4b04e58..285b930; lenses: tests)
@@ -263,9 +263,9 @@ that date, booked by a customer, takes the other room (and answers
 `time_taken` when every room is on standby); the same by the owner takes the
 standby room. Give one service a buffer before and assert the held
 commitment starts that much earlier. Then close F-64.
-**Resolution:** Fixed 2026-10-02: book-time.test.ts proves a room on standby that date is not chosen for a customer (fails with the room rule bypassed in bookTime) and that the owner may use it, and that a buffer before is held too (8:45 to 10:30 for a 9:00 facial with 15 before and 15 after).
+**Resolution:** Fixed 2026-10-02: book-time.test.ts proves a room on standby that date is not chosen for a customer (fails with the room rule bypassed in bookTime) and that the owner may use it, and that a buffer before is held too (8:45 to 10:30 for a 9:00 facial with 15 before and 15 after). Closed 2026-10-02 by independent review of step 5d.4 (7166169..ceb511c): the standby and buffer-before tests are in book-time.test.ts (:418, :443) and pass at ceb511c; with isRoomFree bypassed by a scratch mock the standby test fails.
 
-### F-80 [P3] fixed - "Any available" with every calendar unreadable answers time_taken, which decision 12's message makes untrue
+### F-80 [P3] closed - "Any available" with every calendar unreadable answers time_taken, which decision 12's message makes untrue
 
 **File:** backend/lib/booking/book-time.ts:201-203
 **Found:** 2026-10-02 by independent review of step 5d.3 (scope: 4b04e58..285b930; lenses: quality)
@@ -284,9 +284,9 @@ hits this exactly. The owner path does the same.
 `unreadable`, answer `unavailable` (decision 9's rule, applied at booking
 time), and add the test beside "an unreadable picked calendar answers
 unavailable".
-**Resolution:** Fixed 2026-10-02: with nobody free and a calendar that could not be read, bookTime answers unavailable, never time_taken; tested with every practitioner's connection needing reconnection (fails if answered as taken).
+**Resolution:** Fixed 2026-10-02: with nobody free and a calendar that could not be read, bookTime answers unavailable, never time_taken; tested with every practitioner's connection needing reconnection (fails if answered as taken). Closed 2026-10-02 by independent review of step 5d.4 (7166169..ceb511c): book-time.ts:220 answers unavailable when nobody is free and a calendar was unreadable; "any available with every calendar unreadable answers unavailable, not taken" (book-time.test.ts:457) passes.
 
-### F-81 [P3] fixed - A request key already booked answers that booking even when the service, time, person and customer differ
+### F-81 [P3] closed - A request key already booked answers that booking even when the service, time, person and customer differ
 
 **File:** backend/lib/booking/book-time.ts:133-136 and :329-332
 **Found:** 2026-10-02 by independent review of step 5d.3 (scope: 4b04e58..285b930; lenses: quality)
@@ -306,9 +306,9 @@ whose request differs. No data leaks: the answer has no customer details.
 (a 409/422 at 5d.5), or write in decision 7 that a key lives only until its
 form books once and feature 9 must make a fresh key after every booking.
 Add the test either way.
-**Resolution:** Fixed 2026-10-02: a request key already booked answers that booking only for the same service and start (and the same person when one was picked); otherwise request_key_used, which 5d.5 turns into a 409 asking to reload. Tested with a different time, person and service (fails if any reuse returns the old booking).
+**Resolution:** Fixed 2026-10-02: a request key already booked answers that booking only for the same service and start (and the same person when one was picked); otherwise request_key_used, which 5d.5 turns into a 409 asking to reload. Tested with a different time, person and service (fails if any reuse returns the old booking). Closed 2026-10-02 by independent review of step 5d.4 (7166169..ceb511c): isSameRequest (book-time.ts:77-80) guards both the first lookup and the clash path (:149, :331); "a form already used for another booking is refused" (book-time.test.ts:479) passes.
 
-### F-82 [P3] fixed - An owner-made booking may start at any instant, the past included, and the spec does not say whether it should
+### F-82 [P3] closed - An owner-made booking may start at any instant, the past included, and the spec does not say whether it should
 
 **File:** backend/lib/booking/book-time.ts:164-198 (spec: blueprint/context/current-feature.md, decision 11)
 **Found:** 2026-10-02 by independent review of step 5d.3 (scope: 4b04e58..285b930; lenses: quality)
@@ -324,9 +324,9 @@ code made it silently.
 or 12b, at the latest): either the owner may book the past (and later
 features skip messages for it), or bookTime refuses a start before `now`
 (and, perhaps, beyond some outer limit). Add the test for whichever.
-**Resolution:** Fixed 2026-10-02 with Frank's answer (option B, decision 13): an owner-made booking may start any time from the start of today in the business's zone; an earlier day answers in_the_past. Tested with a walk-in begun at 10:00 entered at 10:10 (booked), yesterday and 2020 (refused), and just after local midnight (booked); the test fails both with no limit and with "only from now on".
+**Resolution:** Fixed 2026-10-02 with Frank's answer (option B, decision 13): an owner-made booking may start any time from the start of today in the business's zone; an earlier day answers in_the_past. Tested with a walk-in begun at 10:00 entered at 10:10 (booked), yesterday and 2020 (refused), and just after local midnight (booked); the test fails both with no limit and with "only from now on". Closed 2026-10-02 by independent review of step 5d.4 (7166169..ceb511c): book-time.ts:175 answers in_the_past for an owner start on an earlier local day; "an owner-made booking may start earlier today, never on an earlier day" (book-time.test.ts:553) passes.
 
-### F-83 [P3] fixed - The try order is built by calling chooseAnyAvailable in loops with a stand-in person, and the choice type is declared twice
+### F-83 [P3] closed - The try order is built by calling chooseAnyAvailable in loops with a stand-in person, and the choice type is declared twice
 
 **File:** backend/lib/booking/book-time.ts:244-263 (and hold-first-free-choice.ts:8, choose-any-available.ts:7)
 **Found:** 2026-10-02 by independent review of step 5d.3 (scope: 4b04e58..285b930; lenses: quality)
@@ -345,4 +345,88 @@ example `orderAnyAvailable(people, rooms)` answering every choice in order,
 with `chooseAnyAvailable` its first element) and use it in bookTime; reuse
 `AnyAvailableChoiceType` in holdFirstFreeChoice; say "the free times" instead
 of "5c's".
-**Resolution:** Fixed 2026-10-02: the order lives in one place, backend/lib/scheduling/order-any-available.ts (orderAnyAvailable, with its own tests); chooseAnyAvailable is its first choice and bookTime uses the whole order, so no made-up person and no loop. BookingChoiceType is gone in favour of AnyAvailableChoiceType. Comments no longer name 5c.
+**Resolution:** Fixed 2026-10-02: the order lives in one place, backend/lib/scheduling/order-any-available.ts (orderAnyAvailable, with its own tests); chooseAnyAvailable is its first choice and bookTime uses the whole order, so no made-up person and no loop. BookingChoiceType is gone in favour of AnyAvailableChoiceType. Comments no longer name 5c. Closed 2026-10-02 by independent review of step 5d.4 (7166169..ceb511c): order-any-available.ts holds the order and AnyAvailableChoiceType, chooseAnyAvailable returns its first element, hold-first-free-choice.ts uses AnyAvailableChoiceType, BookingChoiceType is gone, and no comment in backend/lib/booking names 5c.
+
+### F-84 [P3] fixed - Writing a booking's event twice makes a second Google event and forgets the first, and a cancelled booking is written too
+
+**File:** backend/lib/calendar/write-booking-event.ts:64-76 (and google-calendar-provider.ts:64)
+**Found:** 2026-10-02 by independent review of step 5d.4 (scope: 7166169..ceb511c; lenses: all)
+**Why it matters:** `writeBookingEvent` checks neither `calendarEventId` nor
+`status`, and Google's events.insert is not idempotent. Scratch probe on a
+throwaway clinic with Google faked: calling it again for a booking already
+holding `evt-1` posted a second event and replaced the id with `evt-3`, so the
+first event stays in the worker's calendar with nothing pointing at it, and
+feature 7's cancel can never remove it. A booking set to `cancelled` was
+still written (`evt-4`). Today bookTime calls it once per new booking, so
+nothing double-writes yet. Feature 8's retry (decision 6) will, and the
+ten-second limit makes the bad case ordinary: Google can create the event and
+the answer time out (or the `calendarEventId` update fail), leaving the id
+empty for a booking whose event exists, which the retry then writes again. A
+worker could turn up for a cancelled job because its twin was never removed.
+**Suggested fix:** Send a client-chosen event `id` derived from the booking id
+(Google accepts base32hex, a-v and 0-9, 5 to 1024 characters; the UUID without
+its hyphens qualifies), so a second insert answers 409 and is treated as
+already written; and have writeBookingEvent skip a booking that is cancelled
+or already has `calendarEventId` (or settle both in feature 8's spec). Add a
+test that writes twice and sees one event.
+**Resolution:** Fixed 2026-10-02: the event's id is the booking's without dashes (Google's a-v0-9 rule), so Google keeps one event; a 409 for that id is taken as the event already made; a booking already written answers its saved id without asking Google, and a cancelled one is not written. Tests: writing again makes no second call, a 409 saves the id, a cancelled booking gets no event; each fails with its guard removed.
+
+### F-85 [P3] open - A returning customer's phone typed on this booking never reaches the event
+
+**File:** backend/lib/calendar/write-booking-event.ts:24-26 and :61 (cause: backend/lib/crm/find-or-create-contact.ts:70)
+**Found:** 2026-10-02 by independent review of step 5d.4 (scope: 7166169..ceb511c; lenses: quality)
+**Why it matters:** Decision 14 puts "Phone: ..." in the description when
+given. The event reads the phone from `contact`, and a known email keeps "the
+name and phone first given". Scratch probe: Jane booked one Monday with email
+only, then the next Monday with the same email and phone 403 555 0199; the
+second event's description was exactly `Email: ...`, no phone line, and the
+phone is stored nowhere (the lead keeps only `details`). A painter sent to a
+returning customer gets no phone, or the old one if it changed; the title
+likewise carries the first name ever given.
+**Suggested fix:** Frank's call. Either fill a known contact's empty phone
+(or replace it) in findOrCreateContact, or keep this booking's phone on the
+lead or booking and use it for the event; or write in decision 14 that the
+contact's stored details are what the event shows. Add the test either way.
+**Resolution:**
+
+### F-86 [P3] fixed - Two Done-when items cannot fail: the refresh test passes when writeBookingEvent never refreshes, and "each only when given" is never tested
+
+**File:** backend/lib/calendar/write-booking-event.test.ts:249 and :160
+**Found:** 2026-10-02 by independent review of step 5d.4 (scope: 7166169..ceb511c; lenses: tests)
+**Why it matters:** In "an expired token is refreshed through the one shared
+helper", bookTime's own check reads the busy times first, and getBusyTimes
+renews the 30-second token (call order in a probe: token, freeBusy, events),
+so writeBookingEvent finds a fresh token already stored. A scratch Vitest run
+with writeBookingEvent's `getFreshAccessToken` replaced by a plain read of the
+stored token (no renewal at all) passed every assertion of that test (one
+token call, `Bearer ya29.fresh-access`). The content test has phone, email and
+details all present, so removing the "only when given" filtering
+(write-booking-event.ts:61-66) fails nothing, though that rule is the whole of
+decision 14's description. Also, reconnection and the timeout are tested by
+calling writeBookingEvent directly, so "keeps the booking and logs one line"
+is shown through bookTime only for the Google error.
+**Suggested fix:** Test the renewal by calling writeBookingEvent directly for
+a booking made before connecting, with under a minute left on the token,
+asserting the token call and the Bearer sent to the event; add content cases
+with no phone and no details (`Email: ...` only) and with phone only.
+**Resolution:** Fixed 2026-10-02: the refresh test now books before connecting and writes the event directly, so only the event write can renew the key (fails when the expired key is used anyway); a new test books with no phone and no note and checks the description is the email line alone (fails when missing lines are kept).
+
+### F-87 [P3] fixed - The token helper's comment describes a condition no longer written that way, and two header comments were left unwrapped
+
+**File:** backend/lib/calendar/get-fresh-access-token.ts:65 (also backend/lib/booking/book-time.ts:4, backend/lib/calendar/calendar-provider.ts:2)
+**Found:** 2026-10-02 by independent review of step 5d.4 (scope: 7166169..ceb511c; lenses: quality)
+**Why it matters:** "Written as 'not comfortably valid', so an unreadable date
+refreshes too" explained the old `!(expiresAt - Date.now() > margin)`; the
+condition is now the opposite test with an early return. Behaviour is
+unchanged (NaN compares false, so an unreadable date still falls through to
+the renewal; compared line by line with get-busy-times.ts at 7166169, the race
+rules, the `needs_reconnect` marking and both `continue`s are identical), but
+the comment now names a form that is not there, on the one subtlety a reader
+must not "simplify" away. book-time.ts:4 (149 characters) and
+calendar-provider.ts:2 (129) had words inserted into wrapped headers without
+rewrapping (Prettier leaves comments alone), and the new import in
+book-time.ts:17 sits out of order.
+**Suggested fix:** Say what the line does now ("only a key comfortably valid
+is used as it is; an unreadable date fails this test and is renewed"),
+rewrap the two headers, sort the import.
+**Resolution:** Fixed 2026-10-02: the comment in get-fresh-access-token.ts now matches its condition; the two long header comments are rewrapped under 100 characters; book-time.ts's calendar imports are in order.
