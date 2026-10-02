@@ -15,7 +15,7 @@ export const freeTimesQueryValidationSchema = z
     to: z.iso.date("Use a real date, YYYY-MM-DD."),
     // The same rule as a booking link id: any id format fits, no arbitrary text reaches a query.
     person: z
-      .string()
+      .string("That is not a person id.") // also a person asked for twice
       .regex(/^[A-Za-z0-9_-]{1,64}$/, "That is not a person id.")
       .optional(),
   })

@@ -120,7 +120,7 @@ export const publicBookingLinksRoutes = new Hono()
       const organizationId = await findBookableOrganizationId(slug.data);
       if (!organizationId) return c.json(notFound, 404);
 
-      // Today and the horizon are applied inside the rules, so the dates go in as asked.
+      // The dates go in as asked: findFreeTimes cuts them to today through the horizon.
       try {
         const freeTimes = await findFreeTimes({
           organizationId,

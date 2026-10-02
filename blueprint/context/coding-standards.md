@@ -210,7 +210,8 @@ own subpath export.
   alone; and every "not here" (no such business, a plan without the module, a
   missing, inactive or other business's row) answers the identical `404`, so a
   stranger cannot tell them apart. The answer never carries `organizationId` or
-  anything about people or logins
+  anything about logins, and about people only the id and name of those a
+  customer can pick for a service: never standby, a calendar or contact details
 - Whether the booking widget calls the API from the browser or proxies through
   the host site's Server Action is open until Phase 3 (`project-plan.md`,
   open question 5)

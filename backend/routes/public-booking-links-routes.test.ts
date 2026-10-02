@@ -283,6 +283,23 @@ describe("free times for a service", () => {
     if (!luis || !paintingPerson) throw new Error("The seed is missing: run npm run db:seed.");
     luisId = luis.id;
     paintingPersonId = paintingPerson.id;
+
+    // A dev login can connect a real calendar to a seeded practitioner; no test may reach Google.
+    vi.stubGlobal("fetch", async () => {
+      throw new Error("These tests never call Google.");
+    });
+  });
+
+  afterAll(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test("dates past the horizon answer no times, and nothing is read for them", async () => {
+    // The last date the clock can hold: reading time around it would fail in the database.
+    const response = await get(`${facialPath}?from=9999-12-30&to=9999-12-31`);
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).startTimes).toEqual([]);
   });
 
   test("a picked practitioner: the time zone, who can be picked, and their start times", async () => {

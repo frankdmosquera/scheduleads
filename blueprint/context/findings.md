@@ -220,7 +220,7 @@ decision are the history the standard names.
 comment ("the fewest bookings that day, ties by name then id").
 **Resolution:** Fixed in 5c.3 review fixes: the step number and the date are gone from both headers; the rule stays. Closed by independent review of step 5c.4 (2026-10-02): count-bookings-that-day.ts and choose-any-available.ts carry no step number or date, and the rule is kept. The same kind of comment remains in test files (choose-any-available.test.ts:6 and :15, and the new find-free-times.test.ts:1), recorded as F-69.
 
-### F-66 [P3] fixed - No test subtracts Google busy time or reaches the edges of the read window
+### F-66 [P3] closed - No test subtracts Google busy time or reaches the edges of the read window
 
 **File:** backend/lib/scheduling/find-free-times.test.ts:1 (code: find-free-times.ts:85-89 and :129)
 **Found:** 2026-10-02 by independent review of step 5c.4 (scope: 577bab2..d6ef7d9; lenses: all)
@@ -239,9 +239,9 @@ active check is a double guard findServiceResources also holds.
 get-busy-times.test.ts does (a stubbed fetch and a saved connection), whose
 busy block removes a start; and a commitment late on the last date (an
 evening window, after midnight UTC) that removes the time it covers.
-**Resolution:** Fixed in 5c.4 review fixes: two tests added, a person's faked Google busy time removing the time it covers, and taken time late on the last date (Tuesday in UTC) still seen; each shown able to fail by dropping Google's busy time and by narrowing the read window by a day.
+**Resolution:** Fixed in 5c.4 review fixes: two tests added, a person's faked Google busy time removing the time it covers, and taken time late on the last date (Tuesday in UTC) still seen; each shown able to fail by dropping Google's busy time and by narrowing the read window by a day. Closed by independent review of step 5c.5 (2026-10-02): both tests are in find-free-times.test.ts at ac66226 and pass.
 
-### F-67 [P3] fixed - A picked person's unreadable calendar leaves no log line, and the reason is dropped
+### F-67 [P3] closed - A picked person's unreadable calendar leaves no log line, and the reason is dropped
 
 **File:** backend/lib/scheduling/find-free-times.ts:118
 **Found:** 2026-10-02 by independent review of step 5c.4 (scope: 577bab2..d6ef7d9; lenses: all)
@@ -255,9 +255,9 @@ one.
 **Suggested fix:** Log the same one warning line before throwing, or pass the
 original as `cause` (the constructor taking `ErrorOptions`) so 5c.5 logs it
 with `safeErrorReason`.
-**Resolution:** Fixed in 5c.4 review fixes: a picked person's unreadable calendar now logs the same one-line warning before throwing, and the original error travels as the CalendarUnavailableError's cause; the test checks both.
+**Resolution:** Fixed in 5c.4 review fixes: a picked person's unreadable calendar now logs the same one-line warning before throwing, and the original error travels as the CalendarUnavailableError's cause; the test checks both. Closed by independent review of step 5c.5 (2026-10-02): the warning and the cause are still in find-free-times.ts at ac66226, and the test passes.
 
-### F-68 [P3] fixed - A range whose last date is before its first throws a database error, and 5c.5's clamp can make one
+### F-68 [P3] closed - A range whose last date is before its first throws a database error, and 5c.5's clamp can make one
 
 **File:** backend/lib/scheduling/find-free-times.ts:85
 **Found:** 2026-10-02 by independent review of step 5c.4 (scope: 577bab2..d6ef7d9; lenses: all)
@@ -275,9 +275,9 @@ and the commitments are also read for dates the rules will discard.
 before calling findFreeTimes, and add that case to its Done when; or have
 findFreeTimes answer `startTimes: []` when `fromDate > toDate`, and say which
 in the spec's contract.
-**Resolution:** Fixed in 5c.4 review fixes: findFreeTimes answers no times, without reading anything, when fromDate is after toDate; test added and shown able to fail.
+**Resolution:** Fixed in 5c.4 review fixes: findFreeTimes answers no times, without reading anything, when fromDate is after toDate; test added and shown able to fail. Closed by independent review of step 5c.5 (2026-10-02): the guard still answers before any read at ac66226; the route never sends an inverted range (Zod refuses one), and its unclamped reads are recorded as F-70.
 
-### F-69 [P3] fixed - Step numbers in test file comments
+### F-69 [P3] closed - Step numbers in test file comments
 
 **File:** backend/lib/scheduling/find-free-times.test.ts:1
 **Found:** 2026-10-02 by independent review of step 5c.4 (scope: 577bab2..d6ef7d9; lenses: all)
@@ -288,4 +288,85 @@ gathers", and two from step 5c.3 remain in choose-any-available.test.ts:6
 **Suggested fix:** Drop the step numbers and keep what each comment says (for
 example "every reader free times gathers", "the commitment rows the free-time
 read gathers").
-**Resolution:** Fixed in 5c.4 review fixes: the step numbers are gone from the two test files' comments.
+**Resolution:** Fixed in 5c.4 review fixes: the step numbers are gone from the two test files' comments. Closed by independent review of step 5c.5 (2026-10-02): no step number in any comment under backend/lib, backend/routes or the new shared schema at ac66226.
+
+### F-70 [P2] fixed - The route passes the asked dates unclamped, so a valid date near 9999 is a 500 and far-off dates still read Google
+
+**File:** backend/routes/public-booking-links-routes.ts:123 (reads: backend/lib/scheduling/find-free-times.ts:87-91)
+**Found:** 2026-10-02 by independent review of step 5c.5 (scope: 5368e0c..ac66226; lenses: all)
+**Why it matters:** Decision 5 says a request is "clamped to today through
+today plus the horizon"; the route instead sends the dates as asked and relies
+on the rules to clamp the answer. The reads before the rules are built from
+the raw dates. Probed through the real app against `clinic-dev`:
+`?from=9999-12-30&to=9999-12-30` (and `9999-12-31`) answers 500, with
+"Reading time failed: database error 22009" from `findCommitments`, because
+the read window ends two days later, in year 10000, which Postgres refuses;
+`9999-12-29` answers 200. `z.iso.date` accepts every year 0000 to 9999, so a
+stranger reaches this with a query the schema calls valid, against the
+contract's 200/400/404/503. The same unclamped window means
+`?from=2099-01-01&to=2099-01-31` (200, no times) still reads every candidate's
+commitments and, for a connected person, Google's busy times, for dates the
+rules then discard (F-68 already named this; its fix covered only the inverted
+range).
+**Suggested fix:** Clamp before reading: in findFreeTimes, from the business
+hours already resolved there, take `max(fromDate, today)` and
+`min(toDate, today + horizonDays)` in the business's zone (or the largest
+horizon among the candidates, if a person's can be longer), then let the
+existing `fromDate > toDate` guard answer no times without reading. Add route
+tests for a range wholly past the horizon (200, no times) and for 9999-12-31
+(not 500). Correct the route comment at line 123 to match.
+**Resolution:** Fixed 2026-10-02: findFreeTimes now cuts the dates to today through the business's horizon (a person's rules never carry their own) before any read; a range left empty answers no times unread. Route test for 9999-12-30 to 9999-12-31 (200, no times) added; removing the clamp makes it fail with the 500.
+
+### F-71 [P3] fixed - A repeated person in the query answers Zod's own English message
+
+**File:** packages/shared/zod-validation/booking-links-validation-schemas/free-times-query-validation-schema.ts:17
+**Found:** 2026-10-02 by independent review of step 5c.5 (scope: 5368e0c..ac66226; lenses: all)
+**Why it matters:** Hono's query validator turns a repeated key into an array.
+Probed through the real app: `?from=2026-10-09&to=2026-10-12&person=a&person=b`
+answers 400 with `"Invalid input: expected string, received array"`, the
+library's wording, where every other refusal on the public routes is the
+project's own sentence. A repeated `from` or `to` is fine ("Use a real date,
+YYYY-MM-DD.") because `z.iso.date` carries its message for every issue; the
+`.regex` message on `person` covers only the pattern, not the type. The status
+is right; only the message leaks the library.
+**Suggested fix:** Give the string itself the message,
+`z.string({ error: "That is not a person id." }).regex(...)`, and add a schema
+test with `person: ["a", "b"]`.
+**Resolution:** Fixed 2026-10-02: the person rule carries its message on the string itself, so a person asked for twice reads "That is not a person id.". Schema test added; removing the message makes it fail.
+
+### F-72 [P3] fixed - The coding standard says a public answer carries nothing about people, but the times route names them
+
+**File:** blueprint/context/coding-standards.md:213
+**Found:** 2026-10-02 by independent review of step 5c.5 (scope: 5368e0c..ac66226; lenses: all)
+**Why it matters:** The public-route rule ends "The answer never carries
+`organizationId` or anything about people or logins". Decision 7 deliberately
+lets the times route name the people a customer can pick (id and name), and
+the route does. The code follows the spec, so the standard is now wrong, and
+a later reviewer reading it would flag the route, or a later route would be
+built to the stricter line. The rule in AGENTS.md is to correct a wrong plan
+file before the next step builds on it.
+**Suggested fix:** Amend the line to: never `organizationId` or anything
+about logins; about people, only the id and name of those offered for a
+service, never standby, hours or calendar details (decision 7).
+**Resolution:** Fixed 2026-10-02: coding-standards.md now says a public answer names, of people, only the id and name of those a customer can pick for a service, never standby, a calendar or contact details (decision 7).
+
+### F-73 [P3] fixed - The route tests call the seeded clinic with no guard against a real Google connection
+
+**File:** backend/routes/public-booking-links-routes.test.ts:249
+**Found:** 2026-10-02 by independent review of step 5c.5 (scope: 5368e0c..ac66226; lenses: tests)
+**Why it matters:** The spec says Google is never called in tests. The
+free-times route tests read the seeded `clinic-dev`, whose facial
+practitioners have no connection today, so nothing reaches Google; but nothing
+enforces it. The dev database already carries a real connected Google
+calendar on `painting-dev` (status `connected`, made from the dashboard), and
+the seed links `owner@example.com` to Sofia, one of the three facial
+practitioners. Once that login connects a calendar the same way, these tests
+send Sofia's real tokens to Google on every run, and their answers depend on
+her real calendar and on Google being reachable (an expired grant turns the
+picked-person test for her into a 503). `find-free-times.test.ts` avoids this
+by stubbing `fetch` to throw on any URL.
+**Suggested fix:** In the "free times for a service" describe, stub `fetch`
+to throw (as find-free-times.test.ts does), or assert in its `beforeAll` that
+no `clinic-dev` person has a calendar connection and fail with "the seed
+clinic has a calendar connected".
+**Resolution:** Fixed 2026-10-02: the free-times route tests stub fetch to throw for their whole block, so a calendar connected by a dev login can never reach Google; it would fail the test loudly instead.

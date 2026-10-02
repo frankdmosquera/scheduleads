@@ -42,4 +42,11 @@ describe("the free times question", () => {
       "That is not a person id."
     );
   });
+
+  test("a person asked for twice is refused in the same words", () => {
+    const twice = { from: "2026-10-05", to: "2026-10-05", person: ["a", "b"] };
+    expect(freeTimesQueryValidationSchema.safeParse(twice).error?.issues[0]?.message).toBe(
+      "That is not a person id."
+    );
+  });
 });

@@ -13,6 +13,8 @@ import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error
 import type { BusyBlockType } from "../calendar/calendar-provider.js";
 import { getBusyTimes } from "../calendar/get-busy-times.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
+import { addDays } from "../local-time/add-days.js";
+import { localDate } from "../local-time/local-date.js";
 import { applyFreeTimesRules } from "./apply-free-times-rules.js";
 import { findCommitments } from "./find-commitments.js";
 import { findServiceResources } from "./find-service-resources.js";
@@ -40,7 +42,7 @@ const MINUTE_MS = 60_000;
 // or the picked person is not offered for the service. Throws CalendarUnavailableError when the
 // picked person's calendar cannot be read; with "any available" that person is left out instead.
 export async function findFreeTimes(input: FindFreeTimesInputType): Promise<FreeTimesType | null> {
-  const { organizationId, bookingLinkId, personId, fromDate, toDate, now } = input;
+  const { organizationId, bookingLinkId, personId, now } = input;
 
   const [service] = await db
     .select({
@@ -75,7 +77,12 @@ export async function findFreeTimes(input: FindFreeTimesInputType): Promise<Free
         .orderBy(asc(resource.name), asc(resource.id))
     : [];
   const timezone = businessHours.timezone;
-  // A range the wrong way round, as clamping to today can leave one, has nothing to offer.
+  // Only today through the horizon can be booked, so nothing outside it is read. A range left the
+  // wrong way round, by the clamp or by the caller, has nothing to offer.
+  const today = localDate(now, timezone);
+  const horizonEnd = addDays(today, businessHours.horizonDays);
+  const fromDate = input.fromDate > today ? input.fromDate : today; // YYYY-MM-DD sorts as text
+  const toDate = input.toDate < horizonEnd ? input.toDate : horizonEnd;
   if (fromDate > toDate) return { timezone, people, startTimes: [] };
   const candidates = personId === null ? offered.peopleIds : [personId];
   const placeIds = offered.placeIds ?? [];
