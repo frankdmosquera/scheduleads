@@ -177,6 +177,24 @@ describe("lead and booking rules in the database", () => {
     await db.insert(commitment).values({ ...held, id: randomUUID(), bookingId: myBooking.id });
   });
 
+  test("one booking per form: a second booking with the same key is refused", async () => {
+    const mine = await makeBusiness("key-mine");
+    const theirs = await makeBusiness("key-theirs");
+    const leadId = await makeLead(mine);
+    const key = `form-${tag}`;
+    await db.insert(booking).values(bookingRow(mine, leadId, { requestKey: key }));
+
+    await expect(
+      db.insert(booking).values(bookingRow(mine, leadId, { requestKey: key }))
+    ).rejects.toMatchObject(refusedBy("23505", "booking_request_key_unique"));
+    // The same key in another business, and two bookings with no key (the owner's), are fine.
+    await db
+      .insert(booking)
+      .values(bookingRow(theirs, await makeLead(theirs), { requestKey: key }));
+    await db.insert(booking).values(bookingRow(mine, leadId));
+    await db.insert(booking).values(bookingRow(mine, leadId));
+  });
+
   test("a stage still holding leads cannot be deleted", async () => {
     const b = await makeBusiness("stage-delete");
     await makeLead(b);

@@ -63,10 +63,18 @@ lost):
    writing the event again is feature 8's background job. The event never has
    attendees, so Google never emails the customer from a worker's account
    (feature 6: customers only hear from the business).
-7. **The same customer pressing Book twice gets one booking.** Same business,
-   same service, same start, same contact email, a confirmed booking already
-   there: that booking is the answer, nothing new is written. Without an email
-   (owner-made only) each call books.
+7. **The same form sent twice gets one booking** (Frank, 2026-10-02, after
+   review F-75). The widget makes a one-time `requestKey` when the booking form
+   opens and sends it with Book; `booking` stores it, unique per business, so
+   the database lets only one booking in for a key, even when two copies arrive
+   at the same instant (a double tap, or a press repeated after a lost answer).
+   A request whose key is already booked answers that booking. A different key
+   is a new booking: a parent booking two children at 9:00 is two forms, two
+   keys, two bookings. Owner-made bookings carry no key. The widget also locks
+   its Book button after one press (feature 9); the key covers what a button
+   cannot, since the server never trusts the front end. Rejected: refusing a
+   second booking for the same email, service and start, which would refuse
+   the second child.
 8. **The timeline entry links the lead and the booking in its payload**
    (`{ leadId, bookingId, bookingLinkId, startsAt }`), not new columns;
    feature 11 reads them.
@@ -149,6 +157,13 @@ commit, on Frank's yes.
     an end before its start, an unknown status, or another business's lead,
     service, person or place is refused; a commitment pointing at another
     business's booking is refused; the backend and frontend builds pass.
+  - Review fix (F-75, decision 7): `booking.requestKey` (text, nullable) and
+    `booking_request_key_unique` on `(organizationId, requestKey)` where it is
+    not null, in migration `0014_booking_request_key.sql` (0013 had already
+    run on the dev database, which holds a real Google connection). **Done
+    when** a test proves a second booking with the same key in the same
+    business is refused, the same key in another business and two bookings
+    without a key are both allowed.
 
 - [ ] **5d.2 Writing as one: transactions and the room rule.**
   - `holdTime`, `releaseTime`, `findOrCreateContact` and `recordActivity`
@@ -181,9 +196,12 @@ commit, on Frank's yes.
     `chooseAnyAvailable` with `countBookingsThatDay`, the rooms from
     `isRoomFree`. A picked person whose calendar cannot be read answers
     `unavailable`.
-  - Decision 7 runs first, before the check: the customer's own first booking
-    would otherwise make the time look taken. Then the check, then one
-    transaction:
+  - Decision 7 runs first, before the check: a request whose `requestKey` is
+    already booked answers that booking (the customer's own first booking
+    would otherwise make the time look taken). Inside the transaction the
+    booking's insert carries the key; refused by `booking_request_key_unique`
+    (two copies at the same instant), the transaction is rolled back and the
+    booking that won is the answer. Then the check, then one transaction:
     `findOrCreateContact`, `findFirstPipelineStage`, the lead, the booking,
     `holdTime` (person, and room when needed, buffers inside, `bookingId`
     set; decision 5 on a refusal), and `recordActivity` (`booking_created`,
@@ -198,8 +216,10 @@ commit, on Frank's yes.
     `time_taken` and writes nothing; two bookings of the same person at the
     same instant give one booked and one `time_taken`, the loser leaving no
     contact, lead or booking; "any available" whose first choice is taken
-    meanwhile goes to the next; the same customer booking twice gets the same
-    booking; an unreadable picked calendar answers `unavailable`; another
+    meanwhile goes to the next; the same form sent twice, one after the other
+    and at the same instant, gets one booking and both answer it; two forms
+    with different keys for the same email and time book twice; an unreadable
+    picked calendar answers `unavailable`; another
     business's service or person answers `not_found`; an owner-made booking
     by someone outside the business is refused; open question 2's rule.
 
@@ -250,7 +270,8 @@ commit, on Frank's yes.
 - `packages/shared/db/crm-tables/lead-table.ts`,
   `packages/shared/db/booking-tables/booking-table.ts`,
   `packages/shared/db/scheduling-tables/commitment-table.ts`,
-  `packages/shared/db/index.ts`, `packages/shared/migrations/0013_*`.
+  `packages/shared/db/index.ts`, `packages/shared/migrations/0013_*` and
+  `0014_*`.
 - `packages/shared/zod-validation/booking-links-validation-schemas/`
   (the booking body schema, exported through `index.ts`).
 - `backend/lib/scheduling/`: `hold-time.ts`, `release-time.ts`,
@@ -276,8 +297,9 @@ feature 24).
 **booking**: `id` text, `organizationId`, `leadId`, `bookingLinkId`,
 `personId`, `placeId` null, `startsAt`, `endsAt` (timestamptz, the
 appointment), `status` (`confirmed` | `cancelled`), `location` text not empty,
-`calendarEventId` text null, `createdAt`, `updatedAt`. Its commitments find it
-through `commitment.bookingId`.
+`calendarEventId` text null, `requestKey` text null (unique per business when
+set, decision 7), `createdAt`, `updatedAt`. Its commitments find it through
+`commitment.bookingId`.
 
 **The booking body** (`POST /public/:slug/bookings`):
 
@@ -286,6 +308,7 @@ through `commitment.bookingId`.
   bookingLinkId: string; // the same rule as the id in the times route
   startsAt: string; // an ISO 8601 instant with Z or an offset, one 5c offered
   personId?: string; // left out = any available
+  requestKey?: string; // one per form, made when it opens (decision 7); the same id rule
   customer: {
     name: string; // contactValidationSchema's rule
     email?: string; // open question 1
@@ -342,5 +365,5 @@ rule.
   address. Log lines carry ids and safe reasons only.
 - The Google scopes already granted (`calendar.events.owned`) allow writing
   an event to the person's own calendar; no reconnect is needed.
-- At deploy: confirm `btree_gist` on Railway and apply 0005 to 0013; the
+- At deploy: confirm `btree_gist` on Railway and apply 0005 to 0014; the
   server needs tzdata 2026c or newer (carried from 5c).

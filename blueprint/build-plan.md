@@ -205,7 +205,9 @@ rented" rents nothing.
   the week strip in `prototypes/modal-primo.html` can return later without
   a rewrite. Only the Calendly-shaped month flow gets built now. Open until
   this item's spec: whether each service lets the customer pick the person
-  (a salon) or the business assigns one (Primo's estimates)
+  (a salon) or the business assigns one (Primo's estimates). The Book
+  button locks after one press, and the form sends the one-time key it
+  made when it opened (decided in 5d, Oct 2: one booking per form)
 - [ ] 10. **Tenant zero wired: agents-web** - the agency's siteConfig holds
   its slug, the existing contact-inquiry seam calls the API, the site's
   theme reaches the modal. Frank is the first customer.

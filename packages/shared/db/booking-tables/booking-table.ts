@@ -3,7 +3,16 @@
 // itself; the buffers live only in its commitments, which point back here.
 
 import { sql } from "drizzle-orm";
-import { check, foreignKey, index, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
+import {
+  check,
+  foreignKey,
+  index,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 import { organization } from "../auth-tables/organization-table.js";
 import { lead } from "../crm-tables/lead-table.js";
@@ -26,6 +35,7 @@ export const booking = pgTable(
     status: text("status").notNull().default("confirmed"),
     location: text("location").notNull(), // the customer's address, as they typed it
     calendarEventId: text("calendarEventId"), // the booked person's Google event, once written
+    requestKey: text("requestKey"), // one per booking form; null when the owner books
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })
       .notNull()
@@ -63,5 +73,9 @@ export const booking = pgTable(
     check("booking_location_check", sql`length(btrim(${table.location})) > 0`),
     index("booking_starts_at_index").on(table.organizationId, table.startsAt),
     index("booking_lead_index").on(table.organizationId, table.leadId),
+    // One booking per form, even when two copies arrive at the same instant (a double tap).
+    uniqueIndex("booking_request_key_unique")
+      .on(table.organizationId, table.requestKey)
+      .where(sql`${table.requestKey} is not null`),
   ]
 );

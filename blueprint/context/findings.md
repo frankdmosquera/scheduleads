@@ -148,3 +148,36 @@ chooses whether "any available" is its default): either answer 503
 `unavailable` when every candidate was left out for an unreadable calendar,
 or keep 200 and say so in decision 4. Then make the route test say which.
 **Resolution:**
+
+### F-75 [P2] fixed - Nothing in the schema or the plan makes "the same customer pressing Book twice gets one booking" hold when the two presses arrive together
+
+**File:** packages/shared/db/booking-tables/booking-table.ts:64 (spec: blueprint/context/current-feature.md:66 and :184)
+**Found:** 2026-10-02 by independent review of step 5d.1 (scope: 7510d47..65250fa; lenses: all)
+**Why it matters:** For decision 7's lookup done one request after another,
+`booking_starts_at_index` (organizationId, startsAt) is enough: the join through
+`lead` to `contact.email` then touches a handful of rows. But nothing stops two
+presses that overlap in time. `booking` has no contact column and no unique key
+that could refuse a second booking for the same customer, service and start, and
+5d.3 runs decision 7 "first, before the check", outside the transaction: a
+check-then-insert, which the spec's own notes rule out without a constraint
+behind it. Traced through the code that exists: A and B (same email, "any
+available", two free people) both find no booking and both pass the check. A
+inserts the contact; B's insert waits on `contact_organization_email_unique`
+(find-or-create-contact.ts:49) until A commits, then reads A's contact, writes a
+second lead and booking, is refused Ana by `commitment_no_overlap` and, by
+decision 5, holds the next person. One customer, two practitioners blocked at the
+same time. With a picked person B answers 409 `time_taken` to a customer who is
+in fact booked, where decision 7 and the contract promise 201 with the same
+booking. A double tap on a phone is the ordinary way this happens. 5d.3's Done
+when tests "booking twice" only one after the other.
+**Suggested fix:** Decide in 5d.3's plan, before it is built. Either (a) inside
+the transaction, right after `findOrCreateContact`, lock the contact row
+(`select ... for update`) and run decision 7's lookup again there, answering the
+existing booking if one appeared, so two presses for one email queue behind each
+other; or (b) while 0013 is unreleased, give `booking` the contact it is for and a
+partial unique index (organizationId, bookingLinkId, startsAt, contactId) where
+status is confirmed, so the database refuses the second (a contact without an
+email is always new, so owner-made bookings still book every time). Add a test:
+two identical "any available" requests at the same instant give one booking and
+both answer it.
+**Resolution:** Fixed 2026-10-02 with Frank's answer: neither suggested fix, because both refuse a parent booking two children for the same email, service and time. Instead a one-time requestKey per booking form (decision 7 rewritten): booking.requestKey with booking_request_key_unique on (organizationId, requestKey) where not null, migration 0014; the widget locks its Book button too (build plan item 9). The database test for the key is added and shown able to fail; 5d.3 handles a refused second copy and tests two copies at the same instant.
