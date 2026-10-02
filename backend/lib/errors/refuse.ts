@@ -12,7 +12,9 @@ export type RefusalCodeType =
   | "email_taken" // setting up a client: that email's login already has a business
   | "slug_taken" // setting up a client: another business already has that address
   | "setup_in_progress" // setting up a client: another setup for that email or address is running
-  | "unavailable"; // the answer depends on something that cannot be read right now; try again shortly
+  | "unavailable" // the answer depends on something that cannot be read right now; try again shortly
+  | "time_taken" // booking: the time stopped being free while the customer was booking
+  | "request_key_used"; // booking: this form's key already made a different booking
 
 export type RefusalType = {
   error: {

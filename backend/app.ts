@@ -13,6 +13,7 @@ import { requireKnownSubscriptionMiddleware } from "./middleware/subscription-mi
 import { adminRoutes } from "./routes/admin-routes.js";
 import { calendarRoutes } from "./routes/calendar-routes.js";
 import { publicBookingLinksRoutes } from "./routes/public-booking-links-routes.js";
+import { publicBookingsRoutes } from "./routes/public-bookings-routes.js";
 
 export const app = new Hono()
   // Every dashboard route mounts both; the ones that change something also check the origin.
@@ -20,7 +21,7 @@ export const app = new Hono()
   .use("/me", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
   .use("/calendar/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
   .use("/admin/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
-  // Anyone may read these, never with the login cookie: a CORS rule of their own.
+  // Anyone may call these, never with the login cookie: a CORS rule of their own.
   .use("/public/*", publicCorsMiddleware)
 
   // Better Auth owns every route under this path.
@@ -51,6 +52,7 @@ export const app = new Hono()
   .route("/admin", adminRoutes)
   .route("/calendar", calendarRoutes)
   .route("/public", publicBookingLinksRoutes)
+  .route("/public", publicBookingsRoutes)
 
   // For Railway. No database on purpose: an outage there should not restart a healthy API.
   .get("/health", (c) => c.json({ ok: true }));

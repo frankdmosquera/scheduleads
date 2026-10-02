@@ -124,16 +124,27 @@ lost):
     email on the public form never changes their saved details. Rejected:
     the newest details always win (anyone could change a contact by typing
     their email) and keeping only the first (the new phone was lost).
+16. **An online booking gives a phone or an email, at least one** (Frank,
+    2026-10-02, open question 1). The form asks for both, in two fields, with
+    the hint "At least one is required"; both is best. There must be a way to
+    reach the customer;
+    whichever is given is what feature 6 uses (email only: an email; phone
+    only: a text). It never changes the free times, which come from the
+    business's own calendars. A phone-only customer has no email to be
+    matched by, so each such booking makes its own contact; Frank accepted
+    the duplicates for now, matching by phone is a note for the CRM features.
+    Which of the two
+    a business requires can become its own setting later (feature 12).
+    Rejected: email always required (a business that works by phone loses
+    those bookings). An owner-made booking keeps both optional, as `contact`
+    allows.
 
 ## Open questions
 
 Each blocks only the step named; Frank answers it when that step's plan is
 gone through, before it is built.
 
-1. **Does an online booking require an email?** (blocks 5d.5) Recommended:
-   yes, with the phone optional. Feature 6 sends the confirmation and feature
-   7 the cancel link by email; without one the customer hears nothing. An
-   owner-made booking keeps both optional, as `contact` allows.
+1. Answered 2026-10-02: decision 16.
 2. Answered 2026-10-02: decision 11.
 3. Answered 2026-10-02: decision 14.
 
@@ -143,7 +154,9 @@ gone through, before it is built.
   token (7); retrying a Google event that failed (8).
 - The widget (9) and the owner's booking screen (11 or 12b); the owner-made
   booking's route arrives with that screen.
-- Rate limiting public routes (noted for 9, the first public traffic; F-62).
+- Rate limiting public routes (noted for 9, the first public traffic; F-62):
+  per visitor, and per contact, so the same email or phone booking a burst
+  in a short while is refused (Frank, 2026-10-02, keeping decision 7).
 - Taking deposits or payment.
 
 ## Build loop
@@ -282,7 +295,7 @@ commit, on Frank's yes.
     and log one line; an expired token is refreshed through the shared
     helper; every `getBusyTimes` test passes unchanged.
 
-- [ ] **5d.5 The public route.**
+- [x] **5d.5 The public route.**
   - `POST /public/:slug/bookings` in a new
     `backend/routes/public-bookings-routes.ts`, mounted under `/public`. The
     body is checked by a shared Zod schema
@@ -291,15 +304,18 @@ commit, on Frank's yes.
     Hono's own `validator("json")`, after `bodyLimit` (decision 10). The
     business comes only from the slug, as on the other public routes.
   - `publicCorsMiddleware` allows `POST` too, still without credentials.
-  - `RefusalCodeType` gains `time_taken`.
+  - `RefusalCodeType` gains `time_taken` and `request_key_used`.
   - The times route answers 503 `unavailable` per decision 9.
   - **Done when** route tests on `clinic-dev` prove: 201 with the booking's
     id, times, zone, service and person, and never the customer's name,
     email, phone or address, or `organizationId`; 400 for a malformed body,
-    a start that is not an instant, an empty address, and open question 1's
-    rule; 413 for a body over 16 KB; the one identical 404 for an unknown
-    business, an inactive service and a person not offered; 409
-    `time_taken` with decision 12's message for a time no longer free; 503 `unavailable` for an
+    a start that is not an instant, an empty address, and a customer with
+    neither a phone nor an email (decision 16); 413 for a body over 16 KB;
+    the one identical 404 for an unknown business, an inactive service and
+    a person not offered; 409 `time_taken` with decision 12's message for a
+    time no longer free; 409 `request_key_used` with "This booking form was
+    already used. Please reload the page and book again." for a used key
+    sent with a different booking; 503 `unavailable` for an
     unreadable picked calendar, and on the times route when every calendar
     is unreadable; a preflight allows `POST` without credentials;
     `npm run build --workspace=frontend` passes and the typed client sees the
@@ -351,8 +367,8 @@ set, decision 7), `createdAt`, `updatedAt`. Its commitments find it through
   requestKey?: string; // one per form, made when it opens (decision 7); the same id rule
   customer: {
     name: string; // contactValidationSchema's rule
-    email?: string; // open question 1
-    phone?: string; // optional; a form sends nothing rather than ""
+    email?: string; // decision 16: an email or a phone, at least one
+    phone?: string; // a form sends nothing rather than ""
   };
   location: string; // the customer's address, trimmed, 1 to 300 characters
   details?: string; // what they wrote, trimmed, at most 2000 characters

@@ -1,12 +1,11 @@
 // Backend: the public booking routes a stranger can call. Read-only, no login, and one
 // identical "not here" answer, so nobody can probe which businesses or services exist.
 
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { validator } from "hono/validator";
 
-import { availabilityRule, bookingLink, organization } from "@scheduleads-app/shared/db";
-import { subscriptionIncludes } from "@scheduleads-app/shared/subscriptions";
+import { bookingLink } from "@scheduleads-app/shared/db";
 import {
   bookingLinkIdValidationSchema,
   freeTimesQueryValidationSchema,
@@ -15,11 +14,11 @@ import {
 
 import { db } from "../database.js";
 import { resolveBookableHours } from "../lib/bookable-hours/resolve-bookable-hours.js";
+import { findBookableOrganizationId } from "../lib/booking/find-bookable-organization-id.js";
 import { CalendarUnavailableError } from "../lib/calendar/calendar-unavailable-error.js";
+import { notBookableHere } from "../lib/errors/not-bookable-here.js";
 import { refuse } from "../lib/errors/refuse.js";
 import { findFreeTimes } from "../lib/scheduling/find-free-times.js";
-
-const notFound = refuse("not_found", "Nothing is bookable here.");
 
 // What a stranger may see of a service. Never organizationId, never anything about people.
 const publicBookingLinkColumns = {
@@ -32,23 +31,6 @@ const publicBookingLinkColumns = {
   bufferAfterMinutes: bookingLink.bufferAfterMinutes,
 };
 
-// The only place a public route takes a business from the URL; every query after uses this id.
-// The plan is also read in requireKnownSubscriptionMiddleware: a change to plans touches both.
-async function findBookableOrganizationId(slug: string): Promise<string | null> {
-  const [row] = await db
-    .select({ id: organization.id, plan: organization.plan, hoursId: availabilityRule.id })
-    .from(organization)
-    .leftJoin(
-      availabilityRule,
-      and(eq(availabilityRule.organizationId, organization.id), isNull(availabilityRule.resourceId))
-    )
-    .where(eq(organization.slug, slug))
-    .limit(1);
-
-  if (!row || !subscriptionIncludes(row.plan, "booking") || row.hoursId === null) return null;
-  return row.id;
-}
-
 export const publicBookingLinksRoutes = new Hono()
   // A business's active services, by name.
   .get("/:slug/booking-links", async (c) => {
@@ -56,7 +38,7 @@ export const publicBookingLinksRoutes = new Hono()
     if (!slug.success) return c.json(refuse("bad_request", "That is not a business address."), 400);
 
     const organizationId = await findBookableOrganizationId(slug.data);
-    if (!organizationId) return c.json(notFound, 404);
+    if (!organizationId) return c.json(notBookableHere, 404);
 
     const bookingLinks = await db
       .select(publicBookingLinkColumns)
@@ -75,7 +57,7 @@ export const publicBookingLinksRoutes = new Hono()
     }
 
     const organizationId = await findBookableOrganizationId(slug.data);
-    if (!organizationId) return c.json(notFound, 404);
+    if (!organizationId) return c.json(notBookableHere, 404);
 
     // Found only inside this business, never by id alone.
     const [publicBookingLink] = await db
@@ -89,10 +71,10 @@ export const publicBookingLinksRoutes = new Hono()
         )
       )
       .limit(1);
-    if (!publicBookingLink) return c.json(notFound, 404);
+    if (!publicBookingLink) return c.json(notBookableHere, 404);
 
     const hours = await resolveBookableHours(organizationId, null, new Date());
-    if (!hours) return c.json(notFound, 404); // the hours row went between the two reads
+    if (!hours) return c.json(notBookableHere, 404); // the hours row went between the two reads
 
     // `source` stays out: it says whose week answered, which is about people.
     const { source: _source, ...availability } = hours;
@@ -118,7 +100,7 @@ export const publicBookingLinksRoutes = new Hono()
       const query = c.req.valid("query");
 
       const organizationId = await findBookableOrganizationId(slug.data);
-      if (!organizationId) return c.json(notFound, 404);
+      if (!organizationId) return c.json(notBookableHere, 404);
 
       // The dates go in as asked: findFreeTimes cuts them to today through the horizon.
       try {
@@ -130,10 +112,11 @@ export const publicBookingLinksRoutes = new Hono()
           toDate: query.to,
           now: new Date(),
         });
-        if (!freeTimes) return c.json(notFound, 404);
+        if (!freeTimes) return c.json(notBookableHere, 404);
         return c.json(freeTimes, 200);
       } catch (error) {
-        // Only the picked person's unreadable calendar is expected; anything else is a real fault.
+        // Only unreadable calendars are expected (the picked person's, or everyone's with "any
+        // available", decision 9); anything else is a real fault.
         if (!(error instanceof CalendarUnavailableError)) throw error;
         return c.json(
           refuse("unavailable", "Times cannot be read right now. Try again shortly."),

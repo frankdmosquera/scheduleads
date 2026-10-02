@@ -207,7 +207,16 @@ rented" rents nothing.
   this item's spec: whether each service lets the customer pick the person
   (a salon) or the business assigns one (Primo's estimates). The Book
   button locks after one press, and the form sends the one-time key it
-  made when it opened (decided in 5d, Oct 2: one booking per form)
+  made when it opened (decided in 5d, Oct 2: one booking per form).
+  Screen two asks the standard questions (name, email, phone, address,
+  what they want done, an optional yes to text messages; "At least one is
+  required" under email and phone),
+  then the business's own questions; the answers are saved on the lead
+  (5d, Oct 2; the owner edits them in item 12).
+  The public routes get rate limits here, the first public traffic: per
+  visitor, and per contact, so the same email or phone booking a burst in a
+  short while is refused. A customer may still book two times at once (a
+  parent with two children), so that alone is never refused (5d, Oct 2)
 - [ ] 10. **Tenant zero wired: agents-web** - the agency's siteConfig holds
   its slug, the existing contact-inquiry seam calls the API, the site's
   theme reaches the modal. Frank is the first customer.
@@ -250,6 +259,10 @@ without Frank touching the database.
     closed by default; all the main ones in one click, or one by one
     (Frank, 2026-09-28: we build the functionality, the client decides
     their schedule).
+  - The booking questions (5d, Frank, Oct 2): the owner adds the business's
+    own questions (up to about 20) under the standard ones, starting from a
+    ready-made set for the trade (painting, clinic), and picks whether the
+    form requires an email, a phone, or either one.
   - Notice, how far ahead and time zone, once for the business. How far
     ahead is at most a year (the database refuses more since step 2.6,
     F-31); the screen offers one month, pre-filled, for the owner to change.

@@ -377,7 +377,7 @@ describe("free times for a service", () => {
     });
   });
 
-  test("a picked person whose calendar cannot be read is a 503, never an empty week", async () => {
+  test("a calendar that cannot be read is a 503, never an empty week", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const path = `/public/${unreadable.slug}/booking-links/${unreadable.linkId}/times`;
     const picked = await get(`${path}?from=${from}&to=${to}&person=${unreadable.personId}`);
@@ -388,9 +388,9 @@ describe("free times for a service", () => {
     expect(await picked.json()).toEqual({
       error: { code: "unavailable", message: "Times cannot be read right now. Try again shortly." },
     });
-    // With "any available" she is left out instead, so nobody is left to offer a time.
-    expect(anyAvailable.status).toBe(200);
-    expect((await anyAvailable.json()).startTimes).toEqual([]);
+    // With "any available" she is the only one, so no calendar could be read at all (decision 9).
+    expect(anyAvailable.status).toBe(503);
+    expect((await anyAvailable.json()).error.code).toBe("unavailable");
   });
 
   test("no answer carries the business, standby or calendar details", async () => {
@@ -410,13 +410,13 @@ describe("the login cookie is never allowed", () => {
     expect(response.headers.get("Access-Control-Allow-Credentials")).toBeNull();
   });
 
-  test("a preflight allows GET only, without credentials", async () => {
+  test("a preflight allows GET and POST only, without credentials", async () => {
     const response = await app.request("/public/painting-dev/booking-links", {
       method: "OPTIONS",
       headers: { Origin: dashboardOrigin, "Access-Control-Request-Method": "GET" },
     });
 
-    expect(response.headers.get("Access-Control-Allow-Methods")).toBe("GET");
+    expect(response.headers.get("Access-Control-Allow-Methods")).toBe("GET,POST");
     expect(response.headers.get("Access-Control-Allow-Credentials")).toBeNull();
   });
 
