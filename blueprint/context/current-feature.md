@@ -123,7 +123,7 @@ commit, on Frank's yes.
     spring and autumn clock changes in America/Denver (Alberta stopped
     changing its clocks in 2026, so Edmonton has none to test).
 
-- [ ] **5c.3 Who gets "any available".** No database.
+- [x] **5c.3 Who gets "any available".** No database.
   - `backend/lib/scheduling/choose-any-available.ts`: given a start time,
     the people free then with their booking count that day, and the free
     rooms, returns the person and the room (decision 2), or null when nobody
