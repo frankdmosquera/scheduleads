@@ -51,7 +51,7 @@ confirm the production `invitation` table holds no pending row.
 **Resolution:**
 Carried on Frank's call, 2026-09-30: checked on the live database before the first client-facing deploy (the `invitation` table must be empty, or its rows cancelled). Nothing in code to change.
 
-### F-52 [P3] open - holdTime and releaseTime cannot join a caller's transaction, which 5d and feature 7 need
+### F-52 [P3] closed - holdTime and releaseTime cannot join a caller's transaction, which 5d and feature 7 need
 
 **File:** backend/lib/scheduling/hold-time.ts:33
 **Found:** 2026-10-01 by /audit independent (scope: step 5a.2, 1def0b9..d5175ae; lens: quality)
@@ -67,7 +67,7 @@ answering `{ held: false }` there needs a savepoint.
 **Suggested fix:** Nothing to change in 5a. Decide in 5d's spec: let both take
 an optional executor (`db` or a transaction) and hold inside a nested
 transaction (savepoint) so "taken" leaves the caller's transaction usable.
-**Resolution:**
+**Resolution:** Closed 2026-10-02 by independent review of step 5d.2 (7846a1d..230181c): holdTime, releaseTime, findOrCreateContact and recordActivity take an optional executor, and holdTime runs each try in executor.transaction (postgres-js savepoint, rethrowing the original DrizzleQueryError so cause.code is still read); writing-as-one-transaction.test.ts proves a refused hold answers { held: false } with the caller's transaction committing its other rows, and a release plus a hold in one transaction invisible outside it until commit. A scratch probe (40 pairs of opposite-order holds, each inside its own db.transaction) saw 15 deadlocks in pg_stat_database, every pair still one held and one taken, every outer transaction still usable; the saved test for that path is F-77.
 
 ### F-58 [P3] open - The seed never gives an existing Chemical Peel its 15-minute step, so a migrated (not rebuilt) dev database keeps it empty
 
@@ -126,7 +126,7 @@ free-time list never offered.
 the room check out into one exported helper (for example
 `isRoomFree(room, date, spanStart, spanEnd)` in its own file) used by both
 `applyFreeTimesRules` and 5d, with `resourceId` on the room input.
-**Resolution:**
+**Resolution:** Partly answered by step 5d.2, stays open: backend/lib/scheduling/is-room-free.ts is now the only copy of the rule and applyFreeTimesRules uses it (every 5c test unchanged and passing), and a room carrying its id still type-checks against RoomScheduleType, so 5d.3 can filter its own rooms. The booking, the second consumer this finding is about, does not exist yet; close it when bookTime picks its room with isRoomFree and a test shows it. See F-76 for the span the rule does not own.
 
 ### F-74 [P3] open - "Any available" answers an empty week when every person's calendar is unreadable
 
@@ -181,3 +181,62 @@ email is always new, so owner-made bookings still book every time). Add a test:
 two identical "any available" requests at the same instant give one booking and
 both answer it.
 **Resolution:** Fixed 2026-10-02 with Frank's answer: neither suggested fix, because both refuse a parent booking two children for the same email, service and time. Instead a one-time requestKey per booking form (decision 7 rewritten): booking.requestKey with booking_request_key_unique on (organizationId, requestKey) where not null, migration 0014; the widget locks its Book button too (build plan item 9). The database test for the key is added and shown able to fail; 5d.3 handles a refused second copy and tests two copies at the same instant.
+
+### F-76 [P3] fixed - The room rule is one function now, but the span it checks (the appointment plus both buffers) is still worked out only inside applyFreeTimesRules
+
+**File:** backend/lib/scheduling/apply-free-times-rules.ts:79 (and backend/lib/scheduling/is-room-free.ts:11)
+**Found:** 2026-10-02 by independent review of step 5d.2 (scope: 7846a1d..230181c; lenses: all)
+**Why it matters:** `isRoomFree(room, date, spanStart, spanEnd)` takes the span
+ready-made, so the buffers are not part of the one rule. The only code that
+builds the span is lines 79-80 (`start - bufferBefore`, `start + duration +
+bufferAfter`). 5d.3 must build the same span twice more, for `isRoomFree` and
+for `holdTime`'s "buffers inside", and must load the rooms' busy time and
+standby dates again with their ids, because `findFreeTimes` builds its rooms
+without them (find-free-times.ts:112-115). F-64's own example of drift, "one
+checking the buffers and one not", is exactly the part `isRoomFree` does not
+guard: a booking whose span forgets `bufferAfterMinutes` would pass
+`isRoomFree` for a room the free-time list refused, and the hold would then
+also miss the buffer. Not observed: the booking code does not exist yet.
+**Suggested fix:** In 5d.3, export one small helper for the span (for example
+`appointmentSpan(start, service)` in its own file) used by
+`applyFreeTimesRules`, the room check and the hold, and have a 5d.3 test book a
+service with a buffer after next to a room taken only in that buffer.
+**Resolution:** Fixed 2026-10-02: backend/lib/scheduling/appointment-span.ts, appointmentSpan(start, service), the one copy of the buffer before, the appointment and the buffer after; applyFreeTimesRules uses it, and 5d.3 must too (its Done when now names a room taken only during the buffer after). Tests added; with the buffer after dropped, 6 tests fail.
+
+### F-77 [P3] fixed - No saved test covers the deadlock retry inside a caller's transaction, which this step promises
+
+**File:** backend/lib/booking/writing-as-one-transaction.test.ts:67 (code: backend/lib/scheduling/hold-time.ts:45)
+**Found:** 2026-10-02 by independent review of step 5d.2 (scope: 7846a1d..230181c; lenses: tests)
+**Why it matters:** The spec (current-feature.md:172-173) and hold-time.ts's
+header say a deadlock retry leaves the caller's transaction usable. The new
+tests only exercise the `23P01` path inside a transaction; the existing
+"many simultaneous holds" test uses the pool path only. The behaviour itself
+holds: a scratch probe ran 40 pairs of opposite-order holds (`[ana, room]` and
+`[room, ana]`), each inside its own `db.transaction` followed by a further
+query on that transaction, and `pg_stat_database.deadlocks` rose by 15 during
+the run; every pair gave one held and one taken, nothing threw, all 80 outer
+transactions stayed usable. The same probe on the pool path saw 10 deadlocks,
+all resolved. So nothing is broken, but a later change (for example dropping
+the per-try `transaction()` on the pool path, or moving the retry outside the
+savepoint) could break the in-transaction path with every test still green.
+**Suggested fix:** Add the in-transaction twin of "many simultaneous holds"
+to writing-as-one-transaction.test.ts: each hold inside its own
+`db.transaction` that runs one more statement after it, asserting one held and
+one taken per pair and no throw.
+**Resolution:** Fixed 2026-10-02: writing-as-one-transaction.test.ts holds the same two people in opposite order inside two callers' transactions, ten times, each writing again after its hold; with the retry removed (ATTEMPTS = 1) it failed in 3 runs of 3.
+
+### F-78 [P3] fixed - The spec still says rooms carry their resourceId, which the step deliberately dropped
+
+**File:** blueprint/context/current-feature.md:176
+**Found:** 2026-10-02 by independent review of step 5d.2 (scope: 7846a1d..230181c; lenses: quality)
+**Why it matters:** Step 5d.2's text says "rooms carry their `resourceId`",
+and the box is ticked, but `RoomScheduleType` (is-room-free.ts:9) has no id and
+`findFreeTimes` builds its rooms without one. The build log records the
+change ("the rooms did not have to carry their id"), but the commit only
+ticked the box, and the project rule is that a spec found wrong is corrected
+before the next step builds on it. 5d.3 is built from this file, which now
+describes a room shape that does not exist.
+**Suggested fix:** Amend 5d.2's bullet to what was built (`isRoomFree` takes any
+room with `busy` and `standbyDates`; the booking filters its own id-carrying
+rooms with it), and say in 5d.3 where those rooms and their ids are loaded.
+**Resolution:** Fixed 2026-10-02: the spec's 5d.2 now says isRoomFree takes any room with its taken time and standby dates and a caller keeps its own ids, with appointmentSpan as the one span.

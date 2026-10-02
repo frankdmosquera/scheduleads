@@ -8,6 +8,7 @@ import type { BusyBlockType } from "../calendar/calendar-provider.js";
 import { addDays } from "../local-time/add-days.js";
 import { localDate } from "../local-time/local-date.js";
 import { localTimeToMoment } from "../local-time/local-time-to-moment.js";
+import { appointmentSpan } from "./appointment-span.js";
 import { isRoomFree, type RoomScheduleType } from "./is-room-free.js";
 import { overlapsAny } from "./overlaps-any.js";
 
@@ -76,8 +77,7 @@ export function applyFreeTimesRules(input: FreeTimesInputType): Date[] {
         }
 
         // The appointment and both its buffers must be clear, for the person and for one room.
-        const spanStart = start - service.bufferBeforeMinutes * MINUTE_MS;
-        const spanEnd = start + (service.durationMinutes + service.bufferAfterMinutes) * MINUTE_MS;
+        const { spanStart, spanEnd } = appointmentSpan(start, service);
         if (overlapsAny(busy, spanStart, spanEnd)) continue;
         if (rooms !== null && !rooms.some((room) => isRoomFree(room, date, spanStart, spanEnd))) {
           continue;

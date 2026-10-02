@@ -133,4 +133,31 @@ describe("writing as one transaction", () => {
     expect(await activitiesOf(business)).toHaveLength(1);
     expect(await activeRowsOf(mei)).toHaveLength(0);
   });
+
+  // Two holds of the same two people in opposite order can deadlock; Postgres cancels one. Many
+  // tries, so the rare collision happens: inside each caller's transaction the retry must answer
+  // held or taken, and the transaction must still be able to write afterwards.
+  test("inside callers' transactions, simultaneous holds answer held or taken and both carry on", async () => {
+    const { business, ana, mei } = await makeBusiness("deadlock");
+    const { contact: jane } = await findOrCreateContact(business, { name: "Jane" });
+    const tries = 10;
+    for (let day = 0; day < tries; day++) {
+      const startsAt = new Date(Date.UTC(2027, 0, 1 + day, 15));
+      const endsAt = new Date(Date.UTC(2027, 0, 1 + day, 16));
+      const holdThenWrite = (resourceIds: string[]) =>
+        db.transaction(async (tx) => {
+          const held = await holdTime(
+            business,
+            { resourceIds, startsAt, endsAt, kind: "time_off" },
+            tx
+          );
+          await recordActivity(business, { contactId: jane.id, type: "note" }, tx);
+          return held;
+        });
+      const results = await Promise.all([holdThenWrite([ana, mei]), holdThenWrite([mei, ana])]);
+      expect(results.filter((result) => result.held)).toHaveLength(1);
+    }
+    expect(await activeRowsOf(ana)).toHaveLength(tries);
+    expect(await activitiesOf(business)).toHaveLength(tries * 2); // every transaction carried on
+  }, 60_000);
 });

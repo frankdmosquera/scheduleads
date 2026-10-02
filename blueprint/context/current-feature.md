@@ -173,9 +173,11 @@ commit, on Frank's yes.
     retry leave the caller's transaction usable (F-52).
   - `backend/lib/scheduling/is-room-free.ts`: `isRoomFree(room, date, spanStart,
     spanEnd)`, the room rule pulled out of `applyFreeTimesRules` (not on
-    standby that date, no busy block over the span, half-open); rooms carry
-    their `resourceId`. `applyFreeTimesRules` uses it, behaviour unchanged
-    (F-64).
+    standby that date, no busy block over the span, half-open). It takes any
+    room with its taken time and standby dates; a caller keeps its own ids
+    (5d.3 filters its rooms with it). The span itself comes from one helper,
+    `appointmentSpan` (the buffer before, the appointment, the buffer after;
+    review F-76). `applyFreeTimesRules` uses both, behaviour unchanged (F-64).
   - **Done when** saved tests prove: inside a transaction, a taken hold
     answers `{ held: false }` and the transaction still commits its other
     rows; a rolled-back transaction leaves no commitment, contact or
@@ -219,7 +221,9 @@ commit, on Frank's yes.
     meanwhile goes to the next; the same form sent twice, one after the other
     and at the same instant, gets one booking and both answer it; two forms
     with different keys for the same email and time book twice; an unreadable
-    picked calendar answers `unavailable`; another
+    picked calendar answers `unavailable`; a room taken only during the buffer
+    after is not chosen, and the held span is `appointmentSpan`'s (F-76);
+    another
     business's service or person answers `not_found`; an owner-made booking
     by someone outside the business is refused; open question 2's rule.
 
