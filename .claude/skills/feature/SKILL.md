@@ -188,7 +188,7 @@ bare step titles: a reader who opens only the roadmap must learn what each step
 actually is. When the feature has a rule or mechanism to play with, publish its
 Simulate page with the spec, before step 1 (Frank, 2026-10-02), so a wrong rule
 is caught before code is built on it; each case it lets him play becomes a saved
-test, under the same name, in the step that builds that rule. Record every decision with why the rejected options lost, in the
+test, under the same name, in the step that builds that rule. The page also lists every check the spec plans (`checks/<feature>-planned.json`, marked not yet), which each step's real test run replaces as it is built (`buildlogs/logs/README.md`). Record every decision with why the rejected options lost, in the
 Decisions drawer, as option cards when they compare alternatives. Then commit
 that folder to buildlogs' `main` and push it, as the guide says.
 
