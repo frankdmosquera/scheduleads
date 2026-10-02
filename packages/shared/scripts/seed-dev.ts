@@ -19,6 +19,7 @@ import {
   organization,
   pipelineStage,
   resource,
+  standbyDate,
   user,
 } from "@scheduleads-app/shared/db";
 import {
@@ -43,12 +44,18 @@ function sundayAfterDays(days: number): string {
   date.setUTCDate(date.getUTCDate() + ((7 - date.getUTCDay()) % 7)); // forward to a Sunday
   return date.toISOString().slice(0, 10);
 }
+function mondayAfterDays(days: number): string {
+  const date = new Date(Date.now() + days * DAY_MS);
+  date.setUTCDate(date.getUTCDate() + ((8 - date.getUTCDay()) % 7)); // forward to a Monday
+  return date.toISOString().slice(0, 10);
+}
 
 export type ResourceSeedType = {
   name: string;
   kind: "person" | "place";
   weeklyHours?: WeeklyHoursType | null; // missing = no row, follows the business's week
   dateHours?: DateHoursType;
+  standbyDates?: string[]; // at work, hidden from customers on these dates
 };
 
 export type ServiceSeedType = {
@@ -185,6 +192,7 @@ const ACCOUNTS = [
             wed: [between(at(9), at(17))],
             fri: [between(at(9), at(17))],
           },
+          standbyDates: [mondayAfterDays(7)], // a Monday she would otherwise be bookable
         },
         {
           name: "Luis",
@@ -411,6 +419,7 @@ try {
 
       let peopleMade = 0;
       let hoursMade = 0;
+      let standbyMade = 0;
       const resourceIdsByName = new Map<string, string>([[business.name, firstPerson.id]]);
       for (const person of business.people as readonly ResourceSeedType[]) {
         const { id: resourceId, made } = await ensureResource(
@@ -421,6 +430,17 @@ try {
         );
         resourceIdsByName.set(person.name, resourceId);
         if (made) peopleMade++;
+
+        // A date already there stays; a rerun on a later day adds that day's Monday too.
+        if (person.standbyDates?.length) {
+          const madeDates = await tx
+            .insert(standbyDate)
+            .values(person.standbyDates.map((date) => ({ organizationId, resourceId, date })))
+            .onConflictDoNothing()
+            .returning({ date: standbyDate.date });
+          standbyMade += madeDates.length;
+        }
+
         // No row only when there is nothing to store: no week and no extra dates.
         if (person.weeklyHours === undefined && !person.dateHours?.length) continue;
 
@@ -490,6 +510,7 @@ try {
         holidaysAdded && "holiday picks",
         peopleMade && `${peopleMade} people and places`,
         hoursMade && `${hoursMade} people's own hours`,
+        standbyMade && `${standbyMade} standby dates`,
         servicesMade && `${servicesMade} services`,
         ticksMade && `${ticksMade} who-does-what ticks`,
       ].filter(Boolean);

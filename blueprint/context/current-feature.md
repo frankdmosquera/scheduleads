@@ -85,7 +85,7 @@ merges with a merge commit on Frank's yes.
     everything; `db:migrate` applies cleanly and `db:seed`
     runs twice without changing anything the second time. The backend builds.
 
-- [ ] **5b.2 Standby dates.**
+- [x] **5b.2 Standby dates.**
   - `packages/shared/db/scheduling-tables/standby-date-table.ts`; migration
     `0011_standby_date`, generated.
   - The dev seed puts one clinic practitioner on standby on one date.
