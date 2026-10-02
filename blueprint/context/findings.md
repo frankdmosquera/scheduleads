@@ -158,3 +158,19 @@ between the two commits.
 the dev database (or drop `booking_link_resource`, `booking_link_organization_id_unique` and
 the 0010 ledger row), then `db:migrate` and `db:seed`.
 **Resolution:**
+
+### F-57 [P2] fixed - No standby test puts a date before the range, so a dropped lower bound passes every test
+
+**File:** backend/lib/scheduling/find-standby-dates.test.ts:55
+**Found:** 2026-10-01 by /audit (scope: step 5b.3, 3db43e2..a96ee29; lens: tests)
+**Why it matters:** The Done when asks the tests to prove "exactly the asked people's dates
+inside the range, both ends included". The fixture's earliest date is 2026-10-12 (line 39) and
+the range test starts on 2026-10-12 (line 55); the other tests ask for 2026-10-01 to 2026-10-31.
+No row ever sits before `fromDate`, so deleting `gte(standbyDate.date, fromDate)` at
+find-standby-dates.ts:29 leaves all four tests green. The upper end is proven (2026-10-26 is
+left out of a range ending 2026-10-19), the lower end only for inclusion. 5c reads this per
+week, so a lost lower bound would also hide a person on dates before the week asked about.
+**Suggested fix:** Give Sofia one more standby date before the range, say 2026-10-05, which the
+range test must not return. The other tests ask for Ana and Luis, or for Sofia under another
+business, so they need no change. Test only, no code change.
+**Resolution:** Fixed 2026-10-01 in 5b.3's review-fix commit: Sofia also has 2026-10-05, before the range the test asks for. With the lower bound removed from findStandbyDates the range test now fails; with it back, all four pass.

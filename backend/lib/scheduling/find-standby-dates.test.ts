@@ -23,7 +23,7 @@ const { findStandbyDates } = await import("./find-standby-dates.js");
 
 const tag = randomUUID().slice(0, 8);
 
-// A business of its own: Sofia on standby on three Mondays, Ana on one, Luis never.
+// A business of its own: Sofia on standby on four Mondays, Ana on one, Luis never.
 async function makeBusiness(name: string) {
   const business = randomUUID();
   await db
@@ -36,6 +36,7 @@ async function makeBusiness(name: string) {
     { id: luis, organizationId: business, name: "Luis", kind: "person" },
   ]);
   await db.insert(standbyDate).values([
+    { organizationId: business, resourceId: sofia, date: "2026-10-05" }, // before the range tested
     { organizationId: business, resourceId: sofia, date: "2026-10-12" },
     { organizationId: business, resourceId: sofia, date: "2026-10-19" },
     { organizationId: business, resourceId: sofia, date: "2026-10-26" },
