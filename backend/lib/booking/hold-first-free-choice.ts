@@ -4,16 +4,15 @@
 
 import type { DatabaseExecutorType } from "../../database-executor-type.js";
 import { holdTime } from "../scheduling/hold-time.js";
-
-export type BookingChoiceType = { personId: string; placeId: string | null };
+import type { AnyAvailableChoiceType } from "../scheduling/order-any-available.js";
 
 export async function holdFirstFreeChoice(
   organizationId: string,
-  choices: BookingChoiceType[], // already in order: the first is tried first
+  choices: AnyAvailableChoiceType[], // already in order: the first is tried first
   span: { startsAt: Date; endsAt: Date }, // the appointment plus both buffers
   bookingId: string,
   executor: DatabaseExecutorType
-): Promise<BookingChoiceType | null> {
+): Promise<AnyAvailableChoiceType | null> {
   for (const choice of choices) {
     const held = await holdTime(
       organizationId,

@@ -68,7 +68,10 @@ lost):
    opens and sends it with Book; `booking` stores it, unique per business, so
    the database lets only one booking in for a key, even when two copies arrive
    at the same instant (a double tap, or a press repeated after a lost answer).
-   A request whose key is already booked answers that booking. A different key
+   A request whose key is already booked answers that booking, when it asks
+   for the same service and start (and the same person, if one was picked);
+   a key already used for a different booking is refused, `request_key_used`
+   (review F-81). A different key
    is a new booking: a parent booking two children at 9:00 is two forms, two
    keys, two bookings. Owner-made bookings carry no key. The widget also locks
    its Book button after one press (feature 9); the key covers what a button
@@ -348,12 +351,15 @@ set, decision 7), `createdAt`, `updatedAt`. Its commitments find it through
 | 400 | `bad_request` with the first reason |
 | 404 | `not_found`, one identical answer for every "not here" |
 | 409 | `time_taken`: "Sorry, that time was taken while you were booking. Please pick another one." (decision 12) |
+| 409 | `request_key_used`: "This booking form was already used. Please reload the page and book again." (review F-81) |
 | 413 | the request is over 16 KB |
 | 503 | `unavailable`: "Times cannot be read right now. Try again shortly." |
 
 **bookTime** answers `{ booked: true; booking: BookedType; alreadyBooked:
 boolean }` or `{ booked: false; reason: "not_found" | "time_taken" |
-"unavailable" }`. Nothing in its answer or its logs carries the customer's
+"unavailable" | "request_key_used" }`. "Any available" with nobody free and a
+calendar that could not be read answers `unavailable`, never `time_taken`
+(review F-80). Nothing in its answer or its logs carries the customer's
 name, email, phone, address or words.
 
 **The Google event**: no attendees; `start` and `end` the appointment with

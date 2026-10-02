@@ -415,6 +415,81 @@ describe("booking a time", () => {
     expect(held).toEqual([clinic.ana, clinic.room4].sort()); // the person and the room, together
   });
 
+  test("a room on standby that date is not chosen for a customer, but the owner may use it", async () => {
+    // Room 3 is on standby that Monday. Nothing in the database stops a booking there, so only the
+    // room rule keeps a customer out of it.
+    const customers = await makeClinic("room-standby");
+    await db.insert(standbyDate).values({
+      organizationId: customers.business,
+      resourceId: customers.room3,
+      date: "2026-10-05",
+    });
+    const forCustomer = bookedOrThrow(
+      await customerBooking(customers, { bookingLinkId: customers.massage, personId: null })
+    );
+    expect(forCustomer.placeId).toBe(customers.room4);
+
+    const owners = await makeClinic("room-standby-owner");
+    const owner = await makeOwner(owners, "standby");
+    await db
+      .insert(standbyDate)
+      .values({ organizationId: owners.business, resourceId: owners.room3, date: "2026-10-05" });
+    const forOwner = bookedOrThrow(
+      await ownerBooking(owners, owner, { bookingLinkId: owners.massage, personId: null })
+    );
+    expect(forOwner.placeId).toBe(owners.room3); // first by name, standby only limits customers
+  });
+
+  test("a buffer before is held too", async () => {
+    const clinic = await makeClinic("buffer-before");
+    await db
+      .update(bookingLink)
+      .set({ bufferBeforeMinutes: 15 })
+      .where(eq(bookingLink.id, clinic.facial));
+    const booked = bookedOrThrow(await customerBooking(clinic));
+
+    expect(booked.startsAt).toEqual(NINE); // the appointment itself
+    expect((await rowsOf(clinic.business)).commitments).toEqual([
+      expect.objectContaining({ startsAt: at("14:45"), endsAt: at("16:30") }), // 8:45 to 10:30
+    ]);
+  });
+
+  test("any available with every calendar unreadable answers unavailable, not taken", async () => {
+    const clinic = await makeClinic("all-unreadable");
+    await db.insert(calendarConnection).values(
+      [clinic.ana, clinic.mei].map((resourceId) => ({
+        id: randomUUID(),
+        organizationId: clinic.business,
+        resourceId,
+        provider: "google",
+        accountEmail: `${resourceId}@example.com`,
+        credentials: "not read: the connection needs reconnecting first",
+        grantedScopes: "",
+        status: "needs_reconnect",
+      }))
+    );
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(await customerBooking(clinic, { personId: null })).toEqual({
+      booked: false,
+      reason: "unavailable",
+    });
+    warn.mockRestore();
+  });
+
+  test("a form already used for another booking is refused", async () => {
+    const clinic = await makeClinic("key-reused");
+    const requestKey = `form-${randomUUID()}`;
+    bookedOrThrow(await customerBooking(clinic, { requestKey }));
+
+    const refused = { booked: false, reason: "request_key_used" };
+    expect(await customerBooking(clinic, { requestKey, startsAt: at("16:15") })).toEqual(refused);
+    expect(await customerBooking(clinic, { requestKey, personId: clinic.mei })).toEqual(refused);
+    expect(await customerBooking(clinic, { requestKey, bookingLinkId: clinic.massage })).toEqual(
+      refused
+    );
+    expect((await rowsOf(clinic.business)).bookings).toHaveLength(1);
+  });
+
   test("another business's service or person answers not_found", async () => {
     const mine = await makeClinic("mine");
     const theirs = await makeClinic("theirs");

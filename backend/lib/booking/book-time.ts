@@ -1,7 +1,8 @@
 // Backend: books one time for a service, the one path every booking takes. A form already booked
 // answers that booking; the time is checked again; then the contact, a new lead in the first
 // stage, the booking, its held time and the timeline entry land in one transaction, or nothing
-// does. A customer gets only 5c's free times; the owner any time nobody is busy (decision 11).
+// does. A customer gets only the free times they are offered; the owner any time nobody is busy
+// (decision 11).
 
 import { randomUUID } from "node:crypto";
 
@@ -20,21 +21,21 @@ import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
-import { chooseAnyAvailable } from "../scheduling/choose-any-available.js";
 import { countBookingsThatDay } from "../scheduling/count-bookings-that-day.js";
 import { findCommitments } from "../scheduling/find-commitments.js";
 import { findFreeTimes } from "../scheduling/find-free-times.js";
 import { findServiceResources } from "../scheduling/find-service-resources.js";
 import { findStandbyDates } from "../scheduling/find-standby-dates.js";
 import { isRoomFree } from "../scheduling/is-room-free.js";
+import { orderAnyAvailable } from "../scheduling/order-any-available.js";
 import { overlapsAny } from "../scheduling/overlaps-any.js";
-import { type BookingChoiceType, holdFirstFreeChoice } from "./hold-first-free-choice.js";
+import { holdFirstFreeChoice } from "./hold-first-free-choice.js";
 
 export type BookTimeInputType = {
   organizationId: string; // from the business being booked, never from the request
   bookingLinkId: string;
   personId: string | null; // null = "any available"
-  startsAt: Date; // the appointment's own start, one 5c offered
+  startsAt: Date; // the appointment's own start, one of the free times offered
   requestKey: string | null; // one per booking form (decision 7); null when the owner books
   customer: ContactInputType;
   location: string; // the customer's address
@@ -58,13 +59,20 @@ export type BookedType = {
 
 export type BookTimeResultType =
   | { booked: true; booking: BookedType; alreadyBooked: boolean }
-  | { booked: false; reason: "not_found" | "time_taken" | "unavailable" };
+  | { booked: false; reason: "not_found" | "time_taken" | "unavailable" | "request_key_used" };
 
 const DAY_MS = 86_400_000;
 const MINUTE_MS = 60_000;
 const NOT_FOUND = { booked: false, reason: "not_found" } as const;
 const TIME_TAKEN = { booked: false, reason: "time_taken" } as const;
 const UNAVAILABLE = { booked: false, reason: "unavailable" } as const;
+const REQUEST_KEY_USED = { booked: false, reason: "request_key_used" } as const;
+
+// The same form: the same service and start, and the same person when one was picked.
+const isSameRequest = (existing: BookedType, input: BookTimeInputType) =>
+  existing.bookingLinkId === input.bookingLinkId &&
+  existing.startsAt.getTime() === input.startsAt.getTime() &&
+  (input.personId === null || existing.personId === input.personId);
 
 // Thrown inside the transaction when every choice was taken, so all of it is undone.
 class EveryChoiceTakenError extends Error {}
@@ -133,6 +141,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
   // Decision 7: a form already booked (a second request after a lost answer) gets that booking.
   if (requestKey) {
     const existing = await findBookedByRequestKey(organizationId, requestKey, timezone);
+    if (existing && !isSameRequest(existing, input)) return REQUEST_KEY_USED;
     if (existing) return { booked: true, booking: existing, alreadyBooked: true };
   }
 
@@ -161,7 +170,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
   const span = { startsAt: new Date(spanStart), endsAt: new Date(spanEnd) };
   const endsAt = new Date(startsAt.getTime() + service.durationMinutes * MINUTE_MS);
 
-  // Check again. A customer: the start must still be one of 5c's free times. The owner: only real
+  // Check again. A customer: the start must still be one of the free times. The owner: only real
   // busy time counts, bookings, time off and the person's own Google (Google wins).
   const isFree = async (id: string): Promise<"free" | "busy" | "unreadable"> => {
     if (source !== "manual") {
@@ -197,10 +206,11 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
     }
   };
   const candidates = personId === null ? offered.peopleIds : [personId];
-  const states = await Promise.all(candidates.map(isFree)); // side by side, as 5c reads them
+  const states = await Promise.all(candidates.map(isFree)); // side by side, as the free times read them
   if (personId !== null && states[0] === "unreadable") return UNAVAILABLE;
   const freePeople = candidates.filter((_, i) => states[i] === "free");
-  if (freePeople.length === 0) return TIME_TAKEN;
+  // Nobody free: "try again" if a calendar could not be read (one of them may be free), else taken.
+  if (freePeople.length === 0) return states.includes("unreadable") ? UNAVAILABLE : TIME_TAKEN;
 
   // The rooms: the one room rule over the whole span; the owner may use a room on standby.
   let freeRooms: { resourceId: string; name: string }[] | null = null;
@@ -229,7 +239,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
   }
 
   // The order to try: decision 2's (fewest bookings that day, then name, then id), each person
-  // with the free rooms by name, read off chooseAnyAvailable one pick at a time.
+  // with the free rooms by name.
   const dayRows = await findCommitments(
     organizationId,
     freePeople,
@@ -237,38 +247,11 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
     new Date(startsAt.getTime() + DAY_MS)
   );
   const counts = countBookingsThatDay(dayRows, date, timezone);
-  let peopleLeft = (await namesOf(organizationId, freePeople)).map((person) => ({
+  const people = (await namesOf(organizationId, freePeople)).map((person) => ({
     ...person,
     bookingsThatDay: counts.get(person.resourceId) ?? 0,
   }));
-  const people: string[] = [];
-  for (
-    let pick = chooseAnyAvailable(peopleLeft, null);
-    pick;
-    pick = chooseAnyAvailable(peopleLeft, null)
-  ) {
-    const chosen = pick.personId;
-    people.push(chosen);
-    peopleLeft = peopleLeft.filter((person) => person.resourceId !== chosen);
-  }
-  const rooms: (string | null)[] = [];
-  if (freeRooms === null) rooms.push(null);
-  else {
-    let roomsLeft = freeRooms;
-    const anyone = [{ resourceId: people[0], name: "", bookingsThatDay: 0 }];
-    for (
-      let pick = chooseAnyAvailable(anyone, roomsLeft);
-      pick?.placeId;
-      pick = chooseAnyAvailable(anyone, roomsLeft)
-    ) {
-      const chosen = pick.placeId;
-      rooms.push(chosen);
-      roomsLeft = roomsLeft.filter((room) => room.resourceId !== chosen);
-    }
-  }
-  const choices: BookingChoiceType[] = people.flatMap((id) =>
-    rooms.map((placeId) => ({ personId: id, placeId }))
-  );
+  const choices = orderAnyAvailable(people, freeRooms);
 
   const stage = await findFirstPipelineStage(organizationId);
   if (!stage) throw new Error("Booking failed: the business has no pipeline stage.");
@@ -329,6 +312,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
     // Two copies of one form at the same instant: the database let the other one in; that is the answer.
     if (requestKey && constraintOf(error) === "booking_request_key_unique") {
       const existing = await findBookedByRequestKey(organizationId, requestKey, timezone);
+      if (existing && !isSameRequest(existing, input)) return REQUEST_KEY_USED;
       if (existing) return { booked: true, booking: existing, alreadyBooked: true };
     }
     // Never the database's own error: its message carries the customer's details.
