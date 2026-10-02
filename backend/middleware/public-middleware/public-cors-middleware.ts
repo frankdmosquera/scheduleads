@@ -1,6 +1,6 @@
 // Who may call the public booking routes from a browser: the sites in WIDGET_ORIGINS and the
-// dashboard. They read services and times, and send a booking. Never credentials, and never merged with dashboardCorsMiddleware: the login
-// cookie would let a client site act as the owner.
+// dashboard. They read services and times, and send a booking. Never credentials, and never
+// merged with dashboardCorsMiddleware: the login cookie would let a client site act as the owner.
 
 import { cors } from "hono/cors";
 

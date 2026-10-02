@@ -306,7 +306,8 @@ commit, on Frank's yes.
   - `publicCorsMiddleware` allows `POST` too, still without credentials.
   - `RefusalCodeType` gains `time_taken` and `request_key_used`.
   - The times route answers 503 `unavailable` per decision 9.
-  - **Done when** route tests on `clinic-dev` prove: 201 with the booking's
+  - **Done when** route tests on a clinic of their own (removed after, so a
+    failed run leaves nothing in `clinic-dev`; review F-91) prove: 201 with the booking's
     id, times, zone, service and person, and never the customer's name,
     email, phone or address, or `organizationId`; 400 for a malformed body,
     a start that is not an instant, an empty address, and a customer with

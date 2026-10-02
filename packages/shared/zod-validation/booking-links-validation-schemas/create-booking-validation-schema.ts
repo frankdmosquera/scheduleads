@@ -26,5 +26,3 @@ export const createBookingValidationSchema = z.object({
     .max(300, "That address is too long."),
   details: z.string().trim().max(2000, "Keep it to 2000 characters.").optional(),
 });
-
-export type CreateBookingInputType = z.input<typeof createBookingValidationSchema>;

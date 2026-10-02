@@ -128,7 +128,7 @@ the room check out into one exported helper (for example
 `applyFreeTimesRules` and 5d, with `resourceId` on the room input.
 **Resolution:** Fixed 2026-10-02 in step 5d.3: bookTime picks its rooms with isRoomFree over appointmentSpan's span (book-time.ts), the same rule and span as the free times; tested by "a room taken only during the buffer after is not chosen", which fails when the hold leaves the buffers out. Partly answered by step 5d.2, stays open: backend/lib/scheduling/is-room-free.ts is now the only copy of the rule and applyFreeTimesRules uses it (every 5c test unchanged and passing), and a room carrying its id still type-checks against RoomScheduleType, so 5d.3 can filter its own rooms. The booking, the second consumer this finding is about, does not exist yet; close it when bookTime picks its room with isRoomFree and a test shows it. See F-76 for the span the rule does not own. Not closed by the independent review of step 5d.3 (2026-10-02): the code does use isRoomFree (book-time.ts:214), but no saved test shows it. With isRoomFree mocked to always answer true, "a room taken only during the buffer after is not chosen" still passes (the database refuses Room 3 and decision 5 moves to Room 4), while a customer is booked into a room on standby; see F-79. Close it with F-79's test. Closed 2026-10-02 by independent review of step 5d.4 (7166169..ceb511c): bookTime still picks rooms with isRoomFree over appointmentSpan's span (book-time.ts:222-245), and with isRoomFree mocked to always answer true, book-time.test.ts fails "a room on standby that date is not chosen for a customer, but the owner may use it" (1 failed, 19 passed).
 
-### F-74 [P3] fixed - "Any available" answers an empty week when every person's calendar is unreadable
+### F-74 [P3] closed - "Any available" answers an empty week when every person's calendar is unreadable
 
 **File:** backend/lib/scheduling/find-free-times.ts:136 (test: backend/routes/public-booking-links-routes.test.ts:391-393)
 **Found:** 2026-10-02 by the final independent review of feature 5c (scope: bf53ee6..bb2526d; lenses: all)
@@ -147,7 +147,7 @@ happens when nobody is left.
 chooses whether "any available" is its default): either answer 503
 `unavailable` when every candidate was left out for an unreadable calendar,
 or keep 200 and say so in decision 4. Then make the route test say which.
-**Resolution:** Fixed in step 5d.5 (661b86e), per decision 9: findFreeTimes counts the calendars it read and the ones it could not; with "any available", none read and at least one failed throws CalendarUnavailableError, so the times route answers 503 `unavailable`. One readable calendar still answers 200. Tests: find-free-times.test.ts (no calendar readable) and the route test now asserting 503.
+**Resolution:** Fixed in step 5d.5 (661b86e), per decision 9: findFreeTimes counts the calendars it read and the ones it could not; with "any available", none read and at least one failed throws CalendarUnavailableError, so the times route answers 503 `unavailable`. One readable calendar still answers 200. Tests: find-free-times.test.ts (no calendar readable) and the route test now asserting 503. Closed 2026-10-02 by independent review of step 5d.5 (6906956..2663680): find-free-times.ts:157-159 throws CalendarUnavailableError only when no calendar was read and at least one failed, and the times route maps it to 503 `unavailable` (public-booking-links-routes.ts:118-124). With the throw removed, both "\"any available\" with no calendar readable is \"try again\"" (find-free-times.test.ts) and "a calendar that cannot be read is a 503" (public-booking-links-routes.test.ts) fail; the existing "left out of \"any available\"" test (one readable, fully booked calendar beside an unreadable one) still answers 200 and would fail if the rule ignored the readable count. No new defect in the change.
 
 ### F-75 [P2] fixed - Nothing in the schema or the plan makes "the same customer pressing Book twice gets one booking" hold when the two presses arrive together
 
@@ -430,3 +430,58 @@ book-time.ts:17 sits out of order.
 is used as it is; an unreadable date fails this test and is renewed"),
 rewrap the two headers, sort the import.
 **Resolution:** Fixed 2026-10-02: the comment in get-fresh-access-token.ts now matches its condition; the two long header comments are rewrapped under 100 characters; book-time.ts's calendar imports are in order.
+
+### F-88 [P3] open - The POST preflight test passes even when the browser would be refused the JSON header every booking sends
+
+**File:** backend/routes/public-bookings-routes.test.ts:322
+**Found:** 2026-10-02 by independent review of step 5d.5 (scope: 6906956..2663680; lenses: tests)
+**Why it matters:** The widget posts `Content-Type: application/json`, which
+makes the browser send a preflight and book only if the answer allows that
+header. Today Hono's cors reflects the requested headers because
+`publicCorsMiddleware` sets no `allowHeaders`, so it works. The test sends
+`Access-Control-Request-Headers: content-type` but never checks
+`Access-Control-Allow-Headers`: with `allowHeaders: ["x-nothing"]` added to
+public-cors-middleware.ts in a scratch run, all 17 tests in the file still
+passed, while every real browser booking would be blocked. The Done when's
+"a preflight allows POST" is the one browser-facing promise of this step.
+**Suggested fix:** Assert that `Access-Control-Allow-Headers` includes
+`content-type` (case-insensitive) in the same test.
+**Resolution:**
+
+### F-89 [P3] open - CreateBookingInputType is exported and used nowhere; the typed client already carries the body type
+
+**File:** packages/shared/zod-validation/booking-links-validation-schemas/create-booking-validation-schema.ts:30
+**Found:** 2026-10-02 by independent review of step 5d.5 (scope: 6906956..2663680; lenses: quality)
+**Why it matters:** No file in backend or frontend imports it. The widget
+(feature 9) calls the route through `hc<AppType>`, which takes the body type
+from `validator("json")`, so this second declaration of the same shape is
+not needed by the planned consumer either. The other booking-link schemas
+export no input type. "What breaks if we do not add this?" has no answer yet.
+**Suggested fix:** Remove the export; add it back if a consumer appears that
+the typed client does not serve.
+**Resolution:**
+
+### F-90 [P3] open - The public CORS header comment had a sentence inserted without rewrapping (139 characters)
+
+**File:** backend/middleware/public-middleware/public-cors-middleware.ts:2
+**Found:** 2026-10-02 by independent review of step 5d.5 (scope: 6906956..2663680; lenses: quality)
+**Why it matters:** Prettier leaves comments alone, so `format:check` passes,
+but the header now runs to 139 characters against the 100 every other line
+keeps. Same pattern as F-87 (words added to a wrapped header in step 5d.4),
+so it is drift rather than a one-off.
+**Suggested fix:** Rewrap the three header lines under 100 characters.
+**Resolution:**
+
+### F-91 [P3] open - The step's Done when says the route tests run on clinic-dev; they run on a clinic of their own
+
+**File:** blueprint/context/current-feature.md:309
+**Found:** 2026-10-02 by independent review of step 5d.5 (scope: 6906956..2663680; lenses: tests)
+**Why it matters:** public-bookings-routes.test.ts builds and removes its own
+clinic, so a failed run never leaves bookings in the seeded one (its header
+says why), and uses clinic-dev only for "another business's service". That
+is the better choice and matches the spec's Testing section, but the Done
+when still names clinic-dev, so the spec and the tests disagree on what was
+proved and where.
+**Suggested fix:** Change the Done when to "route tests on a clinic of their
+own (and clinic-dev for another business's service)".
+**Resolution:**

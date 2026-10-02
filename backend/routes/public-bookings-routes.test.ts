@@ -330,6 +330,10 @@ describe("the login cookie is never allowed", () => {
     });
 
     expect(response.headers.get("Access-Control-Allow-Methods")).toBe("GET,POST");
+    // Every booking is sent as JSON, so a browser must be allowed that header, or it books nothing.
+    expect(response.headers.get("Access-Control-Allow-Headers")?.toLowerCase()).toContain(
+      "content-type"
+    );
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe(dashboardOrigin);
     expect(response.headers.get("Access-Control-Allow-Credentials")).toBeNull();
   });
