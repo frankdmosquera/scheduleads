@@ -95,6 +95,14 @@ decision 16) gets no confirmation; the business notification still names them.
    still the business; only a worker's personal address is ruled out. When a
    business runs on one email, the booked worker is kept in the loop by text
    (feature 8). Both later parts are written into the build plan.
+9. **The owner's card also sets the two addresses** (Frank, 2026-10-02, with
+   step 6.3's plan). Where emails come from and where notifications go sit
+   above the key, so a business set up without them is never stuck until
+   Settings (feature 12). Whenever the card is saved and a key is there (the
+   new one, or the one already saved), one test email goes from the new
+   sender to the new notification address first; refused, nothing is saved.
+   Phone, website and colour stay for Settings: nothing is stuck without
+   them.
 
 ## Out of scope
 
@@ -184,22 +192,26 @@ theirs in their plan, and his yes to that plan is the yes to install them.
     pass; the 3b form shows the new fields with their labels and errors
     (checked by hand in the browser, the screenshot in the log).
 
-- [ ] **6.3 The owner's "Email sending" card.**
-  - `PUT /email-sending/key` (dashboard route: `requireOrganizationMiddleware`,
+- [x] **6.3 The owner's "Email sending" card.**
+  - `PUT /email-sending` (dashboard route: `requireOrganizationMiddleware`,
     `requirePermissionMiddleware({ organization: ["update"] })`, the
-    dashboard CORS, CSRF and no-store middleware): takes `{ key }`, saves it
-    through `saveEmailSendingKey`, answers `{ savedAt }` or a refusal; the
-    business is the signed-in one, never from the request.
-  - `GET /email-sending`: whether a key is saved and when, and the sender
-    address; never the key.
+    dashboard CORS, CSRF and no-store middleware): takes `{ senderEmail,
+    notifyEmail, key? }` (decision 9); with a key, new or already saved, the
+    test email goes first and a refusal saves nothing; answers the card's
+    state or a refusal. The business is the signed-in one, never from the
+    request.
+  - `GET /email-sending`: the two addresses and when a key was saved; never
+    the key.
   - `frontend/components/email-sending/email-sending-card.tsx` on the
     dashboard home, beside the calendar card: "Not set up" or "Sending from
-    bookings@primopainters.com, key saved Oct 2"; a password-type field to
-    paste a new key, a Save button that locks while saving, the refusal shown
+    bookings@primopainters.com, key saved Oct 2"; the two address fields; a
+    password-type field to paste a new key, a Save button that locks while saving, the refusal shown
     under the field and read out, the field emptied after a save. Called
     through the typed dashboard client.
-  - **Done when** saved tests: an owner saves a key and the answer carries
-    only `savedAt`; a member without the permission is refused; another
+  - **Done when** saved tests: an owner saves the two addresses and a key,
+    and the answer never carries the key; changing an address with a key
+    already saved sends the test from the new address, and a refusal keeps
+    the old addresses; a member without the permission is refused; another
     business's key is never touched; `GET` never carries the key; a refused
     test answers its safe reason and stores nothing. The frontend build
     passes and the typed client sees both routes; the card checked by hand in
@@ -309,11 +321,12 @@ null, `phone` text null, `website` text null, `brandColor` text null
 `credentials` text not null (`encryptCredentials(key, readTokenKey(),
 organizationId)`), `savedAt` timestamptz. One key per business.
 
-**The card's routes** (6.3): `PUT /email-sending/key` body `{ key: string }`
-answers 200 `{ savedAt }`, 400 `bad_request` (not a Resend key), 422
-`key_refused` with the safe reason, 401/403 as the other dashboard routes;
-`GET /email-sending` answers `{ senderEmail, keySavedAt }` (either may be
-null).
+**The card's routes** (6.3, decision 9): `PUT /email-sending` body
+`{ senderEmail: string; notifyEmail: string; key?: string }` answers 200
+`{ senderEmail, notifyEmail, keySavedAt }`, 400 `bad_request` (an address
+that is not an email, not a Resend key), 422 `key_refused` with the safe
+reason, 401/403 as the other dashboard routes; `GET /email-sending` answers
+the same three (each may be null).
 
 **sendEmail** (6.1):
 
