@@ -185,7 +185,7 @@ and a second resource can hold the same time as the first.
   booking's own old time
   Split on 2026-10-03 into two items, each its own branch, merged and tagged
   as it lands; item 7 is done when both are:
-  - [ ] 7a. **Cancel** - the booking's private link in the confirmation, the
+  - [x] 7a. **Cancel** - the booking's private link in the confirmation, the
     customer's page it opens, and Cancel: the time freed, the event removed
     from the booked person's Google, the customer and the business told by
     email, the timeline entry
