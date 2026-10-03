@@ -208,6 +208,11 @@ describe("a cancelled booking's emails", () => {
   test("a cancel sends both, the cancelling invite attached to Jane's with the booking's UID", async () => {
     const business = await makeBusiness("both");
     const bookingId = await book(business);
+    // Made a day earlier, so the moment of the cancel and of the booking cannot share a second.
+    await db
+      .update(booking)
+      .set({ createdAt: new Date(Date.now() - 24 * 60 * 60_000) })
+      .where(eq(booking.id, bookingId));
 
     expect(await cancel(bookingId)).toEqual({ cancelled: true, alreadyCancelled: false });
 
@@ -228,6 +233,18 @@ describe("a cancelled booking's emails", () => {
     expect(decoded(invite)).toContain("\r\nMETHOD:CANCEL\r\n");
     expect(decoded(invite)).toContain(`\r\nUID:${bookingId}\r\n`);
     expect(decoded(invite)).toContain("\r\nSTATUS:CANCELLED\r\n");
+    // Stamped with the moment of the cancel, read from its own timeline entry.
+    const [entry] = await db
+      .select({ occurredAt: activity.occurredAt })
+      .from(activity)
+      .where(
+        and(eq(activity.organizationId, business.business), eq(activity.type, "booking_cancelled"))
+      );
+    const stamp = entry
+      .occurredAt!.toISOString()
+      .replace(/\.\d{3}Z$/, "Z")
+      .replace(/[-:]/g, "");
+    expect(decoded(invite)).toContain(`\r\nDTSTAMP:${stamp}\r\n`);
 
     expect(toPrimo.headers.get("Idempotency-Key")).toBe(
       `booking-cancelled-notification/${bookingId}`
@@ -365,5 +382,14 @@ describe("a cancelled booking's emails", () => {
     answerResend();
     await settled();
     expect(await cancellationEntriesOf(business)).toHaveLength(2);
+  });
+
+  test("a booking still confirmed gets no cancellation", async () => {
+    const business = await makeBusiness("still-confirmed");
+    const bookingId = await book(business);
+    calls.length = 0;
+
+    expect(await sendCancellationEmails(business.business, bookingId)).toEqual([]);
+    expect(calls).toEqual([]);
   });
 });

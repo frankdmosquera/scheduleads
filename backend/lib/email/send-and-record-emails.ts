@@ -18,13 +18,6 @@ export type BookingEmailToSendType = {
   build: () => Promise<SendEmailInputType>; // rendered only when its turn comes
 };
 
-// Nothing goes when the business cannot send yet (feature 6, decision 4): one plain line says so.
-export function logNothingSent(bookingId: string, missing: string[]): void {
-  console.log(
-    `[email] booking ${bookingId}: nothing sent, the business has no ${missing.join(", ")}`
-  );
-}
-
 // The kinds that went, in order.
 export async function sendAndRecordEmails(
   organizationId: string,

@@ -317,6 +317,13 @@ screenshots in the log.
   and Vercel's own access logs do record request paths, the link included:
   that comes with the link being the key (decision 10), and is named at
   deploy.
+- From step 7a.4's review: the invite's SEQUENCE is fixed at 0 (made) and 1
+  (cancelled); 7b needs it to count changes, so a moved booking sends a
+  higher one and a cancel after a move higher again. The business's
+  cancellation notice says the customer cancelled from their link; the
+  owner's own cancel (features 11 and 12b) needs its own wording. F-128:
+  no real calendar has yet been shown to remove the event from the attached
+  CANCEL invite; checking it means a real email, Frank's call.
 - From step 7a.3: the event is removed by the id made from the booking, so a
   cancel before its id was saved still removes it. One gap is left: a cancel
   in the first moment after booking, whose Google write finishes after the

@@ -8,8 +8,8 @@ import { renderBookingNotification } from "../../emails/booking-notification.js"
 import { bookingIcs } from "./booking-ics.js";
 import { findBookingEmailContext } from "./find-booking-email-context.js";
 import { findBookingEmailRecipients } from "./find-booking-email-recipients.js";
+import { logNothingSent } from "./log-nothing-sent.js";
 import {
-  logNothingSent,
   sendAndRecordEmails,
   type BookingEmailKindType,
   type BookingEmailToSendType,

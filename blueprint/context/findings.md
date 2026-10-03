@@ -244,7 +244,7 @@ passes with it. Drop or rename the Promise.all test. Add one case: a
 cancelled booking whose start has passed answers already cancelled.
 **Resolution:** Fixed 2026-10-03: the Promise.all test, whose two calls never overlapped, is gone. A shared helper now holds the booking in another transaction while the cancel starts: holding and cancelling it gives "already cancelled" with no entry; holding and moving it into the past gives already_started, which fails without the row lock. A cancelled booking whose start has passed answers already cancelled, which fails without the cancelled-first check. The confirmed-only update stays a second guard that matters only without the lock: removing it alone passes, removing it with the lock fails the race test. Closed 2026-10-03 by independent review of step 7a.3 (scope: 12e7fd3..7df5944): re-run by mutation against the 7a.3 code, removing the row lock (cancel-booking.ts:45) fails "moved into the past meanwhile, it is refused"; removing the cancelled-first check (:48) fails "a cancelled booking whose start has passed still answers already cancelled"; removing the confirmed-only condition (:63) alone passes and with the lock fails both race tests, as the fix said. 7a.3's change to this file (the removal started after the transaction) leaves the guards as they were. No new defect.
 
-### F-123 [P3] fixed - The 404 answer, the one the agreed "remove by the made id" call relies on, is not tested
+### F-123 [P3] closed - The 404 answer, the one the agreed "remove by the made id" call relies on, is not tested
 
 **File:** backend/lib/calendar/google-calendar-provider.ts:97 (tests: backend/lib/calendar/remove-booking-event.test.ts:179, :257)
 **Found:** 2026-10-03 by independent review of step 7a.3 (scope: 12e7fd3..7df5944; lenses: quality, security, performance, tests)
@@ -263,9 +263,9 @@ the person's own access token (dropping it from :93 also stays green).
 what Google says when the write never happened) and expect no warning, or
 add a 404 case beside the 410 one. Record the Authorization header in the
 fake and expect the saved access token on the DELETE.
-**Resolution:** Fixed 2026-10-03: the "id not saved yet" test now has Google answer 404 and expects no warning; the fake records the Authorization header and the first test expects Ana's own saved key. Dropping the 404 rule, or sending another key, each fail a test.
+**Resolution:** Fixed 2026-10-03: the "id not saved yet" test now has Google answer 404 and expects no warning; the fake records the Authorization header and the first test expects Ana's own saved key. Dropping the 404 rule, or sending another key, each fail a test. Closed 2026-10-03 by independent review of step 7a.4 (bea19bc..dfa2d60): re-run, removing `response.status === 404` from google-calendar-provider.ts fails "an event whose id was not saved yet is removed by its own id, and Google's 404 is done"; the fake records the Authorization header and the test expects the saved key. No new defect.
 
-### F-124 [P3] fixed - The 7a.3 step and its Done when still say "no event makes no call", which the agreed call made untrue
+### F-124 [P3] closed - The 7a.3 step and its Done when still say "no event makes no call", which the agreed call made untrue
 
 **File:** blueprint/context/current-feature.md:155, :161
 **Found:** 2026-10-03 by independent review of step 7a.3 (scope: 12e7fd3..7df5944; lenses: quality, security, performance, tests)
@@ -281,9 +281,9 @@ reader (7b, feature 8) following the step text would remove the call.
 no connection makes no call; with a connection the event is removed by
 the id made from the booking, saved or not, and Google's 404 counts as
 done.
-**Resolution:** Fixed 2026-10-03: step 7a.3 and its Done when in current-feature.md now say the agreed rule: removed by the made id, saved or not; no connection makes no call; a connected person with no event gets a DELETE that Google answers 404, done, with no warning; the DELETE carries the person's own key.
+**Resolution:** Fixed 2026-10-03: step 7a.3 and its Done when in current-feature.md now say the agreed rule: removed by the made id, saved or not; no connection makes no call; a connected person with no event gets a DELETE that Google answers 404, done, with no warning; the DELETE carries the person's own key. Closed 2026-10-03 by independent review of step 7a.4: current-feature.md 7a.3 and its Done when (:151-166) state the agreed rule and match remove-booking-event.ts and its tests.
 
-### F-125 [P3] fixed - cancelledIn is typed `never` where the removal starts, so that call is not type-checked
+### F-125 [P3] closed - cancelledIn is typed `never` where the removal starts, so that call is not type-checked
 
 **File:** backend/lib/booking/cancel-booking.ts:27, :98
 **Found:** 2026-10-03 by independent review of step 7a.3 (scope: 12e7fd3..7df5944; lenses: quality, security, performance, tests)
@@ -300,4 +300,68 @@ or to what is stored there would compile silently.
 result (for example `{ result, cancelledIn }`) and read it from there,
 or declare it as `let cancelledIn = null as string | null` so the type is
 not narrowed away.
-**Resolution:** Fixed 2026-10-03: cancelledIn is declared with a cast (null as string | null), so TypeScript keeps its type after the transaction and checks the removal's start. The behaviour is unchanged.
+**Resolution:** Fixed 2026-10-03: cancelledIn is declared with a cast (null as string | null), so TypeScript keeps its type after the transaction and checks the removal's start. The behaviour is unchanged. Closed 2026-10-03 by independent review of step 7a.4: cancel-booking.ts:31; a probe `const probe: number = cancelledIn` inside `if (cancelledIn)` (:103) fails tsc with "Type 'string' is not assignable to type 'number'", so both starts (:104, :105) are type-checked. No new defect.
+
+### F-126 [P3] fixed - The cancel's DTSTAMP lookup and the "only a cancelled booking" guard are not tested
+
+**File:** backend/lib/email/send-cancellation-emails.ts:38-50, :28 (tests: backend/lib/email/send-cancellation-emails.test.ts:327)
+**Found:** 2026-10-03 by independent review of step 7a.4 (scope: bea19bc..dfa2d60; lenses: quality, security, performance, tests)
+**Why it matters:** The spec's contract (Data / contracts, "The withdrawn
+invite") says the invite is stamped with the moment of the cancel, read
+from its timeline entry. Two mutations leave all 172 tests in lib/email,
+lib/booking, emails and lib/calendar green: stamping with
+`context.createdAt` always, and querying `payload->>'booking_id'` (a
+broken lookup that silently falls back to the booking's own moment). The
+"same invite again" test (:327) only proves the stamp is stable, which the
+fallback also is. So the payload JSON query, the one new query in this
+step, is never shown to find its entry. Separately, removing
+`if (context.status !== "cancelled") return []` (:28) also stays green:
+nothing proves a confirmed booking gets no cancellation, which feature 8's
+retries will rely on (feature 6 has the mirror test, "a cancelled booking
+sends nothing").
+**Suggested fix:** In the "sends both" test, read the booking_cancelled
+entry's occurredAt and expect the invite to carry `DTSTAMP:` of that
+moment (and differ from the booking's createdAt, which the test's real
+clock already makes true). Add "a booking still confirmed sends no
+cancellation": call sendCancellationEmails on an uncancelled booking and
+expect no Resend call.
+**Resolution:** Fixed 2026-10-03: the "sends both" test makes the booking a day older, then expects the invite's DTSTAMP to equal the booking_cancelled entry's occurredAt; a new test expects a booking still confirmed to get no cancellation and no Resend call. Always stamping with the booking's moment, a wrong JSON key in the lookup, and dropping the status check each fail a test. The lookup also filters on the contact, which uses the timeline index.
+
+### F-127 [P3] fixed - logNothingSent is a second export in send-and-record-emails.ts
+
+**File:** backend/lib/email/send-and-record-emails.ts:22
+**Found:** 2026-10-03 by independent review of step 7a.4 (scope: bea19bc..dfa2d60; lenses: quality, security, performance, tests)
+**Why it matters:** The backend rule in coding-standards.md (:113-114,
+Frank, 2026-09-26) is kind, then area, then one file per export, the file
+named after it. The refactor put two functions in one file:
+`sendAndRecordEmails` and `logNothingSent`, and a reader importing
+`logNothingSent` cannot find it by its name. Types beside a function are
+the codebase's norm; a second function is not.
+**Suggested fix:** Move `logNothingSent` to its own
+`backend/lib/email/log-nothing-sent.ts`, or have
+`findBookingEmailContext`'s two callers share one small helper file named
+for it.
+**Resolution:** Fixed 2026-10-03: logNothingSent moved to backend/lib/email/log-nothing-sent.ts; both senders import it from there.
+
+### F-128 [P3] unverified - No real calendar has been shown to remove the event from the cancelling invite
+
+**File:** backend/lib/email/booking-ics.ts:28-43, backend/lib/email/send-cancellation-emails.ts:62-79
+**Found:** 2026-10-03 by independent review of step 7a.4 (scope: bea19bc..dfa2d60; lenses: quality, security, performance, tests)
+**Why it matters:** Decision 8 promises Jane's calendar removes the event.
+The file itself is RFC 5546 CANCEL-shaped (METHOD:CANCEL, the same UID,
+SEQUENCE 1 above the request's 0, ORGANIZER, ATTENDEE, a stable DTSTAMP,
+STATUS:CANCELLED, the content type's method matching), and the From
+address equals ORGANIZER, which Outlook needs. What is not shown is the
+real behaviour: it rides as an `invite.ics` attachment, as feature 6's
+request does, and whether Gmail, Outlook and Apple Mail act on a CANCEL
+delivered that way, rather than offering a file to open, has not been
+checked. Also, ORGANIZER is the sender address read at cancel time: a
+business that changed its sender address between the booking and the
+cancel sends a CANCEL from a different organizer than the request's,
+which some clients ignore. The Done when does not ask for this check.
+**Suggested fix:** During 7a.5's by-hand session (Frank's call, since it
+sends a real email), book and cancel against a dev business whose
+notification and customer addresses are Frank's own Gmail and an Outlook
+address, and record in the log whether the event disappears. If the
+sender-change case matters, store the organizer used on the request.
+**Resolution:**

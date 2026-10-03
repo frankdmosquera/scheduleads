@@ -12,8 +12,8 @@ import { renderBookingCancelled } from "../../emails/booking-cancelled.js";
 import { renderBookingCancelledNotification } from "../../emails/booking-cancelled-notification.js";
 import { bookingIcs } from "./booking-ics.js";
 import { findBookingEmailContext } from "./find-booking-email-context.js";
+import { logNothingSent } from "./log-nothing-sent.js";
 import {
-  logNothingSent,
   sendAndRecordEmails,
   type BookingEmailKindType,
   type BookingEmailToSendType,
@@ -41,6 +41,7 @@ export async function sendCancellationEmails(
     .where(
       and(
         eq(activity.organizationId, organizationId),
+        eq(activity.contactId, context.contactId), // the timeline index, and only this customer's
         eq(activity.type, "booking_cancelled"),
         sql`${activity.payload}->>'bookingId' = ${bookingId}`
       )
