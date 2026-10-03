@@ -304,7 +304,7 @@ null).
 
 ```ts
 type SendEmailInputType = {
-  apiKey: string; // the business's key, or the agency's for login codes; never logged
+  apiKey: string | null; // the business's or the agency's key; null only in development: nothing sent
   kind: string; // for the log line only: "login_code", "booking_confirmation", ...
   from: string; // "Primo Painters <bookings@primopainters.com>"
   to: string[];

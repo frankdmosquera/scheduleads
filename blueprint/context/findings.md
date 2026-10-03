@@ -123,3 +123,74 @@ seed and the other files rely on that.
 **Suggested fix:** Release Google in a `finally` around the test body (or in
 `afterEach`), so a failure still lets the write settle and the cleanup run.
 **Resolution:**
+
+### F-96 [P2] fixed - With the agency's Resend settings in the root .env, the route tests send real login emails and then fail
+
+**File:** backend/routes/admin-routes.test.ts:38 and backend/routes/calendar-routes.test.ts:54 (path: backend/lib/auth/send-login-code.ts:21-32)
+**Found:** 2026-10-02 by independent review of step 6.1 (scope: 7dc0721..de30223; lenses: quality, security, performance, tests)
+**Why it matters:** Both route test files load the root `.env` and sign in
+by reading the code `sendLoginCode` prints. Since 6.1, once `RESEND_API_KEY`
+and `LOGIN_EMAIL_FROM` are set there (the same file the app reads, and the
+way to try real login emails locally), `sendLoginCode` sends through Resend
+instead of printing: every signed-in test user gets a real email from the
+agency's account to an `@example.com` address (bounces count against the
+agency's sending domain), no code is printed, and the whole file fails.
+Reproduced in this review without leaving the machine, by setting both
+values plus `RESEND_BASE_URL=http://127.0.0.1:9`: Better Auth logged
+"Sending an email failed", the helper threw "No login code was printed for
+admin-frank-...@example.com", and all 25 admin route tests were skipped. The
+spec's Testing section says no test ever sends a real email.
+**Suggested fix:** In both `signIn` helpers (or a shared one), clear the two
+settings for the request with `vi.stubEnv("RESEND_API_KEY", "")` and
+`vi.stubEnv("LOGIN_EMAIL_FROM", "")` (read per send, so this works), or fake
+`fetch` for api.resend.com there.
+**Resolution:** Fixed in 6.1's review fixes: admin-routes.test.ts and calendar-routes.test.ts drop RESEND_API_KEY and LOGIN_EMAIL_FROM right after loading .env, so their sign-in helper always reads the code from the console. Shown with RESEND_API_KEY, LOGIN_EMAIL_FROM and RESEND_BASE_URL (a dead local port) set: all 65 route tests pass and nothing is sent.
+
+### F-97 [P2] fixed - A known address now waits for Resend while an unknown one answers at once, so the sign-in form tells who is a client
+
+**File:** backend/lib/auth/auth-server.ts:155-157 (comment at :148-150; send: backend/lib/auth/send-login-code.ts:32)
+**Found:** 2026-10-02 by independent review of step 6.1 (scope: 7dc0721..de30223; lenses: quality, security, performance, tests)
+**Why it matters:** auth-server.ts says an unknown address is told a code is
+on its way "so the form can't be used to test who is a customer". Better
+Auth 1.7.5 returns at once for an unknown address, but for a known one it
+awaits `sendVerificationOTP` (no `backgroundTasks` handler is set, so
+`runInBackgroundOrAwait` awaits it), and since 6.1 that is a round trip to
+api.resend.com, hundreds of milliseconds and up to the 10-second limit.
+Before 6.1 the known path only printed, so the answer took the same time
+either way. One timed request per address now shows whether that person is
+one of the agency's clients; the 3-per-minute rate limit slows a sweep but
+not a targeted check.
+**Suggested fix:** Answer before the email goes: in `sendVerificationOTP`,
+start `sendLoginCode` without awaiting it and catch its failure into one safe
+log line, or set Better Auth's `advanced.backgroundTasks.handler`. Either way
+the owner's experience is unchanged, since a failed send is already swallowed
+and answered as success.
+**Resolution:** Fixed in 6.1's review fixes: auth-server.ts starts sendLoginCode without awaiting it, logging a failure as a safe reason, so a known address answers as fast as an unknown one. Test: login-code-timing.test.ts holds Resend and gets the 200 first; with the await put back it times out.
+
+### F-98 [P3] fixed - Nothing fails if the login code is written to a log line on the sending path
+
+**File:** backend/lib/auth/send-login-code.test.ts:28 (code: backend/lib/auth/send-login-code.ts:29-41)
+**Found:** 2026-10-02 by independent review of step 6.1 (scope: 7dc0721..de30223; lenses: quality, security, performance, tests)
+**Why it matters:** The step's plan says the code is never put in a log line
+outside development without settings, and the spec's Notes repeat it. In
+this review a `console.log` of the code was added just before `sendEmail`
+and all 17 email and login-code tests still passed. A debugging line left in
+would put live sign-in codes into Railway's logs with nothing to catch it.
+**Suggested fix:** In the "goes through the door" test, spy on `console.log`
+and `console.error` and assert no call contains the code.
+**Resolution:** Fixed in 6.1's review fixes: the sending-path test spies console.log, info, warn and error and fails if the code appears in any line. Proved: a debug console.log of the code makes it fail.
+
+### F-99 [P3] fixed - The sendEmail contract says apiKey is always a string, and the overview still says login codes cannot be sent in production
+
+**File:** blueprint/context/current-feature.md:307; blueprint/context/project-overview.md:220
+**Found:** 2026-10-02 by independent review of step 6.1 (scope: 7dc0721..de30223; lenses: quality, security, performance, tests)
+**Why it matters:** The code takes `apiKey: string | null` (null meaning
+development without a key, as the 6.1 bullet itself describes), but the Data
+/ contracts block that 6.6 will build against still types it `string`. The
+overview's risk line "Login codes cannot be sent in production until email
+exists (item 6)" is no longer true after this step. Both send the next
+reader to the wrong shape.
+**Suggested fix:** Type the contract's `apiKey` as `string | null` with the
+same note as the code; drop or rewrite the overview line when the overview
+is next refreshed.
+**Resolution:** Fixed in 6.1's review fixes: the spec's sendEmail contract types apiKey as string | null; the overview says login codes go by email from the agency's address and names LOGIN_EMAIL_FROM.

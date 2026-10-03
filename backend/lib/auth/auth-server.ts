@@ -14,6 +14,7 @@ import { member, resource } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
 import { seedPipelineStages } from "../crm/seed-pipeline-stages.js";
+import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { sendLoginCode } from "./send-login-code.js";
 
 if (!process.env.BETTER_AUTH_SECRET) {
@@ -152,8 +153,12 @@ export const auth = betterAuth({
       // Better Auth stores codes in plain text by default, readable in the database for
       // five minutes. Hashed, a leaked table gives no one a way in.
       storeOTP: "hashed",
+      // Not awaited: a known address must answer as fast as an unknown one, or the wait for
+      // the email would tell anyone who is a customer (F-97). A failure is logged, never shown.
       async sendVerificationOTP({ email, otp, type }) {
-        await sendLoginCode({ email, otp, type });
+        sendLoginCode({ email, otp, type }).catch((error: unknown) => {
+          console.warn(`[auth] a login code was not sent: ${safeErrorReason(error)}`);
+        });
       },
     }),
 

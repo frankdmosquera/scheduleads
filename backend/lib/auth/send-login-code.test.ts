@@ -28,8 +28,16 @@ describe("a login code", () => {
   test("goes through the door from the agency's login sender, with the agency's key", async () => {
     vi.stubEnv("RESEND_API_KEY", "re_agency_key");
     vi.stubEnv("LOGIN_EMAIL_FROM", "Agents Web <login@agentsweb.com>");
+    const lines = ["log", "info", "warn", "error"].map((level) =>
+      vi.spyOn(console, level as "log").mockImplementation(() => {})
+    );
 
     await sendLoginCode({ email: "owner@primopainters.com", otp: "482913", type: "sign-in" });
+
+    // Sent by email, the code never reaches a log line, where Railway would keep it (F-98).
+    for (const line of lines.flatMap((spy) => spy.mock.calls.flat().map(String))) {
+      expect(line).not.toContain("482913");
+    }
 
     expect(calls).toHaveLength(1);
     const [call] = calls;
