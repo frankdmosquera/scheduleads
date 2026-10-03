@@ -92,7 +92,7 @@ describe("a business's own Resend key", () => {
 
     const result = await saveEmailSending(business, { ...addresses, key: "re_second_key_456" });
 
-    expect(result).toEqual({ ok: false, reason: "Resend refused this key." });
+    expect(result).toEqual({ ok: false, reason: "Resend refused this key.", about: "key" });
     expect((await findBusinessEmailDetails(business))?.apiKey).toBe("re_first_key_123");
   });
 
@@ -150,6 +150,7 @@ describe("a business's own Resend key", () => {
       ok: false,
       reason:
         "Resend would not send from this address. Check that its domain is verified in the same Resend account, and that the key may send from it.",
+      about: "sender",
     });
     expect(bodies[0]).toMatchObject({ to: ["desk@newdomain.com"] });
     expect(String(bodies[0].from)).toContain("<hello@newdomain.com>");
@@ -168,6 +169,7 @@ describe("a business's own Resend key", () => {
     expect(result).toEqual({
       ok: false,
       reason: "The saved key can no longer be read. Paste it again.",
+      about: "key",
     });
   });
 

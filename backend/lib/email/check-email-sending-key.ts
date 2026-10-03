@@ -15,34 +15,50 @@ export type CheckEmailSendingKeyInputType = {
   notifyEmail: string; // where the test email lands
 };
 
-export type CheckEmailSendingKeyResultType = { ok: true } | { ok: false; reason: string };
+// What a refusal is about, so a form shows it under the right field: the key, the sender
+// address, or neither (a limit, or Resend having trouble).
+export type EmailRefusalAboutType = "key" | "sender" | "other";
+
+export type CheckEmailSendingKeyResultType =
+  { ok: true } | { ok: false; reason: string; about: EmailRefusalAboutType };
 
 const escapeHtml = (text: string) =>
   text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 // Resend's answers, in words an owner can act on. Its error name first: a wrong key comes back
 // as 403, like an unverified domain. Only what a retry can fix says to try again.
-function reasonFor(error: SendEmailError): string {
-  if (error.code.endsWith("api_key") || error.status === 401) return "Resend refused this key.";
+function refusalFor(error: SendEmailError): { reason: string; about: EmailRefusalAboutType } {
+  if (error.code.endsWith("api_key") || error.status === 401) {
+    return { reason: "Resend refused this key.", about: "key" };
+  }
   if (error.code === "daily_quota_exceeded" || error.code === "monthly_quota_exceeded") {
-    return (
-      "This Resend account has reached its sending limit. " +
-      "Raise it in Resend, or wait for it to reset."
-    );
+    return {
+      reason:
+        "This Resend account has reached its sending limit. " +
+        "Raise it in Resend, or wait for it to reset.",
+      about: "other",
+    };
   }
   if (error.status === 403) {
-    return (
-      "Resend would not send from this address. Check that its domain is verified in the same " +
-      "Resend account, and that the key may send from it."
-    );
+    return {
+      reason:
+        "Resend would not send from this address. Check that its domain is verified in the same " +
+        "Resend account, and that the key may send from it.",
+      about: "sender",
+    };
   }
   if (error.status === 422 || error.code === "invalid_from_address") {
-    return (
-      "Resend would not accept this sender address. " +
-      "Check it is a real address at the business's domain."
-    );
+    return {
+      reason:
+        "Resend would not accept this sender address. " +
+        "Check it is a real address at the business's domain.",
+      about: "sender",
+    };
   }
-  return "Resend could not send the test email just now. Try again shortly.";
+  return {
+    reason: "Resend could not send the test email just now. Try again shortly.",
+    about: "other",
+  };
 }
 
 export async function checkEmailSendingKey(
@@ -63,7 +79,7 @@ export async function checkEmailSendingKey(
     });
     return { ok: true };
   } catch (error) {
-    if (error instanceof SendEmailError) return { ok: false, reason: reasonFor(error) };
+    if (error instanceof SendEmailError) return { ok: false, ...refusalFor(error) };
     throw error;
   }
 }

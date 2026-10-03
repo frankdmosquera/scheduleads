@@ -7,6 +7,7 @@ import { validator } from "hono/validator";
 
 import { emailSendingValidationSchema } from "@scheduleads-app/shared/zod-validation";
 
+import { emailRefusalCode } from "../lib/email/email-refusal-code.js";
 import { findEmailSendingState } from "../lib/email/find-email-sending-state.js";
 import { saveEmailSending } from "../lib/email/save-email-sending.js";
 import { refuse } from "../lib/errors/refuse.js";
@@ -50,7 +51,7 @@ export const emailSendingRoutes = new Hono()
         notifyEmail: input.notifyEmail,
         key: input.key || null,
       });
-      if (!result.ok) return c.json(refuse("key_refused", result.reason), 422);
+      if (!result.ok) return c.json(refuse(emailRefusalCode[result.about], result.reason), 422);
       return c.json(result.state, 200);
     }
   );

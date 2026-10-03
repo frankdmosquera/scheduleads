@@ -59,39 +59,47 @@ describe("checking a business's key", () => {
       403,
       "invalid_api_key",
       "Resend refused this key.",
+      "key",
     ],
-    ["a missing key", 401, "missing_api_key", "Resend refused this key."],
+    ["a missing key", 401, "missing_api_key", "Resend refused this key.", "key"],
     [
       "an account over its daily limit",
       429,
       "daily_quota_exceeded",
       "This Resend account has reached its sending limit. Raise it in Resend, or wait for it to reset.",
+      "other",
     ],
     [
       "a sender address Resend will not take",
       422,
       "invalid_from_address",
       "Resend would not accept this sender address. Check it is a real address at the business's domain.",
+      "sender",
     ],
     [
       "an address whose domain is not verified",
       403,
       "validation_error",
       "Resend would not send from this address. Check that its domain is verified in the same Resend account, and that the key may send from it.",
+      "sender",
     ],
     [
       "Resend having trouble",
       500,
       "internal_server_error",
       "Resend could not send the test email just now. Try again shortly.",
+      "other",
     ],
-  ])("%s is refused in plain words, never with the key", async (_name, status, name, reason) => {
-    answer = () =>
-      json({ name, statusCode: status, message: "re_business_key_123 was rejected" }, status);
+  ])(
+    "%s is refused in plain words, never with the key",
+    async (_name, status, name, reason, about) => {
+      answer = () =>
+        json({ name, statusCode: status, message: "re_business_key_123 was rejected" }, status);
 
-    const result = await checkEmailSendingKey(input);
+      const result = await checkEmailSendingKey(input);
 
-    expect(result).toEqual({ ok: false, reason });
-    expect(JSON.stringify(result)).not.toContain("re_business");
-  });
+      expect(result).toEqual({ ok: false, reason, about });
+      expect(JSON.stringify(result)).not.toContain("re_business");
+    }
+  );
 });

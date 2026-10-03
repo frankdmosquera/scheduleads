@@ -158,7 +158,11 @@ export type ProvisionedClientType = InferResponseType<typeof provisionClientRout
 
 export type ProvisionClientResultType =
   | { state: "ok"; answer: ProvisionedClientType }
-  | { state: "field"; field: "clientEmail" | "businessName" | "emailSendingKey"; message: string }
+  | {
+      state: "field";
+      field: "clientEmail" | "businessName" | "emailSendingKey" | "senderEmail";
+      message: string;
+    }
   | { state: "refused"; message: string };
 
 // The platform admin's "Set up a client": the API makes the client's login and business.
@@ -180,6 +184,8 @@ export async function provisionClient(
   if (body.error?.code === "key_refused") {
     return { state: "field", field: "emailSendingKey", message };
   }
+  if (body.error?.code === "sender_refused")
+    return { state: "field", field: "senderEmail", message };
   return { state: "refused", message };
 }
 
@@ -219,7 +225,7 @@ export async function fetchEmailSending(): Promise<EmailSendingResultType> {
 
 export type SaveEmailSendingResultType =
   | { state: "ok"; answer: EmailSendingStateType }
-  | { state: "field"; field: "key"; message: string }
+  | { state: "field"; field: "key" | "senderEmail"; message: string }
   | { state: "refused"; message: string };
 
 // Saving the card. A key Resend refused comes back as a message under the key's field.
@@ -234,5 +240,7 @@ export async function saveEmailSending(
   const message =
     body.error?.message ?? `The API answered with an unexpected status (${response.status}).`;
   if (body.error?.code === "key_refused") return { state: "field", field: "key", message };
+  if (body.error?.code === "sender_refused")
+    return { state: "field", field: "senderEmail", message };
   return { state: "refused", message };
 }

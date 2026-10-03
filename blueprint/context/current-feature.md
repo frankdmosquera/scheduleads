@@ -294,7 +294,8 @@ theirs in their plan, and his yes to that plan is the yes to install them.
 
 - `backend/package.json` (resend; React Email, react, react-dom)
 - `backend/lib/email/` (new): `send-email.ts`, `read-email-settings.ts`,
-  `save-email-sending-key.ts`, `booking-ics.ts`,
+  `check-email-sending-key.ts`, `store-email-sending-key.ts`, `save-email-sending.ts`,
+  `find-email-sending-state.ts`, `email-refusal-code.ts`, `booking-ics.ts`,
   `find-business-email-details.ts`, `format-booking-time.ts`
 - `backend/routes/email-sending-routes.ts` (new), `backend/app.ts`
 - `frontend/components/email-sending/` (new), the dashboard home,

@@ -7,6 +7,7 @@ import { validator } from "hono/validator";
 import { provisionClientValidationSchema } from "@scheduleads-app/shared/zod-validation";
 
 import { provisionClient } from "../lib/admin/provision-client.js";
+import { emailRefusalCode } from "../lib/email/email-refusal-code.js";
 import { refuse } from "../lib/errors/refuse.js";
 import { requirePlatformAdminMiddleware } from "../middleware/auth-middleware/require-platform-admin-middleware.js";
 
@@ -37,8 +38,8 @@ export const adminRoutes = new Hono()
       const result = await provisionClient(c.req.valid("json"));
 
       // The key's test email was refused: nothing was made, and the reason says why.
-      if (!result.ok && result.code === "key_refused") {
-        return c.json(refuse("key_refused", result.reason), 422);
+      if (!result.ok && result.code === "email_refused") {
+        return c.json(refuse(emailRefusalCode[result.about], result.reason), 422);
       }
       if (!result.ok) {
         const refusal = refusals[result.code];

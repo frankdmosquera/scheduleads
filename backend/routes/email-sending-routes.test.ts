@@ -38,6 +38,7 @@ const makeTenant = (letter: string) => ({
 });
 const primo = makeTenant("p"); // the owner who sets up sending
 const other = makeTenant("o"); // another business, never touched
+const noBooking = makeTenant("n"); // a plan without booking: no real tier lacks it yet
 const helper = { userId: randomUUID(), email: `sending-m-${tag}@example.com` }; // a member of Primo
 
 const cookies = new Map<string, string>();
@@ -102,21 +103,35 @@ const json = (body: unknown, status = 200) =>
 
 beforeAll(async () => {
   await db.insert(user).values(
-    [primo, other, helper].map((t) => ({
+    [primo, other, noBooking, helper].map((t) => ({
       id: t.userId,
       name: "",
       email: t.email,
       emailVerified: true,
     }))
   );
-  await db
-    .insert(organization)
-    .values(
-      [primo, other].map((t) => ({ id: t.organizationId, name: `Primo ${t.slug}`, slug: t.slug }))
-    );
+  await db.insert(organization).values([
+    ...[primo, other].map((t) => ({
+      id: t.organizationId,
+      name: `Primo ${t.slug}`,
+      slug: t.slug,
+    })),
+    {
+      id: noBooking.organizationId,
+      name: "No booking",
+      slug: noBooking.slug,
+      plan: "no-booking-test",
+    },
+  ]);
   await db.insert(member).values([
     { id: randomUUID(), organizationId: primo.organizationId, userId: primo.userId, role: "owner" },
     { id: randomUUID(), organizationId: other.organizationId, userId: other.userId, role: "owner" },
+    {
+      id: randomUUID(),
+      organizationId: noBooking.organizationId,
+      userId: noBooking.userId,
+      role: "owner",
+    },
     {
       id: randomUUID(),
       organizationId: primo.organizationId,
@@ -124,7 +139,7 @@ beforeAll(async () => {
       role: "member",
     },
   ]);
-  for (const email of [primo.email, other.email, helper.email])
+  for (const email of [primo.email, other.email, noBooking.email, helper.email])
     cookies.set(email, await signIn(email));
 });
 
@@ -146,8 +161,16 @@ afterEach(() => {
 afterAll(async () => {
   await db
     .delete(organization)
-    .where(inArray(organization.id, [primo.organizationId, other.organizationId]));
-  await db.delete(user).where(inArray(user.id, [primo.userId, other.userId, helper.userId]));
+    .where(
+      inArray(organization.id, [
+        primo.organizationId,
+        other.organizationId,
+        noBooking.organizationId,
+      ])
+    );
+  await db
+    .delete(user)
+    .where(inArray(user.id, [primo.userId, other.userId, noBooking.userId, helper.userId]));
   await db.$client.end();
 });
 
@@ -199,6 +222,24 @@ describe("the Email sending card", () => {
       error: { code: "key_refused", message: "Resend refused this key." },
     });
     expect(await (await getCard(primo.email)).json()).toEqual(before);
+  });
+
+  test("a refusal about the sender address comes back as sender_refused, for its own field", async () => {
+    resendAnswer = () => json({ name: "validation_error", statusCode: 403, message: "no" }, 403);
+
+    const response = await saveCard({ ...addresses, key: "re_another_key_789" }, primo.email);
+
+    expect(response.status).toBe(422);
+    expect((await response.json()).error.code).toBe("sender_refused");
+  });
+
+  test("a business whose plan has no booking cannot read or save the card, and nothing is sent", async () => {
+    const read = await getCard(noBooking.email);
+    const save = await saveCard({ ...addresses, key: KEY }, noBooking.email);
+
+    expect(read.status).toBe(403);
+    expect(save.status).toBe(403);
+    expect(resendCalls).toHaveLength(0);
   });
 
   test("a member whose role may not change the business is refused, and nothing is sent", async () => {

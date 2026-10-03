@@ -13,7 +13,10 @@ import type { ProvisionClientInputType } from "@scheduleads-app/shared/zod-valid
 
 import { db } from "../../database.js";
 import { auth } from "../auth/auth-server.js";
-import { checkEmailSendingKey } from "../email/check-email-sending-key.js";
+import {
+  checkEmailSendingKey,
+  type EmailRefusalAboutType,
+} from "../email/check-email-sending-key.js";
 import { storeEmailSendingKey } from "../email/store-email-sending-key.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 
@@ -24,7 +27,7 @@ export type ProvisionClientResultType =
       client: { id: string; name: string; email: string };
     }
   | { ok: false; code: "bad_request" | "email_taken" | "slug_taken" | "setup_in_progress" }
-  | { ok: false; code: "key_refused"; reason: string };
+  | { ok: false; code: "email_refused"; reason: string; about: EmailRefusalAboutType };
 
 type LoginType = { id: string; name: string; email: string };
 
@@ -111,7 +114,9 @@ async function setUp(
       senderEmail: details.senderEmail,
       notifyEmail: details.notifyEmail,
     });
-    if (!checked.ok) return { ok: false, code: "key_refused", reason: checked.reason };
+    if (!checked.ok) {
+      return { ok: false, code: "email_refused", reason: checked.reason, about: checked.about };
+    }
   }
 
   // Better Auth's two server-side creates skip their own permission checks when they carry

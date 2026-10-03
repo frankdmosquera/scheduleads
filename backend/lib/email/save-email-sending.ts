@@ -9,7 +9,7 @@ import { emailSendingKey, organization } from "@scheduleads-app/shared/db";
 import { decryptCredentials, readTokenKey } from "@scheduleads-app/shared/crypto";
 
 import { db } from "../../database.js";
-import { checkEmailSendingKey } from "./check-email-sending-key.js";
+import { checkEmailSendingKey, type EmailRefusalAboutType } from "./check-email-sending-key.js";
 import { findEmailSendingState, type EmailSendingStateType } from "./find-email-sending-state.js";
 import { storeEmailSendingKey } from "./store-email-sending-key.js";
 
@@ -20,7 +20,8 @@ export type SaveEmailSendingInputType = {
 };
 
 export type SaveEmailSendingResultType =
-  { ok: true; state: EmailSendingStateType } | { ok: false; reason: string };
+  | { ok: true; state: EmailSendingStateType }
+  | { ok: false; reason: string; about: EmailRefusalAboutType };
 
 // The key the test email goes with: the new one, else the saved one. A saved key that can no
 // longer be opened (a changed token key) is asked for again rather than silently skipped.
@@ -55,7 +56,11 @@ export async function saveEmailSending(
 
   const apiKey = await keyToTest(organizationId, input.key);
   if (apiKey === "unreadable") {
-    return { ok: false, reason: "The saved key can no longer be read. Paste it again." };
+    return {
+      ok: false,
+      reason: "The saved key can no longer be read. Paste it again.",
+      about: "key",
+    };
   }
   if (apiKey) {
     const checked = await checkEmailSendingKey({

@@ -216,7 +216,7 @@ sending limit. Quote the display name (escaping `"` and `\`) in the from
 line, which 6.6 will build the same way.
 **Resolution:** Fixed in 6.2's review fixes: a sending limit and a sender address Resend will not take (422, invalid_from_address) now get their own plain reasons; only what a retry can fix says to try again. The business name is quoted in the from line (format-sender.ts), so a name with a comma or an ampersand stays one name. Tests: the two new refusals, and a name with a comma, an ampersand and quotes.
 
-### F-101 [P3] fixed - An unreadable saved key blocks saving the new key that would replace it
+### F-101 [P3] closed - An unreadable saved key blocks saving the new key that would replace it
 
 **File:** backend/lib/email/save-email-sending-key.ts:16 (decrypt: backend/lib/email/find-business-email-details.ts:51)
 **Found:** 2026-10-02 by independent review of step 6.2 (scope: 7e287c0..8e181e9; lenses: quality, security, performance, tests)
@@ -231,7 +231,7 @@ cannot open as replaceable (hand-back-calendar-permission.ts returns
 **Suggested fix:** Read only the name and the two addresses in
 saveEmailSendingKey (a select of its own, or a reader option that skips the
 key); the old key is overwritten, never needed.
-**Resolution:** Fixed in 6.2's review fixes: saveEmailSendingKey reads only the name and the two addresses, never the stored key, so a key that can no longer be unlocked is still replaced. Test: a broken stored key is replaced by a new one.
+**Resolution:** Fixed in 6.2's review fixes: saveEmailSendingKey reads only the name and the two addresses, never the stored key, so a key that can no longer be unlocked is still replaced. Test: a broken stored key is replaced by a new one. Closed 2026-10-02 by independent review of step 6.3: save-email-sending-key.ts is gone, and its successor backend/lib/email/save-email-sending.ts (in this step's scope) opens the saved key only when no new key is pasted (keyToTest returns a new key first), so a new key still replaces one that cannot be unlocked; with no new key, an unreadable one is answered "Paste it again" instead of a 500. Both cases are tests in email-sending-key.test.ts and pass.
 
 ### F-102 [P3] fixed - The test of a wrong key fakes 401, so the branch that catches Resend's real wrong-key answer is untested
 
@@ -259,3 +259,53 @@ under Phone, unlike every other field's plain message.
 **Suggested fix:** Give `.min(1, ...)` a plain message, or treat a phone of
 only spaces as empty, the way the other optional fields read.
 **Resolution:** Fixed in 6.2's review fixes: a phone of only spaces answers "Enter a phone number, or leave it empty." Test added.
+
+### F-104 [P3] fixed - A refusal about the sender address is shown under the key field, even when no key was pasted
+
+**File:** frontend/lib/api-client.ts:236 (refusal: backend/routes/email-sending-routes.ts:53; focus: frontend/components/email-sending/email-sending-card.tsx:119)
+**Found:** 2026-10-02 by independent review of step 6.3 (scope: 41d8fd8..5e79646; lenses: quality, security, performance, tests)
+**Why it matters:** Every reason from the test email comes back as one code,
+`key_refused`, and saveEmailSending puts every `key_refused` under the
+"Resend key" field and focuses it. Two of those reasons are about the
+address, not the key: "Resend would not send from this address..." (a 403
+for an unverified domain) and "Resend would not accept this sender
+address...". Decision 9's own case shows it: an owner with a key saved
+changes "Emails come from" to a new domain and leaves the key empty; the
+refusal (the one email-sending-key.test.ts asserts for exactly this case)
+lands in red under the empty key field, so the owner is pointed at the key
+and may paste a new one, when the fix is the sender's domain.
+**Suggested fix:** Let the backend say which field a reason is about (a
+second code such as `sender_refused`, or a `field` on the refusal), and put
+sender refusals under "Emails come from" and account-wide ones (the sending
+limit, "try again shortly") in the card's notice.
+**Resolution:** Fixed in 6.3's review fixes: checkEmailSendingKey now says what a refusal is about (the key, the sender, or neither), and both forms get a code for each: key_refused under the key field, sender_refused under "Emails come from", email_test_failed as a notice (email-refusal-code.ts). Tests: each refusal's subject in the check's table; a sender refusal on the card answers sender_refused.
+
+### F-105 [P3] fixed - Nothing fails if the Email sending routes lose their plan checks
+
+**File:** backend/routes/email-sending-routes.test.ts:154 (checks: backend/routes/email-sending-routes.ts:23-24, :35-36)
+**Found:** 2026-10-02 by independent review of step 6.3 (scope: 41d8fd8..5e79646; lenses: quality, security, performance, tests)
+**Why it matters:** Both routes mount requireKnownSubscriptionMiddleware and
+requireModuleMiddleware("booking"), like the calendar card's routes. In this
+review both were removed from GET and PUT and all 18 tests in
+email-sending-routes.test.ts and email-sending-key.test.ts still passed
+(reverted after). calendar-routes.test.ts proves the same checks with a
+business on a plan without booking (a 403); here a later edit could let a
+business without the booking module set up sending, with nothing to catch it.
+**Suggested fix:** Add the calendar tests' no-booking tenant (an
+unrecognised plan stands in until a real tier lacks booking) and expect 403
+from GET and PUT, with no test email asked for.
+**Resolution:** Fixed in 6.3's review fixes: a business on a plan without booking is refused reading and saving the card, with nothing sent. Proved: with both plan checks removed the test fails. The booking check alone cannot be told apart from the known-plan check until a real tier lacks booking (feature 23), as on the calendar card.
+
+### F-106 [P3] fixed - A step number in a code comment, and the spec still names the removed save-email-sending-key.ts
+
+**File:** backend/middleware/dashboard-middleware/dashboard-cors-middleware.ts:12; blueprint/context/current-feature.md:297
+**Found:** 2026-10-02 by independent review of step 6.3 (scope: 41d8fd8..5e79646; lenses: quality, security, performance, tests)
+**Why it matters:** coding-standards.md says no history in code comments,
+step numbers named first; the new CORS comment ends "(6.3)". The spec's
+Files / areas list, which /complete and later steps read, still names
+`save-email-sending-key.ts`, removed in this step, and not
+`save-email-sending.ts` or `find-email-sending-state.ts`, which replaced it.
+**Suggested fix:** Drop "(6.3)" from the comment (the reason, saving the
+Email sending card, can stay). In Files / areas, name the two new files in
+place of the removed one.
+**Resolution:** Fixed in 6.3's review fixes: the step number is out of the CORS comment, and the spec's Files / areas names the files that replaced save-email-sending-key.ts.
