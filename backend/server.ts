@@ -11,7 +11,7 @@ import { readBookingLinkKey } from "./lib/booking/read-booking-link-key.js";
 import { googleOauthClient } from "./lib/calendar/google-oauth-client.js";
 import { readEmailSettings } from "./lib/email/read-email-settings.js";
 
-const port = Number(process.env.PORT ?? 3001); // 3000 is the frontend's
+const port = Number(process.env.PORT ?? 3401); // 3400 is the frontend's
 
 if (!Number.isInteger(port) || port <= 0 || port > 65535) {
   throw new Error(`PORT must be a valid port number, received: ${process.env.PORT}`);

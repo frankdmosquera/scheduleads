@@ -549,7 +549,7 @@ try {
   });
 
   console.log(
-    `\nSeeded ${database}. Sign in at http://localhost:3000/sign-in; codes print in the API console.`
+    `\nSeeded ${database}. Sign in at http://localhost:3400/sign-in; codes print in the API console.`
   );
 } finally {
   await client.end();

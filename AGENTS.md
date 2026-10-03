@@ -433,20 +433,24 @@ Prettier is a root dev dependency, configured in `.prettierrc`. `.prettierignore
 keeps it to code: docs, the Blueprint skills and generated files are never
 reformatted.
 
-- Frontend dev server: `npm run dev --workspace=frontend` (http://localhost:3000)
-- Backend dev server: `npm run dev --workspace=backend` (http://localhost:3001)
+- Frontend dev server: `npm run dev --workspace=frontend` (http://localhost:3400)
+- Backend dev server: `npm run dev --workspace=backend` (http://localhost:3401)
 - Frontend build: `npm run build --workspace=frontend`
 - Backend build: `npm run build --workspace=backend`
 - Frontend start (serves the build): `npm run start --workspace=frontend`
 - Backend start (runs `dist/`): `npm run start --workspace=backend`
 - Frontend lint: `npm run lint --workspace=frontend`
 
-The frontend must get port 3000. The API trusts only that origin, and when
-another app already holds 3000, Next moves to 3001 without asking, collides
-with the API, and the sign-in page ends up sending its auth calls to itself.
-Starting the frontend also rebuilds `packages/shared`, which restarts the
-API's watcher, and that restart is the moment the port can be lost. Check that
-the frontend reports 3000 before signing in.
+**Scheduleads owns 3400 (frontend) and 3401 (API), and nothing else.**
+Decided by Frank, 2026-10-03. His other projects run on 3000/3001 and are
+never stopped, never asked about, for any check. The frontend is pinned with
+`-p 3400`, so if 3400 is taken it fails loudly instead of drifting onto the
+API's port. If one is taken, check what holds it: a leftover scheduleads
+process is stopped, anything else is reported and left running. The ports
+move together: `PORT`, `BETTER_AUTH_URL` and `APP_ORIGIN` in `.env`, the
+`-p` in the frontend's scripts, and the fallbacks in `backend/server.ts`,
+`backend/lib/auth/auth-server.ts` and `frontend/lib/auth-client.ts`. Google's
+OAuth client lists `http://localhost:3401/calendar/callback` as its redirect.
 
 Database, all from `packages/shared`, which owns the schema and the migration
 ledger:

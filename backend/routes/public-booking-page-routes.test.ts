@@ -40,7 +40,7 @@ const { localTimeToMoment } = await import("../lib/local-time/local-time-to-mome
 const { booking } = await import("@scheduleads-app/shared/db");
 
 const tag = randomUUID().slice(0, 8);
-const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3000";
+const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3400";
 const jane = {
   name: "Jane Doe",
   email: `jane-${tag}@example.com`,

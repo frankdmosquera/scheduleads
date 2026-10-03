@@ -42,11 +42,11 @@ function settingWithDevDefault(name: string, developmentDefault: string): string
 
 // The dashboard's address, the only site allowed to hold a session. Exported so the
 // CORS middleware reads the same value.
-export const appOrigin = settingWithDevDefault("APP_ORIGIN", "http://localhost:3000");
+export const appOrigin = settingWithDevDefault("APP_ORIGIN", "http://localhost:3400");
 
 // The API's own address. Better Auth builds its URLs from it, and so does the calendar's
 // return address from Google.
-export const apiOrigin = settingWithDevDefault("BETTER_AUTH_URL", "http://localhost:3001");
+export const apiOrigin = settingWithDevDefault("BETTER_AUTH_URL", "http://localhost:3401");
 
 // Every action a business role can be granted. Written out instead of importing Better
 // Auth's defaultStatements, which adds `team` and `ac` rows we don't use.

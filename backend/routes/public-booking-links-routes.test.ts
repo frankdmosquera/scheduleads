@@ -31,7 +31,7 @@ const {
 const { localDate } = await import("../lib/local-time/local-date.js");
 const { addDays } = await import("../lib/local-time/add-days.js");
 
-const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3000";
+const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3400";
 
 // Rows this file adds, and removes after. A random tag keeps them apart from the seed.
 const tag = randomUUID().slice(0, 8);

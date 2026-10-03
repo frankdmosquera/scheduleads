@@ -38,7 +38,7 @@ const { bookingEventWrites } = await import("../lib/booking/booking-event-writes
 const { bookingConfirmationEmails } = await import("../lib/booking/booking-confirmation-emails.js");
 const { addDays } = await import("../lib/local-time/add-days.js");
 
-const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3000";
+const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3400";
 const tag = randomUUID().slice(0, 8);
 const id = () => randomUUID();
 
