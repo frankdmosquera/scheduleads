@@ -14,14 +14,28 @@ try {
   // No .env: the environment must already carry DATABASE_URL.
 }
 
+// The sign-in helper reads codes from the console, so these tests never send a real email, even
+// when .env holds the agency's Resend key.
+delete process.env.RESEND_API_KEY;
+delete process.env.LOGIN_EMAIL_FROM;
+
 assertLocalDevDatabase(process.env.DATABASE_URL, "run the admin route tests");
 
 // Imported after the env is loaded: they read it the moment they load.
 const { app } = await import("../app.js");
 const { db } = await import("../database.js");
 const { appOrigin, auth } = await import("../lib/auth/auth-server.js");
-const { clientSetupClaim, invitation, member, organization, pipelineStage, resource, user } =
-  await import("@scheduleads-app/shared/db");
+const {
+  clientSetupClaim,
+  emailSendingKey,
+  invitation,
+  member,
+  organization,
+  pipelineStage,
+  resource,
+  user,
+} = await import("@scheduleads-app/shared/db");
+const { decryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 
 const tag = randomUUID().slice(0, 8);
 const email = (name: string) => `admin-${name}-${tag}@example.com`;
@@ -453,6 +467,146 @@ describe("POST /admin/clients", () => {
     expect(response.status).toBe(500);
     expect(logged.length).toBeGreaterThan(0);
     for (const line of logged) expect(line).not.toContain(email("logged"));
+  });
+});
+
+describe("the business's email details at setup (feature 6)", () => {
+  const resendCalls: { headers: Headers; body: Record<string, unknown> }[] = [];
+  let resendAnswer: () => Response = () => new Response("{}");
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+
+  beforeAll(() => {
+    // Only the key's test email reaches out; it never leaves the machine.
+    vi.stubGlobal("fetch", async (_url: RequestInfo | URL, init?: RequestInit) => {
+      resendCalls.push({
+        headers: new Headers(init?.headers),
+        body: JSON.parse(String(init?.body)),
+      });
+      return resendAnswer();
+    });
+  });
+
+  afterAll(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test("setup stores the details, the owner's email standing in for an empty notification address", async () => {
+    const response = await setUp(
+      {
+        ...client("details"),
+        senderEmail: " Bookings@Example.com ",
+        notifyEmail: "",
+        phone: "403 555 0100",
+        website: "https://example.com",
+        brandColor: "#1D4ED8",
+      },
+      platformAdmin.email
+    );
+
+    expect(response.status).toBe(201);
+    const [business] = await businessesWith(slugOf("details"));
+    expect(business).toMatchObject({
+      senderEmail: "bookings@example.com",
+      notifyEmail: email("details"),
+      phone: "403 555 0100",
+      website: "https://example.com",
+      brandColor: "#1d4ed8",
+    });
+  });
+
+  test.each([
+    [
+      "a colour that is not #rrggbb",
+      "colour",
+      { brandColor: "blue" },
+      "Use a colour like #1d4ed8.",
+    ],
+    [
+      "a website without https",
+      "website",
+      { website: "http://example.com" },
+      "Use the full website address, starting https://",
+    ],
+    [
+      "a sender that is not an email",
+      "sender",
+      { senderEmail: "bookings" },
+      "Enter a valid email address.",
+    ],
+    [
+      "a key without a sender to test it from",
+      "unsent-key",
+      { emailSendingKey: "re_business_key_123" },
+      "Enter the address emails come from, so the key can be tested.",
+    ],
+  ])("%s is refused with 400 and makes nothing", async (_name, name, change, message) => {
+    const response = await setUp({ ...client(name), ...change }, platformAdmin.email);
+
+    expect(response.status).toBe(400);
+    expect((await response.json()).error.message).toBe(message);
+    expect(await loginsWith(email(name))).toHaveLength(0);
+  });
+
+  test("a key whose test email went is stored locked, and never comes back in an answer or a log line", async () => {
+    resendAnswer = () => json({ id: "email-1" });
+    resendCalls.length = 0;
+    const spies = ["log", "info", "warn", "error"].map((level) =>
+      vi.spyOn(console, level as "log").mockImplementation(() => {})
+    );
+
+    const response = await setUp(
+      {
+        ...client("keyed"),
+        senderEmail: "bookings@example.com",
+        emailSendingKey: "re_business_key_123",
+      },
+      platformAdmin.email
+    );
+    const text = await response.text();
+    const lines = spies.flatMap((spy) => spy.mock.calls.flat().map(String));
+    for (const spy of spies) spy.mockRestore();
+
+    expect(response.status).toBe(201);
+    expect(text).not.toContain("re_business_key_123");
+    for (const line of lines) expect(line).not.toContain("re_business_key_123");
+    expect(resendCalls).toHaveLength(1);
+    expect(resendCalls[0].headers.get("Authorization")).toBe("Bearer re_business_key_123");
+    expect(resendCalls[0].body).toMatchObject({
+      from: `"${businessName("keyed")}" <bookings@example.com>`,
+      to: [email("keyed")],
+    });
+    const [business] = await businessesWith(slugOf("keyed"));
+    const [stored] = await db
+      .select()
+      .from(emailSendingKey)
+      .where(eq(emailSendingKey.organizationId, business.id));
+    expect(stored.credentials).not.toContain("re_business_key_123");
+    expect(decryptCredentials(stored.credentials, readTokenKey(), business.id)).toBe(
+      "re_business_key_123"
+    );
+  });
+
+  test("a key whose test email is refused answers 422 with the reason and makes nothing", async () => {
+    resendAnswer = () => json({ name: "invalid_api_key", statusCode: 401, message: "no" }, 401);
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await setUp(
+      {
+        ...client("refused-key"),
+        senderEmail: "bookings@example.com",
+        emailSendingKey: "re_wrong_key_123",
+      },
+      platformAdmin.email
+    );
+    quiet.mockRestore();
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({
+      error: { code: "key_refused", message: "Resend refused this key." },
+    });
+    expect(await loginsWith(email("refused-key"))).toHaveLength(0);
+    expect(await businessesWith(slugOf("refused-key"))).toHaveLength(0);
   });
 });
 

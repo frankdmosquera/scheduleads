@@ -9,6 +9,6 @@ import { appOrigin } from "../../lib/auth/auth-server.js";
 export const dashboardCorsMiddleware = cors({
   origin: appOrigin,
   allowHeaders: ["Content-Type"],
-  allowMethods: ["GET", "POST", "OPTIONS"],
+  allowMethods: ["GET", "POST", "PUT", "OPTIONS"], // PUT: saving the Email sending card
   credentials: true,
 });

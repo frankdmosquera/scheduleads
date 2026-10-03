@@ -1,0 +1,85 @@
+// Backend: proves a business's own Resend key works before anything keeps it, by sending one
+// test email with it, from the business's address to its notification address. A refusal is
+// answered in plain words for the form; the key itself never reaches an answer or a log.
+
+import { randomUUID } from "node:crypto";
+
+import { formatSender } from "./format-sender.js";
+import { SendEmailError } from "./send-email-error.js";
+import { sendEmail } from "./send-email.js";
+
+export type CheckEmailSendingKeyInputType = {
+  apiKey: string;
+  businessName: string;
+  senderEmail: string; // the address at the business's verified domain
+  notifyEmail: string; // where the test email lands
+};
+
+// What a refusal is about, so a form shows it under the right field: the key, the sender
+// address, or neither (a limit, or Resend having trouble).
+export type EmailRefusalAboutType = "key" | "sender" | "other";
+
+export type CheckEmailSendingKeyResultType =
+  { ok: true } | { ok: false; reason: string; about: EmailRefusalAboutType };
+
+const escapeHtml = (text: string) =>
+  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+// Resend's answers, in words an owner can act on. Its error name first: a wrong key comes back
+// as 403, like an unverified domain. Only what a retry can fix says to try again.
+function refusalFor(error: SendEmailError): { reason: string; about: EmailRefusalAboutType } {
+  if (error.code.endsWith("api_key") || error.status === 401) {
+    return { reason: "Resend refused this key.", about: "key" };
+  }
+  if (error.code === "daily_quota_exceeded" || error.code === "monthly_quota_exceeded") {
+    return {
+      reason:
+        "This Resend account has reached its sending limit. " +
+        "Raise it in Resend, or wait for it to reset.",
+      about: "other",
+    };
+  }
+  if (error.status === 403) {
+    return {
+      reason:
+        "Resend would not send from this address. Check that its domain is verified in the same " +
+        "Resend account, and that the key may send from it.",
+      about: "sender",
+    };
+  }
+  if (error.status === 422 || error.code === "invalid_from_address") {
+    return {
+      reason:
+        "Resend would not accept this sender address. " +
+        "Check it is a real address at the business's domain.",
+      about: "sender",
+    };
+  }
+  return {
+    reason: "Resend could not send the test email just now. Try again shortly.",
+    about: "other",
+  };
+}
+
+export async function checkEmailSendingKey(
+  input: CheckEmailSendingKeyInputType
+): Promise<CheckEmailSendingKeyResultType> {
+  try {
+    await sendEmail({
+      apiKey: input.apiKey,
+      kind: "email_key_check",
+      from: formatSender(input.businessName, input.senderEmail),
+      to: [input.notifyEmail],
+      subject: "Your booking emails are set up",
+      text: `This test email shows that ${input.businessName}'s booking emails can be sent.`,
+      html:
+        `<p>This test email shows that ${escapeHtml(input.businessName)}'s booking emails ` +
+        "can be sent.</p>",
+      idempotencyKey: `email-key-check/${randomUUID()}`, // each check is its own email
+    });
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof SendEmailError) return { ok: false, ...refusalFor(error) };
+    throw error;
+  }
+}

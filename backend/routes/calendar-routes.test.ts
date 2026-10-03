@@ -15,6 +15,11 @@ try {
   // No .env: the environment must already carry DATABASE_URL and the Google values.
 }
 
+// The sign-in helper reads codes from the console, so these tests never send a real email, even
+// when .env holds the agency's Resend key.
+delete process.env.RESEND_API_KEY;
+delete process.env.LOGIN_EMAIL_FROM;
+
 assertLocalDevDatabase(process.env.DATABASE_URL, "run the calendar route tests");
 
 // Imported after the env is loaded: they read it the moment they load.

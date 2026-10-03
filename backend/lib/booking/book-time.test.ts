@@ -39,6 +39,7 @@ const {
 } = await import("@scheduleads-app/shared/db");
 const { bookTime } = await import("./book-time.js");
 const { bookingEventWrites } = await import("./booking-event-writes.js");
+const { bookingConfirmationEmails } = await import("./booking-confirmation-emails.js");
 const { holdFirstFreeChoice } = await import("./hold-first-free-choice.js");
 const { holdTime } = await import("../scheduling/hold-time.js");
 const { saveCalendarConnection } = await import("../calendar/save-calendar-connection.js");
@@ -169,6 +170,7 @@ afterEach(() => {
 
 afterAll(async () => {
   await bookingEventWrites.settled(); // no Google write outlives the database
+  await bookingConfirmationEmails.settled(); // nor an email
   await db.delete(organization).where(like(organization.slug, `test-book-%-${tag}`));
   await db.delete(user).where(like(user.email, `owner-%-${tag}@example.com`));
   await db.$client.end();

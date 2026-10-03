@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash c6e2b1dc5bcff4313531c5b32eafe04761e6f0a1044a4f3e3273e56338a67014 -->
+<!-- blueprint:source-hash 79fbb093e73ecd228d3586d9ebe45572e6f0af8402ee2f4b620aa2bb1e28d069 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -208,7 +208,7 @@ API (`backend/app.ts`, one chain so `AppType` carries every route):
 - Health: `GET /health`, no database on purpose.
 - Env, names only: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
   `APP_ORIGIN`, `COOKIE_DOMAIN`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
-  `CALENDAR_TOKEN_KEY`, `RESEND_API_KEY`, `TWILIO_*`, `PORT`, `WIDGET_ORIGINS`;
+  `CALENDAR_TOKEN_KEY`, `RESEND_API_KEY`, `LOGIN_EMAIL_FROM`, `TWILIO_*`, `PORT`, `WIDGET_ORIGINS`;
   the frontend gets only `NEXT_PUBLIC_API_URL`. Losing `CALENDAR_TOKEN_KEY`
   makes every stored calendar connection undecryptable.
 - CORS: public routes allow `WIDGET_ORIGINS` and the dashboard, never with
@@ -217,7 +217,8 @@ API (`backend/app.ts`, one chain so `AppType` carries every route):
   half, finished before item 13.
 - **Client data is never lost by one mistake**: daily backups, a nightly copy
   outside Railway and a tested restore before the first real client (12c).
-- Login codes cannot be sent in production until email exists (item 6).
+- Login codes go by email from the agency's address (feature 6, decision 7);
+  production refuses to start without `RESEND_API_KEY` and `LOGIN_EMAIL_FROM`.
 - A failed calendar check never reports "free".
 
 ## Open questions

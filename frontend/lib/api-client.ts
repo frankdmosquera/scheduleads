@@ -3,7 +3,10 @@
 
 import { hc, type InferResponseType } from "hono/client";
 
-import type { ProvisionClientInputType } from "@scheduleads-app/shared/zod-validation";
+import type {
+  EmailSendingInputType,
+  ProvisionClientInputType,
+} from "@scheduleads-app/shared/zod-validation";
 import type { AppType } from "backend/app-type";
 
 import { API_URL } from "./auth-client";
@@ -155,7 +158,11 @@ export type ProvisionedClientType = InferResponseType<typeof provisionClientRout
 
 export type ProvisionClientResultType =
   | { state: "ok"; answer: ProvisionedClientType }
-  | { state: "field"; field: "clientEmail" | "businessName"; message: string }
+  | {
+      state: "field";
+      field: "clientEmail" | "businessName" | "emailSendingKey" | "senderEmail";
+      message: string;
+    }
   | { state: "refused"; message: string };
 
 // The platform admin's "Set up a client": the API makes the client's login and business.
@@ -174,6 +181,11 @@ export async function provisionClient(
 
   if (body.error?.code === "email_taken") return { state: "field", field: "clientEmail", message };
   if (body.error?.code === "slug_taken") return { state: "field", field: "businessName", message };
+  if (body.error?.code === "key_refused") {
+    return { state: "field", field: "emailSendingKey", message };
+  }
+  if (body.error?.code === "sender_refused")
+    return { state: "field", field: "senderEmail", message };
   return { state: "refused", message };
 }
 
@@ -191,4 +203,44 @@ export async function startCalendarConnect(): Promise<StartCalendarConnectResult
     message:
       body.error?.message ?? `The API answered with an unexpected status (${response.status}).`,
   };
+}
+
+const emailSendingRoute = dashboardApiClient["email-sending"];
+
+// The owner's Email sending card: the two addresses and when the key was saved. Never the key.
+export type EmailSendingStateType = InferResponseType<typeof emailSendingRoute.$get, 200>;
+
+export type EmailSendingResultType =
+  { state: "ok"; answer: EmailSendingStateType } | { state: "unreachable"; message: string };
+
+export async function fetchEmailSending(): Promise<EmailSendingResultType> {
+  const response = await emailSendingRoute.$get().catch(() => null);
+  if (!response) return { state: "unreachable", message: notResponding };
+  if (response.status === 200) return { state: "ok", answer: await response.json() };
+  return {
+    state: "unreachable",
+    message: `The API answered with an unexpected status (${response.status}).`,
+  };
+}
+
+export type SaveEmailSendingResultType =
+  | { state: "ok"; answer: EmailSendingStateType }
+  | { state: "field"; field: "key" | "senderEmail"; message: string }
+  | { state: "refused"; message: string };
+
+// Saving the card. A key Resend refused comes back as a message under the key's field.
+export async function saveEmailSending(
+  input: EmailSendingInputType
+): Promise<SaveEmailSendingResultType> {
+  const response = await emailSendingRoute.$put({ json: input }).catch(() => null);
+  if (!response) return { state: "refused", message: notResponding };
+  if (response.status === 200) return { state: "ok", answer: await response.json() };
+
+  const body = (await response.json().catch(() => ({}))) as RefusalType;
+  const message =
+    body.error?.message ?? `The API answered with an unexpected status (${response.status}).`;
+  if (body.error?.code === "key_refused") return { state: "field", field: "key", message };
+  if (body.error?.code === "sender_refused")
+    return { state: "field", field: "senderEmail", message };
+  return { state: "refused", message };
 }

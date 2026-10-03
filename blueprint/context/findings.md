@@ -123,3 +123,17 @@ seed and the other files rely on that.
 **Suggested fix:** Release Google in a `finally` around the test body (or in
 `afterEach`), so a failure still lets the write settle and the cleanup run.
 **Resolution:**
+
+### F-116 [P3] open - Finding numbers in three code comments added by this feature
+
+**File:** backend/lib/auth/auth-server.ts:157; backend/lib/auth/login-code-timing.test.ts:2; backend/lib/auth/send-login-code.test.ts:37
+**Found:** 2026-10-03 by independent review of feature 6 (scope: 7dc0721..8858d37; lenses: quality, security, performance, tests)
+**Why it matters:** coding-standards.md (Comments) rules out history in code
+comments, finding numbers named; F-112 and F-115 were the same slip and were
+fixed. Three comments written for the F-97 and F-98 repairs still end in
+"(F-97)" or "(F-98)". After `/complete` archives the ledger these become
+`6/F-97`, so the bare numbers in the code point at nothing a later reader can
+find. The comments' reasons are already said in words around them.
+**Suggested fix:** Drop the three parenthesised numbers and keep the
+sentences as they are.
+**Resolution:**

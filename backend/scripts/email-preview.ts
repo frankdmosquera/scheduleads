@@ -1,0 +1,42 @@
+// Backend: writes the two booking emails, filled with a sample booking, to .email-preview/ to open
+// in a browser. Nothing is sent. Run: npm run email:preview --workspace=backend
+
+import { mkdirSync, writeFileSync } from "node:fs";
+
+import { renderBookingConfirmation } from "../emails/booking-confirmation.js";
+import type { BookingEmailFactsType } from "../emails/booking-email-facts-type.js";
+import { renderBookingNotification } from "../emails/booking-notification.js";
+
+const sampleFacts: BookingEmailFactsType = {
+  business: {
+    name: "Summit Painting (dev)",
+    logo: null,
+    phone: "(403) 555-0100",
+    website: "https://example.com",
+    brandColor: "#1d4ed8",
+    timezone: "America/Edmonton",
+  },
+  service: "Exterior painting estimate",
+  startsAt: new Date("2026-10-08T15:00:00Z"), // 9:00 a.m. in Edmonton
+  personName: "Marco",
+  location: "12 Main Street, Calgary",
+  customer: {
+    name: "Jane Doe",
+    email: "jane@example.com",
+    phone: "(403) 555-0148",
+    details:
+      "Two storeys, stucco, last painted about ten years ago.\n\nThe back fence too, please. Mornings are best.",
+  },
+};
+
+const folder = new URL("../.email-preview/", import.meta.url);
+mkdirSync(folder, { recursive: true });
+for (const [name, render] of [
+  ["booking-confirmation", renderBookingConfirmation],
+  ["booking-notification", renderBookingNotification],
+] as const) {
+  const email = await render(sampleFacts);
+  const file = new URL(`${name}.html`, folder);
+  writeFileSync(file, email.html);
+  console.log(`[email preview] ${email.subject}\n  ${file.pathname}`);
+}

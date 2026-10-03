@@ -1,8 +1,8 @@
 // Backend: books one time for a service, the one path every booking takes. A form already booked
 // answers that booking; the time is checked again; then the contact, a new lead in the first stage,
 // the booking, its held time and the timeline entry land in one transaction, or nothing does; then
-// the event starts going into the booked person's Google, without the answer waiting for it. A
-// customer gets only the free times they are offered; the owner any time nobody is busy
+// the event starts going into the booked person's Google and the emails start going out, without
+// the answer waiting for either. A customer gets only the free times they are offered; the owner any time nobody is busy
 // (decision 11).
 
 import { randomUUID } from "node:crypto";
@@ -33,6 +33,7 @@ import { findStandbyDates } from "../scheduling/find-standby-dates.js";
 import { isRoomFree } from "../scheduling/is-room-free.js";
 import { orderAnyAvailable } from "../scheduling/order-any-available.js";
 import { overlapsAny } from "../scheduling/overlaps-any.js";
+import { bookingConfirmationEmails } from "./booking-confirmation-emails.js";
 import { bookingEventWrites } from "./booking-event-writes.js";
 import { holdFirstFreeChoice } from "./hold-first-free-choice.js";
 
@@ -326,9 +327,10 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
       );
       return { contactId: contact.id, ...held };
     });
-    // Saved. Now the booked person's Google, outside the transaction and not awaited: the answer
-    // never waits for Google, and a failure keeps the booking (decision 6, F-93).
+    // Saved. Now the booked person's Google and the emails, outside the transaction and not
+    // awaited: the answer never waits for either, and a failure keeps the booking (decision 6).
     bookingEventWrites.start(organizationId, bookingId);
+    bookingConfirmationEmails.start(organizationId, bookingId);
     return {
       booked: true,
       alreadyBooked: false,

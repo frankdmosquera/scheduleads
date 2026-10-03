@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { AuthCard, Notice } from "@/components/auth-card";
 import { BookingLinksList } from "@/components/booking-links/booking-links-list";
 import { CalendarConnectionCard } from "@/components/calendar/calendar-connection-card";
+import { EmailSendingCard } from "@/components/email-sending/email-sending-card";
 import { SignOutLink } from "@/components/sign-out-link";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
@@ -249,6 +250,8 @@ function SignedIn({
         <BookingLinksList slug={me.organization.slug} />
 
         <CalendarConnectionCard />
+
+        <EmailSendingCard />
 
         <div className="mt-4 flex justify-center gap-4 text-sm text-muted-foreground">
           {isPlatformAdmin(session?.user) ? (
