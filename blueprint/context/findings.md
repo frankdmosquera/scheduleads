@@ -51,24 +51,6 @@ confirm the production `invitation` table holds no pending row.
 **Resolution:**
 Carried on Frank's call, 2026-09-30: checked on the live database before the first client-facing deploy (the `invitation` table must be empty, or its rows cancelled). Nothing in code to change.
 
-### F-52 [P3] open - holdTime and releaseTime cannot join a caller's transaction, which 5d and feature 7 need
-
-**File:** backend/lib/scheduling/hold-time.ts:33
-**Found:** 2026-10-01 by /audit independent (scope: step 5a.2, 1def0b9..d5175ae; lens: quality)
-**Why it matters:** The declared deviation holds for this step: one
-`INSERT ... VALUES` is atomic in Postgres, and its foreign key checks run
-inside the same statement, so a refused row takes the whole hold with it (the
-cross-business test proves `mine.ana` gets no row). But both functions always
-use the global `db`. 5d writes the booking, its commitments and the timeline
-entry together, and feature 7's reschedule must release the old time and hold
-the new one together; neither can be all-or-nothing through these functions as
-written. Inside a transaction, a `23P01` also aborts the whole transaction, so
-answering `{ held: false }` there needs a savepoint.
-**Suggested fix:** Nothing to change in 5a. Decide in 5d's spec: let both take
-an optional executor (`db` or a transaction) and hold inside a nested
-transaction (savepoint) so "taken" leaves the caller's transaction usable.
-**Resolution:**
-
 ### F-58 [P3] open - The seed never gives an existing Chemical Peel its 15-minute step, so a migrated (not rebuilt) dev database keeps it empty
 
 **File:** packages/shared/scripts/seed-dev.ts:485
@@ -108,43 +90,36 @@ and share it across people, or work out each date's offset once and only fall
 back to `localTimeToMoment` on clock-change days.
 **Resolution:** Confirmed (unverified to open) by independent review of step 5c.4 (2026-10-02). The cost is real and is synchronous work, so reading people side by side (Promise.all) shortens the database and Google waits but not this: each person's applyFreeTimesRules still runs one after another on the event loop. Measured in a scratch copy, the rules alone for 7 people over 31 dates (30 minutes, 15 after, one room): weekdays 9 to 17 every 15 minutes, about 73 ms; every day all day every 15 minutes, about 416 ms; every day all day every 5 minutes, about 1.15 s. The build log's 75 ms for the dev clinic matches the first case, so that request is almost all this work, not the reads. Fine for the four tenants' daytime hours; it grows with long windows and a small step (the database allows any step above 0), on a public route with no rate limit yet. Stays a P3, for feature 9 (first public traffic) or feature 12 (where an owner sets the step): work out each date's offset once per request and share it across people, or put a floor on the step.
 
-### F-64 [P3] open - chooseAnyAvailable needs "only the free rooms", but no code says which rooms are free, so 5d would rebuild the room rule
+### F-94 [P3] open - chooseAnyAvailable has no caller outside its own test, while the spec still says the booking's order comes from it
 
-**File:** backend/lib/scheduling/apply-free-times-rules.ts:87
-**Found:** 2026-10-02 by independent review of step 5c.3 (scope: 4d6d1ce..4858600; lenses: all)
-**Why it matters:** The contract trusts the caller to pass only free people
-and only free rooms. Free people can be found by running
-`applyFreeTimesRules` for one person and one date and checking the start is
-in the answer. Free rooms cannot: the room rule (not on standby that date,
-and no busy block over the appointment plus both buffers, half-open) lives
-inline at lines 87 to 95, and `FreeTimesRoomType` (line 20) has no
-`resourceId`, so nothing returns which rooms passed. 5d would have to write
-that rule a second time, and two copies of it can drift (for example one
-checking the buffers and one not), which would let a booking take a room the
-free-time list never offered.
-**Suggested fix:** When 5d is specced, name how it gets the free rooms: pull
-the room check out into one exported helper (for example
-`isRoomFree(room, date, spanStart, spanEnd)` in its own file) used by both
-`applyFreeTimesRules` and 5d, with `resourceId` on the room input.
+**File:** backend/lib/scheduling/choose-any-available.ts:11 (spec: blueprint/context/current-feature.md:255 and :434)
+**Found:** 2026-10-02 by the second final independent review of feature 5d (scope: 12a21d6..3cec4ae; lenses: quality, security, performance, tests)
+**Why it matters:** bookTime takes the whole try order from
+`orderAnyAvailable` (book-time.ts:276), so `chooseAnyAvailable`, built in 5c
+for this booking, is now called only by choose-any-available.test.ts. Its
+header still says it decides who gets an "any available" booking, and the
+spec's 5d.3 bullet and Notes for the AI still name it as the function the
+booking reuses. A reader following the spec opens a function nothing in the
+app runs, and the two files keep one rule behind two entry points that can
+drift.
+**Suggested fix:** Either delete choose-any-available.ts and move its useful
+cases into order-any-available.test.ts, or keep it and say why; and change the
+two spec lines to name `orderAnyAvailable`.
 **Resolution:**
 
-### F-74 [P3] open - "Any available" answers an empty week when every person's calendar is unreadable
+### F-95 [P3] open - When the no-wait test fails, its cleanup hangs on the held Google answer and leaves its business in the dev database
 
-**File:** backend/lib/scheduling/find-free-times.ts:136 (test: backend/routes/public-booking-links-routes.test.ts:391-393)
-**Found:** 2026-10-02 by the final independent review of feature 5c (scope: bf53ee6..bb2526d; lenses: all)
-**Why it matters:** Decision 4 exists so "a broken calendar is never shown as
-an empty week": a picked person's unreadable calendar answers 503. With "any
-available" each unreadable person is left out (line 136-137 return `[]`), and
-nothing checks whether anyone was left to answer. When every candidate is
-left out, the route answers 200 with no start times, which a customer reads
-as "fully booked". The route test asserts exactly this for a one-person
-business (lines 391-393: 200, `startTimes: []`). For a one-person business
-(Primo's shape) or a Google-wide outage, "any available" is then the empty
-week decision 4 rules out for a pick, and the only trace is a console
-warning. The code follows the spec's letter; the spec does not say what
-happens when nobody is left.
-**Suggested fix:** Decide it in the spec (5d, or feature 9, where the widget
-chooses whether "any available" is its default): either answer 503
-`unavailable` when every candidate was left out for an unreadable calendar,
-or keep 200 and say so in decision 4. Then make the route test say which.
+**File:** backend/lib/calendar/write-booking-event.test.ts:191-219 (cleanup: :166-170)
+**Found:** 2026-10-02 by the second final independent review of feature 5d (scope: 12a21d6..3cec4ae; lenses: quality, security, performance, tests)
+**Why it matters:** The test releases Google's held answer only after its
+first assertion. If bookTime ever waits for Google again (the regression it
+guards), the test times out before `answerGoogle()` runs, the background
+write never settles, and `afterAll` hangs on `bookingEventWrites.settled()`
+until the hook times out, so the delete never runs. Reproduced in this review
+by putting the wait back: the run reported the failure, then the throwaway
+business `test-event-no-wait-<tag>` stayed in `scheduleads_dev` with its
+booking. The file's header promises every business is removed after, and the
+seed and the other files rely on that.
+**Suggested fix:** Release Google in a `finally` around the test body (or in
+`afterEach`), so a failure still lets the write settle and the cleanup run.
 **Resolution:**

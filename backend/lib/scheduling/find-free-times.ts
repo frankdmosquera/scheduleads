@@ -40,7 +40,8 @@ const MINUTE_MS = 60_000;
 
 // null when the service is missing, inactive or another business's, the business has no hours,
 // or the picked person is not offered for the service. Throws CalendarUnavailableError when the
-// picked person's calendar cannot be read; with "any available" that person is left out instead.
+// picked person's calendar cannot be read; with "any available" that person is left out instead,
+// unless no calendar could be read at all (decision 9): an empty week would read as fully booked.
 export async function findFreeTimes(input: FindFreeTimesInputType): Promise<FreeTimesType | null> {
   const { organizationId, bookingLinkId, personId, now } = input;
 
@@ -116,6 +117,8 @@ export async function findFreeTimes(input: FindFreeTimesInputType): Promise<Free
 
   // Each person's own start times. People are read side by side, so six Google calendars cost
   // about one call's wait, not six.
+  let readable = 0;
+  let unreadable = 0;
   const timesOf = async (id: string): Promise<Date[]> => {
     const hours = await resolveBookableHours(organizationId, id, now);
     if (!hours) return [];
@@ -134,8 +137,10 @@ export async function findFreeTimes(input: FindFreeTimesInputType): Promise<Free
         throw new CalendarUnavailableError(undefined, { cause: error });
       }
       console.warn(`[free times] left out ${id}, whose calendar cannot be read: ${reason}`);
+      unreadable += 1;
       return [];
     }
+    readable += 1;
 
     return applyFreeTimesRules({
       hours,
@@ -149,8 +154,11 @@ export async function findFreeTimes(input: FindFreeTimesInputType): Promise<Free
     });
   };
 
+  const everyonesTimes = await Promise.all(candidates.map(timesOf));
+  // One readable calendar is enough to answer; none, with one that failed, is "try again".
+  if (readable === 0 && unreadable > 0) throw new CalendarUnavailableError();
   const starts = new Set<number>();
-  for (const times of await Promise.all(candidates.map(timesOf))) {
+  for (const times of everyonesTimes) {
     for (const time of times) starts.add(time.getTime());
   }
 

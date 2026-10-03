@@ -128,7 +128,7 @@ and a second resource can hold the same time as the first.
   next-step queue. The tables and the API routes the loop writes to.
   `resource` moved to item 2, because availability is defined per resource and
   cannot reference a table that arrives two items later. Nothing visible yet
-- [ ] 5. **Booking creation** - validate a requested slot against the rules,
+- [x] 5. **Booking creation** - validate a requested slot against the rules,
   the free resources and the live calendar; take the customer's address;
   create the contact, the lead in the first stage, the booking on a
   resource, and the timeline entry. From version 8:
@@ -169,7 +169,7 @@ and a second resource can hold the same time as the first.
     route the widget will call. How "any available" picks, whether buffers
     may fall outside bookable hours, and how often start times repeat are
     decided here
-  - [ ] 5d. **The booking** - the lead and booking tables, and the public
+  - [x] 5d. **The booking** - the lead and booking tables, and the public
     route that books a time: check it again, the contact, the lead in the
     first stage, the booking with the customer's address, its commitments,
     the timeline entry, and the event in the booked person's Google. The
@@ -205,7 +205,18 @@ rented" rents nothing.
   the week strip in `prototypes/modal-primo.html` can return later without
   a rewrite. Only the Calendly-shaped month flow gets built now. Open until
   this item's spec: whether each service lets the customer pick the person
-  (a salon) or the business assigns one (Primo's estimates)
+  (a salon) or the business assigns one (Primo's estimates). The Book
+  button locks after one press, and the form sends the one-time key it
+  made when it opened (decided in 5d, Oct 2: one booking per form).
+  Screen two asks the standard questions (name, email, phone, address,
+  what they want done, an optional yes to text messages; "At least one is
+  required" under email and phone),
+  then the business's own questions; the answers are saved on the lead
+  (5d, Oct 2; the owner edits them in item 12).
+  The public routes get rate limits here, the first public traffic: per
+  visitor, and per contact, so the same email or phone booking a burst in a
+  short while is refused. A customer may still book two times at once (a
+  parent with two children), so that alone is never refused (5d, Oct 2)
 - [ ] 10. **Tenant zero wired: agents-web** - the agency's siteConfig holds
   its slug, the existing contact-inquiry seam calls the API, the site's
   theme reaches the modal. Frank is the first customer.
@@ -248,6 +259,10 @@ without Frank touching the database.
     closed by default; all the main ones in one click, or one by one
     (Frank, 2026-09-28: we build the functionality, the client decides
     their schedule).
+  - The booking questions (5d, Frank, Oct 2): the owner adds the business's
+    own questions (up to about 20) under the standard ones, starting from a
+    ready-made set for the trade (painting, clinic), and picks whether the
+    form requires an email, a phone, or either one.
   - Notice, how far ahead and time zone, once for the business. How far
     ahead is at most a year (the database refuses more since step 2.6,
     F-31); the screen offers one month, pre-filled, for the owner to change.

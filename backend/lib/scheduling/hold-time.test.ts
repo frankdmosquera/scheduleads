@@ -18,7 +18,16 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the hold time tests");
 
 // Imported after the env is loaded: they read it the moment they load.
 const { db } = await import("../../database.js");
-const { commitment, organization, resource } = await import("@scheduleads-app/shared/db");
+const {
+  booking: bookingTable,
+  bookingLink,
+  commitment,
+  contact,
+  lead,
+  organization,
+  pipelineStage,
+  resource,
+} = await import("@scheduleads-app/shared/db");
 const { holdTime } = await import("./hold-time.js");
 
 const tag = randomUUID().slice(0, 8);
@@ -45,6 +54,40 @@ const booking = (resourceIds: string[], from: string, to: string) => ({
   kind: "booking" as const,
 });
 
+// A real booking for the held rows to point at: a commitment's bookingId must name one.
+async function makeBooking(business: string, personId: string) {
+  const [jane, stage, facial, leadId, bookingId] = Array.from({ length: 5 }, () => randomUUID());
+  await db.insert(contact).values({ id: jane, organizationId: business, name: "Jane" });
+  await db
+    .insert(pipelineStage)
+    .values({ id: stage, organizationId: business, name: "New", position: 0 });
+  await db.insert(bookingLink).values({
+    id: facial,
+    organizationId: business,
+    name: "Facial",
+    slug: "facial",
+    durationMinutes: 60,
+  });
+  await db.insert(lead).values({
+    id: leadId,
+    organizationId: business,
+    contactId: jane,
+    stageId: stage,
+    source: "widget",
+  });
+  await db.insert(bookingTable).values({
+    id: bookingId,
+    organizationId: business,
+    leadId,
+    bookingLinkId: facial,
+    personId,
+    startsAt: at("15:00"),
+    endsAt: at("16:00"),
+    location: "12 Main Street",
+  });
+  return bookingId;
+}
+
 const rowsOf = (resourceId: string) =>
   db.select().from(commitment).where(eq(commitment.resourceId, resourceId));
 
@@ -56,7 +99,7 @@ afterAll(async () => {
 describe("holdTime", () => {
   test("a booking's person and place are held together", async () => {
     const { business, ana, room } = await makeBusiness("together");
-    const bookingId = randomUUID();
+    const bookingId = await makeBooking(business, ana);
 
     const result = await holdTime(business, {
       ...booking([ana, room], "15:00", "16:00"),

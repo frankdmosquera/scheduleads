@@ -1,13 +1,15 @@
 // Backend: takes time for one booking or one stretch of time off: every person and place it
 // needs, all at once or none. The database's no-overlap rule decides. Two holds that clash at the
 // same instant can deadlock inside Postgres, which cancels one; that one tries again and, the
-// other now saved, answers taken. So the two give one held and one taken.
+// other now saved, answers taken. So the two give one held and one taken. Inside a caller's
+// transaction each try runs in a savepoint, so a refusal leaves that transaction usable.
 
 import { randomUUID } from "node:crypto";
 
 import { commitment } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
+import type { DatabaseExecutorType } from "../../database-executor-type.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 
 export type HoldTimeInputType = {
@@ -28,7 +30,8 @@ const postgresCode = (error: unknown) => (error as { cause?: { code?: unknown } 
 
 export async function holdTime(
   organizationId: string,
-  { resourceIds, startsAt, endsAt, kind, bookingId = null }: HoldTimeInputType
+  { resourceIds, startsAt, endsAt, kind, bookingId = null }: HoldTimeInputType,
+  executor: DatabaseExecutorType = db
 ): Promise<HoldTimeResultType> {
   if (resourceIds.length === 0) throw new Error("Holding time failed: no person or place given");
   if (new Set(resourceIds).size !== resourceIds.length) {
@@ -37,21 +40,24 @@ export async function holdTime(
 
   for (let attempt = 1; ; attempt++) {
     try {
-      // One statement for every row, which Postgres runs all or nothing.
-      const held = await db
-        .insert(commitment)
-        .values(
-          resourceIds.map((resourceId) => ({
-            id: randomUUID(),
-            organizationId,
-            resourceId,
-            kind,
-            bookingId,
-            startsAt,
-            endsAt,
-          }))
-        )
-        .returning({ id: commitment.id });
+      // One statement for every row, which Postgres runs all or nothing; in a nested transaction,
+      // so a refused try is undone alone (a savepoint inside the caller's).
+      const held = await executor.transaction((attemptExecutor) =>
+        attemptExecutor
+          .insert(commitment)
+          .values(
+            resourceIds.map((resourceId) => ({
+              id: randomUUID(),
+              organizationId,
+              resourceId,
+              kind,
+              bookingId,
+              startsAt,
+              endsAt,
+            }))
+          )
+          .returning({ id: commitment.id })
+      );
       return { held: true, ids: held.map((row) => row.id) };
     } catch (error) {
       // Taken: the only refusal that is an answer. Another business's person is refused by the

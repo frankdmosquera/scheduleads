@@ -6,13 +6,18 @@ import { and, eq, inArray } from "drizzle-orm";
 import { commitment } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
+import type { DatabaseExecutorType } from "../../database-executor-type.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 
-export async function releaseTime(organizationId: string, ids: string[]): Promise<number> {
+export async function releaseTime(
+  organizationId: string,
+  ids: string[],
+  executor: DatabaseExecutorType = db
+): Promise<number> {
   if (ids.length === 0) return 0;
 
   try {
-    const released = await db
+    const released = await executor
       .update(commitment)
       .set({ status: "cancelled" })
       .where(

@@ -78,6 +78,28 @@ describe("findOrCreateContact", () => {
     expect(await contactsOf(business)).toHaveLength(1);
   });
 
+  test("a known contact without a phone gets the one given now, and keeps it after", async () => {
+    const business = await makeBusiness("fill-phone");
+    const { contact: first } = await findOrCreateContact(business, {
+      name: "Jane",
+      email: "jane@example.com",
+    });
+    const second = await findOrCreateContact(business, {
+      name: "Someone else",
+      email: "jane@example.com",
+      phone: "403 555 0199",
+    });
+    const third = await findOrCreateContact(business, {
+      name: "Jane",
+      email: "jane@example.com",
+      phone: "000",
+    });
+
+    expect(second.contact).toMatchObject({ id: first.id, name: "Jane", phone: "403 555 0199" });
+    expect(third.contact.phone).toBe("403 555 0199"); // filled once, never replaced
+    expect(await contactsOf(business)).toHaveLength(1);
+  });
+
   test("the same email in another business is a different contact", async () => {
     const { maria } = await businessWithMaria("mine");
     const clinic = await makeBusiness("clinic");

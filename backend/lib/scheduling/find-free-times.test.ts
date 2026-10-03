@@ -276,6 +276,34 @@ describe("free times for a service", () => {
     warn.mockRestore();
   });
 
+  test('"any available" with no calendar readable is "try again", never an empty week', async () => {
+    const clinic = await makeClinic("unreadable");
+    const needsReconnect = (resourceId: string, name: string) => ({
+      id: randomUUID(),
+      organizationId: clinic.business,
+      resourceId,
+      provider: "google" as const,
+      accountEmail: `${name}@example.com`,
+      credentials: "not read: the connection needs reconnecting first",
+      grantedScopes: "",
+      status: "needs_reconnect" as const,
+    });
+    await db
+      .insert(calendarConnection)
+      .values([needsReconnect(clinic.ana, "ana"), needsReconnect(clinic.mei, "mei")]);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const answer = await findFreeTimes({
+      organizationId: clinic.business,
+      bookingLinkId: clinic.facial,
+      personId: null,
+      fromDate: MONDAY,
+      toDate: MONDAY,
+      now: fridayMorning,
+    }).catch((error) => error);
+    warn.mockRestore();
+    expect(answer).toBeInstanceOf(CalendarUnavailableError);
+  });
+
   test("a person's Google busy time removes the times it covers", async () => {
     const clinic = await makeClinic("google");
     await saveCalendarConnection({

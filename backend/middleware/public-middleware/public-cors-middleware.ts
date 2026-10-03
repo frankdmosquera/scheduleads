@@ -1,6 +1,6 @@
-// Who may read the public booking routes from a browser: the sites in WIDGET_ORIGINS and the
-// dashboard. Never credentials, and never merged with dashboardCorsMiddleware: the login
-// cookie would let a client site act as the owner.
+// Who may call the public booking routes from a browser: the sites in WIDGET_ORIGINS and the
+// dashboard. They read services and times, and send a booking. Never credentials, and never
+// merged with dashboardCorsMiddleware: the login cookie would let a client site act as the owner.
 
 import { cors } from "hono/cors";
 
@@ -15,6 +15,6 @@ const widgetOrigins = (process.env.WIDGET_ORIGINS ?? "")
 
 export const publicCorsMiddleware = cors({
   origin: [...widgetOrigins, appOrigin], // any other site gets no Allow-Origin, so its browser blocks the read
-  allowMethods: ["GET"],
+  allowMethods: ["GET", "POST"],
   credentials: false,
 });
