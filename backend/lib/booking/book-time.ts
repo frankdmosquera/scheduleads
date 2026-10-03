@@ -33,6 +33,7 @@ import { findStandbyDates } from "../scheduling/find-standby-dates.js";
 import { isRoomFree } from "../scheduling/is-room-free.js";
 import { orderAnyAvailable } from "../scheduling/order-any-available.js";
 import { overlapsAny } from "../scheduling/overlaps-any.js";
+import { bookingConfirmationEmails } from "./booking-confirmation-emails.js";
 import { bookingEventWrites } from "./booking-event-writes.js";
 import { holdFirstFreeChoice } from "./hold-first-free-choice.js";
 
@@ -326,9 +327,10 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
       );
       return { contactId: contact.id, ...held };
     });
-    // Saved. Now the booked person's Google, outside the transaction and not awaited: the answer
-    // never waits for Google, and a failure keeps the booking (decision 6, F-93).
+    // Saved. Now the booked person's Google and the emails, outside the transaction and not
+    // awaited: the answer never waits for either, and a failure keeps the booking (decision 6, F-93).
     bookingEventWrites.start(organizationId, bookingId);
+    bookingConfirmationEmails.start(organizationId, bookingId);
     return {
       booked: true,
       alreadyBooked: false,

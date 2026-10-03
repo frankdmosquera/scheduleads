@@ -103,13 +103,23 @@ decision 16) gets no confirmation; the business notification still names them.
    sender to the new notification address first; refused, nothing is saved.
    Phone, website and colour stay for Settings: nothing is stuck without
    them.
+10. **A booking the owner makes emails the customer, never the business**
+    (Frank, 2026-10-02, open question 4). The customer gets the same
+    confirmation and invite as from the booking form, when an email was
+    given. The business gets no notification: the owner made it, and it is
+    already on their calendar and in their leads. The owner's screen
+    (feature 11) can add a "don't send" box later.
+11. **The booked worker gets no email in this feature** (Frank, 2026-10-02,
+    open question 5). A worker with Google already sees the event in their
+    calendar (feature 5); one without is told by text with feature 8, the
+    fallback decision 8 put in the build plan.
 
 ## Out of scope
 
 - Texts, reminders and retrying a failed email: feature 8 (the job runner).
 - The cancel and reschedule link in the confirmation: feature 7.
-- Telling the booked worker, beyond what their Google calendar shows (open
-  question 5): feature 19 unless Frank decides otherwise.
+- Telling the booked worker, beyond what their Google calendar shows
+  (decision 11): a text with feature 8.
 - Editing the business details from the dashboard: feature 12 (Settings).
 - Inbound email, CRM email and the BCC capture address: Phase 6.
 - Each business's own booking questions: features 9 and 12.
@@ -263,7 +273,7 @@ theirs in their plan, and his yes to that plan is the yes to install them.
     `<script>` shown as text; the plain-text twins carry the same facts; the
     preview writes two files; both opened by hand, the screenshots in the log.
 
-- [ ] **6.6 Sent once the booking is saved.**
+- [x] **6.6 Sent once the booking is saved.**
   - `backend/lib/booking/booking-confirmation-emails.ts`, beside
     `booking-event-writes.ts` and in the same shape: started by `bookTime`
     after the booking's transaction, not awaited; the sends still running can
@@ -280,8 +290,9 @@ theirs in their plan, and his yes to that plan is the yes to install them.
     A failure keeps the booking and logs one line with the booking id and a
     safe reason; a business without its two addresses or its key logs that
     and sends nothing (decision 4). Retrying is feature 8.
-  - Owner-made bookings (open question 4) and the booked worker (open
-    question 5) follow Frank's answers.
+  - A booking the owner makes (source `manual`) sends only the customer's
+    confirmation (decision 10). The booked worker gets no email (decision
+    11).
   - **Done when** saved tests, with Resend faked: a booking with an email
     sends both, the invite attached to the customer's, and writes two timeline
     entries; a phone-only booking sends only the business's; a resent form
@@ -396,10 +407,5 @@ gone through, before it is built.
 1. Answered 2026-10-02: decision 6.
 2. Answered 2026-10-02: decision 8.
 3. Answered 2026-10-02: decision 7.
-4. **Does a booking the owner makes email the customer?** (blocks 6.6)
-   Recommended: yes, when an email is given; the owner's screen (feature 11
-   or 12b) can add a "don't send" box later.
-5. **Is the booked worker told by email?** (blocks 6.6) Recommended: not in
-   this feature. A worker with Google sees the event already; one with a
-   login but no Google, or neither, is feature 19's question, as the build
-   plan allows.
+4. Answered 2026-10-02: decision 10.
+5. Answered 2026-10-02: decision 11.
