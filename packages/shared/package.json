@@ -20,6 +20,10 @@
       "types": "./dist/helpers/to-slug.d.ts",
       "default": "./dist/helpers/to-slug.js"
     },
+    "./booking-time": {
+      "types": "./dist/helpers/format-booking-time.d.ts",
+      "default": "./dist/helpers/format-booking-time.js"
+    },
     "./assert-local-dev-database": {
       "types": "./dist/helpers/assert-local-dev-database.d.ts",
       "default": "./dist/helpers/assert-local-dev-database.js"

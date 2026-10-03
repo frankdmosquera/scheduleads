@@ -192,7 +192,7 @@ No package is planned. Installing one is a line only Frank crosses.
     customer's text as text; the preview writes four files, the two new ones
     opened by hand, the screenshots in the log.
 
-- [ ] **7a.5 Jane's page.**
+- [x] **7a.5 Jane's page.**
   - `frontend/app/b/[token]/page.tsx`: the booking under the business's name,
     logo and colour; the service, the day and time with the zone named, the
     person; a Cancel button that asks once more ("Cancel this booking?")

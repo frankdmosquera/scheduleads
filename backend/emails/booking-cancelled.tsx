@@ -5,7 +5,8 @@
 
 import { Heading, Link, render, Text } from "@react-email/components";
 
-import { formatBookingTime } from "../lib/email/format-booking-time.js";
+import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
+
 import type { BookingEmailFactsType } from "./booking-email-facts-type.js";
 import { EmailButton } from "./email-button.js";
 import { emailColors } from "./email-colors.js";
