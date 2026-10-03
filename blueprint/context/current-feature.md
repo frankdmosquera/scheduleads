@@ -218,7 +218,7 @@ theirs in their plan, and his yes to that plan is the yes to install them.
     the browser (not set up, a refused key, a saved key), the screenshots in
     the log.
 
-- [ ] **6.4 The calendar invite.**
+- [x] **6.4 The calendar invite.**
   - `backend/lib/email/booking-ics.ts`: one pure function from a booking
     (id, service name, start, end, address, business name, sender email,
     customer name and email) to the text of an `.ics` file: `METHOD:REQUEST`,
