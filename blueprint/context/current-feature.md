@@ -234,10 +234,11 @@ theirs in their plan, and his yes to that plan is the yes to install them.
     text; the UID is the same for one booking every time (feature 7 cancels
     and moves the same event by it).
 
-- [ ] **6.5 The two emails.**
-  - Install `@react-email/components`, `@react-email/render`, `react` and
-    `react-dom` in `backend` (Frank's yes with this plan; the plan's choice,
-    Primo's pattern). The templates are `.tsx` files with
+- [x] **6.5 The two emails.**
+  - Install `@react-email/components`, `react` and `react-dom` in `backend`,
+    and `@types/react` as a dev dependency (Frank's yes with this plan;
+    Primo's pattern). `render` comes inside `@react-email/components`, so
+    `@react-email/render` is not installed on its own. The templates are `.tsx` files with
     `/** @jsxImportSource react */`, because the backend's own JSX setting is
     Hono's.
   - `backend/emails/booking-confirmation.tsx`, to the customer: the business's
