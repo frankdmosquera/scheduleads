@@ -428,3 +428,55 @@ same kind of slip.
 **Suggested fix:** "Read from the database inside the booking's own
 business" and "Reply-to is the customer, set where the email is sent".
 **Resolution:** Fixed 2026-10-02: both comments reworded without step numbers.
+
+### F-113 [P2] fixed - No test drives a failure out of the not-awaited send, so the guard against crashing Node is unproved
+
+**File:** backend/lib/booking/booking-confirmation-emails.ts:218-223 (the paths: backend/lib/email/send-booking-emails.ts:67-72, backend/lib/email/find-business-email-details.ts:176-178)
+**Found:** 2026-10-02 by independent review of step 6.6 (scope: 3bee2a3..b434c85; lenses: quality, security, performance, tests)
+**Why it matters:** `sendBookingEmails` rejects when the saved key cannot be
+unlocked (the token key changed, or the credentials are bound to another
+business), when the database fails, or when the booking or business is gone.
+Only the `.catch` in `start` stands between that rejection and an unhandled
+rejection, which stops the API process. Mutation: deleting that `.catch`
+leaves all 9 tests in `send-booking-emails.test.ts` green, because every
+failure the tests drive (Resend refusing) is caught inside the per-email
+`try`. The code is right today; nothing keeps it right. The Google event's
+twin (`booking-event-writes.ts`) has the same gap.
+**Suggested fix:** One test: a business whose `email_sending_key` row holds
+credentials locked for another business id (or garbage), booked through
+`bookTime`; expect the booking saved, no Resend call, no `email_sent` entry,
+and one `console.warn` line with the booking id and none of Jane's details.
+Vitest fails the run on an unhandled rejection, so removing the `.catch`
+would then fail it.
+**Resolution:** Fixed 2026-10-02: a new test books through bookTime with a key locked for another business, so the send fails before Resend; it expects the booking kept, no Resend call, no entry and one warning with the booking id and none of Jane's details. Removing the .catch now fails it (Vitest fails on the unhandled rejection). The Google event's twin in booking-event-writes.ts is feature 5's code and keeps its gap; noted for /complete.
+
+### F-114 [P3] fixed - The booking read's two guards have no test: a cancelled booking and another business's id
+
+**File:** backend/lib/email/send-booking-emails.ts:65, 69
+**Found:** 2026-10-02 by independent review of step 6.6 (scope: 3bee2a3..b434c85; lenses: quality, security, performance, tests)
+**Why it matters:** Mutations: removing `if (row.status !== "confirmed") return [];`
+and dropping `eq(booking.organizationId, organizationId)` from the `where`
+each leave every test green. Neither is reachable wrongly today (the only
+caller passes the booking it just saved, in its own business), but feature
+8's retries will call this with older bookings, some cancelled by feature 7,
+and the tenant rule is the one the brief and 6.2 hold every read to.
+**Suggested fix:** Two short direct calls in the same file: a booking set to
+`cancelled` returns `[]` with no Resend call; `sendBookingEmails(otherBusiness, bookingId)`
+rejects with "no such booking in this business" and sends nothing.
+**Resolution:** Fixed 2026-10-02: two direct calls, a cancelled booking returning [] with nothing sent, and another business's booking id rejected with nothing sent. Removing the status check or the business filter now fails a test each.
+
+### F-115 [P3] fixed - book-time.ts comments: the file header omits the emails, and a finding number stays in a rewritten comment
+
+**File:** backend/lib/booking/book-time.ts:1-6, 330-331
+**Found:** 2026-10-02 by independent review of step 6.6 (scope: 3bee2a3..b434c85; lenses: quality, security, performance, tests)
+**Why it matters:** The header still says what happens after the save is
+"the event starts going into the booked person's Google"; the emails now
+start there too, so the one path every booking takes is described half.
+The comment at 330-331 was rewritten in this step and kept "(decision 6,
+F-93)"; the coding standards' Comments section rules out finding numbers
+in code comments (F-112 was the same kind of slip).
+**Suggested fix:** Header: "...then the event starts going into the booked
+person's Google and the emails go out, without the answer waiting for
+either." At 331: drop "F-93" and keep the rule in words ("a failure keeps the
+booking").
+**Resolution:** Fixed 2026-10-02: book-time.ts's header names the emails beside the Google event, and the comment no longer carries F-93.

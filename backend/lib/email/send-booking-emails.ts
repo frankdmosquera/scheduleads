@@ -29,6 +29,7 @@ export async function sendBookingEmails(
   const [row] = await db
     .select({
       status: booking.status,
+      createdAt: booking.createdAt,
       startsAt: booking.startsAt,
       endsAt: booking.endsAt, // the appointment itself, not its buffers
       location: booking.location,
@@ -135,7 +136,9 @@ export async function sendBookingEmails(
               senderEmail,
               customerName: row.customerName,
               customerEmail: to,
-              stampedAt: new Date(),
+              // The booking's own moment, so a retry sends the very same invite: Resend refuses
+              // a key it already used with a different email.
+              stampedAt: row.createdAt,
             }),
             contentType: "text/calendar; charset=utf-8; method=REQUEST",
           },

@@ -4,7 +4,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq, inArray, like } from "drizzle-orm";
+import { and, eq, inArray, like, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
@@ -157,7 +157,8 @@ const timelineOf = (business: BusinessType) =>
   db
     .select({ payload: activity.payload, actorUserId: activity.actorUserId })
     .from(activity)
-    .where(and(eq(activity.organizationId, business.business), eq(activity.type, "email_sent")));
+    .where(and(eq(activity.organizationId, business.business), eq(activity.type, "email_sent")))
+    .orderBy(sql`${activity.payload}->>'kind'`); // the confirmation, then the notification
 
 const decoded = (attachment: unknown) =>
   Buffer.from(String((attachment as { content: string }).content), "base64").toString("utf8");
@@ -398,6 +399,77 @@ describe("a booking's emails", () => {
     for (const detail of [jane.name, "Jane", jane.email, jane.phone, jane.location, jane.details]) {
       expect(everything).not.toContain(detail);
     }
+  });
+
+  // Vitest fails the run on an unhandled rejection, so a send that could escape would fail here.
+  test("a send that fails before Resend keeps the booking and logs one line, never crashing", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const business = await makeBusiness("unreadable-key", { key: false });
+    await db.insert(emailSendingKey).values({
+      organizationId: business.business,
+      credentials: encryptCredentials("re_primo_send_key", readTokenKey(), randomUUID()), // locked for another business
+    });
+    const bookingId = await book(business);
+
+    expect(calls).toEqual([]);
+    expect(await timelineOf(business)).toEqual([]);
+    const saved = await db
+      .select({ id: booking.id })
+      .from(booking)
+      .where(and(eq(booking.organizationId, business.business), eq(booking.id, bookingId)));
+    expect(saved).toHaveLength(1);
+    expect(warn).toHaveBeenCalledTimes(1);
+    const line = String(warn.mock.calls[0][0]);
+    expect(line).toContain(`[email] no emails for booking ${bookingId}: `);
+    for (const detail of ["Jane", jane.email, jane.phone, jane.location, "re_primo"]) {
+      expect(line).not.toContain(detail);
+    }
+  });
+
+  test("a cancelled booking sends nothing", async () => {
+    const business = await makeBusiness("cancelled");
+    const bookingId = await book(business);
+    calls.length = 0;
+    await db.update(booking).set({ status: "cancelled" }).where(eq(booking.id, bookingId));
+
+    expect(await sendBookingEmails(business.business, bookingId)).toEqual([]);
+    expect(calls).toEqual([]);
+  });
+
+  test("another business's booking is refused and nothing is sent", async () => {
+    const mine = await makeBusiness("mine");
+    const theirs = await makeBusiness("theirs");
+    const theirBooking = await book(theirs);
+    calls.length = 0;
+
+    await expect(sendBookingEmails(mine.business, theirBooking)).rejects.toThrow(
+      "no such booking in this business"
+    );
+    expect(calls).toEqual([]);
+  });
+
+  test("sending a booking's emails again sends the very same invite, under the same key", async () => {
+    const business = await makeBusiness("same-again");
+    const bookingId = await book(business);
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(Date.now() + 60 * 60_000)); // an hour later, as a retry would be
+    try {
+      await sendBookingEmails(business.business, bookingId);
+    } finally {
+      vi.useRealTimers();
+    }
+
+    const confirmations = calls.filter((call) =>
+      call.headers.get("Idempotency-Key")?.startsWith("booking-confirmation/")
+    );
+    expect(confirmations).toHaveLength(2);
+    expect(confirmations[1].headers.get("Idempotency-Key")).toBe(
+      confirmations[0].headers.get("Idempotency-Key")
+    );
+    const [first, second] = confirmations.map((call) =>
+      decoded((call.body.attachments as unknown[])[0])
+    );
+    expect(second).toBe(first); // DTSTAMP is the booking's own moment, not the send's
   });
 });
 
