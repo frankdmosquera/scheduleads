@@ -4,6 +4,11 @@
 
 **Branch:** feature/06-confirmations
 
+**Status:** verified. Whole feature seen and agreed by Frank 2026-10-02;
+steps 6.1 to 6.6 built, tested and reviewed step by step; no P0 or P1 was
+ever open; decisions 6 to 11 made with Frank along the way. The checkpoint
+for the final review.
+
 ## Goal
 
 When a booking is saved, the customer gets a confirmation email from the
