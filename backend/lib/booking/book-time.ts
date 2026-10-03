@@ -147,11 +147,20 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
   const { timezone } = hours;
 
   // Decision 7: a form already booked (a second request after a lost answer) gets that booking.
-  if (requestKey) {
+  // Asked first, and again before any refusal: a copy whose check ran after the first copy was
+  // saved sees that copy's own time as taken (F-92).
+  const bookedByThisForm = async (): Promise<BookTimeResultType | null> => {
+    if (!requestKey) return null;
     const existing = await findBookedByRequestKey(organizationId, requestKey, timezone);
-    if (existing && !isSameRequest(existing, input)) return REQUEST_KEY_USED;
-    if (existing) return { booked: true, booking: existing, alreadyBooked: true };
-  }
+    if (!existing) return null;
+    return isSameRequest(existing, input)
+      ? { booked: true, booking: existing, alreadyBooked: true }
+      : REQUEST_KEY_USED;
+  };
+  const refuseUnlessBooked = async (refusal: BookTimeResultType) =>
+    (await bookedByThisForm()) ?? refusal;
+  const earlier = await bookedByThisForm();
+  if (earlier) return earlier;
 
   const [service] = await db
     .select({
@@ -217,10 +226,12 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
   };
   const candidates = personId === null ? offered.peopleIds : [personId];
   const states = await Promise.all(candidates.map(isFree)); // side by side, as the free times read them
-  if (personId !== null && states[0] === "unreadable") return UNAVAILABLE;
+  if (personId !== null && states[0] === "unreadable") return refuseUnlessBooked(UNAVAILABLE);
   const freePeople = candidates.filter((_, i) => states[i] === "free");
   // Nobody free: "try again" if a calendar could not be read (one of them may be free), else taken.
-  if (freePeople.length === 0) return states.includes("unreadable") ? UNAVAILABLE : TIME_TAKEN;
+  if (freePeople.length === 0) {
+    return refuseUnlessBooked(states.includes("unreadable") ? UNAVAILABLE : TIME_TAKEN);
+  }
 
   // The rooms: the one room rule over the whole span; the owner may use a room on standby.
   let freeRooms: { resourceId: string; name: string }[] | null = null;
@@ -245,7 +256,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         spanEnd
       )
     );
-    if (freeRooms.length === 0) return TIME_TAKEN;
+    if (freeRooms.length === 0) return refuseUnlessBooked(TIME_TAKEN);
   }
 
   // The order to try: decision 2's (fewest bookings that day, then name, then id), each person
@@ -329,12 +340,11 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
       booking: { id: bookingId, leadId, bookingLinkId, startsAt, endsAt, timezone, ...written },
     };
   } catch (error) {
-    if (error instanceof EveryChoiceTakenError) return TIME_TAKEN;
+    if (error instanceof EveryChoiceTakenError) return refuseUnlessBooked(TIME_TAKEN);
     // Two copies of one form at the same instant: the database let the other one in; that is the answer.
     if (requestKey && constraintOf(error) === "booking_request_key_unique") {
-      const existing = await findBookedByRequestKey(organizationId, requestKey, timezone);
-      if (existing && !isSameRequest(existing, input)) return REQUEST_KEY_USED;
-      if (existing) return { booked: true, booking: existing, alreadyBooked: true };
+      const other = await bookedByThisForm();
+      if (other) return other;
     }
     // Never the database's own error: its message carries the customer's details.
     throw new Error(`Booking failed: ${safeErrorReason(error)}`);

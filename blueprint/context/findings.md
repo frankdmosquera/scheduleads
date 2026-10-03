@@ -149,7 +149,7 @@ chooses whether "any available" is its default): either answer 503
 or keep 200 and say so in decision 4. Then make the route test say which.
 **Resolution:** Fixed in step 5d.5 (661b86e), per decision 9: findFreeTimes counts the calendars it read and the ones it could not; with "any available", none read and at least one failed throws CalendarUnavailableError, so the times route answers 503 `unavailable`. One readable calendar still answers 200. Tests: find-free-times.test.ts (no calendar readable) and the route test now asserting 503. Closed 2026-10-02 by independent review of step 5d.5 (6906956..2663680): find-free-times.ts:157-159 throws CalendarUnavailableError only when no calendar was read and at least one failed, and the times route maps it to 503 `unavailable` (public-booking-links-routes.ts:118-124). With the throw removed, both "\"any available\" with no calendar readable is \"try again\"" (find-free-times.test.ts) and "a calendar that cannot be read is a 503" (public-booking-links-routes.test.ts) fail; the existing "left out of \"any available\"" test (one readable, fully booked calendar beside an unreadable one) still answers 200 and would fail if the rule ignored the readable count. No new defect in the change.
 
-### F-75 [P2] fixed - Nothing in the schema or the plan makes "the same customer pressing Book twice gets one booking" hold when the two presses arrive together
+### F-75 [P2] closed - Nothing in the schema or the plan makes "the same customer pressing Book twice gets one booking" hold when the two presses arrive together
 
 **File:** packages/shared/db/booking-tables/booking-table.ts:64 (spec: blueprint/context/current-feature.md:66 and :184)
 **Found:** 2026-10-02 by independent review of step 5d.1 (scope: 7510d47..65250fa; lenses: all)
@@ -180,9 +180,9 @@ status is confirmed, so the database refuses the second (a contact without an
 email is always new, so owner-made bookings still book every time). Add a test:
 two identical "any available" requests at the same instant give one booking and
 both answer it.
-**Resolution:** Fixed 2026-10-02 with Frank's answer: neither suggested fix, because both refuse a parent booking two children for the same email, service and time. Instead a one-time requestKey per booking form (decision 7 rewritten): booking.requestKey with booking_request_key_unique on (organizationId, requestKey) where not null, migration 0014; the widget locks its Book button too (build plan item 9). The database test for the key is added and shown able to fail; 5d.3 handles a refused second copy and tests two copies at the same instant.
+**Resolution:** Fixed 2026-10-02 with Frank's answer: neither suggested fix, because both refuse a parent booking two children for the same email, service and time. Instead a one-time requestKey per booking form (decision 7 rewritten): booking.requestKey with booking_request_key_unique on (organizationId, requestKey) where not null, migration 0014; the widget locks its Book button too (build plan item 9). The database test for the key is added and shown able to fail; 5d.3 handles a refused second copy and tests two copies at the same instant. Closed 2026-10-02 by the final independent review of feature 5d (12a21d6..aa237da): the interleaving traced here (two copies both pass the check before either commits) is now refused by booking_request_key_unique (0014) and answered with the booking that won (book-time.ts:334-337, isSameRequest guarding it); with that clash handling disabled in a scratch run, "two copies of one form at the same instant give one booking, and both answer it" fails. A different interleaving, where the second copy's check runs after the first has committed, still answers time_taken and is recorded as F-92; it is not a defect of this repair.
 
-### F-76 [P3] fixed - The room rule is one function now, but the span it checks (the appointment plus both buffers) is still worked out only inside applyFreeTimesRules
+### F-76 [P3] closed - The room rule is one function now, but the span it checks (the appointment plus both buffers) is still worked out only inside applyFreeTimesRules
 
 **File:** backend/lib/scheduling/apply-free-times-rules.ts:79 (and backend/lib/scheduling/is-room-free.ts:11)
 **Found:** 2026-10-02 by independent review of step 5d.2 (scope: 7846a1d..230181c; lenses: all)
@@ -201,9 +201,9 @@ also miss the buffer. Not observed: the booking code does not exist yet.
 `appointmentSpan(start, service)` in its own file) used by
 `applyFreeTimesRules`, the room check and the hold, and have a 5d.3 test book a
 service with a buffer after next to a room taken only in that buffer.
-**Resolution:** Fixed 2026-10-02: backend/lib/scheduling/appointment-span.ts, appointmentSpan(start, service), the one copy of the buffer before, the appointment and the buffer after; applyFreeTimesRules uses it, and 5d.3 must too (its Done when now names a room taken only during the buffer after). Tests added; with the buffer after dropped, 6 tests fail.
+**Resolution:** Fixed 2026-10-02: backend/lib/scheduling/appointment-span.ts, appointmentSpan(start, service), the one copy of the buffer before, the appointment and the buffer after; applyFreeTimesRules uses it, and 5d.3 must too (its Done when now names a room taken only during the buffer after). Tests added; with the buffer after dropped, 6 tests fail. Closed 2026-10-02 by the final independent review of feature 5d (12a21d6..aa237da): appointmentSpan (appointment-span.ts) is the one span, used by applyFreeTimesRules (:80) and bookTime (:179) for both the room rule and the hold; with the buffer after dropped in a scratch run, 4 tests fail (appointment-span.test.ts and three in book-time.test.ts, including the room taken only during the buffer after). No new defect.
 
-### F-77 [P3] fixed - No saved test covers the deadlock retry inside a caller's transaction, which this step promises
+### F-77 [P3] closed - No saved test covers the deadlock retry inside a caller's transaction, which this step promises
 
 **File:** backend/lib/booking/writing-as-one-transaction.test.ts:67 (code: backend/lib/scheduling/hold-time.ts:45)
 **Found:** 2026-10-02 by independent review of step 5d.2 (scope: 7846a1d..230181c; lenses: tests)
@@ -223,9 +223,9 @@ savepoint) could break the in-transaction path with every test still green.
 to writing-as-one-transaction.test.ts: each hold inside its own
 `db.transaction` that runs one more statement after it, asserting one held and
 one taken per pair and no throw.
-**Resolution:** Fixed 2026-10-02: writing-as-one-transaction.test.ts holds the same two people in opposite order inside two callers' transactions, ten times, each writing again after its hold; with the retry removed (ATTEMPTS = 1) it failed in 3 runs of 3.
+**Resolution:** Fixed 2026-10-02: writing-as-one-transaction.test.ts holds the same two people in opposite order inside two callers' transactions, ten times, each writing again after its hold; with the retry removed (ATTEMPTS = 1) it failed in 3 runs of 3. Closed 2026-10-02 by the final independent review of feature 5d (12a21d6..aa237da): writing-as-one-transaction.test.ts holds two people in opposite order inside callers' transactions; with ATTEMPTS = 1 in hold-time.ts in a scratch run it fails. No new defect.
 
-### F-78 [P3] fixed - The spec still says rooms carry their resourceId, which the step deliberately dropped
+### F-78 [P3] closed - The spec still says rooms carry their resourceId, which the step deliberately dropped
 
 **File:** blueprint/context/current-feature.md:176
 **Found:** 2026-10-02 by independent review of step 5d.2 (scope: 7846a1d..230181c; lenses: quality)
@@ -239,7 +239,7 @@ describes a room shape that does not exist.
 **Suggested fix:** Amend 5d.2's bullet to what was built (`isRoomFree` takes any
 room with `busy` and `standbyDates`; the booking filters its own id-carrying
 rooms with it), and say in 5d.3 where those rooms and their ids are loaded.
-**Resolution:** Fixed 2026-10-02: the spec's 5d.2 now says isRoomFree takes any room with its taken time and standby dates and a caller keeps its own ids, with appointmentSpan as the one span.
+**Resolution:** Fixed 2026-10-02: the spec's 5d.2 now says isRoomFree takes any room with its taken time and standby dates and a caller keeps its own ids, with appointmentSpan as the one span. Closed 2026-10-02 by the final independent review of feature 5d (12a21d6..aa237da): current-feature.md 5d.2 now says isRoomFree takes any room with its taken time and standby dates and a caller keeps its own ids, matching is-room-free.ts and bookTime's id-carrying rooms (book-time.ts:226-247).
 
 ### F-79 [P3] closed - No saved test fails when bookTime stops filtering rooms with isRoomFree, so a room on standby could be booked for a customer unnoticed
 
@@ -347,7 +347,7 @@ with `chooseAnyAvailable` its first element) and use it in bookTime; reuse
 of "5c's".
 **Resolution:** Fixed 2026-10-02: the order lives in one place, backend/lib/scheduling/order-any-available.ts (orderAnyAvailable, with its own tests); chooseAnyAvailable is its first choice and bookTime uses the whole order, so no made-up person and no loop. BookingChoiceType is gone in favour of AnyAvailableChoiceType. Comments no longer name 5c. Closed 2026-10-02 by independent review of step 5d.4 (7166169..ceb511c): order-any-available.ts holds the order and AnyAvailableChoiceType, chooseAnyAvailable returns its first element, hold-first-free-choice.ts uses AnyAvailableChoiceType, BookingChoiceType is gone, and no comment in backend/lib/booking names 5c.
 
-### F-84 [P3] fixed - Writing a booking's event twice makes a second Google event and forgets the first, and a cancelled booking is written too
+### F-84 [P3] closed - Writing a booking's event twice makes a second Google event and forgets the first, and a cancelled booking is written too
 
 **File:** backend/lib/calendar/write-booking-event.ts:64-76 (and google-calendar-provider.ts:64)
 **Found:** 2026-10-02 by independent review of step 5d.4 (scope: 7166169..ceb511c; lenses: all)
@@ -369,9 +369,9 @@ its hyphens qualifies), so a second insert answers 409 and is treated as
 already written; and have writeBookingEvent skip a booking that is cancelled
 or already has `calendarEventId` (or settle both in feature 8's spec). Add a
 test that writes twice and sees one event.
-**Resolution:** Fixed 2026-10-02: the event's id is the booking's without dashes (Google's a-v0-9 rule), so Google keeps one event; a 409 for that id is taken as the event already made; a booking already written answers its saved id without asking Google, and a cancelled one is not written. Tests: writing again makes no second call, a 409 saves the id, a cancelled booking gets no event; each fails with its guard removed.
+**Resolution:** Fixed 2026-10-02: the event's id is the booking's without dashes (Google's a-v0-9 rule), so Google keeps one event; a 409 for that id is taken as the event already made; a booking already written answers its saved id without asking Google, and a cancelled one is not written. Tests: writing again makes no second call, a 409 saves the id, a cancelled booking gets no event; each fails with its guard removed. Closed 2026-10-02 by the final independent review of feature 5d (12a21d6..aa237da): write-booking-event.ts:60-66 skips a cancelled or already written booking and sends the dashless booking id; google-calendar-provider.ts treats 409 as the event already made. In scratch runs each guard removed (the saved-id return, the status check, the 409 branch) fails its own test in write-booking-event.test.ts. No new defect.
 
-### F-85 [P3] fixed - A returning customer's phone typed on this booking never reaches the event
+### F-85 [P3] closed - A returning customer's phone typed on this booking never reaches the event
 
 **File:** backend/lib/calendar/write-booking-event.ts:24-26 and :61 (cause: backend/lib/crm/find-or-create-contact.ts:70)
 **Found:** 2026-10-02 by independent review of step 5d.4 (scope: 7166169..ceb511c; lenses: quality)
@@ -387,9 +387,9 @@ likewise carries the first name ever given.
 (or replace it) in findOrCreateContact, or keep this booking's phone on the
 lead or booking and use it for the event; or write in decision 14 that the
 contact's stored details are what the event shows. Add the test either way.
-**Resolution:** Fixed 2026-10-02 with Frank's answer (option A, decision 15): lead.phone (migration 0015) keeps the phone given with each request and the event shows it; findOrCreateContact fills a known contact's phone only when it had none. Tests: a returning customer's new phone reaches this booking's event (fails when the event reads the contact's phone), and a known contact is filled once, never replaced (fails when the empty-phone guard is removed).
+**Resolution:** Fixed 2026-10-02 with Frank's answer (option A, decision 15): lead.phone (migration 0015) keeps the phone given with each request and the event shows it; findOrCreateContact fills a known contact's phone only when it had none. Tests: a returning customer's new phone reaches this booking's event (fails when the event reads the contact's phone), and a known contact is filled once, never replaced (fails when the empty-phone guard is removed). Closed 2026-10-02 by the final independent review of feature 5d (12a21d6..aa237da): lead.phone (0015) is written by bookTime (book-time.ts:282) and preferred by the event (write-booking-event.ts:72); findOrCreateContact fills a phone only where it is null. Reading the contact's phone first fails "a returning customer's new phone reaches this booking's event", and dropping the null guard fails two find-or-create-contact tests (scratch runs). No new defect.
 
-### F-86 [P3] fixed - Two Done-when items cannot fail: the refresh test passes when writeBookingEvent never refreshes, and "each only when given" is never tested
+### F-86 [P3] closed - Two Done-when items cannot fail: the refresh test passes when writeBookingEvent never refreshes, and "each only when given" is never tested
 
 **File:** backend/lib/calendar/write-booking-event.test.ts:249 and :160
 **Found:** 2026-10-02 by independent review of step 5d.4 (scope: 7166169..ceb511c; lenses: tests)
@@ -409,9 +409,9 @@ is shown through bookTime only for the Google error.
 a booking made before connecting, with under a minute left on the token,
 asserting the token call and the Bearer sent to the event; add content cases
 with no phone and no details (`Email: ...` only) and with phone only.
-**Resolution:** Fixed 2026-10-02: the refresh test now books before connecting and writes the event directly, so only the event write can renew the key (fails when the expired key is used anyway); a new test books with no phone and no note and checks the description is the email line alone (fails when missing lines are kept).
+**Resolution:** Fixed 2026-10-02: the refresh test now books before connecting and writes the event directly, so only the event write can renew the key (fails when the expired key is used anyway); a new test books with no phone and no note and checks the description is the email line alone (fails when missing lines are kept). Closed 2026-10-02 by the final independent review of feature 5d (12a21d6..aa237da): with renewal skipped in get-fresh-access-token.ts, "an expired token is refreshed through the one shared helper" fails; with every line kept regardless of what was given, "a phone, an email or a note left out leaves its line out" fails (scratch runs).
 
-### F-87 [P3] fixed - The token helper's comment describes a condition no longer written that way, and two header comments were left unwrapped
+### F-87 [P3] closed - The token helper's comment describes a condition no longer written that way, and two header comments were left unwrapped
 
 **File:** backend/lib/calendar/get-fresh-access-token.ts:65 (also backend/lib/booking/book-time.ts:4, backend/lib/calendar/calendar-provider.ts:2)
 **Found:** 2026-10-02 by independent review of step 5d.4 (scope: 7166169..ceb511c; lenses: quality)
@@ -429,9 +429,9 @@ book-time.ts:17 sits out of order.
 **Suggested fix:** Say what the line does now ("only a key comfortably valid
 is used as it is; an unreadable date fails this test and is renewed"),
 rewrap the two headers, sort the import.
-**Resolution:** Fixed 2026-10-02: the comment in get-fresh-access-token.ts now matches its condition; the two long header comments are rewrapped under 100 characters; book-time.ts's calendar imports are in order.
+**Resolution:** Fixed 2026-10-02: the comment in get-fresh-access-token.ts now matches its condition; the two long header comments are rewrapped under 100 characters; book-time.ts's calendar imports are in order. Closed 2026-10-02 by the final independent review of feature 5d (12a21d6..aa237da): get-fresh-access-token.ts:156-157 now describes the condition as written (a comfortably valid key is used, anything else, an unreadable date too, is renewed); the two headers are under 100 characters and the imports are in order.
 
-### F-88 [P3] fixed - The POST preflight test passes even when the browser would be refused the JSON header every booking sends
+### F-88 [P3] closed - The POST preflight test passes even when the browser would be refused the JSON header every booking sends
 
 **File:** backend/routes/public-bookings-routes.test.ts:322
 **Found:** 2026-10-02 by independent review of step 5d.5 (scope: 6906956..2663680; lenses: tests)
@@ -446,9 +446,9 @@ passed, while every real browser booking would be blocked. The Done when's
 "a preflight allows POST" is the one browser-facing promise of this step.
 **Suggested fix:** Assert that `Access-Control-Allow-Headers` includes
 `content-type` (case-insensitive) in the same test.
-**Resolution:** Fixed in 5d.5's review fixes (5ac0594): the preflight test now also asserts Access-Control-Allow-Headers includes content-type. Proved able to fail: with allowHeaders ["x-nothing"] in publicCorsMiddleware the test fails.
+**Resolution:** Fixed in 5d.5's review fixes (5ac0594): the preflight test now also asserts Access-Control-Allow-Headers includes content-type. Proved able to fail: with allowHeaders ["x-nothing"] in publicCorsMiddleware the test fails. Closed 2026-10-02 by the final independent review of feature 5d (12a21d6..aa237da): the preflight test asserts Access-Control-Allow-Headers contains content-type; with allowHeaders ["x-nothing"] in publicCorsMiddleware in a scratch run it fails.
 
-### F-89 [P3] fixed - CreateBookingInputType is exported and used nowhere; the typed client already carries the body type
+### F-89 [P3] closed - CreateBookingInputType is exported and used nowhere; the typed client already carries the body type
 
 **File:** packages/shared/zod-validation/booking-links-validation-schemas/create-booking-validation-schema.ts:30
 **Found:** 2026-10-02 by independent review of step 5d.5 (scope: 6906956..2663680; lenses: quality)
@@ -459,9 +459,9 @@ not needed by the planned consumer either. The other booking-link schemas
 export no input type. "What breaks if we do not add this?" has no answer yet.
 **Suggested fix:** Remove the export; add it back if a consumer appears that
 the typed client does not serve.
-**Resolution:** Fixed in 5d.5's review fixes (5ac0594): the unused CreateBookingInputType export is removed; the typed client takes the body type from the validator.
+**Resolution:** Fixed in 5d.5's review fixes (5ac0594): the unused CreateBookingInputType export is removed; the typed client takes the body type from the validator. Closed 2026-10-02 by the final independent review of feature 5d (12a21d6..aa237da): create-booking-validation-schema.ts exports only the schema; nothing imports a booking input type.
 
-### F-90 [P3] fixed - The public CORS header comment had a sentence inserted without rewrapping (139 characters)
+### F-90 [P3] closed - The public CORS header comment had a sentence inserted without rewrapping (139 characters)
 
 **File:** backend/middleware/public-middleware/public-cors-middleware.ts:2
 **Found:** 2026-10-02 by independent review of step 5d.5 (scope: 6906956..2663680; lenses: quality)
@@ -470,9 +470,9 @@ but the header now runs to 139 characters against the 100 every other line
 keeps. Same pattern as F-87 (words added to a wrapped header in step 5d.4),
 so it is drift rather than a one-off.
 **Suggested fix:** Rewrap the three header lines under 100 characters.
-**Resolution:** Fixed in 5d.5's review fixes (5ac0594): the header comment is rewrapped under 100 characters.
+**Resolution:** Fixed in 5d.5's review fixes (5ac0594): the header comment is rewrapped under 100 characters. Closed 2026-10-02 by the final independent review of feature 5d (12a21d6..aa237da): the header comment of public-cors-middleware.ts is three lines under 100 characters.
 
-### F-91 [P3] fixed - The step's Done when says the route tests run on clinic-dev; they run on a clinic of their own
+### F-91 [P3] closed - The step's Done when says the route tests run on clinic-dev; they run on a clinic of their own
 
 **File:** blueprint/context/current-feature.md:309
 **Found:** 2026-10-02 by independent review of step 5d.5 (scope: 6906956..2663680; lenses: tests)
@@ -484,4 +484,52 @@ when still names clinic-dev, so the spec and the tests disagree on what was
 proved and where.
 **Suggested fix:** Change the Done when to "route tests on a clinic of their
 own (and clinic-dev for another business's service)".
-**Resolution:** Fixed in 5d.5's review fixes (5ac0594): the Done when now says the route tests run on a clinic of their own, removed after, and why.
+**Resolution:** Fixed in 5d.5's review fixes (5ac0594): the Done when now says the route tests run on a clinic of their own, removed after, and why. Closed 2026-10-02 by the final independent review of feature 5d (12a21d6..aa237da): current-feature.md 5d.5's Done when names a clinic of their own, removed after, matching public-bookings-routes.test.ts.
+
+### F-92 [P2] fixed - A resent form whose check runs after its first copy committed answers time_taken, though the customer is booked
+
+**File:** backend/lib/booking/book-time.ts:220-223 (also :248 and :332; the key is read only at :150-154)
+**Found:** 2026-10-02 by the final independent review of feature 5d (scope: 12a21d6..aa237da; lenses: quality, security, performance, tests)
+**Why it matters:** Decision 7 promises that the same form sent twice gets one
+booking and both copies answer it. bookTime reads the request key once, before
+the check, and consults it again only when its own booking insert clashes on
+`booking_request_key_unique`. When the second copy reads the key before the
+first commits but runs its check after (a press repeated after a slow or lost
+answer, arriving while the first is still being written), the check sees the
+first copy's own commitment and answers `time_taken` (picked person, line 223),
+`unavailable` (line 220 or 223) or `time_taken` for the rooms (line 248),
+without ever reaching the insert. Shown in a scratch Vitest run (since removed)
+that held the second copy's check until the first copy had booked: the first
+answered booked, the second `{ booked: false, reason: "time_taken" }` for the
+same key, service, person and start. The customer reads "Sorry, that time was
+taken while you were booking" for a booking that exists; picking another time
+on the same form then gets `request_key_used`, and after a reload they book a
+second time, so the business holds two bookings for one job. The saved test
+for two copies at the same instant uses "any available" with two free people,
+so the second copy always finds someone free and reaches the insert; a picked
+person, a one-person business (Primo's shape) or a room service is never tested.
+**Suggested fix:** Before answering `time_taken` or `unavailable` (lines 220,
+223, 248 and the `EveryChoiceTakenError` branch at 332) when a `requestKey` was
+sent, read `findBookedByRequestKey` again and answer that booking (or
+`request_key_used`) through `isSameRequest`, as the clash path already does. Add
+a test with a picked person whose check runs after the first copy commits.
+**Resolution:** Fixed after the final review: bookTime asks the form's key again before every refusal (the picked person unreadable or busy, nobody free, no free room, every choice taken), through one helper used by the first lookup and the clash path too, so a copy whose check ran after its first copy was saved answers that booking. Test: book-time-resent-while-saving.test.ts holds the second copy's check until the first has booked, with one painter; it fails without the fix (time_taken) and passes with it.
+
+### F-93 [P3] open - The customer's answer waits for Google's event write, up to 10 seconds (20 with a key renewal), after the booking is already saved
+
+**File:** backend/lib/booking/book-time.ts:319-325 (limits: backend/lib/calendar/google-calendar-provider.ts:15, backend/lib/calendar/google-oauth-client.ts:13)
+**Found:** 2026-10-02 by the final independent review of feature 5d (scope: 12a21d6..aa237da; lenses: quality, security, performance, tests)
+**Why it matters:** bookTime awaits `writeBookingEvent` before returning, and
+the public route answers only then. The answer does not depend on the event
+(decision 6 keeps the booking whatever Google does), but when Google is slow,
+which is exactly the case decision 6 is about, a customer whose booking was
+saved in milliseconds watches the Book button spin for up to 10 seconds, or 20
+when the key is renewed first. A widget or browser that gives up sooner shows a
+failure for a booking that exists. The coding standards say long running work
+does not belong in a request handler; the spec only says the write happens
+after the commit, so the wait is a side effect nobody decided.
+**Suggested fix:** Frank's call. Either answer first and let the write finish
+on its own (not awaited, its catch and warning line kept) until feature 8's job
+runner owns it, or write in decision 6 that the customer's answer waits for
+Google until then.
+**Resolution:**
