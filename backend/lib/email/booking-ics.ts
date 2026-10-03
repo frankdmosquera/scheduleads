@@ -25,7 +25,9 @@ export function bookingIcs(input: BookingIcsInputType): string {
     "CALSCALE:GREGORIAN",
     "METHOD:REQUEST",
     "BEGIN:VEVENT",
-    `UID:${input.bookingId}@${senderDomain}`, // the same every time, so feature 7 moves this event
+    // The booking's own id, a random UUID, and never the sender's domain, which the owner can
+    // change: the same every time, so feature 7 moves this event instead of adding a second.
+    `UID:${input.bookingId}`,
     "SEQUENCE:0",
     `DTSTAMP:${utcStamp(input.stampedAt)}`,
     `DTSTART:${utcStamp(input.startsAt)}`, // UTC: each calendar shows its reader's own zone
@@ -50,13 +52,15 @@ function utcStamp(moment: Date): string {
     .replace(/[-:]/g, "");
 }
 
-// The backslash goes first, or the ones added for the others would be doubled.
+// The backslash goes first, or the ones added for the others would be doubled. Any other control
+// character but a tab is not allowed in the text at all, and a strict calendar refuses the file.
 function escapeText(value: string): string {
   return value
     .replace(/\\/g, "\\\\")
     .replace(/;/g, "\\;")
     .replace(/,/g, "\\,")
-    .replace(/\r\n|\r|\n/g, "\\n");
+    .replace(/\r\n|\r|\n/g, "\\n")
+    .replace(/[\u0000-\u0008\u000a-\u001f\u007f]+/g, " ");
 }
 
 // A parameter value cannot hold a double quote or a control character, even quoted.

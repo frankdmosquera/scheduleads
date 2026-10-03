@@ -309,3 +309,70 @@ Files / areas list, which /complete and later steps read, still names
 Email sending card, can stay). In Files / areas, name the two new files in
 place of the removed one.
 **Resolution:** Fixed in 6.3's review fixes: the step number is out of the CORS comment, and the spec's Files / areas names the files that replaced save-email-sending-key.ts.
+
+### F-107 [P2] fixed - The invite's UID changes when the business changes its sender address
+
+**File:** backend/lib/email/booking-ics.ts:18-20, :28 (the plan: blueprint/context/current-feature.md, step 6.4)
+**Found:** 2026-10-02 by independent review of step 6.4 (scope: adb473e..6febd01; lenses: quality, security, performance, tests)
+**Why it matters:** The UID is the booking id plus the domain of
+`senderEmail`, and that address is editable: the owner's card saves a new
+one (backend/lib/email/save-email-sending.ts:78, decision 9), and decision 6's
+handover changes it by design (Frank builds with a test sender of his own,
+the owner then sets their own). A booking confirmed before the change and
+moved or cancelled by feature 7 after it would carry a different UID, so the
+customer's calendar would get a second event instead of moving the first.
+The step's own promise ("the UID is the same for one booking every time")
+is only tested against a different DTSTAMP (booking-ics.test.ts:93), never a
+different sender.
+**Suggested fix:** Build the UID from the booking id alone (already a
+`randomUUID()` in book-time.ts:281, so globally unique; RFC 5545 does not
+require an `@domain`), or from a part that never changes and never names the
+product. Amend step 6.4's UID line in the spec to match, and add a test that
+a different `senderEmail` gives the same UID.
+**Resolution:** Fixed 2026-10-02: the UID is now the booking's own id alone
+(a random UUID), never the sender's domain; the spec's step 6.4 line amended
+to match. The UID test also expects the same UID from a different sender, and
+the exact-text test reads `UID:bk_123`. Putting the domain back fails two tests.
+
+### F-108 [P3] fixed - The fold tests never fill a continuation line or carry an emoji
+
+**File:** backend/lib/email/booking-ics.test.ts:73-91 (code: backend/lib/email/booking-ics.ts:67-89)
+**Found:** 2026-10-02 by independent review of step 6.4 (scope: adb473e..6febd01; lenses: quality, security, performance, tests)
+**Why it matters:** Two mutations in this review left all 6 tests passing
+(both reverted). Raising the continuation limit from 74 to 75, which writes
+76-octet lines, passed because the longest folded line in any test, the
+Spanish SUMMARY, is 143 octets: 75 on the first line and 69 on the second,
+so no continuation ever reaches the limit. Iterating UTF-16 code units
+instead of characters (`line.split("")`) also passed, though the comment at
+booking-ics.ts:69-70 promises an emoji arrives whole; only the two-octet "ó"
+is tested. The code itself is right today (probed: an emoji at the boundary
+moves whole, continuation lines are exactly 75 octets).
+**Suggested fix:** Make the Spanish (or another) value long enough for at
+least one full continuation line and expect a line of exactly 75 octets
+starting with a space; add a case with a four-octet emoji at the fold
+boundary that expects it whole on the next line.
+**Resolution:** Fixed 2026-10-02: two new tests, a continuation line filled to
+exactly 75 octets with its leading space, and a four-octet emoji at the fold
+point moving whole to the next line. Both mutations above (continuation limit
+75, iterating UTF-16 code units) now fail a test.
+
+### F-109 [P3] fixed - Control characters typed in the address reach the invite's LOCATION raw
+
+**File:** backend/lib/email/booking-ics.ts:54-60 (input: packages/shared/zod-validation/booking-links-validation-schemas/create-booking-validation-schema.ts:22-26)
+**Found:** 2026-10-02 by independent review of step 6.4 (scope: adb473e..6febd01; lenses: quality, security, performance, tests)
+**Why it matters:** The booking form's address only trims and limits
+length, so a customer's typed address can hold control characters. Probed on
+the built function: an address of `12 Main<NUL>St<VT>Back<BEL>` comes out as
+`LOCATION:12 Main<NUL>St<VT>Back<BEL>`. RFC 5545's TEXT allows no control
+character but a tab, so the attached invite is invalid and a strict parser
+may refuse all of it (a NUL can also cut the file short in C-based readers).
+No line can be injected: CR and LF are escaped. `quoteParameter` already
+strips controls from the two names; `escapeText` does not. A lone CR is
+handled but untested (removing `\r` from the regex left every test passing).
+**Suggested fix:** In `escapeText`, after the new-line escape, replace any
+remaining C0 control except tab, and DEL, with a space, as `quoteParameter`
+does; add a lone `\r` and a `\u0000` to the escape test.
+**Resolution:** Fixed 2026-10-02: `escapeText` replaces any control character
+left after the new-line escape, except a tab, with a space. The escape test
+now carries a lone `\r` and a `\u0000`; dropping the lone CR from the
+new-line escape fails it.

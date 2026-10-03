@@ -30,7 +30,7 @@ describe("bookingIcs", () => {
         "CALSCALE:GREGORIAN",
         "METHOD:REQUEST",
         "BEGIN:VEVENT",
-        "UID:bk_123@primopainters.com",
+        "UID:bk_123",
         "SEQUENCE:0",
         "DTSTAMP:20261002T203000Z",
         "DTSTART:20261008T150000Z",
@@ -48,14 +48,14 @@ describe("bookingIcs", () => {
     );
   });
 
-  test("escapes a comma, a semicolon, a backslash and new lines in the address", () => {
+  test("escapes a comma, a semicolon, a backslash and new lines in the address, and drops other control characters", () => {
     const ics = bookingIcs({
       ...plainBooking,
-      location: "Unit 4, 12 Main St; back door\\side\r\nRing twice\nThanks",
+      location: "Unit 4, 12 Main St; back door\\side\r\nRing twice\nThanks\rCall first\u0000now",
     });
 
     expect(unfold(ics)).toContain(
-      "\r\nLOCATION:Unit 4\\, 12 Main St\\; back door\\\\side\\nRing twice\\nThanks\r\n"
+      "\r\nLOCATION:Unit 4\\, 12 Main St\\; back door\\\\side\\nRing twice\\nThanks\\nCall first now\r\n"
     );
   });
 
@@ -91,11 +91,37 @@ describe("bookingIcs", () => {
     expect(lines[summaryAt + 1]).toBe(" ó with B");
   });
 
+  test("never splits an emoji, which is four octets", () => {
+    // 72 octets, then a four-octet emoji: 76 is over, so the whole emoji starts the next line.
+    const ics = bookingIcs({ ...plainBooking, service: `${"a".repeat(64)}😀`, businessName: "B" });
+    const lines = ics.split("\r\n");
+    const summaryAt = lines.findIndex((line) => line.startsWith("SUMMARY:"));
+
+    expect(lines[summaryAt]).toBe(`SUMMARY:${"a".repeat(64)}`);
+    expect(lines[summaryAt + 1]).toBe(" 😀 with B");
+  });
+
+  test("fills a continuation line to exactly 75 octets, its leading space counted", () => {
+    const ics = bookingIcs({
+      ...plainBooking,
+      service: `${"a".repeat(67)}${"b".repeat(74)}c`,
+      businessName: "B",
+    });
+    const lines = ics.split("\r\n");
+    const summaryAt = lines.findIndex((line) => line.startsWith("SUMMARY:"));
+
+    expect(lines[summaryAt]).toBe(`SUMMARY:${"a".repeat(67)}`);
+    expect(lines[summaryAt + 1]).toBe(` ${"b".repeat(74)}`);
+    expect(lines[summaryAt + 2]).toBe(" c with B");
+  });
+
   test("gives one booking the same UID every time, and another booking a different one", () => {
     const uidOf = (ics: string) => ics.split("\r\n").find((line) => line.startsWith("UID:"));
     const later = { ...plainBooking, stampedAt: new Date("2026-10-05T09:00:00.000Z") };
+    const newSender = { ...plainBooking, senderEmail: "hello@primo-painting.ca" };
 
     expect(uidOf(bookingIcs(later))).toBe(uidOf(bookingIcs(plainBooking)));
+    expect(uidOf(bookingIcs(newSender))).toBe(uidOf(bookingIcs(plainBooking)));
     expect(uidOf(bookingIcs({ ...plainBooking, bookingId: "bk_456" }))).not.toBe(
       uidOf(bookingIcs(plainBooking))
     );

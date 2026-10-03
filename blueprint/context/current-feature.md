@@ -222,7 +222,7 @@ theirs in their plan, and his yes to that plan is the yes to install them.
   - `backend/lib/email/booking-ics.ts`: one pure function from a booking
     (id, service name, start, end, address, business name, sender email,
     customer name and email) to the text of an `.ics` file: `METHOD:REQUEST`,
-    one `VEVENT` with `UID:<booking id>@<sender domain>`, `SEQUENCE:0`,
+    one `VEVENT` with `UID:<booking id>` (a random UUID; never the sender's domain, which the owner can change), `SEQUENCE:0`,
     `DTSTAMP`, `DTSTART` and `DTEND` in UTC (`...Z`), `SUMMARY` "<service>
     with <business>", `LOCATION` the address, `ORGANIZER` the business,
     `ATTENDEE` the customer with `RSVP=FALSE`, `STATUS:CONFIRMED`. CRLF line
