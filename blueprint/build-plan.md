@@ -183,6 +183,16 @@ and a second resource can hold the same time as the first.
   confirmation. A cancel frees the slot and removes the event from the
   booked person's Google; a reschedule is never refused because of the
   booking's own old time
+  Split on 2026-10-03 into two items, each its own branch, merged and tagged
+  as it lands; item 7 is done when both are:
+  - [ ] 7a. **Cancel** - the booking's private link in the confirmation, the
+    customer's page it opens, and Cancel: the time freed, the event removed
+    from the booked person's Google, the customer and the business told by
+    email, the timeline entry
+  - [ ] 7b. **Reschedule** - on the same page: the free times for the same
+    service, never refused because of the booking's own old time (neither
+    its held time nor its own event in Google), and the same booking moved,
+    its Google event and the customer's invite moved with it, both told
 - [ ] 8. **Scheduled messages** - the background job runner, then the
   confirmation text when a booking is made and the reminder text the
   evening before. Primo already sends both through Calendly, a
