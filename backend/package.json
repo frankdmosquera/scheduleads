@@ -27,7 +27,8 @@
     "date-holidays": "^3.37.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.8",
-    "postgres": "^3.4.9"
+    "postgres": "^3.4.9",
+    "resend": "^6.32.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.1",
