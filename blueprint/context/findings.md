@@ -515,7 +515,7 @@ sent, read `findBookedByRequestKey` again and answer that booking (or
 a test with a picked person whose check runs after the first copy commits.
 **Resolution:** Fixed after the final review: bookTime asks the form's key again before every refusal (the picked person unreadable or busy, nobody free, no free room, every choice taken), through one helper used by the first lookup and the clash path too, so a copy whose check ran after its first copy was saved answers that booking. Test: book-time-resent-while-saving.test.ts holds the second copy's check until the first has booked, with one painter; it fails without the fix (time_taken) and passes with it.
 
-### F-93 [P3] open - The customer's answer waits for Google's event write, up to 10 seconds (20 with a key renewal), after the booking is already saved
+### F-93 [P3] fixed - The customer's answer waits for Google's event write, up to 10 seconds (20 with a key renewal), after the booking is already saved
 
 **File:** backend/lib/booking/book-time.ts:319-325 (limits: backend/lib/calendar/google-calendar-provider.ts:15, backend/lib/calendar/google-oauth-client.ts:13)
 **Found:** 2026-10-02 by the final independent review of feature 5d (scope: 12a21d6..aa237da; lenses: quality, security, performance, tests)
@@ -532,4 +532,4 @@ after the commit, so the wait is a side effect nobody decided.
 on its own (not awaited, its catch and warning line kept) until feature 8's job
 runner owns it, or write in decision 6 that the customer's answer waits for
 Google until then.
-**Resolution:**
+**Resolution:** Frank's answer, option A (2026-10-02, written into decision 6): bookTime starts the event write once the booking is saved and does not await it (`bookingEventWrites.start` in backend/lib/booking/booking-event-writes.ts, which keeps the catch and the one warning line and lets tests await the writes still running). Test: "the customer's answer does not wait for Google" holds Google's answer and gets the booking first; with the wait put back it times out.

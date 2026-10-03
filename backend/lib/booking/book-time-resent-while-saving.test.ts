@@ -54,12 +54,14 @@ const {
   resource,
 } = await import("@scheduleads-app/shared/db");
 const { bookTime } = await import("./book-time.js");
+const { bookingEventWrites } = await import("./booking-event-writes.js");
 
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
 const fridayMorning = new Date("2026-10-02T14:00:00Z");
 
 afterAll(async () => {
+  await bookingEventWrites.settled(); // no Google write outlives the database
   await db.delete(organization).where(like(organization.slug, `test-resent-%-${tag}`));
   await db.$client.end();
 });

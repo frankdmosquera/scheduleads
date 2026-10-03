@@ -31,12 +31,14 @@ const {
   resource,
 } = await import("@scheduleads-app/shared/db");
 const { bookTime } = await import("./book-time.js");
+const { bookingEventWrites } = await import("./booking-event-writes.js");
 const { holdTime } = await import("../scheduling/hold-time.js");
 
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
 
 afterAll(async () => {
+  await bookingEventWrites.settled(); // no Google write outlives the database
   await db.delete(organization).where(like(organization.slug, `test-meanwhile-%-${tag}`));
   await db.$client.end();
 });

@@ -31,6 +31,7 @@ const {
 } = await import("@scheduleads-app/shared/db");
 const { decryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { bookTime } = await import("../booking/book-time.js");
+const { bookingEventWrites } = await import("../booking/booking-event-writes.js");
 const { writeBookingEvent } = await import("./write-booking-event.js");
 const { saveCalendarConnection } = await import("./save-calendar-connection.js");
 const { CalendarReconnectNeededError } = await import("./calendar-reconnect-needed-error.js");
@@ -97,8 +98,9 @@ const connect = (clinic: ClinicType, expiresInMs = 60 * 60 * 1000) =>
     },
   });
 
-const book = (clinic: ClinicType, changes: Partial<Parameters<typeof bookTime>[0]> = {}) =>
-  bookTime({
+// Booked, then Google's write waited for: the customer's answer does not wait for it, these tests do.
+const book = async (clinic: ClinicType, changes: Partial<Parameters<typeof bookTime>[0]> = {}) => {
+  const result = await bookTime({
     organizationId: clinic.business,
     bookingLinkId: clinic.estimate,
     personId: clinic.ana,
@@ -112,6 +114,9 @@ const book = (clinic: ClinicType, changes: Partial<Parameters<typeof bookTime>[0
     now: new Date("2026-10-02T14:00:00Z"),
     ...changes,
   });
+  await bookingEventWrites.settled();
+  return result;
+};
 
 const bookedId = async (
   clinic: ClinicType,
@@ -159,6 +164,7 @@ afterEach(() => {
 });
 
 afterAll(async () => {
+  await bookingEventWrites.settled();
   await db.delete(organization).where(like(organization.slug, `test-event-%-${tag}`));
   await db.$client.end();
 });
@@ -180,6 +186,37 @@ describe("the booking's event in Google", () => {
       start: { dateTime: "2026-10-05T15:00:00.000Z", timeZone: "America/Edmonton" },
       end: { dateTime: "2026-10-05T16:00:00.000Z", timeZone: "America/Edmonton" },
     }); // and no attendees: Google invites nobody
+  });
+
+  test("the customer's answer does not wait for Google", async () => {
+    const clinic = await makeClinic("no-wait");
+    await connect(clinic);
+    let answerGoogle = () => {};
+    const googleAnswered = new Promise<void>((resolve) => (answerGoogle = resolve));
+    eventAnswer = async () => {
+      await googleAnswered; // Google is slow: it answers only when the test lets it
+      return json({ id: "evt-slow" });
+    };
+
+    const result = await bookTime({
+      organizationId: clinic.business,
+      bookingLinkId: clinic.estimate,
+      personId: clinic.ana,
+      startsAt: NINE,
+      requestKey: randomUUID(),
+      customer: { name: "Jane Doe", email: `jane-${tag}@example.com` },
+      location: "12 Main Street, Calgary",
+      details: null,
+      source: "widget",
+      actorUserId: null,
+      now: new Date("2026-10-02T14:00:00Z"),
+    });
+    if (!result.booked) throw new Error(`expected a booking, got ${result.reason}`);
+    expect(await eventIdOf(result.booking.id)).toBeNull(); // answered while Google still works
+
+    answerGoogle();
+    await bookingEventWrites.settled();
+    expect(await eventIdOf(result.booking.id)).toBe("evt-slow");
   });
 
   test("the event's id is saved on the booking", async () => {

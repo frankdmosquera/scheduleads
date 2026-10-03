@@ -6,7 +6,7 @@
 
 **Status:** verified. Whole feature seen and agreed by Frank 2026-10-02;
 steps 5d.1 to 5d.5 built, tested and reviewed step by step; no P0 or P1 was
-ever open, the P3s from 5d.5's review (F-88 to F-91) fixed last on 2026-10-02.
+ever open; the final review's F-92 and F-93 fixed last on 2026-10-02.
 The checkpoint for the final review.
 
 ## Goal
@@ -68,6 +68,12 @@ lost):
    writing the event again is feature 8's background job. The event never has
    attendees, so Google never emails the customer from a worker's account
    (feature 6: customers only hear from the business).
+   The customer's answer never waits for Google (Frank, 2026-10-02, review
+   F-93, option A): the write starts once the booking is saved and finishes on
+   its own, so a slow Google cannot keep the Book button spinning. Rejected:
+   waiting (up to 20 seconds when Google is slow, and a browser that gives up
+   shows a failure for a booking that exists). If the server restarts in that
+   moment, the event waits for feature 8's retry.
 7. **The same form sent twice gets one booking** (Frank, 2026-10-02, after
    review F-75). The widget makes a one-time `requestKey` when the booking form
    opens and sends it with Book; `booking` stores it, unique per business, so
