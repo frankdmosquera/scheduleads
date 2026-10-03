@@ -222,7 +222,7 @@ read inside that business, every bad link the same 404. Drop `cancelToken`
 from the overview's booking line.
 **Resolution:** Fixed 2026-10-03: coding-standards.md gains the signed-link kind of public route (its rules: the id only from a verified signature, every other query on that row's business, one 404, no customer details, never cached, the link never logged or stored); the build log's Rules tab regenerated. The overview drops cancelToken and names the signed link. Closed 2026-10-03 by independent review of step 7a.2 (scope: 2e91e73..6b0b747): coding-standards.md:215-222 names the signed-link public route and 7a.2's POST follows it (id only from the verified token, every other query on the row's business, one 404, no-store, no customer details); project-overview.md:150 names the signed link and cancelToken is gone. No new defect.
 
-### F-122 [P3] fixed - Neither guard against a double cancel, nor the cancelled-first order, is pinned by a test
+### F-122 [P3] closed - Neither guard against a double cancel, nor the cancelled-first order, is pinned by a test
 
 **File:** backend/lib/booking/cancel-booking.ts:41, :44, :59 (tests: backend/lib/booking/cancel-booking.test.ts:176, :193)
 **Found:** 2026-10-03 by independent review of step 7a.2 (scope: 2e91e73..6b0b747; lenses: quality, security, performance, tests)
@@ -242,4 +242,62 @@ the booking into the past instead of cancelling it, and expect
 `already_started` with nothing changed: that fails without the lock and
 passes with it. Drop or rename the Promise.all test. Add one case: a
 cancelled booking whose start has passed answers already cancelled.
-**Resolution:** Fixed 2026-10-03: the Promise.all test, whose two calls never overlapped, is gone. A shared helper now holds the booking in another transaction while the cancel starts: holding and cancelling it gives "already cancelled" with no entry; holding and moving it into the past gives already_started, which fails without the row lock. A cancelled booking whose start has passed answers already cancelled, which fails without the cancelled-first check. The confirmed-only update stays a second guard that matters only without the lock: removing it alone passes, removing it with the lock fails the race test.
+**Resolution:** Fixed 2026-10-03: the Promise.all test, whose two calls never overlapped, is gone. A shared helper now holds the booking in another transaction while the cancel starts: holding and cancelling it gives "already cancelled" with no entry; holding and moving it into the past gives already_started, which fails without the row lock. A cancelled booking whose start has passed answers already cancelled, which fails without the cancelled-first check. The confirmed-only update stays a second guard that matters only without the lock: removing it alone passes, removing it with the lock fails the race test. Closed 2026-10-03 by independent review of step 7a.3 (scope: 12e7fd3..7df5944): re-run by mutation against the 7a.3 code, removing the row lock (cancel-booking.ts:45) fails "moved into the past meanwhile, it is refused"; removing the cancelled-first check (:48) fails "a cancelled booking whose start has passed still answers already cancelled"; removing the confirmed-only condition (:63) alone passes and with the lock fails both race tests, as the fix said. 7a.3's change to this file (the removal started after the transaction) leaves the guards as they were. No new defect.
+
+### F-123 [P3] fixed - The 404 answer, the one the agreed "remove by the made id" call relies on, is not tested
+
+**File:** backend/lib/calendar/google-calendar-provider.ts:97 (tests: backend/lib/calendar/remove-booking-event.test.ts:179, :257)
+**Found:** 2026-10-03 by independent review of step 7a.3 (scope: 12e7fd3..7df5944; lenses: quality, security, performance, tests)
+**Why it matters:** The Done when says an event already gone counts as
+removed, and the spec names both 404 and 410. Only 410 is tested (:184).
+Deleting `response.status === 404` from :97 leaves all 30 tests in the
+three files green. 404 is what Google answers for an id it never had,
+which is exactly the case the agreed call creates: a connected person
+whose event was never written (connected after the booking, or the write
+failed) now gets a DELETE, and without the 404 rule every such cancel
+would log a false "is still there" line and keep feature 8 retrying
+forever. The "id not saved yet" test (:257) answers 204, so it does not
+cover it either. Smaller, same place: nothing checks the DELETE carries
+the person's own access token (dropping it from :93 also stays green).
+**Suggested fix:** Answer 404 in the "id not saved yet" test (that is
+what Google says when the write never happened) and expect no warning, or
+add a 404 case beside the 410 one. Record the Authorization header in the
+fake and expect the saved access token on the DELETE.
+**Resolution:** Fixed 2026-10-03: the "id not saved yet" test now has Google answer 404 and expects no warning; the fake records the Authorization header and the first test expects Ana's own saved key. Dropping the 404 rule, or sending another key, each fail a test.
+
+### F-124 [P3] fixed - The 7a.3 step and its Done when still say "no event makes no call", which the agreed call made untrue
+
+**File:** blueprint/context/current-feature.md:155, :161
+**Found:** 2026-10-03 by independent review of step 7a.3 (scope: 12e7fd3..7df5944; lenses: quality, security, performance, tests)
+**Why it matters:** The step says "no event or no connection does
+nothing" (:155) and the Done when "no connection or no event makes no
+call" (:161). After the agreed call, a booking with no event but a
+connected person does make a DELETE (remove-booking-event.ts:31, proved
+by the test at remove-booking-event.test.ts:257). Only the Notes (:310)
+were amended, so the step contradicts its own code, and the "no event"
+half of the Done when has no test because it is no longer true. A later
+reader (7b, feature 8) following the step text would remove the call.
+**Suggested fix:** Amend the step and its Done when to the agreed rule:
+no connection makes no call; with a connection the event is removed by
+the id made from the booking, saved or not, and Google's 404 counts as
+done.
+**Resolution:** Fixed 2026-10-03: step 7a.3 and its Done when in current-feature.md now say the agreed rule: removed by the made id, saved or not; no connection makes no call; a connected person with no event gets a DELETE that Google answers 404, done, with no warning; the DELETE carries the person's own key.
+
+### F-125 [P3] fixed - cancelledIn is typed `never` where the removal starts, so that call is not type-checked
+
+**File:** backend/lib/booking/cancel-booking.ts:27, :98
+**Found:** 2026-10-03 by independent review of step 7a.3 (scope: 12e7fd3..7df5944; lenses: quality, security, performance, tests)
+**Why it matters:** `let cancelledIn: string | null = null` is narrowed by
+TypeScript to `null` at its declaration, and an assignment inside the
+transaction callback (:90) does not undo that, so inside
+`if (cancelledIn)` (:98) the variable is `never`. Reproduced in a scratch
+file with the same shape under `--strict`: assigning it to a `number`
+compiles. The runtime is right today (a failed commit throws before :98,
+and only a cancel that changed something sets it), but `start(cancelledIn, ...)`
+would accept any argument type, so a later change to `start`'s parameters
+or to what is stored there would compile silently.
+**Suggested fix:** Return the business from the transaction with the
+result (for example `{ result, cancelledIn }`) and read it from there,
+or declare it as `let cancelledIn = null as string | null` so the type is
+not narrowed away.
+**Resolution:** Fixed 2026-10-03: cancelledIn is declared with a cast (null as string | null), so TypeScript keeps its type after the transaction and checks the removal's start. The behaviour is unchanged.

@@ -152,14 +152,17 @@ No package is planned. Installing one is a line only Frank crosses.
   - The provider seam gains `deleteEvent(accessToken, eventId)`: Google's
     `DELETE`, an event already gone (404, 410) being the answer too; throws
     on any other failure. `backend/lib/calendar/remove-booking-event.ts`
-    removes a cancelled booking's event and clears its `calendarEventId`; no
-    event or no connection does nothing.
+    removes a cancelled booking's event by the id made from the booking,
+    saved or not, and clears its `calendarEventId`; no connection does
+    nothing, and a person with a connection but no event gets a DELETE that
+    Google answers 404, which counts as done.
   - Started by the cancel after its transaction, not awaited, beside the
     Google write and in its shape (decision 5); the removals still running
     can be awaited by tests.
   - **Done when** saved tests, with Google faked: a cancel removes the event
-    and clears its id; an event already gone counts as removed; no
-    connection or no event makes no call; a Google error keeps the cancel,
+    and clears its id; an event already gone (404 or 410) counts as removed,
+    with no warning; no connection makes no call; the DELETE carries the
+    person's own access key; a Google error keeps the cancel,
     logs one line with no customer details and leaves the id; the cancel's
     answer does not wait for Google.
 
@@ -311,6 +314,10 @@ screenshots in the log.
   cancel before its id was saved still removes it. One gap is left: a cancel
   in the first moment after booking, whose Google write finishes after the
   removal, leaves the event in place. Feature 8's retries close it.
+- From step 7a.3's review, for 7b: Google keeps a deleted event's id, and a
+  new event with the same id is refused (409), which `createEvent` reads as
+  "already there". So 7b moves an event by updating it in place, never by
+  deleting and writing it again.
 - From step 7a.2's review: 7a.3 and 7a.4 start Google and the emails only
   when the cancel changed something (`alreadyCancelled` false), so a second
   press never removes or emails twice. `cancelBooking` fixes the actor to the

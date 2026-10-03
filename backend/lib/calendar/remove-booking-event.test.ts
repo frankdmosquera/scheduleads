@@ -43,7 +43,7 @@ const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
 // Google's side, faked: the answers each test sets, and every call made.
 type AnswerType = () => Response | Promise<Response>;
 let deleteAnswer: AnswerType;
-const calls: { method: string; url: string }[] = [];
+const calls: { method: string; url: string; authorization: string | null }[] = [];
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 const EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
@@ -126,7 +126,8 @@ const statusOf = async (bookingId: string) =>
   (await db.select({ status: booking.status }).from(booking).where(eq(booking.id, bookingId)))[0]
     ?.status;
 const googleIdOf = (bookingId: string) => bookingId.replace(/-/g, "");
-const deleteCalls = () => calls.filter((call) => call.method === "DELETE");
+const deleteCalls = () =>
+  calls.filter((call) => call.method === "DELETE").map(({ method, url }) => ({ method, url }));
 
 beforeEach(() => {
   calls.length = 0;
@@ -134,7 +135,7 @@ beforeEach(() => {
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input instanceof Request ? input.url : input);
     const method = init?.method ?? "GET";
-    calls.push({ method, url });
+    calls.push({ method, url, authorization: new Headers(init?.headers).get("Authorization") });
     if (url === "https://www.googleapis.com/calendar/v3/freeBusy") {
       return json({ calendars: { primary: { busy: [] } } });
     }
@@ -174,6 +175,10 @@ describe("a cancelled booking's Google event", () => {
       { method: "DELETE", url: `${EVENTS_URL}/${googleIdOf(bookingId)}` },
     ]);
     expect(await eventIdOf(bookingId)).toBeNull();
+    // Ana's own key, the one saved with her connection.
+    expect(calls.find((call) => call.method === "DELETE")?.authorization).toBe(
+      "Bearer ya29.saved-access"
+    );
   });
 
   test("an event already gone counts as removed", async () => {
@@ -254,7 +259,9 @@ describe("a cancelled booking's Google event", () => {
     expect(await eventIdOf(bookingId)).toBeNull();
   });
 
-  test("an event whose id was not saved yet is removed by its own id", async () => {
+  test("an event whose id was not saved yet is removed by its own id, and Google's 404 is done", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    deleteAnswer = () => json({ error: { code: 404 } }, 404); // never written, as far as Google knows
     const made = await makeBusiness("unsaved");
     await connect(made);
     const bookingId = await bookIn(made);
@@ -266,6 +273,7 @@ describe("a cancelled booking's Google event", () => {
     expect(deleteCalls()).toEqual([
       { method: "DELETE", url: `${EVENTS_URL}/${googleIdOf(bookingId)}` },
     ]);
+    expect(warn).not.toHaveBeenCalled();
   });
 
   test("a booking still confirmed keeps its event", async () => {

@@ -24,7 +24,9 @@ export async function cancelBooking(
   bookingId: string,
   now: Date
 ): Promise<CancelBookingResultType> {
-  let cancelledIn: string | null = null; // the business, once this call cancelled the booking
+  // The business, once this call cancelled the booking. Typed by a cast, not by the declaration,
+  // so TypeScript does not narrow it to null and stop checking its use after the transaction.
+  let cancelledIn = null as string | null;
   let result: CancelBookingResultType;
   try {
     result = await db.transaction(async (tx) => {
