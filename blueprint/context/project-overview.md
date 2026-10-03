@@ -146,7 +146,8 @@ business uses a composite FK on `(organizationId, id)`.
   `manual`), `details`. Likely also linked from `activity`.
 - **booking** (5): `leadId`, `bookingLinkId`, the people and place it holds,
   `startsAt`, `endsAt`, `status`, `location` (the customer's address,
-  required), `calendarEventId`, `cancelToken`. Online or owner-made.
+  required), `calendarEventId`. Online or owner-made. Its private link is
+  signed, never stored (7a, decision 10).
 - **commitment** (5): one row per person or place per booking or time off,
   buffers inside; the database refuses overlapping active rows.
 - **quote**, **quote_item** (16): status, currency, tax, totals, expiry, accept

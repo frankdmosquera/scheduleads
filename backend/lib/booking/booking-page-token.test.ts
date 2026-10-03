@@ -21,6 +21,15 @@ describe("a booking's private link", () => {
     expect(makeBookingPageToken(bookingId, key)).toBe(token); // the same link every time
   });
 
+  // Links are permanent (decision 10): any change to how they are made ends every link already sent.
+  test("a link is made exactly the same way, always", () => {
+    const id = "0f9c2a4e-3b1d-4e8a-9c7f-5d2e1a6b8c90";
+
+    expect(makeBookingPageToken(id, Buffer.alloc(32, 7))).toBe(
+      `${id}.mVah-Rh6TSaGRd82Yl_yDu_4tycDhUlj167g8nwiu_s`
+    );
+  });
+
   test("one changed character in the link opens nothing, with the same answer as a made-up link", () => {
     const token = makeBookingPageToken(bookingId, key);
 

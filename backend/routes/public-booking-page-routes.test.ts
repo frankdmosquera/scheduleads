@@ -44,7 +44,7 @@ const jane = {
 };
 
 // A business of its own: Marco does interior estimates (60 minutes, 15 after), Mondays 9 to 12.
-async function makeBusiness(name: string, businessName: string) {
+async function makeBusiness(name: string, businessName: string, timezone = "America/Edmonton") {
   const id = () => randomUUID();
   const business = id();
   await db.insert(organization).values({
@@ -61,7 +61,7 @@ async function makeBusiness(name: string, businessName: string) {
     organizationId: business,
     resourceId: null,
     weeklyHours: { mon: [{ startMinute: 540, endMinute: 720 }] },
-    timezone: "America/Edmonton",
+    timezone,
     minimumNoticeMinutes: 0,
     horizonDays: 60,
     closedDates: [],
@@ -99,6 +99,10 @@ async function makeBusiness(name: string, businessName: string) {
     now: new Date("2026-10-02T14:00:00Z"),
   });
   if (!result.booked) throw new Error(`expected a booking, got ${result.reason}`);
+  // Marco gets hours of his own after the booking: a person's row carries no zone.
+  await db
+    .insert(availabilityRule)
+    .values({ id: id(), organizationId: business, resourceId: marco });
   return { business, bookingId: result.booking.id };
 }
 
@@ -112,7 +116,7 @@ beforeAll(async () => {
   });
   vi.spyOn(console, "log").mockImplementation(() => {}); // the businesses send no email: one line each
   primo = await makeBusiness("primo", "Primo Painters");
-  other = await makeBusiness("other", "Other Painting");
+  other = await makeBusiness("other", "Other Painting", "America/Toronto");
 });
 
 afterAll(async () => {
@@ -167,6 +171,14 @@ describe("the customer's booking page", () => {
         error: { code: "not_found", message: "This link does not open a booking." },
       }),
     ]);
+  });
+
+  test("the page says its own business's zone, never another's or a person's hours row", async () => {
+    const mine = await (await pageOf(makeBookingPageToken(primo.bookingId))).json();
+    const theirs = await (await pageOf(makeBookingPageToken(other.bookingId))).json();
+
+    expect(mine.booking.timezone).toBe("America/Edmonton");
+    expect(theirs.booking.timezone).toBe("America/Toronto");
   });
 
   test("each link opens its own business's booking only", async () => {

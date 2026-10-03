@@ -14,8 +14,10 @@ import {
 
 import { db } from "../../database.js";
 
+export type BookingStatusType = "confirmed" | "cancelled";
+
 export type BookingPageType = {
-  status: string; // "confirmed" or "cancelled"
+  status: BookingStatusType;
   service: string;
   startsAt: string; // ISO 8601 in UTC
   endsAt: string; // the appointment's own end, without the buffer after
@@ -32,7 +34,7 @@ export type BookingPageType = {
 
 // null when no such booking exists, or its business has no time zone.
 export async function findBookingPage(bookingId: string): Promise<BookingPageType | null> {
-  const [row] = await db
+  const rows = await db
     .select({
       status: booking.status,
       startsAt: booking.startsAt,
@@ -67,12 +69,15 @@ export async function findBookingPage(bookingId: string): Promise<BookingPageTyp
       )
     )
     .where(eq(booking.id, bookingId))
-    .limit(1);
+    .limit(2);
+  // One booking, one business row of hours: anything more is a join gone wrong, never a guess.
+  if (rows.length > 1) throw new Error("Reading a booking page found more than one row.");
+  const [row] = rows;
   // Without the business's zone the page cannot say when; a booking is never made without one.
   if (!row?.timezone) return null;
 
   return {
-    status: row.status,
+    status: statusOf(row.status),
     service: row.service,
     startsAt: row.startsAt.toISOString(),
     endsAt: row.endsAt.toISOString(),
@@ -86,4 +91,10 @@ export async function findBookingPage(bookingId: string): Promise<BookingPageTyp
       website: row.website,
     },
   };
+}
+
+// The database allows only these two; anything else is refused rather than shown.
+function statusOf(status: string): BookingStatusType {
+  if (status === "confirmed" || status === "cancelled") return status;
+  throw new Error("Reading a booking page found an unknown status.");
 }

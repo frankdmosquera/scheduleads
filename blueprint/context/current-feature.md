@@ -244,7 +244,7 @@ matches in constant time. Never logged, never stored.
 ```ts
 type BookingPageType = {
   status: "confirmed" | "cancelled";
-  canCancel: boolean; // confirmed and not started (open question 2)
+  canCancel: boolean; // added with 7a.2, once open question 2 says until when
   service: string;
   startsAt: string; // ISO 8601 UTC
   endsAt: string;
@@ -298,7 +298,14 @@ screenshots in the log.
 - The Google event's id is the booking id without dashes; removing it must
   treat 404 and 410 as done.
 - The root layout's title says the product's name: the page overrides it.
-- Never put a token, a customer's details or a key in a log line.
+- Never put a token, a customer's details or a key in a log line. Railway's
+  and Vercel's own access logs do record request paths, the link included:
+  that comes with the link being the key (decision 10), and is named at
+  deploy.
+- From step 7a.1's review: a business may have the slug `bookings`, which
+  sits where `/public/bookings/...` does. Nothing collides today; reserve the
+  slug before 7b adds more routes there. 7a.2 adds a test that a cancelled
+  booking's page still opens.
 - Deploy note: `BOOKING_LINK_KEY` on Railway; migration 0017; the domain in
   `APP_ORIGIN` is what Jane sees in her link, so it must not carry the
   product's name.

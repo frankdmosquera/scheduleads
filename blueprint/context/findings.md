@@ -137,3 +137,87 @@ find. The comments' reasons are already said in words around them.
 **Suggested fix:** Drop the three parenthesised numbers and keep the
 sentences as they are.
 **Resolution:**
+
+### F-117 [P2] fixed - No test notices the booking page reading another business's time zone, or a person's hours row
+
+**File:** backend/lib/booking/find-booking-page.ts:65-66 (tests: backend/routes/public-booking-page-routes.test.ts:64, :172)
+**Found:** 2026-10-03 by independent review of step 7a.1 (scope: 32114fc..4c05007; lenses: quality, security, performance, tests)
+**Why it matters:** The hours row that gives the page its zone is the one
+join not pinned by a foreign key to the booking's business, so its two
+conditions are what keep it inside the business. Both were removed in turn
+in this review and all 11 tests still passed: without the business
+condition the query picks any business's hours row, and without
+`isNull(resourceId)` a person's own row (zone always null) can be picked and
+a real link answers 404. The tests cannot see either because both test
+businesses share America/Edmonton, have no person-level hours, and the
+isolation test compares only the business name. The code is right today;
+the guard the spec asks for ("read through the booking's own business") is
+untested.
+**Suggested fix:** Give the second test business a different zone (for
+example America/Toronto) and a person-level hours row for Marco, and assert
+each link's `timezone` (and that the booking still opens) in "each link
+opens its own business's booking only".
+**Resolution:** Fixed 2026-10-03: the second test business runs on Toronto time and Marco gets a person-level hours row (no zone) after his booking; a new test expects each link to say its own business's zone. The lookup now refuses more than one joined row instead of taking the first, so a join that loses either condition fails deterministically: dropping the business condition or the person-row condition each fails three tests.
+
+### F-118 [P3] fixed - The page's status is typed as any string, not the contract's two values
+
+**File:** backend/lib/booking/find-booking-page.ts:18
+**Found:** 2026-10-03 by independent review of step 7a.1 (scope: 32114fc..4c05007; lenses: quality, security, performance, tests)
+**Why it matters:** The spec's view says `status: "confirmed" | "cancelled"`
+and the database check allows only those, but `BookingPageType.status` is
+`string`, so the frontend's inferred `BookingPageType` is `string` too. Jane's
+page (7a.5) branches on this value for its states, and with `string` a
+misspelt branch or a third status added later compiles without complaint,
+which is what the typed client exists to catch.
+**Suggested fix:** Type it as `"confirmed" | "cancelled"` (one shared
+union beside the booking table if other code needs it) and narrow the row
+value once in `findBookingPage`.
+**Resolution:** Fixed 2026-10-03: BookingStatusType is "confirmed" | "cancelled", narrowed once in findBookingPage; any other value is refused, never shown. The typed client carries the union.
+
+### F-119 [P3] fixed - The token's exact construction is not pinned by a known-answer test
+
+**File:** backend/lib/booking/booking-page-token.ts:13-14 (tests: backend/lib/booking/booking-page-token.test.ts:15)
+**Found:** 2026-10-03 by independent review of step 7a.1 (scope: 32114fc..4c05007; lenses: quality, security, performance, tests)
+**Why it matters:** Every test makes and reads a token with the same code,
+so they pass for any construction. Dropping the `booking-page:` purpose
+prefix in this review left all 11 tests green. Decision 10 makes these links
+permanent (every later email carries the same one), so an innocent change to
+the construction would silently end every link already sent, and the domain
+separation the comment promises is unguarded.
+**Suggested fix:** Add one test with a fixed key and a fixed booking id that
+expects the exact token string, computed once from the spec's formula
+(`base64url(HMAC-SHA256(key, "booking-page:" + id))`).
+**Resolution:** Fixed 2026-10-03: a known-answer test pins the exact token for a fixed key and booking id; dropping the purpose prefix now fails it.
+
+### F-120 [P3] fixed - readBookingLinkKey is a line-for-line copy of readTokenKey
+
+**File:** backend/lib/booking/read-booking-link-key.ts:7 (copy of packages/shared/crypto/token-cipher.ts:14)
+**Found:** 2026-10-03 by independent review of step 7a.1 (scope: 32114fc..4c05007; lenses: quality, security, performance, tests)
+**Why it matters:** The two functions differ only in the variable name in
+the env lookup and messages: the same canonical base64 check, the same
+length check, the same make-one hint. The canonical check is the subtle
+part (Buffer skips bad characters silently), and a fix to one copy will not
+reach the other; feature 16's quote link would make a third.
+**Suggested fix:** One shared `readBase64Key(name, encodedKey)` in
+`packages/shared/crypto` (or `helpers/`), with `readTokenKey` and
+`readBookingLinkKey` as one-line callers; the existing tests keep covering
+both names.
+**Resolution:** Fixed 2026-10-03: readBase64Key(name, value) in packages/shared/crypto/token-cipher.ts holds the check once; readTokenKey and readBookingLinkKey are one-line callers with their own names in the errors.
+
+### F-121 [P3] fixed - Two planning docs still contradict decision 10 and the new route
+
+**File:** blueprint/context/coding-standards.md:209; blueprint/context/project-overview.md:149
+**Found:** 2026-10-03 by independent review of step 7a.1 (scope: 32114fc..4c05007; lenses: quality, security, performance, tests)
+**Why it matters:** The standards' public-route rule says a public route is
+read-only, takes its business from the slug, and never finds a row by its
+id alone; `GET /public/bookings/:token` finds the booking by the signed id,
+which is right by the spec, and 7a.2's cancel will write. A later reviewer
+following the standard would flag correct code, or a builder would copy the
+slug rule onto the token route. The overview's planned booking model still
+lists `cancelToken`, the stored token decision 10 rejected; this commit
+edited the overview but left that line.
+**Suggested fix:** Add a second public-route kind to the standard: keyed by
+a signed link, the business taken from the row the link names, every other
+read inside that business, every bad link the same 404. Drop `cancelToken`
+from the overview's booking line.
+**Resolution:** Fixed 2026-10-03: coding-standards.md gains the signed-link kind of public route (its rules: the id only from a verified signature, every other query on that row's business, one 404, no customer details, never cached, the link never logged or stored); the build log's Rules tab regenerated. The overview drops cancelToken and names the signed link.
