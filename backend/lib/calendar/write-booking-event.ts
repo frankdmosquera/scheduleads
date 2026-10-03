@@ -8,6 +8,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { availabilityRule, booking, bookingLink, contact, lead } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
+import { calendarEventIdOf } from "./calendar-event-id-of.js";
 import { getFreshAccessToken } from "./get-fresh-access-token.js";
 
 export async function writeBookingEvent(
@@ -60,10 +61,7 @@ export async function writeBookingEvent(
   if (row.status !== "confirmed") return null; // a cancelled booking has no event to write
   if (row.calendarEventId) return row.calendarEventId; // written already
 
-  // Google takes an id of lowercase letters a to v and digits, so a booking's id without dashes fits.
-  const id = bookingId.replace(/-/g, "").toLowerCase();
-  if (!/^[a-v0-9]{5,1024}$/.test(id))
-    throw new Error("Writing the event failed: the id does not fit Google.");
+  const id = calendarEventIdOf(bookingId);
 
   const access = await getFreshAccessToken({ organizationId, resourceId: row.personId });
   if (!access) return null; // no calendar connected: nothing to write

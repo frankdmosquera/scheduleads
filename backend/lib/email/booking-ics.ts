@@ -1,5 +1,6 @@
 // Backend: one booking as the text of a calendar invite (RFC 5545), attached to the customer's
-// confirmation as invite.ics. Pure: no database, no clock.
+// confirmation as invite.ics, and in its cancelling form to their cancellation, so their calendar
+// removes the event (feature 7a, decision 8). Pure: no database, no clock.
 
 export type BookingIcsInputType = {
   bookingId: string;
@@ -12,6 +13,7 @@ export type BookingIcsInputType = {
   customerName: string;
   customerEmail: string;
   stampedAt: Date; // when the invite is written (DTSTAMP)
+  cancelled?: boolean; // the cancelling form: withdraws the event it once sent
 };
 
 export function bookingIcs(input: BookingIcsInputType): string {
@@ -23,12 +25,13 @@ export function bookingIcs(input: BookingIcsInputType): string {
     "VERSION:2.0",
     `PRODID:-//${senderDomain}//Bookings//EN`, // the business's, never the product's name
     "CALSCALE:GREGORIAN",
-    "METHOD:REQUEST",
+    input.cancelled ? "METHOD:CANCEL" : "METHOD:REQUEST",
     "BEGIN:VEVENT",
     // The booking's own id, a random UUID, and never the sender's domain, which the owner can
     // change: the same every time, so feature 7 moves this event instead of adding a second.
     `UID:${input.bookingId}`,
-    "SEQUENCE:0",
+    // A change must carry a higher number than the invite it changes, or calendars ignore it.
+    input.cancelled ? "SEQUENCE:1" : "SEQUENCE:0",
     `DTSTAMP:${utcStamp(input.stampedAt)}`,
     `DTSTART:${utcStamp(input.startsAt)}`, // UTC: each calendar shows its reader's own zone
     `DTEND:${utcStamp(input.endsAt)}`,
@@ -37,7 +40,7 @@ export function bookingIcs(input: BookingIcsInputType): string {
     `ORGANIZER;CN=${quoteParameter(input.businessName)}:mailto:${input.senderEmail}`,
     // She booked it herself, so she is already in, and no reply is asked of her.
     `ATTENDEE;CN=${quoteParameter(input.customerName)};ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;RSVP=FALSE:mailto:${input.customerEmail}`,
-    "STATUS:CONFIRMED",
+    input.cancelled ? "STATUS:CANCELLED" : "STATUS:CONFIRMED",
     "END:VEVENT",
     "END:VCALENDAR",
   ];

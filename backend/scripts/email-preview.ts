@@ -1,8 +1,10 @@
-// Backend: writes the two booking emails, filled with a sample booking, to .email-preview/ to open
-// in a browser. Nothing is sent. Run: npm run email:preview --workspace=backend
+// Backend: writes the booking emails, made and cancelled, filled with a sample booking, to
+// .email-preview/ to open in a browser. Nothing is sent. Run: npm run email:preview --workspace=backend
 
 import { mkdirSync, writeFileSync } from "node:fs";
 
+import { renderBookingCancelled } from "../emails/booking-cancelled.js";
+import { renderBookingCancelledNotification } from "../emails/booking-cancelled-notification.js";
 import { renderBookingConfirmation } from "../emails/booking-confirmation.js";
 import type { BookingEmailFactsType } from "../emails/booking-email-facts-type.js";
 import { renderBookingNotification } from "../emails/booking-notification.js";
@@ -29,11 +31,19 @@ const sampleFacts: BookingEmailFactsType = {
   },
 };
 
+// A link of the right shape; the preview opens nothing.
+const sampleBookingPageUrl = "http://localhost:3400/b/00000000-0000-4000-8000-000000000000.sample";
+
 const folder = new URL("../.email-preview/", import.meta.url);
 mkdirSync(folder, { recursive: true });
 for (const [name, render] of [
-  ["booking-confirmation", renderBookingConfirmation],
+  [
+    "booking-confirmation",
+    (facts: BookingEmailFactsType) => renderBookingConfirmation(facts, sampleBookingPageUrl),
+  ],
   ["booking-notification", renderBookingNotification],
+  ["booking-cancelled", renderBookingCancelled],
+  ["booking-cancelled-notification", renderBookingCancelledNotification],
 ] as const) {
   const email = await render(sampleFacts);
   const file = new URL(`${name}.html`, folder);

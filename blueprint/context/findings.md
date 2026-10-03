@@ -137,3 +137,47 @@ find. The comments' reasons are already said in words around them.
 **Suggested fix:** Drop the three parenthesised numbers and keep the
 sentences as they are.
 **Resolution:**
+
+### F-128 [P3] unverified - No real calendar has been shown to remove the event from the cancelling invite
+
+**File:** backend/lib/email/booking-ics.ts:28-43, backend/lib/email/send-cancellation-emails.ts:62-79
+**Found:** 2026-10-03 by independent review of step 7a.4 (scope: bea19bc..dfa2d60; lenses: quality, security, performance, tests)
+**Why it matters:** Decision 8 promises Jane's calendar removes the event.
+The file itself is RFC 5546 CANCEL-shaped (METHOD:CANCEL, the same UID,
+SEQUENCE 1 above the request's 0, ORGANIZER, ATTENDEE, a stable DTSTAMP,
+STATUS:CANCELLED, the content type's method matching), and the From
+address equals ORGANIZER, which Outlook needs. What is not shown is the
+real behaviour: it rides as an `invite.ics` attachment, as feature 6's
+request does, and whether Gmail, Outlook and Apple Mail act on a CANCEL
+delivered that way, rather than offering a file to open, has not been
+checked. Also, ORGANIZER is the sender address read at cancel time: a
+business that changed its sender address between the booking and the
+cancel sends a CANCEL from a different organizer than the request's,
+which some clients ignore. The Done when does not ask for this check.
+**Suggested fix:** During 7a.5's by-hand session (Frank's call, since it
+sends a real email), book and cancel against a dev business whose
+notification and customer addresses are Frank's own Gmail and an Outlook
+address, and record in the log whether the event disappears. If the
+sender-change case matters, store the organizer used on the request.
+**Resolution:**
+
+### F-134 [P3] open - The cancel test that checks log lines for the customer's details reads them before any are written
+
+**File:** backend/lib/booking/cancel-booking.test.ts:299-311
+**Found:** 2026-10-03 by /audit independent (scope: current, 32114fc..14772a1; lens: tests)
+**Why it matters:** The test "nothing in the timeline entry or a log line
+carries the customer's details" collects console lines, awaits
+`cancelBooking`, and builds `everything` from `lines.join` straight away
+(:307). Every line a cancel can write comes from the work it starts
+without waiting (the Google removal and the cancellation emails, which
+need a database round trip first), so none has been written when the
+lines are read, and the log half of the test passes whatever those lines
+say. The same lines are checked in their own files
+(remove-booking-event.test.ts:236-239, send-cancellation-emails.test.ts:320-326),
+so nothing is unguarded today; the risk is a test whose name promises
+more than it proves.
+**Suggested fix:** Await `bookingEventRemovals.settled()` and
+`bookingCancellationEmails.settled()` before reading `lines`, or drop
+"a log line" from the test's name and leave the log checks to the two
+files that already make them.
+**Resolution:**

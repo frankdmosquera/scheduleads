@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash 79fbb093e73ecd228d3586d9ebe45572e6f0af8402ee2f4b620aa2bb1e28d069 -->
+<!-- blueprint:source-hash 71a9cc16fe9ef91b43957c0c0251bc6c52383c790354c8139235b565771f636e -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -66,7 +66,11 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
      the timeline entry, the Google event. Owner-made bookings too.
 6. **Confirmations** - `.ics` email to the customer, notification to the
    business, always from the business.
-7. **Self-serve cancel and reschedule** - tokenized link.
+7. **Self-serve cancel and reschedule** - split into two, each merged as it lands:
+   - **7a. Cancel** - the private link, the customer's page, the time freed,
+     the Google event removed, both sides told.
+   - **7b. Reschedule** - free times ignoring the booking's own old time, the
+     same booking moved with its event and invite.
 8. **Scheduled messages** - the job runner, confirmation and reminder texts.
 9. **The booking component** - unstyled trigger, themed modal, one provider
    per host, layout stored on the booking link.
@@ -142,7 +146,8 @@ business uses a composite FK on `(organizationId, id)`.
   `manual`), `details`. Likely also linked from `activity`.
 - **booking** (5): `leadId`, `bookingLinkId`, the people and place it holds,
   `startsAt`, `endsAt`, `status`, `location` (the customer's address,
-  required), `calendarEventId`, `cancelToken`. Online or owner-made.
+  required), `calendarEventId`. Online or owner-made. Its private link is
+  signed, never stored (7a, decision 10).
 - **commitment** (5): one row per person or place per booking or time off,
   buffers inside; the database refuses overlapping active rows.
 - **quote**, **quote_item** (16): status, currency, tax, totals, expiry, accept

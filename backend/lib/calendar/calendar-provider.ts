@@ -33,6 +33,9 @@ export type CalendarProviderType = {
   // Writes the event into the person's main calendar and answers its id; an event already there
   // with that id is the answer too. Throws on any other failure.
   createEvent(accessToken: string, event: CalendarEventType): Promise<string>;
+  // Takes the event out of the person's main calendar; one already gone is done too. Throws on
+  // any other failure.
+  deleteEvent(accessToken: string, eventId: string): Promise<void>;
   // Best effort: whether the provider confirmed. Never throws.
   revoke(token: string): Promise<boolean>;
 };

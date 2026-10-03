@@ -1,10 +1,12 @@
 /** @jsxImportSource react */
 // Backend: the customer's confirmation, from the business and under its brand: what, when, with
-// whom and where, and a button to call the business. It never names the product.
+// whom and where, a button to the booking's own page, and the business's phone. It never names the
+// product.
 
 import { Heading, Link, render, Text } from "@react-email/components";
 
-import { formatBookingTime } from "../lib/email/format-booking-time.js";
+import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
+
 import type { BookingEmailFactsType } from "./booking-email-facts-type.js";
 import { EmailButton } from "./email-button.js";
 import { emailColors } from "./email-colors.js";
@@ -13,11 +15,15 @@ import { EmailLayout } from "./email-layout.js";
 import type { RenderedEmailType } from "./rendered-email-type.js";
 import { telHref } from "./tel-href.js";
 
+// The page's address is its own argument, so no other email can carry it by mistake.
 export async function renderBookingConfirmation(
-  facts: BookingEmailFactsType
+  facts: BookingEmailFactsType,
+  bookingPageUrl: string
 ): Promise<RenderedEmailType> {
   const when = formatBookingTime(facts.startsAt, facts.business.timezone);
-  const email = <BookingConfirmationEmail facts={facts} when={when} />;
+  const email = (
+    <BookingConfirmationEmail facts={facts} when={when} bookingPageUrl={bookingPageUrl} />
+  );
   return {
     subject: `You're booked with ${facts.business.name}: ${when}`,
     html: await render(email),
@@ -25,7 +31,15 @@ export async function renderBookingConfirmation(
   };
 }
 
-function BookingConfirmationEmail({ facts, when }: { facts: BookingEmailFactsType; when: string }) {
+function BookingConfirmationEmail({
+  facts,
+  when,
+  bookingPageUrl,
+}: {
+  facts: BookingEmailFactsType;
+  when: string;
+  bookingPageUrl: string;
+}) {
   const { business } = facts;
   const brand = business.brandColor ?? emailColors.ink;
   return (
@@ -65,22 +79,36 @@ function BookingConfirmationEmail({ facts, when }: { facts: BookingEmailFactsTyp
       <EmailField label="With">{facts.personName}</EmailField>
       <EmailField label="Where">{facts.location}</EmailField>
 
+      <Text
+        style={{
+          margin: "20px 0 0",
+          fontSize: "14px",
+          lineHeight: "20px",
+          color: emailColors.muted,
+        }}
+      >
+        Need to change it?
+      </Text>
+      <EmailButton href={bookingPageUrl} color={brand}>
+        Manage your booking
+      </EmailButton>
+
       {business.phone ? (
-        <>
-          <Text
-            style={{
-              margin: "20px 0 0",
-              fontSize: "14px",
-              lineHeight: "20px",
-              color: emailColors.muted,
-            }}
-          >
-            {`Need to change something? Call us at ${business.phone}.`}
-          </Text>
-          <EmailButton href={telHref(business.phone)} color={brand}>
-            {`Call ${business.name}`}
-          </EmailButton>
-        </>
+        <Text
+          style={{
+            margin: "16px 0 0",
+            fontSize: "14px",
+            lineHeight: "20px",
+            color: emailColors.muted,
+            textAlign: "center",
+          }}
+        >
+          Or call us at{" "}
+          <Link href={telHref(business.phone)} style={{ color: emailColors.ink }}>
+            {business.phone}
+          </Link>
+          .
+        </Text>
       ) : null}
     </EmailLayout>
   );

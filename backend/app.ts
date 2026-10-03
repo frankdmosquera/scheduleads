@@ -14,6 +14,7 @@ import { adminRoutes } from "./routes/admin-routes.js";
 import { calendarRoutes } from "./routes/calendar-routes.js";
 import { emailSendingRoutes } from "./routes/email-sending-routes.js";
 import { publicBookingLinksRoutes } from "./routes/public-booking-links-routes.js";
+import { publicBookingPageRoutes } from "./routes/public-booking-page-routes.js";
 import { publicBookingsRoutes } from "./routes/public-bookings-routes.js";
 
 export const app = new Hono()
@@ -61,6 +62,7 @@ export const app = new Hono()
   .route("/email-sending", emailSendingRoutes)
   .route("/public", publicBookingLinksRoutes)
   .route("/public", publicBookingsRoutes)
+  .route("/public", publicBookingPageRoutes)
 
   // For Railway. No database on purpose: an outage there should not restart a healthy API.
   .get("/health", (c) => c.json({ ok: true }));

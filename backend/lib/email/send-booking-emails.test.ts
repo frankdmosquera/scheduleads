@@ -38,6 +38,8 @@ const { bookTime } = await import("../booking/book-time.js");
 const { bookingEventWrites } = await import("../booking/booking-event-writes.js");
 const { bookingConfirmationEmails } = await import("../booking/booking-confirmation-emails.js");
 const { sendBookingEmails } = await import("./send-booking-emails.js");
+const { appOrigin } = await import("../auth/auth-server.js");
+const { readBookingPageToken } = await import("../booking/booking-page-token.js");
 
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
@@ -229,6 +231,30 @@ describe("a booking's emails", () => {
         actorUserId: null,
       },
     ]);
+  });
+
+  test("the confirmation carries a link that opens the same booking's page", async () => {
+    const business = await makeBusiness("page-link");
+    const bookingId = await book(business);
+
+    const [confirmation] = calls;
+    const html = String(confirmation.body.html);
+    const page = `${appOrigin}/b/`;
+    const at = html.indexOf(`href="${page}`);
+    expect(at).toBeGreaterThan(-1);
+    const link = html.slice(at + 'href="'.length, html.indexOf('"', at + 'href="'.length));
+    expect(readBookingPageToken(link.slice(page.length))).toBe(bookingId);
+    expect(String(confirmation.body.text)).toContain(link);
+  });
+
+  test("the business's notification carries no link", async () => {
+    const business = await makeBusiness("no-page-link");
+    await book(business);
+
+    const [, notification] = calls;
+    expect(notification.body.to).toEqual(["office@primopainters.com"]);
+    expect(`${notification.body.html}
+${notification.body.text}`).not.toContain("/b/");
   });
 
   test("a phone-only booking sends only the business's", async () => {
@@ -448,7 +474,7 @@ describe("a booking's emails", () => {
     expect(calls).toEqual([]);
   });
 
-  test("sending a booking's emails again sends the very same invite, under the same key", async () => {
+  test("sending a booking's emails again sends the very same invite and link, under the same key", async () => {
     const business = await makeBusiness("same-again");
     const bookingId = await book(business);
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -470,6 +496,7 @@ describe("a booking's emails", () => {
       decoded((call.body.attachments as unknown[])[0])
     );
     expect(second).toBe(first); // DTSTAMP is the booking's own moment, not the send's
+    expect(confirmations[1].body.html).toBe(confirmations[0].body.html); // the signed link is the same
   });
 });
 

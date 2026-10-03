@@ -7,7 +7,7 @@ import { adminClient, emailOTPClient, organizationClient } from "better-auth/cli
 // The API's address. Public by nature, so it is the app's only NEXT_PUBLIC_* variable;
 // never put a secret behind that prefix. It falls back to localhost instead of throwing,
 // because NEXT_PUBLIC_* is baked in at build time and a throw would break local builds.
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001").replace(
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3401").replace(
   /\/+$/,
   ""
 );

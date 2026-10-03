@@ -212,6 +212,14 @@ own subpath export.
   stranger cannot tell them apart. The answer never carries `organizationId` or
   anything about logins, and about people only the id and name of those a
   customer can pick for a service: never standby, a calendar or contact details
+- The second kind of public route is opened by a signed link instead of a
+  slug (feature 7a, decision 10: `routes/public-booking-page-routes.ts`). The
+  signature, made only by this app under `BOOKING_LINK_KEY`, is what names the
+  row, so finding it by its id is allowed there and nowhere else: the id is
+  read from a verified signature, never from the request alone. Every other
+  query filters on that row's own business; every bad or unknown link answers
+  the identical `404`; the answer never carries the customer's own details,
+  is never cached, and the link itself is never logged or stored
 - Whether the booking widget calls the API from the browser or proxies through
   the host site's Server Action is open until Phase 3 (`project-plan.md`,
   open question 5)
