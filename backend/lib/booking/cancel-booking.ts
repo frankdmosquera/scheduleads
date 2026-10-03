@@ -1,7 +1,8 @@
 // Backend: cancels one booking, the customer's own act through their private link (feature 7a).
 // In one transaction: the booking cancelled, its held time released so the next customer is
 // offered it at once, and a booking_cancelled entry on the contact's timeline. Allowed until the
-// appointment starts (decision 11). Cancelling twice is one cancel (decision 4). The owner's
+// appointment starts (decision 11). Cancelling twice is one cancel (decision 4). Once saved, the
+// booked person's Google event starts going, without the answer waiting for it. The owner's
 // screens (features 11 and 12b) call it too.
 
 import { and, eq } from "drizzle-orm";
@@ -12,6 +13,7 @@ import { db } from "../../database.js";
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { releaseTime } from "../scheduling/release-time.js";
+import { bookingEventRemovals } from "./booking-event-removals.js";
 
 export type CancelBookingResultType =
   | { cancelled: true; alreadyCancelled: boolean }
@@ -22,8 +24,10 @@ export async function cancelBooking(
   bookingId: string,
   now: Date
 ): Promise<CancelBookingResultType> {
+  let cancelledIn: string | null = null; // the business, once this call cancelled the booking
+  let result: CancelBookingResultType;
   try {
-    return await db.transaction(async (tx) => {
+    result = await db.transaction(async (tx) => {
       // Locked first, so two presses at the same instant make one cancel, never two.
       const [row] = await tx
         .select({
@@ -83,10 +87,14 @@ export async function cancelBooking(
         { contactId: row.contactId, type: "booking_cancelled", payload: { bookingId } },
         tx
       );
+      cancelledIn = organizationId;
       return { cancelled: true, alreadyCancelled: false } as const;
     });
   } catch (error) {
     // Never the database's own error: its message carries the query.
     throw new Error(`Cancelling a booking failed: ${safeErrorReason(error)}`);
   }
+  // Saved. Only a cancel that changed something removes the event, so a second press never does.
+  if (cancelledIn) bookingEventRemovals.start(cancelledIn, bookingId);
+  return result;
 }

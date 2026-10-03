@@ -148,7 +148,7 @@ No package is planned. Installing one is a line only Frank crosses.
     business's booking is never touched; nothing in the answer, the log or
     the timeline payload carries the customer's details.
 
-- [ ] **7a.3 The event leaves the booked person's Google.**
+- [x] **7a.3 The event leaves the booked person's Google.**
   - The provider seam gains `deleteEvent(accessToken, eventId)`: Google's
     `DELETE`, an event already gone (404, 410) being the answer too; throws
     on any other failure. `backend/lib/calendar/remove-booking-event.ts`
@@ -307,6 +307,10 @@ screenshots in the log.
   and Vercel's own access logs do record request paths, the link included:
   that comes with the link being the key (decision 10), and is named at
   deploy.
+- From step 7a.3: the event is removed by the id made from the booking, so a
+  cancel before its id was saved still removes it. One gap is left: a cancel
+  in the first moment after booking, whose Google write finishes after the
+  removal, leaves the event in place. Feature 8's retries close it.
 - From step 7a.2's review: 7a.3 and 7a.4 start Google and the emails only
   when the cancel changed something (`alreadyCancelled` false), so a second
   press never removes or emails twice. `cancelBooking` fixes the actor to the

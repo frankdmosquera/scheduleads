@@ -87,5 +87,16 @@ export const googleCalendarProvider: CalendarProviderType = {
     return body.id;
   },
 
+  async deleteEvent(accessToken: string, eventId: string) {
+    const response = await fetch(`${EVENTS_URL}/${encodeURIComponent(eventId)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    // 404 never written or already deleted, 410 deleted earlier: the event is gone either way.
+    if (response.ok || response.status === 404 || response.status === 410) return;
+    throw new Error(`Google refused to remove the event (${response.status}).`);
+  },
+
   revoke: (token) => googleOauthClient.revoke(token),
 };
