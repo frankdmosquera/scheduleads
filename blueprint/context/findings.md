@@ -302,7 +302,7 @@ or declare it as `let cancelledIn = null as string | null` so the type is
 not narrowed away.
 **Resolution:** Fixed 2026-10-03: cancelledIn is declared with a cast (null as string | null), so TypeScript keeps its type after the transaction and checks the removal's start. The behaviour is unchanged. Closed 2026-10-03 by independent review of step 7a.4: cancel-booking.ts:31; a probe `const probe: number = cancelledIn` inside `if (cancelledIn)` (:103) fails tsc with "Type 'string' is not assignable to type 'number'", so both starts (:104, :105) are type-checked. No new defect.
 
-### F-126 [P3] fixed - The cancel's DTSTAMP lookup and the "only a cancelled booking" guard are not tested
+### F-126 [P3] closed - The cancel's DTSTAMP lookup and the "only a cancelled booking" guard are not tested
 
 **File:** backend/lib/email/send-cancellation-emails.ts:38-50, :28 (tests: backend/lib/email/send-cancellation-emails.test.ts:327)
 **Found:** 2026-10-03 by independent review of step 7a.4 (scope: bea19bc..dfa2d60; lenses: quality, security, performance, tests)
@@ -325,9 +325,9 @@ moment (and differ from the booking's createdAt, which the test's real
 clock already makes true). Add "a booking still confirmed sends no
 cancellation": call sendCancellationEmails on an uncancelled booking and
 expect no Resend call.
-**Resolution:** Fixed 2026-10-03: the "sends both" test makes the booking a day older, then expects the invite's DTSTAMP to equal the booking_cancelled entry's occurredAt; a new test expects a booking still confirmed to get no cancellation and no Resend call. Always stamping with the booking's moment, a wrong JSON key in the lookup, and dropping the status check each fail a test. The lookup also filters on the contact, which uses the timeline index.
+**Resolution:** Fixed 2026-10-03: the "sends both" test makes the booking a day older, then expects the invite's DTSTAMP to equal the booking_cancelled entry's occurredAt; a new test expects a booking still confirmed to get no cancellation and no Resend call. Always stamping with the booking's moment, a wrong JSON key in the lookup, and dropping the status check each fail a test. The lookup also filters on the contact, which uses the timeline index. Closed 2026-10-03 by the independent review of step 7a.5, which re-read 33fa2f4: stamping always with the booking's createdAt, querying `->>'booking_id'`, and removing the status check each fail exactly one test in send-cancellation-emails.test.ts (9 tests); the new contactId filter is a non-null inner-joined id, so it narrows without hiding the entry. Nothing new found.
 
-### F-127 [P3] fixed - logNothingSent is a second export in send-and-record-emails.ts
+### F-127 [P3] closed - logNothingSent is a second export in send-and-record-emails.ts
 
 **File:** backend/lib/email/send-and-record-emails.ts:22
 **Found:** 2026-10-03 by independent review of step 7a.4 (scope: bea19bc..dfa2d60; lenses: quality, security, performance, tests)
@@ -341,7 +341,7 @@ the codebase's norm; a second function is not.
 `backend/lib/email/log-nothing-sent.ts`, or have
 `findBookingEmailContext`'s two callers share one small helper file named
 for it.
-**Resolution:** Fixed 2026-10-03: logNothingSent moved to backend/lib/email/log-nothing-sent.ts; both senders import it from there.
+**Resolution:** Fixed 2026-10-03: logNothingSent moved to backend/lib/email/log-nothing-sent.ts; both senders import it from there. Closed 2026-10-03 by the independent review of step 7a.5: log-nothing-sent.ts exports only logNothingSent, send-and-record-emails.ts exports only sendAndRecordEmails beside its two types, and no import of the old location remains.
 
 ### F-128 [P3] unverified - No real calendar has been shown to remove the event from the cancelling invite
 
@@ -365,3 +365,56 @@ notification and customer addresses are Frank's own Gmail and an Outlook
 address, and record in the log whether the event disappears. If the
 sender-change case matters, store the organizer used on the request.
 **Resolution:**
+
+### F-129 [P2] fixed - The confirm step is not announced, and opening it drops keyboard focus
+
+**File:** frontend/components/booking-page/booking-page.tsx:158-167
+**Found:** 2026-10-03 by independent review of step 7a.5 (scope: 33fa2f4..78a97a7; lenses: quality, security, performance, tests)
+**Why it matters:** Step 7a.5 says "Accessible: the confirm step and the
+result are announced". The result is (the aria-live heading and the
+`role="alert"` problem), the confirm step is not. Pressing "Cancel this
+booking" swaps that button for the `role="group"` block, so the focused
+element is removed and focus falls to the page body; the group is not a
+live region and nothing moves focus into it. A screen reader user hears
+nothing after pressing the button and does not learn that "Cancel this
+booking?" with two new buttons appeared. The same happens on "Keep it",
+whose button is removed in turn.
+**Suggested fix:** When the step becomes "confirm", move focus to the
+question or to "Keep it" (the safe choice), for example with a ref and the
+same requestAnimationFrame the result uses; when "Keep it" is pressed,
+return focus to "Cancel this booking". Optionally put the question inside
+the existing polite live region.
+**Resolution:** Fixed 2026-10-03: opening the confirm step moves focus to "Keep it" and the question is a status region, so it is read out; "Keep it" puts focus back on "Cancel this booking". Checked by the build and lint; the frontend has no test runner, so no saved test.
+
+### F-130 [P3] fixed - White text on the business's colour has no contrast check
+
+**File:** frontend/components/booking-page/booking-page.tsx:81, :176, :206
+**Found:** 2026-10-03 by independent review of step 7a.5 (scope: 33fa2f4..78a97a7; lenses: quality, security, performance, tests)
+**Why it matters:** The two main actions ("Yes, cancel it" and "Call
+<business>") are white text on `brandColor`, and the only rule on that
+colour is `#rrggbb` (shared validation schema and the database check). A
+business with a light brand colour, a yellow such as `#facc15`, gets about
+1.5:1 contrast, far under WCAG's 4.5:1, so the button that confirms the
+cancel is close to unreadable; at `disabled:opacity-60` it is worse. The
+emails have the same pattern (EmailButton), so this is a choice made once
+for both rather than a page-only slip. The inline `style` it needs is also
+the frontend's first, against the "No inline styles" standard, with no
+comment saying why.
+**Suggested fix:** A small shared helper that picks white or a dark ink
+from the colour's relative luminance, used by the page and EmailButton;
+or fall back to the neutral ink when white on the brand is under 4.5:1.
+Say in a comment that a per-business colour is the one inline style.
+**Resolution:** Fixed 2026-10-03: textColorOn (packages/shared/helpers/text-color-on.ts, tested) picks white or dark ink by contrast; the page's two buttons and the emails' EmailButton use it. The page's inline styles carry a comment: the business's colour is data, not a class.
+
+### F-131 [P3] fixed - "Try again" gives no sign it did anything
+
+**File:** frontend/components/booking-page/booking-page.tsx:26-36, :64
+**Found:** 2026-10-03 by independent review of step 7a.5 (scope: 33fa2f4..78a97a7; lenses: quality, security, performance, tests)
+**Why it matters:** On the unreachable screen, "Try again" bumps `reloads`
+but leaves `result` as it was, so the screen does not change while the
+request runs, and if it fails again the identical screen stays. Jane
+cannot tell a retry happened from a button that does nothing, which is
+the moment she is most likely to give up and not cancel.
+**Suggested fix:** Clear the result on retry (`setResult(null)` with the
+reload), so "One moment…" shows until the new answer arrives.
+**Resolution:** Fixed 2026-10-03: "Try again" clears the result first, so "One moment..." shows while it retries. Also from the notes: the logo keeps its shape (object-contain).

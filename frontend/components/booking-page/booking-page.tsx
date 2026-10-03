@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
+import { textColorOn } from "@scheduleads-app/shared/text-color-on";
 
 import {
   cancelBookingPage,
@@ -61,7 +62,10 @@ export function BookingPage({ token }: { token: string }) {
         <p className="mt-2 text-sm leading-6 text-slate-600">Please try again in a moment.</p>
         <button
           type="button"
-          onClick={() => setReloads((n) => n + 1)}
+          onClick={() => {
+            setResult(null); // "One moment…" while it tries again
+            setReloads((n) => n + 1);
+          }}
           className="mt-6 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm font-medium text-slate-900 hover:bg-slate-50"
         >
           Try again
@@ -78,7 +82,12 @@ function BookingDetails({ token, initial }: { token: string; initial: BookingPag
   const [problem, setProblem] = useState<string | null>(null);
   const resultHeading = useRef<HTMLHeadingElement>(null);
   const { business } = booking;
+  // The business's own colour is data, not a class, so its buttons are styled inline; the text on
+  // it is white or dark ink, whichever stays readable.
   const brand = business.brandColor ?? "#0f172a";
+  const onBrand = textColorOn(brand);
+  const keepRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const when = formatBookingTime(new Date(booking.startsAt), booking.timezone);
 
   useEffect(() => {
@@ -125,7 +134,7 @@ function BookingDetails({ token, initial }: { token: string; initial: BookingPag
       {business.logo ? (
         // A plain img: the logo lives on the business's own image host, outside Next's optimiser.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={business.logo} alt={business.name} className="mb-5 h-12 w-auto" />
+        <img src={business.logo} alt={business.name} className="mb-5 h-12 w-auto object-contain" />
       ) : (
         <p className="mb-5 text-lg font-semibold text-slate-900">{business.name}</p>
       )}
@@ -158,14 +167,18 @@ function BookingDetails({ token, initial }: { token: string; initial: BookingPag
           {step === "button" ? (
             <button
               type="button"
-              onClick={() => setStep("confirm")}
+              ref={cancelRef}
+              onClick={() => {
+                setStep("confirm");
+                requestAnimationFrame(() => keepRef.current?.focus()); // the button just pressed is gone
+              }}
               className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm font-medium text-slate-900 hover:bg-slate-50"
             >
               Cancel this booking
             </button>
           ) : (
             <div role="group" aria-labelledby="confirm-cancel">
-              <p id="confirm-cancel" className="text-sm font-medium text-slate-900">
+              <p id="confirm-cancel" role="status" className="text-sm font-medium text-slate-900">
                 Cancel this booking?
               </p>
               <div className="mt-3 flex gap-3">
@@ -173,16 +186,18 @@ function BookingDetails({ token, initial }: { token: string; initial: BookingPag
                   type="button"
                   onClick={cancel}
                   disabled={step === "sending"}
-                  style={{ backgroundColor: brand }}
-                  className="flex-1 rounded-lg px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                  style={{ backgroundColor: brand, color: onBrand }}
+                  className="flex-1 rounded-lg px-4 py-3 text-sm font-semibold disabled:opacity-60"
                 >
                   {step === "sending" ? "Cancelling…" : "Yes, cancel it"}
                 </button>
                 <button
+                  ref={keepRef}
                   type="button"
                   onClick={() => {
                     setStep("button");
                     setProblem(null);
+                    requestAnimationFrame(() => cancelRef.current?.focus()); // back where they were
                   }}
                   disabled={step === "sending"}
                   className="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-sm font-medium text-slate-900 hover:bg-slate-50 disabled:opacity-60"
@@ -203,8 +218,8 @@ function BookingDetails({ token, initial }: { token: string; initial: BookingPag
       {(cancelled || started) && business.phone ? (
         <a
           href={telHref(business.phone)}
-          style={{ backgroundColor: brand }}
-          className="mt-6 block w-full rounded-lg px-4 py-3 text-center text-sm font-semibold text-white"
+          style={{ backgroundColor: brand, color: onBrand }}
+          className="mt-6 block w-full rounded-lg px-4 py-3 text-center text-sm font-semibold"
         >
           {`Call ${business.name}`}
         </a>

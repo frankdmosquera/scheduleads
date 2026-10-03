@@ -5,6 +5,8 @@
 import type { ReactNode } from "react";
 import { Button } from "@react-email/components";
 
+import { textColorOn } from "@scheduleads-app/shared/text-color-on";
+
 export function EmailButton({
   href,
   color,
@@ -22,7 +24,7 @@ export function EmailButton({
         marginTop: "20px",
         backgroundColor: color,
         borderRadius: "8px",
-        color: "#ffffff",
+        color: textColorOn(color), // readable on a light brand colour too
         fontSize: "16px",
         fontWeight: 600,
         padding: "14px 20px",
