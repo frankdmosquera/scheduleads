@@ -2,7 +2,8 @@
 // In one transaction: the booking cancelled, its held time released so the next customer is
 // offered it at once, and a booking_cancelled entry on the contact's timeline. Allowed until the
 // appointment starts (decision 11). Cancelling twice is one cancel (decision 4). Once saved, the
-// booked person's Google event starts going, without the answer waiting for it. The owner's
+// booked person's Google event starts going and both sides start being told, without the answer
+// waiting for either. The owner's
 // screens (features 11 and 12b) call it too.
 
 import { and, eq } from "drizzle-orm";
@@ -13,6 +14,7 @@ import { db } from "../../database.js";
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { releaseTime } from "../scheduling/release-time.js";
+import { bookingCancellationEmails } from "./booking-cancellation-emails.js";
 import { bookingEventRemovals } from "./booking-event-removals.js";
 
 export type CancelBookingResultType =
@@ -96,7 +98,11 @@ export async function cancelBooking(
     // Never the database's own error: its message carries the query.
     throw new Error(`Cancelling a booking failed: ${safeErrorReason(error)}`);
   }
-  // Saved. Only a cancel that changed something removes the event, so a second press never does.
-  if (cancelledIn) bookingEventRemovals.start(cancelledIn, bookingId);
+  // Saved. Only a cancel that changed something removes the event and tells both sides, so a
+  // second press never does either again.
+  if (cancelledIn) {
+    bookingEventRemovals.start(cancelledIn, bookingId);
+    bookingCancellationEmails.start(cancelledIn, bookingId);
+  }
   return result;
 }

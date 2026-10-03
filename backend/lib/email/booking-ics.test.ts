@@ -48,6 +48,17 @@ describe("bookingIcs", () => {
     );
   });
 
+  test("the cancelling form withdraws the same event", () => {
+    const lines = bookingIcs({ ...plainBooking, cancelled: true }).split("\r\n");
+
+    expect(lines).toContain("METHOD:CANCEL");
+    expect(lines).toContain("STATUS:CANCELLED");
+    expect(lines).toContain("SEQUENCE:1"); // higher than the invite it withdraws
+    expect(lines).toContain("UID:bk_123"); // the same event
+    expect(lines).not.toContain("METHOD:REQUEST");
+    expect(lines).not.toContain("STATUS:CONFIRMED");
+  });
+
   test("escapes a comma, a semicolon, a backslash and new lines in the address, and drops other control characters", () => {
     const ics = bookingIcs({
       ...plainBooking,

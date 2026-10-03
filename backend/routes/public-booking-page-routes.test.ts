@@ -32,6 +32,7 @@ const { bookTime } = await import("../lib/booking/book-time.js");
 const { bookingEventWrites } = await import("../lib/booking/booking-event-writes.js");
 const { bookingConfirmationEmails } = await import("../lib/booking/booking-confirmation-emails.js");
 const { bookingEventRemovals } = await import("../lib/booking/booking-event-removals.js");
+const { bookingCancellationEmails } = await import("../lib/booking/booking-cancellation-emails.js");
 const { makeBookingPageToken } = await import("../lib/booking/booking-page-token.js");
 const { addDays } = await import("../lib/local-time/add-days.js");
 const { localDate } = await import("../lib/local-time/local-date.js");
@@ -147,6 +148,7 @@ afterAll(async () => {
   await bookingEventWrites.settled();
   await bookingConfirmationEmails.settled();
   await bookingEventRemovals.settled();
+  await bookingCancellationEmails.settled();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   await db.delete(organization).where(like(organization.slug, `test-page-%-${tag}-dev`));

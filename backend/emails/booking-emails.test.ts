@@ -5,6 +5,8 @@ import { describe, expect, test } from "vitest";
 import type { BookingEmailFactsType } from "./booking-email-facts-type.js";
 import { renderBookingConfirmation } from "./booking-confirmation.js";
 import { renderBookingNotification } from "./booking-notification.js";
+import { renderBookingCancelled } from "./booking-cancelled.js";
+import { renderBookingCancelledNotification } from "./booking-cancelled-notification.js";
 
 const facts: BookingEmailFactsType = {
   business: {
@@ -209,5 +211,76 @@ describe("the business's notification", () => {
     ]) {
       expect(text).toContain(fact);
     }
+  });
+});
+
+describe("the customer's cancellation", () => {
+  test("its subject names the business and the time it was, in the business's zone", async () => {
+    const email = await renderBookingCancelled(facts);
+
+    expect(email.subject).toBe(
+      "Your booking with Primo Painters is cancelled: Thursday, October 8 at 9:00 a.m. MDT"
+    );
+    expect((await renderBookingCancelled(torontoFacts)).subject).toContain("11:00 a.m. EDT");
+  });
+
+  test("says what it was and when, with a tel: button to book again", async () => {
+    const { html, text } = await renderBookingCancelled(facts);
+
+    for (const fact of [
+      "Your booking is cancelled",
+      "Exterior painting estimate",
+      "Thursday, October 8 at 9:00 a.m. MDT",
+    ]) {
+      expect(html).toContain(fact);
+      expect(text.toLowerCase()).toContain(fact.toLowerCase()); // plain text writes headings in capitals
+    }
+    expect(html).toContain('href="tel:4035550100"');
+    expect(text).toContain("Primo Painters");
+  });
+
+  test("never names the product, and shows what the customer typed as text", async () => {
+    const email = await renderBookingCancelled(scriptFacts);
+
+    expect(`${email.subject}\n${email.html}\n${email.text}`).not.toMatch(productName);
+    expect(email.html).not.toContain("<script");
+  });
+});
+
+describe("the business's cancellation notice", () => {
+  test("its subject is the service and the time it was, in the business's zone", async () => {
+    const email = await renderBookingCancelledNotification(facts);
+
+    expect(email.subject).toBe(
+      "Cancelled: Exterior painting estimate, Thursday, October 8 at 9:00 a.m. MDT"
+    );
+    expect((await renderBookingCancelledNotification(torontoFacts)).subject).toContain(
+      "11:00 a.m. EDT"
+    );
+  });
+
+  test("names who cancelled, with tel: and mailto: links, and the time is free again", async () => {
+    const { html, text } = await renderBookingCancelledNotification(facts);
+
+    for (const fact of [
+      "Jane Doe",
+      "jane@example.com",
+      "(403) 555-0148",
+      "Marco",
+      "The time is free again",
+    ]) {
+      expect(html).toContain(fact);
+      expect(text).toContain(fact);
+    }
+    expect(html.split('href="tel:4035550148"')).toHaveLength(3); // the phone line and the button
+    expect(html).toContain('href="mailto:jane@example.com"');
+  });
+
+  test("never names the product, and shows what the customer typed as text", async () => {
+    const email = await renderBookingCancelledNotification(scriptFacts);
+
+    expect(`${email.subject}\n${email.html}\n${email.text}`).not.toMatch(productName);
+    expect(email.html).not.toContain("<script");
+    expect(email.html).toContain("&lt;script&gt;");
   });
 });

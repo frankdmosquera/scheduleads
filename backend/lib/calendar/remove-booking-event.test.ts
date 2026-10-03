@@ -32,6 +32,7 @@ const { bookTime } = await import("../booking/book-time.js");
 const { cancelBooking } = await import("../booking/cancel-booking.js");
 const { bookingEventWrites } = await import("../booking/booking-event-writes.js");
 const { bookingEventRemovals } = await import("../booking/booking-event-removals.js");
+const { bookingCancellationEmails } = await import("../booking/booking-cancellation-emails.js");
 const { bookingConfirmationEmails } = await import("../booking/booking-confirmation-emails.js");
 const { saveCalendarConnection } = await import("./save-calendar-connection.js");
 const { removeBookingEvent } = await import("./remove-booking-event.js");
@@ -156,6 +157,7 @@ afterEach(() => {
 afterAll(async () => {
   await bookingEventWrites.settled();
   await bookingEventRemovals.settled();
+  await bookingCancellationEmails.settled();
   await bookingConfirmationEmails.settled();
   await db.delete(organization).where(like(organization.slug, `test-removal-%-${tag}`));
   await db.$client.end();

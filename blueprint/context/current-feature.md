@@ -166,7 +166,7 @@ No package is planned. Installing one is a line only Frank crosses.
     logs one line with no customer details and leaves the id; the cancel's
     answer does not wait for Google.
 
-- [ ] **7a.4 Both are told.**
+- [x] **7a.4 Both are told.**
   - `bookingIcs` gains the cancelling form: `METHOD:CANCEL`,
     `STATUS:CANCELLED`, the same UID, `SEQUENCE:1` (decision 8).
   - `backend/emails/booking-cancelled.tsx` to Jane: "Your booking is
@@ -280,6 +280,13 @@ No customer details, no ids but what the link already carries. 404
 **The withdrawn invite** (7a.4): `invite.ics`,
 `text/calendar; charset=utf-8; method=CANCEL`; `METHOD:CANCEL`,
 `STATUS:CANCELLED`, the booking's UID, `SEQUENCE:1`, the original times.
+Stamped (`DTSTAMP`) with the moment of the cancel, read from its timeline
+entry, so a retry sends the very same invite.
+
+**The cancellation emails** (7a.4): keys `booking-cancelled/<id>` and
+`booking-cancelled-notification/<id>`; each that went gets an `email_sent`
+entry with `kind` `booking_cancellation` or
+`booking_cancellation_notification` (feature 6's two kinds keep theirs).
 
 **The page** (7a.5): `/b/<token>` on the frontend's origin (`APP_ORIGIN`).
 
