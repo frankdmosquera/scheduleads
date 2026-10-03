@@ -379,6 +379,14 @@ sent until Frank sets a Resend key and a verified domain on purpose.
 - Dates: `Intl.DateTimeFormat` with the business's `timeZone`, never the
   server's zone (Railway runs UTC).
 - Never put a customer's details or a login code in a log line.
+- For 6.6, from step 6.5's review: `findBusinessEmailDetails` gives
+  `timezone: string | null` while the templates need a string, and `Intl`
+  throws on a missing zone, so decide what a business without one does. The
+  notification's footer says replying reaches the customer, which holds only
+  once `replyTo` is set to their email. Send the invite so Outlook on a
+  desktop sees a meeting (step 6.4's review). Alberta keeps daylight time for
+  good in the time zone data from 2026c (Node 26 here); check that the Node on
+  Railway carries the same data, or Primo's winter times read an hour off.
 
 ## Open questions
 

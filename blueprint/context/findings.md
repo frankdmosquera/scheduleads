@@ -376,3 +376,55 @@ does; add a lone `\r` and a `\u0000` to the escape test.
 left after the new-line escape, except a tab, with a space. The escape test
 now carries a lone `\r` and a `\u0000`; dropping the lone CR from the
 new-line escape fails it.
+
+### F-110 [P3] fixed - The email tests run only in Edmonton, the laptop's own zone, so a template that ignores the business's zone passes
+
+**File:** backend/emails/booking-emails.test.ts:9-28 (code: backend/emails/booking-confirmation.tsx:19, backend/emails/booking-notification.tsx:19)
+**Found:** 2026-10-02 by independent review of step 6.5 (scope: 67aaa74..fbaf9d3; lenses: quality, security, performance, tests)
+**Why it matters:** Every email test uses a business in `America/Edmonton`,
+and this laptop's own zone is `America/Edmonton`. Two mutations in this
+review left all 14 tests passing (both reverted): the confirmation calling
+`formatBookingTime` with a hard-coded `"America/Edmonton"`, and the
+notification calling it with the server's zone. The formatter's own test
+catches a formatter that drops its zone, but nothing ties the templates to
+`facts.business.timezone`, which is the step's Done when ("the time in the
+business's zone"); on Railway (UTC) a server-zone slip shows every booking
+six hours off. Two notification mutations also survived: the "Call <customer>"
+button pointed at `#` (the test titled "with a tel: link and button" is met
+by the Phone link alone), and the brand colour ignored.
+**Suggested fix:** Render each email once for a business in another zone
+(`America/Toronto`: expect "11:00 a.m. EDT" in the subject and the text). In
+the notification test expect the `tel:` href twice (link and button) and the
+brand colour.
+**Resolution:** Fixed 2026-10-02: each email is also rendered for a Toronto business and must read 11:00 a.m. EDT in its subject, HTML and text; the notification test expects the tel: link twice (line and button) and the brand colour. All four mutations above now fail a test.
+
+### F-111 [P3] fixed - The confirmation's plain-text twin never names the business when it has a logo and no phone
+
+**File:** backend/emails/email-layout.tsx:46-67 (also backend/emails/booking-confirmation.tsx:36-45, 68-83; backend/emails/booking-notification.tsx:85-101)
+**Found:** 2026-10-02 by independent review of step 6.5 (scope: 67aaa74..fbaf9d3; lenses: quality, security, performance, tests)
+**Why it matters:** React Email's plain-text render skips images, so the
+logo, whose alt text is the business's name in the HTML, leaves nothing in
+the text. The name then appears only in the "Call <business>" button (only
+with a phone) or the footer (only without a website). Probed: a business with
+a logo, a website and no phone gets a text body that never says who the
+booking is with. Smaller, same twin: single line breaks in the customer's
+words, kept in the HTML by `pre-line`, are joined into one line in the
+notification's text ("Two storeys, stucco. South side peeling."). The subject
+and the From name still carry the business, hence P3.
+**Suggested fix:** Name the business once in the body whatever it has (for
+example "Here are the details of your booking with Primo Painters."), and add
+a test with a logo and no phone that expects the name in the text. The
+line-break loss can be accepted or the fixture given a single line break.
+**Resolution:** Fixed 2026-10-02: the confirmation's opening line names the business ("Primo Painters has you booked."), tested for a business with a logo and no phone. The customer's single line breaks are now <br /> instead of pre-line, so they survive in the plain-text twin too, tested. Both changes reverted fail a test.
+
+### F-112 [P3] fixed - Step numbers in two code comments
+
+**File:** backend/emails/booking-email-facts-type.ts:1-2, backend/emails/booking-notification.tsx:3
+**Found:** 2026-10-02 by independent review of step 6.5 (scope: 67aaa74..fbaf9d3; lenses: quality, security, performance, tests)
+**Why it matters:** "Step 6.6 reads it from the database" and "Reply-to is
+the customer (step 6.6)". The coding standards' Comments section rules out
+step numbers in code comments (they belong in the build log); F-106 was the
+same kind of slip.
+**Suggested fix:** "Read from the database inside the booking's own
+business" and "Reply-to is the customer, set where the email is sent".
+**Resolution:** Fixed 2026-10-02: both comments reworded without step numbers.

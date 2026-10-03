@@ -1,7 +1,8 @@
 /** @jsxImportSource react */
 // Backend: the business's notification of a new booking: what and when first, then who booked,
-// each fact on its own line so it reads in a second. Reply-to is the customer (step 6.6).
+// each fact on its own line so it reads in a second. It is sent with the customer as reply-to.
 
+import { Fragment } from "react";
 import { Heading, Hr, Link, render, Text } from "@react-email/components";
 
 import { formatBookingTime } from "../lib/email/format-booking-time.js";
@@ -84,7 +85,8 @@ function BookingNotificationEmail({ facts, when }: { facts: BookingEmailFactsTyp
           >
             In their words
           </Text>
-          {/* One paragraph per blank line, so their own paragraphs survive. */}
+          {/* One paragraph per blank line and a <br /> per line break, so their own lines survive
+              in the HTML and in the plain-text twin alike. */}
           {customer.details.split(/\n{2,}/).map((paragraph, index) => (
             <Text
               key={index}
@@ -93,10 +95,14 @@ function BookingNotificationEmail({ facts, when }: { facts: BookingEmailFactsTyp
                 fontSize: "16px",
                 lineHeight: "24px",
                 color: emailColors.ink,
-                whiteSpace: "pre-line",
               }}
             >
-              {paragraph}
+              {paragraph.split("\n").map((line, lineIndex) => (
+                <Fragment key={lineIndex}>
+                  {lineIndex > 0 ? <br /> : null}
+                  {line}
+                </Fragment>
+              ))}
             </Text>
           ))}
         </>

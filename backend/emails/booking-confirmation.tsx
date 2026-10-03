@@ -57,7 +57,7 @@ function BookingConfirmationEmail({ facts, when }: { facts: BookingEmailFactsTyp
           color: emailColors.muted,
         }}
       >
-        {`Thanks, ${facts.customer.name}. Here are the details.`}
+        {`Thanks, ${facts.customer.name}. ${business.name} has you booked.`}
       </Text>
 
       <EmailField label="What">{facts.service}</EmailField>

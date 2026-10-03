@@ -1,5 +1,5 @@
-// Backend: everything the two booking emails say, for one booking. Step 6.6 reads it from the
-// database inside the booking's own business.
+// Backend: everything the two booking emails say, for one booking, read from the database inside
+// the booking's own business.
 
 export type BookingEmailFactsType = {
   business: {

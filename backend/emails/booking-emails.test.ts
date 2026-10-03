@@ -36,6 +36,12 @@ const scriptFacts: BookingEmailFactsType = {
 
 const productName = /scheduleads/i;
 
+// A business in another zone than this laptop's, so an email that ignored the business's zone fails.
+const torontoFacts: BookingEmailFactsType = {
+  ...facts,
+  business: { ...facts.business, timezone: "America/Toronto" },
+};
+
 describe("the customer's confirmation", () => {
   test("its subject names the business and the time in the business's zone", async () => {
     const email = await renderBookingConfirmation(facts);
@@ -43,6 +49,23 @@ describe("the customer's confirmation", () => {
     expect(email.subject).toBe(
       "You're booked with Primo Painters: Thursday, October 8 at 9:00 a.m. MDT"
     );
+  });
+
+  test("a business in Toronto gets its own time, not this laptop's", async () => {
+    const email = await renderBookingConfirmation(torontoFacts);
+
+    expect(email.subject).toContain("Thursday, October 8 at 11:00 a.m. EDT");
+    expect(email.html).toContain("Thursday, October 8 at 11:00 a.m. EDT");
+    expect(email.text).toContain("Thursday, October 8 at 11:00 a.m. EDT");
+  });
+
+  test("the plain-text twin names the business even with a logo and no phone", async () => {
+    const { text } = await renderBookingConfirmation({
+      ...facts,
+      business: { ...facts.business, phone: null },
+    });
+
+    expect(text).toContain("Primo Painters");
   });
 
   test("says what, when, with whom and where, with the logo and a tel: button", async () => {
@@ -110,6 +133,14 @@ describe("the business's notification", () => {
     );
   });
 
+  test("a business in Toronto gets its own time, not this laptop's", async () => {
+    const email = await renderBookingNotification(torontoFacts);
+
+    expect(email.subject).toContain("Thursday, October 8 at 11:00 a.m. EDT");
+    expect(email.html).toContain("Thursday, October 8 at 11:00 a.m. EDT");
+    expect(email.text).toContain("Thursday, October 8 at 11:00 a.m. EDT");
+  });
+
   test("lists who booked, with a tel: link and button and a mailto: link", async () => {
     const { html } = await renderBookingNotification(facts);
 
@@ -124,8 +155,19 @@ describe("the business's notification", () => {
     ]) {
       expect(html).toContain(fact);
     }
-    expect(html).toContain('href="tel:4035550148"');
+    expect(html.split('href="tel:4035550148"')).toHaveLength(3); // the phone line and the button
     expect(html).toContain('href="mailto:jane@example.com"');
+    expect(html).toContain("#1d4ed8");
+  });
+
+  test("the customer's own line breaks survive, in the HTML and the plain-text twin", async () => {
+    const { html, text } = await renderBookingNotification({
+      ...facts,
+      customer: { ...facts.customer, details: "Line one\nLine two" },
+    });
+
+    expect(html).toContain("Line one<br/>Line two");
+    expect(text).toContain("Line one\nLine two");
   });
 
   test("a phone-only booking has no email line and says to call", async () => {
