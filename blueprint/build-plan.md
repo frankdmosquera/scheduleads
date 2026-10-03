@@ -174,7 +174,7 @@ and a second resource can hold the same time as the first.
     first stage, the booking with the customer's address, its commitments,
     the timeline entry, and the event in the booked person's Google. The
     same booking for one the owner makes
-- [ ] 6. **Confirmations** - email with `.ics` to the customer and a
+- [x] 6. **Confirmations** - email with `.ics` to the customer and a
   business-side notification, from Primo's template pattern. Customers only
   ever hear from the business, never from a worker's own address. A booked
   worker with no login and no Google has no way to be told yet; this item or
