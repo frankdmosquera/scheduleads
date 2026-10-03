@@ -4,6 +4,11 @@
 
 **Branch:** feature/07a-cancel
 
+**Status:** verified. Whole feature seen and agreed by Frank 2026-10-03;
+steps 7a.1 to 7a.6 built, tested and reviewed step by step; no P0 or P1 was
+ever open; decisions 10 and 11 made with Frank along the way. The checkpoint
+for the final review.
+
 ## Goal
 
 Jane's confirmation carries a private link. It opens a page, under the
