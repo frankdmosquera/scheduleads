@@ -100,6 +100,18 @@ describe("a business's own Resend key", () => {
     ).toHaveLength(1);
   });
 
+  test("a key that can no longer be unlocked is still replaced by a new one", async () => {
+    const business = await makeBusiness("unreadable");
+    await db
+      .insert(emailSendingKey)
+      .values({ organizationId: business, credentials: "v1.broken.key.here" });
+
+    const result = await saveEmailSendingKey(business, "re_new_key_456");
+
+    expect(result).toEqual({ ok: true, savedAt: expect.any(Date) });
+    expect((await findBusinessEmailDetails(business))?.apiKey).toBe("re_new_key_456");
+  });
+
   test("a business without its two addresses is asked for them first, and nothing is sent", async () => {
     const business = await makeBusiness("no-addresses", { senderEmail: null });
     const fetchSpy = vi.fn(async () => resendAnswer());

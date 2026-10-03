@@ -573,7 +573,7 @@ describe("the business's email details at setup (feature 6)", () => {
     expect(resendCalls).toHaveLength(1);
     expect(resendCalls[0].headers.get("Authorization")).toBe("Bearer re_business_key_123");
     expect(resendCalls[0].body).toMatchObject({
-      from: `${businessName("keyed")} <bookings@example.com>`,
+      from: `"${businessName("keyed")}" <bookings@example.com>`,
       to: [email("keyed")],
     });
     const [business] = await businessesWith(slugOf("keyed"));

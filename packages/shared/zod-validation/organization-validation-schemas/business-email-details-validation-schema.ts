@@ -12,7 +12,14 @@ export const businessEmailDetailsValidationSchema = z.object({
   senderEmail: z.union([empty, emailAddressValidationSchema]).optional(),
   notifyEmail: z.union([empty, emailAddressValidationSchema]).optional(),
   phone: z
-    .union([empty, z.string().trim().min(1).max(40, "That phone number is too long.")])
+    .union([
+      empty,
+      z
+        .string()
+        .trim()
+        .min(1, "Enter a phone number, or leave it empty.")
+        .max(40, "That phone number is too long."),
+    ])
     .optional(),
   website: z
     .union([

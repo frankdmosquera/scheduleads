@@ -4,6 +4,7 @@
 
 import { randomUUID } from "node:crypto";
 
+import { formatSender } from "./format-sender.js";
 import { SendEmailError } from "./send-email-error.js";
 import { sendEmail } from "./send-email.js";
 
@@ -19,13 +20,26 @@ export type CheckEmailSendingKeyResultType = { ok: true } | { ok: false; reason:
 const escapeHtml = (text: string) =>
   text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-// Resend's answers, in words an owner can act on.
+// Resend's answers, in words an owner can act on. Its error name first: a wrong key comes back
+// as 403, like an unverified domain. Only what a retry can fix says to try again.
 function reasonFor(error: SendEmailError): string {
-  if (error.status === 401 || error.code.endsWith("api_key")) return "Resend refused this key.";
+  if (error.code.endsWith("api_key") || error.status === 401) return "Resend refused this key.";
+  if (error.code === "daily_quota_exceeded" || error.code === "monthly_quota_exceeded") {
+    return (
+      "This Resend account has reached its sending limit. " +
+      "Raise it in Resend, or wait for it to reset."
+    );
+  }
   if (error.status === 403) {
     return (
       "Resend would not send from this address. Check that its domain is verified in the same " +
       "Resend account, and that the key may send from it."
+    );
+  }
+  if (error.status === 422 || error.code === "invalid_from_address") {
+    return (
+      "Resend would not accept this sender address. " +
+      "Check it is a real address at the business's domain."
     );
   }
   return "Resend could not send the test email just now. Try again shortly.";
@@ -38,11 +52,13 @@ export async function checkEmailSendingKey(
     await sendEmail({
       apiKey: input.apiKey,
       kind: "email_key_check",
-      from: `${input.businessName} <${input.senderEmail}>`,
+      from: formatSender(input.businessName, input.senderEmail),
       to: [input.notifyEmail],
       subject: "Your booking emails are set up",
-      text: `This test email shows that ${input.businessName}'s booking emails can be sent. Nothing else to do.`,
-      html: `<p>This test email shows that ${escapeHtml(input.businessName)}'s booking emails can be sent.</p><p>Nothing else to do.</p>`,
+      text: `This test email shows that ${input.businessName}'s booking emails can be sent.`,
+      html:
+        `<p>This test email shows that ${escapeHtml(input.businessName)}'s booking emails ` +
+        "can be sent.</p>",
       idempotencyKey: `email-key-check/${randomUUID()}`, // each check is its own email
     });
     return { ok: true };

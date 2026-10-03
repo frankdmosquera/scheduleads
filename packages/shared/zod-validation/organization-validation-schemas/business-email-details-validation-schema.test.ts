@@ -46,6 +46,7 @@ describe("the business's email details", () => {
     ],
     ["a sender that is not an email", { senderEmail: "bookings" }, "Enter a valid email address."],
     ["a phone too long", { phone: "1".repeat(41) }, "That phone number is too long."],
+    ["a phone of only spaces", { phone: "   " }, "Enter a phone number, or leave it empty."],
   ])("%s is refused", (_name, details, expected) => {
     expect(message(details)).toBe(expected);
   });

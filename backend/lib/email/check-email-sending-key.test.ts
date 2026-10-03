@@ -33,20 +33,46 @@ afterEach(() => {
 });
 
 describe("checking a business's key", () => {
+  test("a name with a comma and an ampersand stays one quoted name in the from line", async () => {
+    await checkEmailSendingKey({ ...input, businessName: 'Smith, Jones & Co "the painters"' });
+
+    expect(calls[0].body.from).toBe(
+      '"Smith, Jones & Co \\"the painters\\"" <bookings@primopainters.com>'
+    );
+  });
+
   test("a working key sends one test email from the business to its notification address", async () => {
     expect(await checkEmailSendingKey(input)).toEqual({ ok: true });
 
     expect(calls).toHaveLength(1);
     expect(calls[0].headers.get("Authorization")).toBe("Bearer re_business_key_123");
     expect(calls[0].body).toMatchObject({
-      from: "Primo Painters <bookings@primopainters.com>",
+      from: '"Primo Painters" <bookings@primopainters.com>',
       to: ["office@primopainters.com"],
       subject: "Your booking emails are set up",
     });
   });
 
   test.each([
-    ["a wrong key", 401, "invalid_api_key", "Resend refused this key."],
+    [
+      "a wrong key, which Resend answers with 403",
+      403,
+      "invalid_api_key",
+      "Resend refused this key.",
+    ],
+    ["a missing key", 401, "missing_api_key", "Resend refused this key."],
+    [
+      "an account over its daily limit",
+      429,
+      "daily_quota_exceeded",
+      "This Resend account has reached its sending limit. Raise it in Resend, or wait for it to reset.",
+    ],
+    [
+      "a sender address Resend will not take",
+      422,
+      "invalid_from_address",
+      "Resend would not accept this sender address. Check it is a real address at the business's domain.",
+    ],
     [
       "an address whose domain is not verified",
       403,

@@ -1,9 +1,14 @@
 // Backend: a business's own Resend key, pasted by its owner (step 6.3): proved with a test email
 // from the business's address, then kept locked. A refused key keeps nothing, and the earlier
-// key, if any, stays in use.
+// key, if any, stays in use. The earlier key is never opened, so a key that can no longer be
+// unlocked (a changed token key) can always be replaced.
 
+import { eq } from "drizzle-orm";
+
+import { organization } from "@scheduleads-app/shared/db";
+
+import { db } from "../../database.js";
 import { checkEmailSendingKey } from "./check-email-sending-key.js";
-import { findBusinessEmailDetails } from "./find-business-email-details.js";
 import { storeEmailSendingKey } from "./store-email-sending-key.js";
 
 export type SaveEmailSendingKeyResultType =
@@ -13,7 +18,15 @@ export async function saveEmailSendingKey(
   organizationId: string,
   apiKey: string
 ): Promise<SaveEmailSendingKeyResultType> {
-  const business = await findBusinessEmailDetails(organizationId);
+  const [business] = await db
+    .select({
+      name: organization.name,
+      senderEmail: organization.senderEmail,
+      notifyEmail: organization.notifyEmail,
+    })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
   if (!business) throw new Error("Saving an email key failed: the business does not exist.");
   if (!business.senderEmail || !business.notifyEmail) {
     return {

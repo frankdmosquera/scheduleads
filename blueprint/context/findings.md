@@ -124,7 +124,7 @@ seed and the other files rely on that.
 `afterEach`), so a failure still lets the write settle and the cleanup run.
 **Resolution:**
 
-### F-96 [P2] fixed - With the agency's Resend settings in the root .env, the route tests send real login emails and then fail
+### F-96 [P2] closed - With the agency's Resend settings in the root .env, the route tests send real login emails and then fail
 
 **File:** backend/routes/admin-routes.test.ts:38 and backend/routes/calendar-routes.test.ts:54 (path: backend/lib/auth/send-login-code.ts:21-32)
 **Found:** 2026-10-02 by independent review of step 6.1 (scope: 7dc0721..de30223; lenses: quality, security, performance, tests)
@@ -144,7 +144,7 @@ spec's Testing section says no test ever sends a real email.
 settings for the request with `vi.stubEnv("RESEND_API_KEY", "")` and
 `vi.stubEnv("LOGIN_EMAIL_FROM", "")` (read per send, so this works), or fake
 `fetch` for api.resend.com there.
-**Resolution:** Fixed in 6.1's review fixes: admin-routes.test.ts and calendar-routes.test.ts drop RESEND_API_KEY and LOGIN_EMAIL_FROM right after loading .env, so their sign-in helper always reads the code from the console. Shown with RESEND_API_KEY, LOGIN_EMAIL_FROM and RESEND_BASE_URL (a dead local port) set: all 65 route tests pass and nothing is sent.
+**Resolution:** Fixed in 6.1's review fixes: admin-routes.test.ts and calendar-routes.test.ts drop RESEND_API_KEY and LOGIN_EMAIL_FROM right after loading .env, so their sign-in helper always reads the code from the console. Shown with RESEND_API_KEY, LOGIN_EMAIL_FROM and RESEND_BASE_URL (a dead local port) set: all 65 route tests pass and nothing is sent. Closed 2026-10-02 by independent review of step 6.2: admin-routes.test.ts (in this step's scope) and calendar-routes.test.ts still drop both settings before the app loads, and 6.2's new admin tests fake fetch for the key's test email, so nothing leaves the machine; all 393 backend tests pass.
 
 ### F-97 [P2] fixed - A known address now waits for Resend while an unknown one answers at once, so the sign-in form tells who is a client
 
@@ -180,7 +180,7 @@ would put live sign-in codes into Railway's logs with nothing to catch it.
 and `console.error` and assert no call contains the code.
 **Resolution:** Fixed in 6.1's review fixes: the sending-path test spies console.log, info, warn and error and fails if the code appears in any line. Proved: a debug console.log of the code makes it fail.
 
-### F-99 [P3] fixed - The sendEmail contract says apiKey is always a string, and the overview still says login codes cannot be sent in production
+### F-99 [P3] closed - The sendEmail contract says apiKey is always a string, and the overview still says login codes cannot be sent in production
 
 **File:** blueprint/context/current-feature.md:307; blueprint/context/project-overview.md:220
 **Found:** 2026-10-02 by independent review of step 6.1 (scope: 7dc0721..de30223; lenses: quality, security, performance, tests)
@@ -193,4 +193,69 @@ reader to the wrong shape.
 **Suggested fix:** Type the contract's `apiKey` as `string | null` with the
 same note as the code; drop or rewrite the overview line when the overview
 is next refreshed.
-**Resolution:** Fixed in 6.1's review fixes: the spec's sendEmail contract types apiKey as string | null; the overview says login codes go by email from the agency's address and names LOGIN_EMAIL_FROM.
+**Resolution:** Fixed in 6.1's review fixes: the spec's sendEmail contract types apiKey as string | null; the overview says login codes go by email from the agency's address and names LOGIN_EMAIL_FROM. Closed 2026-10-02 by independent review of step 6.2: the contract in current-feature.md (in this step's scope) types apiKey as string | null and still matches send-email.ts, whose SendEmailError keeps the "Sending an email failed: <reason>" message; the overview line names LOGIN_EMAIL_FROM.
+
+### F-100 [P3] fixed - Resend refusals that will never pass on a retry are told as "Try again shortly"
+
+**File:** backend/lib/email/check-email-sending-key.ts:31 (the from line: :41)
+**Found:** 2026-10-02 by independent review of step 6.2 (scope: 7e287c0..8e181e9; lenses: quality, security, performance, tests)
+**Why it matters:** reasonFor names 401, a code ending in api_key and 403;
+every other answer says "Resend could not send the test email just now. Try
+again shortly." The installed SDK's own list of codes includes
+invalid_from_address and invalid_parameter (422), daily_quota_exceeded and
+monthly_quota_exceeded, none of which a retry fixes, so Frank (and in 6.3 the
+owner) retries a setup that can never pass, with no hint why. One way to get
+there is unverified: the from line puts the business name in unquoted
+(`Smith, Jones & Co <bookings@...>`), and a comma or angle bracket in a
+display name is not a valid address header unless quoted; the business name
+schema allows both.
+**Suggested fix:** Keep "try again shortly" for the timeout, the 429 rate
+limit and 5xx only; answer invalid_from_address and the other 422s as a
+problem with the sender address, and the quotas as the Resend account's
+sending limit. Quote the display name (escaping `"` and `\`) in the from
+line, which 6.6 will build the same way.
+**Resolution:** Fixed in 6.2's review fixes: a sending limit and a sender address Resend will not take (422, invalid_from_address) now get their own plain reasons; only what a retry can fix says to try again. The business name is quoted in the from line (format-sender.ts), so a name with a comma or an ampersand stays one name. Tests: the two new refusals, and a name with a comma, an ampersand and quotes.
+
+### F-101 [P3] fixed - An unreadable saved key blocks saving the new key that would replace it
+
+**File:** backend/lib/email/save-email-sending-key.ts:16 (decrypt: backend/lib/email/find-business-email-details.ts:51)
+**Found:** 2026-10-02 by independent review of step 6.2 (scope: 7e287c0..8e181e9; lenses: quality, security, performance, tests)
+**Why it matters:** saveEmailSendingKey starts by calling
+findBusinessEmailDetails, which unlocks the stored key. When that key cannot
+be unlocked (CALENDAR_TOKEN_KEY changed, or a row restored onto another
+business, which email-sending-key.test.ts shows throws), the save throws
+before the test email, so pasting a new key in the 6.3 card, the only way to
+repair it, fails with a 500 every time. The calendar code treats keys it
+cannot open as replaceable (hand-back-calendar-permission.ts returns
+"not_confirmed" instead of throwing).
+**Suggested fix:** Read only the name and the two addresses in
+saveEmailSendingKey (a select of its own, or a reader option that skips the
+key); the old key is overwritten, never needed.
+**Resolution:** Fixed in 6.2's review fixes: saveEmailSendingKey reads only the name and the two addresses, never the stored key, so a key that can no longer be unlocked is still replaced. Test: a broken stored key is replaced by a new one.
+
+### F-102 [P3] fixed - The test of a wrong key fakes 401, so the branch that catches Resend's real wrong-key answer is untested
+
+**File:** backend/lib/email/check-email-sending-key.test.ts:49 (code: backend/lib/email/check-email-sending-key.ts:24)
+**Found:** 2026-10-02 by independent review of step 6.2 (scope: 7e287c0..8e181e9; lenses: quality, security, performance, tests)
+**Why it matters:** Resend answers an invalid key with invalid_api_key and
+status 403, the same status as an unverified domain, so it is the
+`error.code.endsWith("api_key")` half of the condition that keeps a wrong key
+from being told to verify its domain. In this review that half was deleted
+and all 42 tests in check-email-sending-key, email-sending-key and
+admin-routes still passed (reverted after).
+**Suggested fix:** Add a case with name invalid_api_key and status 403
+expecting "Resend refused this key.", and keep the 401 case for a missing or
+restricted key.
+**Resolution:** Fixed in 6.2's review fixes: the error name is checked first, and the wrong-key test now fakes Resend's real answer (invalid_api_key with 403), beside a missing key (401). Proved: without the name check the 403 test fails.
+
+### F-103 [P3] fixed - A phone of only spaces shows Zod's raw English under the field
+
+**File:** packages/shared/zod-validation/organization-validation-schemas/business-email-details-validation-schema.ts:15
+**Found:** 2026-10-02 by independent review of step 6.2 (scope: 7e287c0..8e181e9; lenses: quality, security, performance, tests)
+**Why it matters:** The phone is trimmed, then `.min(1)` has no message, so
+"   " is refused with "Too small: expected string to have >=1 characters"
+(seen in this review through the built schema), and the 3b form shows that
+under Phone, unlike every other field's plain message.
+**Suggested fix:** Give `.min(1, ...)` a plain message, or treat a phone of
+only spaces as empty, the way the other optional fields read.
+**Resolution:** Fixed in 6.2's review fixes: a phone of only spaces answers "Enter a phone number, or leave it empty." Test added.
