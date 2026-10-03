@@ -13,6 +13,7 @@ export * from "./booking-tables/booking-link-table.js";
 export * from "./booking-tables/availability-rule-table.js";
 export * from "./booking-tables/calendar-connection-table.js";
 export * from "./booking-tables/calendar-oauth-state-table.js";
+export * from "./auth-tables/email-sending-key-table.js";
 export * from "./admin-tables/client-setup-claim-table.js";
 export * from "./crm-tables/pipeline-stage-table.js";
 export * from "./crm-tables/contact-table.js";

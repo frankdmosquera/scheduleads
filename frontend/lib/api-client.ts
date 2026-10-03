@@ -155,7 +155,7 @@ export type ProvisionedClientType = InferResponseType<typeof provisionClientRout
 
 export type ProvisionClientResultType =
   | { state: "ok"; answer: ProvisionedClientType }
-  | { state: "field"; field: "clientEmail" | "businessName"; message: string }
+  | { state: "field"; field: "clientEmail" | "businessName" | "emailSendingKey"; message: string }
   | { state: "refused"; message: string };
 
 // The platform admin's "Set up a client": the API makes the client's login and business.
@@ -174,6 +174,9 @@ export async function provisionClient(
 
   if (body.error?.code === "email_taken") return { state: "field", field: "clientEmail", message };
   if (body.error?.code === "slug_taken") return { state: "field", field: "businessName", message };
+  if (body.error?.code === "key_refused") {
+    return { state: "field", field: "emailSendingKey", message };
+  }
   return { state: "refused", message };
 }
 

@@ -109,6 +109,14 @@ const ACCOUNTS = [
     business: {
       name: "Summit Painting (dev)",
       slug: "painting-dev",
+      // What its emails need (feature 6). No Resend key: dev sends nothing real.
+      emailDetails: {
+        senderEmail: "bookings@example.com",
+        notifyEmail: "admin@example.com",
+        phone: "403 555 0100",
+        website: "https://example.com",
+        brandColor: "#1d4ed8",
+      },
       hours: {
         weeklyHours: {
           mon: paintingWeekday,
@@ -160,6 +168,13 @@ const ACCOUNTS = [
     business: {
       name: "Riverbend Clinic (dev)",
       slug: "clinic-dev",
+      emailDetails: {
+        senderEmail: "hello@example.com",
+        notifyEmail: "owner@example.com",
+        phone: "403 555 0200",
+        website: "https://example.com",
+        brandColor: "#0f766e",
+      },
       hours: {
         weeklyHours: {
           mon: [between(at(9), at(19))],
@@ -355,6 +370,12 @@ try {
           role: "owner",
         });
       }
+
+      // Its email details, only while it has none, so details changed by hand survive a reseed.
+      await tx
+        .update(organization)
+        .set(business.emailDetails)
+        .where(and(eq(organization.id, organizationId), isNull(organization.senderEmail)));
 
       // The first person. Made here because inserting the business directly skips the
       // Better Auth hook that normally makes it.

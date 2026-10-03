@@ -4,6 +4,8 @@
 
 import { Resend } from "resend";
 
+import { SendEmailError } from "./send-email-error.js";
+
 export type SendEmailInputType = {
   apiKey: string | null; // null only in development without a key: nothing is sent
   kind: string; // for the log line only: "login_code", "booking_confirmation", ...
@@ -25,7 +27,11 @@ export async function sendEmail(
 ): Promise<string | null> {
   if (!input.apiKey) {
     if (process.env.NODE_ENV === "production") {
-      throw new Error(`Sending an email failed: no Resend key for ${input.kind}.`);
+      throw new SendEmailError(
+        "no_key",
+        null,
+        `Sending an email failed: no Resend key for ${input.kind}.`
+      );
     }
     console.log(
       `[email] ${input.kind} not sent, no Resend key in development (${input.idempotencyKey})`
@@ -52,14 +58,20 @@ export async function sendEmail(
     { idempotencyKey: input.idempotencyKey, signal }
   );
   if (signal.aborted) {
-    throw new Error(
+    throw new SendEmailError(
+      "timeout",
+      null,
       `Sending an email failed: no answer from Resend within ${timeoutMs / 1000} seconds.`
     );
   }
   // Only the error's name and status: Resend's message can repeat the addresses it was given.
   if (error) {
     const status = error.statusCode ? ` (${error.statusCode})` : "";
-    throw new Error(`Sending an email failed: ${error.name}${status}.`);
+    throw new SendEmailError(
+      error.name,
+      error.statusCode,
+      `Sending an email failed: ${error.name}${status}.`
+    );
   }
   return data.id;
 }

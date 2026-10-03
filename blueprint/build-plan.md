@@ -191,7 +191,10 @@ and a second resource can hold the same time as the first.
   a runner**, and reminders, follow-ups and the calendar token refresh all
   need one, which is why it is here rather than left to Phase 8. Every
   message goes out through one place in the code, Twilio for all of it for
-  now, so moving WhatsApp to Meta directly later changes that one place
+  now, so moving WhatsApp to Meta directly later changes that one place.
+  When a business runs on one email, the booked worker gets a text with the
+  booking, the last resort that keeps them in the loop; the customer's
+  replies still go to the business (feature 6, decision 8, Frank, Oct 2)
 
 ## Phase 3. The widget in the agency's own site
 
@@ -263,6 +266,11 @@ without Frank touching the database.
     own questions (up to about 20) under the standard ones, starting from a
     ready-made set for the trade (painting, clinic), and picks whether the
     form requires an email, a phone, or either one.
+  - Each person's own work email (6, decision 8, Frank, Oct 2): optional, at
+    the business's domain (pedro@primopainters.com). When set, the
+    customer's confirmation lets them reply straight to the booked person,
+    and that person gets their own booking notification, through feature 6's
+    one "who hears about this booking" function. Never a personal address.
   - Notice, how far ahead and time zone, once for the business. How far
     ahead is at most a year (the database refuses more since step 2.6,
     F-31); the screen offers one month, pre-filled, for the owner to change.

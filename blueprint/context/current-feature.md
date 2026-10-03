@@ -31,7 +31,7 @@ decision 16) gets no confirmation; the business notification still names them.
   Saving a key sends a test email first, so a wrong key is never stored.
 - Login codes sent through it. Production refuses to start without the email
   settings, the way it already refuses without `CALENDAR_TOKEN_KEY`.
-- The business details an email needs (open question 2): who it comes
+- The business details an email needs (decision 8): who it comes
   from, where the business notification goes, the phone for the `tel:` button,
   the website, the brand colour; the logo already has a column. Set when the
   agency sets up a client; editable in Settings later (feature 12).
@@ -83,6 +83,18 @@ decision 16) gets no confirmation; the business notification still names them.
    app sends them, not the business, and a new owner needs a code before they
    can sign in and paste their own key. Rejected: each business's own sender,
    which cannot send the first code.
+8. **One email per business now; each person's own work email later**
+   (Frank, 2026-10-02, open question 2). The business notification goes to
+   the business's notification address, which client setup fills with the
+   owner's email to start; it is its own field so a business can point it at
+   another inbox without the owner changing their sign-in. Who hears about a
+   booking is answered in one place (`findBookingEmailRecipients`, 6.6), so
+   when a person has their own work email at the business's domain (stored
+   with Settings, feature 12), Jane's replies and that person's notification
+   go to them without a rewrite. A work address at the business's domain is
+   still the business; only a worker's personal address is ruled out. When a
+   business runs on one email, the booked worker is kept in the loop by text
+   (feature 8). Both later parts are written into the build plan.
 
 ## Out of scope
 
@@ -138,9 +150,10 @@ theirs in their plan, and his yes to that plan is the yes to install them.
     a "Sending access" key cannot read emails (the answer goes in the log).
 
 - [ ] **6.2 The business details an email needs, and its locked key.**
-  - Migration 0016 adds to `organization` (open question 2):
+  - Migration 0016 adds to `organization` (decision 8):
     `senderEmail` (the confirmation's from address), `notifyEmail` (where the
-    business notification goes), `phone`, `website`, `brandColor` (a
+    business notification goes; client setup fills it with the owner's email
+    to start, decision 8), `phone`, `website`, `brandColor` (a
     `#rrggbb` hex). All nullable at the database; the sending refuses without
     the two addresses and logs it (decision 4).
   - The same migration adds `email_sending_key`: `organizationId` (primary
@@ -243,7 +256,9 @@ theirs in their plan, and his yes to that plan is the yes to install them.
     after the booking's transaction, not awaited; the sends still running can
     be awaited by tests. It reads the booking and the business details inside
     one business, renders the two emails, attaches the invite to the
-    customer's, and sends with the business's own key: the customer's only when an email was given, the
+    customer's, and sends with the business's own key, to the recipients
+    one function decides (`findBookingEmailRecipients`: the business's
+    notification address today, decision 8): the customer's only when an email was given, the
     business's always. Idempotency keys `booking-confirmation/<booking id>`
     and `booking-notification/<booking id>`.
   - Each email that went gets an `email_sent` timeline entry on the contact
@@ -356,9 +371,7 @@ Each blocks only the step named; Frank answers it when that step's plan is
 gone through, before it is built.
 
 1. Answered 2026-10-02: decision 6.
-2. **Where does the business notification go?** (blocks 6.2) Recommended: one
-   notification address per business, set at setup (often the owner's inbox).
-   Alternative: always the owner's login email.
+2. Answered 2026-10-02: decision 8.
 3. Answered 2026-10-02: decision 7.
 4. **Does a booking the owner makes email the customer?** (blocks 6.6)
    Recommended: yes, when an email is given; the owner's screen (feature 11

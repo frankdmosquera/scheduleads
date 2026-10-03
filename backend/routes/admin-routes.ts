@@ -36,6 +36,10 @@ export const adminRoutes = new Hono()
     async (c) => {
       const result = await provisionClient(c.req.valid("json"));
 
+      // The key's test email was refused: nothing was made, and the reason says why.
+      if (!result.ok && result.code === "key_refused") {
+        return c.json(refuse("key_refused", result.reason), 422);
+      }
       if (!result.ok) {
         const refusal = refusals[result.code];
         return c.json(refuse(result.code, refusal.message), refusal.status);
