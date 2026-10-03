@@ -149,7 +149,7 @@ theirs in their plan, and his yes to that plan is the yes to install them.
     from the login sender. Both builds pass. Resend's documentation checked:
     a "Sending access" key cannot read emails (the answer goes in the log).
 
-- [ ] **6.2 The business details an email needs, and its locked key.**
+- [x] **6.2 The business details an email needs, and its locked key.**
   - Migration 0016 adds to `organization` (decision 8):
     `senderEmail` (the confirmation's from address), `notifyEmail` (where the
     business notification goes; client setup fills it with the owner's email
