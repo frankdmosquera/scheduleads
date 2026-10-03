@@ -1,10 +1,12 @@
 // Backend: sends one saved booking's emails, from the business through its own Resend key: the
-// customer's confirmation with the invite attached, and the business's notification. Each email
-// that went gets an email_sent entry on the contact's timeline, with no address and no content.
+// customer's confirmation with the invite attached and the link to the booking's own page, and the
+// business's notification. Each email that went gets an email_sent entry on the contact's timeline,
+// with no address and no content.
 // A business without its two addresses, its key or its time zone sends nothing (decision 4).
 
 import { renderBookingConfirmation } from "../../emails/booking-confirmation.js";
 import { renderBookingNotification } from "../../emails/booking-notification.js";
+import { bookingPageUrl } from "../booking/booking-page-url.js";
 import { bookingIcs } from "./booking-ics.js";
 import { findBookingEmailContext } from "./find-booking-email-context.js";
 import { findBookingEmailRecipients } from "./find-booking-email-recipients.js";
@@ -40,7 +42,7 @@ export async function sendBookingEmails(
     emails.push({
       kind: "booking_confirmation",
       build: async () => ({
-        ...(await renderBookingConfirmation(facts)),
+        ...(await renderBookingConfirmation(facts, bookingPageUrl(bookingId))),
         apiKey,
         kind: "booking_confirmation",
         from,

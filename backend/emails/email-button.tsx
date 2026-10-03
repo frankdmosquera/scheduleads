@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 // Backend: a full-width tap target in the business's colour. These emails are read on a phone, and
-// the button is how the reader calls back.
+// the button is the reader's one next step.
 
 import type { ReactNode } from "react";
 import { Button } from "@react-email/components";

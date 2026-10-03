@@ -38,6 +38,9 @@ const scriptFacts: BookingEmailFactsType = {
 
 const productName = /scheduleads/i;
 
+// The booking's own page, as the sender makes it; the shape is all these tests need.
+const bookingPage = "https://app.example.com/b/0a6c2f6e-4b1d-4c8e-9f3a-2d7e5b1c9a40.signature";
+
 // A business in another zone than this laptop's, so an email that ignored the business's zone fails.
 const torontoFacts: BookingEmailFactsType = {
   ...facts,
@@ -46,7 +49,7 @@ const torontoFacts: BookingEmailFactsType = {
 
 describe("the customer's confirmation", () => {
   test("its subject names the business and the time in the business's zone", async () => {
-    const email = await renderBookingConfirmation(facts);
+    const email = await renderBookingConfirmation(facts, bookingPage);
 
     expect(email.subject).toBe(
       "You're booked with Primo Painters: Thursday, October 8 at 9:00 a.m. MDT"
@@ -54,7 +57,7 @@ describe("the customer's confirmation", () => {
   });
 
   test("a business in Toronto gets its own time, not this laptop's", async () => {
-    const email = await renderBookingConfirmation(torontoFacts);
+    const email = await renderBookingConfirmation(torontoFacts, bookingPage);
 
     expect(email.subject).toContain("Thursday, October 8 at 11:00 a.m. EDT");
     expect(email.html).toContain("Thursday, October 8 at 11:00 a.m. EDT");
@@ -62,16 +65,16 @@ describe("the customer's confirmation", () => {
   });
 
   test("the plain-text twin names the business even with a logo and no phone", async () => {
-    const { text } = await renderBookingConfirmation({
-      ...facts,
-      business: { ...facts.business, phone: null },
-    });
+    const { text } = await renderBookingConfirmation(
+      { ...facts, business: { ...facts.business, phone: null } },
+      bookingPage
+    );
 
     expect(text).toContain("Primo Painters");
   });
 
-  test("says what, when, with whom and where, with the logo and a tel: button", async () => {
-    const { html } = await renderBookingConfirmation(facts);
+  test("says what, when, with whom and where, with the logo and a tel: link", async () => {
+    const { html } = await renderBookingConfirmation(facts, bookingPage);
 
     expect(html).toContain("Exterior painting estimate");
     expect(html).toContain("Thursday, October 8 at 9:00 a.m. MDT");
@@ -84,8 +87,18 @@ describe("the customer's confirmation", () => {
     expect(html).toContain("#1d4ed8");
   });
 
+  test("a button in the business's colour opens the booking's own page, in the HTML and the plain-text twin", async () => {
+    const { html, text } = await renderBookingConfirmation(facts, bookingPage);
+
+    expect(html).toContain("Manage your booking");
+    expect(html.split(`href="${bookingPage}"`)).toHaveLength(2); // the one button
+    expect(html).toMatch(/background-color:#1d4ed8/);
+    expect(text).toContain("Manage your booking");
+    expect(text).toContain(bookingPage);
+  });
+
   test("never names the product", async () => {
-    const email = await renderBookingConfirmation(facts);
+    const email = await renderBookingConfirmation(facts, bookingPage);
 
     expect(`${email.subject}\n${email.html}\n${email.text}`).not.toMatch(productName);
   });
@@ -95,23 +108,24 @@ describe("the customer's confirmation", () => {
       ...facts,
       business: { ...facts.business, logo: null, phone: null, website: null, brandColor: null },
     };
-    const { html, text } = await renderBookingConfirmation(bare);
+    const { html, text } = await renderBookingConfirmation(bare, bookingPage);
 
     expect(html).not.toContain("<img");
     expect(html).not.toContain("tel:");
+    expect(html).toContain(`href="${bookingPage}"`); // the page needs no phone
     expect(html).toContain("Primo Painters");
     expect(text).toContain("Thursday, October 8 at 9:00 a.m. MDT");
   });
 
   test("what the customer typed is shown as text, never run", async () => {
-    const { html } = await renderBookingConfirmation(scriptFacts);
+    const { html } = await renderBookingConfirmation(scriptFacts, bookingPage);
 
     expect(html).not.toContain("<script");
     expect(html).toContain("&lt;script&gt;");
   });
 
   test("the plain-text twin carries the same facts", async () => {
-    const { text } = await renderBookingConfirmation(facts);
+    const { text } = await renderBookingConfirmation(facts, bookingPage);
 
     expect(text).not.toContain("<");
     for (const fact of [

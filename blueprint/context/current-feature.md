@@ -211,7 +211,7 @@ No package is planned. Installing one is a line only Frank crosses.
     cancelled page, a bad link, a booking already started; the page's title
     and icon carry no product name; the screenshots in the log.
 
-- [ ] **7a.6 The link in Jane's confirmation.**
+- [x] **7a.6 The link in Jane's confirmation.**
   - The confirmation email gains "Need to change it? Manage your booking",
     linking `<APP_ORIGIN>/b/<token>`, in the HTML and the plain-text twin.
     Only the customer's email carries it; the business's notification never

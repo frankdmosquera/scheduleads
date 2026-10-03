@@ -31,10 +31,16 @@ const sampleFacts: BookingEmailFactsType = {
   },
 };
 
+// A link of the right shape; the preview opens nothing.
+const sampleBookingPageUrl = "http://localhost:3400/b/00000000-0000-4000-8000-000000000000.sample";
+
 const folder = new URL("../.email-preview/", import.meta.url);
 mkdirSync(folder, { recursive: true });
 for (const [name, render] of [
-  ["booking-confirmation", renderBookingConfirmation],
+  [
+    "booking-confirmation",
+    (facts: BookingEmailFactsType) => renderBookingConfirmation(facts, sampleBookingPageUrl),
+  ],
   ["booking-notification", renderBookingNotification],
   ["booking-cancelled", renderBookingCancelled],
   ["booking-cancelled-notification", renderBookingCancelledNotification],

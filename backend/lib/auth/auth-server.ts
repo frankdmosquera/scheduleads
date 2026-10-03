@@ -41,7 +41,7 @@ function settingWithDevDefault(name: string, developmentDefault: string): string
 }
 
 // The dashboard's address, the only site allowed to hold a session. Exported so the
-// CORS middleware reads the same value.
+// CORS middleware reads the same value, and the customer's booking page lives there too.
 export const appOrigin = settingWithDevDefault("APP_ORIGIN", "http://localhost:3400");
 
 // The API's own address. Better Auth builds its URLs from it, and so does the calendar's
