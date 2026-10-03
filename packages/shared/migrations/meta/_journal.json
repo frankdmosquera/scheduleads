@@ -120,6 +120,13 @@
       "when": 1790997421157,
       "tag": "0016_business_email_details",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791037592319,
+      "tag": "0017_booking_cancelled_activity",
+      "breakpoints": true
     }
   ]
 }

@@ -18,6 +18,7 @@ export type BookingStatusType = "confirmed" | "cancelled";
 
 export type BookingPageType = {
   status: BookingStatusType;
+  canCancel: boolean; // confirmed and not started (decision 11)
   service: string;
   startsAt: string; // ISO 8601 in UTC
   endsAt: string; // the appointment's own end, without the buffer after
@@ -33,7 +34,10 @@ export type BookingPageType = {
 };
 
 // null when no such booking exists, or its business has no time zone.
-export async function findBookingPage(bookingId: string): Promise<BookingPageType | null> {
+export async function findBookingPage(
+  bookingId: string,
+  now: Date
+): Promise<BookingPageType | null> {
   const rows = await db
     .select({
       status: booking.status,
@@ -76,8 +80,10 @@ export async function findBookingPage(bookingId: string): Promise<BookingPageTyp
   // Without the business's zone the page cannot say when; a booking is never made without one.
   if (!row?.timezone) return null;
 
+  const status = statusOf(row.status);
   return {
-    status: statusOf(row.status),
+    status,
+    canCancel: status === "confirmed" && row.startsAt.getTime() > now.getTime(),
     service: row.service,
     startsAt: row.startsAt.toISOString(),
     endsAt: row.endsAt.toISOString(),

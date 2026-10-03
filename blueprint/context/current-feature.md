@@ -69,6 +69,12 @@ email works". Moving a booking to another time is 7b, on the same page.
     stored on the booking (the overview's `cancelToken`), where a database
     copy opens every booking; a stored hash of a random token, safe at rest
     but no later email could carry the link again.
+11. **Jane may cancel until the appointment starts** (Frank, 2026-10-03,
+    open question 2). From its start the page shows the business's phone
+    instead: once the worker is on site it is a conversation, not a button. A
+    late cancel still frees the time. A business's own cutoff ("not within 24
+    hours") comes with Settings, feature 12. Rejected: a 24-hour cutoff for
+    every business, a rule nobody chose.
 
 ## Out of scope
 
@@ -76,7 +82,7 @@ email works". Moving a booking to another time is 7b, on the same page.
 - The owner cancelling from the dashboard: features 11 and 12b, which can call
   the same cancel function.
 - A business's own cancellation rule (for example "not within 24 hours"):
-  Settings, feature 12. Until then the rule is open question 2's answer.
+  Settings, feature 12. Until then it is decision 11: until the start.
 - Retrying a failed event removal or email: feature 8.
 - What a cancel does to the lead's stage: feature 14.
 - Rate limits on the public routes: feature 9.
@@ -120,10 +126,9 @@ No package is planned. Installing one is a line only Frank crosses.
     answer is never cached. The frontend build passes and the typed public
     client sees the route.
 
-- [ ] **7a.2 Cancel.**
-  - Until when Jane may cancel follows open question 2 (blocks this step).
-    Recommended: until the appointment starts; after that the page says it
-    has started and shows the business's phone.
+- [x] **7a.2 Cancel.**
+  - Jane may cancel until the appointment starts (decision 11). The page's
+    view gains `canCancel`: confirmed and not started.
   - `backend/lib/booking/cancel-booking.ts`: in one transaction, the booking
     row locked, then, when it is confirmed and not started: its status
     `cancelled`, its held rows released (`releaseTime`), and a
@@ -244,7 +249,7 @@ matches in constant time. Never logged, never stored.
 ```ts
 type BookingPageType = {
   status: "confirmed" | "cancelled";
-  canCancel: boolean; // added with 7a.2, once open question 2 says until when
+  canCancel: boolean; // confirmed and not started (decision 11); added in 7a.2
   service: string;
   startsAt: string; // ISO 8601 UTC
   endsAt: string;
@@ -316,6 +321,4 @@ Each blocks only the step named; Frank answers it when that step's plan is
 gone through.
 
 1. Answered 2026-10-03: decision 10.
-2. **Until when can Jane cancel herself?** (blocks 7a.2) Recommended: until
-   the appointment starts; after that she calls the business. A business's own
-   rule ("not within 24 hours") comes with Settings, feature 12.
+2. Answered 2026-10-03: decision 11.

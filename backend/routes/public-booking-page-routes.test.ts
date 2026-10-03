@@ -4,7 +4,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import { like } from "drizzle-orm";
+import { eq, like } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
@@ -32,6 +32,10 @@ const { bookTime } = await import("../lib/booking/book-time.js");
 const { bookingEventWrites } = await import("../lib/booking/booking-event-writes.js");
 const { bookingConfirmationEmails } = await import("../lib/booking/booking-confirmation-emails.js");
 const { makeBookingPageToken } = await import("../lib/booking/booking-page-token.js");
+const { addDays } = await import("../lib/local-time/add-days.js");
+const { localDate } = await import("../lib/local-time/local-date.js");
+const { localTimeToMoment } = await import("../lib/local-time/local-time-to-moment.js");
+const { booking } = await import("@scheduleads-app/shared/db");
 
 const tag = randomUUID().slice(0, 8);
 const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3000";
@@ -43,7 +47,8 @@ const jane = {
   details: "Two bedrooms, ceilings too",
 };
 
-// A business of its own: Marco does interior estimates (60 minutes, 15 after), Mondays 9 to 12.
+// A business of its own: Marco does interior estimates (60 minutes, 15 after), every day 9 to 5.
+// Its first booking is a week from today at 9:00, by the real clock: the routes read it.
 async function makeBusiness(name: string, businessName: string, timezone = "America/Edmonton") {
   const id = () => randomUUID();
   const business = id();
@@ -60,7 +65,12 @@ async function makeBusiness(name: string, businessName: string, timezone = "Amer
     id: id(),
     organizationId: business,
     resourceId: null,
-    weeklyHours: { mon: [{ startMinute: 540, endMinute: 720 }] },
+    weeklyHours: Object.fromEntries(
+      ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].map((day) => [
+        day,
+        [{ startMinute: 540, endMinute: 1020 }],
+      ])
+    ),
     timezone,
     minimumNoticeMinutes: 0,
     horizonDays: 60,
@@ -85,25 +95,38 @@ async function makeBusiness(name: string, businessName: string, timezone = "Amer
     .insert(bookingLinkResource)
     .values({ organizationId: business, bookingLinkId: estimate, resourceId: marco });
 
+  const made = { business, marco, estimate, timezone, slug: `test-page-${name}-${tag}-dev` };
+  const first = await bookFor(made, 540);
+  // Marco gets hours of his own after the booking: a person's row carries no zone.
+  await db
+    .insert(availabilityRule)
+    .values({ id: id(), organizationId: business, resourceId: marco });
+  return { ...made, bookingId: first.bookingId, startsAt: first.startsAt };
+}
+
+type MadeType = { business: string; marco: string; estimate: string; timezone: string };
+
+// The day a week from today in the business's zone.
+const dayAhead = (timezone: string) => addDays(localDate(new Date(), timezone), 7);
+
+// A booking for Jane on that day, at a minute of the day.
+async function bookFor(made: MadeType, minuteOfDay: number) {
+  const startsAt = localTimeToMoment(dayAhead(made.timezone), minuteOfDay, made.timezone)!;
   const result = await bookTime({
-    organizationId: business,
-    bookingLinkId: estimate,
-    personId: marco,
-    startsAt: new Date("2026-10-05T15:00:00Z"), // Monday 9:00 in Edmonton
+    organizationId: made.business,
+    bookingLinkId: made.estimate,
+    personId: made.marco,
+    startsAt,
     requestKey: randomUUID(),
     customer: { name: jane.name, email: jane.email, phone: jane.phone },
     location: jane.location,
     details: jane.details,
     source: "widget",
     actorUserId: null,
-    now: new Date("2026-10-02T14:00:00Z"),
+    now: new Date(),
   });
   if (!result.booked) throw new Error(`expected a booking, got ${result.reason}`);
-  // Marco gets hours of his own after the booking: a person's row carries no zone.
-  await db
-    .insert(availabilityRule)
-    .values({ id: id(), organizationId: business, resourceId: marco });
-  return { business, bookingId: result.booking.id };
+  return { bookingId: result.booking.id, startsAt };
 }
 
 let primo: Awaited<ReturnType<typeof makeBusiness>>;
@@ -137,9 +160,11 @@ describe("the customer's booking page", () => {
     expect(await response.json()).toEqual({
       booking: {
         status: "confirmed",
+        canCancel: true,
         service: "Interior estimate",
-        startsAt: "2026-10-05T15:00:00.000Z",
-        endsAt: "2026-10-05T16:00:00.000Z", // the appointment itself, not its 15 after
+        startsAt: primo.startsAt.toISOString(),
+        // The appointment itself, not its 15 after.
+        endsAt: new Date(primo.startsAt.getTime() + 60 * 60_000).toISOString(),
         timezone: "America/Edmonton",
         person: "Marco",
         business: {
@@ -218,5 +243,100 @@ describe("the customer's booking page", () => {
 
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe(dashboardOrigin);
     expect(response.headers.get("Access-Control-Allow-Credentials")).toBeNull();
+  });
+});
+
+const cancelOf = (token: string) =>
+  app.request(`/public/bookings/${encodeURIComponent(token)}/cancel`, { method: "POST" });
+const statusOf = async (bookingId: string) =>
+  (await db.select({ status: booking.status }).from(booking).where(eq(booking.id, bookingId)))[0]
+    ?.status;
+const freeTimes = async () => {
+  const day = dayAhead(primo.timezone);
+  const response = await app.request(
+    `/public/${primo.slug}/booking-links/${primo.estimate}/times?from=${day}&to=${day}&person=${primo.marco}`
+  );
+  return (await response.json()).startTimes as string[];
+};
+const changedSignature = (token: string) => {
+  const [id, signature] = token.split(".");
+  return `${id}.${signature.slice(0, -2)}${signature.at(-2) === "A" ? "B" : "A"}${signature.at(-1)}`;
+};
+
+describe("cancelling from the page", () => {
+  test("a cancel frees the time: the free-times route offers it again", async () => {
+    const { bookingId, startsAt } = await bookFor(primo, 900); // 15:00
+    expect(await freeTimes()).not.toContain(startsAt.toISOString());
+
+    const response = await cancelOf(makeBookingPageToken(bookingId));
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).booking).toMatchObject({
+      status: "cancelled",
+      canCancel: false,
+    });
+    expect(await freeTimes()).toContain(startsAt.toISOString());
+  });
+
+  test("a cancelled booking's page still opens, and pressing again answers the same", async () => {
+    const { bookingId } = await bookFor(primo, 780); // 13:00
+    const token = makeBookingPageToken(bookingId);
+    const first = await (await cancelOf(token)).text();
+    const again = await cancelOf(token);
+
+    expect(again.status).toBe(200);
+    expect(await again.text()).toBe(first);
+    const page = await pageOf(token);
+    expect(page.status).toBe(200);
+    expect((await page.json()).booking).toMatchObject({ status: "cancelled", canCancel: false });
+  });
+
+  test("a started booking is refused with 409 and nothing changes", async () => {
+    const { bookingId } = await bookFor(other, 660); // 11:00
+    const started = new Date(Date.now() - 10 * 60_000);
+    await db
+      .update(booking)
+      .set({ startsAt: started, endsAt: new Date(started.getTime() + 60 * 60_000) })
+      .where(eq(booking.id, bookingId));
+    const token = makeBookingPageToken(bookingId);
+
+    const response = await cancelOf(token);
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "already_started",
+        message: "This booking has already started. Call the business to change it.",
+      },
+    });
+    expect(await statusOf(bookingId)).toBe("confirmed");
+    expect((await (await pageOf(token)).json()).booking.canCancel).toBe(false);
+  });
+
+  test("a bad link cancels nothing, with the same 404 as the page", async () => {
+    const { bookingId } = await bookFor(primo, 720); // 12:00
+    for (const bad of [
+      changedSignature(makeBookingPageToken(bookingId)),
+      "hello",
+      makeBookingPageToken(randomUUID()),
+    ]) {
+      const response = await cancelOf(bad);
+      expect(response.status).toBe(404);
+      expect(await response.json()).toEqual({
+        error: { code: "not_found", message: "This link does not open a booking." },
+      });
+    }
+    expect(await statusOf(bookingId)).toBe("confirmed");
+  });
+
+  test("the cancel's answer carries none of the customer's details, and is never cached", async () => {
+    const { bookingId } = await bookFor(other, 780); // 13:00
+    const response = await cancelOf(makeBookingPageToken(bookingId));
+    const text = await response.text();
+
+    for (const detail of ["Jane", jane.email, jane.phone, jane.location, jane.details]) {
+      expect(text).not.toContain(detail);
+    }
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
   });
 });
