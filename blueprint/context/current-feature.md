@@ -307,6 +307,11 @@ screenshots in the log.
   and Vercel's own access logs do record request paths, the link included:
   that comes with the link being the key (decision 10), and is named at
   deploy.
+- From step 7a.2's review: 7a.3 and 7a.4 start Google and the emails only
+  when the cancel changed something (`alreadyCancelled` false), so a second
+  press never removes or emails twice. `cancelBooking` fixes the actor to the
+  customer and refuses after the start; the owner's screens (features 11 and
+  12b) will need their own actor, and may need to cancel after the start.
 - From step 7a.1's review: a business may have the slug `bookings`, which
   sits where `/public/bookings/...` does. Nothing collides today; reserve the
   slug before 7b adds more routes there. 7a.2 adds a test that a cancelled

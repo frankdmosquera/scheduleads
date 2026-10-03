@@ -138,7 +138,7 @@ find. The comments' reasons are already said in words around them.
 sentences as they are.
 **Resolution:**
 
-### F-117 [P2] fixed - No test notices the booking page reading another business's time zone, or a person's hours row
+### F-117 [P2] closed - No test notices the booking page reading another business's time zone, or a person's hours row
 
 **File:** backend/lib/booking/find-booking-page.ts:65-66 (tests: backend/routes/public-booking-page-routes.test.ts:64, :172)
 **Found:** 2026-10-03 by independent review of step 7a.1 (scope: 32114fc..4c05007; lenses: quality, security, performance, tests)
@@ -157,9 +157,9 @@ untested.
 example America/Toronto) and a person-level hours row for Marco, and assert
 each link's `timezone` (and that the booking still opens) in "each link
 opens its own business's booking only".
-**Resolution:** Fixed 2026-10-03: the second test business runs on Toronto time and Marco gets a person-level hours row (no zone) after his booking; a new test expects each link to say its own business's zone. The lookup now refuses more than one joined row instead of taking the first, so a join that loses either condition fails deterministically: dropping the business condition or the person-row condition each fails three tests.
+**Resolution:** Fixed 2026-10-03: the second test business runs on Toronto time and Marco gets a person-level hours row (no zone) after his booking; a new test expects each link to say its own business's zone. The lookup now refuses more than one joined row instead of taking the first, so a join that loses either condition fails deterministically: dropping the business condition or the person-row condition each fails three tests. Closed 2026-10-03 by independent review of step 7a.2 (scope: 2e91e73..6b0b747): re-examined find-booking-page.ts and its route tests. Dropping the hours row's business condition, or its person-row condition, each fails six route tests (the lookup refuses a second joined row); the partial unique index keeps one business-level hours row per business, so the refusal can never fire on good data. No new defect.
 
-### F-118 [P3] fixed - The page's status is typed as any string, not the contract's two values
+### F-118 [P3] closed - The page's status is typed as any string, not the contract's two values
 
 **File:** backend/lib/booking/find-booking-page.ts:18
 **Found:** 2026-10-03 by independent review of step 7a.1 (scope: 32114fc..4c05007; lenses: quality, security, performance, tests)
@@ -172,9 +172,9 @@ which is what the typed client exists to catch.
 **Suggested fix:** Type it as `"confirmed" | "cancelled"` (one shared
 union beside the booking table if other code needs it) and narrow the row
 value once in `findBookingPage`.
-**Resolution:** Fixed 2026-10-03: BookingStatusType is "confirmed" | "cancelled", narrowed once in findBookingPage; any other value is refused, never shown. The typed client carries the union.
+**Resolution:** Fixed 2026-10-03: BookingStatusType is "confirmed" | "cancelled", narrowed once in findBookingPage; any other value is refused, never shown. The typed client carries the union. Closed 2026-10-03 by independent review of step 7a.2 (scope: 2e91e73..6b0b747): BookingStatusType is the two-value union, narrowed once in statusOf, and 7a.2's canCancel builds on the narrowed value. No new defect.
 
-### F-119 [P3] fixed - The token's exact construction is not pinned by a known-answer test
+### F-119 [P3] closed - The token's exact construction is not pinned by a known-answer test
 
 **File:** backend/lib/booking/booking-page-token.ts:13-14 (tests: backend/lib/booking/booking-page-token.test.ts:15)
 **Found:** 2026-10-03 by independent review of step 7a.1 (scope: 32114fc..4c05007; lenses: quality, security, performance, tests)
@@ -187,9 +187,9 @@ separation the comment promises is unguarded.
 **Suggested fix:** Add one test with a fixed key and a fixed booking id that
 expects the exact token string, computed once from the spec's formula
 (`base64url(HMAC-SHA256(key, "booking-page:" + id))`).
-**Resolution:** Fixed 2026-10-03: a known-answer test pins the exact token for a fixed key and booking id; dropping the purpose prefix now fails it.
+**Resolution:** Fixed 2026-10-03: a known-answer test pins the exact token for a fixed key and booking id; dropping the purpose prefix now fails it. Closed 2026-10-03 by independent review of step 7a.2 (scope: 2e91e73..6b0b747): re-examined booking-page-token.ts and its test; dropping the booking-page: prefix fails "a link is made exactly the same way, always". No new defect.
 
-### F-120 [P3] fixed - readBookingLinkKey is a line-for-line copy of readTokenKey
+### F-120 [P3] closed - readBookingLinkKey is a line-for-line copy of readTokenKey
 
 **File:** backend/lib/booking/read-booking-link-key.ts:7 (copy of packages/shared/crypto/token-cipher.ts:14)
 **Found:** 2026-10-03 by independent review of step 7a.1 (scope: 32114fc..4c05007; lenses: quality, security, performance, tests)
@@ -202,9 +202,9 @@ reach the other; feature 16's quote link would make a third.
 `packages/shared/crypto` (or `helpers/`), with `readTokenKey` and
 `readBookingLinkKey` as one-line callers; the existing tests keep covering
 both names.
-**Resolution:** Fixed 2026-10-03: readBase64Key(name, value) in packages/shared/crypto/token-cipher.ts holds the check once; readTokenKey and readBookingLinkKey are one-line callers with their own names in the errors.
+**Resolution:** Fixed 2026-10-03: readBase64Key(name, value) in packages/shared/crypto/token-cipher.ts holds the check once; readTokenKey and readBookingLinkKey are one-line callers with their own names in the errors. Closed 2026-10-03 by independent review of step 7a.2 (scope: 2e91e73..6b0b747): read-booking-link-key.ts and readTokenKey are one-line callers of readBase64Key in packages/shared/crypto/token-cipher.ts; both names stay tested (booking-page-token.test.ts, token-cipher.test.ts). No new defect.
 
-### F-121 [P3] fixed - Two planning docs still contradict decision 10 and the new route
+### F-121 [P3] closed - Two planning docs still contradict decision 10 and the new route
 
 **File:** blueprint/context/coding-standards.md:209; blueprint/context/project-overview.md:149
 **Found:** 2026-10-03 by independent review of step 7a.1 (scope: 32114fc..4c05007; lenses: quality, security, performance, tests)
@@ -220,4 +220,26 @@ edited the overview but left that line.
 a signed link, the business taken from the row the link names, every other
 read inside that business, every bad link the same 404. Drop `cancelToken`
 from the overview's booking line.
-**Resolution:** Fixed 2026-10-03: coding-standards.md gains the signed-link kind of public route (its rules: the id only from a verified signature, every other query on that row's business, one 404, no customer details, never cached, the link never logged or stored); the build log's Rules tab regenerated. The overview drops cancelToken and names the signed link.
+**Resolution:** Fixed 2026-10-03: coding-standards.md gains the signed-link kind of public route (its rules: the id only from a verified signature, every other query on that row's business, one 404, no customer details, never cached, the link never logged or stored); the build log's Rules tab regenerated. The overview drops cancelToken and names the signed link. Closed 2026-10-03 by independent review of step 7a.2 (scope: 2e91e73..6b0b747): coding-standards.md:215-222 names the signed-link public route and 7a.2's POST follows it (id only from the verified token, every other query on the row's business, one 404, no-store, no customer details); project-overview.md:150 names the signed link and cancelToken is gone. No new defect.
+
+### F-122 [P3] fixed - Neither guard against a double cancel, nor the cancelled-first order, is pinned by a test
+
+**File:** backend/lib/booking/cancel-booking.ts:41, :44, :59 (tests: backend/lib/booking/cancel-booking.test.ts:176, :193)
+**Found:** 2026-10-03 by independent review of step 7a.2 (scope: 2e91e73..6b0b747; lenses: quality, security, performance, tests)
+**Why it matters:** The cancel has two guards against two presses at
+once, the row lock (:41) and the update that only changes a confirmed
+booking (:59). Removing either one alone left all 19 tests green; only
+removing both failed the race test. "Two cancels at the same instant"
+(:176) also passed with both guards removed, so its two calls never
+overlap and it repeats the second-cancel test rather than proving the
+Done when line it is named for. Removing the already-cancelled check
+(:44) also stays green, yet it is what makes a second press after the
+start answer 200 cancelled rather than 409 already_started. The code is
+right today; the lock is the guard 7b's move will lean on (a move and a
+cancel of the same booking at once), and nothing would notice it going.
+**Suggested fix:** In the race test, let the holding transaction move
+the booking into the past instead of cancelling it, and expect
+`already_started` with nothing changed: that fails without the lock and
+passes with it. Drop or rename the Promise.all test. Add one case: a
+cancelled booking whose start has passed answers already cancelled.
+**Resolution:** Fixed 2026-10-03: the Promise.all test, whose two calls never overlapped, is gone. A shared helper now holds the booking in another transaction while the cancel starts: holding and cancelling it gives "already cancelled" with no entry; holding and moving it into the past gives already_started, which fails without the row lock. A cancelled booking whose start has passed answers already cancelled, which fails without the cancelled-first check. The confirmed-only update stays a second guard that matters only without the lock: removing it alone passes, removing it with the lock fails the race test.

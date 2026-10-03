@@ -131,6 +131,35 @@ afterAll(async () => {
   await db.$client.end();
 });
 
+// Holds the booking in a transaction of its own, starts `act` (which then has to wait for it),
+// applies `change` and commits; answers what `act` answered.
+async function whileHeld<T>(
+  bookingId: string,
+  change: Partial<typeof booking.$inferInsert>,
+  act: () => Promise<T>
+): Promise<T> {
+  let locked = () => {};
+  const isLocked = new Promise<void>((resolve) => (locked = resolve));
+  let letGo = () => {};
+  const goes = new Promise<void>((resolve) => (letGo = resolve));
+  const holder = db.transaction(async (tx) => {
+    await tx
+      .select({ id: booking.id })
+      .from(booking)
+      .where(eq(booking.id, bookingId))
+      .for("update");
+    locked();
+    await goes;
+    await tx.update(booking).set(change).where(eq(booking.id, bookingId));
+  });
+  await isLocked;
+  const acting = act();
+  await new Promise((resolve) => setTimeout(resolve, 200)); // act now waits on the row
+  letGo();
+  await holder;
+  return acting;
+}
+
 describe("cancelling a booking", () => {
   test("a cancel marks the booking cancelled, releases its rows and writes one timeline entry", async () => {
     const made = await makeBooking("cancel");
@@ -173,48 +202,42 @@ describe("cancelling a booking", () => {
     });
   });
 
-  test("two cancels at the same instant make one cancel", async () => {
-    const made = await makeBooking("at-once");
-
-    const results = await Promise.all([
-      cancelBooking(made.bookingId, NOW),
-      cancelBooking(made.bookingId, NOW),
-    ]);
-
-    expect(results.map((result) => result.cancelled && result.alreadyCancelled).sort()).toEqual([
-      false,
-      true,
-    ]);
-    expect((await rowsOf(made)).cancelledEntries).toHaveLength(1);
-  });
-
-  // Two at the same instant rarely overlap in a test, so this one makes them: another cancel holds
-  // the booking while this one starts, then commits first.
+  // Two at the same instant rarely overlap in a test, so these make them: another transaction holds
+  // the booking while the cancel starts, changes it, then commits first.
   test("a cancel racing another cancel of the same booking makes one cancel", async () => {
     const made = await makeBooking("race");
-    let locked = () => {};
-    const isLocked = new Promise<void>((resolve) => (locked = resolve));
-    let letGo = () => {};
-    const goes = new Promise<void>((resolve) => (letGo = resolve));
-    const first = db.transaction(async (tx) => {
-      await tx
-        .select({ id: booking.id })
-        .from(booking)
-        .where(eq(booking.id, made.bookingId))
-        .for("update");
-      locked();
-      await goes;
-      await tx.update(booking).set({ status: "cancelled" }).where(eq(booking.id, made.bookingId));
+
+    const second = await whileHeld(made.bookingId, { status: "cancelled" }, () =>
+      cancelBooking(made.bookingId, NOW)
+    );
+
+    expect(second).toEqual({ cancelled: true, alreadyCancelled: true });
+    expect((await rowsOf(made)).cancelledEntries).toHaveLength(0); // the other change wrote none
+  });
+
+  // Without the lock the cancel would decide on the start it read before the move.
+  test("a cancel waits for the booking it reads: moved into the past meanwhile, it is refused", async () => {
+    const made = await makeBooking("moved");
+    const past = new Date(NOW.getTime() - 60 * 60_000);
+
+    const result = await whileHeld(
+      made.bookingId,
+      { startsAt: past, endsAt: new Date(past.getTime() + 60 * 60_000) },
+      () => cancelBooking(made.bookingId, NOW)
+    );
+
+    expect(result).toEqual({ cancelled: false, reason: "already_started" });
+    expect((await rowsOf(made)).status).toBe("confirmed");
+  });
+
+  test("a cancelled booking whose start has passed still answers already cancelled", async () => {
+    const made = await makeBooking("late-again");
+    await cancelBooking(made.bookingId, NOW);
+
+    expect(await cancelBooking(made.bookingId, NINE)).toEqual({
+      cancelled: true,
+      alreadyCancelled: true,
     });
-    await isLocked;
-
-    const second = cancelBooking(made.bookingId, NOW);
-    await new Promise((resolve) => setTimeout(resolve, 200)); // the second now waits on the row
-    letGo();
-    await first;
-
-    expect(await second).toEqual({ cancelled: true, alreadyCancelled: true });
-    expect((await rowsOf(made)).cancelledEntries).toHaveLength(0); // the first wrote none here
   });
 
   test("only the cancelled booking's time is released", async () => {
