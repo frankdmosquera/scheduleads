@@ -128,7 +128,7 @@ and a second resource can hold the same time as the first.
   next-step queue. The tables and the API routes the loop writes to.
   `resource` moved to item 2, because availability is defined per resource and
   cannot reference a table that arrives two items later. Nothing visible yet
-- [ ] 5. **Booking creation** - validate a requested slot against the rules,
+- [x] 5. **Booking creation** - validate a requested slot against the rules,
   the free resources and the live calendar; take the customer's address;
   create the contact, the lead in the first stage, the booking on a
   resource, and the timeline entry. From version 8:
@@ -169,7 +169,7 @@ and a second resource can hold the same time as the first.
     route the widget will call. How "any available" picks, whether buffers
     may fall outside bookable hours, and how often start times repeat are
     decided here
-  - [ ] 5d. **The booking** - the lead and booking tables, and the public
+  - [x] 5d. **The booking** - the lead and booking tables, and the public
     route that books a time: check it again, the contact, the lead in the
     first stage, the booking with the customer's address, its commitments,
     the timeline entry, and the event in the booked person's Google. The
