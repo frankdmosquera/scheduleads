@@ -25,6 +25,8 @@ const telHref = (phone: string) => `tel:${phone.replace(/[^\d+]/g, "")}`;
 export function BookingPage({ token }: { token: string }) {
   const [result, setResult] = useState<BookingPageResultType | null>(null);
   const [reloads, setReloads] = useState(0);
+  const retried = useRef(false); // after "Try again", focus goes to the next screen's heading
+  const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     let live = true; // a late answer never updates a page the customer already left
@@ -36,17 +38,29 @@ export function BookingPage({ token }: { token: string }) {
     };
   }, [token, reloads]);
 
+  useEffect(() => {
+    if (result && retried.current) heading.current?.focus(); // runs once the new screen is drawn
+  }, [result]);
+
   if (!result) {
     return (
       <PageFrame>
-        <p className="text-sm text-slate-500">One moment…</p>
+        <p role="status" className="text-sm text-slate-500">
+          One moment…
+        </p>
       </PageFrame>
     );
   }
   if (result.state === "not-found") {
     return (
       <PageFrame>
-        <h1 className="text-xl font-semibold text-slate-900">This link doesn&apos;t work</h1>
+        <h1
+          ref={heading}
+          tabIndex={-1}
+          className="text-xl font-semibold text-slate-900 outline-none"
+        >
+          This link doesn&apos;t work
+        </h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">
           Please call the business that sent it.
         </p>
@@ -56,13 +70,18 @@ export function BookingPage({ token }: { token: string }) {
   if (result.state === "unreachable") {
     return (
       <PageFrame>
-        <h1 className="text-xl font-semibold text-slate-900">
+        <h1
+          ref={heading}
+          tabIndex={-1}
+          className="text-xl font-semibold text-slate-900 outline-none"
+        >
           Your booking can&apos;t load right now
         </h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">Please try again in a moment.</p>
         <button
           type="button"
           onClick={() => {
+            retried.current = true;
             setResult(null); // "One moment…" while it tries again
             setReloads((n) => n + 1);
           }}
@@ -73,10 +92,18 @@ export function BookingPage({ token }: { token: string }) {
       </PageFrame>
     );
   }
-  return <BookingDetails token={token} initial={result.booking} />;
+  return <BookingDetails token={token} initial={result.booking} headingRef={heading} />;
 }
 
-function BookingDetails({ token, initial }: { token: string; initial: BookingPageType }) {
+function BookingDetails({
+  token,
+  initial,
+  headingRef,
+}: {
+  token: string;
+  initial: BookingPageType;
+  headingRef: React.RefObject<HTMLHeadingElement | null>;
+}) {
   const [booking, setBooking] = useState(initial);
   const [step, setStep] = useState<CancelStepType>("button");
   const [problem, setProblem] = useState<string | null>(null);
@@ -142,7 +169,10 @@ function BookingDetails({ token, initial }: { token: string; initial: BookingPag
       {/* Read out whenever it changes: the cancel's result lands here. */}
       <div aria-live="polite">
         <h1
-          ref={resultHeading}
+          ref={(element) => {
+            resultHeading.current = element;
+            headingRef.current = element; // the page's own retry focuses it too
+          }}
           tabIndex={-1}
           className="text-xl font-semibold text-slate-900 outline-none"
         >

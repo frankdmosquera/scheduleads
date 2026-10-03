@@ -447,10 +447,11 @@ never stopped, never asked about, for any check. The frontend is pinned with
 `-p 3400`, so if 3400 is taken it fails loudly instead of drifting onto the
 API's port. If one is taken, check what holds it: a leftover scheduleads
 process is stopped, anything else is reported and left running. The ports
-move together: `PORT`, `BETTER_AUTH_URL` and `APP_ORIGIN` in `.env`, the
-`-p` in the frontend's scripts, and the fallbacks in `backend/server.ts`,
-`backend/lib/auth/auth-server.ts` and `frontend/lib/auth-client.ts`. Google's
-OAuth client lists `http://localhost:3401/calendar/callback` as its redirect.
+move together, everywhere at once: `git grep -n -E "340[01]"` lists every
+place in the repo, and outside it `PORT`, `BETTER_AUTH_URL` and `APP_ORIGIN`
+in the root `.env`, plus `NEXT_PUBLIC_API_URL` in `frontend/.env.local` if
+that file exists. Google's OAuth client lists
+`http://localhost:3401/calendar/callback` as its redirect.
 
 Database, all from `packages/shared`, which owns the schema and the migration
 ledger:

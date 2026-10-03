@@ -366,7 +366,7 @@ address, and record in the log whether the event disappears. If the
 sender-change case matters, store the organizer used on the request.
 **Resolution:**
 
-### F-129 [P2] fixed - The confirm step is not announced, and opening it drops keyboard focus
+### F-129 [P2] closed - The confirm step is not announced, and opening it drops keyboard focus
 
 **File:** frontend/components/booking-page/booking-page.tsx:158-167
 **Found:** 2026-10-03 by independent review of step 7a.5 (scope: 33fa2f4..78a97a7; lenses: quality, security, performance, tests)
@@ -384,9 +384,9 @@ question or to "Keep it" (the safe choice), for example with a ref and the
 same requestAnimationFrame the result uses; when "Keep it" is pressed,
 return focus to "Cancel this booking". Optionally put the question inside
 the existing polite live region.
-**Resolution:** Fixed 2026-10-03: opening the confirm step moves focus to "Keep it" and the question is a status region, so it is read out; "Keep it" puts focus back on "Cancel this booking". Checked by the build and lint; the frontend has no test runner, so no saved test.
+**Resolution:** Fixed 2026-10-03: opening the confirm step moves focus to "Keep it" and the question is a status region, so it is read out; "Keep it" puts focus back on "Cancel this booking". Checked by the build and lint; the frontend has no test runner, so no saved test. Closed 2026-10-03 by the independent review of step 7a.6: booking-page.tsx:171-174 moves focus to "Keep it" (keepRef, after the commit through requestAnimationFrame), and because "Keep it" sits inside `role="group" aria-labelledby="confirm-cancel"` (:180-181), entering the group reads "Cancel this booking?" with it; "Keep it" returns focus to "Cancel this booking" (cancelRef, :197-200). The `role="status"` on the question is redundant with the group label (a live region mounted already filled is not reliably read) but harmless. No new defect from the repair; lint passes.
 
-### F-130 [P3] fixed - White text on the business's colour has no contrast check
+### F-130 [P3] closed - White text on the business's colour has no contrast check
 
 **File:** frontend/components/booking-page/booking-page.tsx:81, :176, :206
 **Found:** 2026-10-03 by independent review of step 7a.5 (scope: 33fa2f4..78a97a7; lenses: quality, security, performance, tests)
@@ -404,7 +404,7 @@ comment saying why.
 from the colour's relative luminance, used by the page and EmailButton;
 or fall back to the neutral ink when white on the brand is under 4.5:1.
 Say in a comment that a per-business colour is the one inline style.
-**Resolution:** Fixed 2026-10-03: textColorOn (packages/shared/helpers/text-color-on.ts, tested) picks white or dark ink by contrast; the page's two buttons and the emails' EmailButton use it. The page's inline styles carry a comment: the business's colour is data, not a class.
+**Resolution:** Fixed 2026-10-03: textColorOn (packages/shared/helpers/text-color-on.ts, tested) picks white or dark ink by contrast; the page's two buttons and the emails' EmailButton use it. The page's inline styles carry a comment: the business's colour is data, not a class. Closed 2026-10-03 by the independent review of step 7a.6: text-color-on.ts computes WCAG relative luminance and returns whichever of white and #0f172a contrasts more; its test pins #facc15 to the ink and #1d4ed8 to white (shared suite, 107 passing). booking-page.tsx:87-88, :189, :221 and email-button.tsx:264 use it; a rendered confirmation on #facc15 shows `color:#0f172a` on the button. The yellow case of the finding now reads at about 12:1. Residual, not a defect of the repair: with two text colours the worst case is a mid-luminance brand colour (for example #7a7a7a) at about 4.3:1, a little under 4.5:1 for 14-16px semibold text; only a third colour or a darkened brand could lift that.
 
 ### F-131 [P3] fixed - "Try again" gives no sign it did anything
 
@@ -416,5 +416,50 @@ request runs, and if it fails again the identical screen stays. Jane
 cannot tell a retry happened from a button that does nothing, which is
 the moment she is most likely to give up and not cancel.
 **Suggested fix:** Clear the result on retry (`setResult(null)` with the
-reload), so "One moment…" shows until the new answer arrives.
-**Resolution:** Fixed 2026-10-03: "Try again" clears the result first, so "One moment..." shows while it retries. Also from the notes: the logo keeps its shape (object-contain).
+reload), so "One moment..." shows until the new answer arrives.
+**Resolution:** Fixed 2026-10-03: "Try again" clears the result first, so "One moment..." shows while it retries. Also from the notes: the logo keeps its shape (object-contain). Re-examined 2026-10-03 by the independent review of step 7a.6 and not closed: the visible sign is there (booking-page.tsx:65-68 clears the result, so "One moment..." shows), but the repair removes the focused "Try again" button from the page and nothing announces the retry or its answer, tracked as F-133. Close both together once F-133 is fixed.
+
+### F-132 [P3] fixed - AGENTS.md's list of where the ports move together leaves out half the places that carry them
+
+**File:** AGENTS.md:449-452
+**Found:** 2026-10-03 by independent review of step 7a.6 (scope: 8c47953..34cc243; lenses: quality, security, performance, tests)
+**Why it matters:** The new paragraph reads as the checklist for the next
+port move: `PORT`, `BETTER_AUTH_URL` and `APP_ORIGIN` in `.env`, the `-p`
+in the frontend's scripts, and three code fallbacks. The commit itself
+also had to change `.claude/launch.json` (:8, :14), `.env.example`
+(`PORT`, `BETTER_AUTH_URL`, `APP_ORIGIN`, `NEXT_PUBLIC_API_URL` and the
+Google redirect comment), the `APP_ORIGIN` fallback in the three route
+tests (public-booking-links-routes.test.ts:34,
+public-booking-page-routes.test.ts:43, public-bookings-routes.test.ts:41),
+the sign-in line in packages/shared/scripts/seed-dev.ts:552 and the
+sample link in backend/scripts/email-preview.ts:35; and a local
+`frontend/.env.local` with `NEXT_PUBLIC_API_URL` would need it too.
+Following the list as written leaves launch.json on the old ports, so the
+preview tool waits on a port nothing listens on. Every place moved
+correctly this time (`git grep` finds no 3000/3001 left outside that
+paragraph); only the checklist is short.
+**Suggested fix:** Name the missing places in the paragraph, or replace
+the list with the one command that finds them all,
+`git grep -nE '340[01]'`, plus the two that git cannot see (the local
+`.env` / `frontend/.env.local` and Google's redirect).
+**Resolution:** Fixed 2026-10-03: AGENTS.md no longer lists files by hand; it says `git grep -n -E "340[01]"` lists every place in the repo, and names the two outside it (the root `.env`'s PORT, BETTER_AUTH_URL and APP_ORIGIN, and `frontend/.env.local`'s NEXT_PUBLIC_API_URL if that file exists).
+
+### F-133 [P3] fixed - "Try again" now drops keyboard focus, and nothing announces the retry or its answer
+
+**File:** frontend/components/booking-page/booking-page.tsx:39-45, :63-68
+**Found:** 2026-10-03 by independent review of step 7a.6 (scope: 8c47953..34cc243; lenses: quality, security, performance, tests)
+**Why it matters:** F-131's repair calls `setResult(null)` on "Try
+again", which replaces the whole card with "One moment...". The button that
+holds focus is unmounted, so focus falls to the page body, and neither
+"One moment..." nor the screen that follows is a live region or receives
+focus. A screen reader user who presses "Try again" hears nothing, and if
+it fails again lands on the same screen with focus nowhere; if it works,
+the booking appears unannounced. That is F-131's "Jane cannot tell a retry
+happened" again, for the reader who cannot see the change, and the focus
+loss is new with the repair. The same page's cancel result already solves
+this with a polite live region and a focused heading.
+**Suggested fix:** Put the loading line and the state headings in one
+`aria-live="polite"` region that stays mounted (for example inside
+PageFrame), or focus the new screen's heading after each answer, as
+`resultHeading` does for the cancel.
+**Resolution:** Fixed 2026-10-03: after "Try again", focus moves to the next screen's heading (the "can't load" heading again, or "Your booking"), from an effect that runs once that screen is rendered; "One moment..." is a status region. The first load moves no focus. Checked in the browser with the API stopped then started: focus landed on "Your booking can't load right now", then on "Your booking". The frontend has no test runner, so no saved test; build and lint pass.
