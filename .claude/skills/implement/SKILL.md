@@ -47,7 +47,9 @@ existing target-area patterns, then let the narrow check expose incompatibilitie
 Resolve the work branch before editing. Use the exact `**Branch:**` value in the
 spec when present. For an older spec without it, combine the configured prefix
 for its type with the work title: lowercase ASCII letters and digits, replace
-each run of other characters with one hyphen, and trim edge hyphens. Feature
+each run of other characters with one hyphen, and trim edge hyphens. A feature
+branch also puts the build-plan id between prefix and title, zero-padded to two
+digits with any letter suffix kept, as in `feature/07b-reschedule`. Feature
 titles come from the named build-plan item; fix and rollback titles come from
 their spec heading or target. Stop if the type or title is ambiguous. Create or
 switch to that exact branch and never implement on the default branch. On

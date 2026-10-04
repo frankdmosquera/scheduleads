@@ -2,7 +2,7 @@
 
 **From build-plan:** feature <n>
 **Status:** not started
-**Branch:** `feature/<name>`
+**Branch:** `feature/NN-<name>`
 
 ## Goal
 

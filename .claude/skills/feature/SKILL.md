@@ -138,9 +138,13 @@ Add focused tests for logic when a test command exists. Add browser coverage onl
 when a Browser tests command exists and it is proportionate. Do not claim live,
 visual, persisted-data, or integration evidence that was not run.
 
-Build the branch value from the configured feature prefix plus the feature title
-in lowercase kebab-case. Replace each run of characters other than ASCII letters
-and digits with one hyphen and trim edge hyphens.
+Build the branch value from the configured feature prefix, then `NN-`, then the
+feature title in lowercase kebab-case, for example `feature/07b-reschedule`. NN
+is the build-plan id exactly as the archive file and the `item-NN-done` tag use
+it: the number zero-padded to two digits, keeping any letter suffix (`7` gives
+`07`, `3b` gives `03b`, `22` stays `22`). For the title, replace each run of
+characters other than ASCII letters and digits with one hyphen and trim edge
+hyphens.
 
 For visual replication, require an existing screenshot or reference. Store a
 provided image under `blueprint/reference/` and link it. If `prototypes/` exists,

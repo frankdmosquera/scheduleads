@@ -129,7 +129,8 @@ Autopilot. Still report what the critique changed in the final packet.
 
 Use the same branch rules as `/implement`:
 
-- Feature: the configured feature prefix, default `feature/<name>`
+- Feature: the configured feature prefix, default `feature/NN-<name>`, NN being
+  the zero-padded build-plan id
 - Fix: the configured fix prefix, default `fix/<name>`
 
 If the branch already exists, switch to it only if it matches the active spec.
