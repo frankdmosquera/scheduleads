@@ -7,9 +7,9 @@
 
 import { randomUUID } from "node:crypto";
 
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
-import { booking, bookingLink, lead, member, resource } from "@scheduleads-app/shared/db";
+import { booking, bookingLink, lead, member } from "@scheduleads-app/shared/db";
 import {
   contactValidationSchema,
   type ContactInputType,
@@ -27,6 +27,7 @@ import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
 import { countBookingsThatDay } from "../scheduling/count-bookings-that-day.js";
 import { findCommitments } from "../scheduling/find-commitments.js";
+import { findResourceNames } from "../scheduling/find-resource-names.js";
 import { findFreeTimes } from "../scheduling/find-free-times.js";
 import { findServiceResources } from "../scheduling/find-service-resources.js";
 import { findStandbyDates } from "../scheduling/find-standby-dates.js";
@@ -115,15 +116,6 @@ async function findBookedByRequestKey(
     .limit(1);
   return row ? { ...row, timezone } : null;
 }
-
-const namesOf = async (organizationId: string, ids: string[]) =>
-  ids.length === 0
-    ? []
-    : db
-        .select({ resourceId: resource.id, name: resource.name })
-        .from(resource)
-        .where(and(eq(resource.organizationId, organizationId), inArray(resource.id, ids)))
-        .orderBy(asc(resource.name), asc(resource.id));
 
 export async function bookTime(input: BookTimeInputType): Promise<BookTimeResultType> {
   const { organizationId, bookingLinkId, personId, startsAt, requestKey, source, now } = input;
@@ -241,7 +233,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
     const [taken, standby, rooms] = await Promise.all([
       findCommitments(organizationId, offered.placeIds, span.startsAt, span.endsAt),
       source === "manual" ? [] : findStandbyDates(organizationId, offered.placeIds, date, date),
-      namesOf(organizationId, offered.placeIds),
+      findResourceNames(organizationId, offered.placeIds),
     ]);
     freeRooms = rooms.filter((room) =>
       isRoomFree(
@@ -270,7 +262,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
     new Date(startsAt.getTime() + DAY_MS)
   );
   const counts = countBookingsThatDay(dayRows, date, timezone);
-  const people = (await namesOf(organizationId, freePeople)).map((person) => ({
+  const people = (await findResourceNames(organizationId, freePeople)).map((person) => ({
     ...person,
     bookingsThatDay: counts.get(person.resourceId) ?? 0,
   }));

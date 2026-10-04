@@ -5,9 +5,9 @@
 // the booking's times, person, room and invite number saved, and a booking_moved entry, or nothing
 // changes. Until the appointment starts (decision 12). The same start again is one move (decision 4).
 
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
-import { booking, bookingLink, commitment, lead, resource } from "@scheduleads-app/shared/db";
+import { booking, bookingLink, commitment, lead } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
 import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
@@ -18,6 +18,7 @@ import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
 import { countBookingsThatDay } from "../scheduling/count-bookings-that-day.js";
 import { findCommitments } from "../scheduling/find-commitments.js";
+import { findResourceNames } from "../scheduling/find-resource-names.js";
 import { findFreeTimes } from "../scheduling/find-free-times.js";
 import { findServiceResources } from "../scheduling/find-service-resources.js";
 import { findStandbyDates } from "../scheduling/find-standby-dates.js";
@@ -138,7 +139,7 @@ export async function moveBooking(input: {
     const [taken, standby, rooms] = await Promise.all([
       findCommitments(organizationId, offered.placeIds, span.startsAt, span.endsAt),
       findStandbyDates(organizationId, offered.placeIds, date, date),
-      namesOf(organizationId, offered.placeIds),
+      findResourceNames(organizationId, offered.placeIds),
     ]);
     freeRooms = rooms.filter((room) =>
       isRoomFree(
@@ -168,7 +169,7 @@ export async function moveBooking(input: {
     )
   ).filter((row) => row.bookingId !== bookingId);
   const counts = countBookingsThatDay(dayRows, date, timezone);
-  const people = (await namesOf(organizationId, freePeople)).map((person) => ({
+  const people = (await findResourceNames(organizationId, freePeople)).map((person) => ({
     ...person,
     bookingsThatDay: counts.get(person.resourceId) ?? 0,
   }));
@@ -248,12 +249,3 @@ export async function moveBooking(input: {
     throw new Error(`Moving a booking failed: ${safeErrorReason(error)}`);
   }
 }
-
-const namesOf = async (organizationId: string, ids: string[]) =>
-  ids.length === 0
-    ? []
-    : db
-        .select({ resourceId: resource.id, name: resource.name })
-        .from(resource)
-        .where(and(eq(resource.organizationId, organizationId), inArray(resource.id, ids)))
-        .orderBy(asc(resource.name), asc(resource.id));

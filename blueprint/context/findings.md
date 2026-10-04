@@ -182,7 +182,7 @@ more than it proves.
 files that already make them.
 **Resolution:**
 
-### F-135 [P3] fixed - The Google tests for a move depend on running in order and never pin the cross-off to the booking's own person
+### F-135 [P3] closed - The Google tests for a move depend on running in order and never pin the cross-off to the booking's own person
 
 **File:** backend/routes/public-booking-move-times-routes.test.ts:206-245 (cross-off: backend/lib/scheduling/find-free-times.ts:135)
 **Found:** 2026-10-03 by independent review of step 7b.1 (scope: a55c8ee..548c727; lenses: quality, security, performance, tests)
@@ -200,9 +200,9 @@ Jane's booking would then be hidden, and nothing would say so.
 `beforeAll` of a nested `describe`, or in each test), and add a case where
 Mei is connected too and Google answers the same 9:00 to 10:00 for both:
 Ana's 9:00 is offered, Mei's is not.
-**Resolution:** Fixed 2026-10-03: each Google test saves its own connection (saving again only updates), so each passes or fails alone; a new test, "the booking's own hour is crossed off only for its own person", connects Ana and Mei with the same 9:00 to 10:00 and expects Mei's 9:00 and 9:30 to stay busy. Removing the cross-off fails the own-event test run alone; crossing off for every person fails the new test.
+**Resolution:** Fixed 2026-10-03: each Google test saves its own connection (saving again only updates), so each passes or fails alone; a new test, "the booking's own hour is crossed off only for its own person", connects Ana and Mei with the same 9:00 to 10:00 and expects Mei's 9:00 and 9:30 to stay busy. Removing the cross-off fails the own-event test run alone; crossing off for every person fails the new test. Closed 2026-10-03 by independent review of step 7b.2: re-read find-free-times.ts:138 and the test file; the cross-off switched off fails "the booking's own Google event does not block" run alone, and `if (ignoreBooking)` fails "crossed off only for its own person", both reproduced and restored.
 
-### F-136 [P3] fixed - No test asks a booking's move times for a person who does not offer its service
+### F-136 [P3] closed - No test asks a booking's move times for a person who does not offer its service
 
 **File:** backend/routes/public-booking-move-times-routes.test.ts:247-258 (answer: backend/lib/booking/find-booking-move-times.ts:57)
 **Found:** 2026-10-03 by independent review of step 7b.1 (scope: a55c8ee..548c727; lenses: quality, security, performance, tests)
@@ -217,7 +217,7 @@ route, not on this one.
 **Suggested fix:** Add one case: Jane's link with `person=` a resource id of
 another test business, and one with the clinic's Room 3 id, each answering
 404 with the same body as a bad link.
-**Resolution:** Fixed 2026-10-03: a new test asks for Room 3 (a place, not a person who can be picked) and for an unknown id, both answering the same 404; answering 200 with no times instead fails it.
+**Resolution:** Fixed 2026-10-03: a new test asks for Room 3 (a place, not a person who can be picked) and for an unknown id, both answering the same 404; answering 200 with no times instead fails it. Closed 2026-10-03 by independent review of step 7b.2: re-read find-booking-move-times.ts:57 and the test; answering an empty 200 for a null fails "a person who does not offer the service, or another business's, answers 404", reproduced and restored.
 
 ### F-137 [P3] open - The reserved slug is refused only when a business is made; an owner can still take it through Better Auth's organization update
 
@@ -241,7 +241,7 @@ to-slug.ts), or drop `organization: ["update"]` from the roles until a
 settings screen needs it.
 **Resolution:** Deferred by Frank, 2026-10-03: left for Settings (feature 12), where editing a business's details is designed; no screen reaches the route today. Stays open, carried forward.
 
-### F-138 [P3] open - A booking whose service was switched off opens its page, but its move times answer "This link does not open a booking"
+### F-138 [P3] fixed - A booking whose service was switched off opens its page, but its move times answer "This link does not open a booking"
 
 **File:** backend/lib/booking/find-booking-move-times.ts:15,57 (page: backend/lib/booking/find-booking-page.ts:86)
 **Found:** 2026-10-03 by independent review of step 7b.1 (scope: a55c8ee..548c727; lenses: quality, security, performance, tests)
@@ -256,9 +256,9 @@ No test or spec line covers the case.
 still be moved. If not, make `canMove` false for it and let the page say
 to call the business; if so, read the service without the `active` filter
 for a move.
-**Resolution:** Decided by Frank, 2026-10-03 (decision 13): switching a service off stops only new bookings; an existing booking keeps Change the time. Fixed by step 7b.2, which reads the booking's own service even when switched off.
+**Resolution:** Decided by Frank, 2026-10-03 (decision 13): switching a service off stops only new bookings; an existing booking keeps Change the time. Fixed by step 7b.2, which reads the booking's own service even when switched off. Built in 7b.2 (1731845): findServiceResources and findFreeTimes read the booking's own service when switched off; tested by "a booking whose service was switched off can still move, while new bookings cannot".
 
-### F-139 [P3] fixed - The spec names `ignoreBookingId` and "the day's booking counts"; the code has `ignoreBooking` and no such counts
+### F-139 [P3] closed - The spec names `ignoreBookingId` and "the day's booking counts"; the code has `ignoreBooking` and no such counts
 
 **File:** blueprint/context/current-feature.md:117-120,144,234
 **Found:** 2026-10-03 by independent review of step 7b.1 (scope: a55c8ee..548c727; lenses: quality, security, performance, tests)
@@ -271,4 +271,145 @@ does not have. AGENTS.md asks for a wrong spec to be corrected before the
 next step builds on it.
 **Suggested fix:** Change the three lines to `ignoreBooking` and drop the
 booking-counts clause.
-**Resolution:** Fixed 2026-10-03: the spec says ignoreBooking with its four fields and crossOffSpan, drops the daily counts from 7b.1, and notes that 7b.2's any-available order must leave the moved booking out of the day's counts.
+**Resolution:** Fixed 2026-10-03: the spec says ignoreBooking with its four fields and crossOffSpan, drops the daily counts from 7b.1, and notes that 7b.2's any-available order must leave the moved booking out of the day's counts. Closed 2026-10-03 by independent review of step 7b.2: re-read current-feature.md; 7b.1's bullet names `ignoreBooking` with its four fields and `crossOffSpan`, no booking counts remain in 7b.1, and the Notes for the AI carry the 7b.2 counts rule.
+
+### F-140 [P2] fixed - A hold that fails inside the move's transaction is never tested; committing the release with no new hold leaves every test green
+
+**File:** backend/lib/booking/move-booking.ts:221 (test: backend/routes/public-booking-move-routes.test.ts:254)
+**Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
+**Why it matters:** The step's central promise is "a time taken meanwhile
+leaves her booking as it was" (decision 10): inside the transaction the old
+rows are released first, so only the thrown `EveryChoiceTakenError` rolls
+that release back when the new hold fails. The test named "a time taken
+meanwhile" books 13:00 before the move starts, so the free-times check
+outside the transaction refuses it and the transaction never runs.
+Replacing :221 with `return { moved: false, reason: "time_taken" } as const`
+(which commits the release and leaves a confirmed booking holding no time,
+so its slot can be booked twice) left all 529 backend tests green in this
+review. The code is right today; nothing guards it.
+**Suggested fix:** Add a test in the shape of
+book-time-taken-meanwhile.test.ts: mock `findCommitments` (or
+`findFreeTimes`) so the check sees the new time free while the database
+already holds it for another booking, then assert 409 `time_taken`, the
+booking's times, person and sequence unchanged, its old row still
+`active`, and no `booking_moved` entry.
+**Resolution:** Fixed 2026-10-03: move-booking-taken-meanwhile.test.ts shows the check an empty world while the database holds the new time, so the hold fails inside the transaction; the booking, its released-then-restored row and the timeline stay untouched. Committing the release instead fails it.
+
+### F-141 [P2] open - A move to another person leaves its Google event in the old person's calendar, and the booking keeps no record of whose calendar that is
+
+**File:** backend/lib/booking/move-booking.ts:226 (cancel's removal: backend/lib/calendar/remove-booking-event.ts:21,28)
+**Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
+**Why it matters:** The move overwrites `personId` and keeps
+`calendarEventId`, which points at an event in the old person's Google.
+7a's cancel removes the event from `row.personId`'s calendar, now the new
+person's: Google answers 404, google-calendar-provider.ts:97 treats that as
+gone, `calendarEventId` is cleared, and the old person's event stays at the
+old time with no log line, still blocking that person's free times. On this
+branch, a person-changing move followed by a cancel does exactly that.
+7b.3 plans to remove the old person's event after the move, but it runs
+after the transaction, not awaited, and may fail (decision 5); once it
+has, the old person exists nowhere: not on the booking, and not in the
+`booking_moved` payload (`{ bookingId, fromStartsAt, toStartsAt, sequence }`).
+Feature 8's retry and 7a's cancel then cannot find the event.
+**Suggested fix:** Settle it in 7b.3's plan, before building on it: keep
+whose calendar holds the event (a `calendarPersonId` beside
+`calendarEventId`, set when the event is written and cleared when it is
+removed), and have removal and update use it rather than `personId`; or at
+least add `fromPersonId` and `toPersonId` to the `booking_moved` payload
+and the spec's contract.
+**Resolution:** Carried to 7b.3's plan (spec, Notes for the AI): the event moves between calendars there and must know the old person.
+
+### F-142 [P3] fixed - No move test uses a room or moves with any available, so the room's own-row filter and the day's counts can be removed with every test green
+
+**File:** backend/lib/booking/move-booking.ts:147,169 (tests: backend/routes/public-booking-move-routes.test.ts)
+**Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
+**Why it matters:** The test clinic has no rooms, and the only any-available
+press is one already at its time. Removing `row.bookingId !== bookingId`
+from the room check (:147), which would refuse a Face and Body move 30
+minutes later in the same room though the times route offers it, left the
+12 move tests green; so did removing the filter that keeps the moved
+booking out of the day's counts (:169), which the spec's Notes for the AI
+call out for this step. Decision 10's any-available move (the order, the
+person it lands on) is untested end to end.
+**Suggested fix:** Give one test clinic a room ticked for the service and
+move Jane 30 minutes later in it; add an any-available move to a new time
+where the counts decide the person (Ana with Jane's booking and one other
+that day, Mei with one), asserting Jane stays with Ana.
+**Resolution:** Fixed 2026-10-03: tests for a move in a room (Room 3 held again at the new time), any available going to whoever is free, and any available not counting the booking being moved; counting the room's own rows or the day's own booking each fails one.
+
+### F-143 [P3] fixed - The move route lacks the booking form's body limit and its refusal for a body that is not JSON
+
+**File:** backend/routes/public-booking-page-routes.ts:78-87 (the form's: backend/routes/public-bookings-routes.ts:28-37)
+**Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
+**Why it matters:** The booking form's POST caps the body (`bodyLimit`) and
+turns Hono's malformed-JSON exception into the refusal shape. The move
+route has neither, and its validator runs before the token is read, so
+anyone can make it parse any size of body. Probed in this review through
+the built app: `{not json` answers 400 `text/plain` "Malformed JSON in
+request body" (not `{ error: { code, message } }`, which the page will read
+in 7b.5), and a 5 MB body is parsed in full before the 400. Rate limits are
+feature 9, but the size cap is this repo's own pattern for public POSTs.
+**Suggested fix:** Mount the same `bodyLimit` and an `onError` that maps a
+400 `HTTPException` to `refuse("bad_request", ...)` on
+`publicBookingPageRoutes`, as `publicBookingsRoutes` does.
+**Resolution:** Fixed 2026-10-03: the move route has the booking form's bodyLimit (1 KB, 413) and its onError refusal for a body that is not JSON (400 bad_request); tested.
+
+### F-144 [P3] fixed - The spec's move contract says 400 `invalid_start` and no 503; the route answers 400 `bad_request` and 503 `unavailable`
+
+**File:** blueprint/context/current-feature.md:280 (route: backend/routes/public-booking-page-routes.ts:84,104)
+**Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
+**Why it matters:** Data / contracts lists the move's answers as 200, 400
+`invalid_start`, 404, 409. The route answers `bad_request` for a bad body
+(as every other route does) and also 503 `unavailable` when a calendar
+cannot be read. 7b.5 builds the page's states from this contract, so a
+page written to it would miss the 503 and look for a code that never
+comes. AGENTS.md asks for a wrong spec to be corrected before the next step
+builds on it.
+**Suggested fix:** Change the contract line to 400 `bad_request` and add
+503 `unavailable`.
+**Resolution:** Fixed 2026-10-03: the spec's move contract says 400 bad_request, 413 and 503 unavailable, as the code answers.
+
+### F-145 [P3] open - The move's check is a copy of bookTime's: the free check, the room rule, the day's counts and `namesOf`
+
+**File:** backend/lib/booking/move-booking.ts:109-176,252-259 (original: backend/lib/booking/book-time.ts:119-126,196-277)
+**Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
+**Why it matters:** About 70 lines repeat bookTime's customer path with two
+`bookingId` filters added, and `namesOf` is copied verbatim. A later change
+to how a start is checked or ordered (F-62's cost, the room rule, a new
+any-available rule) has to be made in both files, and one being missed is
+exactly the drift the spec's "changing the time is booking again"
+(decision 10) forbids.
+**Suggested fix:** Extract one function in `lib/booking/` that, given the
+service, the start and an optional booking to leave out, answers the
+ordered choices or the refusal; bookTime's customer path and moveBooking
+both call it. Can wait for the owner's move (features 11 and 12b), which
+will be a third caller.
+**Resolution:** Partly fixed 2026-10-03: the name lookup is one shared helper (find-resource-names.ts) used by bookTime and moveBooking. The free check's copy stays, carried for when the owner's move (features 11 and 12b) gives a third caller; noted in the spec.
+
+### F-146 [P3] fixed - Two move tests promise more than they check: "the log" spies only console.log, and "another business's booking" only sends a foreign person id
+
+**File:** backend/routes/public-booking-move-routes.test.ts:306-330
+**Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
+**Why it matters:** The move path writes no `console.log`; its only log
+lines are `console.warn` (calendar), which `beforeAll` silences and no test
+reads, so the log half of the privacy test passes whatever those lines say
+(the same shape as F-134). "another business's booking is never touched"
+is refused by the person check at move-booking.ts:93 before any write, so
+it does not show that the writes stay inside the booking's business. Both
+behaviours are right by reading; the names claim coverage the tests do not
+give.
+**Suggested fix:** Collect `console.warn` and `console.error` too (with a
+connected calendar that fails, so a warn line is actually written), and
+either rename the tenant test to what it checks or add a case that moves
+one business's booking and asserts the other business's rows unchanged.
+**Resolution:** Fixed 2026-10-03: the privacy test also reads console.warn and a refusal's body; the tenant test also makes a real move of ours to a time the other business has booked and checks their booking and rows are untouched.
+
+### F-147 [P3] fixed - The activity types test is still named "the nine kinds" while it expects ten
+
+**File:** packages/shared/crm/activity-types.test.ts:6
+**Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
+**Why it matters:** The assertion moved to 10 for `booking_moved`; the
+name did not, so a failing run would report the wrong expectation.
+**Suggested fix:** Rename it "are the ten kinds of timeline entry, each
+once".
+**Resolution:** Fixed 2026-10-03: the test says ten kinds.

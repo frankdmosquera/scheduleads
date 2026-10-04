@@ -158,7 +158,8 @@ No package is planned. Installing one is a line only Frank crosses.
     (`personId` null for any available): 200 the page's
     view at the new time; 404 for a bad link; 409 `time_taken`,
     `already_started` or `already_cancelled`; 400 for a start that is not an
-    ISO instant.
+    ISO instant, or a body that is not JSON; 413 over 1 KB; 503 when a
+    calendar cannot be read.
   - The page's view gains `canMove` (the same as `canCancel`, decision 13).
   - A booking's own service is read even when switched off, for its move
     times and its move (decision 13); new bookings still need it switched on.
@@ -277,8 +278,10 @@ an unknown `person` answers 404 `not_found`.
 
 **Move** (`POST /public/bookings/:token/move`, body
 `{ startsAt: string; personId: string | null }`):
-200 the page's view at the new time; 400 `invalid_start`; 404 `not_found`;
-409 `time_taken`, `already_started` or `already_cancelled`. Safe to repeat.
+200 the page's view at the new time; 400 `bad_request` (a start that is
+not a time, a body that is not JSON); 413 for a body over 1 KB; 404
+`not_found`; 409 `time_taken`, `already_started` or `already_cancelled`; 503
+`unavailable` when a calendar cannot be read. Safe to repeat.
 
 **The page's view** gains `canMove: boolean` (confirmed and not started).
 
@@ -331,6 +334,15 @@ harness), with screenshots in the build log.
   left it for Settings, feature 12 (2026-10-03).
 - `bookTime` orders "any available" by the day's booking counts; a move's
   counts must leave out the booking being moved (7b.2).
+- From step 7b.2's review, for 7b.3 (F-141): a move to another person keeps
+  `calendarEventId` while `personId` changes, and nothing records whose
+  calendar holds the event, so 7a's cancel would remove it from the wrong
+  person. 7b.3 moves the event between calendars and must know the old
+  person (the move can hand it over, or the event's owner can be saved).
+- From step 7b.2's review (F-145): the move's free check copies about 70
+  lines of `bookTime`'s; the name lookup is shared now
+  (`find-resource-names.ts`), the rest is carried for when the owner's move
+  (features 11 and 12b) gives a third caller.
 
 ## Open questions
 

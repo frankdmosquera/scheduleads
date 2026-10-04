@@ -4,6 +4,8 @@
 // decision 2).
 
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
+import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 
 import {
@@ -26,9 +28,17 @@ const alreadyStarted = refuse(
 );
 const alreadyCancelled = refuse("already_cancelled", "This booking was cancelled.");
 const timeTaken = refuse("time_taken", "That time was just taken. Pick another.");
+const notValidMove = refuse("bad_request", "That is not a valid move.");
+const MOST_BYTES = 1024; // a start and a person id are far below this
+
 const timesUnreadable = refuse("unavailable", "Times cannot be read right now. Try again shortly.");
 
 export const publicBookingPageRoutes = new Hono()
+  // Hono's validator throws on a body that is not JSON; it gets the same refusal shape as the rest.
+  .onError((error, c) => {
+    if (error instanceof HTTPException && error.status === 400) return c.json(notValidMove, 400);
+    throw error;
+  })
   // What the booking's page shows. Never cached: the booking can change, and the link is private.
   .get("/bookings/:token", async (c) => {
     c.header("Cache-Control", "no-store");
@@ -77,10 +87,14 @@ export const publicBookingPageRoutes = new Hono()
   // in one go. Pressed twice to the same time, it answers the same (decision 4).
   .post(
     "/bookings/:token/move",
+    bodyLimit({
+      maxSize: MOST_BYTES,
+      onError: (c) => c.json(refuse("bad_request", "That move is too large."), 413),
+    }),
     validator("json", (value, c) => {
       const parsed = moveBookingValidationSchema.safeParse(value);
       if (!parsed.success) {
-        const message = parsed.error.issues[0]?.message ?? "That is not a valid move.";
+        const message = parsed.error.issues[0]?.message ?? notValidMove.error.message;
         return c.json(refuse("bad_request", message), 400);
       }
       return parsed.data;

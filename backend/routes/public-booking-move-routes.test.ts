@@ -55,8 +55,8 @@ const at = (hour: number, minute = 0) =>
   localTimeToMoment(day, hour * 60 + minute, ZONE)!.toISOString();
 
 // A clinic of its own: Ana and Mei do facials (60 minutes, a start every 30), every day 9:00 to
-// 17:00. Jane has a facial with Ana at 9:00.
-async function makeClinic(name: string) {
+// 17:00, in Room 3 when withRoom. Jane has a facial with Ana at 9:00.
+async function makeClinic(name: string, { withRoom = false } = {}) {
   const id = () => randomUUID();
   const business = id();
   const slug = `test-moving-${name}-${tag}-dev`;
@@ -79,10 +79,11 @@ async function makeClinic(name: string) {
   await db
     .insert(pipelineStage)
     .values({ id: id(), organizationId: business, name: "New", position: 0 });
-  const [ana, mei, facial] = [id(), id(), id()];
+  const [ana, mei, room, facial] = [id(), id(), id(), id()];
   await db.insert(resource).values([
     { id: ana, organizationId: business, name: "Ana", kind: "person" },
     { id: mei, organizationId: business, name: "Mei", kind: "person" },
+    { id: room, organizationId: business, name: "Room 3", kind: "place" },
   ]);
   await db.insert(bookingLink).values({
     id: facial,
@@ -92,11 +93,14 @@ async function makeClinic(name: string) {
     durationMinutes: 60,
     slotIntervalMinutes: 30,
   });
-  await db.insert(bookingLinkResource).values([
-    { organizationId: business, bookingLinkId: facial, resourceId: ana },
-    { organizationId: business, bookingLinkId: facial, resourceId: mei },
-  ]);
-  const clinic = { business, slug, ana, mei, facial };
+  await db
+    .insert(bookingLinkResource)
+    .values([
+      { organizationId: business, bookingLinkId: facial, resourceId: ana },
+      { organizationId: business, bookingLinkId: facial, resourceId: mei },
+      ...(withRoom ? [{ organizationId: business, bookingLinkId: facial, resourceId: room }] : []),
+    ]);
+  const clinic = { business, slug, ana, mei, room, facial };
   return { ...clinic, janesBooking: await book(clinic, ana, 9) };
 }
 
@@ -229,6 +233,40 @@ describe("moving a booking", () => {
     ]);
   });
 
+  test("a move in a room takes the room again at the new time", async () => {
+    const clinic = await makeClinic("room", { withRoom: true });
+    const response = await move(clinic.janesBooking, at(9, 30), clinic.ana); // overlaps her own room time
+
+    expect(response.status).toBe(200);
+    const active = (await heldRows(clinic.janesBooking)).filter((row) => row.status === "active");
+    expect(active.map((row) => row.resourceId).sort()).toEqual([clinic.ana, clinic.room].sort());
+    expect(active.every((row) => row.startsAt.getTime() === new Date(at(9, 30)).getTime())).toBe(
+      true
+    );
+  });
+
+  test("any available moves to whoever is free at the new time", async () => {
+    const clinic = await makeClinic("anyone");
+    await book(clinic, clinic.ana, 11); // Ana is taken at 11:00
+    const response = await move(clinic.janesBooking, at(11)); // any available
+
+    expect(response.status).toBe(200);
+    expect(await bookingRow(clinic.janesBooking)).toMatchObject({
+      startsAt: new Date(at(11)),
+      personId: clinic.mei,
+    });
+  });
+
+  test("any available does not count the booking being moved", async () => {
+    const clinic = await makeClinic("own-count");
+    // Ana has only Jane's own booking that day, Mei none. Counted, Jane would go to Mei; left out,
+    // both have none and the tie goes by name, so she stays with Ana.
+    const response = await move(clinic.janesBooking, at(14));
+
+    expect(response.status).toBe(200);
+    expect((await bookingRow(clinic.janesBooking)).personId).toBe(clinic.ana);
+  });
+
   test("the free-times route offers the old time again", async () => {
     const clinic = await makeClinic("freed");
     await move(clinic.janesBooking, at(14), clinic.ana);
@@ -306,23 +344,35 @@ describe("moving a booking", () => {
   test("another business's booking is never touched", async () => {
     const primo = await makeClinic("ours");
     const other = await makeClinic("theirs");
+    const othersRowsBefore = await heldRows(other.janesBooking);
     // A person of another business can never be picked for this booking.
-    const response = await move(primo.janesBooking, at(11), other.ana);
+    const foreign = await move(primo.janesBooking, at(11), other.ana);
+    // A real move of ours, to a time the other business also has booked, leaves theirs alone.
+    const ours = await move(primo.janesBooking, at(9, 30), primo.ana);
 
-    expect(response.status).toBe(404);
-    expect((await bookingRow(primo.janesBooking)).sequence).toBe(0);
-    expect((await bookingRow(other.janesBooking)).sequence).toBe(0);
+    expect(foreign.status).toBe(404);
+    expect(ours.status).toBe(200);
+    expect(await bookingRow(other.janesBooking)).toMatchObject({
+      startsAt: new Date(at(9)),
+      sequence: 0,
+    });
+    expect(await heldRows(other.janesBooking)).toEqual(othersRowsBefore);
     expect(await movedEntries(other)).toEqual([]);
   });
 
   test("nothing in the answer, the log or the timeline payload carries the customer's details", async () => {
     const clinic = await makeClinic("private");
     const log = vi.spyOn(console, "log");
+    const warn = vi.mocked(console.warn);
+    warn.mockClear();
     const response = await move(clinic.janesBooking, at(11), clinic.ana);
+    const refused = await move(clinic.janesBooking, at(11), clinic.mei); // a refusal says nothing either
     const said = [
       await response.text(),
       JSON.stringify(await movedEntries(clinic)),
       JSON.stringify(log.mock.calls),
+      JSON.stringify(warn.mock.calls),
+      await refused.text(),
     ].join("\n");
 
     expect(response.headers.get("Cache-Control")).toBe("no-store");
@@ -346,6 +396,27 @@ describe("moving a booking", () => {
     expect(moveTimes.status).toBe(200);
     expect(((await moveTimes.json()) as { startTimes: string[] }).startTimes).toContain(at(11));
     expect(moved.status).toBe(200);
+  });
+
+  test("a body that is not JSON, or too large, is refused in the same shape", async () => {
+    const clinic = await makeClinic("bodies");
+    const url = `/public/bookings/${makeBookingPageToken(clinic.janesBooking)}/move`;
+    const notJson = await app.request(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{not json",
+    });
+    const tooLarge = await app.request(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ startsAt: at(11), personId: null, padding: "x".repeat(5000) }),
+    });
+
+    expect(notJson.status).toBe(400);
+    expect(await codeOf(notJson)).toBe("bad_request");
+    expect(tooLarge.status).toBe(413);
+    expect(await codeOf(tooLarge)).toBe("bad_request");
+    expect((await bookingRow(clinic.janesBooking)).sequence).toBe(0);
   });
 
   test("a bad link or a start that is not a time moves nothing", async () => {
