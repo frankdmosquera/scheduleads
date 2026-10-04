@@ -402,7 +402,7 @@ give.
 connected calendar that fails, so a warn line is actually written), and
 either rename the tenant test to what it checks or add a case that moves
 one business's booking and asserts the other business's rows unchanged.
-**Resolution:** Fixed 2026-10-03: the privacy test also reads console.warn and a refusal's body; the tenant test also makes a real move of ours to a time the other business has booked and checks their booking and rows are untouched. Not closed by independent review of step 7b.3 (2026-10-04): the tenant half holds; the log half still reads a `console.warn` that nothing writes (no calendar is connected in that test, and it reads before `bookingEventMoves.settled()`). A real follow failure's line is now checked for the name and address in move-booking-event.test.ts "a Google error keeps the move and logs one line". Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): the route test is unchanged and still reads `console.warn` and `console.log` before `bookingMoveEmails.settled()` (public-booking-move-routes.test.ts:369-388), so its log half checks only what happens to have run. The move's real log lines are now pinned elsewhere (move-booking-event.test.ts:365, send-move-emails.test.ts:328 and :355), so the remaining gap is the test's name, not the coverage.
+**Resolution:** Fixed 2026-10-03: the privacy test also reads console.warn and a refusal's body; the tenant test also makes a real move of ours to a time the other business has booked and checks their booking and rows are untouched. Not closed by independent review of step 7b.3 (2026-10-04): the tenant half holds; the log half still reads a `console.warn` that nothing writes (no calendar is connected in that test, and it reads before `bookingEventMoves.settled()`). A real follow failure's line is now checked for the name and address in move-booking-event.test.ts "a Google error keeps the move and logs one line". Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): the route test is unchanged and still reads `console.warn` and `console.log` before `bookingMoveEmails.settled()` (public-booking-move-routes.test.ts:369-388), so its log half checks only what happens to have run. The move's real log lines are now pinned elsewhere (move-booking-event.test.ts:365, send-move-emails.test.ts:328 and :355), so the remaining gap is the test's name, not the coverage. Not closed by independent review of feature 7b (scope: a55c8ee..6c1fa5d): public-booking-move-routes.test.ts:416-435 is unchanged since that pass.
 
 ### F-147 [P3] closed - The activity types test is still named "the nine kinds" while it expects ten
 
@@ -682,7 +682,7 @@ fits, which is the width the step was checked at; small phones still exist.
 **Suggested fix:** Let the range label wrap or shrink (`min-w-0`,
 `text-center`), or shorten the buttons to icons with `aria-label`s below a
 breakpoint.
-**Resolution:** Fixed 2026-10-04: the week reads "Oct 4 to 10" (both months only across two) with narrower buttons; at 320px Later ends at x=260 inside the card at 289. Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): this reviewer started no dev server and could not measure; the code matches the repair (weekName at change-time-panel.tsx:49-56, `px-2` buttons), but the measurement above was for a same-month week, and a week across two months ("Oct 25 to Nov 1") is about four characters wider. Look at one such week at 320px before closing.
+**Resolution:** Fixed 2026-10-04: the week reads "Oct 4 to 10" (both months only across two) with narrower buttons; at 320px Later ends at x=260 inside the card at 289. Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): this reviewer started no dev server and could not measure; the code matches the repair (weekName at change-time-panel.tsx:49-56, `px-2` buttons), but the measurement above was for a same-month week, and a week across two months ("Oct 25 to Nov 1") is about four characters wider. Look at one such week at 320px before closing. Not closed by independent review of feature 7b (scope: a55c8ee..6c1fa5d): no dev server was started, so still unmeasured. Estimated from the code only: the buttons went from `px-3` to `px-2` (16px narrower in all) and a cross-month label is about one character shorter than the "Oct 11 to Oct 17" first measured 12px past the card's border, so Later likely ends inside the border but in the card's padding. A measurement is still needed to close it.
 
 ### F-162 [P3] closed - Week changes may not be announced: each status is a freshly mounted live region
 
@@ -750,7 +750,7 @@ in words.
 keep the sentences.
 **Resolution:** Fixed 2026-10-04: the three comments keep their sentences without the step and finding numbers. Closed 2026-10-04 by independent review of feature 7b (scope: a55c8ee..5db122e): find-booking-move-times.ts:16-18, find-booking-page.ts:28 and change-time-panel.tsx:219,230 carry no step or finding numbers. Two new test file headers still do; recorded separately as F-166.
 
-### F-166 [P3] fixed - Step numbers in the headers of two new test files
+### F-166 [P3] closed - Step numbers in the headers of two new test files
 
 **File:** backend/lib/calendar/move-booking-event.test.ts:1; backend/routes/public-booking-move-routes.test.ts:1
 **Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..5db122e; lenses: quality, security, performance, tests)
@@ -762,9 +762,9 @@ numbers left anywhere in backend, frontend or packages/shared. The feature
 reference alone is the project's usual form.
 **Suggested fix:** Drop ", step 7b.3" and ", step 7b.2" and keep the
 sentences.
-**Resolution:** Fixed 2026-10-04: both headers name the feature only.
+**Resolution:** Fixed 2026-10-04: both headers name the feature only. Closed 2026-10-04 by independent review of feature 7b (scope: a55c8ee..6c1fa5d): move-booking-event.test.ts:1 and public-booking-move-routes.test.ts:1 name the feature only, and `git grep` finds no `7b.N` step number in backend, frontend or packages/shared.
 
-### F-167 [P2] fixed - No test makes a calendar unreadable during a move, so the move's "unavailable" answers can turn into "free" with every test green
+### F-167 [P2] closed - No test makes a calendar unreadable during a move, so the move's "unavailable" answers can turn into "free" with every test green
 
 **File:** backend/lib/booking/move-booking.ts:126-138; backend/routes/public-booking-page-routes.ts:80-83,118
 **Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..5db122e; lenses: quality, security, performance, tests)
@@ -787,4 +787,83 @@ answers 500 (or a refresh that fails): a move to that picked person answers
 503 `unavailable` and changes nothing; the move-times route for that person
 answers 503. Optionally, any available with every calendar unreadable answers
 503, not `time_taken`.
-**Resolution:** Fixed 2026-10-04: three tests with an unreadable calendar. A picked person whose connection needs reconnecting: the move answers 503 `unavailable` and the booking, its held rows and the timeline are unchanged. Any available with every calendar unreadable: 503, not `time_taken`. The move-times route with Google answering 500: 503. Mutations caught: the catch in move-booking.ts returning "free" fails two tests, the any-available answer forced to `time_taken` fails one, the routes answering 200 instead of 503 fails three.
+**Resolution:** Fixed 2026-10-04: three tests with an unreadable calendar. A picked person whose connection needs reconnecting: the move answers 503 `unavailable` and the booking, its held rows and the timeline are unchanged. Any available with every calendar unreadable: 503, not `time_taken`. The move-times route with Google answering 500: 503. Mutations caught: the catch in move-booking.ts returning "free" fails two tests, the any-available answer forced to `time_taken` fails one, the routes answering 200 instead of 503 fails three. Closed 2026-10-04 by independent review of feature 7b (scope: a55c8ee..6c1fa5d), read in code (no product code was changed in this review): public-booking-move-routes.test.ts:330-360 gives Mei, then Ana and Mei, a `needs_reconnect` connection, so getFreshAccessToken throws, findFreeTimes throws CalendarUnavailableError for each picked id, and move-booking.ts:127,133-137 answer `unavailable`; the tests assert 503, the booking's start, person and sequence, its active row and no `booking_moved` entry, so a catch answering "free" or a forced `time_taken` cannot pass them. public-booking-move-times-routes.test.ts:263-270 answers Google's free/busy with 500 for a picked Ana and asserts 503 `unavailable`. No new defect in the repair; the shared clinic's lasting connections it adds to are recorded as F-170.
+
+### F-168 [P2] fixed - "Any available", the panel's default, can hand Jane's booking to another person while her own is free, and the confirm question never says who
+
+**File:** frontend/components/booking-page/change-time-panel.tsx:91,183 (backend/lib/booking/move-booking.ts:131,180; backend/lib/scheduling/order-any-available.ts:21-23)
+**Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..6c1fa5d; lenses: quality, security, performance, tests)
+**Why it matters:** The Who select starts at "Any available" (`personId`
+null), and a move with any available orders every free person by the day's
+bookings, then by name, with no preference for the person who holds the
+booking now. Jane booked Mei by name; she opens "Change the time", keeps the
+default, picks Monday 2:00 p.m. where Ana and Mei are both free with no other
+bookings that day, and is asked only "Move to Monday, ... at 2:00 p.m.?".
+The tie goes by name to Ana, so she ends with Ana though Mei was free; she
+learns it only from the "With" line after the move. The saved test "any
+available does not count the booking being moved" shows the same
+(Jane stays with Ana only because Ana sorts first). Decision 10 gives her
+the booking form's choices but decides neither the default nor this
+tie; for Face and Body, where the practitioner matters, a silent change of
+person on a time-only change is the likely surprise.
+**Suggested fix:** Ask Frank which he wants, then one of: start the Who
+select at her current person (still a choice she can change); or let a move
+with any available try the booking's current person first when free; and in
+either case name the person in the confirm question ("Move to Monday at
+2:00 p.m. with Ana?") when the move may change it.
+**Resolution:** Fixed 2026-10-04 on Frank's call, recorded as decision 14 in the spec: the Who choice opens on her own person (any available when her person no longer offers the service), and the confirm names who she will be with. Seen in the browser at 375px on dev booking 106ce52c: Who opens on "Marco (estimator)"; the confirm reads "Move to Monday, October 5 at 9:00 a.m. MDT with Marco (estimator)?", and with Any available "... with any available person?". Nothing was moved.
+
+### F-169 [P3] open - A failed write into the new person's calendar skips the removal from the first person's
+
+**File:** backend/lib/calendar/move-booking-event.ts:82-89
+**Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..6c1fa5d; lenses: quality, security, performance, tests)
+**Why it matters:** On a person change the follow calls
+`writeBookingEvent` outside any try, and `createEvent` throws on any Google
+answer but success, as does a token refresh that fails. The first person's
+removal sits after it, so one failed write leaves the first person's event
+at the old time even when her calendar is perfectly reachable: she sees an
+appointment that is no longer hers, and Google's free/busy keeps her busy
+there, so that time is not offered to new customers. `calendarEventId` was
+already cleared, so nothing points at the event (F-149's retry gap). F-148
+asked for the two calendars to be independent; the repair made the new
+person's write independent of the first calendar, not the other way round.
+No test makes the new person's write fail (move-booking-event.test.ts
+fakes every POST as accepted unless the id was deleted there).
+**Suggested fix:** Catch the write's failure, run the first person's removal
+in every case, then rethrow (or log both on one line); add a test where the
+new person's POST answers 500 and assert a DELETE still reaches the first
+person's calendar.
+**Resolution:**
+
+### F-170 [P3] open - The move-times privacy test reads a 503 refusal, not the times, when its file runs in order
+
+**File:** backend/routes/public-booking-move-times-routes.test.ts:339-347 (connections saved at :244,253-254,264; fetch reset at :178-182)
+**Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..6c1fa5d; lenses: quality, security, performance, tests)
+**Why it matters:** The file shares one clinic, and the Google tests save
+calendar connections for Ana and Mei that are never removed. `afterEach`
+resets `fetch` to throw, and "nothing in the answer carries the customer's
+details" fakes no Google answer, so with both people connected and both
+calendars unreadable, any available throws CalendarUnavailableError and the
+route answers 503 `unavailable`. The test then checks that a refusal's body
+has no customer details and never asserts the status, so the 200 answer it
+is named for (`people`, `startTimes`, `lastDate`) is only checked when the
+test runs alone. The same order dependence F-135 removed from the Google
+tests, in the one test that does not set Google up.
+**Suggested fix:** Call `fakeGoogleBusy([])` at the start of the test and
+assert `response.status` is 200 before reading the body.
+**Resolution:**
+
+### F-171 [P3] open - AGENTS.md's branch example still has no build-plan number, which the skills now require
+
+**File:** AGENTS.md:211-212 (skills: .claude/skills/feature/SKILL.md:141-147, .claude/skills/implement/SKILL.md:50-52)
+**Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..6c1fa5d; lenses: quality, security, performance, tests)
+**Why it matters:** The delta changes `/feature`, `/implement`,
+`/autopilot`, `/continuous` and the spec template to name feature branches
+`feature/NN-<name>` (this branch is `feature/07b-reschedule`), matching the
+workspace rules. AGENTS.md, the file every session loads, still gives
+`feature/booking-links-resources-and-availability-rules` as the example of a
+feature branch, so the project's two instruction sources now show different
+shapes for the same name.
+**Suggested fix:** Change the example to the numbered form, for example
+`feature/07b-reschedule`.
+**Resolution:**

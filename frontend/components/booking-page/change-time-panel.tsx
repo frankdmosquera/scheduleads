@@ -1,8 +1,9 @@
-// Frontend: "Change the time" on the customer's booking page (feature 7b). Who first, any available
-// or a named person who offers the service (decision 10), then the free times a week at a time in
-// the business's zone, never before today, then one more question before the move. Every state has
-// its own plain words: no times that week, a time just taken, times that cannot load, and a failure
-// that keeps the choice usable. A booking that can no longer move goes back to the page.
+// Frontend: "Change the time" on the customer's booking page (feature 7b). Who first, opening on her
+// own person (decision 14), any available or anyone else who offers the service (decision 10), then
+// the free times a week at a time in the business's zone, never before today, then one more question
+// naming the time and the person before the move. Every state has its own plain words: no times that
+// week, a time just taken, times that cannot load, and a failure that keeps the choice usable. A
+// booking that can no longer move goes back to the page.
 
 "use client";
 
@@ -88,11 +89,13 @@ export function ChangeTimePanel({
   onClose: () => void;
 }) {
   const { timezone } = booking;
-  const [personId, setPersonId] = useState<string | null>(null); // null = any available
+  // null = any available. Her own person first, so keeping the default never changes who she sees.
+  const [personId, setPersonId] = useState<string | null>(booking.personId);
   const [weekOffset, setWeekOffset] = useState(0); // 0 = the week starting today
   const [reloads, setReloads] = useState(0);
   const [result, setResult] = useState<BookingMoveTimesResultType | null>(null);
-  const [people, setPeople] = useState<{ id: string; name: string }[]>([]);
+  // Her own person until the first answer lists everyone who offers the service.
+  const [people, setPeople] = useState([{ id: booking.personId, name: booking.person }]);
   const [lastDate, setLastDate] = useState<string | null>(null); // the last date it takes bookings
   const [chosen, setChosen] = useState<string | null>(null); // the start asked about once more
   const [sending, setSending] = useState(false);
@@ -130,6 +133,11 @@ export function ChangeTimePanel({
         onCannotMove(next.state);
         return;
       }
+      // Her person no longer offers the service: the times route refuses them, so any available.
+      if (next.state === "not-found" && personId !== null && personId === booking.personId) {
+        setPersonId(null);
+        return;
+      }
       if (next.state === "ok") {
         setPeople(next.times.people);
         setLastDate(next.times.lastDate);
@@ -139,7 +147,7 @@ export function ChangeTimePanel({
     return () => {
       live = false;
     };
-  }, [token, from, to, personId, reloads, onCannotMove]);
+  }, [token, from, to, personId, booking.personId, reloads, onCannotMove]);
 
   async function move() {
     if (!chosen) return;
@@ -177,10 +185,12 @@ export function ChangeTimePanel({
     "rounded-lg border border-slate-300 px-4 py-3 text-sm font-medium text-slate-900 hover:bg-slate-50 disabled:opacity-60";
 
   if (chosen) {
+    const withWhom =
+      people.find((person) => person.id === personId)?.name ?? "any available person";
     return (
       <div role="group" aria-labelledby="confirm-move">
         <p id="confirm-move" role="status" className="text-sm font-medium text-slate-900">
-          {`Move to ${formatBookingTime(new Date(chosen), timezone)}?`}
+          {`Move to ${formatBookingTime(new Date(chosen), timezone)} with ${withWhom}?`}
         </p>
         <div className="mt-3 flex gap-3">
           <button

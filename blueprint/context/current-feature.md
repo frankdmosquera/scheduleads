@@ -6,7 +6,7 @@
 
 **Status:** verified. Whole feature seen and agreed by Frank 2026-10-03;
 steps 7b.1 to 7b.5 built, tested and reviewed step by step; no P0 or P1 was
-ever open; decisions 10 to 13 made with Frank along the way. The checkpoint
+ever open; decisions 10 to 14 made with Frank along the way. The checkpoint
 for the final review.
 
 ## Goal
@@ -96,6 +96,14 @@ it. Nobody signs in: the link is still the key. This finishes feature 7.
     Change the time and Cancel, its move times read for its own service even
     when the service is switched off. Rejected: hiding the move and showing
     the phone, which treats an existing booking as if it were new.
+14. **Changing the time starts with her own person** (Frank, 2026-10-04,
+    from the final review, F-168). The Who choice opens on the person she is
+    booked with, still changeable to "Any available" or anyone else who
+    offers the service, and the confirm question names who she will be with
+    ("Move to Monday, October 12 at 2:00 p.m. with Mei?", or "with any
+    available person"). If her person no longer offers the service, it opens
+    on "Any available". Rejected: opening on "Any available", which could
+    hand her to another person on a tie without saying so.
 
 ## Out of scope
 
@@ -231,9 +239,10 @@ No package is planned. Installing one is a line only Frank crosses.
     "Change the time" opens the free times a week at a time (earlier and
     later weeks, never before today), grouped by day in the business's zone.
     Who comes first: "Any available" or a named person who offers the
-    service (decision 10), the week reloaded when it changes.
+    service (decision 10), opening on her own person (decision 14), the week
+    reloaded when it changes.
     Picking a time asks once more ("Move to Tuesday, October 13 at 10:00
-    a.m.?", "Keep the current time" focused first), locks while sending, and
+    a.m. with Mei?", "Keep the current time" focused first), locks while sending, and
     ends on "Your booking has moved" with the new time read out and focused.
   - States: no free times that week (said, with the next week a press away),
     a time taken meanwhile ("That time was just taken. Pick another." and the
