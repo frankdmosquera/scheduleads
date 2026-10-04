@@ -16,6 +16,7 @@ import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { addDays } from "../local-time/add-days.js";
 import { localDate } from "../local-time/local-date.js";
 import { applyFreeTimesRules } from "./apply-free-times-rules.js";
+import { crossOffSpan } from "./cross-off-span.js";
 import { findCommitments } from "./find-commitments.js";
 import { findServiceResources } from "./find-service-resources.js";
 import { findStandbyDates } from "./find-standby-dates.js";
@@ -33,6 +34,9 @@ export type FindFreeTimesInputType = {
   fromDate: string; // YYYY-MM-DD in the business's zone, included
   toDate: string; // YYYY-MM-DD in the business's zone, included
   now: Date;
+  // A booking being moved (feature 7b): its own held time is not busy, and its own event is
+  // crossed off its person's Google busy time (decision 11), so it never stands in its own way.
+  ignoreBooking?: { id: string; personId: string; startsAt: Date; endsAt: Date };
 };
 
 const DAY_MS = 86_400_000;
@@ -43,7 +47,7 @@ const MINUTE_MS = 60_000;
 // picked person's calendar cannot be read; with "any available" that person is left out instead,
 // unless no calendar could be read at all (decision 9): an empty week would read as fully booked.
 export async function findFreeTimes(input: FindFreeTimesInputType): Promise<FreeTimesType | null> {
-  const { organizationId, bookingLinkId, personId, now } = input;
+  const { organizationId, bookingLinkId, personId, now, ignoreBooking } = input;
 
   const [service] = await db
     .select({
@@ -106,7 +110,9 @@ export async function findFreeTimes(input: FindFreeTimesInputType): Promise<Free
   ]);
   const busyOf = (id: string): BusyBlockType[] =>
     commitments
-      .filter((row) => row.resourceId === id)
+      .filter(
+        (row) => row.resourceId === id && !(ignoreBooking && row.bookingId === ignoreBooking.id)
+      )
       .map((row) => ({ start: row.startsAt, end: row.endsAt }));
   const standbyOf = (id: string) =>
     standby.filter((row) => row.resourceId === id).map((row) => row.date);
@@ -126,6 +132,12 @@ export async function findFreeTimes(input: FindFreeTimesInputType): Promise<Free
     let googleBusy: BusyBlockType[];
     try {
       googleBusy = await getBusyTimes({ organizationId, resourceId: id, from, to });
+      if (ignoreBooking?.personId === id) {
+        googleBusy = crossOffSpan(googleBusy, {
+          start: ignoreBooking.startsAt,
+          end: ignoreBooking.endsAt,
+        });
+      }
     } catch (error) {
       // Never read as free: a picked person's times cannot be known, and with "any available"
       // the person is left out. Either way the reason is logged, so the answer can be explained.
