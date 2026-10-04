@@ -239,7 +239,7 @@ business uses the slug (painting-dev, clinic-dev, test-...-dev).
 change to `slug` (the slug is built from the name, never typed, per
 to-slug.ts), or drop `organization: ["update"]` from the roles until a
 settings screen needs it.
-**Resolution:**
+**Resolution:** Deferred by Frank, 2026-10-03: left for Settings (feature 12), where editing a business's details is designed; no screen reaches the route today. Stays open, carried forward.
 
 ### F-138 [P3] open - A booking whose service was switched off opens its page, but its move times answer "This link does not open a booking"
 

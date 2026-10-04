@@ -319,7 +319,8 @@ harness), with screenshots in the build log.
   booking's page open while its move times answer 404 (F-138), so 7b.2's
   `canMove` cannot simply equal `canCancel`; settle it in 7b.2's plan. An
   owner can still change their address through Better Auth's own
-  organization update (F-137), which the reserved slug does not cover.
+  organization update (F-137), which the reserved slug does not cover; Frank
+  left it for Settings, feature 12 (2026-10-03).
 - `bookTime` orders "any available" by the day's booking counts; a move's
   counts must leave out the booking being moved (7b.2).
 
