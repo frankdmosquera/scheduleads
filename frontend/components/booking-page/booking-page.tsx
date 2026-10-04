@@ -1,11 +1,12 @@
 // Frontend: the customer's booking page. Their booking under the business's name, logo and colour,
-// and a Cancel button that asks once more (feature 7a). Every state has its own plain words: not
-// found, already cancelled, already started, and a failure that keeps the button usable. Nothing
-// here names the product (decision 9) or shows the customer's own details (decision 3).
+// "Change the time" (feature 7b) and a Cancel button that asks once more (feature 7a). Every state
+// has its own plain words: not found, already cancelled, already started, moved, and a failure
+// that keeps the button usable. Nothing here names the product (decision 9) or shows the
+// customer's own details (decision 3).
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 import { textColorOn } from "@scheduleads-app/shared/text-color-on";
@@ -16,6 +17,8 @@ import {
   type BookingPageResultType,
   type BookingPageType,
 } from "@/lib/api-client";
+
+import { ChangeTimePanel, type CannotMoveType } from "./change-time-panel";
 
 // What the Cancel area is doing: showing the button, asking once more, or sending.
 type CancelStepType = "button" | "confirm" | "sending";
@@ -107,6 +110,8 @@ function BookingDetails({
   const [booking, setBooking] = useState(initial);
   const [step, setStep] = useState<CancelStepType>("button");
   const [problem, setProblem] = useState<string | null>(null);
+  const [changing, setChanging] = useState(false); // the "Change the time" panel is open
+  const [moved, setMoved] = useState(false);
   const resultHeading = useRef<HTMLHeadingElement>(null);
   const { business } = booking;
   // The business's own colour is data, not a class, so its buttons are styled inline; the text on
@@ -115,11 +120,33 @@ function BookingDetails({
   const onBrand = textColorOn(brand);
   const keepRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const changeRef = useRef<HTMLButtonElement>(null);
   const when = formatBookingTime(new Date(booking.startsAt), booking.timezone);
 
   useEffect(() => {
     document.title = `Your booking with ${business.name}`;
   }, [business.name]);
+
+  // Stable, so the panel does not ask for its times again each time this page draws.
+  const showMoved = useCallback((next: BookingPageType) => {
+    setBooking(next);
+    setChanging(false);
+    setMoved(true);
+    requestAnimationFrame(() => resultHeading.current?.focus()); // the heading has just changed
+  }, []);
+  const showCannotMove = useCallback((reason: CannotMoveType) => {
+    setBooking((current) =>
+      reason === "already-cancelled"
+        ? { ...current, status: "cancelled", canCancel: false, canMove: false }
+        : { ...current, canCancel: false, canMove: false }
+    );
+    setChanging(false);
+    requestAnimationFrame(() => resultHeading.current?.focus());
+  }, []);
+  const closeChangeTime = useCallback(() => {
+    setChanging(false);
+    requestAnimationFrame(() => changeRef.current?.focus()); // back where they were
+  }, []);
 
   async function cancel() {
     setStep("sending");
@@ -176,8 +203,15 @@ function BookingDetails({
           tabIndex={-1}
           className="text-xl font-semibold text-slate-900 outline-none"
         >
-          {cancelled ? "Your booking is cancelled" : "Your booking"}
+          {cancelled
+            ? "Your booking is cancelled"
+            : moved
+              ? "Your booking has moved"
+              : "Your booking"}
         </h1>
+        {moved && !cancelled ? (
+          <p className="mt-2 text-sm leading-6 text-slate-600">{`It's now ${when}.`}</p>
+        ) : null}
         {started ? (
           <p className="mt-2 text-sm leading-6 text-slate-600">
             This booking has already started.
@@ -192,8 +226,36 @@ function BookingDetails({
         <Detail label="With" value={booking.person} />
       </dl>
 
-      {!cancelled && !started ? (
+      {!cancelled && !started && changing ? (
         <div className="mt-6">
+          <ChangeTimePanel
+            token={token}
+            booking={booking}
+            brand={brand}
+            onBrand={onBrand}
+            onMoved={showMoved}
+            onCannotMove={showCannotMove}
+            onClose={closeChangeTime}
+          />
+        </div>
+      ) : null}
+
+      {!cancelled && !started && !changing ? (
+        <div className="mt-6 space-y-3">
+          {booking.canMove && step === "button" ? (
+            <button
+              type="button"
+              ref={changeRef}
+              onClick={() => {
+                setProblem(null);
+                setChanging(true);
+              }}
+              style={{ backgroundColor: brand, color: onBrand }}
+              className="w-full rounded-lg px-4 py-3 text-sm font-semibold"
+            >
+              Change the time
+            </button>
+          ) : null}
           {step === "button" ? (
             <button
               type="button"

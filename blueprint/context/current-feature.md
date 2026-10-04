@@ -221,10 +221,12 @@ No package is planned. Installing one is a line only Frank crosses.
     business's zone, no product name, the customer's text as text; the
     preview opened by hand, screenshots in the log.
 
-- [ ] **7b.5 Jane's page: change the time.**
+- [x] **7b.5 Jane's page: change the time.**
   - On `frontend/components/booking-page/booking-page.tsx`, beside Cancel:
     "Change the time" opens the free times a week at a time (earlier and
     later weeks, never before today), grouped by day in the business's zone.
+    Who comes first: "Any available" or a named person who offers the
+    service (decision 10), the week reloaded when it changes.
     Picking a time asks once more ("Move to Tuesday, October 13 at 10:00
     a.m.?", "Keep the current time" focused first), locks while sending, and
     ends on "Your booking has moved" with the new time read out and focused.
