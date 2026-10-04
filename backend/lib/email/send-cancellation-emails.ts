@@ -75,6 +75,7 @@ export async function sendCancellationEmails(
               customerName: context.customerName,
               customerEmail,
               stampedAt,
+              sequence: context.sequence + 1, // above the last move's invite (feature 7b)
               cancelled: true,
             }),
             contentType: "text/calendar; charset=utf-8; method=CANCEL",

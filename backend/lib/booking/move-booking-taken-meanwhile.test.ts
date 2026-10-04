@@ -37,6 +37,7 @@ const { moveBooking } = await import("./move-booking.js");
 const { bookingEventWrites } = await import("./booking-event-writes.js");
 const { bookingConfirmationEmails } = await import("./booking-confirmation-emails.js");
 const { bookingEventMoves } = await import("./booking-event-moves.js");
+const { bookingMoveEmails } = await import("./booking-move-emails.js");
 
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
@@ -47,6 +48,7 @@ afterAll(async () => {
   await bookingEventWrites.settled();
   await bookingConfirmationEmails.settled();
   await bookingEventMoves.settled();
+  await bookingMoveEmails.settled();
   await db.delete(organization).where(like(organization.slug, `test-move-meanwhile-%-${tag}`));
   await db.$client.end();
 });

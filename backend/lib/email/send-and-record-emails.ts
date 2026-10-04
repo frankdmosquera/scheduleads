@@ -10,6 +10,8 @@ import { sendEmail, type SendEmailInputType } from "./send-email.js";
 export type BookingEmailKindType =
   | "booking_confirmation"
   | "booking_notification"
+  | "booking_move"
+  | "booking_move_notification"
   | "booking_cancellation"
   | "booking_cancellation_notification";
 

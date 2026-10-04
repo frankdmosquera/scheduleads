@@ -35,6 +35,7 @@ const { bookTime } = await import("../lib/booking/book-time.js");
 const { bookingEventWrites } = await import("../lib/booking/booking-event-writes.js");
 const { bookingConfirmationEmails } = await import("../lib/booking/booking-confirmation-emails.js");
 const { bookingEventMoves } = await import("../lib/booking/booking-event-moves.js");
+const { bookingMoveEmails } = await import("../lib/booking/booking-move-emails.js");
 const { makeBookingPageToken } = await import("../lib/booking/booking-page-token.js");
 const { addDays } = await import("../lib/local-time/add-days.js");
 const { localDate } = await import("../lib/local-time/local-date.js");
@@ -172,6 +173,7 @@ beforeAll(() => {
 
 afterAll(async () => {
   await bookingEventMoves.settled(); // no Google work outlives the database
+  await bookingMoveEmails.settled();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   await db.delete(organization).where(like(organization.slug, `test-moving-%-${tag}-dev`));

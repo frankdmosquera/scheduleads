@@ -7,6 +7,8 @@ import { renderBookingConfirmation } from "./booking-confirmation.js";
 import { renderBookingNotification } from "./booking-notification.js";
 import { renderBookingCancelled } from "./booking-cancelled.js";
 import { renderBookingCancelledNotification } from "./booking-cancelled-notification.js";
+import { renderBookingMoved } from "./booking-moved.js";
+import { renderBookingMovedNotification } from "./booking-moved-notification.js";
 
 const facts: BookingEmailFactsType = {
   business: {
@@ -296,5 +298,107 @@ describe("the business's cancellation notice", () => {
     expect(`${email.subject}\n${email.html}\n${email.text}`).not.toMatch(productName);
     expect(email.html).not.toContain("<script");
     expect(email.html).toContain("&lt;script&gt;");
+  });
+});
+
+// The day before at 3:30 p.m. in Edmonton, moved to the sample's Thursday at 9:00.
+const movedFrom = new Date("2026-10-07T21:30:00Z");
+
+describe("the customer's word that the booking moved", () => {
+  test("its subject names the business and the new time, in the business's zone", async () => {
+    const email = await renderBookingMoved(facts, movedFrom, bookingPage);
+
+    expect(email.subject).toBe(
+      "Your booking with Primo Painters has moved: Thursday, October 8 at 9:00 a.m. MDT"
+    );
+    expect((await renderBookingMoved(torontoFacts, movedFrom, bookingPage)).subject).toContain(
+      "11:00 a.m. EDT"
+    );
+  });
+
+  test("says the new time and the old one, with the business's phone and the booking's own page", async () => {
+    const { html, text } = await renderBookingMoved(facts, movedFrom, bookingPage);
+
+    for (const fact of [
+      "Your booking has moved",
+      "Exterior painting estimate",
+      "Thursday, October 8 at 9:00 a.m. MDT",
+      "Wednesday, October 7 at 3:30 p.m. MDT",
+      "Marco",
+      "12 Main Street, Calgary",
+      "(403) 555-0100",
+    ]) {
+      expect(html).toContain(fact);
+      expect(text.toLowerCase()).toContain(fact.toLowerCase()); // plain text writes headings in capitals
+    }
+    expect(html).toContain('href="tel:4035550100"');
+    expect(html).toContain(`href="${bookingPage}"`);
+    expect(text).toContain(bookingPage);
+    expect(html).toContain("background-color:#1d4ed8"); // the button in the business's colour
+  });
+});
+
+describe("the business's notice that a booking moved", () => {
+  test("its subject is the service and the new time, in the business's zone", async () => {
+    const email = await renderBookingMovedNotification(facts, movedFrom);
+
+    expect(email.subject).toBe(
+      "Moved: Exterior painting estimate, Thursday, October 8 at 9:00 a.m. MDT"
+    );
+    expect((await renderBookingMovedNotification(torontoFacts, movedFrom)).subject).toContain(
+      "11:00 a.m. EDT"
+    );
+  });
+
+  test("names who moved it and from when, with tel: and mailto: links", async () => {
+    const { html, text } = await renderBookingMovedNotification(facts, movedFrom);
+
+    for (const fact of [
+      "Booking moved",
+      "Wednesday, October 7 at 3:30 p.m. MDT",
+      "Jane Doe",
+      "jane@example.com",
+      "(403) 555-0148",
+      "12 Main Street, Calgary",
+      "Marco",
+      "The old time is free again",
+    ]) {
+      expect(html).toContain(fact);
+      expect(text.toLowerCase()).toContain(fact.toLowerCase());
+    }
+    expect(html.split('href="tel:4035550148"')).toHaveLength(3); // the phone line and the button
+    expect(html).toContain('href="mailto:jane@example.com"');
+    expect(html).toContain("Replying goes straight to Jane Doe");
+  });
+
+  test("a phone-only booking has no email line and no word about replying", async () => {
+    const phoneOnly = { ...facts, customer: { ...facts.customer, email: null } };
+    const { html } = await renderBookingMovedNotification(phoneOnly, movedFrom);
+
+    expect(html).not.toContain("mailto:");
+    expect(html).not.toContain("Replying goes straight");
+  });
+});
+
+describe("both move emails", () => {
+  test("the templates show the time in the business's zone, no product name, the customer's text as text", async () => {
+    const toronto = [
+      await renderBookingMoved(torontoFacts, movedFrom, bookingPage),
+      await renderBookingMovedNotification(torontoFacts, movedFrom),
+    ];
+    for (const email of toronto) {
+      expect(email.html).toContain("Thursday, October 8 at 11:00 a.m. EDT"); // the new time
+      expect(email.html).toContain("Wednesday, October 7 at 5:30 p.m. EDT"); // the old one
+    }
+
+    const typed = [
+      await renderBookingMoved(scriptFacts, movedFrom, bookingPage),
+      await renderBookingMovedNotification(scriptFacts, movedFrom),
+    ];
+    for (const email of typed) {
+      expect(`${email.subject}\n${email.html}\n${email.text}`).not.toMatch(productName);
+      expect(email.html).not.toContain("<script");
+      expect(email.html).toContain("&lt;script&gt;");
+    }
   });
 });

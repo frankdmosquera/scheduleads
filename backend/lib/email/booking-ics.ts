@@ -1,6 +1,7 @@
 // Backend: one booking as the text of a calendar invite (RFC 5545), attached to the customer's
-// confirmation as invite.ics, and in its cancelling form to their cancellation, so their calendar
-// removes the event (feature 7a, decision 8). Pure: no database, no clock.
+// confirmation as invite.ics, again to the word that it moved, so their calendar moves the event
+// (feature 7b), and in its cancelling form to their cancellation, so their calendar removes it
+// (feature 7a, decision 8). Pure: no database, no clock.
 
 export type BookingIcsInputType = {
   bookingId: string;
@@ -13,6 +14,7 @@ export type BookingIcsInputType = {
   customerName: string;
   customerEmail: string;
   stampedAt: Date; // when the invite is written (DTSTAMP)
+  sequence: number; // above every invite for this booking sent before (feature 7b, decision 6)
   cancelled?: boolean; // the cancelling form: withdraws the event it once sent
 };
 
@@ -28,10 +30,10 @@ export function bookingIcs(input: BookingIcsInputType): string {
     input.cancelled ? "METHOD:CANCEL" : "METHOD:REQUEST",
     "BEGIN:VEVENT",
     // The booking's own id, a random UUID, and never the sender's domain, which the owner can
-    // change: the same every time, so feature 7 moves this event instead of adding a second.
+    // change: the same every time, so a move updates this event instead of adding a second.
     `UID:${input.bookingId}`,
     // A change must carry a higher number than the invite it changes, or calendars ignore it.
-    input.cancelled ? "SEQUENCE:1" : "SEQUENCE:0",
+    `SEQUENCE:${input.sequence}`,
     `DTSTAMP:${utcStamp(input.stampedAt)}`,
     `DTSTART:${utcStamp(input.startsAt)}`, // UTC: each calendar shows its reader's own zone
     `DTEND:${utcStamp(input.endsAt)}`,

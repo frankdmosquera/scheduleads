@@ -197,7 +197,7 @@ No package is planned. Installing one is a line only Frank crosses.
     press to the same time makes no call; the move's answer does not wait for
     Google.
 
-- [ ] **7b.4 Both are told.**
+- [x] **7b.4 Both are told.**
   - `bookingIcs` takes `sequence`: the moved invite is `METHOD:REQUEST`, the
     same UID, the new times and the booking's `sequence`; the cancelling
     invite carries `sequence + 1` instead of a fixed 1 (decision 6). Stamped

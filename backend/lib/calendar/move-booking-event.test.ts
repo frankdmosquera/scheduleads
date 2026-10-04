@@ -34,6 +34,7 @@ const { moveBooking } = await import("../booking/move-booking.js");
 const { cancelBooking } = await import("../booking/cancel-booking.js");
 const { bookingEventWrites } = await import("../booking/booking-event-writes.js");
 const { bookingEventMoves } = await import("../booking/booking-event-moves.js");
+const { bookingMoveEmails } = await import("../booking/booking-move-emails.js");
 const { bookingEventRemovals } = await import("../booking/booking-event-removals.js");
 const { bookingConfirmationEmails } = await import("../booking/booking-confirmation-emails.js");
 const { bookingCancellationEmails } = await import("../booking/booking-cancellation-emails.js");
@@ -90,6 +91,7 @@ afterAll(async () => {
   await bookingEventRemovals.settled();
   await bookingConfirmationEmails.settled();
   await bookingCancellationEmails.settled();
+  await bookingMoveEmails.settled();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   await db.delete(organization).where(like(organization.slug, `test-event-move-%-${tag}`));

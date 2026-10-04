@@ -1,4 +1,4 @@
-// Backend: writes the booking emails, made and cancelled, filled with a sample booking, to
+// Backend: writes the booking emails, made, moved and cancelled, filled with a sample booking, to
 // .email-preview/ to open in a browser. Nothing is sent. Run: npm run email:preview --workspace=backend
 
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -7,6 +7,8 @@ import { renderBookingCancelled } from "../emails/booking-cancelled.js";
 import { renderBookingCancelledNotification } from "../emails/booking-cancelled-notification.js";
 import { renderBookingConfirmation } from "../emails/booking-confirmation.js";
 import type { BookingEmailFactsType } from "../emails/booking-email-facts-type.js";
+import { renderBookingMoved } from "../emails/booking-moved.js";
+import { renderBookingMovedNotification } from "../emails/booking-moved-notification.js";
 import { renderBookingNotification } from "../emails/booking-notification.js";
 
 const sampleFacts: BookingEmailFactsType = {
@@ -34,6 +36,9 @@ const sampleFacts: BookingEmailFactsType = {
 // A link of the right shape; the preview opens nothing.
 const sampleBookingPageUrl = "http://localhost:3400/b/00000000-0000-4000-8000-000000000000.sample";
 
+// A move from the day before to the sample time.
+const sampleMovedFrom = new Date("2026-10-07T21:30:00Z"); // 3:30 p.m. in Edmonton
+
 const folder = new URL("../.email-preview/", import.meta.url);
 mkdirSync(folder, { recursive: true });
 for (const [name, render] of [
@@ -42,6 +47,15 @@ for (const [name, render] of [
     (facts: BookingEmailFactsType) => renderBookingConfirmation(facts, sampleBookingPageUrl),
   ],
   ["booking-notification", renderBookingNotification],
+  [
+    "booking-moved",
+    (facts: BookingEmailFactsType) =>
+      renderBookingMoved(facts, sampleMovedFrom, sampleBookingPageUrl),
+  ],
+  [
+    "booking-moved-notification",
+    (facts: BookingEmailFactsType) => renderBookingMovedNotification(facts, sampleMovedFrom),
+  ],
   ["booking-cancelled", renderBookingCancelled],
   ["booking-cancelled-notification", renderBookingCancelledNotification],
 ] as const) {

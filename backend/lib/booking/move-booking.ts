@@ -4,7 +4,8 @@
 // the way. Then one transaction, the booking row locked: the old held time released, the new held,
 // the booking's times, person, room and invite number saved, and a booking_moved entry, or nothing
 // changes. Until the appointment starts (decision 12). The same start again is one move (decision 4).
-// Once saved, the booked person's Google event starts following it, without the answer waiting.
+// Once saved, the booked person's Google event starts following it and both sides are told, without
+// the answer waiting.
 
 import { and, eq } from "drizzle-orm";
 
@@ -27,6 +28,7 @@ import { isRoomFree } from "../scheduling/is-room-free.js";
 import { orderAnyAvailable } from "../scheduling/order-any-available.js";
 import { releaseTime } from "../scheduling/release-time.js";
 import { bookingEventMoves } from "./booking-event-moves.js";
+import { bookingMoveEmails } from "./booking-move-emails.js";
 import { holdFirstFreeChoice } from "./hold-first-free-choice.js";
 
 export type MoveBookingResultType =
@@ -177,9 +179,10 @@ export async function moveBooking(input: {
   }));
   const choices = orderAnyAvailable(people, freeRooms);
 
-  // Who held the booking before, once this call moved it. Typed by a cast, not by the declaration,
-  // so TypeScript does not narrow it to null and stop checking its use after the transaction.
-  let movedFrom = null as string | null;
+  // Who held the booking before and the move's number, once this call moved it. Typed by a cast,
+  // not by the declaration, so TypeScript does not narrow it to null and stop checking its use
+  // after the transaction.
+  let saved = null as { fromPersonId: string; sequence: number } | null;
   let result: MoveBookingResultType;
   try {
     result = await db.transaction(async (tx) => {
@@ -247,7 +250,7 @@ export async function moveBooking(input: {
         },
         tx
       );
-      movedFrom = row.personId;
+      saved = { fromPersonId: row.personId, sequence };
       return { moved: true, unchanged: false } as const;
     });
   } catch (error) {
@@ -255,7 +258,11 @@ export async function moveBooking(input: {
     // Never the database's own error: its message carries the query.
     throw new Error(`Moving a booking failed: ${safeErrorReason(error)}`);
   }
-  // Saved. Only a move that changed something moves the event, so a second press never does.
-  if (movedFrom) bookingEventMoves.start(organizationId, bookingId, movedFrom);
+  // Saved. Only a move that changed something moves the event and tells both sides, so a second
+  // press never does.
+  if (saved) {
+    bookingEventMoves.start(organizationId, bookingId, saved.fromPersonId);
+    bookingMoveEmails.start(organizationId, bookingId, saved.sequence);
+  }
   return result;
 }

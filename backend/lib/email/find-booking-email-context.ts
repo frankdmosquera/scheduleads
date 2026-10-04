@@ -1,7 +1,7 @@
 // Backend: everything a booking's emails need, read inside its own business: the booking, the
 // customer, the facts the templates show, and the business's sending setup, or what it still
-// lacks (feature 6, decision 4: no sender, no email). The confirmation and the cancellation both
-// read it here.
+// lacks (feature 6, decision 4: no sender, no email). The confirmation, the move and the
+// cancellation all read it here.
 
 import { and, eq } from "drizzle-orm";
 
@@ -27,6 +27,7 @@ export type BookingEmailContextType = {
   status: string;
   createdAt: Date;
   endsAt: Date; // the appointment itself, not its buffers
+  sequence: number; // the invite number: 0 when made, one more each move
   contactId: string;
   source: string; // the lead's: "widget", "hosted" or "manual"
   customerName: string;
@@ -45,6 +46,7 @@ export async function findBookingEmailContext(
       createdAt: booking.createdAt,
       startsAt: booking.startsAt,
       endsAt: booking.endsAt,
+      sequence: booking.sequence,
       location: booking.location,
       service: bookingLink.name,
       personName: resource.name,
@@ -87,6 +89,7 @@ export async function findBookingEmailContext(
     status: row.status,
     createdAt: row.createdAt,
     endsAt: row.endsAt,
+    sequence: row.sequence,
     contactId: row.contactId,
     source: row.source,
     customerName: row.customerName,
