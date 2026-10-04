@@ -606,4 +606,4 @@ on top of all six.
 **Suggested fix:** One small helper that takes the work and the log line
 and returns `{ start, settled }`, with one shared "all background work
 settled" for tests; keep the six named exports as thin uses of it.
-**Resolution:**
+**Resolution:** Carried to feature 8 on Frank's call, 2026-10-04: its job runner replaces all six trackers, so a shared helper now would be thrown away. Noted in the spec's Notes for the AI. Stays open until then.

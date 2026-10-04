@@ -332,6 +332,11 @@ harness), with screenshots in the build log.
   must carry the first person and the event id it is removing; a single
   column on the booking would only half-solve it. F-153 (unverified): a
   PATCH of an event deleted by hand in Google may answer 200.
+- From step 7b.4's review, for feature 8 (F-156): six modules repeat the same
+  start-and-settle background tracker (event writes, moves, removals, and the
+  confirmation, move and cancellation emails), and every test file awaits
+  each one by hand. Feature 8's job runner replaces them; nothing shared is
+  built before it.
 - A confirmation retried by feature 8 after a move would carry the new times
   under the confirmation's old key, which Resend refuses: feature 8 decides
   (a note, not this feature's work).
