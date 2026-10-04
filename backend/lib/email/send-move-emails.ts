@@ -12,6 +12,7 @@ import { db } from "../../database.js";
 import { renderBookingMoved } from "../../emails/booking-moved.js";
 import { renderBookingMovedNotification } from "../../emails/booking-moved-notification.js";
 import { bookingPageUrl } from "../booking/booking-page-url.js";
+import { findResourceNames } from "../scheduling/find-resource-names.js";
 import { bookingIcs } from "./booking-ics.js";
 import { findBookingEmailContext } from "./find-booking-email-context.js";
 import { logNothingSent } from "./log-nothing-sent.js";
@@ -37,8 +38,8 @@ export async function sendMoveEmails(
   }
   const { facts, apiKey, from } = setup;
 
-  // The move itself, from its own timeline entry: its times, even after a later move, and its
-  // moment, so a retry sends the very same invite and Resend accepts the key again.
+  // The move itself, from its own timeline entry: its times and person, even after a later move,
+  // and its moment, so a retry sends the very same email and Resend accepts the key again.
   const [moved] = await db
     .select({ occurredAt: activity.occurredAt, payload: activity.payload })
     .from(activity)
@@ -54,9 +55,10 @@ export async function sendMoveEmails(
     .orderBy(asc(activity.occurredAt))
     .limit(1);
   if (!moved) throw new Error(`Sending a move's emails failed: no move ${sequence} was saved.`);
-  const { fromStartsAt, toStartsAt } = moved.payload as {
+  const { fromStartsAt, toStartsAt, toPersonId } = moved.payload as {
     fromStartsAt: string;
     toStartsAt: string;
+    toPersonId: string;
   };
   const startsAt = new Date(toStartsAt);
   const movedFrom = new Date(fromStartsAt);
@@ -64,7 +66,10 @@ export async function sendMoveEmails(
   const endsAt = new Date(
     startsAt.getTime() + (context.endsAt.getTime() - facts.startsAt.getTime())
   );
-  const movedFacts = { ...facts, startsAt };
+  const [person] = await findResourceNames(organizationId, [toPersonId]);
+  if (!person)
+    throw new Error(`Sending a move's emails failed: move ${sequence}'s person is gone.`);
+  const movedFacts = { ...facts, startsAt, personName: person.name };
 
   const emails: BookingEmailToSendType[] = [];
   const customerEmail = context.customerEmail;

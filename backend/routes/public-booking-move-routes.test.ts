@@ -210,6 +210,8 @@ describe("moving a booking", () => {
           bookingId: clinic.janesBooking,
           fromStartsAt: at(9),
           toStartsAt: at(11),
+          fromPersonId: clinic.ana,
+          toPersonId: clinic.ana,
           sequence: 1,
         },
         actorUserId: null,

@@ -63,8 +63,11 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 // A painting business of its own: Marco does interior estimates (60 minutes), Mondays 9 to 12. Set
-// up to send unless a test leaves the key out.
-async function makeBusiness(name: string, { key = true }: { key?: boolean } = {}) {
+// up to send unless a test leaves the key out. With ana, Ana does them too.
+async function makeBusiness(
+  name: string,
+  { key = true, ana = false }: { key?: boolean; ana?: boolean } = {}
+) {
   const id = () => randomUUID();
   const business = id();
   await db.insert(organization).values({
@@ -109,7 +112,16 @@ async function makeBusiness(name: string, { key = true }: { key?: boolean } = {}
   await db
     .insert(bookingLinkResource)
     .values({ organizationId: business, bookingLinkId: estimate, resourceId: marco });
-  return { business, marco, estimate };
+  const anaId = id();
+  if (ana) {
+    await db
+      .insert(resource)
+      .values({ id: anaId, organizationId: business, name: "Ana", kind: "person" });
+    await db
+      .insert(bookingLinkResource)
+      .values({ organizationId: business, bookingLinkId: estimate, resourceId: anaId });
+  }
+  return { business, marco, ana: anaId, estimate };
 }
 
 type BusinessType = Awaited<ReturnType<typeof makeBusiness>>;
@@ -147,10 +159,11 @@ const book = async (
   return result.booking.id;
 };
 
-// Moved, then the emails waited for. Only the move's own emails are kept in calls.
-const move = async (bookingId: string, startsAt: Date) => {
+// Moved (any available unless a person is named), then the emails waited for. Only the move's own
+// emails are kept in calls.
+const move = async (bookingId: string, startsAt: Date, personId: string | null = null) => {
   calls.length = 0;
-  const result = await moveBooking({ bookingId, startsAt, personId: null, now: NOW });
+  const result = await moveBooking({ bookingId, startsAt, personId, now: NOW });
   await settled();
   return result;
 };
@@ -388,6 +401,22 @@ describe("a moved booking's emails", () => {
     expect(lines).toContain("DTEND:20261005T170000Z");
     expect(calls[0].headers.get("Idempotency-Key")).toBe(`booking-moved/${bookingId}/1`);
     for (const call of calls) expect(String(call.body.subject)).toContain("10:00 a.m."); // not eleven
+  });
+
+  test("an earlier move's emails, sent after a later move to another person, name that move's person", async () => {
+    const business = await makeBusiness("earlier-person", { ana: true });
+    const bookingId = await book(business);
+    await move(bookingId, TEN, business.ana); // booked with Marco, moved to Ana
+    await move(bookingId, ELEVEN, business.marco); // and back to Marco
+    calls.length = 0;
+
+    await sendMoveEmails(business.business, bookingId, 1);
+
+    expect(calls).toHaveLength(2);
+    for (const call of calls) {
+      expect(String(call.body.html)).toContain(">Ana<"); // the With line
+      expect(String(call.body.html)).not.toContain(">Marco<");
+    }
   });
 
   test("the move's answer does not wait for the emails", async () => {

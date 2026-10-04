@@ -245,6 +245,8 @@ export async function moveBooking(input: {
             bookingId,
             fromStartsAt: row.startsAt.toISOString(),
             toStartsAt: startsAt.toISOString(),
+            fromPersonId: row.personId,
+            toPersonId: chosen.personId, // the move's emails name this person, even sent late
             sequence,
           },
         },

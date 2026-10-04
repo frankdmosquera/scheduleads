@@ -551,7 +551,7 @@ hand, then PATCH it). If it answers 200, read `status` from the answer and
 treat "cancelled" as not there, and cite what was observed beside the line.
 **Resolution:**
 
-### F-154 [P3] open - An earlier move's emails, built after a later move to another person, name the later person in "With"
+### F-154 [P3] fixed - An earlier move's emails, built after a later move to another person, name the later person in "With"
 
 **File:** backend/lib/email/send-move-emails.ts:67 (backend/lib/email/find-booking-email-context.ts:52,128; backend/emails/booking-moved.tsx:84; backend/emails/booking-moved-notification.tsx:76; backend/lib/booking/move-booking.ts:244-249)
 **Found:** 2026-10-04 by independent review of step 7b.4 (scope: b56d43a..1524a1b; lenses: quality, security, performance, tests)
@@ -573,7 +573,7 @@ blocking now.
 emails, so every fact in a move's email comes from the move itself; or
 record it as a note for feature 8 beside the confirmation note already in
 the spec.
-**Resolution:**
+**Resolution:** Fixed 2026-10-04 on Frank's yes: the booking_moved entry saves fromPersonId and toPersonId, and the move's emails name toPersonId's person; a test moves Marco to Ana then back to Marco and sends move 1's emails late, which name Ana. Reading the person from the booking row, or saving the old person as the new, each fail it.
 
 ### F-155 [P3] fixed - The confirmation's invite number 0 is untested, so it can equal the first move's with every test green
 

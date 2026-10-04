@@ -289,7 +289,9 @@ not a time, a body that is not JSON); 413 for a body over 1 KB; 404
 **booking** gains `sequence integer not null default 0`.
 
 **The timeline entry**: `type: "booking_moved"`, payload
-`{ bookingId, fromStartsAt, toStartsAt, sequence }` (ISO instants),
+`{ bookingId, fromStartsAt, toStartsAt, fromPersonId, toPersonId, sequence }`
+(ISO instants; the people since 7b.4's review, F-154, so a move's emails name
+that move's person even when sent after a later move),
 `actorUserId` null (the customer did it).
 
 **The moved invite**: `invite.ics`, `text/calendar; charset=utf-8;

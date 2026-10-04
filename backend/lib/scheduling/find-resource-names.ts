@@ -1,5 +1,6 @@
 // Backend: the names of some people or places of one business, sorted by name then id, so two
-// runs always list them alike. Used by booking a time and moving a booking to order their choices.
+// runs always list them alike. Used by booking a time and moving a booking to order their choices,
+// and by a move's emails to name the move's own person.
 
 import { and, asc, eq, inArray } from "drizzle-orm";
 
