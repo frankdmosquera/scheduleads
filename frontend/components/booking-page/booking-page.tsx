@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 import { textColorOn } from "@scheduleads-app/shared/text-color-on";
+import { telHref } from "@scheduleads-app/shared/tel-href";
 
 import {
   cancelBookingPage,
@@ -22,8 +23,6 @@ import { ChangeTimePanel, type CannotMoveType } from "./change-time-panel";
 
 // What the Cancel area is doing: showing the button, asking once more, or sending.
 type CancelStepType = "button" | "confirm" | "sending";
-
-const telHref = (phone: string) => `tel:${phone.replace(/[^\d+]/g, "")}`;
 
 export function BookingPage({ token }: { token: string }) {
   const [result, setResult] = useState<BookingPageResultType | null>(null);

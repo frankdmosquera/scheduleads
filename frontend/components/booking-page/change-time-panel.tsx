@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
+import { telHref } from "@scheduleads-app/shared/tel-href";
 
 import {
   fetchBookingMoveTimes,
@@ -226,7 +227,7 @@ export function ChangeTimePanel({
   const days = byDay(startTimes, timezone);
   const count = startTimes.length;
   const week = weekName(from, to);
-  // The week holding the business's last bookable date: nothing later can be booked (F-159).
+  // The week holding the business's last bookable date: nothing later can be booked.
   const isLastWeek = lastDate !== null && to >= lastDate;
   const booksUpTo = lastDate
     ? `${booking.business.name} takes bookings up to ${dayName(lastDate)}.`
@@ -389,7 +390,7 @@ export function ChangeTimePanel({
             <>
               {" To book later, call "}
               <a
-                href={`tel:${booking.business.phone.replace(/[^d+]/g, "")}`}
+                href={telHref(booking.business.phone)}
                 className="font-medium text-slate-900 underline"
               >
                 {booking.business.phone}

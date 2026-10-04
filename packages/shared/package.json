@@ -28,6 +28,10 @@
       "types": "./dist/helpers/text-color-on.d.ts",
       "default": "./dist/helpers/text-color-on.js"
     },
+    "./tel-href": {
+      "types": "./dist/helpers/tel-href.d.ts",
+      "default": "./dist/helpers/tel-href.js"
+    },
     "./assert-local-dev-database": {
       "types": "./dist/helpers/assert-local-dev-database.d.ts",
       "default": "./dist/helpers/assert-local-dev-database.js"

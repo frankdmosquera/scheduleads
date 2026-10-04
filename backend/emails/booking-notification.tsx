@@ -6,6 +6,7 @@ import { Fragment } from "react";
 import { Heading, Hr, Link, render, Text } from "@react-email/components";
 
 import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
+import { telHref } from "@scheduleads-app/shared/tel-href";
 
 import type { BookingEmailFactsType } from "./booking-email-facts-type.js";
 import { EmailButton } from "./email-button.js";
@@ -13,7 +14,6 @@ import { emailColors } from "./email-colors.js";
 import { EmailField } from "./email-field.js";
 import { EmailLayout } from "./email-layout.js";
 import type { RenderedEmailType } from "./rendered-email-type.js";
-import { telHref } from "./tel-href.js";
 
 export async function renderBookingNotification(
   facts: BookingEmailFactsType

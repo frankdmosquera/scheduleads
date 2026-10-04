@@ -25,7 +25,7 @@ export type BookingPageType = {
   endsAt: string; // the appointment's own end, without the buffer after
   timezone: string; // the business's IANA zone
   person: string; // the booked person's name
-  personId: string; // so the page can tell her own time from another person's (7b.5's review, F-160)
+  personId: string; // so the page can tell her own time from another person's
   business: {
     name: string;
     logo: string | null; // an absolute https:// image URL

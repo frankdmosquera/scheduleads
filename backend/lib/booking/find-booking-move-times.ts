@@ -14,7 +14,7 @@ import { localDate } from "../local-time/local-date.js";
 import { findFreeTimes, type FreeTimesType } from "../scheduling/find-free-times.js";
 
 // The booking form's answer, plus the last date the business takes bookings, so the page stops
-// offering later weeks there (7b.5's review, F-159).
+// offering later weeks there.
 export type BookingMoveTimesType = FreeTimesType & { lastDate: string }; // YYYY-MM-DD, its zone
 
 export type BookingMoveTimesResultType =
