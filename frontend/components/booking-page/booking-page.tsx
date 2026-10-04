@@ -121,6 +121,7 @@ function BookingDetails({
   const keepRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const changeRef = useRef<HTMLButtonElement>(null);
+  const yesCancelRef = useRef<HTMLButtonElement>(null);
   const when = formatBookingTime(new Date(booking.startsAt), booking.timezone);
 
   useEffect(() => {
@@ -165,6 +166,7 @@ function BookingDetails({
       return;
     }
     setStep("confirm"); // the button stays usable: pressing again is safe
+    requestAnimationFrame(() => yesCancelRef.current?.focus()); // it was locked while sending
     setProblem(
       answer.state === "not-found"
         ? "This link no longer opens a booking. Please call the business."
@@ -275,6 +277,7 @@ function BookingDetails({
               </p>
               <div className="mt-3 flex gap-3">
                 <button
+                  ref={yesCancelRef}
                   type="button"
                   onClick={cancel}
                   disabled={step === "sending"}

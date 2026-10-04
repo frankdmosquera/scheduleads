@@ -286,7 +286,9 @@ not a time, a body that is not JSON); 413 for a body over 1 KB; 404
 `not_found`; 409 `time_taken`, `already_started` or `already_cancelled`; 503
 `unavailable` when a calendar cannot be read. Safe to repeat.
 
-**The page's view** gains `canMove: boolean` (confirmed and not started).
+**The page's view** gains `canMove: boolean` (confirmed and not started) and
+`personId: string` (the booked person, so the page tells her own time from
+another person's; 7b.5's review, F-160).
 
 **booking** gains `sequence integer not null default 0`.
 

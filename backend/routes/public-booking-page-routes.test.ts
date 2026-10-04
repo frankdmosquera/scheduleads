@@ -172,6 +172,7 @@ describe("the customer's booking page", () => {
         endsAt: new Date(primo.startsAt.getTime() + 60 * 60_000).toISOString(),
         timezone: "America/Edmonton",
         person: "Marco",
+        personId: primo.marco,
         business: {
           name: "Primo Painters",
           logo: "https://ik.imagekit.io/primo/logo.png",

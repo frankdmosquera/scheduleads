@@ -19,14 +19,18 @@ import {
 
 const DAY_MS = 86_400_000;
 
-// A moment's calendar date in a zone, as YYYY-MM-DD (en-CA writes dates that way).
-const dateIn = (moment: Date, timeZone: string) =>
-  new Intl.DateTimeFormat("en-CA", {
+// A moment's calendar date in a zone, as YYYY-MM-DD, built from its parts so no locale's own
+// date order can change it.
+function dateIn(moment: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(moment);
+  }).formatToParts(moment);
+  const part = (type: string) => parts.find((each) => each.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
 
 const addDays = (date: string, days: number) =>
   new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
@@ -40,11 +44,15 @@ const dayName = (date: string) =>
     day: "numeric",
   }).format(new Date(`${date}T12:00:00Z`));
 
-// "Oct 4", short enough for the week bar on a phone.
-const shortDayName = (date: string) =>
-  new Intl.DateTimeFormat("en-CA", { timeZone: "UTC", month: "short", day: "numeric" }).format(
-    new Date(`${date}T12:00:00Z`)
-  );
+// "Oct 4 to 10", or "Sep 28 to Oct 4" across two months: short enough for a phone at 320px.
+function weekName(from: string, to: string): string {
+  const named = (date: string, options: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat("en-CA", { timeZone: "UTC", ...options }).format(
+      new Date(`${date}T12:00:00Z`)
+    );
+  const sameMonth = from.slice(0, 7) === to.slice(0, 7);
+  return `${named(from, { month: "short", day: "numeric" })} to ${named(to, sameMonth ? { day: "numeric" } : { month: "short", day: "numeric" })}`;
+}
 
 const timeOfDay = (moment: Date, timeZone: string) =>
   new Intl.DateTimeFormat("en-CA", { timeZone, hour: "numeric", minute: "2-digit" }).format(moment);
@@ -89,6 +97,8 @@ export function ChangeTimePanel({
   const [problem, setProblem] = useState<string | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const keepRef = useRef<HTMLButtonElement>(null);
+  const yesRef = useRef<HTMLButtonElement>(null);
+  const laterRef = useRef<HTMLButtonElement>(null);
 
   // Today in the business's zone, read once: the week never starts before it.
   const [today] = useState(() => dateIn(new Date(), timezone));
@@ -147,7 +157,9 @@ export function ChangeTimePanel({
       requestAnimationFrame(() => heading.current?.focus());
       return;
     }
-    // The question stays: pressing again is safe.
+    // The question stays: pressing again is safe. Its button was locked while sending, so focus
+    // goes back to it.
+    requestAnimationFrame(() => yesRef.current?.focus());
     setProblem(
       answer.state === "not-found"
         ? "This link no longer opens a booking. Please call the business."
@@ -166,6 +178,7 @@ export function ChangeTimePanel({
         </p>
         <div className="mt-3 flex gap-3">
           <button
+            ref={yesRef}
             type="button"
             onClick={move}
             disabled={sending}
@@ -197,9 +210,8 @@ export function ChangeTimePanel({
     );
   }
 
-  // Her own time is not a move unless another person is picked: the page knows its person by name.
-  const pickedName = people.find((person) => person.id === personId)?.name;
-  const keepsPerson = personId === null || pickedName === booking.person;
+  // Her own time is not a move unless another person is picked (decision 4 answers it unchanged).
+  const keepsPerson = personId === null || personId === booking.personId;
   const startTimes =
     result?.state === "ok"
       ? result.times.startTimes.filter(
@@ -208,6 +220,15 @@ export function ChangeTimePanel({
       : [];
   const days = byDay(startTimes, timezone);
   const count = startTimes.length;
+  const week = weekName(from, to);
+  // One live region, always there, so every new week or person is read out.
+  const announcement = !result
+    ? "Finding free times…"
+    : result.state !== "ok"
+      ? ""
+      : count === 0
+        ? `${week}: no free times.`
+        : `${week}: ${count} free ${count === 1 ? "time" : "times"}.`;
 
   return (
     <section aria-labelledby="change-time-heading">
@@ -246,22 +267,23 @@ export function ChangeTimePanel({
           onClick={() => {
             askAgain();
             setWeekOffset((n) => n - 1);
+            // The first week turns this button off, so focus moves on to Later.
+            if (weekOffset === 1) laterRef.current?.focus();
           }}
           disabled={weekOffset === 0}
-          className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-40"
+          className="whitespace-nowrap rounded-lg px-2 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-40"
         >
           ‹ Earlier
         </button>
-        <p className="whitespace-nowrap text-sm font-medium text-slate-900">
-          {`${shortDayName(from)} to ${shortDayName(to)}`}
-        </p>
+        <p className="whitespace-nowrap text-sm font-medium text-slate-900">{week}</p>
         <button
+          ref={laterRef}
           type="button"
           onClick={() => {
             askAgain();
             setWeekOffset((n) => n + 1);
           }}
-          className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+          className="whitespace-nowrap rounded-lg px-2 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
         >
           Later ›
         </button>
@@ -273,11 +295,13 @@ export function ChangeTimePanel({
         </p>
       ) : null}
 
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
+
       <div className="mt-3">
         {!result ? (
-          <p role="status" className="text-sm text-slate-500">
-            Finding free times…
-          </p>
+          <p className="text-sm text-slate-500">Finding free times…</p>
         ) : result.state === "not-found" ? (
           <p role="alert" className="text-sm text-red-700">
             This link no longer opens a booking. Please call the business.
@@ -300,9 +324,7 @@ export function ChangeTimePanel({
           </div>
         ) : count === 0 ? (
           <div>
-            <p role="status" className="text-sm text-slate-700">
-              No free times this week.
-            </p>
+            <p className="text-sm text-slate-700">No free times this week.</p>
             <button
               type="button"
               onClick={() => {
@@ -316,9 +338,6 @@ export function ChangeTimePanel({
           </div>
         ) : (
           <>
-            <p role="status" className="sr-only">
-              {`${count} free ${count === 1 ? "time" : "times"} this week.`}
-            </p>
             <div className="space-y-4">
               {days.map((day) => (
                 <div key={day.date} role="group" aria-labelledby={`day-${day.date}`}>

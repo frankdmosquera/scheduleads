@@ -607,3 +607,110 @@ on top of all six.
 and returns `{ start, settled }`, with one shared "all background work
 settled" for tests; keep the six named exports as thin uses of it.
 **Resolution:** Carried to feature 8 on Frank's call, 2026-10-04: its job runner replaces all six trackers, so a shared helper now would be thrown away. Noted in the spec's Notes for the AI. Stays open until then.
+
+### F-157 [P3] fixed - Focus falls to the page body after a failed move
+
+**File:** frontend/components/booking-page/change-time-panel.tsx:171,185 (move at :125-157)
+**Found:** 2026-10-04 by independent review of step 7b.5 (scope: 79acbd8..48d743c; lenses: quality, security, performance, tests, accessibility)
+**Why it matters:** While sending, both "Yes, move it" and "Keep the current
+time" are disabled, so the focused button loses focus. When the answer is a
+failure (503, not found, unreachable) they are enabled again but nothing puts
+focus back. Checked in the browser with the move answer faked as 503:
+`document.activeElement` was BODY. A keyboard or screen-reader user hears the
+alert, then has to find the question again from the top of the page; the spec
+asks for "a failure that keeps the choice usable". 7a's cancel confirm
+(booking-page.tsx:280,294) has the same shape.
+**Suggested fix:** After a failed answer, focus the "Yes, move it" button (or
+the alert's container with tabIndex -1) in a requestAnimationFrame, as the
+other transitions already do.
+**Resolution:** Fixed 2026-10-04: a failed move puts focus back on "Yes, move it", and a failed cancel on "Yes, cancel it" (the same gap on the same page); seen in the browser with the move answered 503.
+
+### F-158 [P3] fixed - "Earlier" back to the first week drops focus to the page body
+
+**File:** frontend/components/booking-page/change-time-panel.tsx:250
+**Found:** 2026-10-04 by independent review of step 7b.5 (scope: 79acbd8..48d743c; lenses: quality, security, performance, tests, accessibility)
+**Why it matters:** `disabled={weekOffset === 0}` disables the very button
+just pressed when it returns to this week, so it loses focus. Checked in the
+browser: Later, then Earlier, and `document.activeElement` was BODY. Keyboard
+and screen-reader users lose their place in the week bar.
+**Suggested fix:** Keep the button focusable and use `aria-disabled` with an
+early return in the handler, or move focus to "Later ›" when the offset
+reaches 0.
+**Resolution:** Fixed 2026-10-04: Earlier back to the first week moves focus on to Later; seen in the browser.
+
+### F-159 [P3] open - "Later" and "Show the next week" never end past the business's horizon
+
+**File:** frontend/components/booking-page/change-time-panel.tsx:258-266,306-315 (clamp in backend/lib/scheduling/find-free-times.ts:91-94)
+**Found:** 2026-10-04 by independent review of step 7b.5 (scope: 79acbd8..48d743c; lenses: quality, security, performance, tests, accessibility)
+**Why it matters:** The times route clamps the range to today plus the
+business's horizon and answers an empty list beyond it. The page has no upper
+bound, so past the horizon every week says "No free times this week." with
+"Show the next week" offered again, forever. It reads as a fully booked
+business and invites endless presses, each one a full free-times read (Google
+included).
+**Suggested fix:** Let the times answer carry the last bookable date (a
+business date, no customer data), disable "Later" past it and say "No times
+can be booked after <date>" instead of offering another week.
+**Resolution:**
+
+### F-160 [P3] fixed - The booking's own start is hidden by matching its person by name
+
+**File:** frontend/components/booking-page/change-time-panel.tsx:200-207
+**Found:** 2026-10-04 by independent review of step 7b.5 (scope: 79acbd8..48d743c; lenses: quality, security, performance, tests, accessibility)
+**Why it matters:** Hiding the current start for "Any available" and for the
+same person is right (decision 4 answers it as unchanged, and showing it
+would end on "Your booking has moved" with nothing moved). Matching by name is
+the weak part: two people with the same name (common in a clinic) make the
+other person's slot at that time disappear, and a person renamed after the
+page loaded shows the booking's own start as a move, which then reports
+"moved" with no change. Checked in the browser with faked answers: by name it
+works for the plain case (hidden for Any available and Marco, shown for Ana).
+**Suggested fix:** Compare by id: the page view can carry the booked
+person's id (a business resource id, not the customer's details, so decision
+3 holds), or the times route can leave out the booking's own start for its
+own person and for any available on the server.
+**Resolution:** Fixed 2026-10-04: the page view carries personId, and the panel compares ids; the page route test pins the new field.
+
+### F-161 [P3] fixed - The week bar spills out of the card at 320px
+
+**File:** frontend/components/booking-page/change-time-panel.tsx:243-267
+**Found:** 2026-10-04 by independent review of step 7b.5 (scope: 79acbd8..48d743c; lenses: quality, security, performance, tests, accessibility)
+**Why it matters:** Three `whitespace-nowrap` items in a 232px content box.
+Measured at 320px wide: the "Later ›" button ends at x=301 while the card
+ends at x=289, so it crosses the card's border (no page scroll). At 375px it
+fits, which is the width the step was checked at; small phones still exist.
+**Suggested fix:** Let the range label wrap or shrink (`min-w-0`,
+`text-center`), or shorten the buttons to icons with `aria-label`s below a
+breakpoint.
+**Resolution:** Fixed 2026-10-04: the week reads "Oct 4 to 10" (both months only across two) with narrower buttons; at 320px Later ends at x=260 inside the card at 289.
+
+### F-162 [P3] fixed - Week changes may not be announced: each status is a freshly mounted live region
+
+**File:** frontend/components/booking-page/change-time-panel.tsx:278,303,319
+**Found:** 2026-10-04 by independent review of step 7b.5 (scope: 79acbd8..48d743c; lenses: quality, security, performance, tests, accessibility)
+**Why it matters:** "Finding free times…", "No free times this week." and
+"N free times this week." are three different elements, each mounted with its
+text already inside. Screen readers announce changes to a live region that
+already exists; a `role="status"` inserted already filled is announced
+inconsistently. Focus stays on "Later ›", and the week label
+("Oct 11 to Oct 17") is not in any live region, so after pressing Later a
+screen-reader user may hear nothing, or a count without the week it belongs
+to. Not checked with a screen reader in this review.
+**Suggested fix:** One persistent `role="status"` element that always exists
+in the panel, whose text changes: "Finding free times for Oct 11 to Oct 17",
+then "3 free times, Oct 11 to Oct 17" or "No free times, Oct 11 to Oct 17".
+**Resolution:** Fixed 2026-10-04: one live region is always mounted and names the week with its count ("Oct 4 to 10: 38 free times."); the visible lines are plain text. Not tried with a screen reader.
+
+### F-163 [P3] fixed - Calendar dates rely on en-CA formatting as YYYY-MM-DD
+
+**File:** frontend/components/booking-page/change-time-panel.tsx:22-32,94
+**Found:** 2026-10-04 by independent review of step 7b.5 (scope: 79acbd8..48d743c; lenses: quality, security, performance, tests, accessibility)
+**Why it matters:** `dateIn` assumes `Intl.DateTimeFormat("en-CA").format`
+writes YYYY-MM-DD. That is locale data (CLDR), not a guarantee, and browsers
+have briefly shipped en-CA as M/d/yyyy before. If a browser ever does, `today`
+is not a date, `addDays` calls `toISOString()` on an Invalid Date and throws a
+RangeError, and the panel crashes on open. The backend's `localDate` uses
+`formatToParts` for this reason (backend/lib/local-time/clock-as-utc.ts:24).
+**Suggested fix:** Build YYYY-MM-DD from `formatToParts` (year, month, day),
+and reuse one formatter per zone instead of a new one per start time.
+**Resolution:** Fixed 2026-10-04: dateIn builds YYYY-MM-DD from formatToParts.
