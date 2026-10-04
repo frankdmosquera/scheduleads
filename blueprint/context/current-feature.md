@@ -4,6 +4,11 @@
 
 **Branch:** feature/07b-reschedule
 
+**Status:** verified. Whole feature seen and agreed by Frank 2026-10-03;
+steps 7b.1 to 7b.5 built, tested and reviewed step by step; no P0 or P1 was
+ever open; decisions 10 to 13 made with Frank along the way. The checkpoint
+for the final review.
+
 ## Goal
 
 On the page Jane's private link opens (feature 7a), she can move her booking
