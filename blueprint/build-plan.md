@@ -179,7 +179,7 @@ and a second resource can hold the same time as the first.
   ever hear from the business, never from a worker's own address. A booked
   worker with no login and no Google has no way to be told yet; this item or
   item 19 decides how they are
-- [ ] 7. **Self-serve cancel and reschedule** - a tokenized link in the
+- [x] 7. **Self-serve cancel and reschedule** - a tokenized link in the
   confirmation. A cancel frees the slot and removes the event from the
   booked person's Google; a reschedule is never refused because of the
   booking's own old time
@@ -189,7 +189,7 @@ and a second resource can hold the same time as the first.
     customer's page it opens, and Cancel: the time freed, the event removed
     from the booked person's Google, the customer and the business told by
     email, the timeline entry
-  - [ ] 7b. **Reschedule** - on the same page: the free times for the same
+  - [x] 7b. **Reschedule** - on the same page: the free times for the same
     service, never refused because of the booking's own old time (neither
     its held time nor its own event in Google), and the same booking moved,
     its Google event and the customer's invite moved with it, both told

@@ -165,12 +165,14 @@ describe("the customer's booking page", () => {
       booking: {
         status: "confirmed",
         canCancel: true,
+        canMove: true,
         service: "Interior estimate",
         startsAt: primo.startsAt.toISOString(),
         // The appointment itself, not its 15 after.
         endsAt: new Date(primo.startsAt.getTime() + 60 * 60_000).toISOString(),
         timezone: "America/Edmonton",
         person: "Marco",
+        personId: primo.marco,
         business: {
           name: "Primo Painters",
           logo: "https://ik.imagekit.io/primo/logo.png",
@@ -292,7 +294,11 @@ describe("cancelling from the page", () => {
     expect(await again.text()).toBe(first);
     const page = await pageOf(token);
     expect(page.status).toBe(200);
-    expect((await page.json()).booking).toMatchObject({ status: "cancelled", canCancel: false });
+    expect((await page.json()).booking).toMatchObject({
+      status: "cancelled",
+      canCancel: false,
+      canMove: false,
+    });
   });
 
   test("a started booking is refused with 409 and nothing changes", async () => {
@@ -314,7 +320,9 @@ describe("cancelling from the page", () => {
       },
     });
     expect(await statusOf(bookingId)).toBe("confirmed");
-    expect((await (await pageOf(token)).json()).booking.canCancel).toBe(false);
+    const page = (await (await pageOf(token)).json()).booking;
+    expect(page.canCancel).toBe(false);
+    expect(page.canMove).toBe(false);
   });
 
   test("a bad link cancels nothing, with the same 404 as the page", async () => {

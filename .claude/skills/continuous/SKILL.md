@@ -128,7 +128,8 @@ decision. Stop with the exact decision needed.
 
 ### 2.2 Create or resume the feature branch
 
-Use `git.featureBranchPrefix` from config and a name derived from the spec.
+Use the spec's exact `**Branch:**` value: `git.featureBranchPrefix` from config,
+the zero-padded build-plan id and the title, as in `feature/07b-reschedule`.
 Create the branch from the current local default branch. When resuming, require
 the existing branch, active spec, and branch prefix to agree.
 

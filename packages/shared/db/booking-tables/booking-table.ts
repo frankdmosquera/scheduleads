@@ -7,6 +7,7 @@ import {
   check,
   foreignKey,
   index,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -36,6 +37,9 @@ export const booking = pgTable(
     location: text("location").notNull(), // the customer's address, as they typed it
     calendarEventId: text("calendarEventId"), // the booked person's Google event, once written
     requestKey: text("requestKey"), // one per booking form; null when the owner books
+    // The calendar invite's number: 0 when made, one more for each move, so the customer's
+    // calendar always takes the latest version (feature 7b, decision 6).
+    sequence: integer("sequence").notNull().default(0),
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })
       .notNull()

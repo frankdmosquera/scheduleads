@@ -20,6 +20,7 @@ export async function writeBookingEvent(
       personId: booking.personId,
       status: booking.status,
       calendarEventId: booking.calendarEventId,
+      sequence: booking.sequence,
       startsAt: booking.startsAt,
       endsAt: booking.endsAt,
       location: booking.location,
@@ -61,7 +62,7 @@ export async function writeBookingEvent(
   if (row.status !== "confirmed") return null; // a cancelled booking has no event to write
   if (row.calendarEventId) return row.calendarEventId; // written already
 
-  const id = calendarEventIdOf(bookingId);
+  const id = calendarEventIdOf(bookingId, row.sequence); // fresh after a move, so never refused
 
   const access = await getFreshAccessToken({ organizationId, resourceId: row.personId });
   if (!access) return null; // no calendar connected: nothing to write

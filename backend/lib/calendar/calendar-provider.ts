@@ -36,6 +36,13 @@ export type CalendarProviderType = {
   // Takes the event out of the person's main calendar; one already gone is done too. Throws on
   // any other failure.
   deleteEvent(accessToken: string, eventId: string): Promise<void>;
+  // Moves a written event to a new start and end; false when it is not there (never written, or
+  // deleted). Throws on any other failure.
+  updateEventTime(
+    accessToken: string,
+    eventId: string,
+    time: { start: Date; end: Date; timezone: string }
+  ): Promise<boolean>;
   // Best effort: whether the provider confirmed. Never throws.
   revoke(token: string): Promise<boolean>;
 };

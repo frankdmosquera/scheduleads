@@ -63,6 +63,7 @@ export async function sendBookingEmails(
               // The booking's own moment, so a retry sends the very same invite: Resend refuses
               // a key it already used with a different email.
               stampedAt: context.createdAt,
+              sequence: 0, // the invite as made; each move sends its own, numbered higher
             }),
             contentType: "text/calendar; charset=utf-8; method=REQUEST",
           },

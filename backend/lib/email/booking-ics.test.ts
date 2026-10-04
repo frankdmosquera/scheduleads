@@ -13,6 +13,7 @@ const plainBooking: BookingIcsInputType = {
   customerName: "Jane Doe",
   customerEmail: "jane@example.com",
   stampedAt: new Date("2026-10-02T20:30:00.000Z"),
+  sequence: 0,
 };
 
 // A folded line rejoined: every line break followed by a space is removed (RFC 5545, 3.1).
@@ -48,12 +49,29 @@ describe("bookingIcs", () => {
     );
   });
 
+  test("a moved booking updates the same event, under the number it is given", () => {
+    const moved = {
+      ...plainBooking,
+      startsAt: new Date("2026-10-09T17:00:00.000Z"),
+      endsAt: new Date("2026-10-09T18:00:00.000Z"),
+      sequence: 2,
+    };
+    const lines = bookingIcs(moved).split("\r\n");
+
+    expect(lines).toContain("METHOD:REQUEST");
+    expect(lines).toContain("STATUS:CONFIRMED");
+    expect(lines).toContain("UID:bk_123"); // the same event
+    expect(lines).toContain("SEQUENCE:2");
+    expect(lines).toContain("DTSTART:20261009T170000Z");
+    expect(lines).toContain("DTEND:20261009T180000Z");
+  });
+
   test("the cancelling form withdraws the same event", () => {
-    const lines = bookingIcs({ ...plainBooking, cancelled: true }).split("\r\n");
+    const lines = bookingIcs({ ...plainBooking, sequence: 3, cancelled: true }).split("\r\n");
 
     expect(lines).toContain("METHOD:CANCEL");
     expect(lines).toContain("STATUS:CANCELLED");
-    expect(lines).toContain("SEQUENCE:1"); // higher than the invite it withdraws
+    expect(lines).toContain("SEQUENCE:3"); // the number it is given, above the last move's
     expect(lines).toContain("UID:bk_123"); // the same event
     expect(lines).not.toContain("METHOD:REQUEST");
     expect(lines).not.toContain("STATUS:CONFIRMED");

@@ -98,5 +98,21 @@ export const googleCalendarProvider: CalendarProviderType = {
     throw new Error(`Google refused to remove the event (${response.status}).`);
   },
 
+  async updateEventTime(accessToken: string, eventId: string, { start, end, timezone }) {
+    const response = await fetch(`${EVENTS_URL}/${encodeURIComponent(eventId)}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        start: { dateTime: start.toISOString(), timeZone: timezone },
+        end: { dateTime: end.toISOString(), timeZone: timezone },
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    // 404 never written, 410 deleted: there is no event to move.
+    if (response.status === 404 || response.status === 410) return false;
+    if (!response.ok) throw new Error(`Google refused to move the event (${response.status}).`);
+    return true;
+  },
+
   revoke: (token) => googleOauthClient.revoke(token),
 };

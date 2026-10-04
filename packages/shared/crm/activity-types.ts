@@ -5,6 +5,7 @@
 export const ACTIVITY_TYPES = [
   "booking_created",
   "booking_cancelled",
+  "booking_moved",
   "stage_changed",
   "email_sent",
   "email_received",
