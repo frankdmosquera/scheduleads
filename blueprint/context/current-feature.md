@@ -114,10 +114,10 @@ No package is planned. Installing one is a line only Frank crosses.
 ## Build steps
 
 - [x] **7b.1 Free times that ignore the booking's own time.**
-  - `findFreeTimes` gains `ignoreBookingId`: that booking's held rows are left
-    out of every person's and room's busy time and out of the day's booking
-    counts, and its own start to end is crossed off the busy blocks Google
-    answers for its current person (decision 11).
+  - `findFreeTimes` gains `ignoreBooking` (`{ id, personId, startsAt,
+    endsAt }`): that booking's held rows are left out of every person's and
+    room's busy time, and its own start to end is crossed off the busy blocks
+    Google answers for its current person only (decision 11, `crossOffSpan`).
   - `GET /public/bookings/:token/times?from=YYYY-MM-DD&to=YYYY-MM-DD&person=<id>`
     (public CORS, never with credentials, `no-store`): the people she can
     pick and the free start times for this booking's service, for the picked
@@ -141,7 +141,7 @@ No package is planned. Installing one is a line only Frank crosses.
   - The booking gains `sequence` (integer, 0); `booking_moved` joins the
     activity types; migration 0018.
   - `backend/lib/booking/move-booking.ts`: the start checked against
-    `findFreeTimes` with `ignoreBookingId` for the picked person or any
+    `findFreeTimes` with `ignoreBooking` for the picked person or any
     available, then one transaction with the booking row locked: still
     confirmed and not started, its active held rows released, the new span
     held for the picked person or the first free one in the booking's own
@@ -231,7 +231,7 @@ No package is planned. Installing one is a line only Frank crosses.
 
 ## Files / areas
 
-- `backend/lib/scheduling/find-free-times.ts` (`ignoreBookingId`), and the
+- `backend/lib/scheduling/find-free-times.ts` (`ignoreBooking`), and the
   Google busy time it reads
 - `backend/lib/booking/`: `move-booking.ts`, `find-booking-page.ts`
   (`canMove`), the after-move starts beside `booking-event-writes.ts` and
@@ -315,6 +315,13 @@ harness), with screenshots in the build log.
   under the confirmation's old key, which Resend refuses: feature 8 decides
   (a note, not this feature's work).
 - Never put a token, a customer's details or a key in a log line.
+- From step 7b.1's review: a business that switches a service off leaves the
+  booking's page open while its move times answer 404 (F-138), so 7b.2's
+  `canMove` cannot simply equal `canCancel`; settle it in 7b.2's plan. An
+  owner can still change their address through Better Auth's own
+  organization update (F-137), which the reserved slug does not cover.
+- `bookTime` orders "any available" by the day's booking counts; a move's
+  counts must leave out the booking being moved (7b.2).
 
 ## Open questions
 

@@ -136,7 +136,22 @@ const timesFor = (bookingId: string, person?: string) =>
 const startTimesOf = async (response: Response) =>
   ((await response.json()) as { startTimes: string[] }).startTimes;
 
-// Google, faked for a person whose calendar holds these busy blocks.
+// A person's Google connection, saved again by each test that needs it, so no test depends on
+// another having run first.
+const connect = (resourceId: string, name: string) =>
+  saveCalendarConnection({
+    organizationId: clinic.business,
+    resourceId,
+    accountEmail: `${name}-${tag}@gmail.com`,
+    grantedScopes: ["openid", "email"],
+    credentials: {
+      refreshToken: "1//saved-refresh",
+      accessToken: "ya29.saved-access",
+      accessTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    },
+  });
+
+// Google, faked: every connected person's calendar holds these busy blocks.
 function fakeGoogleBusy(busy: { start: string; end: string }[]) {
   vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
     const url = String(input instanceof Request ? input.url : input);
@@ -212,17 +227,7 @@ describe("free times for moving a booking", () => {
       startsAt: new Date(at(15)),
       endsAt: new Date(at(16)),
     });
-    await saveCalendarConnection({
-      organizationId: clinic.business,
-      resourceId: clinic.ana,
-      accountEmail: `ana-${tag}@gmail.com`,
-      grantedScopes: ["openid", "email"],
-      credentials: {
-        refreshToken: "1//saved-refresh",
-        accessToken: "ya29.saved-access",
-        accessTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-      },
-    });
+    await connect(clinic.ana, "ana");
     fakeGoogleBusy([
       { start: at(9), end: at(10) }, // Jane's own event
       { start: at(11), end: at(12) }, // Ana's dentist
@@ -236,12 +241,34 @@ describe("free times for moving a booking", () => {
   });
 
   test("the booking's own Google event does not block", async () => {
-    // Ana is connected (the test above); Google says she is busy 9:00 to 10:00, which is Jane.
-    fakeGoogleBusy([{ start: at(9), end: at(10) }]);
+    await connect(clinic.ana, "ana");
+    fakeGoogleBusy([{ start: at(9), end: at(10) }]); // Ana's 9:00 to 10:00 is Jane's own booking
     const anaTimes = await startTimesOf(await timesFor(clinic.janesBooking, clinic.ana));
 
     expect(anaTimes).toContain(at(9));
     expect(anaTimes).toContain(at(9, 30));
+  });
+
+  test("the booking's own hour is crossed off only for its own person", async () => {
+    await connect(clinic.ana, "ana");
+    await connect(clinic.mei, "mei");
+    // Both calendars say 9:00 to 10:00. For Ana that is Jane; for Mei it is something of her own.
+    fakeGoogleBusy([{ start: at(9), end: at(10) }]);
+    const meiTimes = await startTimesOf(await timesFor(clinic.janesBooking, clinic.mei));
+
+    expect(meiTimes).not.toContain(at(9));
+    expect(meiTimes).not.toContain(at(9, 30));
+  });
+
+  test("a person who does not offer the service, or another business's, answers 404", async () => {
+    const stranger = await app.request(
+      `/public/bookings/${makeBookingPageToken(clinic.janesBooking)}/times?from=${day}&to=${day}&person=${clinic.room}`
+    );
+    const elsewhere = await timesFor(clinic.janesBooking, randomUUID());
+
+    expect(stranger.status).toBe(404); // Room 3 is a place, not a person who can be picked
+    expect(elsewhere.status).toBe(404);
+    expect(await elsewhere.json()).toEqual(await stranger.json());
   });
 
   test("a bad link answers 404 with the same body", async () => {
@@ -258,6 +285,7 @@ describe("free times for moving a booking", () => {
   });
 
   test("a started or cancelled booking answers 409", async () => {
+    fakeGoogleBusy([]); // whoever is connected is free; their event writes simply fail and log
     const cancelled = await book(clinic, clinic.mei, 16, "Cara Lee");
     await app.request(`/public/bookings/${makeBookingPageToken(cancelled)}/cancel`, {
       method: "POST",

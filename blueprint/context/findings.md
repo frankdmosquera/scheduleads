@@ -181,3 +181,94 @@ more than it proves.
 "a log line" from the test's name and leave the log checks to the two
 files that already make them.
 **Resolution:**
+
+### F-135 [P3] fixed - The Google tests for a move depend on running in order and never pin the cross-off to the booking's own person
+
+**File:** backend/routes/public-booking-move-times-routes.test.ts:206-245 (cross-off: backend/lib/scheduling/find-free-times.ts:135)
+**Found:** 2026-10-03 by independent review of step 7b.1 (scope: a55c8ee..548c727; lenses: quality, security, performance, tests)
+**Why it matters:** "the booking's own Google event does not block" (:238)
+relies on Ana's calendar connection saved inside the test before it. Run
+alone (`vitest -t "own Google event"`) Ana has no connection, Google is
+never asked, and the test passes even with the cross-off switched off:
+reproduced in this review. In the full file it does catch that break.
+Separately, decision 11 crosses off the booking's span for its current
+person only; changing the guard at :135 to cross it off for every person
+(`if (ignoreBooking)`) left all 9 tests green, because only Ana has a
+connected calendar. Another person's own Google event at the same time as
+Jane's booking would then be hidden, and nothing would say so.
+**Suggested fix:** Give the Google cases their own setup (connect Ana in a
+`beforeAll` of a nested `describe`, or in each test), and add a case where
+Mei is connected too and Google answers the same 9:00 to 10:00 for both:
+Ana's 9:00 is offered, Mei's is not.
+**Resolution:** Fixed 2026-10-03: each Google test saves its own connection (saving again only updates), so each passes or fails alone; a new test, "the booking's own hour is crossed off only for its own person", connects Ana and Mei with the same 9:00 to 10:00 and expects Mei's 9:00 and 9:30 to stay busy. Removing the cross-off fails the own-event test run alone; crossing off for every person fails the new test.
+
+### F-136 [P3] fixed - No test asks a booking's move times for a person who does not offer its service
+
+**File:** backend/routes/public-booking-move-times-routes.test.ts:247-258 (answer: backend/lib/booking/find-booking-move-times.ts:57)
+**Found:** 2026-10-03 by independent review of step 7b.1 (scope: a55c8ee..548c727; lenses: quality, security, performance, tests)
+**Why it matters:** The step's plan promises 404 for a person who does not
+offer the service, and the contract says an unknown `person` answers 404
+`not_found`. That is also the answer that keeps another business's person
+out (findFreeTimes checks `person` against the service's own people, inside
+the booking's business). The behaviour is right today, but changing :57 to
+answer an empty 200 when findFreeTimes gives null left every test green in
+this review. The tenant check itself is tested only on the booking form's
+route, not on this one.
+**Suggested fix:** Add one case: Jane's link with `person=` a resource id of
+another test business, and one with the clinic's Room 3 id, each answering
+404 with the same body as a bad link.
+**Resolution:** Fixed 2026-10-03: a new test asks for Room 3 (a place, not a person who can be picked) and for an unknown id, both answering the same 404; answering 200 with no times instead fails it.
+
+### F-137 [P3] open - The reserved slug is refused only when a business is made; an owner can still take it through Better Auth's organization update
+
+**File:** packages/shared/zod-validation/organization-validation-schemas/business-name-validation-schema.ts:14-19 (update rights: backend/lib/auth/auth-server.ts:65,71)
+**Found:** 2026-10-03 by independent review of step 7b.1 (scope: a55c8ee..548c727; lenses: quality, security, performance, tests)
+**Why it matters:** The spec says no business can sit where these routes
+do. The refine closes POST /admin/clients, the only creation path
+(`allowUserToCreateOrganization: false`). But the owner and admin roles
+hold `organization: ["update"]`, and Better Auth 1.7.5's
+`POST /api/auth/organization/update` takes `data.slug`, checks only that no
+other business has it, and runs no `beforeUpdateOrganization` hook here.
+So a signed-in owner can set their slug to `bookings` (or to any string,
+which would also break the address their widget is embedded under). No
+route collides today even then: Hono answers the first match, the slug
+routes are mounted first, and a valid token is never `booking-links`. So
+this is a guard with a side door, not a live break. No seed or test
+business uses the slug (painting-dev, clinic-dev, test-...-dev).
+**Suggested fix:** Add a `beforeUpdateOrganization` hook that refuses any
+change to `slug` (the slug is built from the name, never typed, per
+to-slug.ts), or drop `organization: ["update"]` from the roles until a
+settings screen needs it.
+**Resolution:**
+
+### F-138 [P3] open - A booking whose service was switched off opens its page, but its move times answer "This link does not open a booking"
+
+**File:** backend/lib/booking/find-booking-move-times.ts:15,57 (page: backend/lib/booking/find-booking-page.ts:86)
+**Found:** 2026-10-03 by independent review of step 7b.1 (scope: a55c8ee..548c727; lenses: quality, security, performance, tests)
+**Why it matters:** findFreeTimes returns null for an inactive service, and
+the times route turns that into the bad-link 404. findBookingPage does not
+look at `bookingLink.active`, so Jane's page still opens, and 7b.2 plans
+`canMove` as the same as `canCancel`. When the business switches a service
+off with bookings still ahead, the page will offer "Change the time" and
+the times call will tell her the link opens no booking, which is false.
+No test or spec line covers the case.
+**Suggested fix:** Decide in 7b.2's plan whether a switched-off service can
+still be moved. If not, make `canMove` false for it and let the page say
+to call the business; if so, read the service without the `active` filter
+for a move.
+**Resolution:**
+
+### F-139 [P3] fixed - The spec names `ignoreBookingId` and "the day's booking counts"; the code has `ignoreBooking` and no such counts
+
+**File:** blueprint/context/current-feature.md:117-120,144,234
+**Found:** 2026-10-03 by independent review of step 7b.1 (scope: a55c8ee..548c727; lenses: quality, security, performance, tests)
+**Why it matters:** The built input is `ignoreBooking: { id, personId,
+startsAt, endsAt }` (find-free-times.ts:39), because the Google cross-off
+needs the person and the span. The spec's 7b.1 bullet, 7b.2's plan (which
+will call it) and Files still say `ignoreBookingId`, and 7b.1 promises the
+booking is left out of "the day's booking counts", which findFreeTimes
+does not have. AGENTS.md asks for a wrong spec to be corrected before the
+next step builds on it.
+**Suggested fix:** Change the three lines to `ignoreBooking` and drop the
+booking-counts clause.
+**Resolution:** Fixed 2026-10-03: the spec says ignoreBooking with its four fields and crossOffSpan, drops the daily counts from 7b.1, and notes that 7b.2's any-available order must leave the moved booking out of the day's counts.
