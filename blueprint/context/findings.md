@@ -241,7 +241,7 @@ to-slug.ts), or drop `organization: ["update"]` from the roles until a
 settings screen needs it.
 **Resolution:** Deferred by Frank, 2026-10-03: left for Settings (feature 12), where editing a business's details is designed; no screen reaches the route today. Stays open, carried forward.
 
-### F-138 [P3] fixed - A booking whose service was switched off opens its page, but its move times answer "This link does not open a booking"
+### F-138 [P3] closed - A booking whose service was switched off opens its page, but its move times answer "This link does not open a booking"
 
 **File:** backend/lib/booking/find-booking-move-times.ts:15,57 (page: backend/lib/booking/find-booking-page.ts:86)
 **Found:** 2026-10-03 by independent review of step 7b.1 (scope: a55c8ee..548c727; lenses: quality, security, performance, tests)
@@ -256,7 +256,7 @@ No test or spec line covers the case.
 still be moved. If not, make `canMove` false for it and let the page say
 to call the business; if so, read the service without the `active` filter
 for a move.
-**Resolution:** Decided by Frank, 2026-10-03 (decision 13): switching a service off stops only new bookings; an existing booking keeps Change the time. Fixed by step 7b.2, which reads the booking's own service even when switched off. Built in 7b.2 (1731845): findServiceResources and findFreeTimes read the booking's own service when switched off; tested by "a booking whose service was switched off can still move, while new bookings cannot".
+**Resolution:** Decided by Frank, 2026-10-03 (decision 13): switching a service off stops only new bookings; an existing booking keeps Change the time. Fixed by step 7b.2, which reads the booking's own service even when switched off. Built in 7b.2 (1731845): findServiceResources and findFreeTimes read the booking's own service when switched off; tested by "a booking whose service was switched off can still move, while new bookings cannot". Closed 2026-10-04 by independent review of step 7b.3: re-read find-free-times.ts:64-72 and move-booking.ts:82-93 (the booking's own service read with `serviceMayBeOff`) and the test, which asserts the form's times answer 404 while the move's times and the move answer 200.
 
 ### F-139 [P3] closed - The spec names `ignoreBookingId` and "the day's booking counts"; the code has `ignoreBooking` and no such counts
 
@@ -273,7 +273,7 @@ next step builds on it.
 booking-counts clause.
 **Resolution:** Fixed 2026-10-03: the spec says ignoreBooking with its four fields and crossOffSpan, drops the daily counts from 7b.1, and notes that 7b.2's any-available order must leave the moved booking out of the day's counts. Closed 2026-10-03 by independent review of step 7b.2: re-read current-feature.md; 7b.1's bullet names `ignoreBooking` with its four fields and `crossOffSpan`, no booking counts remain in 7b.1, and the Notes for the AI carry the 7b.2 counts rule.
 
-### F-140 [P2] fixed - A hold that fails inside the move's transaction is never tested; committing the release with no new hold leaves every test green
+### F-140 [P2] closed - A hold that fails inside the move's transaction is never tested; committing the release with no new hold leaves every test green
 
 **File:** backend/lib/booking/move-booking.ts:221 (test: backend/routes/public-booking-move-routes.test.ts:254)
 **Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
@@ -293,7 +293,7 @@ book-time-taken-meanwhile.test.ts: mock `findCommitments` (or
 already holds it for another booking, then assert 409 `time_taken`, the
 booking's times, person and sequence unchanged, its old row still
 `active`, and no `booking_moved` entry.
-**Resolution:** Fixed 2026-10-03: move-booking-taken-meanwhile.test.ts shows the check an empty world while the database holds the new time, so the hold fails inside the transaction; the booking, its released-then-restored row and the timeline stay untouched. Committing the release instead fails it.
+**Resolution:** Fixed 2026-10-03: move-booking-taken-meanwhile.test.ts shows the check an empty world while the database holds the new time, so the hold fails inside the transaction; the booking, its released-then-restored row and the timeline stay untouched. Committing the release instead fails it. Closed 2026-10-04 by independent review of step 7b.3: replacing move-booking.ts:228's throw with a `time_taken` return failed "a hold that fails inside the move undoes all of it"; restored.
 
 ### F-141 [P2] fixed - A move to another person leaves its Google event in the old person's calendar, and the booking keeps no record of whose calendar that is
 
@@ -317,9 +317,9 @@ whose calendar holds the event (a `calendarPersonId` beside
 removed), and have removal and update use it rather than `personId`; or at
 least add `fromPersonId` and `toPersonId` to the `booking_moved` payload
 and the spec's contract.
-**Resolution:** Carried to 7b.3's plan (spec, Notes for the AI): the event moves between calendars there and must know the old person. Fixed by step 7b.3: the move hands over who held the event; a person change removes it from that person's calendar and writes it into the new one under an id carrying the move's number, saved; the cancel removes by the saved id. Tested: "a cancel after a person change removes the event from the new person's calendar".
+**Resolution:** Carried to 7b.3's plan (spec, Notes for the AI): the event moves between calendars there and must know the old person. Fixed by step 7b.3: the move hands over who held the event; a person change removes it from that person's calendar and writes it into the new one under an id carrying the move's number, saved; the cancel removes by the saved id. Tested: "a cancel after a person change removes the event from the new person's calendar". Not closed by independent review of step 7b.3 (2026-10-04): the happy path is fixed (removing the old person's delete fails "a move to another person removes the old person's event and writes the new person's"), but the booking still keeps no record of whose calendar holds the event, so a follow that fails, or that a cancel overtakes, leaves it in the old person's calendar where nothing can find it. That half carries on as F-149.
 
-### F-142 [P3] fixed - No move test uses a room or moves with any available, so the room's own-row filter and the day's counts can be removed with every test green
+### F-142 [P3] closed - No move test uses a room or moves with any available, so the room's own-row filter and the day's counts can be removed with every test green
 
 **File:** backend/lib/booking/move-booking.ts:147,169 (tests: backend/routes/public-booking-move-routes.test.ts)
 **Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
@@ -335,9 +335,9 @@ person it lands on) is untested end to end.
 move Jane 30 minutes later in it; add an any-available move to a new time
 where the counts decide the person (Ana with Jane's booking and one other
 that day, Mei with one), asserting Jane stays with Ana.
-**Resolution:** Fixed 2026-10-03: tests for a move in a room (Room 3 held again at the new time), any available going to whoever is free, and any available not counting the booking being moved; counting the room's own rows or the day's own booking each fails one.
+**Resolution:** Fixed 2026-10-03: tests for a move in a room (Room 3 held again at the new time), any available going to whoever is free, and any available not counting the booking being moved; counting the room's own rows or the day's own booking each fails one. Closed 2026-10-04 by independent review of step 7b.3: dropping the booking filter at move-booking.ts:150 failed "a move in a room takes the room again at the new time", and at :172 failed "any available does not count the booking being moved"; restored.
 
-### F-143 [P3] fixed - The move route lacks the booking form's body limit and its refusal for a body that is not JSON
+### F-143 [P3] closed - The move route lacks the booking form's body limit and its refusal for a body that is not JSON
 
 **File:** backend/routes/public-booking-page-routes.ts:78-87 (the form's: backend/routes/public-bookings-routes.ts:28-37)
 **Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
@@ -352,9 +352,9 @@ feature 9, but the size cap is this repo's own pattern for public POSTs.
 **Suggested fix:** Mount the same `bodyLimit` and an `onError` that maps a
 400 `HTTPException` to `refuse("bad_request", ...)` on
 `publicBookingPageRoutes`, as `publicBookingsRoutes` does.
-**Resolution:** Fixed 2026-10-03: the move route has the booking form's bodyLimit (1 KB, 413) and its onError refusal for a body that is not JSON (400 bad_request); tested.
+**Resolution:** Fixed 2026-10-03: the move route has the booking form's bodyLimit (1 KB, 413) and its onError refusal for a body that is not JSON (400 bad_request); tested. Closed 2026-10-04 by independent review of step 7b.3: re-read public-booking-page-routes.ts:38-41,90-93 and the test "a body that is not JSON, or too large, is refused in the same shape" (400 and 413, both `bad_request`, sequence unchanged).
 
-### F-144 [P3] fixed - The spec's move contract says 400 `invalid_start` and no 503; the route answers 400 `bad_request` and 503 `unavailable`
+### F-144 [P3] closed - The spec's move contract says 400 `invalid_start` and no 503; the route answers 400 `bad_request` and 503 `unavailable`
 
 **File:** blueprint/context/current-feature.md:280 (route: backend/routes/public-booking-page-routes.ts:84,104)
 **Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
@@ -367,7 +367,7 @@ comes. AGENTS.md asks for a wrong spec to be corrected before the next step
 builds on it.
 **Suggested fix:** Change the contract line to 400 `bad_request` and add
 503 `unavailable`.
-**Resolution:** Fixed 2026-10-03: the spec's move contract says 400 bad_request, 413 and 503 unavailable, as the code answers.
+**Resolution:** Fixed 2026-10-03: the spec's move contract says 400 bad_request, 413 and 503 unavailable, as the code answers. Closed 2026-10-04 by independent review of step 7b.3: re-read the spec's Move contract (400 `bad_request`, 413, 404, 409, 503 `unavailable`), which matches the route.
 
 ### F-145 [P3] open - The move's check is a copy of bookTime's: the free check, the room rule, the day's counts and `namesOf`
 
@@ -402,9 +402,9 @@ give.
 connected calendar that fails, so a warn line is actually written), and
 either rename the tenant test to what it checks or add a case that moves
 one business's booking and asserts the other business's rows unchanged.
-**Resolution:** Fixed 2026-10-03: the privacy test also reads console.warn and a refusal's body; the tenant test also makes a real move of ours to a time the other business has booked and checks their booking and rows are untouched.
+**Resolution:** Fixed 2026-10-03: the privacy test also reads console.warn and a refusal's body; the tenant test also makes a real move of ours to a time the other business has booked and checks their booking and rows are untouched. Not closed by independent review of step 7b.3 (2026-10-04): the tenant half holds; the log half still reads a `console.warn` that nothing writes (no calendar is connected in that test, and it reads before `bookingEventMoves.settled()`). A real follow failure's line is now checked for the name and address in move-booking-event.test.ts "a Google error keeps the move and logs one line".
 
-### F-147 [P3] fixed - The activity types test is still named "the nine kinds" while it expects ten
+### F-147 [P3] closed - The activity types test is still named "the nine kinds" while it expects ten
 
 **File:** packages/shared/crm/activity-types.test.ts:6
 **Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
@@ -412,4 +412,141 @@ one business's booking and asserts the other business's rows unchanged.
 name did not, so a failing run would report the wrong expectation.
 **Suggested fix:** Rename it "are the ten kinds of timeline entry, each
 once".
-**Resolution:** Fixed 2026-10-03: the test says ten kinds.
+**Resolution:** Fixed 2026-10-03: the test says ten kinds. Closed 2026-10-04 by independent review of step 7b.3: activity-types.test.ts:6 reads "are the ten kinds of timeline entry, each once" and asserts 10.
+
+### F-148 [P2] fixed - A move to another person writes nothing into the new person's calendar when the old person's calendar needs reconnecting or refuses the delete
+
+**File:** backend/lib/calendar/move-booking-event.ts:79-82 (backend/lib/calendar/get-fresh-access-token.ts:44)
+**Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
+**Why it matters:** The old person's key and delete come first, and either
+one throwing ends the whole follow before `forget()` and
+`writeBookingEvent`: `getFreshAccessToken` throws
+`CalendarReconnectNeededError` for a connection marked `needs_reconnect`,
+and `deleteEvent` throws on any answer but 2xx, 404 and 410. Probed in this
+review with temporary tests (removed after): Jane booked with Ana, both Ana
+and Mei connected, Ana's connection set to `needs_reconnect`, Jane moved
+to Mei: no Google call at all, Mei's calendar gets nothing, and
+`calendarEventId` still names Ana's event. The same with Ana's DELETE
+answering 503. Mei then works an appointment that is missing from her own
+calendar because someone else's calendar is broken, and feature 8 cannot
+redo it (F-149). A Google refresh token that expires or is revoked is
+enough to put a connection in `needs_reconnect`.
+**Suggested fix:** Make the two calendars independent: write into the new
+person's calendar whatever happened in the old one (write first, or catch
+and log the old side's failure on its own line), and test the old person
+needing reconnect, the old delete failing, and the old person having no
+calendar while the new one does.
+**Resolution:** Fixed 2026-10-04: on a person change the new person's event is written first, then the first person's removed inside a try; a first calendar that needs reconnecting or refuses the removal no longer stops the write, and the failure is logged. Tested with a connection needing reconnection and a removal answering 503.
+
+### F-149 [P2] open - When the follow gives up on the old person's calendar, nothing records that the event is still there, so neither the cancel nor feature 8 can remove it
+
+**File:** backend/lib/calendar/move-booking-event.ts:46,80 (backend/lib/booking/booking-event-moves.ts:2-3; payload: backend/lib/booking/move-booking.ts:241-246; removal: backend/lib/calendar/remove-booking-event.ts:33)
+**Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
+**Why it matters:** Who held the event before a move exists only as the
+in-memory argument to the follow. When the follow fails (F-148's cases, a
+Google 5xx or timeout, a restart before it runs), or a cancel lands before
+it reads the row (line 46 returns "nothing", commented "the removal handles
+it"), the event stays in the old person's calendar while `personId` names
+the new person, and the cancel's removal asks only the current person's
+calendar. Probed: Ana's DELETE answering 503 on a move to Mei, then a
+cancel: the only call is a DELETE in Mei's calendar, `calendarEventId` is
+cleared, and Ana's 9:00 event is never removed. It keeps Ana busy in
+Google's free/busy, so her 9:00 is no longer offered to new customers, and
+nothing can find it: not the booking row, not the `booking_moved` payload
+(`{ bookingId, fromStartsAt, toStartsAt, sequence }`), not the log line.
+booking-event-moves.ts says feature 8 tries again; it has nothing to try
+with. This is the half of F-141 that remains.
+**Suggested fix:** F-141's first option: save whose calendar holds the
+event (`calendarPersonId` beside `calendarEventId`, set by the write,
+cleared by the removal) and have the follow and the removal act on it
+rather than on the handed-over person and the current `personId`. At the
+least, add `fromPersonId` and `toPersonId` to the `booking_moved` payload
+and the spec's contract so feature 8 can redo a person change, and correct
+the comment at line 46.
+**Resolution:** Carried to feature 8 (spec, Notes for the AI): its retry job must carry the first person and the event id being removed; a booking column would only half-solve it.
+
+### F-150 [P3] open - Two moves inside one follow's Google calls leave an orphan event and save the wrong calendar's id
+
+**File:** backend/lib/calendar/move-booking-event.ts:50,57,82 (backend/lib/calendar/write-booking-event.ts:85-88)
+**Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
+**Why it matters:** Each follow pairs the person handed over by its own
+move with the booking row as it stands when it reads, and
+`writeBookingEvent` saves its id unconditionally. Probed with Mei's event
+write held: Jane moved Ana to Mei, then back to Ana, then Mei's answer
+released. Calls: DELETE plain id at Ana, POST `s1` at Mei, DELETE plain id
+at Mei (wrong id, Mei holds `s1`), POST `s2` at Ana; the saved id ends as
+`s1` while the booking is Ana's, and a cancel then deletes `s1` in Ana's
+calendar, leaving `s1` at Mei and `s2` at Ana for a cancelled booking. A
+move in the first moment after booking (event created, id not yet saved)
+can do the same: the PATCH by the plain id misses and `s1` is written
+beside it. The window is one follow's Google calls (about a second today;
+the owner's move in features 11 and 12b adds a second actor). Feature 8's
+retries cannot repair it, since no retry knows which id is right; it
+belongs to this step's design, but it is rare.
+**Suggested fix:** Run one booking's follows one at a time (a per-booking
+chain in booking-event-moves.ts), and with F-149's `calendarPersonId` let
+each follow compare where the event is with where it should be instead of
+trusting the handed-over person; save the written id only while
+`calendarEventId` is still null.
+**Resolution:** Carried to feature 8 with F-149: two moves inside one follow's Google calls; the retry job design covers it.
+
+### F-151 [P3] fixed - Four of the follow's branches can be broken with every test green
+
+**File:** backend/lib/calendar/move-booking-event.test.ts (code: backend/lib/calendar/move-booking-event.ts:46,66-71,80; backend/lib/booking/move-booking.ts:208)
+**Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
+**Why it matters:** Each of these left the 10 event-move tests, and the
+write and remove tests, green in this review (each restored): dropping the
+save of the id after a PATCH that found an unsaved event (66-71), which is
+what lets a later cancel find 7a's "written, id not yet saved" event;
+returning "nothing" when the old person has no calendar instead of writing
+into the new person's (80; the only unconnected test has nobody
+connected); starting the follow on the in-transaction "already there"
+answer (move-booking.ts:208; the second-press test stops at the pre-check
+on :75); and removing the cancelled check (46). The person-change failure
+path is untested too (F-148).
+**Suggested fix:** Add: a same-person move whose event exists but whose id
+was not saved (asserting the plain id is saved after the PATCH); old person
+unconnected, new person connected (one POST, to the new person); two
+simultaneous presses to the same new time making one PATCH; a follow for a
+booking cancelled before it reads making no PATCH or POST.
+**Resolution:** Fixed 2026-10-04: tests for an event found but never saved (its id saved), a person change with no first calendar (the new person written), two moves at once (one PATCH), and a cancelled booking's event not moved; each of the four breakages now fails its test.
+
+### F-152 [P3] fixed - The spec and three comments still describe the step's first plan
+
+**File:** blueprint/context/current-feature.md:178-180,248-249,322 (backend/lib/calendar/calendar-event-id-of.ts:4; backend/lib/calendar/move-booking-event.ts:46; backend/lib/calendar/remove-booking-event.ts:4-5)
+**Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
+**Why it matters:** The 7b.3 bullet says the seam gains
+`updateEvent(accessToken, event)` and that a 404 writes the event inside
+it; the code has `updateEventTime(accessToken, eventId, time)` answering
+false, and the caller writes. Files names a new `update-booking-event.ts`;
+the file is `move-booking-event.ts`. The Notes for the AI still say the
+event's id is the booking id without dashes. In code,
+calendar-event-id-of.ts:4 says the first id is "made, never stored", but
+write-booking-event.ts:85-88 stores it; move-booking-event.ts:46 says the
+removal handles a cancel meanwhile, which F-149 shows false after a person
+change; and remove-booking-event.ts's header reflow leaves "Only a
+cancelled" alone at the end of a short line. AGENTS.md asks for a wrong
+spec to be corrected before the next step builds on it.
+**Suggested fix:** Bring the bullet, Files and Notes to `updateEventTime`,
+`move-booking-event.ts` and the id with the move's number; reword the two
+comments and reflow the header.
+**Resolution:** Fixed 2026-10-04: the spec says updateEventTime and move-booking-event.ts and gives the id rule with the move's number; the comments in calendar-event-id-of.ts and move-booking-event.ts corrected.
+
+### F-153 [P3] unverified - A PATCH of an event the person deleted by hand may answer 200, so the move reports "moved" and the event stays hidden
+
+**File:** backend/lib/calendar/google-calendar-provider.ts:111-113 (fallback: backend/lib/calendar/move-booking-event.ts:50)
+**Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
+**Why it matters:** The code reads only 404 and 410 as "not there". Google
+keeps a deleted event under its id with status "cancelled" (the reason
+calendarEventIdOf now adds the move's number); if a PATCH of such an event
+answers 200, `updateEventTime` returns true, the follow reports "moved",
+and the worker never sees the moved booking. The same applies when the
+fallback at move-booking-event.ts:50 patches the plain id in a calendar
+this booking's event was once deleted from. No real Google answer was
+checked in this review (the fake answers whatever the test sets), and the
+comment cites no source, which coding-standards.md asks for when code rests
+on how a dependency behaves.
+**Suggested fix:** Check once against a real calendar (delete an event by
+hand, then PATCH it). If it answers 200, read `status` from the answer and
+treat "cancelled" as not there, and cite what was observed beside the line.
+**Resolution:**

@@ -175,9 +175,10 @@ No package is planned. Installing one is a line only Frank crosses.
     carries the customer's details.
 
 - [x] **7b.3 The event moves in the booked person's Google.**
-  - The provider seam gains `updateEvent(accessToken, event)`: Google's
-    `PATCH` of the event by the id made from the booking; 404 writes it
-    instead; throws on any other failure.
+  - The provider seam gains `updateEventTime(accessToken, eventId, time)`:
+    Google's `PATCH` of the event's start and end by its saved id; 404 or
+    410 answers false and the event is written afresh; throws on any other
+    failure. `move-booking-event.ts` does the following.
   - When the move changed the person: the event is removed from the old
     person's Google and written into the new person's. Google keeps a deleted
     event's id in a calendar, so an event moved to another person carries an
@@ -245,8 +246,8 @@ No package is planned. Installing one is a line only Frank crosses.
   (`canMove`), the after-move starts beside `booking-event-writes.ts` and
   `booking-cancellation-emails.ts`
 - `backend/lib/calendar/`: `calendar-provider.ts`,
-  `google-calendar-provider.ts` (`updateEvent`), a new
-  `update-booking-event.ts`
+  `google-calendar-provider.ts` (`updateEventTime`), a new
+  `move-booking-event.ts`
 - `backend/lib/email/`: `booking-ics.ts`, a sender for the two new emails
   through `find-booking-email-context.ts` and `send-and-record-emails.ts`,
   `send-cancellation-emails.ts` (the sequence)
@@ -319,8 +320,16 @@ harness), with screenshots in the build log.
   old one otherwise.
 - The free-times check runs outside the transaction, as `bookTime`'s does;
   the overlap rule inside it is the race guard.
-- The Google event's id is the booking id without dashes
-  (`calendarEventIdOf`).
+- The Google event's id is the booking id without dashes, plus `s` and the
+  move's number for a write after a move (`calendarEventIdOf(id, sequence)`);
+  the saved `calendarEventId` is what updates and removals use.
+- From step 7b.3's review, for feature 8 (F-149, F-150): a follow that
+  cannot remove the first person's event, or a cancel that beats the follow,
+  leaves that event behind with nothing pointing at it, and two moves
+  within one follow's Google calls can leave an orphan. The move's retry job
+  must carry the first person and the event id it is removing; a single
+  column on the booking would only half-solve it. F-153 (unverified): a
+  PATCH of an event deleted by hand in Google may answer 200.
 - A confirmation retried by feature 8 after a move would carry the new times
   under the confirmation's old key, which Resend refuses: feature 8 decides
   (a note, not this feature's work).

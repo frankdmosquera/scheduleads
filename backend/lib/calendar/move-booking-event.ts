@@ -1,15 +1,17 @@
 // Backend: makes a moved booking's event follow it (feature 7b). With the same person, the same
 // event gets the new start and end (decision 7, never deleted and written again); one that is not
-// there is written. With another person, it leaves the first person's calendar and is written into
-// the new person's, under a fresh id so moving back later is never refused. Nothing for a booking
-// no longer confirmed, or for a person with no calendar. Throws on any failure; the caller keeps
-// the move either way (decision 5).
+// there is written. With another person, it is written into the new person's calendar under a
+// fresh id, so moving back later is never refused, and then taken out of the first person's; a
+// first calendar that cannot be reached never stops the new person getting it. Nothing for a
+// booking no longer confirmed, or for a person with no calendar. Throws on any failure, after
+// doing what it could; the caller keeps the move either way (decision 5).
 
 import { and, eq, isNull } from "drizzle-orm";
 
 import { availabilityRule, booking } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
+import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { calendarEventIdOf } from "./calendar-event-id-of.js";
 import { getFreshAccessToken } from "./get-fresh-access-token.js";
 import { writeBookingEvent } from "./write-booking-event.js";
@@ -43,7 +45,7 @@ export async function moveBookingEvent(
     .limit(1);
   if (!row) throw new Error("Moving the event failed: no such booking in this business.");
   if (!row.timezone) throw new Error("Moving the event failed: the business has no time zone.");
-  if (row.status !== "confirmed") return "nothing"; // cancelled meanwhile: the removal handles it
+  if (row.status !== "confirmed") return "nothing"; // cancelled meanwhile: the cancel's removal runs
 
   // The event as it stands: its saved id, or the one made from the booking if it was written
   // before its id could be saved.
@@ -75,9 +77,15 @@ export async function moveBookingEvent(
     return (await writeBookingEvent(organizationId, bookingId)) ? "written" : "nothing";
   }
 
-  // Another person: out of the first person's calendar, then into the new person's.
-  const from = await getFreshAccessToken({ organizationId, resourceId: fromPersonId });
-  if (from) await from.provider.deleteEvent(from.accessToken, eventId);
+  // Another person: into the new person's calendar first, then out of the first person's.
   await forget();
-  return (await writeBookingEvent(organizationId, bookingId)) ? "written" : "nothing";
+  const written = await writeBookingEvent(organizationId, bookingId);
+  try {
+    const from = await getFreshAccessToken({ organizationId, resourceId: fromPersonId });
+    if (from) await from.provider.deleteEvent(from.accessToken, eventId);
+  } catch (error) {
+    // Logged by the caller; retrying the removal is feature 8's (it must carry this person and id).
+    throw new Error(`the first person's event was not removed: ${safeErrorReason(error)}`);
+  }
+  return written ? "written" : "nothing";
 }

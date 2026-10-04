@@ -22,6 +22,7 @@ const { db } = await import("../../database.js");
 const {
   availabilityRule,
   booking,
+  calendarConnection,
   bookingLink,
   bookingLinkResource,
   organization,
@@ -37,6 +38,7 @@ const { bookingEventRemovals } = await import("../booking/booking-event-removals
 const { bookingConfirmationEmails } = await import("../booking/booking-confirmation-emails.js");
 const { bookingCancellationEmails } = await import("../booking/booking-cancellation-emails.js");
 const { saveCalendarConnection } = await import("./save-calendar-connection.js");
+const { moveBookingEvent } = await import("./move-booking-event.js");
 
 const tag = randomUUID().slice(0, 8);
 const NOW = new Date("2026-10-02T14:00:00Z"); // Friday 8:00 in Edmonton
@@ -47,12 +49,14 @@ const EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/eve
 type CallType = { method: string; url: string; authorization: string | null; body: unknown };
 const calls: CallType[] = [];
 let patchAnswer: () => Response | Promise<Response>;
+let deleteAnswer: () => Response | Promise<Response>;
 const deletedIn = new Map<string, Set<string>>(); // access token -> ids deleted in that calendar
 
 beforeEach(() => {
   calls.length = 0;
   deletedIn.clear();
   patchAnswer = () => new Response("{}", { status: 200 });
+  deleteAnswer = () => new Response(null, { status: 204 });
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input instanceof Request ? input.url : input);
     const method = init?.method ?? "GET";
@@ -72,8 +76,9 @@ beforeEach(() => {
     }
     if (method === "PATCH") return patchAnswer();
     if (method === "DELETE") {
-      deleted.add(decodeURIComponent(url.slice(EVENTS_URL.length + 1)));
-      return new Response(null, { status: 204 });
+      const answer = await deleteAnswer();
+      if (answer.ok) deleted.add(decodeURIComponent(url.slice(EVENTS_URL.length + 1)));
+      return answer;
     }
     throw new Error(`Unexpected ${method} ${url}`);
   });
@@ -221,10 +226,10 @@ describe("a moved booking's Google event", () => {
 
     await moveTo(janes, 10, clinic.mei);
     expect(eventCalls()).toEqual([
-      { method: "DELETE", id: base(janes), authorization: "Bearer ya29.ana" },
       { method: "POST", id: "", authorization: "Bearer ya29.mei" },
+      { method: "DELETE", id: base(janes), authorization: "Bearer ya29.ana" },
     ]);
-    expect((calls[1].body as { id: string }).id).toBe(`${base(janes)}s1`);
+    expect((calls[0].body as { id: string }).id).toBe(`${base(janes)}s1`);
     expect(await savedEventId(janes)).toBe(`${base(janes)}s1`);
   });
 
@@ -257,6 +262,83 @@ describe("a moved booking's Google event", () => {
     expect(eventCalls()).toEqual([
       { method: "DELETE", id: `${base(janes)}s1`, authorization: "Bearer ya29.mei" },
     ]);
+  });
+
+  test("the new person gets the event even when the first calendar needs reconnecting", async () => {
+    const clinic = await makeClinic("reconnect");
+    await connect(clinic, clinic.ana, "ana");
+    await connect(clinic, clinic.mei, "mei");
+    const janes = await bookJane(clinic);
+    await db
+      .update(calendarConnection)
+      .set({ status: "needs_reconnect" })
+      .where(eq(calendarConnection.resourceId, clinic.ana));
+    const warn = vi.mocked(console.warn);
+    warn.mockClear();
+    calls.length = 0;
+
+    await moveTo(janes, 10, clinic.mei);
+    expect(eventCalls()).toEqual([{ method: "POST", id: "", authorization: "Bearer ya29.mei" }]);
+    expect(await savedEventId(janes)).toBe(`${base(janes)}s1`);
+    expect(warn.mock.calls.filter((args) => args.join(" ").includes(janes))).toHaveLength(1);
+  });
+
+  test("the new person gets the event even when the first calendar refuses the removal", async () => {
+    const clinic = await makeClinic("refused");
+    await connect(clinic, clinic.ana, "ana");
+    await connect(clinic, clinic.mei, "mei");
+    const janes = await bookJane(clinic);
+    deleteAnswer = () => new Response("{}", { status: 503 });
+    calls.length = 0;
+
+    await moveTo(janes, 10, clinic.mei);
+    expect(eventCalls().map((call) => call.method)).toEqual(["POST", "DELETE"]);
+    expect(await savedEventId(janes)).toBe(`${base(janes)}s1`);
+  });
+
+  test("a person change with no first calendar still writes the new person's", async () => {
+    const clinic = await makeClinic("no-first");
+    await connect(clinic, clinic.mei, "mei");
+    const janes = await bookJane(clinic); // Ana has no calendar: no event yet
+    calls.length = 0;
+
+    await moveTo(janes, 10, clinic.mei);
+    expect(eventCalls()).toEqual([{ method: "POST", id: "", authorization: "Bearer ya29.mei" }]);
+  });
+
+  test("an event found but never saved gets its id saved", async () => {
+    const clinic = await makeClinic("unsaved");
+    await connect(clinic, clinic.ana, "ana");
+    const janes = await bookJane(clinic);
+    await db.update(booking).set({ calendarEventId: null }).where(eq(booking.id, janes));
+
+    await moveTo(janes, 10, clinic.ana); // Google answers the PATCH: the event was there
+    expect(await savedEventId(janes)).toBe(base(janes));
+  });
+
+  test("two moves at once to the same time move the event once", async () => {
+    const clinic = await makeClinic("at-once");
+    await connect(clinic, clinic.ana, "ana");
+    const janes = await bookJane(clinic);
+    calls.length = 0;
+
+    await Promise.all([
+      moveBooking({ bookingId: janes, startsAt: at(10), personId: clinic.ana, now: NOW }),
+      moveBooking({ bookingId: janes, startsAt: at(10), personId: clinic.ana, now: NOW }),
+    ]);
+    await bookingEventMoves.settled();
+    expect(calls.filter((call) => call.method === "PATCH")).toHaveLength(1);
+  });
+
+  test("a cancelled booking's event is not moved", async () => {
+    const clinic = await makeClinic("cancelled");
+    await connect(clinic, clinic.ana, "ana");
+    const janes = await bookJane(clinic);
+    await db.update(booking).set({ status: "cancelled" }).where(eq(booking.id, janes));
+    calls.length = 0;
+
+    expect(await moveBookingEvent(clinic.business, janes, clinic.ana)).toBe("nothing");
+    expect(calls).toEqual([]);
   });
 
   test("no connection makes no call", async () => {
