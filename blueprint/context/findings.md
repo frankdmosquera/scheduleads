@@ -490,7 +490,7 @@ trusting the handed-over person; save the written id only while
 `calendarEventId` is still null.
 **Resolution:** Carried to feature 8 with F-149: two moves inside one follow's Google calls; the retry job design covers it.
 
-### F-151 [P3] fixed - Four of the follow's branches can be broken with every test green
+### F-151 [P3] closed - Four of the follow's branches can be broken with every test green
 
 **File:** backend/lib/calendar/move-booking-event.test.ts (code: backend/lib/calendar/move-booking-event.ts:46,66-71,80; backend/lib/booking/move-booking.ts:208)
 **Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
@@ -509,9 +509,9 @@ was not saved (asserting the plain id is saved after the PATCH); old person
 unconnected, new person connected (one POST, to the new person); two
 simultaneous presses to the same new time making one PATCH; a follow for a
 booking cancelled before it reads making no PATCH or POST.
-**Resolution:** Fixed 2026-10-04: tests for an event found but never saved (its id saved), a person change with no first calendar (the new person written), two moves at once (one PATCH), and a cancelled booking's event not moved; each of the four breakages now fails its test.
+**Resolution:** Fixed 2026-10-04: tests for an event found but never saved (its id saved), a person change with no first calendar (the new person written), two moves at once (one PATCH), and a cancelled booking's event not moved; each of the four breakages now fails its test. Closed 2026-10-04 by independent review of step 7b.4: re-broke three branches at HEAD (the cancelled check, the id save after a PATCH, the follow started on the in-transaction "already there") and each failed its own test, restored after; the fourth (old person unconnected) is now structural, the new person is written before the first calendar is read, and "a person change with no first calendar still writes the new person's" covers it.
 
-### F-152 [P3] fixed - The spec and three comments still describe the step's first plan
+### F-152 [P3] closed - The spec and three comments still describe the step's first plan
 
 **File:** blueprint/context/current-feature.md:178-180,248-249,322 (backend/lib/calendar/calendar-event-id-of.ts:4; backend/lib/calendar/move-booking-event.ts:46; backend/lib/calendar/remove-booking-event.ts:4-5)
 **Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
@@ -530,7 +530,7 @@ spec to be corrected before the next step builds on it.
 **Suggested fix:** Bring the bullet, Files and Notes to `updateEventTime`,
 `move-booking-event.ts` and the id with the move's number; reword the two
 comments and reflow the header.
-**Resolution:** Fixed 2026-10-04: the spec says updateEventTime and move-booking-event.ts and gives the id rule with the move's number; the comments in calendar-event-id-of.ts and move-booking-event.ts corrected.
+**Resolution:** Fixed 2026-10-04: the spec says updateEventTime and move-booking-event.ts and gives the id rule with the move's number; the comments in calendar-event-id-of.ts and move-booking-event.ts corrected. Closed 2026-10-04 by independent review of step 7b.4: the spec's 7b.3 bullet, Files and Notes name updateEventTime, move-booking-event.ts and the id with the move's number; calendar-event-id-of.ts:1-5 and move-booking-event.ts:48 no longer claim what the code does not do. Only the cosmetic reflow of remove-booking-event.ts:4 ("Only a cancelled" alone at a line end) was left, which misleads nobody.
 
 ### F-153 [P3] unverified - A PATCH of an event the person deleted by hand may answer 200, so the move reports "moved" and the event stays hidden
 
@@ -549,4 +549,61 @@ on how a dependency behaves.
 **Suggested fix:** Check once against a real calendar (delete an event by
 hand, then PATCH it). If it answers 200, read `status` from the answer and
 treat "cancelled" as not there, and cite what was observed beside the line.
+**Resolution:**
+
+### F-154 [P3] open - An earlier move's emails, built after a later move to another person, name the later person in "With"
+
+**File:** backend/lib/email/send-move-emails.ts:67 (backend/lib/email/find-booking-email-context.ts:52,128; backend/emails/booking-moved.tsx:84; backend/emails/booking-moved-notification.tsx:76; backend/lib/booking/move-booking.ts:244-249)
+**Found:** 2026-10-04 by independent review of step 7b.4 (scope: b56d43a..1524a1b; lenses: quality, security, performance, tests)
+**Why it matters:** The move's emails take its times from its own
+`booking_moved` entry, but the person from the booking row as it is when
+the emails are built (`movedFacts = { ...facts, startsAt }`, `personName`
+read from `booking.personId`). The entry's payload carries no person, so
+an earlier move's emails cannot know who it was with. Today the window is
+only the few milliseconds between move 1's commit and its email context
+read, which no customer can hit through the page; the test "an earlier
+move's emails, sent after a later move, still carry that move's times"
+stays on one person and so never sees it. It becomes real with feature 8:
+a retried move email names whoever holds the booking at retry time, beside
+that move's old time, and the body then differs from the first try under
+the same Resend key, which Resend refuses within its key window. Not
+blocking now.
+**Suggested fix:** Put `toPersonId` (and `fromPersonId`) in the
+`booking_moved` payload and read that person's name for the move's
+emails, so every fact in a move's email comes from the move itself; or
+record it as a note for feature 8 beside the confirmation note already in
+the spec.
+**Resolution:**
+
+### F-155 [P3] fixed - The confirmation's invite number 0 is untested, so it can equal the first move's with every test green
+
+**File:** backend/lib/email/send-booking-emails.ts:66 (tests: backend/lib/email/send-booking-emails.test.ts, backend/lib/email/booking-ics.test.ts:16,35)
+**Found:** 2026-10-04 by independent review of step 7b.4 (scope: b56d43a..1524a1b; lenses: quality, security, performance, tests)
+**Why it matters:** Decision 6 rests on the order 0 (made) < 1 (first move)
+< ... < sequence + 1 (cancel). Every move and cancel number is asserted,
+but the confirmation's 0 is only asserted in the pure `bookingIcs` unit
+test, which passes its own input. Changing send-booking-emails.ts:66 to
+`sequence: 1` left all 568 backend tests green in this review (restored
+after). With that change the first move's invite carries the same
+SEQUENCE as the confirmation's, and calendars that follow RFC 5546 ignore
+the move: the customer's calendar keeps the old time.
+**Suggested fix:** In the confirmation test that already decodes the
+invite, assert `SEQUENCE:0`; or in send-move-emails.test.ts, assert the
+first move's number is above the confirmation's actually sent invite.
+**Resolution:** Fixed 2026-10-04: send-move-emails.test.ts asserts the confirmation actually sent carries SEQUENCE:0 before the move sends 1; the confirmation set to 1 now fails that test.
+
+### F-156 [P3] open - The sixth copy of the "start and settle" background tracker
+
+**File:** backend/lib/booking/booking-move-emails.ts:9-26 (same body in booking-event-writes.ts, booking-confirmation-emails.ts, booking-event-moves.ts, booking-event-removals.ts, booking-cancellation-emails.ts)
+**Found:** 2026-10-04 by independent review of step 7b.4 (scope: b56d43a..1524a1b; lenses: quality, security, performance, tests)
+**Why it matters:** Each module repeats the same `running` set, the
+`.then/.catch/.finally` chain and `settled()`, differing only in the call
+and the log line. Every test file that books, moves or cancels must now
+list up to six `settled()` calls by hand (this step added the new one to
+four files); a file that forgets one can end the database pool while a
+send is still writing its `email_sent` entry. Feature 8 will add retries
+on top of all six.
+**Suggested fix:** One small helper that takes the work and the log line
+and returns `{ start, settled }`, with one shared "all background work
+settled" for tests; keep the six named exports as thin uses of it.
 **Resolution:**

@@ -201,6 +201,10 @@ describe("a moved booking's emails", () => {
   test("a move sends both, Jane's invite carrying the booking's UID, the new times and the new sequence", async () => {
     const business = await makeBusiness("both");
     const bookingId = await book(business);
+    // The confirmation's invite is number 0, so the move's 1 is the higher one calendars take.
+    expect(inviteOf(calls.find((call) => call.body.attachments)).split("\r\n")).toContain(
+      "SEQUENCE:0"
+    );
 
     expect(await move(bookingId, TEN)).toEqual({ moved: true, unchanged: false });
 
