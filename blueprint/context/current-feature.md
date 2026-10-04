@@ -86,6 +86,11 @@ it. Nobody signs in: the link is still the key. This finishes feature 7.
     the page shows the business's phone instead. A business's own cutoff
     comes with Settings, feature 12. Rejected: a fixed 24-hour cutoff for
     every business, a rule nobody chose.
+13. **Switching a service off stops only new bookings** (Frank, 2026-10-03,
+    from 7b.1's review, F-138). A booking already made keeps its page whole:
+    Change the time and Cancel, its move times read for its own service even
+    when the service is switched off. Rejected: hiding the move and showing
+    the phone, which treats an existing booking as if it were new.
 
 ## Out of scope
 
@@ -154,7 +159,9 @@ No package is planned. Installing one is a line only Frank crosses.
     view at the new time; 404 for a bad link; 409 `time_taken`,
     `already_started` or `already_cancelled`; 400 for a start that is not an
     ISO instant.
-  - The page's view gains `canMove` (the same as `canCancel`).
+  - The page's view gains `canMove` (the same as `canCancel`, decision 13).
+  - A booking's own service is read even when switched off, for its move
+    times and its move (decision 13); new bookings still need it switched on.
   - **Done when** saved tests, against the local database: a move changes the
     times, releases the old rows, holds the new ones and writes one entry with
     the old and new start; moving into a time overlapping the old one works;
@@ -316,8 +323,9 @@ harness), with screenshots in the build log.
   (a note, not this feature's work).
 - Never put a token, a customer's details or a key in a log line.
 - From step 7b.1's review: a business that switches a service off leaves the
-  booking's page open while its move times answer 404 (F-138), so 7b.2's
-  `canMove` cannot simply equal `canCancel`; settle it in 7b.2's plan. An
+  booking's page open while its move times answer 404 (F-138); Frank decided
+  (decision 13) the booking keeps working, so 7b.2 reads its own service
+  even when switched off. An
   owner can still change their address through Better Auth's own
   organization update (F-137), which the reserved slug does not cover; Frank
   left it for Settings, feature 12 (2026-10-03).

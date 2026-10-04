@@ -256,7 +256,7 @@ No test or spec line covers the case.
 still be moved. If not, make `canMove` false for it and let the page say
 to call the business; if so, read the service without the `active` filter
 for a move.
-**Resolution:**
+**Resolution:** Decided by Frank, 2026-10-03 (decision 13): switching a service off stops only new bookings; an existing booking keeps Change the time. Fixed by step 7b.2, which reads the booking's own service even when switched off.
 
 ### F-139 [P3] fixed - The spec names `ignoreBookingId` and "the day's booking counts"; the code has `ignoreBooking` and no such counts
 
