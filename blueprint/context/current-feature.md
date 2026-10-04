@@ -174,7 +174,7 @@ No package is planned. Installing one is a line only Frank crosses.
     never touched; nothing in the answer, the log or the timeline payload
     carries the customer's details.
 
-- [ ] **7b.3 The event moves in the booked person's Google.**
+- [x] **7b.3 The event moves in the booked person's Google.**
   - The provider seam gains `updateEvent(accessToken, event)`: Google's
     `PATCH` of the event by the id made from the booking; 404 writes it
     instead; throws on any other failure.

@@ -295,7 +295,7 @@ booking's times, person and sequence unchanged, its old row still
 `active`, and no `booking_moved` entry.
 **Resolution:** Fixed 2026-10-03: move-booking-taken-meanwhile.test.ts shows the check an empty world while the database holds the new time, so the hold fails inside the transaction; the booking, its released-then-restored row and the timeline stay untouched. Committing the release instead fails it.
 
-### F-141 [P2] open - A move to another person leaves its Google event in the old person's calendar, and the booking keeps no record of whose calendar that is
+### F-141 [P2] fixed - A move to another person leaves its Google event in the old person's calendar, and the booking keeps no record of whose calendar that is
 
 **File:** backend/lib/booking/move-booking.ts:226 (cancel's removal: backend/lib/calendar/remove-booking-event.ts:21,28)
 **Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
@@ -317,7 +317,7 @@ whose calendar holds the event (a `calendarPersonId` beside
 removed), and have removal and update use it rather than `personId`; or at
 least add `fromPersonId` and `toPersonId` to the `booking_moved` payload
 and the spec's contract.
-**Resolution:** Carried to 7b.3's plan (spec, Notes for the AI): the event moves between calendars there and must know the old person.
+**Resolution:** Carried to 7b.3's plan (spec, Notes for the AI): the event moves between calendars there and must know the old person. Fixed by step 7b.3: the move hands over who held the event; a person change removes it from that person's calendar and writes it into the new one under an id carrying the move's number, saved; the cancel removes by the saved id. Tested: "a cancel after a person change removes the event from the new person's calendar".
 
 ### F-142 [P3] fixed - No move test uses a room or moves with any available, so the room's own-row filter and the day's counts can be removed with every test green
 

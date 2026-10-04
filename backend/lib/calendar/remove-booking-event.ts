@@ -1,6 +1,7 @@
 // Backend: takes a cancelled booking's event out of the booked person's own calendar (feature 7a),
-// and forgets its id on the booking. Removed by the id made from the booking, so an event whose id
-// was not saved yet (a cancel in the first moment after booking) goes too. Only a cancelled
+// and forgets its id on the booking. Removed by its saved id, wherever a move put it (feature 7b),
+// or by the id made from the booking, so an event whose id was not saved yet (a cancel in the
+// first moment after booking) goes too. Only a cancelled
 // booking loses its event; with no calendar connected there is nothing to remove. Throws on any
 // failure; the caller keeps the cancel either way (decision 5).
 
@@ -18,7 +19,11 @@ export async function removeBookingEvent(
   bookingId: string
 ): Promise<boolean> {
   const [row] = await db
-    .select({ personId: booking.personId, status: booking.status })
+    .select({
+      personId: booking.personId,
+      status: booking.status,
+      calendarEventId: booking.calendarEventId,
+    })
     .from(booking)
     .where(and(eq(booking.organizationId, organizationId), eq(booking.id, bookingId)))
     .limit(1);
@@ -28,7 +33,10 @@ export async function removeBookingEvent(
   const access = await getFreshAccessToken({ organizationId, resourceId: row.personId });
   if (!access) return false; // no calendar connected: nothing was ever written
 
-  await access.provider.deleteEvent(access.accessToken, calendarEventIdOf(bookingId));
+  await access.provider.deleteEvent(
+    access.accessToken,
+    row.calendarEventId ?? calendarEventIdOf(bookingId)
+  );
   await db
     .update(booking)
     .set({ calendarEventId: null })
