@@ -142,7 +142,7 @@ No package is planned. Installing one is a line only Frank crosses.
     carries the customer's details; making a business with the slug
     `bookings` is refused.
 
-- [ ] **7b.2 Move.**
+- [x] **7b.2 Move.**
   - The booking gains `sequence` (integer, 0); `booking_moved` joins the
     activity types; migration 0018.
   - `backend/lib/booking/move-booking.ts`: the start checked against

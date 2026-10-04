@@ -6,11 +6,15 @@
 import { Hono } from "hono";
 import { validator } from "hono/validator";
 
-import { freeTimesQueryValidationSchema } from "@scheduleads-app/shared/zod-validation";
+import {
+  freeTimesQueryValidationSchema,
+  moveBookingValidationSchema,
+} from "@scheduleads-app/shared/zod-validation";
 
 import { cancelBooking } from "../lib/booking/cancel-booking.js";
 import { findBookingMoveTimes } from "../lib/booking/find-booking-move-times.js";
 import { findBookingPage } from "../lib/booking/find-booking-page.js";
+import { moveBooking } from "../lib/booking/move-booking.js";
 import { readBookingPageToken } from "../lib/booking/booking-page-token.js";
 import { CalendarUnavailableError } from "../lib/calendar/calendar-unavailable-error.js";
 import { refuse } from "../lib/errors/refuse.js";
@@ -21,6 +25,8 @@ const alreadyStarted = refuse(
   "This booking has already started. Call the business to change it."
 );
 const alreadyCancelled = refuse("already_cancelled", "This booking was cancelled.");
+const timeTaken = refuse("time_taken", "That time was just taken. Pick another.");
+const timesUnreadable = refuse("unavailable", "Times cannot be read right now. Try again shortly.");
 
 export const publicBookingPageRoutes = new Hono()
   // What the booking's page shows. Never cached: the booking can change, and the link is private.
@@ -63,11 +69,44 @@ export const publicBookingPageRoutes = new Hono()
         return c.json(result.times, 200);
       } catch (error) {
         if (!(error instanceof CalendarUnavailableError)) throw error;
-        return c.json(
-          refuse("unavailable", "Times cannot be read right now. Try again shortly."),
-          503
-        );
+        return c.json(timesUnreadable, 503);
       }
+    }
+  )
+  // Move to another time (feature 7b): checked again, then the old time freed and the new one held
+  // in one go. Pressed twice to the same time, it answers the same (decision 4).
+  .post(
+    "/bookings/:token/move",
+    validator("json", (value, c) => {
+      const parsed = moveBookingValidationSchema.safeParse(value);
+      if (!parsed.success) {
+        const message = parsed.error.issues[0]?.message ?? "That is not a valid move.";
+        return c.json(refuse("bad_request", message), 400);
+      }
+      return parsed.data;
+    }),
+    async (c) => {
+      c.header("Cache-Control", "no-store");
+      const bookingId = readBookingPageToken(c.req.param("token"));
+      if (!bookingId) return c.json(linkNotFound, 404);
+      const body = c.req.valid("json");
+
+      const result = await moveBooking({
+        bookingId,
+        startsAt: new Date(body.startsAt),
+        personId: body.personId ?? null,
+        now: new Date(),
+      });
+      if (!result.moved) {
+        if (result.reason === "already_started") return c.json(alreadyStarted, 409);
+        if (result.reason === "already_cancelled") return c.json(alreadyCancelled, 409);
+        if (result.reason === "time_taken") return c.json(timeTaken, 409);
+        if (result.reason === "unavailable") return c.json(timesUnreadable, 503);
+        return c.json(linkNotFound, 404);
+      }
+      const booking = await findBookingPage(bookingId, new Date());
+      if (!booking) return c.json(linkNotFound, 404);
+      return c.json({ booking }, 200);
     }
   )
   // Cancel, until the appointment starts (decision 11). Pressed twice, it answers the same.

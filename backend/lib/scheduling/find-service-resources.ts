@@ -14,9 +14,12 @@ export type ServiceResourcesType = {
   placeIds: string[] | null; // null: no room check; empty: a room is needed and none can be used
 };
 
+// serviceMayBeOff: an existing booking's own service is read even when switched off, since that
+// stops only new bookings (feature 7b, decision 13).
 export async function findServiceResources(
   organizationId: string,
-  bookingLinkId: string
+  bookingLinkId: string,
+  { serviceMayBeOff = false }: { serviceMayBeOff?: boolean } = {}
 ): Promise<ServiceResourcesType | null> {
   try {
     const [service] = await db
@@ -26,7 +29,7 @@ export async function findServiceResources(
         and(
           eq(bookingLink.organizationId, organizationId),
           eq(bookingLink.id, bookingLinkId),
-          eq(bookingLink.active, true)
+          serviceMayBeOff ? undefined : eq(bookingLink.active, true)
         )
       )
       .limit(1);

@@ -127,6 +127,13 @@
       "when": 1791037592319,
       "tag": "0017_booking_cancelled_activity",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791084321186,
+      "tag": "0018_booking_moved_and_sequence",
+      "breakpoints": true
     }
   ]
 }

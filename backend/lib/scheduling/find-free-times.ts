@@ -61,13 +61,16 @@ export async function findFreeTimes(input: FindFreeTimesInputType): Promise<Free
       and(
         eq(bookingLink.organizationId, organizationId),
         eq(bookingLink.id, bookingLinkId),
-        eq(bookingLink.active, true)
+        // A booking being moved keeps its service even when switched off (decision 13).
+        ignoreBooking ? undefined : eq(bookingLink.active, true)
       )
     )
     .limit(1);
   if (!service) return null;
 
-  const offered = await findServiceResources(organizationId, bookingLinkId);
+  const offered = await findServiceResources(organizationId, bookingLinkId, {
+    serviceMayBeOff: ignoreBooking !== undefined,
+  });
   const businessHours = await resolveBookableHours(organizationId, null, now);
   if (!offered || !businessHours) return null;
   if (personId !== null && !offered.peopleIds.includes(personId)) return null;

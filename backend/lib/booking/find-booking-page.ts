@@ -19,6 +19,7 @@ export type BookingStatusType = "confirmed" | "cancelled";
 export type BookingPageType = {
   status: BookingStatusType;
   canCancel: boolean; // confirmed and not started (decision 11)
+  canMove: boolean; // the same as canCancel, a switched-off service included (feature 7b, decision 13)
   service: string;
   startsAt: string; // ISO 8601 in UTC
   endsAt: string; // the appointment's own end, without the buffer after
@@ -81,9 +82,11 @@ export async function findBookingPage(
   if (!row?.timezone) return null;
 
   const status = statusOf(row.status);
+  const changeable = status === "confirmed" && row.startsAt.getTime() > now.getTime();
   return {
     status,
-    canCancel: status === "confirmed" && row.startsAt.getTime() > now.getTime(),
+    canCancel: changeable,
+    canMove: changeable,
     service: row.service,
     startsAt: row.startsAt.toISOString(),
     endsAt: row.endsAt.toISOString(),
