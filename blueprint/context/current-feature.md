@@ -271,6 +271,7 @@ type BookingMoveTimesType = {
   timezone: string; // the business's IANA zone
   people: { id: string; name: string }[]; // who she can pick, by name
   startTimes: string[]; // ISO 8601 instants in UTC, ascending, unique
+  lastDate: string; // YYYY-MM-DD, the last date it takes bookings (7b.5's review, F-159)
 };
 ```
 

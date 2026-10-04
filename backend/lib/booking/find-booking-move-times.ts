@@ -8,10 +8,17 @@ import { eq } from "drizzle-orm";
 import { booking } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
+import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
+import { addDays } from "../local-time/add-days.js";
+import { localDate } from "../local-time/local-date.js";
 import { findFreeTimes, type FreeTimesType } from "../scheduling/find-free-times.js";
 
+// The booking form's answer, plus the last date the business takes bookings, so the page stops
+// offering later weeks there (7b.5's review, F-159).
+export type BookingMoveTimesType = FreeTimesType & { lastDate: string }; // YYYY-MM-DD, its zone
+
 export type BookingMoveTimesResultType =
-  | { state: "ok"; times: FreeTimesType }
+  | { state: "ok"; times: BookingMoveTimesType }
   | { state: "not_found" } // no such booking, its service is gone, or the person does not offer it
   | { state: "already_cancelled" }
   | { state: "already_started" };
@@ -54,5 +61,9 @@ export async function findBookingMoveTimes(input: {
       endsAt: row.endsAt,
     },
   });
-  return times ? { state: "ok", times } : { state: "not_found" };
+  const hours = await resolveBookableHours(row.organizationId, null, input.now);
+  if (!times || !hours) return { state: "not_found" };
+  // The same horizon findFreeTimes stops at: today in the business's zone plus its days ahead.
+  const lastDate = addDays(localDate(input.now, hours.timezone), hours.horizonDays);
+  return { state: "ok", times: { ...times, lastDate } };
 }

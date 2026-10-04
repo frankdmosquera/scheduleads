@@ -308,6 +308,25 @@ describe("free times for moving a booking", () => {
     );
   });
 
+  test("the answer names the last date the business takes bookings", async () => {
+    fakeGoogleBusy([]);
+    const response = await timesFor(clinic.janesBooking);
+    // Today in the clinic's zone, plus its 60 days ahead, worked out apart from the code.
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+    const part = (type: string) => Number(parts.find((each) => each.type === type)?.value);
+    const lastDate = new Date(Date.UTC(part("year"), part("month") - 1, part("day") + 60))
+      .toISOString()
+      .slice(0, 10);
+
+    expect(response.status).toBe(200);
+    expect(((await response.json()) as { lastDate: string }).lastDate).toBe(lastDate);
+  });
+
   test("nothing in the answer carries the customer's details", async () => {
     const response = await timesFor(clinic.janesBooking);
     const text = await response.text();

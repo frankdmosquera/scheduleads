@@ -92,6 +92,7 @@ export function ChangeTimePanel({
   const [reloads, setReloads] = useState(0);
   const [result, setResult] = useState<BookingMoveTimesResultType | null>(null);
   const [people, setPeople] = useState<{ id: string; name: string }[]>([]);
+  const [lastDate, setLastDate] = useState<string | null>(null); // the last date it takes bookings
   const [chosen, setChosen] = useState<string | null>(null); // the start asked about once more
   const [sending, setSending] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -99,6 +100,7 @@ export function ChangeTimePanel({
   const keepRef = useRef<HTMLButtonElement>(null);
   const yesRef = useRef<HTMLButtonElement>(null);
   const laterRef = useRef<HTMLButtonElement>(null);
+  const earlierRef = useRef<HTMLButtonElement>(null);
 
   // Today in the business's zone, read once: the week never starts before it.
   const [today] = useState(() => dateIn(new Date(), timezone));
@@ -127,7 +129,10 @@ export function ChangeTimePanel({
         onCannotMove(next.state);
         return;
       }
-      if (next.state === "ok") setPeople(next.times.people);
+      if (next.state === "ok") {
+        setPeople(next.times.people);
+        setLastDate(next.times.lastDate);
+      }
       setResult(next);
     });
     return () => {
@@ -221,14 +226,19 @@ export function ChangeTimePanel({
   const days = byDay(startTimes, timezone);
   const count = startTimes.length;
   const week = weekName(from, to);
+  // The week holding the business's last bookable date: nothing later can be booked (F-159).
+  const isLastWeek = lastDate !== null && to >= lastDate;
+  const booksUpTo = lastDate
+    ? `${booking.business.name} takes bookings up to ${dayName(lastDate)}.`
+    : "";
   // One live region, always there, so every new week or person is read out.
   const announcement = !result
     ? "Finding free times…"
     : result.state !== "ok"
       ? ""
       : count === 0
-        ? `${week}: no free times.`
-        : `${week}: ${count} free ${count === 1 ? "time" : "times"}.`;
+        ? `${week}: no free times.${isLastWeek ? ` ${booksUpTo}` : ""}`
+        : `${week}: ${count} free ${count === 1 ? "time" : "times"}.${isLastWeek ? ` ${booksUpTo}` : ""}`;
 
   return (
     <section aria-labelledby="change-time-heading">
@@ -263,6 +273,7 @@ export function ChangeTimePanel({
 
       <div className="mt-4 flex items-center justify-between gap-2">
         <button
+          ref={earlierRef}
           type="button"
           onClick={() => {
             askAgain();
@@ -282,8 +293,11 @@ export function ChangeTimePanel({
           onClick={() => {
             askAgain();
             setWeekOffset((n) => n + 1);
+            // The last week turns this button off, so focus moves back to Earlier.
+            if (lastDate !== null && addDays(to, 7) >= lastDate) earlierRef.current?.focus();
           }}
-          className="whitespace-nowrap rounded-lg px-2 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+          disabled={isLastWeek}
+          className="whitespace-nowrap rounded-lg px-2 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-40"
         >
           Later ›
         </button>
@@ -325,16 +339,18 @@ export function ChangeTimePanel({
         ) : count === 0 ? (
           <div>
             <p className="text-sm text-slate-700">No free times this week.</p>
-            <button
-              type="button"
-              onClick={() => {
-                askAgain();
-                setWeekOffset((n) => n + 1);
-              }}
-              className={`mt-3 w-full ${outlineButton}`}
-            >
-              Show the next week
-            </button>
+            {isLastWeek ? null : (
+              <button
+                type="button"
+                onClick={() => {
+                  askAgain();
+                  setWeekOffset((n) => n + 1);
+                }}
+                className={`mt-3 w-full ${outlineButton}`}
+              >
+                Show the next week
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -365,6 +381,24 @@ export function ChangeTimePanel({
           </>
         )}
       </div>
+
+      {isLastWeek && result?.state === "ok" ? (
+        <p className="mt-4 text-sm leading-6 text-slate-600">
+          {booksUpTo}
+          {booking.business.phone ? (
+            <>
+              {" To book later, call "}
+              <a
+                href={`tel:${booking.business.phone.replace(/[^d+]/g, "")}`}
+                className="font-medium text-slate-900 underline"
+              >
+                {booking.business.phone}
+              </a>
+              .
+            </>
+          ) : null}
+        </p>
+      ) : null}
 
       <button type="button" onClick={onClose} className={`mt-6 w-full ${outlineButton}`}>
         Keep the current time

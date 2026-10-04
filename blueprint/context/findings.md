@@ -638,7 +638,7 @@ early return in the handler, or move focus to "Later ›" when the offset
 reaches 0.
 **Resolution:** Fixed 2026-10-04: Earlier back to the first week moves focus on to Later; seen in the browser.
 
-### F-159 [P3] open - "Later" and "Show the next week" never end past the business's horizon
+### F-159 [P3] fixed - "Later" and "Show the next week" never end past the business's horizon
 
 **File:** frontend/components/booking-page/change-time-panel.tsx:258-266,306-315 (clamp in backend/lib/scheduling/find-free-times.ts:91-94)
 **Found:** 2026-10-04 by independent review of step 7b.5 (scope: 79acbd8..48d743c; lenses: quality, security, performance, tests, accessibility)
@@ -651,7 +651,7 @@ included).
 **Suggested fix:** Let the times answer carry the last bookable date (a
 business date, no customer data), disable "Later" past it and say "No times
 can be booked after <date>" instead of offering another week.
-**Resolution:**
+**Resolution:** Fixed 2026-10-04 on Frank's yes: the move's times answer names lastDate (today in the business's zone plus its horizon, the date findFreeTimes stops at); the page switches Later off on that week, drops "Show the next week", says how far ahead the business books with its phone, and moves focus back to Earlier. A route test pins lastDate; one day short fails it. Seen in the browser: Later stops at Nov 29 to Dec 5.
 
 ### F-160 [P3] fixed - The booking's own start is hidden by matching its person by name
 
