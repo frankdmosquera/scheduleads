@@ -1,6 +1,6 @@
-// Moving a booking from its page (feature 7b, step 7b.2), through the real app against the local
-// database. Every test makes a clinic of its own, removed after. Google and Resend are never
-// reached: fetch throws, nobody here has a calendar or a Resend key.
+// Moving a booking from its page (feature 7b), through the real app against the local database.
+// Every test makes a clinic of its own, removed after. Google and Resend are never reached: fetch
+// throws, nobody has a Resend key, and a calendar here is only ever one needing reconnection.
 
 import { randomUUID } from "node:crypto";
 
@@ -26,6 +26,7 @@ const {
   booking,
   bookingLink,
   bookingLinkResource,
+  calendarConnection,
   commitment,
   organization,
   pipelineStage,
@@ -158,6 +159,20 @@ const heldRows = (bookingId: string) =>
     })
     .from(commitment)
     .where(eq(commitment.bookingId, bookingId));
+// Calendars that cannot be read: each connection needs reconnecting, so Google is never asked.
+const unreadableCalendars = (clinic: ClinicType, resourceIds: string[]) =>
+  db.insert(calendarConnection).values(
+    resourceIds.map((resourceId) => ({
+      id: randomUUID(),
+      organizationId: clinic.business,
+      resourceId,
+      provider: "google",
+      accountEmail: `${resourceId}@example.com`,
+      credentials: "not read: the connection needs reconnecting first",
+      grantedScopes: "",
+      status: "needs_reconnect",
+    }))
+  );
 const movedEntries = (clinic: ClinicType) =>
   db
     .select({ payload: activity.payload, actorUserId: activity.actorUserId })
@@ -309,6 +324,38 @@ describe("moving a booking", () => {
     expect(
       (await heldRows(clinic.janesBooking)).filter((row) => row.status === "active")
     ).toHaveLength(1);
+    expect(await movedEntries(clinic)).toEqual([]);
+  });
+
+  test("a picked person whose calendar cannot be read answers 503 and nothing changes", async () => {
+    const clinic = await makeClinic("unreadable");
+    await unreadableCalendars(clinic, [clinic.mei]);
+    const response = await move(clinic.janesBooking, at(13), clinic.mei);
+
+    expect(response.status).toBe(503);
+    expect(await codeOf(response)).toBe("unavailable");
+    expect(await bookingRow(clinic.janesBooking)).toMatchObject({
+      startsAt: new Date(at(9)),
+      personId: clinic.ana,
+      sequence: 0,
+    });
+    expect(
+      (await heldRows(clinic.janesBooking)).filter((row) => row.status === "active")
+    ).toHaveLength(1);
+    expect(await movedEntries(clinic)).toEqual([]);
+  });
+
+  test("any available with every calendar unreadable answers 503, not taken", async () => {
+    const clinic = await makeClinic("all-unreadable");
+    await unreadableCalendars(clinic, [clinic.ana, clinic.mei]);
+    const response = await move(clinic.janesBooking, at(13));
+
+    expect(response.status).toBe(503);
+    expect(await codeOf(response)).toBe("unavailable");
+    expect(await bookingRow(clinic.janesBooking)).toMatchObject({
+      startsAt: new Date(at(9)),
+      sequence: 0,
+    });
     expect(await movedEntries(clinic)).toEqual([]);
   });
 

@@ -260,6 +260,15 @@ describe("free times for moving a booking", () => {
     expect(meiTimes).not.toContain(at(9, 30));
   });
 
+  test("a person whose calendar cannot be read answers 503, never free", async () => {
+    await connect(clinic.ana, "ana");
+    vi.stubGlobal("fetch", async () => new Response("", { status: 500 })); // Google fails
+    const response = await timesFor(clinic.janesBooking, clinic.ana);
+
+    expect(response.status).toBe(503);
+    expect(((await response.json()) as { error: { code: string } }).error.code).toBe("unavailable");
+  });
+
   test("a person who does not offer the service, or another business's, answers 404", async () => {
     const stranger = await app.request(
       `/public/bookings/${makeBookingPageToken(clinic.janesBooking)}/times?from=${day}&to=${day}&person=${clinic.room}`

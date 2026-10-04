@@ -402,7 +402,7 @@ give.
 connected calendar that fails, so a warn line is actually written), and
 either rename the tenant test to what it checks or add a case that moves
 one business's booking and asserts the other business's rows unchanged.
-**Resolution:** Fixed 2026-10-03: the privacy test also reads console.warn and a refusal's body; the tenant test also makes a real move of ours to a time the other business has booked and checks their booking and rows are untouched. Not closed by independent review of step 7b.3 (2026-10-04): the tenant half holds; the log half still reads a `console.warn` that nothing writes (no calendar is connected in that test, and it reads before `bookingEventMoves.settled()`). A real follow failure's line is now checked for the name and address in move-booking-event.test.ts "a Google error keeps the move and logs one line".
+**Resolution:** Fixed 2026-10-03: the privacy test also reads console.warn and a refusal's body; the tenant test also makes a real move of ours to a time the other business has booked and checks their booking and rows are untouched. Not closed by independent review of step 7b.3 (2026-10-04): the tenant half holds; the log half still reads a `console.warn` that nothing writes (no calendar is connected in that test, and it reads before `bookingEventMoves.settled()`). A real follow failure's line is now checked for the name and address in move-booking-event.test.ts "a Google error keeps the move and logs one line". Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): the route test is unchanged and still reads `console.warn` and `console.log` before `bookingMoveEmails.settled()` (public-booking-move-routes.test.ts:369-388), so its log half checks only what happens to have run. The move's real log lines are now pinned elsewhere (move-booking-event.test.ts:365, send-move-emails.test.ts:328 and :355), so the remaining gap is the test's name, not the coverage.
 
 ### F-147 [P3] closed - The activity types test is still named "the nine kinds" while it expects ten
 
@@ -682,7 +682,7 @@ fits, which is the width the step was checked at; small phones still exist.
 **Suggested fix:** Let the range label wrap or shrink (`min-w-0`,
 `text-center`), or shorten the buttons to icons with `aria-label`s below a
 breakpoint.
-**Resolution:** Fixed 2026-10-04: the week reads "Oct 4 to 10" (both months only across two) with narrower buttons; at 320px Later ends at x=260 inside the card at 289.
+**Resolution:** Fixed 2026-10-04: the week reads "Oct 4 to 10" (both months only across two) with narrower buttons; at 320px Later ends at x=260 inside the card at 289. Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): this reviewer started no dev server and could not measure; the code matches the repair (weekName at change-time-panel.tsx:49-56, `px-2` buttons), but the measurement above was for a same-month week, and a week across two months ("Oct 25 to Nov 1") is about four characters wider. Look at one such week at 320px before closing.
 
 ### F-162 [P3] closed - Week changes may not be announced: each status is a freshly mounted live region
 
@@ -715,7 +715,7 @@ RangeError, and the panel crashes on open. The backend's `localDate` uses
 and reuse one formatter per zone instead of a new one per start time.
 **Resolution:** Fixed 2026-10-04: dateIn builds YYYY-MM-DD from formatToParts. Closed 2026-10-04 by independent review of feature 7b (scope: a55c8ee..7a353a8): change-time-panel.tsx:24-33 builds YYYY-MM-DD from formatToParts.
 
-### F-164 [P2] fixed - The "call" link beside the last bookable week strips every digit from the business's phone
+### F-164 [P2] closed - The "call" link beside the last bookable week strips every digit from the business's phone
 
 **File:** frontend/components/booking-page/change-time-panel.tsx:392
 **Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..7a353a8; lenses: quality, security, performance, tests)
@@ -733,9 +733,9 @@ week bar, not at the link's href.
 **Suggested fix:** Use the page's `telHref` (export it from
 booking-page.tsx, or move it to a small file beside both) instead of the
 inline replace, and look at the link's href once in the browser.
-**Resolution:** Fixed 2026-10-04: one `telHref` now lives in packages/shared/helpers/tel-href.ts with its own test (digits and a leading plus kept); the page, the change-time panel and all six emails import it, and the backend and page copies are gone. Seen in the browser at 375px on dev booking 106ce52c, week Nov 29 to Dec 5: the call link reads `tel:4035550100`.
+**Resolution:** Fixed 2026-10-04: one `telHref` now lives in packages/shared/helpers/tel-href.ts with its own test (digits and a leading plus kept); the page, the change-time panel and all six emails import it, and the backend and page copies are gone. Seen in the browser at 375px on dev booking 106ce52c, week Nov 29 to Dec 5: the call link reads `tel:4035550100`. Closed 2026-10-04 by independent review of feature 7b (scope: a55c8ee..5db122e): packages/shared/helpers/tel-href.ts:5 keeps `/[^\d+]/g` and its test pins digits and a leading plus; change-time-panel.tsx:393, booking-page.tsx and all six emails import it, and no other phone replace is left in frontend or backend.
 
-### F-165 [P3] fixed - Finding and step numbers in three new code comments
+### F-165 [P3] closed - Finding and step numbers in three new code comments
 
 **File:** backend/lib/booking/find-booking-move-times.ts:17; backend/lib/booking/find-booking-page.ts:28; frontend/components/booking-page/change-time-panel.tsx:229
 **Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..7a353a8; lenses: quality, security, performance, tests)
@@ -748,4 +748,43 @@ nothing a later reader can find, and each comment already says its reason
 in words.
 **Suggested fix:** Drop the parenthesised review and finding references and
 keep the sentences.
-**Resolution:** Fixed 2026-10-04: the three comments keep their sentences without the step and finding numbers.
+**Resolution:** Fixed 2026-10-04: the three comments keep their sentences without the step and finding numbers. Closed 2026-10-04 by independent review of feature 7b (scope: a55c8ee..5db122e): find-booking-move-times.ts:16-18, find-booking-page.ts:28 and change-time-panel.tsx:219,230 carry no step or finding numbers. Two new test file headers still do; recorded separately as F-166.
+
+### F-166 [P3] fixed - Step numbers in the headers of two new test files
+
+**File:** backend/lib/calendar/move-booking-event.test.ts:1; backend/routes/public-booking-move-routes.test.ts:1
+**Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..5db122e; lenses: quality, security, performance, tests)
+**Why it matters:** coding-standards.md (Comments) rules out history in
+code comments, step numbers named. The F-165 repair ("step numbers out of
+comments") cleared the three named comments but left "(feature 7b, step
+7b.3)" and "(feature 7b, step 7b.2)" in these two headers, the only step
+numbers left anywhere in backend, frontend or packages/shared. The feature
+reference alone is the project's usual form.
+**Suggested fix:** Drop ", step 7b.3" and ", step 7b.2" and keep the
+sentences.
+**Resolution:** Fixed 2026-10-04: both headers name the feature only.
+
+### F-167 [P2] fixed - No test makes a calendar unreadable during a move, so the move's "unavailable" answers can turn into "free" with every test green
+
+**File:** backend/lib/booking/move-booking.ts:126-138; backend/routes/public-booking-page-routes.ts:80-83,118
+**Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..5db122e; lenses: quality, security, performance, tests)
+**Why it matters:** The move adds its own handling of a calendar that cannot
+be read: `isFree` turns `CalendarUnavailableError` into "unreadable", a
+picked person's unreadable calendar answers `unavailable`, and any available
+answers `unavailable` rather than `time_taken` when no one is free and some
+calendar was unreadable; both routes map that to 503. coding-standards.md
+(Error Handling) makes this a rule: a failed calendar check never reports
+"free". No move or move-times test ever makes a calendar unreadable: the
+route tests stub `fetch` to throw but connect no calendar, and the Google
+tests always answer free/busy (move-booking-event.test.ts:66-68); searching
+the move tests for 503 or "unavailable" finds nothing. Changing the catch at
+move-booking.ts:127 to return "free" would let a move land on top of an
+event the server never saw, and every test would stay green. bookTime has
+the matching tests (book-time.test.ts:349 and :461); the move, a copy of
+its check (F-145), does not.
+**Suggested fix:** Two saved tests with a connected calendar whose free/busy
+answers 500 (or a refresh that fails): a move to that picked person answers
+503 `unavailable` and changes nothing; the move-times route for that person
+answers 503. Optionally, any available with every calendar unreadable answers
+503, not `time_taken`.
+**Resolution:** Fixed 2026-10-04: three tests with an unreadable calendar. A picked person whose connection needs reconnecting: the move answers 503 `unavailable` and the booking, its held rows and the timeline are unchanged. Any available with every calendar unreadable: 503, not `time_taken`. The move-times route with Google answering 500: 503. Mutations caught: the catch in move-booking.ts returning "free" fails two tests, the any-available answer forced to `time_taken` fails one, the routes answering 200 instead of 503 fails three.

@@ -1,6 +1,6 @@
-// A moved booking's event following it in the booked person's Google (feature 7b, step 7b.3),
-// against the local database with Google faked: no test ever reaches Google. The fake behaves as
-// Google does where it matters: an event id once deleted in a calendar is refused there for good.
+// A moved booking's event following it in the booked person's Google (feature 7b), against
+// the local database with Google faked: no test ever reaches Google. The fake behaves as Google
+// does where it matters: an event id once deleted in a calendar is refused there for good.
 
 import { randomUUID } from "node:crypto";
 
