@@ -205,6 +205,18 @@ and a second resource can hold the same time as the first.
   When a business runs on one email, the booked worker gets a text with the
   booking, the last resort that keeps them in the loop; the customer's
   replies still go to the business (feature 6, decision 8, Frank, Oct 2)
+  Split on 2026-10-04 into three items, each its own branch, merged and
+  tagged as it lands; item 8 is done when all three are:
+  - [ ] 8a. **The background runner** - work that must happen later is kept
+    in the database, survives a restart and is retried: the booking, cancel
+    and move emails and the Google event writes, removals and moves leave
+    the in-memory trackers for it, and a move that gives up on the first
+    person's calendar is retried instead of leaving the event behind
+  - [ ] 8b. **The customer's texts** - one place in the code sends every
+    text, through Twilio; the confirmation text when a booking is made and
+    the reminder before the appointment, moved or dropped with the booking
+  - [ ] 8c. **The worker's text** - when a business runs on one email, the
+    booked worker gets a text with the booking
 
 ## Phase 3. The widget in the agency's own site
 
