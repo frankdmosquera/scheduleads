@@ -19,6 +19,7 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the job runner tests");
 // Imported after the env is loaded: they read it the moment they load.
 const { db } = await import("../../database.js");
 const { enqueueJob } = await import("./enqueue-job.js");
+const { exitWhenRunnerStops } = await import("./exit-when-runner-stops.js");
 const { installJobTables } = await import("./install-job-tables.js");
 const { jobTask } = await import("./job-task.js");
 const { startJobRunner } = await import("./start-job-runner.js");
@@ -56,6 +57,9 @@ afterAll(async () => {
   const mine = sql`select id from graphile_worker._private_tasks where identifier like ${`test-${tag}-%`}`;
   await db.execute(sql`delete from graphile_worker._private_jobs where task_id in (${mine})`);
   await db.execute(sql`delete from graphile_worker._private_tasks where id in (${mine})`);
+  await db.execute(
+    sql`delete from graphile_worker._private_job_queues where queue_name like ${`test-${tag}-%`}`
+  );
   await db.$client.end();
 });
 
@@ -160,9 +164,9 @@ describe("the job runner", () => {
     let worked!: () => void;
     const done = new Promise<void>((resolve) => (worked = resolve));
 
-    const runner = await startJobRunner({
+    const runner = (await startJobRunner({
       [taskName("waiting")]: jobTask(async () => worked()),
-    });
+    }))!;
     await done;
     await runner.stop();
 
@@ -186,12 +190,45 @@ describe("the job runner", () => {
       await enqueueJob(db, taskName("in-line"), { name }, { queueName });
     }
 
-    const runner = await startJobRunner(tasks); // five at once, but one queue goes one by one
+    const runner = (await startJobRunner(tasks))!; // five at once, but one queue goes one by one
     await allDone;
     await runner.stop();
 
     expect(ran.map((job) => job.name)).toEqual(["first", "second", "third"]);
     expect(ran[1]!.start).toBeGreaterThanOrEqual(ran[0]!.end);
     expect(ran[2]!.start).toBeGreaterThanOrEqual(ran[1]!.end);
+  });
+
+  test("no runner starts while no job is defined", async () => {
+    expect(await startJobRunner({})).toBeNull(); // its workers would refuse an empty list and exit
+  });
+
+  test("a runner that stops by itself takes the API down so it restarts, a stop the API asked for does not", async () => {
+    const idle = { [taskName("idle")]: jobTask(async () => {}) };
+    const exit = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    // Stopped from inside, as the library does when a worker loses Postgres: the API did not ask.
+    const dying = (await startJobRunner(idle))!;
+    exitWhenRunnerStops(dying, () => false);
+    await dying.stop("a worker exited unexpectedly");
+    await dying.promise;
+    await new Promise((resolve) => setImmediate(resolve)); // the watcher runs after the promise
+
+    expect(exit).toHaveBeenCalledWith(1);
+    expect(error.mock.calls.map(([line]) => String(line))).toContainEqual(
+      expect.stringContaining("the runner stopped by itself")
+    );
+
+    exit.mockClear();
+    const stopped = (await startJobRunner(idle))!;
+    exitWhenRunnerStops(stopped, () => true); // a deploy's SIGTERM
+    await stopped.stop("SIGTERM");
+    await stopped.promise;
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(exit).not.toHaveBeenCalled();
+    exit.mockRestore();
+    error.mockRestore();
   });
 });

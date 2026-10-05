@@ -109,12 +109,12 @@ One package: graphile-worker, installed in `backend` on Frank's yes
 
 - [x] **8a.1 The runner.**
   - graphile-worker, in `backend` (decision 9, installed on Frank's yes).
-  - `backend/lib/jobs/`: the job names and their payloads (ids only: the
-    business, the booking, a sequence, a person, an event id; never a
-    customer's details), `enqueueJob(tx, name, payload, options)` that adds a
+  - `backend/lib/jobs/`: `enqueueJob(tx, name, payload, options)` that adds a
     job inside the caller's transaction (options: run after, a queue to run
-    in order, attempts), the runner's start and stop, and a test helper that
-    runs every due job to the end.
+    in order, attempts), its payload values ids and numbers only; the
+    runner's start and stop; and a test helper that runs every due job to the
+    end. The job names and their payload types arrive with the jobs that use
+    them, in 8a.2 and 8a.3 (amended after 8a.1's review, F-174).
   - The runner's own tables installed by the API at start, and by the test
     helper, never by hand.
   - `server.ts` starts the runner before listening and stops it on `SIGTERM`
@@ -127,8 +127,11 @@ One package: graphile-worker, installed in `backend` on Frank's yes
     runs three times with growing waits; one that always fails stops at its
     limit with one log line and stays failed; a job added while no runner is
     running is worked by the next one started; jobs in one queue run one at
-    a time in order. The backend build passes and the API starts and stops
-    cleanly by hand.
+    a time in order; a runner that stops by itself takes the API down so
+    Railway restarts it, while a stop the API asked for does not (F-173). The
+    backend build passes; the API starts by hand and says the runner is not
+    started while no job is defined (the library refuses an empty list), so
+    the runner's first start in the API is checked in 8a.2.
 - [ ] **8a.2 The emails as jobs.**
   - `bookTime`, `cancelBooking` and `moveBooking` add their email jobs inside
     their transactions, one per email, in place of the three email trackers,
@@ -138,6 +141,7 @@ One package: graphile-worker, installed in `backend` on Frank's yes
     booking moved or cancelled meanwhile is not sent (decision 3); nothing
     after the appointment has started.
   - The email tests wait with the helper instead of `settled()`.
+  - The API started by hand shows the runner working, now that jobs exist.
   - **Done when** saved tests: a booking, a cancel and a move each leave their
     email jobs and send exactly today's emails; a send that fails once is
     sent on the retry, under the same key, recorded once; the customer's

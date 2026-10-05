@@ -10,6 +10,7 @@ import { appOrigin } from "./lib/auth/auth-server.js";
 import { readBookingLinkKey } from "./lib/booking/read-booking-link-key.js";
 import { googleOauthClient } from "./lib/calendar/google-oauth-client.js";
 import { readEmailSettings } from "./lib/email/read-email-settings.js";
+import { exitWhenRunnerStops } from "./lib/jobs/exit-when-runner-stops.js";
 import { startJobRunner } from "./lib/jobs/start-job-runner.js";
 
 const port = Number(process.env.PORT ?? 3401); // 3400 is the frontend's
@@ -28,7 +29,7 @@ readEmailSettings();
 
 // The runner first, so every job a request adds has someone to work it (decision 7).
 const runner = await startJobRunner();
-console.log("[jobs] runner working");
+console.log(runner ? "[jobs] runner working" : "[jobs] no jobs defined yet: runner not started");
 
 const server = serve({ fetch: app.fetch, port }, (info) => {
   console.log(`[api] listening on http://localhost:${info.port}`);
@@ -43,8 +44,9 @@ async function stop(signal: string): Promise<void> {
   stopping = true;
   console.log(`[api] ${signal}: stopping`);
   server.close();
-  await runner.stop(signal);
+  await runner?.stop(signal);
   process.exit(0);
 }
 process.on("SIGTERM", () => void stop("SIGTERM"));
 process.on("SIGINT", () => void stop("SIGINT"));
+if (runner) exitWhenRunnerStops(runner, () => stopping);

@@ -413,3 +413,96 @@ today (both work in UTC on YYYY-MM-DD); nothing keeps them agreeing.
 import them in both the backend and the panel; or leave it for the dashboard
 (features 11 and 12b), which will need the same dates, and note it there.
 **Resolution:**
+
+### F-173 [P1] fixed - The API keeps serving after its runner has stopped itself, so jobs pile up unworked until the next deploy
+
+**File:** backend/server.ts:30 (graphile-worker 0.18.0: dist/runner.js:115-121, dist/main.js:956-963, dist/worker.js:296-301, dist/lib.js:354-362)
+**Found:** 2026-10-05 by independent review of step 8a.1 (scope: 779512a..17a9118; lenses: quality, security, performance, tests)
+**Why it matters:** `server.ts` keeps the `runner` only to call `stop()` on a
+signal; nothing watches `runner.promise`. In graphile-worker 0.18 the runner
+can stop on its own while the process lives: when a worker cannot mark a job
+done or failed it "commits seppuku" (worker.js:296-301), the pool then shuts
+down because "one of the workers exited prematurely" (main.js:956-963), and
+the runner calls its own `stop()` and resolves `promise` (runner.js:115-121;
+both branches end in `.catch(noop)`, so it never rejects and nothing crashes).
+The completion is retried only for codes 40001, 40P01, 57P03, EHOSTUNREACH
+and ETIMEDOUT (lib.js:354-362); a Postgres restart shows up as 57P01
+(admin_shutdown), ECONNREFUSED or ECONNRESET, which are not retried. Concrete
+case, from 8a.2 on: Railway restarts Postgres while a confirmation email job
+is running; its completion fails with ECONNREFUSED; the runner stops and
+prints one `[jobs] Runner stopping` warning; the API reconnects through
+postgres-js and keeps taking bookings, each adding its jobs inside the
+transaction, and none is worked until the next deploy. That is the outage
+this feature exists to survive ("when Resend or Google fails for a while,
+the email arrives anyway"), turned silent and indefinite. Reachable only
+once a task exists (`jobTasks` is empty in 8a.1), which is why it should be
+settled before 8a.2 puts the emails on it. Found by reading the library
+source; not reproduced, since that needs the database stopped mid-job.
+**Suggested fix:** In `server.ts`, after starting the runner:
+`runner.promise.finally(() => { if (!stopping) { console.error("[jobs] runner stopped on its own; exiting so the API restarts"); process.exit(1); } })`,
+so Railway restarts the whole process and the new runner picks the jobs up.
+A test can stop a started runner's pool and assert the hook fires, or the
+step records the hand check.
+**Resolution:** Fixed 2026-10-05: `exitWhenRunnerStops` (backend/lib/jobs/exit-when-runner-stops.ts) watches the runner; a stop the API did not ask for logs one line and exits with 1, so Railway restarts the API with a runner. A test stops a real runner from inside and from a SIGTERM: the first exits, the second does not; breaking either branch fails it. While fixing it, a worse case showed: with no job defined yet the library's workers refuse the empty list and exit at once, so 8a.1's API runner died right after "runner working" (F-177).
+
+### F-174 [P3] fixed - 8a.1's plan lists the job names and their id-only payload types; neither was built and the spec does not say they moved
+
+**File:** backend/lib/jobs/enqueue-job.ts:19-23 (spec: blueprint/context/current-feature.md, step 8a.1 first bullet and Data / contracts)
+**Found:** 2026-10-05 by independent review of step 8a.1 (scope: 779512a..17a9118; lenses: quality, security, performance, tests)
+**Why it matters:** The step's plan says `backend/lib/jobs/` holds "the job
+names and their payloads (ids only ...)". The step built `enqueueJob(executor,
+name: string, payload: Record<string, string | number | null>)`: any name and
+any string value, so a customer's email in a payload compiles and the "ids
+only" rule rests on a comment. Leaving the names to 8a.2 and 8a.3, which add
+the first tasks, is reasonable, but the ticked box says they exist and the
+spec records no move, which is the kind of silent plan drift the step review
+is there to catch.
+**Suggested fix:** Either add the names and payload types from Data /
+contracts now (a name union and one payload type per name, which `enqueueJob`
+then takes), or amend step 8a.1 to say they arrive with 8a.2 and 8a.3.
+**Resolution:** Fixed 2026-10-05 by amending the spec: 8a.1 builds `enqueueJob` with payload values ids and numbers only; the job names and payload types arrive with the jobs that use them, in 8a.2 and 8a.3.
+
+### F-175 [P3] fixed - The runner's tests leave one job queue row in the database on every run
+
+**File:** backend/lib/jobs/job-runner.test.ts:54-59
+**Found:** 2026-10-05 by independent review of step 8a.1 (scope: 779512a..17a9118; lenses: quality, security, performance, tests)
+**Why it matters:** The queue test adds jobs in queue `test-<tag>-queue`;
+`add_job` creates a row in `graphile_worker._private_job_queues` for it.
+`afterAll` deletes this run's jobs and tasks but not the queue, and the
+library never removes unused queues by itself. `scheduleads_dev` already
+holds 8 such rows (`queue_name like 'test-%'`, counted read-only during this
+review) while no `test-` task or job is left. Harmless in size today, but it
+is the same unbounded-queues growth the spec's Notes flag for 8a.3's queue
+per booking, and the spec's Testing section says each test removes what it
+made.
+**Suggested fix:** Add
+`delete from graphile_worker._private_job_queues where queue_name like 'test-<tag>-%'`
+to `afterAll`, after the jobs are deleted.
+**Resolution:** Fixed 2026-10-05: afterAll also deletes this run's queue rows; the 8 left by earlier runs were removed from scheduleads_dev; a full backend run now leaves 0 jobs and 0 queues.
+
+### F-176 [P2] open - A deploy's clean stop depends on Railway's grace period, which nothing has confirmed
+
+**File:** backend/server.ts:39-49 (spec: decision 9, "a job left mid-run by a crash (not a deploy, which stops cleanly)")
+**Found:** 2026-10-05 by independent review of step 8a.1 (scope: 779512a..17a9118; lenses: quality, security, performance, tests)
+**Why it matters:** On SIGTERM the API waits for `runner.stop()` with no time
+limit, then exits. Railway sends SIGKILL after `RAILWAY_DEPLOYMENT_DRAINING_SECONDS`;
+its docs page on teardown names the variable but this review could not
+confirm its default. If the window is shorter than a running job (a Google
+call or an email send), the job is killed while locked and is only taken
+again when graphile-worker treats the lock as abandoned (about four hours),
+so a confirmation could arrive hours late, the case decision 9 says a deploy
+avoids. The spec's Notes already say the SIGTERM path is first seen on
+Railway. Missing validation: Railway's default draining time and one
+observed deploy with a job in flight.
+**Suggested fix:** Confirm the default and set `RAILWAY_DEPLOYMENT_DRAINING_SECONDS`
+(for example 30) when the runner first runs on Railway; optionally bound the
+wait in `stop()` so the API exits itself before the SIGKILL.
+**Resolution:** Confirmed 2026-10-05 from Railway's documentation (deployment teardown): an old deployment gets SIGTERM, then SIGKILL after RAILWAY_DEPLOYMENT_DRAINING_SECONDS, about 0 to 3 seconds by default. A job in flight at a deploy can be killed and then waits about 4 hours for its lock to expire. The fix is a Railway setting on the backend service (for example 30 seconds), which only Frank changes; raised with him after 8a.1's review.
+
+### F-177 [P1] fixed - With no job defined, the API's runner dies right after it starts and nothing says so
+
+**File:** backend/lib/jobs/start-job-runner.ts:13; backend/server.ts:31
+**Found:** 2026-10-05 by the builder while fixing F-173 (scope: step 8a.1)
+**Why it matters:** graphile-worker's workers assert at least one runnable task; with 8a.1's empty `jobTasks` every worker exited with "No runnable tasks!", the pool shut down and the runner stopped itself. The API had logged "[jobs] runner working" just before, so 8a.1's check by hand proved nothing; with F-173's fix the API would have exited and restarted in a loop.
+**Suggested fix:** Start the runner only when a job is defined, and say so.
+**Resolution:** Fixed 2026-10-05: `startJobRunner` returns null for an empty task list; `server.ts` logs "[jobs] no jobs defined yet: runner not started" and stops or watches the runner only when there is one. A test checks no runner starts for an empty list; removing the guard fails it. Started by hand, the API printed that line and still answered /health 8 seconds later. The runner's first start in the API is checked in 8a.2, when the first jobs exist.
