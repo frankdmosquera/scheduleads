@@ -12,7 +12,7 @@ const MOST_ATTEMPTS = 10;
 
 export type EnqueueJobOptionsType = {
   runAt?: Date; // not before then; now when left out
-  queueName?: string; // jobs in one queue run one at a time, in the order added
+  queueName?: string; // one job at a time per queue; a failed one retries behind later ones
   maxAttempts?: number;
 };
 

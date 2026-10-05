@@ -32,12 +32,9 @@ const {
 } = await import("@scheduleads-app/shared/db");
 const { encryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { bookTime } = await import("../booking/book-time.js");
-const { bookingEventWrites } = await import("../booking/booking-event-writes.js");
 const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { moveBooking } = await import("../booking/move-booking.js");
-const { bookingEventMoves } = await import("../booking/booking-event-moves.js");
 const { cancelBooking } = await import("../booking/cancel-booking.js");
-const { bookingEventRemovals } = await import("../booking/booking-event-removals.js");
 const { sendMoveEmails } = await import("./send-move-emails.js");
 
 const tag = randomUUID().slice(0, 8);
@@ -125,11 +122,6 @@ async function makeBusiness(
 type BusinessType = Awaited<ReturnType<typeof makeBusiness>>;
 
 const settled = async () => {
-  await bookingEventWrites.settled();
-  await workDueJobs();
-  await bookingEventMoves.settled();
-  await workDueJobs();
-  await bookingEventRemovals.settled();
   await workDueJobs();
 };
 

@@ -31,9 +31,7 @@ const {
   resource,
 } = await import("@scheduleads-app/shared/db");
 const { bookTime } = await import("./book-time.js");
-const { bookingEventWrites } = await import("./booking-event-writes.js");
 const { workDueJobs } = await import("../jobs/work-due-jobs.js");
-const { bookingEventRemovals } = await import("./booking-event-removals.js");
 const { cancelBooking } = await import("./cancel-booking.js");
 
 const tag = randomUUID().slice(0, 8);
@@ -124,9 +122,6 @@ beforeAll(() => {
 });
 
 afterAll(async () => {
-  await bookingEventWrites.settled();
-  await workDueJobs();
-  await bookingEventRemovals.settled();
   await workDueJobs();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();

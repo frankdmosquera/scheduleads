@@ -3,4 +3,7 @@
 
 export const jobNames = {
   bookingEmail: "booking_email",
+  bookingEventWrite: "booking_event_write",
+  bookingEventMove: "booking_event_move",
+  bookingEventRemove: "booking_event_remove",
 } as const;

@@ -33,9 +33,7 @@ const {
   resource,
 } = await import("@scheduleads-app/shared/db");
 const { bookTime } = await import("../lib/booking/book-time.js");
-const { bookingEventWrites } = await import("../lib/booking/booking-event-writes.js");
 const { workDueJobs } = await import("../lib/jobs/work-due-jobs.js");
-const { bookingEventMoves } = await import("../lib/booking/booking-event-moves.js");
 const { makeBookingPageToken } = await import("../lib/booking/booking-page-token.js");
 const { addDays } = await import("../lib/local-time/add-days.js");
 const { localDate } = await import("../lib/local-time/local-date.js");
@@ -122,7 +120,6 @@ async function book(clinic: ClinicType, personId: string, hour: number, minute =
     actorUserId: null,
     now: new Date(),
   });
-  await bookingEventWrites.settled();
   await workDueJobs();
   if (!result.booked) throw new Error(`expected a booking, got ${result.reason}`);
   return result.booking.id;
@@ -186,7 +183,6 @@ beforeAll(() => {
 });
 
 afterAll(async () => {
-  await bookingEventMoves.settled(); // no Google work outlives the database
   await workDueJobs();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();

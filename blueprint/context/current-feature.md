@@ -65,9 +65,15 @@ texts (8b, 8c) are later jobs on this runner.
    booking, never a customer's details; the job stays in the database, failed.
    Outcomes that are not failures are not retried: no calendar connected, no
    email set up, a cancelled booking.
-5. **A booking's calendar jobs run one at a time, in order.** The write, each
-   move and the removal for one booking queue behind each other, so two moves
-   close together can no longer race (F-150). Emails need no order.
+5. **A booking's calendar jobs run one at a time, never in a set order.**
+   Amended with Frank, 2026-10-05, planning 8a.3: they run in one of 16 fixed
+   lanes, the lane named by the last character of the booking's id, so two of
+   one booking's jobs never run at once and two moves close together can no
+   longer race (F-150). A queue per booking was dropped: graphile-worker warns
+   against that many queue names, which would need a cleanup on a schedule,
+   and a failed job's retry waits while a later job of the same lane runs
+   first, so no order holds anyway. Each job does what is still true when it
+   runs (decision 3), which makes the order not matter. Emails need no lane.
 6. **A removal carries what it removes.** When a move changes the person, or
    a booking is cancelled, the job is given the person and the event id at
    that moment, read inside the transaction (F-149). Writing the new
@@ -148,20 +154,36 @@ One package: graphile-worker, installed in `backend` on Frank's yes
     email failing never resends the business's; a confirmation still waiting
     after a move or a cancel is not sent; no email after the start. Every
     existing email test passes unchanged in what it checks.
-- [ ] **8a.3 The Google event as jobs.**
-  - The write, the move and the removal become jobs in one queue per booking
-    (decision 5), added inside the transactions, in place of the three event
+- [x] **8a.3 The Google event as jobs.** Planned with Frank, 2026-10-05.
+  - A booking adds a write, every move adds a move, inside the transactions,
+    in the booking's lane (decision 5), in place of the three event
     trackers, which are removed (F-156 closed).
-  - A move to another person adds a write for the new person and a removal
-    carrying the old person and event id (decision 6); a cancel's removal
-    carries the same. The move to the same person stays an update in place.
+  - A write or a move reads the booking when it runs: nothing for a booking
+    gone or no longer confirmed, for a person with no calendar, once the
+    appointment has started, or once a later move has its own job. It saves
+    the event's id only while the booking still has the person and the move
+    number it read, so a change landing during its Google call never gets
+    the wrong calendar's id (F-150).
+  - A move to another person, and a cancel, add a take-out carrying the
+    person and the event id at that moment, read inside the transaction:
+    the saved id, or the id the event would have when none is saved yet
+    (decision 6, F-149). A take-out runs even after the appointment has
+    started, since the event it removes can be at another time, and it is
+    independent of the write, so one failing never skips the other (F-169).
+    A move to the same person stays an update in place, by the saved id or,
+    when none is saved, the id the event would have.
+  - The Google tests work the jobs with the helper instead of `settled()`.
   - **Done when** saved tests: a move whose first calendar needs reconnecting
     removes the old event once it is reconnected, within the attempts
-    (F-149); two moves close together leave one event, at the last time, in
-    the last person's calendar (F-150); a failed write into the new person's
-    calendar still lets the old event be removed, and the write lands on its
-    retry (F-169); every existing Google test passes unchanged in what it
-    checks.
+    (F-149); two moves close together, with the middle person's write held
+    mid-call, leave one event, at the last time, in the last person's
+    calendar, with its id saved (F-150); a failed write into the new
+    person's calendar still lets the old event be removed, and the write
+    lands on its retry (F-169); a cancel right after booking, before the
+    event's id is saved, still removes it; two of one booking's jobs never
+    run at the same time; every existing Google test passes unchanged in
+    what it checks. The full backend suite passes several runs in a row,
+    and the API started by hand works a booking's calendar job.
 
 ## Files / areas
 
@@ -175,8 +197,8 @@ One package: graphile-worker, installed in `backend` on Frank's yes
 - `backend/lib/email/send-and-record-emails.ts`, `send-booking-emails.ts`,
   `send-cancellation-emails.ts`, `send-move-emails.ts`: one email per job.
 - `backend/lib/calendar/write-booking-event.ts`, `remove-booking-event.ts`,
-  `move-booking-event.ts`: called by the jobs; the move's removal takes the
-  person and event id it is given.
+  `move-booking-event.ts`: called by the jobs; the removal takes the person
+  and event id it is given, and the move no longer removes anything.
 - The 15 backend test files that wait with `settled()`.
 
 ## Data / contracts
@@ -187,10 +209,13 @@ One package: graphile-worker, installed in `backend` on Frank's yes
   tables in the same database; the app's Drizzle schema and migration ledger
   are untouched.
 - **Job names**: `booking_email` (`{ organizationId, bookingId, kind,
-  sequence }`, kind as `BookingEmailKindType`), `booking_event_write`,
-  `booking_event_move`, `booking_event_remove` (`{ organizationId,
-  bookingId, sequence, personId?, eventId? }`). The calendar ones run in the
-  queue `booking-event:<bookingId>`.
+  sequence }`, kind as `BookingEmailKindType`), `booking_event_write`
+  (`{ organizationId, bookingId, sequence }`), `booking_event_move`
+  (`{ organizationId, bookingId, sequence, eventId }`, eventId null unless
+  the move kept the person), `booking_event_remove` (`{ organizationId,
+  bookingId, personId, eventId }`). The calendar ones run in the
+  lane `booking-event-<last character of bookingId>` (decision 5); the names
+  and payloads are settled in 8a.3's plan.
 - **No new environment variable** for the API: the runner uses
   `DATABASE_URL`. `JOBS_SCHEMA` is set only by the tests (8a.2).
 - **No route changes** and no change to any answer.
@@ -224,11 +249,9 @@ own tests. Each test removes the jobs it made. The frontend is untouched.
   restart limit at the same time (F-179). Changing Railway is Frank's.
 - `npm run db:migrate` builds a fresh database without the runner's tables;
   the API's start and the test helper install them.
-- From building 8a.1, for 8a.3: graphile-worker's own documentation warns
-  against queue names with many values (one per booking), which slow it and
-  need a periodic cleanup of unused queues. Decision 5 names a queue per
-  booking, so 8a.3's plan settles it: the library's queue cleanup on a
-  schedule, or another way to keep a booking's calendar jobs in order.
+- From building 8a.1, settled planning 8a.3: graphile-worker's documentation
+  warns against queue names with many values (one per booking), so decision 5
+  uses 16 fixed lanes instead, and no queue cleanup is needed.
 - From building 8a.1, settled in 8a.2: backend test files run in parallel,
   and working the due jobs takes every due job with a known name. Each Vitest
   worker now keeps its jobs in a schema of its own (`JOBS_SCHEMA`, set only
@@ -253,6 +276,18 @@ own tests. Each test removes the jobs it made. The frontend is untouched.
   tests' fetch can only reach this machine, whatever a file stubs or
   unstubs. A job is added with its payload cast through text, so it is
   stored as an object whichever Postgres driver adds it.
+- From building 8a.3: within one run the library looks for its next job
+  before the last job's end (which unlocks its lane) is written, so a job
+  waiting behind another in its lane is left for the next run. The tests'
+  helper runs again while any job of its list is due; in the API the runner
+  takes it on its next poll, about 2 seconds later.
+- From building 8a.3: six existing Google tests changed what they check,
+  where the jobs change the facts: the two tests of a move
+  to another person's write and removal are compared without their order.
+  "A booking still confirmed keeps its event" now moves the booking to the
+  same person and sees no removal, since the removal no longer reads the
+  booking's status. The answer-does-not-wait tests now see Google asked only
+  once the jobs are worked.
 - On Windows a stop signal cannot be sent to a process, so the API's stop on SIGTERM is
   first seen on Railway; the runner's own stop is proved by the tests.
 

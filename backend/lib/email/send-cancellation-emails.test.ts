@@ -34,10 +34,8 @@ const {
 } = await import("@scheduleads-app/shared/db");
 const { encryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { bookTime } = await import("../booking/book-time.js");
-const { bookingEventWrites } = await import("../booking/booking-event-writes.js");
 const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { cancelBooking } = await import("../booking/cancel-booking.js");
-const { bookingEventRemovals } = await import("../booking/booking-event-removals.js");
 const { sendCancellationEmails } = await import("./send-cancellation-emails.js");
 
 const tag = randomUUID().slice(0, 8);
@@ -126,9 +124,6 @@ async function makeOwner(business: BusinessType, name: string) {
 }
 
 const settled = async () => {
-  await bookingEventWrites.settled();
-  await workDueJobs();
-  await bookingEventRemovals.settled();
   await workDueJobs();
 };
 

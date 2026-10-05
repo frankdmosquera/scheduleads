@@ -239,7 +239,7 @@ either rename the tenant test to what it checks or add a case that moves
 one business's booking and asserts the other business's rows unchanged.
 **Resolution:** Fixed 2026-10-03: the privacy test also reads console.warn and a refusal's body; the tenant test also makes a real move of ours to a time the other business has booked and checks their booking and rows are untouched. Not closed by independent review of step 7b.3 (2026-10-04): the tenant half holds; the log half still reads a `console.warn` that nothing writes (no calendar is connected in that test, and it reads before `bookingEventMoves.settled()`). A real follow failure's line is now checked for the name and address in move-booking-event.test.ts "a Google error keeps the move and logs one line". Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): the route test is unchanged and still reads `console.warn` and `console.log` before `bookingMoveEmails.settled()` (public-booking-move-routes.test.ts:369-388), so its log half checks only what happens to have run. The move's real log lines are now pinned elsewhere (move-booking-event.test.ts:365, send-move-emails.test.ts:328 and :355), so the remaining gap is the test's name, not the coverage. Not closed by independent review of feature 7b (scope: a55c8ee..6c1fa5d): public-booking-move-routes.test.ts:416-435 is unchanged since that pass. Not closed by independent review of feature 7b (scope: a55c8ee..851fadb): the test file is unchanged since 6c1fa5d.
 
-### F-149 [P2] open - When the follow gives up on the old person's calendar, nothing records that the event is still there, so neither the cancel nor feature 8 can remove it
+### F-149 [P2] fixed - When the follow gives up on the old person's calendar, nothing records that the event is still there, so neither the cancel nor feature 8 can remove it
 
 **File:** backend/lib/calendar/move-booking-event.ts:46,80 (backend/lib/booking/booking-event-moves.ts:2-3; payload: backend/lib/booking/move-booking.ts:241-246; removal: backend/lib/calendar/remove-booking-event.ts:33)
 **Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
@@ -264,9 +264,9 @@ rather than on the handed-over person and the current `personId`. At the
 least, add `fromPersonId` and `toPersonId` to the `booking_moved` payload
 and the spec's contract so feature 8 can redo a person change, and correct
 the comment at line 46.
-**Resolution:** Carried to feature 8 (spec, Notes for the AI): its retry job must carry the first person and the event id being removed; a booking column would only half-solve it.
+**Resolution:** Carried to feature 8 (spec, Notes for the AI): its retry job must carry the first person and the event id being removed; a booking column would only half-solve it. Fixed 2026-10-05 in 8a.3: a move to another person and a cancel add a removal job carrying the person and the event id read inside the transaction (the saved id, or the id the event has when none is saved yet), retried on its own. Test: a move whose first calendar needs reconnecting removes the old event once it is reconnected.
 
-### F-150 [P3] open - Two moves inside one follow's Google calls leave an orphan event and save the wrong calendar's id
+### F-150 [P3] fixed - Two moves inside one follow's Google calls leave an orphan event and save the wrong calendar's id
 
 **File:** backend/lib/calendar/move-booking-event.ts:50,57,82 (backend/lib/calendar/write-booking-event.ts:85-88)
 **Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
@@ -289,7 +289,7 @@ chain in booking-event-moves.ts), and with F-149's `calendarPersonId` let
 each follow compare where the event is with where it should be instead of
 trusting the handed-over person; save the written id only while
 `calendarEventId` is still null.
-**Resolution:** Carried to feature 8 with F-149: two moves inside one follow's Google calls; the retry job design covers it.
+**Resolution:** Carried to feature 8 with F-149: two moves inside one follow's Google calls; the retry job design covers it. Fixed 2026-10-05 in 8a.3: a booking's calendar jobs run one at a time in its lane, a write or move does nothing once a later move added its own job, and an event id is saved only while the booking still has the person and move number the job read. Test: two moves close together, the middle person's write held mid-call, leave one event at the last time in the last person's calendar.
 
 ### F-153 [P3] unverified - A PATCH of an event the person deleted by hand may answer 200, so the move reports "moved" and the event stays hidden
 
@@ -310,7 +310,7 @@ hand, then PATCH it). If it answers 200, read `status` from the answer and
 treat "cancelled" as not there, and cite what was observed beside the line.
 **Resolution:**
 
-### F-156 [P3] open - The sixth copy of the "start and settle" background tracker
+### F-156 [P3] fixed - The sixth copy of the "start and settle" background tracker
 
 **File:** backend/lib/booking/booking-move-emails.ts:9-26 (same body in booking-event-writes.ts, booking-confirmation-emails.ts, booking-event-moves.ts, booking-event-removals.ts, booking-cancellation-emails.ts)
 **Found:** 2026-10-04 by independent review of step 7b.4 (scope: b56d43a..1524a1b; lenses: quality, security, performance, tests)
@@ -324,7 +324,7 @@ on top of all six.
 **Suggested fix:** One small helper that takes the work and the log line
 and returns `{ start, settled }`, with one shared "all background work
 settled" for tests; keep the six named exports as thin uses of it.
-**Resolution:** Carried to feature 8 on Frank's call, 2026-10-04: its job runner replaces all six trackers, so a shared helper now would be thrown away. Noted in the spec's Notes for the AI. Stays open until then.
+**Resolution:** Carried to feature 8 on Frank's call, 2026-10-04: its job runner replaces all six trackers, so a shared helper now would be thrown away. Noted in the spec's Notes for the AI. Stays open until then. Fixed 2026-10-05 in 8a.3: the three event trackers are removed; with 8a.2's three email trackers, all six are now jobs, and no test waits with settled().
 
 ### F-161 [P3] fixed - The week bar spills out of the card at 320px
 
@@ -339,7 +339,7 @@ fits, which is the width the step was checked at; small phones still exist.
 breakpoint.
 **Resolution:** Fixed 2026-10-04: the week reads "Oct 4 to 10" (both months only across two) with narrower buttons; at 320px Later ends at x=260 inside the card at 289. Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): this reviewer started no dev server and could not measure; the code matches the repair (weekName at change-time-panel.tsx:49-56, `px-2` buttons), but the measurement above was for a same-month week, and a week across two months ("Oct 25 to Nov 1") is about four characters wider. Look at one such week at 320px before closing. Not closed by independent review of feature 7b (scope: a55c8ee..6c1fa5d): no dev server was started, so still unmeasured. Estimated from the code only: the buttons went from `px-3` to `px-2` (16px narrower in all) and a cross-month label is about one character shorter than the "Oct 11 to Oct 17" first measured 12px past the card's border, so Later likely ends inside the border but in the card's padding. A measurement is still needed to close it. Not closed by independent review of feature 7b (scope: a55c8ee..851fadb): no dev server was started; the week bar's markup (change-time-panel.tsx:285-315) is unchanged by the last repair, so still unmeasured across two months at 320px.
 
-### F-169 [P3] open - A failed write into the new person's calendar skips the removal from the first person's
+### F-169 [P3] fixed - A failed write into the new person's calendar skips the removal from the first person's
 
 **File:** backend/lib/calendar/move-booking-event.ts:82-89
 **Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..6c1fa5d; lenses: quality, security, performance, tests)
@@ -359,7 +359,7 @@ fakes every POST as accepted unless the id was deleted there).
 in every case, then rethrow (or log both on one line); add a test where the
 new person's POST answers 500 and assert a DELETE still reaches the first
 person's calendar.
-**Resolution:**
+**Resolution:** Fixed 2026-10-05 in 8a.3: the new person's write and the first person's removal are separate jobs. Test: a failed write into the new person's calendar still lets the old event be removed, and the write lands on its retry.
 
 ### F-170 [P3] open - The move-times privacy test reads a 503 refusal, not the times, when its file runs in order
 

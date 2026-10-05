@@ -35,7 +35,6 @@ const {
 } = await import("@scheduleads-app/shared/db");
 const { encryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { bookTime } = await import("../booking/book-time.js");
-const { bookingEventWrites } = await import("../booking/booking-event-writes.js");
 const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { sendBookingEmails } = await import("./send-booking-emails.js");
 const { appOrigin } = await import("../auth/auth-server.js");
@@ -127,7 +126,6 @@ async function makeOwner(business: BusinessType, name: string) {
 }
 
 const settled = async () => {
-  await bookingEventWrites.settled();
   await workDueJobs();
 };
 

@@ -29,9 +29,7 @@ const {
   resource,
 } = await import("@scheduleads-app/shared/db");
 const { bookTime } = await import("../lib/booking/book-time.js");
-const { bookingEventWrites } = await import("../lib/booking/booking-event-writes.js");
 const { workDueJobs } = await import("../lib/jobs/work-due-jobs.js");
-const { bookingEventRemovals } = await import("../lib/booking/booking-event-removals.js");
 const { makeBookingPageToken } = await import("../lib/booking/booking-page-token.js");
 const { addDays } = await import("../lib/local-time/add-days.js");
 const { localDate } = await import("../lib/local-time/local-date.js");
@@ -144,9 +142,6 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await bookingEventWrites.settled();
-  await workDueJobs();
-  await bookingEventRemovals.settled();
   await workDueJobs();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();

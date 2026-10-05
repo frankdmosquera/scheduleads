@@ -33,9 +33,6 @@ const { encryptCredentials, readTokenKey } = await import("@scheduleads-app/shar
 const { bookTime } = await import("../booking/book-time.js");
 const { cancelBooking } = await import("../booking/cancel-booking.js");
 const { moveBooking } = await import("../booking/move-booking.js");
-const { bookingEventWrites } = await import("../booking/booking-event-writes.js");
-const { bookingEventMoves } = await import("../booking/booking-event-moves.js");
-const { bookingEventRemovals } = await import("../booking/booking-event-removals.js");
 const { jobClock } = await import("./job-clock.js");
 const { jobSchema } = await import("./job-schema.js");
 const { workDueJobs } = await import("./work-due-jobs.js");
@@ -128,7 +125,7 @@ async function book(business: BusinessType): Promise<string> {
 const jobsOf = async (bookingId: string) =>
   (await db.execute(
     sql`select payload->>'kind' as kind, attempts from ${schema}._private_jobs
-        where payload->>'bookingId' = ${bookingId} order by id`
+        where payload->>'bookingId' = ${bookingId} and payload->>'kind' is not null order by id`
   )) as unknown as { kind: string; attempts: number }[];
 
 // A failed job waits seconds for its next try; the tests do not wait for it.
@@ -169,9 +166,6 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
-  await bookingEventWrites.settled();
-  await bookingEventMoves.settled();
-  await bookingEventRemovals.settled();
   await db.delete(organization).where(like(organization.slug, `test-emailjob-%-${tag}-dev`));
   await db.$client.end();
 });
@@ -305,7 +299,10 @@ describe("a booking's emails as jobs", () => {
 
     expect(calls).toEqual([]);
     expect(await jobsOf(id)).toEqual([]); // not a failure: nothing left to try
-    const lines = vi.mocked(console.warn).mock.calls.map(([line]) => String(line));
+    const lines = vi
+      .mocked(console.warn)
+      .mock.calls.map(([line]) => String(line))
+      .filter((line) => line.startsWith("[email]")); // the event's job has its own line
     expect(lines).toEqual([
       `[email] booking ${id}: booking_confirmation not sent, the appointment has started`,
       `[email] booking ${id}: booking_notification not sent, the appointment has started`,

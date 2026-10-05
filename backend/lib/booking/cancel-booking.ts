@@ -1,21 +1,22 @@
 // Backend: cancels one booking, the customer's own act through their private link (feature 7a).
 // In one transaction: the booking cancelled, its held time released so the next customer is
 // offered it at once, and a booking_cancelled entry on the contact's timeline. Allowed until the
-// appointment starts (decision 11). Cancelling twice is one cancel (decision 4). Once saved, the
-// booked person's Google event starts going and both sides start being told, without the answer
-// waiting for either. The owner's
-// screens (features 11 and 12b) call it too.
+// appointment starts (decision 11). Cancelling twice is one cancel (decision 4). Saved with it, as
+// jobs: taking the event out of the booked person's Google and telling both sides, so the answer
+// waits for neither. The owner's screens (features 11 and 12b) call it too.
 
 import { and, eq } from "drizzle-orm";
 
 import { booking, commitment, lead } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
+import { calendarEventIdOf } from "../calendar/calendar-event-id-of.js";
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
+import { enqueueBookingEventJob } from "../jobs/enqueue-booking-event-job.js";
+import { jobNames } from "../jobs/job-names.js";
 import { releaseTime } from "../scheduling/release-time.js";
-import { bookingEventRemovals } from "./booking-event-removals.js";
 
 export type CancelBookingResultType =
   | { cancelled: true; alreadyCancelled: boolean }
@@ -26,9 +27,6 @@ export async function cancelBooking(
   bookingId: string,
   now: Date
 ): Promise<CancelBookingResultType> {
-  // The business, once this call cancelled the booking. Typed by a cast, not by the declaration,
-  // so TypeScript does not narrow it to null and stop checking its use after the transaction.
-  let cancelledIn = null as string | null;
   let result: CancelBookingResultType;
   try {
     result = await db.transaction(async (tx) => {
@@ -38,6 +36,9 @@ export async function cancelBooking(
           organizationId: booking.organizationId,
           status: booking.status,
           startsAt: booking.startsAt,
+          personId: booking.personId,
+          sequence: booking.sequence,
+          calendarEventId: booking.calendarEventId,
           contactId: lead.contactId,
         })
         .from(booking)
@@ -99,15 +100,22 @@ export async function cancelBooking(
         ["booking_cancellation", "booking_cancellation_notification"],
         0
       );
-      cancelledIn = organizationId;
+      // The event, wherever it is now: its saved id, or the id it has if a write is still under
+      // way (decision 6). Only a cancel that changed something adds it, so a second press never does.
+      await enqueueBookingEventJob(tx, {
+        name: jobNames.bookingEventRemove,
+        payload: {
+          organizationId,
+          bookingId,
+          personId: row.personId,
+          eventId: row.calendarEventId ?? calendarEventIdOf(bookingId, row.sequence),
+        },
+      });
       return { cancelled: true, alreadyCancelled: false } as const;
     });
   } catch (error) {
     // Never the database's own error: its message carries the query.
     throw new Error(`Cancelling a booking failed: ${safeErrorReason(error)}`);
   }
-  // Saved. Only a cancel that changed something removes the event, so a second press never does
-  // it again; its emails were added as jobs inside the transaction.
-  if (cancelledIn) bookingEventRemovals.start(cancelledIn, bookingId);
   return result;
 }

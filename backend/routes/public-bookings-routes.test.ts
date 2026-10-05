@@ -34,7 +34,6 @@ const {
   resource,
 } = await import("@scheduleads-app/shared/db");
 const { localDate } = await import("../lib/local-time/local-date.js");
-const { bookingEventWrites } = await import("../lib/booking/booking-event-writes.js");
 const { workDueJobs } = await import("../lib/jobs/work-due-jobs.js");
 const { addDays } = await import("../lib/local-time/add-days.js");
 
@@ -161,8 +160,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await bookingEventWrites.settled(); // no Google write outlives the database
-  await workDueJobs(); // nor an email
+  await workDueJobs(); // no job outlives the database
   vi.unstubAllGlobals();
   await db.delete(organization).where(inArray(organization.id, [clinic.id])); // its rows go with it
   await db.$client.end();

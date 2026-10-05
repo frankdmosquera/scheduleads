@@ -1,7 +1,9 @@
 // Backend: puts one saved booking into the booked person's own calendar and keeps the event's id
 // on the booking. With no calendar connected, or for a booking cancelled or already written, it
 // writes nothing. Safe to call again: the event's id is made from the booking's, so Google keeps
-// one event. Throws on any failure; the caller keeps the booking either way (decision 6).
+// one event. The id is saved only while the booking still has the person and the move number
+// read here: a move or cancel landing during the call adds its own jobs, which take this event
+// out. Throws on any failure; the booking is kept either way and its job tries again.
 
 import { and, eq, isNull } from "drizzle-orm";
 
@@ -82,9 +84,18 @@ export async function writeBookingEvent(
     timezone: row.timezone,
   });
 
-  await db
+  const saved = await db
     .update(booking)
     .set({ calendarEventId: eventId })
-    .where(and(eq(booking.organizationId, organizationId), eq(booking.id, bookingId)));
-  return eventId;
+    .where(
+      and(
+        eq(booking.organizationId, organizationId),
+        eq(booking.id, bookingId),
+        eq(booking.personId, row.personId),
+        eq(booking.sequence, row.sequence),
+        eq(booking.status, "confirmed")
+      )
+    )
+    .returning({ id: booking.id });
+  return saved.length > 0 ? eventId : null; // null: the booking changed while Google wrote
 }
