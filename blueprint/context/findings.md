@@ -555,7 +555,7 @@ come fast, have the API retry the runner's first start for a bounded time
 (say a minute) before giving up, or raise the service's restart limit.
 **Resolution:**
 
-### F-180 [P1] fixed - A failed email job outlives the test that failed it, so a later test works it: the backend suite fails about half the time, and once called the real Resend
+### F-180 [P1] closed - A failed email job outlives the test that failed it, so a later test works it: the backend suite fails about half the time, and once called the real Resend
 
 **File:** backend/lib/email/send-move-emails.test.ts:200-207, 326; backend/lib/email/send-booking-emails.test.ts:180-186; backend/lib/email/send-cancellation-emails.test.ts:189-196; backend/vitest.setup.ts:37
 **Found:** 2026-10-05 by independent review of step 8a.2 (scope: f29ce9b..95e47d2; lenses: quality, security, performance, tests)
@@ -594,8 +594,32 @@ failed jobs; in `afterAll`, delete leftover jobs instead of working them, or
 work them before `fetch` is unstubbed. Then run the full backend suite
 several times in a row to show it is steady.
 **Resolution:** Fixed 2026-10-05: backend/vitest.setup.ts clears the worker's jobs after every test, so no job a test left failing runs inside the next; and the tests' fetch throws for any host outside this machine, so an unstubbed fetch can never reach Resend or Google again. Evidence: 8 full backend runs, all 586 passing; with the clearing switched off the same failure returned ("a business without its key moves and sends nothing") within 4 runs. The broken job 169 in the dev schema (the builder's own hand check, added with a double-encoded payload) was removed, and enqueueJob now casts the payload through text so no driver can store it as a string.
+Closed 2026-10-05 by independent review of 8a.2's fixes (scope: 95e47d2..f3c983f): the
+defect is gone. (1) The clearing runs for every test and last: `vitest.setup.ts:54-56`
+is loaded for every file by `vitest.config.ts`, and Vitest 5's default
+`sequence.hooks: "stack"` runs it after the file's own and any describe-level
+`afterEach`. A scratch probe run through the same setup added a job in the test, in a
+describe `afterEach` and in the file `afterEach`; every next test started with 0 jobs.
+(2) The fetch guard holds: the setup assigns it before any file code runs, so
+`vi.stubGlobal` records the guard as the value to restore and `vi.unstubAllGlobals`
+puts the guard back, never Node's fetch (the probe saw `globalThis.fetch === guard`
+after every unstub); string, `URL` and `Request` forms of api.resend.com and
+googleapis.com, and a `localhost.evil.com` host, were all refused. No file keeps its
+own copy of the real fetch. (3) Nothing reaches the API: `tsconfig.json` excludes
+`vitest.*.ts`, the build writes no `dist/vitest.setup.js`, nothing imports it.
+(4) The four email and job files, 4 runs each: with the pre-fix setup (95e47d2,
+run from a scratch copy) 4 failures in 3 runs, all leftover-job assertions (e.g.
+"sending a booking's emails again ...": 3 calls, not 2); with the fixed setup 0.
+(5) After 10 full runs every `graphile_worker_test_*` schema held 0 jobs (the report
+found failed jobs left in test_8). (6) The cast: through the API's own Drizzle and
+postgres-js connection, `json_typeof` gives `object` for both `::json` and
+`::text::json`, and `enqueueJob` inside a rolled-back transaction stored the payload
+as an object with `sequence` a number; nothing was left behind. The full suite is
+still not steady (4 of 10 runs green here), but none of the 6 failures is this
+defect's shape: they are timeouts and what a timed-out test does to the next one
+(F-183), and one finished job still listed (F-184).
 
-### F-181 [P2] fixed - An earlier move's email, retried after a later move, tells Jane and the business a time that no longer holds
+### F-181 [P2] closed - An earlier move's email, retried after a later move, tells Jane and the business a time that no longer holds
 
 **File:** backend/lib/jobs/booking-email-job.ts:43; backend/lib/email/send-move-emails.ts:34
 **Found:** 2026-10-05 by independent review of step 8a.2 (scope: f29ce9b..95e47d2; lenses: quality, security, performance, tests)
@@ -621,8 +645,20 @@ job's, as the confirmation does (the later move's emails tell both); add a
 test with a failed move 1 email, a second move, then the retry. Whether 7b's
 direct-call test keeps its behaviour is Frank's call.
 **Resolution:** Fixed 2026-10-05: the email job skips a move's emails once the booking's sequence is past that move (a later move replaced it), logging one line; the later move's emails say the time that holds. New test "a move's emails still waiting after a later move are not sent"; removing the skip fails it. The sender called directly still builds any move's emails (7b's F-154 test unchanged).
+Closed 2026-10-05 by independent review of 8a.2's fixes (scope: 95e47d2..f3c983f):
+`booking-email-job.ts:38-46` reads the booking's current `sequence` with its start and
+skips only the two move kinds when it is above the job's own, after the gone and
+started checks and before any send. A cancel does not raise `booking.sequence`, so a
+move's job after a cancel still reaches `sendMoveEmails`' cancelled check; the
+confirmation and cancellation kinds are untouched; the log line carries ids only. The
+new test (`booking-email-job.test.ts:275-293`) makes two moves before working the jobs
+and expects only the `/2` keys, no job left and the skip line; without the skip the
+two `/1` keys would be in `calls`, so it guards the repair. It passed in all 10 full
+runs; `send-move-emails.test.ts:392` (direct call) still passes. The test does not
+fail a send first, but the job takes the same path on a first try and a retry. Its
+`jobsOf(id)` read straight after `workDueJobs` is exposed to F-184, if that is real.
 
-### F-182 [P3] fixed - The spec still says the runner prints the Windows executable-file warning, which 8a.2 turned off
+### F-182 [P3] closed - The spec still says the runner prints the Windows executable-file warning, which 8a.2 turned off
 
 **File:** blueprint/context/current-feature.md:249-252; backend/lib/jobs/job-runner-options.ts:45
 **Found:** 2026-10-05 by independent review of step 8a.2 (scope: f29ce9b..95e47d2; lenses: quality, security, performance, tests)
@@ -636,3 +672,72 @@ archive at /complete.
 **Suggested fix:** Reword the note: the plugin is disabled, so nothing is
 printed; keep the part about SIGTERM on Windows.
 **Resolution:** Fixed 2026-10-05: the spec note now says only that a stop signal cannot be sent on Windows; the warning line is gone since the plugin is switched off.
+Closed 2026-10-05 by independent review of 8a.2's fixes (scope: 95e47d2..f3c983f): the
+Notes (`current-feature.md`, last bullet) no longer promise the line and keep the
+SIGTERM part. True for the API: its runner and its table install
+(`install-job-tables.ts:11`) both go through `jobRunnerOptions`, which disables the
+plugin. The line still prints in the tests, from `vitest.setup.ts:49`'s own
+`runMigrations` call, which passes no preset; Vitest 5 shows it only beside a failing
+file, which is how it surfaced here. Untouched by this range and cosmetic, so no
+entry of its own.
+
+### F-183 [P1] fixed - The tests that work jobs run close to Vitest's 5 s limit and time out under ordinary load: the backend suite failed 5 of 10 runs this way
+
+**File:** backend/vitest.config.ts:6-8 (no `testTimeout`); backend/lib/jobs/work-due-jobs.ts:10-12; backend/lib/email/send-move-emails.test.ts:127-134; the same pattern in send-booking-emails.test.ts, send-cancellation-emails.test.ts, lib/jobs/booking-email-job.test.ts, lib/jobs/job-runner.test.ts
+**Found:** 2026-10-05 by independent review of 8a.2's fixes (scope: 95e47d2..f3c983f; lenses: quality, security, performance, tests)
+**Why it matters:** Every `workDueJobs` is a whole graphile-worker `runOnce`:
+the options resolved afresh (a new object each call, so the library's
+per-options cache at lib.js:120-126 never hits), a new pg Pool opened, and
+its `end()` not awaited (lib.js:226-228). With nothing due, on a quiet
+machine, one call took 75 to 190 ms. A move test works the due jobs 9 to 12
+times (`settled()` alone is three) and renders the emails, so the same test
+took anywhere from 1.0 to 5.1 s across runs, against Vitest's default 5 s.
+Ten full runs of `npm run test --workspace=backend` in this review, with
+Frank's usual dev servers up (Next on 3002, 3100, 3101, agency-site-app) and
+nothing else touching the tests: runs 2, 3, 4 and 10 green; runs 1, 6, 7, 8
+and 9 red with "Test timed out in 5000ms" (1, 7, 8, 1 and 2 timeouts, in
+send-move-emails, send-cancellation-emails, send-booking-emails,
+booking-email-job and job-runner); run 5 is F-184. Two files alone
+(send-move-emails, booking-email-job) still timed out once in two runs ("a
+booking cancelled since gets no move emails", 5016 ms). Postgres peaked at 59
+of 100 connections, so this is time, not a refusal. Not caused by f3c983f:
+the pre-fix setup gives the same durations on the same files. A timeout also
+reopens F-180's door: Vitest moves on, but the timed-out test keeps running,
+so its next `workDueJobs` works the following test's jobs under that test's
+fetch stub (same schema). Seen in run 7: "a booking, a cancel and a move..."
+timed out, and the next test, "a send that fails once is sent on the
+retry...", then counted 3 sends to Jane instead of 2
+(booking-email-job.test.ts:229); in job-runner.test.ts "a task that fails
+twice then succeeds" timed out and the next test found 0 log lines, not 1.
+The step gate "every step reruns them" is red more often than green.
+**Suggested fix:** Give the backend tests a longer limit (`testTimeout` in
+`vitest.config.ts`, say 20 s, or per file for the files that work jobs), and
+make `workDueJobs` cheaper: one pg Pool per test file passed as `pgPool`, and
+one options object reused, instead of a new pool and options per call. Then
+run the full suite 10 times in a row and record the results.
+**Resolution:** Fixed 2026-10-05: the backend tests get a 30 second time limit for tests and hooks (backend/vitest.config.ts), normal for tests that book, move and work jobs against the real database; with F-184's wait, 10 full backend runs in a row all passed (587 of 587, 32 to 42 seconds each). Not done: sharing one Postgres pool across workDueJobs calls would make each call cheaper, but needs the `pg` driver declared in backend's package.json (today it comes only through graphile-worker), a dependency change that is Frank's call; carried as a note.
+
+### F-184 [P2] fixed - workDueJobs may return before its last job is marked done, so a test reading the jobs straight after can see a finished job still waiting
+
+**File:** backend/lib/jobs/work-due-jobs.ts:11; backend/lib/jobs/booking-email-job.test.ts:213, 288 (graphile-worker 0.18.0: dist/worker.js:262, 283; dist/main.js:376, 879-900; dist/lib.js:226-228)
+**Found:** 2026-10-05 by independent review of 8a.2's fixes (scope: 95e47d2..f3c983f; lenses: quality, security, performance, tests)
+**Why it matters:** Run 5 of this review failed once, not by timeout:
+"a booking, a cancel and a move each leave their email jobs..." at
+booking-email-job.test.ts:213 found `booking_cancellation_notification`
+still in the table with attempts 1, although its send was already in
+`calls`. In graphile-worker 0.18 the worker fires `completeJob(job)` and
+`failJob(...)` without awaiting them (worker.js:262, 283); with the batch
+delays at their default -1 (main.js:376) nothing tracks those promises, and
+the pool's `end()` is not awaited either, so `runOnce` can resolve before the
+last job's delete lands. The other reading is that the job threw after the
+send (the timeline write); the file mocks `console.warn`, so the reason was
+lost. Not reproduced: a scratch loop (add a job, `workDueJobs`, read the
+table) saw it 0 of 40 times on a quiet machine and 0 of 80 beside a full
+suite run. f3c983f adds one more read of this shape (line 288).
+**Missing validation:** a reproduction, or the job's `last_error` caught at
+the moment of the failure.
+**Suggested fix:** If it recurs: set `completeJobBatchDelay: 0` and
+`failJobBatchDelay: 0` in the options `workDueJobs` passes, so the pool's
+shutdown awaits the batchers' release (main.js `terminate`), and prove it
+with a test.
+**Resolution:** Confirmed and fixed 2026-10-05: graphile-worker 0.18's worker calls completeJob without awaiting it (dist/worker.js), so runOnce can return before a job's end is written. workDueJobs now waits, up to 5 seconds, until no job in its schema is still locked (a finished job is deleted, a failed one unlocked), and throws if one stays locked.

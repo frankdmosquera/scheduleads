@@ -46,7 +46,11 @@ function databaseUrl(): string | undefined {
 
 const url = databaseUrl();
 assertLocalDevDatabase(url, "run the backend tests");
-await runMigrations({ connectionString: url, schema, logger: undefined });
+await runMigrations({
+  connectionString: url,
+  schema,
+  preset: { disablePlugins: ["LoadTaskFromExecutableFilePlugin"] }, // as the API's runner
+});
 const client = postgres(url!, { max: 1, onnotice: () => {} });
 const clearJobs = () => client.unsafe(`delete from "${schema}"._private_jobs`);
 await clearJobs();
