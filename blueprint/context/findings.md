@@ -895,7 +895,7 @@ delete the queue rows), before the file and after each test.
 **Resolution:** Fixed 2026-10-05 as suggested: vitest.setup.ts unlocks every lane in the worker's schema along with clearing its jobs, before each file and after each test.
 Closed 2026-10-05 by independent review of 8a.3's fixes (scope: 40f598e..dea9c59): vitest.setup.ts:57-62 clears `locked_at` and `locked_by` on `_private_job_queues`, whose `is_available` is generated from `locked_at is null` (graphile-worker 0.18.0 dist/generated/sql.js:1164), the column getJobs reads. Probed in a scratch copy: a test ending with a booking's write held mid-call left 1 locked lane, and the next test started with 0; with the setup from 40f598e the next test started with 1. After every run and probe of this review, all 16 job schemas held no job and no locked lane.
 
-### F-189 [P3] fixed - A crash mid-job now holds a sixteenth of every business's calendar jobs for four hours, not only that booking's
+### F-189 [P3] closed - A crash mid-job now holds a sixteenth of every business's calendar jobs for four hours, not only that booking's
 
 **File:** backend/lib/jobs/booking-event-lane-of.ts:4-6; blueprint/context/current-feature.md (decisions 5 and 9) (graphile-worker 0.18.0: dist/sql/getJobs.js queue clause, dist/sql/resetLockedAt.js)
 **Found:** 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e; lenses: quality, security, performance, tests)
@@ -914,8 +914,9 @@ in a Google call), so a note rather than a defect.
 more lanes (the last two characters give 256) shrink the share, and the lane
 lock could be released at start-up for workers known to be gone.
 **Resolution:** Fixed 2026-10-05 on Frank's call: 256 lanes, named by the last two characters of the booking's id (bookingEventLaneOf). A crash mid-job still holds its own job and lane for 4 hours (decision 9's accepted cost), but now about 1 booking in 256 shares that lane instead of 1 in 16. The cost is up to 256 small queue rows, made as each lane is first used.
+Closed 2026-10-05 by independent review of 8a.3's second fixes (scope: dea9c59..7f10bdc): `bookingEventLaneOf` takes `slice(-2)` (booking-event-lane-of.ts:6), and the only place a booking id is made is `randomUUID()` (book-time.ts:274), whose last two characters are lowercase hex, so the lanes are exactly `booking-event-00` to `-ff`; the comment says the same. Nothing else counts lanes: every calendar job takes its lane from this one function (enqueue-booking-event-job.ts:21), and the tests' setup unlocks every queue row whatever its name (vitest.setup.ts:57-62). The spec's decision 5, job contract and Notes say 256. The full backend suite passed 6 of 6 runs, and every job schema held no job and no locked lane afterwards.
 
-### F-190 [P3] fixed - With no id saved, a removal asks Google once per move number, so moves made faster than the jobs cost calls that grow with the square of the moves
+### F-190 [P3] closed - With no id saved, a removal asks Google once per move number, so moves made faster than the jobs cost calls that grow with the square of the moves
 
 **File:** backend/lib/jobs/booking-event-removal-job.ts:25-27; backend/lib/calendar/remove-booking-event.ts:25-27 (added by: backend/lib/booking/move-booking.ts:270-290, backend/lib/booking/cancel-booking.ts:102-113)
 **Found:** 2026-10-05 by independent review of 8a.3's fixes (scope: 40f598e..dea9c59; lenses: quality, security, performance, tests)
@@ -950,8 +951,9 @@ the job carries, and say so in those three comments. Or, to keep the range as
 cover against a doubled run, bound it (for example to the ids since the last
 person change).
 **Resolution:** Fixed 2026-10-05 on Frank's yes, as suggested: a removal carries one id again, the saved one or, with none saved, the id the write just before the change would have used (calendarEventIdOf(bookingId, row.sequence), read in the transaction); any earlier unsaved write was taken out by its own change. Test: five quick moves between Ana and Mei during a held write make five DELETE calls and leave one event at the last time; on the range version they made 15.
+Closed 2026-10-05 by independent review of 8a.3's second fixes (scope: dea9c59..7f10bdc): the one id holds. An event is written only under `calendarEventIdOf(bookingId, row.sequence)` for the person read in the same query (write-booking-event.ts:20-25, 65-67), so an id always belongs to one move number and that move's person; it is saved only while that number and person still hold (87-100), and every change reads the row under `for update` (move-booking.ts:203, cancel-booking.ts:50), so a change after an unsaved write sees no id and names exactly that person and number (move-booking.ts:280-290, cancel-booking.ts:106-113). Every write sits in the booking's lane, and the lane lock lives in the database (graphile-worker 0.18.0 dist/sql/getJobs.js:95-129), so two runners never write one booking at once; a crashed job's lock is reset with `run_at = greatest(run_at, now())` (dist/sql/resetLockedAt.js:8), so the jobs queued behind it run first, and its retry is skipped once a later move exists (is-booking-event-job-due.ts:27). Writes only use the current number, which no removal has named yet, so no path writes an id this booking deleted in that calendar. Probed in a scratch copy with the move tests' fake extended, 11 of 11 pass on this range: a write crashed after Google took the plain id, with the 4-hour lock expired by the library's own SQL, then a same-person move; then Ana, Mei and a cancel; the crashed write retried before the jobs behind it; no change at all (its retry finds its own event by 409); a crashed move job with `s1` taken in Mei, then back to Ana; a write taken then answered 503 with a move before its retry; every write taken then lost across Ana, Mei, Ana and a cancel; a person change, and a same-person move with nothing saved, each while a removal is mid-call; an event deleted by hand, its rewrite taken then lost, a cancel before the retry; 20 alternating moves during a held write (20 DELETE calls, one event). Each probe also asserts no POST of an id after a DELETE of it in that calendar. Five of the eleven fail on 40f598e. The quick-moves test fails on dea9c59 with 15 DELETE calls instead of 5 (rerun here), and the full suite passed 6 of 6 runs (599 tests).
 
-### F-191 [P3] fixed - The retry test's failing write is refused before Google takes it, so it cannot fail for the case it is named for
+### F-191 [P3] closed - The retry test's failing write is refused before Google takes it, so it cannot fail for the case it is named for
 
 **File:** backend/lib/calendar/move-booking-event.test.ts:612-631 (fake: 87)
 **Found:** 2026-10-05 by independent review of 8a.3's fixes (scope: 40f598e..dea9c59; lenses: quality, security, performance, tests)
@@ -973,3 +975,25 @@ this is the one saved case that adds nothing, not a gap in what is checked.
 refused (record the event, then answer 503), and fail the move job's first
 call whatever its method, so the same test fails on the code before the fix.
 **Resolution:** Fixed 2026-10-05: the fake Google can now take a write or update and then answer 503 (takenThenFails), and the test fails the move's own call that way, after the booking's held write. It passes on the current code and fails on 40f598e (the plain id stays in Ana's calendar for a cancelled booking).
+Closed 2026-10-05 by independent review of 8a.3's second fixes (scope: dea9c59..7f10bdc): rerun in a scratch copy of 40f598e with this range's test file, the test fails (Ana's calendar keeps one event for the cancelled booking); it passes on this range in 6 of 6 full runs. The fake now records the event before the 503 (move-booking-event.test.ts:92-94), and the counter's second call is the move job's own write, since the booking's held write is the first (the DELETE branch never asks `takenThenFails`). On this range it would fail if the cancel named any id but `s1`, the one the failed write left. The new quick-moves test fails on dea9c59 with 15 DELETE calls instead of 5, as reported.
+
+### F-192 [P3] fixed - Two lines of the move tests still describe the removal and the fake as they were before this range
+
+**File:** backend/lib/calendar/move-booking-event.test.ts:274, 653
+**Found:** 2026-10-05 by independent review of 8a.3's second fixes (scope: dea9c59..7f10bdc; lenses: quality, security, performance, tests)
+**Why it matters:** F-190 asked for the comments stating the wider claim to
+be brought in line, and the three it named were; a fourth, in the tests,
+was missed: "an event never written gets written" still says "with no id
+saved, every id it could have is taken out", the sweep this range removed.
+It reads true only by accident (at move number 0 there is one id), and it
+tells a reader the removal still walks a list. In the retry test, the
+predicate `method !== "DELETE" && failures++ === 1` guards against a method
+that never reaches it: the fake asks `takenThenFails` only for a POST or a
+successful PATCH (lines 94 and 103), so the first half is always true and
+suggests DELETE calls are counted. Nothing fails because of either; both
+are text a reader trusts.
+**Suggested fix:** Say what happens now at line 274, for example "with no id
+saved, the id the booking's write would have used is taken out", and drop
+`method !== "DELETE" &&` at line 653 (or keep the fake's own comment as the
+only statement of which calls it covers).
+**Resolution:** Fixed 2026-10-05 as suggested: the comment now says the last write's id is taken out, and the retry predicate is `failures++ === 1`, since the fake asks it only for writes and updates.

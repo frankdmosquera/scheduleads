@@ -271,7 +271,7 @@ describe("a moved booking's Google event", () => {
     const janes = await bookJane(clinic); // nobody connected yet, so no event
     await connect(clinic, clinic.ana, "ana");
 
-    await moveTo(janes, 10, clinic.ana); // with no id saved, every id it could have is taken out
+    await moveTo(janes, 10, clinic.ana); // with no id saved, the last write's id is taken out
     expect(
       eventCalls()
         .map((call) => call.method)
@@ -650,7 +650,7 @@ describe("a booking's Google event as jobs", () => {
     let failures = 0;
     // The move's own call (after the booking's held write) reaches Google, but its answer fails
     // once: the job waits to retry.
-    takenThenFails = (method) => method !== "DELETE" && failures++ === 1;
+    takenThenFails = () => failures++ === 1;
     write.release();
     await working;
     await cancelBooking(janes, NOW);
