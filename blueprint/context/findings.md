@@ -511,7 +511,7 @@ wait in `stop()` so the API exits itself before the SIGKILL.
 **Resolution:** Fixed 2026-10-05: `startJobRunner` returns null for an empty task list; `server.ts` logs "[jobs] no jobs defined yet: runner not started" and stops or watches the runner only when there is one. A test checks no runner starts for an empty list; removing the guard fails it. Started by hand, the API printed that line and still answered /health 8 seconds later. The runner's first start in the API is checked in 8a.2, when the first jobs exist.
 Invalid 2026-10-05 by independent review of 8a.1's fixes (scope: 17a9118..882086a): the defect described does not exist in graphile-worker 0.18.0. The "No runnable tasks!" assertion (dist/taskIdentifiers.js:19) is thrown inside `getJob` (sql/getJobs.js:13), which a continuous worker calls inside a try (worker.js:90-134); on an error it logs at debug level ("Failed to acquire job ... contiguous fails") and tries again after `pollInterval` (2 s); only a run-once worker rejects. Run here against scheduleads_dev with `taskList: {}`, concurrency 5 and no stop call: after 9 s `runner.promise` was still pending, each of the 5 workers had logged "Failed to acquire job: No runnable tasks!" 5 times at debug, and nothing else. Repeated with the repo's own `jobRunnerOptions({})` and `exitWhenRunnerStops(runner, () => false)`, `process.exit` stubbed: no exit in 9 s. So 8a.1's API runner never died, and F-173's fix would not have looped; what an empty list really does is five workers failing every 2 s, silently, because our logger drops debug lines. The guard in `startJobRunner` and the null runner in `server.ts` are still right for that reason and stay; the wrong reason they carry is F-178.
 
-### F-178 [P3] fixed - The code and the spec give a library behaviour that does not happen as the reason no runner starts without a job
+### F-178 [P3] closed - The code and the spec give a library behaviour that does not happen as the reason no runner starts without a job
 
 **File:** backend/lib/jobs/start-job-runner.ts:12; backend/lib/jobs/job-runner.test.ts:203; blueprint/context/current-feature.md:118-119, 132-134
 **Found:** 2026-10-05 by independent review of 8a.1's fixes (scope: 17a9118..882086a; lenses: quality, security, performance, tests)
@@ -532,6 +532,7 @@ the workers would only poll and fail every 2 s, silently, at debug level),
 and amend 8a.1's Done when and its tables bullet to match: no runner and no
 table install at API start until 8a.2 defines the first jobs.
 **Resolution:** Fixed 2026-10-05: both comments now say an empty list would leave the workers polling for nothing, silently; the spec's Done when says the same, and its tables line says the API installs them when its runner starts, once a job is defined.
+Closed 2026-10-05 by independent review of step 8a.2 (scope: f29ce9b..95e47d2): re-read at 95e47d2. `start-job-runner.ts:12` gives the real reason (an empty list would leave the workers polling every two seconds for nothing, silently); `job-runner.test.ts:205` says the same; the spec's tables bullet says the API installs them "when its runner starts (once a job is defined)" and 8a.1's Done when says "its workers would poll for nothing". No old wording ("refuse an empty list") remains in `backend/` or the spec.
 
 ### F-179 [P3] unverified - A self-stop during a Postgres restart may restart the API into a database that is still down, until Railway's retries run out
 
@@ -553,3 +554,85 @@ restarts and whether the count resets, observed once on the backend service.
 come fast, have the API retry the runner's first start for a bounded time
 (say a minute) before giving up, or raise the service's restart limit.
 **Resolution:**
+
+### F-180 [P1] fixed - A failed email job outlives the test that failed it, so a later test works it: the backend suite fails about half the time, and once called the real Resend
+
+**File:** backend/lib/email/send-move-emails.test.ts:200-207, 326; backend/lib/email/send-booking-emails.test.ts:180-186; backend/lib/email/send-cancellation-emails.test.ts:189-196; backend/vitest.setup.ts:37
+**Found:** 2026-10-05 by independent review of step 8a.2 (scope: f29ce9b..95e47d2; lenses: quality, security, performance, tests)
+**Why it matters:** The "Resend failing" tests in the three email files now
+leave their two failed jobs in the worker's schema, due again about 2.7 s
+later (graphile-worker's wait after a first failure, e^1 s). Nothing removes
+them until the next file starts (`vitest.setup.ts:37`), and every later
+`settled()` runs `workDueJobs`, which takes every due job in the schema. So
+the old retry lands inside whichever later test is running then, and its
+send is counted in that test's `calls`. Seven full runs of
+`npm run test --workspace=backend` in this review: four failed, each with one
+test in send-move-emails.test.ts: three times "a business without its key
+moves and sends nothing, and logs it" (line 358: `calls` held another
+booking's `booking_move` to jane-...@example.com) and once "sending a move's
+emails again sends the very same invite, under the same key" (line 372: the
+Idempotency-Key of another booking). The plain first run and the builder's
+passed, so the step's "every step reruns them" gate is a coin flip.
+The same leftover can also reach the real network: these files unstub
+`fetch` in `afterEach`, then `afterAll` calls `settled()`. After the first
+run here, the dev database's `graphile_worker_test_8` schema held
+send-booking-emails' failed jobs (confirmation and notification, attempt 2)
+whose stored error was "Sending an email failed: validation_error (401)", an
+answer no stub in the repo gives for a booking email (those tests answer 500
+`application_error`; the only 401 stubs are in key tests that make no
+booking), so the retry went to api.resend.com with the fake key
+`re_primo_send_key`, a test address and the rendered email. Resend refused
+the key, so nothing was delivered, but the spec's Testing line says
+"Resend faked, nothing real sent", and on a slow network that `afterAll`
+waits up to the send's 10 s limit against Vitest's 10 s hook limit.
+`booking-email-job.test.ts:164-168` already does it right (deletes the
+schema's jobs after each test).
+**Suggested fix:** In every test file that fails a send on purpose (at least
+these three), delete the worker schema's jobs in `afterEach`, as
+booking-email-job.test.ts does, or have each failure test remove its own
+failed jobs; in `afterAll`, delete leftover jobs instead of working them, or
+work them before `fetch` is unstubbed. Then run the full backend suite
+several times in a row to show it is steady.
+**Resolution:** Fixed 2026-10-05: backend/vitest.setup.ts clears the worker's jobs after every test, so no job a test left failing runs inside the next; and the tests' fetch throws for any host outside this machine, so an unstubbed fetch can never reach Resend or Google again. Evidence: 8 full backend runs, all 586 passing; with the clearing switched off the same failure returned ("a business without its key moves and sends nothing") within 4 runs. The broken job 169 in the dev schema (the builder's own hand check, added with a double-encoded payload) was removed, and enqueueJob now casts the payload through text so no driver can store it as a string.
+
+### F-181 [P2] fixed - An earlier move's email, retried after a later move, tells Jane and the business a time that no longer holds
+
+**File:** backend/lib/jobs/booking-email-job.ts:43; backend/lib/email/send-move-emails.ts:34
+**Found:** 2026-10-05 by independent review of step 8a.2 (scope: f29ce9b..95e47d2; lenses: quality, security, performance, tests)
+**Why it matters:** Decision 3 says a job does what is still true when it
+runs, and the step applies it to the confirmation pair (`sequence > 0`:
+nothing sent). A move's own job has no such check: `sendMoveEmails` stops
+only for a cancelled booking, so move 1's emails go even when the booking is
+already at move 2. Before 8a, "sent late" meant the same moment as the move;
+now a failed move email is retried for about three and a half hours, so the
+order can flip. Concretely: Jane moves from 9:00 to 10:00, Resend fails her
+`booking_move` (job retried after 2.7 s, 7.4 s, 20 s, 55 s, 2.5 min, ...),
+she moves again to 11:00, move 2's emails go, then move 1's retry succeeds
+and the last email she gets says "Your booking has moved: 10:00". Her
+calendar stays right (the invite's SEQUENCE 1 is below 2), but the email
+text and the business's "moved from 9:00 to 10:00" notice arriving after
+"moved from 10:00 to 11:00" are wrong. No test covers it; 7b's test "an
+earlier move's emails, sent after a later move, still carry that move's
+times" (send-move-emails.test.ts:392) calls `sendMoveEmails` directly and
+asserts the old behaviour.
+**Suggested fix:** In the job (or in `sendMoveEmails` when called with
+`only`), send nothing when the booking's current sequence is above the
+job's, as the confirmation does (the later move's emails tell both); add a
+test with a failed move 1 email, a second move, then the retry. Whether 7b's
+direct-call test keeps its behaviour is Frank's call.
+**Resolution:** Fixed 2026-10-05: the email job skips a move's emails once the booking's sequence is past that move (a later move replaced it), logging one line; the later move's emails say the time that holds. New test "a move's emails still waiting after a later move are not sent"; removing the skip fails it. The sender called directly still builds any move's emails (7b's F-154 test unchanged).
+
+### F-182 [P3] fixed - The spec still says the runner prints the Windows executable-file warning, which 8a.2 turned off
+
+**File:** blueprint/context/current-feature.md:249-252; backend/lib/jobs/job-runner-options.ts:45
+**Found:** 2026-10-05 by independent review of step 8a.2 (scope: f29ce9b..95e47d2; lenses: quality, security, performance, tests)
+**Why it matters:** 8a.2 disables `LoadTaskFromExecutableFilePlugin`, the
+only source of "Executable file detection not yet supported on win32"
+(graphile-worker 0.18.0 dist/plugins/LoadTaskFromExecutableFilePlugin.js:18),
+yet the spec's Notes still tell the reader the runner prints it once at
+start and that it is harmless. Someone checking the API by hand against the
+spec would look for a line that no longer appears. The note goes into the
+archive at /complete.
+**Suggested fix:** Reword the note: the plugin is disabled, so nothing is
+printed; keep the part about SIGTERM on Windows.
+**Resolution:** Fixed 2026-10-05: the spec note now says only that a stop signal cannot be sent on Windows; the warning line is gone since the plugin is switched off.

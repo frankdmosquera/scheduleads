@@ -245,10 +245,15 @@ own tests. Each test removes the jobs it made. The frontend is untouched.
   as well as Jane's confirmation: once the booking has moved (its sequence
   above 0) or been cancelled, neither goes; the move or cancel emails tell
   both. A failed send is now thrown, one line per failed try naming the job
-  and its booking.
-- On Windows, the runner prints once at start: "Executable file detection not
-  yet supported on win32". Harmless: no task folder is used. A stop signal
-  cannot be sent to a process on Windows, so the API's stop on SIGTERM is
+  and its booking. After 8a.2's review (F-181), a move's emails are not sent
+  once a later move replaced it: the later move's emails say the time that
+  holds.
+- After 8a.2's review (F-180): every backend test starts with no job waiting
+  (`vitest.setup.ts` clears the worker's jobs after each test), and the
+  tests' fetch can only reach this machine, whatever a file stubs or
+  unstubs. A job is added with its payload cast through text, so it is
+  stored as an object whichever Postgres driver adds it.
+- On Windows a stop signal cannot be sent to a process, so the API's stop on SIGTERM is
   first seen on Railway; the runner's own stop is proved by the tests.
 
 ## Open questions

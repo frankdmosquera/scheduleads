@@ -43,6 +43,7 @@ const { workDueJobs } = await import("./work-due-jobs.js");
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
 const TEN = new Date("2026-10-05T16:00:00Z");
+const ELEVEN = new Date("2026-10-05T17:00:00Z");
 const NOW = new Date("2026-10-02T14:00:00Z"); // the Friday before, as vitest.setup.ts pins it
 const jane = { name: "Jane Doe", email: `jane-${tag}@example.com`, phone: "403 555 0148" };
 const schema = sql.identifier(jobSchema);
@@ -269,6 +270,26 @@ describe("a booking's emails as jobs", () => {
     ]);
     expect(await jobsOf(moved)).toEqual([]);
     expect(await jobsOf(cancelled)).toEqual([]);
+  });
+
+  test("a move's emails still waiting after a later move are not sent", async () => {
+    const business = await makeBusiness("moved-twice");
+    const id = await book(business);
+    await workDueJobs();
+    calls.length = 0;
+    await moveBooking({ bookingId: id, startsAt: TEN, personId: null, now: NOW });
+    await moveBooking({ bookingId: id, startsAt: ELEVEN, personId: null, now: NOW });
+    await workDueJobs(); // the first move's emails run after the second move
+
+    expect(calls.map((call) => call.key)).toEqual([
+      `booking-moved/${id}/2`,
+      `booking-moved-notification/${id}/2`,
+    ]);
+    expect(await jobsOf(id)).toEqual([]);
+    const lines = vi.mocked(console.warn).mock.calls.map(([line]) => String(line));
+    expect(lines).toContain(
+      `[email] booking ${id}: booking_move 1 not sent, a later move replaced it`
+    );
   });
 
   test("no email is sent after the appointment has started", async () => {

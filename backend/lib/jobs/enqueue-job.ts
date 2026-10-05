@@ -26,7 +26,7 @@ export async function enqueueJob(
   await executor.execute(
     sql`select ${sql.identifier(jobSchema)}.add_job(
       ${name},
-      ${JSON.stringify(payload)}::json,
+      ${JSON.stringify(payload)}::text::json, -- text first, so no driver encodes it twice
       queue_name => ${queueName ?? null}::text,
       run_at => ${runAt?.toISOString() ?? null}::timestamptz,
       max_attempts => ${maxAttempts}::int
