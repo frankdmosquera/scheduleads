@@ -74,6 +74,11 @@ texts (8b, 8c) are later jobs on this runner.
    and a failed job's retry waits while a later job of the same lane runs
    first, so no order holds anyway. Each job does what is still true when it
    runs (decision 3), which makes the order not matter. Emails need no lane.
+   After the step's review (F-189, Frank, 2026-10-05): 256 lanes, named by
+   the last two characters of the booking's id. A crash mid-job holds its
+   lane for 4 hours, and with it every booking sharing the lane; 256 makes
+   that about 1 booking in 256 instead of 1 in 16, for a few tens of
+   kilobytes of queue rows and no noticeable cost.
 6. **A removal carries what it removes.** When a move changes the person, or
    a booking is cancelled, the job is given the person and the event id at
    that moment, read inside the transaction (F-149). Writing the new
@@ -217,7 +222,7 @@ One package: graphile-worker, installed in `backend` on Frank's yes
   (`{ organizationId, bookingId, sequence }`), `booking_event_remove`
   (`{ organizationId, bookingId, personId, eventId, sequence }`, eventId
   null when none was saved, and then every id up to that move number goes). The calendar ones run in the
-  lane `booking-event-<last character of bookingId>` (decision 5); the names
+  lane `booking-event-<last two characters of bookingId>` (decision 5); the names
   and payloads are settled in 8a.3's plan.
 - **No new environment variable** for the API: the runner uses
   `DATABASE_URL`. `JOBS_SCHEMA` is set only by the tests (8a.2).
@@ -254,7 +259,7 @@ own tests. Each test removes the jobs it made. The frontend is untouched.
   the API's start and the test helper install them.
 - From building 8a.1, settled planning 8a.3: graphile-worker's documentation
   warns against queue names with many values (one per booking), so decision 5
-  uses 16 fixed lanes instead, and no queue cleanup is needed.
+  uses fixed lanes instead (256 since F-189), and no queue cleanup is needed.
 - From building 8a.1, settled in 8a.2: backend test files run in parallel,
   and working the due jobs takes every due job with a known name. Each Vitest
   worker now keeps its jobs in a schema of its own (`JOBS_SCHEMA`, set only

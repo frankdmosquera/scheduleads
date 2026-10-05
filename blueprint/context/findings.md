@@ -268,7 +268,7 @@ the comment at line 46.
 **Resolution:** Carried to feature 8 (spec, Notes for the AI): its retry job must carry the first person and the event id being removed; a booking column would only half-solve it. Fixed 2026-10-05 in 8a.3: a move to another person and a cancel add a removal job carrying the person and the event id read inside the transaction (the saved id, or the id the event has when none is saved yet), retried on its own. Test: a move whose first calendar needs reconnecting removes the old event once it is reconnected.
 Closed 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e): move-booking.ts:279-284 and cancel-booking.ts:105-113 add a removal job carrying the first person and the event id inside the transaction, and remove-booking-event.ts acts only on those, never on where the booking is now; the test "a move whose first calendar needs reconnecting removes the old event once it is reconnected" passed in 8 of 8 full runs, and the original probe's case (Ana's DELETE failing, then a cancel) now leaves Ana's removal job to retry on its own. A compound race that still leaves an event under an older move's id is F-187.
 
-### F-150 [P3] fixed - Two moves inside one follow's Google calls leave an orphan event and save the wrong calendar's id
+### F-150 [P3] closed - Two moves inside one follow's Google calls leave an orphan event and save the wrong calendar's id
 
 **File:** backend/lib/calendar/move-booking-event.ts:50,57,82 (backend/lib/calendar/write-booking-event.ts:85-88)
 **Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
@@ -293,6 +293,7 @@ trusting the handed-over person; save the written id only while
 `calendarEventId` is still null.
 **Resolution:** Carried to feature 8 with F-149: two moves inside one follow's Google calls; the retry job design covers it. Fixed 2026-10-05 in 8a.3: a booking's calendar jobs run one at a time in its lane, a write or move does nothing once a later move added its own job, and an event id is saved only while the booking still has the person and move number the job read. Test: two moves close together, the middle person's write held mid-call, leave one event at the last time in the last person's calendar.
 Not closed by independent review of step 8a.3 (scope: 56f1bae..40f598e): the original case holds (Ana to Mei to Ana with Mei's write held leaves one event, `s2` in Ana's calendar, saved), but two changes inside one Google call still leave an event behind when the first change keeps the person: see F-187.
+Closed 2026-10-05 by independent review of 8a.3's fixes (scope: 40f598e..dea9c59): both forms now hold. The person-change form ("two moves close together leave one event, at the last time, in the last person's calendar") and the same-person form (F-187's four saved cases) passed in 6 of 6 full runs, and the second case in this finding's text (a move in the first moment after booking) is "two moves with the same person during the booking's write leave one event" and "a booking moved before its event was written gets one event". A scratch probe of nine further interleavings ends with one event at the last time in the last person's calendar, its id saved, or none for a cancelled booking (see F-187's closing line).
 
 ### F-153 [P3] unverified - A PATCH of an event the person deleted by hand may answer 200, so the move reports "moved" and the event stays hidden
 
@@ -835,7 +836,7 @@ in words.
 **Resolution:** Fixed 2026-10-05: the finding and step numbers are gone from the comments in work-due-jobs.ts, vitest.config.ts, vitest.setup.ts, booking-email-job.ts and its test, send-and-record-emails.ts and the three booking files; booking-email-job.ts's header is rewrapped to the usual width.
 Closed 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e): the five numbers are gone (`git grep` finds no `(F-` or `8a.` step number in backend, frontend or packages comments), and the comments this range adds carry none either.
 
-### F-187 [P2] fixed - Two changes inside one Google call still leave an event behind when the first one keeps the person: an extra event, or one for a cancelled booking
+### F-187 [P2] closed - Two changes inside one Google call still leave an event behind when the first one keeps the person: an extra event, or one for a cancelled booking
 
 **File:** backend/lib/booking/move-booking.ts:235,277; backend/lib/booking/cancel-booking.ts:111; backend/lib/calendar/move-booking-event.ts:50 (save that loses the race: backend/lib/calendar/write-booking-event.ts:87-100, move-booking-event.ts:61-71)
 **Found:** 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e; lenses: quality, security, performance, tests)
@@ -870,8 +871,9 @@ the same-person update try every unsaved id since the last person change
 (404 and 410 already count as gone). Add a test with a fake that records a POST
 or PATCH before holding its answer, asserting the live events per calendar.
 **Resolution:** Fixed 2026-10-05 on Frank's yes: a move that keeps the person updates the saved event in place only when an id is saved. With none saved, as while an earlier write has not saved its id, the move or cancel adds a removal carrying the booking's move number, which takes out every id the event may have had (one never written is gone already, as Google answers), and the move's job writes the event afresh under its own id. The move job no longer takes an event id. Tests, with a fake Google that keeps each calendar's live events and takes a held write before answering: the reviewer's four cases (two same-person moves during the booking's write; a cancel during a same-person move's write; a cancel while that write waits for its retry; a move to another person during it) each end with one event at the last time, or none for a cancelled booking. Three of the four fail on the code before the fix; the retry case passes there too, since the old code moved in place instead of writing.
+Closed 2026-10-05 by independent review of 8a.3's fixes (scope: 40f598e..dea9c59): an event is now written only under the move number the write reads (write-booking-event.ts:65-69), its id goes unsaved only when a change lands during the call (87-99), and that change reads no saved id, so it adds a removal for that person and number (move-booking.ts:278-290, cancel-booking.ts:104-113); a write never uses a number at or below one a removal named in that calendar, so no path writes an id this booking deleted there (the saved tests' fake refuses every deleted id and they pass). The four saved cases pass in 6 of 6 full runs; on the code before the fix, run in a scratch copy, three fail (two of them only by the 30 s limit, waiting for a write the old code never makes). A scratch probe with a Google that keeps live events and takes each call before its answer ended correctly in nine more interleavings, six of which fail on the code before the fix: 20 moves faster than the jobs, alternating people and with one person; lost answers at every write across Ana, Mei, Ana; a person change and a same-person move during held writes, then a cancel; moves while a removal is mid-call; an event deleted by hand with a move during the rewrite; a cancel during a PATCH; a crashed write whose lock ran out with a move waiting; a cancel while the move waits for its retry after a call Google took. The cost of the removal's range is F-190, the retry test's gap F-191.
 
-### F-188 [P3] fixed - A test that ends with a calendar job still running leaves its lane locked in the worker's schema, and later runs fail for four hours
+### F-188 [P3] closed - A test that ends with a calendar job still running leaves its lane locked in the worker's schema, and later runs fail for four hours
 
 **File:** backend/vitest.setup.ts:55-59; backend/lib/jobs/work-due-jobs.ts:34-46 (graphile-worker 0.18.0: dist/sql/completeJobs.js, failJobs.js, resetLockedAt.js)
 **Found:** 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e; lenses: quality, security, performance, tests)
@@ -891,8 +893,9 @@ per test would then fail on that worker, a flake that looks random for hours.
 (`update ... _private_job_queues set locked_at = null, locked_by = null`, or
 delete the queue rows), before the file and after each test.
 **Resolution:** Fixed 2026-10-05 as suggested: vitest.setup.ts unlocks every lane in the worker's schema along with clearing its jobs, before each file and after each test.
+Closed 2026-10-05 by independent review of 8a.3's fixes (scope: 40f598e..dea9c59): vitest.setup.ts:57-62 clears `locked_at` and `locked_by` on `_private_job_queues`, whose `is_available` is generated from `locked_at is null` (graphile-worker 0.18.0 dist/generated/sql.js:1164), the column getJobs reads. Probed in a scratch copy: a test ending with a booking's write held mid-call left 1 locked lane, and the next test started with 0; with the setup from 40f598e the next test started with 1. After every run and probe of this review, all 16 job schemas held no job and no locked lane.
 
-### F-189 [P3] open - A crash mid-job now holds a sixteenth of every business's calendar jobs for four hours, not only that booking's
+### F-189 [P3] fixed - A crash mid-job now holds a sixteenth of every business's calendar jobs for four hours, not only that booking's
 
 **File:** backend/lib/jobs/booking-event-lane-of.ts:4-6; blueprint/context/current-feature.md (decisions 5 and 9) (graphile-worker 0.18.0: dist/sql/getJobs.js queue clause, dist/sql/resetLockedAt.js)
 **Found:** 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e; lenses: quality, security, performance, tests)
@@ -910,4 +913,63 @@ in a Google call), so a note rather than a defect.
 **Suggested fix:** Record the cost in decision 5 as accepted, or narrow it:
 more lanes (the last two characters give 256) shrink the share, and the lane
 lock could be released at start-up for workers known to be gone.
+**Resolution:** Fixed 2026-10-05 on Frank's call: 256 lanes, named by the last two characters of the booking's id (bookingEventLaneOf). A crash mid-job still holds its own job and lane for 4 hours (decision 9's accepted cost), but now about 1 booking in 256 shares that lane instead of 1 in 16. The cost is up to 256 small queue rows, made as each lane is first used.
+
+### F-190 [P3] open - With no id saved, a removal asks Google once per move number, so moves made faster than the jobs cost calls that grow with the square of the moves
+
+**File:** backend/lib/jobs/booking-event-removal-job.ts:25-27; backend/lib/calendar/remove-booking-event.ts:25-27 (added by: backend/lib/booking/move-booking.ts:270-290, backend/lib/booking/cancel-booking.ts:102-113)
+**Found:** 2026-10-05 by independent review of 8a.3's fixes (scope: 40f598e..dea9c59; lenses: quality, security, performance, tests)
+**Why it matters:** With `eventId` null the removal deletes
+`calendarEventIdOf(bookingId, k)` for every k from 0 to `sequence`, one call
+after another in the booking's lane, and a failed call starts the list again
+on the retry. Every move made before the last move's job has saved its id adds
+such a removal (a move to another person always clears the id), so n moves that
+outrun the jobs cost n(n+1)/2 calls. Probed in a scratch copy of the backend
+with a fake Google that keeps live events: 20 moves alternating Ana and Mei,
+the jobs worked only after the last, made 210 DELETE calls; 20 same-person
+moves while the booking's write was held made 210 too (the code before the fix:
+20 and 0). The move route is public with no rate limit yet (as F-62 notes for
+the times route), and the lane is one of 16 shared by every business (F-189),
+so a scripted customer holds a sixteenth of all calendar jobs while Google
+answers, and a per-user quota error restarts the list. The range buys nothing
+the change's own id does not: an event is written only under the move number
+and person `writeBookingEvent` reads, and only while no id is saved
+(write-booking-event.ts:20-25, 65-69); its id goes unsaved only when a change
+lands during the call (87-99); that change reads no saved id, since the lane
+lets no other job of the booking save meanwhile, so it adds a removal for that
+person and `row.sequence`, which names exactly that id. With the job changed to
+delete only `calendarEventIdOf(bookingId, sequence)`, the 27 move tests (the
+four F-187 cases among them), every interleaving probed under F-187
+and the full backend suite (609 tests with the probes) all pass, with 20 DELETE
+calls in both cost probes. Only a second runner working the same booking at
+once (a lock that ran out on a live process) would need the earlier ids. The
+comments at move-booking.ts:271-273 ("under any earlier id"), cancel-booking.ts:102
+("every id it may have") and booking-event-removal-job.ts:2-4 state the wider claim.
+**Suggested fix:** When no id is saved, delete only the id of the move number
+the job carries, and say so in those three comments. Or, to keep the range as
+cover against a doubled run, bound it (for example to the ids since the last
+person change).
+**Resolution:**
+
+### F-191 [P3] open - The retry test's failing write is refused before Google takes it, so it cannot fail for the case it is named for
+
+**File:** backend/lib/calendar/move-booking-event.test.ts:612-631 (fake: 87)
+**Found:** 2026-10-05 by independent review of 8a.3's fixes (scope: 40f598e..dea9c59; lenses: quality, security, performance, tests)
+**Why it matters:** "a cancel while a same-person move's write waits for its
+retry leaves no event" fails the move's write with `postFails`, which answers
+503 before the fake records the event, so the failed write leaves nothing in
+Ana's calendar and the cancel's removal has nothing to catch. On the code
+before the fix the move job never makes that call (it PATCHes, which succeeds),
+so no retry happens there at all; F-187's resolution notes the test passes on
+that code. The case it is named for is F-187's B2: the move job's first Google
+call fails after Google took it (a timeout, or a 5xx after the change), and the
+cancel lands before the retry. Probed in a scratch copy with that shape, failing
+the move job's first call whatever its method (taken, then answered 503): on
+the code before the fix the plain id stays in Ana's calendar for the cancelled
+booking; on this range none is left. The fix is still guarded (the "cancel
+during a same-person move's write" test fails if the cancel names no id), so
+this is the one saved case that adds nothing, not a gap in what is checked.
+**Suggested fix:** In that test, let the failed write be taken before it is
+refused (record the event, then answer 503), and fail the move job's first
+call whatever its method, so the same test fails on the code before the fix.
 **Resolution:**
