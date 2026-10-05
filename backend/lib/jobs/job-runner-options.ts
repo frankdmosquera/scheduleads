@@ -42,6 +42,11 @@ export function jobRunnerOptions(taskList: TaskList): RunnerOptions {
     noHandleSignals: true, // server.ts stops the API and the runner together
     // Jobs are named in code, never loaded from files: the plugin that would look for executable
     // task files only warns, on Windows, that it cannot.
-    preset: { disablePlugins: ["LoadTaskFromExecutableFilePlugin"] },
+    preset: {
+      disablePlugins: ["LoadTaskFromExecutableFilePlugin"],
+      // A job's end (done, or failed and unlocked) is written before the runner stops: left
+      // unwritten by an exit, the job would stay locked four hours, then run again.
+      worker: { completeJobBatchDelay: 0, failJobBatchDelay: 0 },
+    },
   };
 }

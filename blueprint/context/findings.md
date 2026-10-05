@@ -681,7 +681,7 @@ plugin. The line still prints in the tests, from `vitest.setup.ts:49`'s own
 file, which is how it surfaced here. Untouched by this range and cosmetic, so no
 entry of its own.
 
-### F-183 [P1] fixed - The tests that work jobs run close to Vitest's 5 s limit and time out under ordinary load: the backend suite failed 5 of 10 runs this way
+### F-183 [P1] closed - The tests that work jobs run close to Vitest's 5 s limit and time out under ordinary load: the backend suite failed 5 of 10 runs this way
 
 **File:** backend/vitest.config.ts:6-8 (no `testTimeout`); backend/lib/jobs/work-due-jobs.ts:10-12; backend/lib/email/send-move-emails.test.ts:127-134; the same pattern in send-booking-emails.test.ts, send-cancellation-emails.test.ts, lib/jobs/booking-email-job.test.ts, lib/jobs/job-runner.test.ts
 **Found:** 2026-10-05 by independent review of 8a.2's fixes (scope: 95e47d2..f3c983f; lenses: quality, security, performance, tests)
@@ -716,8 +716,24 @@ make `workDueJobs` cheaper: one pg Pool per test file passed as `pgPool`, and
 one options object reused, instead of a new pool and options per call. Then
 run the full suite 10 times in a row and record the results.
 **Resolution:** Fixed 2026-10-05: the backend tests get a 30 second time limit for tests and hooks (backend/vitest.config.ts), normal for tests that book, move and work jobs against the real database; with F-184's wait, 10 full backend runs in a row all passed (587 of 587, 32 to 42 seconds each). Not done: sharing one Postgres pool across workDueJobs calls would make each call cheaper, but needs the `pg` driver declared in backend's package.json (today it comes only through graphile-worker), a dependency change that is Frank's call; carried as a note.
+Closed 2026-10-05 by independent review of 8a.2's second fixes (scope: f3c983f..b4210e9):
+the defect is gone. `backend/vitest.config.ts:10-11` sets `testTimeout` and `hookTimeout`
+to 30 s for every backend file (the only Vitest config in `backend`, and the setup file
+is loaded through it). Ten full runs of `npm run test --workspace=backend` in a row,
+no dev server started by this review: all ten green, 587 of 587 each, Vitest durations
+32.87, 31.63, 32.35, 33.11, 33.48, 32.08, 31.88, 32.50, 33.20 and 32.32 s (33 to 36 s
+wall). Run 10's JSON timings put the slowest test at 7.2 s ("many simultaneous holds
+...", hold-time.test.ts, which would have failed the old 5 s limit) and the slowest
+job-working test at 3.7 s (send-move-emails.test.ts), so the limit has about four times
+the worst seen. The longer limit also keeps a slow test from being abandoned while it
+still works jobs, the way into F-180's shape that this entry described. The hook limit
+covers F-180's afterAll that waits on a send. The second half of the suggested fix
+(one pool, one options object) was not done and is not needed to close: the defect was
+the timeouts. The builder's reason holds: `pgPool` takes a `pg` Pool, and `pg` is not in
+backend's package.json (only graphile-worker's own dependency), so it is a dependency
+choice for Frank.
 
-### F-184 [P2] fixed - workDueJobs may return before its last job is marked done, so a test reading the jobs straight after can see a finished job still waiting
+### F-184 [P2] closed - workDueJobs may return before its last job is marked done, so a test reading the jobs straight after can see a finished job still waiting
 
 **File:** backend/lib/jobs/work-due-jobs.ts:11; backend/lib/jobs/booking-email-job.test.ts:213, 288 (graphile-worker 0.18.0: dist/worker.js:262, 283; dist/main.js:376, 879-900; dist/lib.js:226-228)
 **Found:** 2026-10-05 by independent review of 8a.2's fixes (scope: 95e47d2..f3c983f; lenses: quality, security, performance, tests)
@@ -741,3 +757,73 @@ the moment of the failure.
 shutdown awaits the batchers' release (main.js `terminate`), and prove it
 with a test.
 **Resolution:** Confirmed and fixed 2026-10-05: graphile-worker 0.18's worker calls completeJob without awaiting it (dist/worker.js), so runOnce can return before a job's end is written. workDueJobs now waits, up to 5 seconds, until no job in its schema is still locked (a finished job is deleted, a failed one unlocked), and throws if one stays locked.
+Closed 2026-10-05 by independent review of 8a.2's second fixes (scope: f3c983f..b4210e9):
+the defect is gone. (1) The claim holds in graphile-worker 0.18.0: the worker fires
+`completeJob(job)` and `failJob(...)` without `await` (dist/worker.js:262, 283); with the
+batch delays at their default -1 these are the plain functions at dist/main.js:898-899
+and 920-921, whose `release` is null, so `terminate()` (main.js:433-437) has nothing to
+wait for, and the pool's `end()` is not awaited (lib.js:227). (2) Shown, not only read: a
+scratch probe whose task row-locked its own job from a second connection for 800 ms made
+`runOnce` return at 113 to 230 ms with the job still locked, 3 of 3 times; a wait like
+`workDueJobs`' then polled about 50 times and ended 8 to 18 ms after the lock let go, with
+the job gone. Without the held lock, 60 plain `runOnce` calls never showed the race, which
+is why the original entry could not reproduce it. (3) The wait is sound: it reads
+`jobSchema`, the same schema `runOnce` gets from `jobRunnerOptions`, which in the tests is
+the Vitest worker's own `graphile_worker_test_<pool id>`, so it never waits on another
+file's or the dev API's jobs; a job's end is one statement (the delete, or the fail that
+clears `locked_at` and, for a queued job, the queue lock in the same CTE,
+dist/sql/completeJobs.js, failJobs.js), so "no row locked" cannot be seen before the end
+commits and the wait cannot end early; jobs whose task is not in the run's list are never
+locked, so a run with a narrow task list does not wait on them; it is bounded at 5 s and
+throws, and a rejected end query still surfaces as Vitest's unhandled rejection, so
+nothing is masked. Every leftover locked row is deleted by the setup's `afterEach`, and
+`job-runner.test.ts`'s runner tests come after its `workDueJobs` tests. No file that
+calls it mocks `database.js`. (4) 10 of 10 full runs green (F-183). What this repair does
+not reach is the same library behaviour in the API's own stop: F-185.
+
+### F-185 [P2] fixed - A deploy's clean stop can exit before a job that just finished is marked done, so that job stays locked for about four hours
+
+**File:** backend/server.ts:47-48; backend/lib/jobs/job-runner-options.ts:33-47; backend/lib/jobs/job-runner.test.ts:173-175 (graphile-worker 0.18.0: dist/worker.js:262, 283; dist/main.js:376, 433-437, 898-899, 920-921; dist/sql/000004.sql:113)
+**Found:** 2026-10-05 by independent review of 8a.2's second fixes (scope: f3c983f..b4210e9; lenses: quality, security, performance, tests)
+**Why it matters:** F-184's repair proves that the library ends a job with an
+un-awaited query. The API's stop has the same gap, and no test or Railway setting
+covers it: `stop()` runs `await runner?.stop(signal); process.exit(0);`, and
+`runner.stop()` resolves once the workers have returned, which is right after they
+fire the end query, not after it lands. A scratch probe did exactly what `server.ts`
+does (a real runner with the repo's options, one job, the task returns, `stop`, then
+`process.exit(0)`) and read the table afterwards: the finished job was still there,
+locked, attempts 1, in 5 of 20 runs. graphile-worker takes such a job again only after
+its lock is 4 hours old. So a deploy that lands just as a job ends can: run a booking
+email job a second time 4 hours later (whether Resend drops the repeat depends on its
+idempotency window for the same key, not checked here); lose a failed try's unlock, so
+a retry due in seconds waits 4 hours (a confirmation that failed once arrives hours
+late); and, once 8a.3 puts a booking's calendar jobs in one queue, keep that queue
+locked too, since the queue unlock is in the same lost statement. Setting
+`RAILWAY_DEPLOYMENT_DRAINING_SECONDS` (F-176) does not help: nothing kills the process,
+it exits by itself. Decision 9 and the `server.ts` comment say a deploy stops cleanly;
+in this window it does not. `job-runner.test.ts:175` reads the jobs straight after
+`runner.stop()` and is exposed to the same race (it passed in all 10 runs here).
+**Suggested fix:** Set `completeJobBatchDelay: 0` and `failJobBatchDelay: 0` under
+`preset.worker` in `jobRunnerOptions`: the ends then go through the library's batcher,
+whose `release()` waits for every pending end, and `terminate()` awaits it
+(main.js:433-437, 1094-1104). The same probe with that preset left no job locked in 12
+of 12 runs, and with the held-lock probe from F-184 `runOnce` itself returned only after
+the delete landed. Add a test that stops a runner right after a job's task returns and
+expects the job gone. With that in place `workDueJobs`' polling wait is no longer
+needed and can go, or stay as a guard.
+**Resolution:** Fixed 2026-10-05 as the review proposed: jobRunnerOptions sets the library's completeJobBatchDelay and failJobBatchDelay to 0, so a job's end goes through the batch the runner flushes when it stops, and server.ts's exit after runner.stop() no longer leaves a finished job locked (the review's probe: 12 of 12 clean with this setting, 5 of 20 left locked without). The test "a job added while no runner is running is worked by the next one started" checks the job is gone right after runner.stop(). Three full backend runs passed afterwards (587 of 587).
+
+### F-186 [P3] fixed - Finding and step numbers in code comments again, two of them added by this range
+
+**File:** backend/lib/jobs/work-due-jobs.ts:18; backend/vitest.config.ts:2-3; backend/vitest.setup.ts:3; backend/lib/jobs/booking-email-job.ts:3
+**Found:** 2026-10-05 by independent review of 8a.2's second fixes (scope: f3c983f..b4210e9; lenses: quality, security, performance, tests)
+**Why it matters:** coding-standards.md (Comments, lines 358-359) rules out history
+in code comments, finding numbers and step numbers named; F-116 is the same slip,
+still open. This range adds "(F-184)" (work-due-jobs.ts:18) and "(F-183)"
+(vitest.config.ts:3). The previous range added "(F-180)" (vitest.setup.ts:3) and
+"(F-181)" (booking-email-job.ts:3), which its review did not raise, and
+vitest.config.ts:2 carries "(8a.2)". After `/complete` the ledger's numbers become
+`8a/F-...`, so the bare ones point at nothing; each sentence already says its reason
+in words.
+**Suggested fix:** Drop the five parenthesised numbers and keep the sentences.
+**Resolution:** Fixed 2026-10-05: the finding and step numbers are gone from the comments in work-due-jobs.ts, vitest.config.ts, vitest.setup.ts, booking-email-job.ts and its test, send-and-record-emails.ts and the three booking files; booking-email-job.ts's header is rewrapped to the usual width.

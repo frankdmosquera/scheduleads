@@ -1,7 +1,7 @@
 // Backend: the job that sends one of a booking's emails (decision 2). It reads the booking afresh
 // when it runs (decision 3): a booking that is gone sends nothing, a move's emails do not go once
-// a later move replaced it (F-181), and nothing goes once the appointment has started (decision 4). A send that fails throws, so the runner tries again
-// under the same Resend key.
+// a later move replaced it, and nothing goes once the appointment has started (decision 4). A
+// send that fails throws, so the runner tries again under the same Resend key.
 
 import { and, eq } from "drizzle-orm";
 

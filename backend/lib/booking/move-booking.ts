@@ -252,7 +252,7 @@ export async function moveBooking(input: {
         },
         tx
       );
-      // The two emails, as jobs saved with the move (8a.2, decision 1).
+      // The two emails, as jobs saved with the move (decision 1 of the background runner).
       await enqueueBookingEmails(
         tx,
         organizationId,

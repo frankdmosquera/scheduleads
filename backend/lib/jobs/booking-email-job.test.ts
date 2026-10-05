@@ -1,4 +1,4 @@
-// A booking's emails as jobs (8a.2), against the local database with Resend faked: no test ever
+// A booking's emails as jobs, against the local database with Resend faked: no test ever
 // sends a real email. Every business here is a throwaway carrying this run's tag, removed after.
 // Test names match the feature's Simulate page and its planned checks.
 

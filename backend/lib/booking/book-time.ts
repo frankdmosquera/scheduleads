@@ -317,7 +317,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         },
         tx
       );
-      // The two emails, as jobs saved with the booking (8a.2, decision 1).
+      // The two emails, as jobs saved with the booking (decision 1 of the background runner).
       await enqueueBookingEmails(
         tx,
         organizationId,

@@ -15,7 +15,7 @@ const MOST_WAIT_MS = 5_000;
 export async function workDueJobs(taskList: TaskList = jobTasks): Promise<void> {
   await runOnce(jobRunnerOptions(taskList));
   // The library returns before it has written a job's end (done, or failed and unlocked), so wait
-  // until no job is still locked: a test then reads what the run left (F-184).
+  // until no job is still locked: a test then reads what the run left.
   const deadline = Date.now() + MOST_WAIT_MS;
   while (Date.now() < deadline) {
     const locked = await db.execute(

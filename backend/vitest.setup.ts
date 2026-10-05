@@ -1,6 +1,6 @@
 // Backend tests, before each file. Each Vitest worker keeps its jobs in a schema of its own, so a
 // test that works the due jobs never takes another file's, nor one the dev API added; the files
-// still run side by side. Every test starts with no job waiting (F-180): a job a test left failing
+// still run side by side. Every test starts with no job waiting: a job a test left failing
 // on purpose would otherwise be retried inside the next test. No test reaches a server outside
 // this machine, whatever a file stubs or unstubs. The jobs' clock is pinned to the Friday before
 // the fixed Monday, October 5 2026, that the tests book on, so "has the appointment started"

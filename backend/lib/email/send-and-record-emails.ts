@@ -1,7 +1,7 @@
 // Backend: sends a booking's emails one by one and records each that went as an email_sent entry
 // on the contact's timeline: the booking, which email, Resend's id, never an address or content.
 // One failing never stops the next; then any failure is thrown, ids and reasons only, so the job
-// that sent them is tried again (8a.2). A retry reuses each email's key, never a second email.
+// that sent them is tried again. A retry reuses each email's key, never a second email.
 
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";

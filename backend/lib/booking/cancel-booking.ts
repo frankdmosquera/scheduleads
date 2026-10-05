@@ -91,7 +91,7 @@ export async function cancelBooking(
         { contactId: row.contactId, type: "booking_cancelled", payload: { bookingId } },
         tx
       );
-      // The two emails, as jobs saved with the cancel (8a.2, decision 1).
+      // The two emails, as jobs saved with the cancel (decision 1 of the background runner).
       await enqueueBookingEmails(
         tx,
         organizationId,
