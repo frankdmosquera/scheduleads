@@ -32,7 +32,7 @@ const {
 } = await import("@scheduleads-app/shared/db");
 const { bookTime } = await import("../lib/booking/book-time.js");
 const { bookingEventWrites } = await import("../lib/booking/booking-event-writes.js");
-const { bookingConfirmationEmails } = await import("../lib/booking/booking-confirmation-emails.js");
+const { workDueJobs } = await import("../lib/jobs/work-due-jobs.js");
 const { makeBookingPageToken } = await import("../lib/booking/booking-page-token.js");
 const { saveCalendarConnection } = await import("../lib/calendar/save-calendar-connection.js");
 const { addDays } = await import("../lib/local-time/add-days.js");
@@ -124,7 +124,7 @@ async function book(clinic: ClinicType, personId: string, hour: number, name: st
     now: new Date(),
   });
   await bookingEventWrites.settled();
-  await bookingConfirmationEmails.settled();
+  await workDueJobs();
   if (!result.booked) throw new Error(`expected a booking, got ${result.reason}`);
   return result.booking.id;
 }

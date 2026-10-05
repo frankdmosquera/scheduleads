@@ -132,7 +132,7 @@ One package: graphile-worker, installed in `backend` on Frank's yes
     backend build passes; the API starts by hand and says the runner is not
     started while no job is defined (its workers would poll for nothing), so
     the runner's first start in the API is checked in 8a.2.
-- [ ] **8a.2 The emails as jobs.**
+- [x] **8a.2 The emails as jobs.**
   - `bookTime`, `cancelBooking` and `moveBooking` add their email jobs inside
     their transactions, one per email, in place of the three email trackers,
     which are removed.
@@ -191,7 +191,8 @@ One package: graphile-worker, installed in `backend` on Frank's yes
   `booking_event_move`, `booking_event_remove` (`{ organizationId,
   bookingId, sequence, personId?, eventId? }`). The calendar ones run in the
   queue `booking-event:<bookingId>`.
-- **No new environment variable**: the runner uses `DATABASE_URL`.
+- **No new environment variable** for the API: the runner uses
+  `DATABASE_URL`. `JOBS_SCHEMA` is set only by the tests (8a.2).
 - **No route changes** and no change to any answer.
 
 ## Testing
@@ -216,6 +217,11 @@ own tests. Each test removes the jobs it made. The frontend is untouched.
   safe.
 - F-153 (unverified, from 7b): a PATCH of an event deleted by hand may answer
   200. Not this feature's work; it stays in the ledger.
+- At deploy (Frank, 2026-10-05): set `RAILWAY_DEPLOYMENT_DRAINING_SECONDS=30`
+  on the Railway backend service before the deploy that ships 8a (F-176):
+  Railway's default gives an old API about 0 to 3 seconds after SIGTERM, so a
+  job in flight is cut and then waits about 4 hours for its lock. Check the
+  restart limit at the same time (F-179). Changing Railway is Frank's.
 - `npm run db:migrate` builds a fresh database without the runner's tables;
   the API's start and the test helper install them.
 - From building 8a.1, for 8a.3: graphile-worker's own documentation warns
@@ -223,10 +229,23 @@ own tests. Each test removes the jobs it made. The frontend is untouched.
   need a periodic cleanup of unused queues. Decision 5 names a queue per
   booking, so 8a.3's plan settles it: the library's queue cleanup on a
   schedule, or another way to keep a booking's calendar jobs in order.
-- From building 8a.1, for 8a.2: backend test files run in parallel, and a
-  test that works the due jobs takes every due job with a known name, another
-  file's included. 8a.2's plan settles how each file only works its own (the
-  runner can skip jobs carrying given flags, or the files can run in turn).
+- From building 8a.1, settled in 8a.2: backend test files run in parallel,
+  and working the due jobs takes every due job with a known name. Each Vitest
+  worker now keeps its jobs in a schema of its own (`JOBS_SCHEMA`, set only
+  by `backend/vitest.setup.ts`; the API uses the library's), cleared before
+  each file, so files still run side by side and never take each other's
+  jobs or the dev API's. Running the files one at a time was tried first: the
+  suite went from 13 to 107 seconds; with a schema per worker it takes 24.
+- From building 8a.2: the jobs judge "has the appointment started" by
+  `jobClock` (`backend/lib/jobs/job-clock.ts`); the tests pin it to Friday
+  2026-10-02, since they book on the fixed Monday after. The setup reads only
+  `DATABASE_URL` from the `.env`, never loading the rest: a test checks the
+  API refusing to start without a setting.
+- From building 8a.2: decision 3's rule covers the business's notification
+  as well as Jane's confirmation: once the booking has moved (its sequence
+  above 0) or been cancelled, neither goes; the move or cancel emails tell
+  both. A failed send is now thrown, one line per failed try naming the job
+  and its booking.
 - On Windows, the runner prints once at start: "Executable file detection not
   yet supported on win32". Harmless: no task folder is used. A stop signal
   cannot be sent to a process on Windows, so the API's stop on SIGTERM is

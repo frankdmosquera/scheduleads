@@ -5,6 +5,7 @@
 import { sql } from "drizzle-orm";
 
 import type { DatabaseExecutorType } from "../../database-executor-type.js";
+import { jobSchema } from "./job-schema.js";
 
 // Up to 10 tries, the waits growing from seconds to about two hours (decision 4).
 const MOST_ATTEMPTS = 10;
@@ -23,7 +24,7 @@ export async function enqueueJob(
   { runAt, queueName, maxAttempts = MOST_ATTEMPTS }: EnqueueJobOptionsType = {}
 ): Promise<void> {
   await executor.execute(
-    sql`select graphile_worker.add_job(
+    sql`select ${sql.identifier(jobSchema)}.add_job(
       ${name},
       ${JSON.stringify(payload)}::json,
       queue_name => ${queueName ?? null}::text,

@@ -17,13 +17,16 @@ import {
   type BookingEmailToSendType,
 } from "./send-and-record-emails.js";
 
-// The kinds that went, in order. Throws only when the booking or the business cannot be read.
+// The kinds that went, in order: both, or only the one a job asks for. Throws when the booking or
+// the business cannot be read, or a send fails.
 export async function sendBookingEmails(
   organizationId: string,
-  bookingId: string
+  bookingId: string,
+  only?: BookingEmailKindType
 ): Promise<BookingEmailKindType[]> {
   const context = await findBookingEmailContext(organizationId, bookingId);
   if (context.status !== "confirmed") return [];
+  if (context.sequence > 0) return []; // moved before these went: the move's emails tell both
   const { setup } = context;
   if (!setup.ready) {
     logNothingSent(bookingId, setup.missing);
@@ -88,5 +91,6 @@ export async function sendBookingEmails(
     });
   }
 
-  return sendAndRecordEmails(organizationId, bookingId, context.contactId, emails);
+  const toSend = only ? emails.filter((email) => email.kind === only) : emails;
+  return sendAndRecordEmails(organizationId, bookingId, context.contactId, toSend);
 }

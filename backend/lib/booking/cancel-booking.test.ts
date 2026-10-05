@@ -32,9 +32,8 @@ const {
 } = await import("@scheduleads-app/shared/db");
 const { bookTime } = await import("./book-time.js");
 const { bookingEventWrites } = await import("./booking-event-writes.js");
-const { bookingConfirmationEmails } = await import("./booking-confirmation-emails.js");
+const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { bookingEventRemovals } = await import("./booking-event-removals.js");
-const { bookingCancellationEmails } = await import("./booking-cancellation-emails.js");
 const { cancelBooking } = await import("./cancel-booking.js");
 
 const tag = randomUUID().slice(0, 8);
@@ -126,9 +125,9 @@ beforeAll(() => {
 
 afterAll(async () => {
   await bookingEventWrites.settled();
-  await bookingConfirmationEmails.settled();
+  await workDueJobs();
   await bookingEventRemovals.settled();
-  await bookingCancellationEmails.settled();
+  await workDueJobs();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   await db.delete(organization).where(like(organization.slug, `test-cancel-%-${tag}`));

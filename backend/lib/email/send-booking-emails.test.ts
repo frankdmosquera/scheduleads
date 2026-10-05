@@ -36,7 +36,7 @@ const {
 const { encryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { bookTime } = await import("../booking/book-time.js");
 const { bookingEventWrites } = await import("../booking/booking-event-writes.js");
-const { bookingConfirmationEmails } = await import("../booking/booking-confirmation-emails.js");
+const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { sendBookingEmails } = await import("./send-booking-emails.js");
 const { appOrigin } = await import("../auth/auth-server.js");
 const { readBookingPageToken } = await import("../booking/booking-page-token.js");
@@ -128,7 +128,7 @@ async function makeOwner(business: BusinessType, name: string) {
 
 const settled = async () => {
   await bookingEventWrites.settled();
-  await bookingConfirmationEmails.settled();
+  await workDueJobs();
 };
 
 // Booked, then the emails waited for: the customer's answer does not wait for them, these tests do.
@@ -302,7 +302,7 @@ ${notification.body.text}`).not.toContain("/b/");
     expect(await timelineOf(business)).toHaveLength(2);
   });
 
-  test("Resend failing keeps the booking, logs one line with no address, and writes no entry", async () => {
+  test("Resend failing keeps the booking, logs one line per email with no address, and writes no entry", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {}); // the SDK's own line outside production
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     answer = () =>
@@ -319,13 +319,18 @@ ${notification.body.text}`).not.toContain("/b/");
       .from(booking)
       .where(and(eq(booking.organizationId, business.business), eq(booking.id, bookingId)));
     expect(saved).toHaveLength(1);
-    expect(warn).toHaveBeenCalledTimes(1);
-    const line = String(warn.mock.calls[0][0]);
-    expect(line).toContain(bookingId);
-    expect(line).toContain(
-      "booking_confirmation: Sending an email failed: application_error (500)"
+    // One line per email that failed, each naming its booking, never an address.
+    const lines = warn.mock.calls.map(([line]) => String(line));
+    expect(lines).toHaveLength(2);
+    expect(lines).toContainEqual(
+      expect.stringContaining(
+        "booking_confirmation: Sending an email failed: application_error (500)"
+      )
     );
-    expect(line).not.toContain("@");
+    for (const line of lines) {
+      expect(line).toContain(`for booking ${bookingId}`);
+      expect(line).not.toContain("@");
+    }
     expect(await timelineOf(business)).toEqual([]);
   });
 
@@ -428,7 +433,7 @@ ${notification.body.text}`).not.toContain("/b/");
   });
 
   // Vitest fails the run on an unhandled rejection, so a send that could escape would fail here.
-  test("a send that fails before Resend keeps the booking and logs one line, never crashing", async () => {
+  test("a send that fails before Resend keeps the booking and logs one line per email, never crashing", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const business = await makeBusiness("unreadable-key", { key: false });
     await db.insert(emailSendingKey).values({
@@ -444,11 +449,15 @@ ${notification.body.text}`).not.toContain("/b/");
       .from(booking)
       .where(and(eq(booking.organizationId, business.business), eq(booking.id, bookingId)));
     expect(saved).toHaveLength(1);
-    expect(warn).toHaveBeenCalledTimes(1);
-    const line = String(warn.mock.calls[0][0]);
-    expect(line).toContain(`[email] no emails for booking ${bookingId}: `);
-    for (const detail of ["Jane", jane.email, jane.phone, jane.location, "re_primo"]) {
-      expect(line).not.toContain(detail);
+    // One line per email job that failed, each naming its booking, never a customer's details.
+    const lines = warn.mock.calls.map(([line]) => String(line));
+    expect(lines).toHaveLength(2);
+    for (const line of lines) {
+      expect(line).toContain("booking_email");
+      expect(line).toContain(`for booking ${bookingId}`);
+      for (const detail of ["Jane", jane.email, jane.phone, jane.location, "re_primo"]) {
+        expect(line).not.toContain(detail);
+      }
     }
   });
 

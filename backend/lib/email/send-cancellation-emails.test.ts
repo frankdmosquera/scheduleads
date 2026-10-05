@@ -35,10 +35,9 @@ const {
 const { encryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { bookTime } = await import("../booking/book-time.js");
 const { bookingEventWrites } = await import("../booking/booking-event-writes.js");
-const { bookingConfirmationEmails } = await import("../booking/booking-confirmation-emails.js");
+const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { cancelBooking } = await import("../booking/cancel-booking.js");
 const { bookingEventRemovals } = await import("../booking/booking-event-removals.js");
-const { bookingCancellationEmails } = await import("../booking/booking-cancellation-emails.js");
 const { sendCancellationEmails } = await import("./send-cancellation-emails.js");
 
 const tag = randomUUID().slice(0, 8);
@@ -128,9 +127,9 @@ async function makeOwner(business: BusinessType, name: string) {
 
 const settled = async () => {
   await bookingEventWrites.settled();
-  await bookingConfirmationEmails.settled();
+  await workDueJobs();
   await bookingEventRemovals.settled();
-  await bookingCancellationEmails.settled();
+  await workDueJobs();
 };
 
 // Cancelled, then the emails waited for. The booking's own confirmation emails are left behind.
@@ -303,7 +302,7 @@ describe("a cancelled booking's emails", () => {
     expect(await cancellationEntriesOf(business)).toHaveLength(2);
   });
 
-  test("Resend failing keeps the cancel and logs one line", async () => {
+  test("Resend failing keeps the cancel and logs one line per email", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {}); // the SDK's own line outside production
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const business = await makeBusiness("resend-down");
@@ -317,13 +316,18 @@ describe("a cancelled booking's emails", () => {
     expect(await cancel(bookingId)).toEqual({ cancelled: true, alreadyCancelled: false });
 
     expect(calls).toHaveLength(2); // both were tried
-    expect(warn).toHaveBeenCalledTimes(1);
-    const line = String(warn.mock.calls[0][0]);
-    expect(line).toContain(bookingId);
-    expect(line).toContain(
-      "booking_cancellation: Sending an email failed: application_error (500)"
+    // One line per email that failed, each naming its booking, never an address.
+    const lines = warn.mock.calls.map(([line]) => String(line));
+    expect(lines).toHaveLength(2);
+    expect(lines).toContainEqual(
+      expect.stringContaining(
+        "booking_cancellation: Sending an email failed: application_error (500)"
+      )
     );
-    expect(line).not.toContain("@");
+    for (const line of lines) {
+      expect(line).toContain(`for booking ${bookingId}`);
+      expect(line).not.toContain("@");
+    }
     expect(await cancellationEntriesOf(business)).toEqual([]);
   });
 

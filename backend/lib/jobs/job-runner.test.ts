@@ -21,11 +21,13 @@ const { db } = await import("../../database.js");
 const { enqueueJob } = await import("./enqueue-job.js");
 const { exitWhenRunnerStops } = await import("./exit-when-runner-stops.js");
 const { installJobTables } = await import("./install-job-tables.js");
+const { jobSchema } = await import("./job-schema.js");
 const { jobTask } = await import("./job-task.js");
 const { startJobRunner } = await import("./start-job-runner.js");
 const { workDueJobs } = await import("./work-due-jobs.js");
 
 const tag = randomUUID().slice(0, 8);
+const schema = sql.identifier(jobSchema);
 const taskName = (name: string) => `test-${tag}-${name}`;
 
 type JobRowType = {
@@ -40,25 +42,25 @@ const jobsOf = async (name: string) =>
   (await db.execute(
     sql`select id, attempts, max_attempts, last_error,
           extract(epoch from run_at - now())::float as wait_seconds
-        from graphile_worker.jobs where task_identifier = ${taskName(name)} order by id`
+        from ${schema}.jobs where task_identifier = ${taskName(name)} order by id`
   )) as unknown as JobRowType[];
 
 // A failed job waits for its next try; the tests do not wait seconds for it.
 const makeDue = (name: string) =>
   db.execute(
-    sql`update graphile_worker._private_jobs set run_at = now()
-        where task_id in (select id from graphile_worker._private_tasks where identifier = ${taskName(name)})`
+    sql`update ${schema}._private_jobs set run_at = now()
+        where task_id in (select id from ${schema}._private_tasks where identifier = ${taskName(name)})`
   );
 
 await installJobTables();
 
 afterAll(async () => {
   vi.restoreAllMocks();
-  const mine = sql`select id from graphile_worker._private_tasks where identifier like ${`test-${tag}-%`}`;
-  await db.execute(sql`delete from graphile_worker._private_jobs where task_id in (${mine})`);
-  await db.execute(sql`delete from graphile_worker._private_tasks where id in (${mine})`);
+  const mine = sql`select id from ${schema}._private_tasks where identifier like ${`test-${tag}-%`}`;
+  await db.execute(sql`delete from ${schema}._private_jobs where task_id in (${mine})`);
+  await db.execute(sql`delete from ${schema}._private_tasks where id in (${mine})`);
   await db.execute(
-    sql`delete from graphile_worker._private_job_queues where queue_name like ${`test-${tag}-%`}`
+    sql`delete from ${schema}._private_job_queues where queue_name like ${`test-${tag}-%`}`
   );
   await db.$client.end();
 });

@@ -35,7 +35,7 @@ const {
 } = await import("@scheduleads-app/shared/db");
 const { localDate } = await import("../lib/local-time/local-date.js");
 const { bookingEventWrites } = await import("../lib/booking/booking-event-writes.js");
-const { bookingConfirmationEmails } = await import("../lib/booking/booking-confirmation-emails.js");
+const { workDueJobs } = await import("../lib/jobs/work-due-jobs.js");
 const { addDays } = await import("../lib/local-time/add-days.js");
 
 const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3400";
@@ -162,7 +162,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await bookingEventWrites.settled(); // no Google write outlives the database
-  await bookingConfirmationEmails.settled(); // nor an email
+  await workDueJobs(); // nor an email
   vi.unstubAllGlobals();
   await db.delete(organization).where(inArray(organization.id, [clinic.id])); // its rows go with it
   await db.$client.end();

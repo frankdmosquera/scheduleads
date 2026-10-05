@@ -23,6 +23,7 @@ import { findFirstPipelineStage } from "../crm/find-first-pipeline-stage.js";
 import { findOrCreateContact } from "../crm/find-or-create-contact.js";
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
+import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
 import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
 import { countBookingsThatDay } from "../scheduling/count-bookings-that-day.js";
@@ -34,7 +35,6 @@ import { findStandbyDates } from "../scheduling/find-standby-dates.js";
 import { isRoomFree } from "../scheduling/is-room-free.js";
 import { orderAnyAvailable } from "../scheduling/order-any-available.js";
 import { overlapsAny } from "../scheduling/overlaps-any.js";
-import { bookingConfirmationEmails } from "./booking-confirmation-emails.js";
 import { bookingEventWrites } from "./booking-event-writes.js";
 import { holdFirstFreeChoice } from "./hold-first-free-choice.js";
 
@@ -317,12 +317,19 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         },
         tx
       );
+      // The two emails, as jobs saved with the booking (8a.2, decision 1).
+      await enqueueBookingEmails(
+        tx,
+        organizationId,
+        bookingId,
+        ["booking_confirmation", "booking_notification"],
+        0
+      );
       return { contactId: contact.id, ...held };
     });
-    // Saved. Now the booked person's Google and the emails, outside the transaction and not
-    // awaited: the answer never waits for either, and a failure keeps the booking (decision 6).
+    // Saved. Now the booked person's Google, outside the transaction and not awaited: the answer
+    // never waits for it, and a failure keeps the booking (decision 6). The emails are jobs.
     bookingEventWrites.start(organizationId, bookingId);
-    bookingConfirmationEmails.start(organizationId, bookingId);
     return {
       booked: true,
       alreadyBooked: false,

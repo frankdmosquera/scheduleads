@@ -16,6 +16,7 @@ import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.j
 import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error.js";
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
+import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
 import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
 import { countBookingsThatDay } from "../scheduling/count-bookings-that-day.js";
@@ -28,7 +29,6 @@ import { isRoomFree } from "../scheduling/is-room-free.js";
 import { orderAnyAvailable } from "../scheduling/order-any-available.js";
 import { releaseTime } from "../scheduling/release-time.js";
 import { bookingEventMoves } from "./booking-event-moves.js";
-import { bookingMoveEmails } from "./booking-move-emails.js";
 import { holdFirstFreeChoice } from "./hold-first-free-choice.js";
 
 export type MoveBookingResultType =
@@ -252,6 +252,14 @@ export async function moveBooking(input: {
         },
         tx
       );
+      // The two emails, as jobs saved with the move (8a.2, decision 1).
+      await enqueueBookingEmails(
+        tx,
+        organizationId,
+        bookingId,
+        ["booking_move", "booking_move_notification"],
+        sequence
+      );
       saved = { fromPersonId: row.personId, sequence };
       return { moved: true, unchanged: false } as const;
     });
@@ -260,11 +268,8 @@ export async function moveBooking(input: {
     // Never the database's own error: its message carries the query.
     throw new Error(`Moving a booking failed: ${safeErrorReason(error)}`);
   }
-  // Saved. Only a move that changed something moves the event and tells both sides, so a second
-  // press never does.
-  if (saved) {
-    bookingEventMoves.start(organizationId, bookingId, saved.fromPersonId);
-    bookingMoveEmails.start(organizationId, bookingId, saved.sequence);
-  }
+  // Saved. Only a move that changed something moves the event, so a second press never does; its
+  // emails were added as jobs inside the transaction.
+  if (saved) bookingEventMoves.start(organizationId, bookingId, saved.fromPersonId);
   return result;
 }

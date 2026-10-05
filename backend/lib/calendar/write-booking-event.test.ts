@@ -32,7 +32,7 @@ const {
 const { decryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { bookTime } = await import("../booking/book-time.js");
 const { bookingEventWrites } = await import("../booking/booking-event-writes.js");
-const { bookingConfirmationEmails } = await import("../booking/booking-confirmation-emails.js");
+const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { writeBookingEvent } = await import("./write-booking-event.js");
 const { saveCalendarConnection } = await import("./save-calendar-connection.js");
 const { CalendarReconnectNeededError } = await import("./calendar-reconnect-needed-error.js");
@@ -166,7 +166,7 @@ afterEach(() => {
 
 afterAll(async () => {
   await bookingEventWrites.settled();
-  await bookingConfirmationEmails.settled(); // nor an email
+  await workDueJobs(); // nor an email
   await db.delete(organization).where(like(organization.slug, `test-event-%-${tag}`));
   await db.$client.end();
 });

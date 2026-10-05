@@ -23,11 +23,12 @@ import {
 } from "./send-and-record-emails.js";
 
 // The kinds that went, in order, for the move that gave the booking this sequence. Throws when the
-// booking, the business or that move cannot be read.
+// booking, the business or that move cannot be read, or a send fails.
 export async function sendMoveEmails(
   organizationId: string,
   bookingId: string,
-  sequence: number
+  sequence: number,
+  only?: BookingEmailKindType // the one a job asks for; both when left out
 ): Promise<BookingEmailKindType[]> {
   const context = await findBookingEmailContext(organizationId, bookingId);
   if (context.status !== "confirmed") return []; // cancelled since: the cancellation says so
@@ -118,5 +119,6 @@ export async function sendMoveEmails(
     }),
   });
 
-  return sendAndRecordEmails(organizationId, bookingId, context.contactId, emails);
+  const toSend = only ? emails.filter((email) => email.kind === only) : emails;
+  return sendAndRecordEmails(organizationId, bookingId, context.contactId, toSend);
 }

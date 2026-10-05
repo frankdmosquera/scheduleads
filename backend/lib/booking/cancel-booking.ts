@@ -13,8 +13,8 @@ import { booking, commitment, lead } from "@scheduleads-app/shared/db";
 import { db } from "../../database.js";
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
+import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
 import { releaseTime } from "../scheduling/release-time.js";
-import { bookingCancellationEmails } from "./booking-cancellation-emails.js";
 import { bookingEventRemovals } from "./booking-event-removals.js";
 
 export type CancelBookingResultType =
@@ -91,6 +91,14 @@ export async function cancelBooking(
         { contactId: row.contactId, type: "booking_cancelled", payload: { bookingId } },
         tx
       );
+      // The two emails, as jobs saved with the cancel (8a.2, decision 1).
+      await enqueueBookingEmails(
+        tx,
+        organizationId,
+        bookingId,
+        ["booking_cancellation", "booking_cancellation_notification"],
+        0
+      );
       cancelledIn = organizationId;
       return { cancelled: true, alreadyCancelled: false } as const;
     });
@@ -98,11 +106,8 @@ export async function cancelBooking(
     // Never the database's own error: its message carries the query.
     throw new Error(`Cancelling a booking failed: ${safeErrorReason(error)}`);
   }
-  // Saved. Only a cancel that changed something removes the event and tells both sides, so a
-  // second press never does either again.
-  if (cancelledIn) {
-    bookingEventRemovals.start(cancelledIn, bookingId);
-    bookingCancellationEmails.start(cancelledIn, bookingId);
-  }
+  // Saved. Only a cancel that changed something removes the event, so a second press never does
+  // it again; its emails were added as jobs inside the transaction.
+  if (cancelledIn) bookingEventRemovals.start(cancelledIn, bookingId);
   return result;
 }
