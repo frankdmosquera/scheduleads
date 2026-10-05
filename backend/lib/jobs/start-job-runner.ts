@@ -9,7 +9,8 @@ import { jobTasks } from "./job-tasks.js";
 
 const CONCURRENT_JOBS = 5; // emails and Google calls mostly wait on the network
 
-// Null when no job is defined: the library's workers refuse an empty list and exit at once.
+// Null when no job is defined: with an empty list its workers would poll every two seconds for
+// nothing, silently, since the logger drops their debug lines.
 export async function startJobRunner(taskList: TaskList = jobTasks): Promise<Runner | null> {
   if (Object.keys(taskList).length === 0) return null;
   return run({ ...jobRunnerOptions(taskList), concurrency: CONCURRENT_JOBS });

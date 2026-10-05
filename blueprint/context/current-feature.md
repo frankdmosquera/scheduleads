@@ -115,8 +115,8 @@ One package: graphile-worker, installed in `backend` on Frank's yes
     runner's start and stop; and a test helper that runs every due job to the
     end. The job names and their payload types arrive with the jobs that use
     them, in 8a.2 and 8a.3 (amended after 8a.1's review, F-174).
-  - The runner's own tables installed by the API at start, and by the test
-    helper, never by hand.
+  - The runner's own tables installed by the API when its runner starts
+    (once a job is defined), and by the test helper, never by hand.
   - `server.ts` starts the runner before listening and stops it on `SIGTERM`
     and `SIGINT`, letting running jobs finish.
   - Retries as decision 4: the attempt limit, the growing waits, the one log
@@ -130,7 +130,7 @@ One package: graphile-worker, installed in `backend` on Frank's yes
     a time in order; a runner that stops by itself takes the API down so
     Railway restarts it, while a stop the API asked for does not (F-173). The
     backend build passes; the API starts by hand and says the runner is not
-    started while no job is defined (the library refuses an empty list), so
+    started while no job is defined (its workers would poll for nothing), so
     the runner's first start in the API is checked in 8a.2.
 - [ ] **8a.2 The emails as jobs.**
   - `bookTime`, `cancelBooking` and `moveBooking` add their email jobs inside

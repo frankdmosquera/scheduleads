@@ -200,7 +200,7 @@ describe("the job runner", () => {
   });
 
   test("no runner starts while no job is defined", async () => {
-    expect(await startJobRunner({})).toBeNull(); // its workers would refuse an empty list and exit
+    expect(await startJobRunner({})).toBeNull(); // its workers would poll for nothing, silently
   });
 
   test("a runner that stops by itself takes the API down so it restarts, a stop the API asked for does not", async () => {

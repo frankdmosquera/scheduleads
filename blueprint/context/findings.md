@@ -414,7 +414,7 @@ import them in both the backend and the panel; or leave it for the dashboard
 (features 11 and 12b), which will need the same dates, and note it there.
 **Resolution:**
 
-### F-173 [P1] fixed - The API keeps serving after its runner has stopped itself, so jobs pile up unworked until the next deploy
+### F-173 [P1] closed - The API keeps serving after its runner has stopped itself, so jobs pile up unworked until the next deploy
 
 **File:** backend/server.ts:30 (graphile-worker 0.18.0: dist/runner.js:115-121, dist/main.js:956-963, dist/worker.js:296-301, dist/lib.js:354-362)
 **Found:** 2026-10-05 by independent review of step 8a.1 (scope: 779512a..17a9118; lenses: quality, security, performance, tests)
@@ -444,8 +444,9 @@ so Railway restarts the whole process and the new runner picks the jobs up.
 A test can stop a started runner's pool and assert the hook fires, or the
 step records the hand check.
 **Resolution:** Fixed 2026-10-05: `exitWhenRunnerStops` (backend/lib/jobs/exit-when-runner-stops.ts) watches the runner; a stop the API did not ask for logs one line and exits with 1, so Railway restarts the API with a runner. A test stops a real runner from inside and from a SIGTERM: the first exits, the second does not; breaking either branch fails it. While fixing it, a worse case showed: with no job defined yet the library's workers refuse the empty list and exit at once, so 8a.1's API runner died right after "runner working" (F-177).
+Closed 2026-10-05 by independent review of 8a.1's fixes (scope: 17a9118..882086a): `server.ts:52` attaches `exitWhenRunnerStops(runner, () => stopping)` synchronously after the runner starts, and `stop()` sets `stopping` before it calls `runner.stop()`, so a SIGTERM never reads as a self-stop. In graphile-worker 0.18.0 every stop, the API's or the library's own, goes through the one `stop()` in dist/runner.js:94-114: a worker that rejects (seppuku, worker.js:296-301) is removed, the pool records the error and shuts down (main.js:956-963), `_finPromise` rejects, and the `wp` handler calls `stop()` and ends in `.catch(noop)` (runner.js:115-117), so `runner.promise` (runner.js:121, `Promise.all([cp, wp])`) resolves and never rejects; `.finally` therefore fires on a self-stop. Run here against scheduleads_dev: a runner stopped from outside resolved its promise at once. Railway's restart policy docs: the default is On Failure, which restarts on a non-zero exit, up to 10 times (see F-179 for what that cap means here). The test's first half calls the public `stop()` with a reason rather than making a worker fail, so it proves the watcher and its two branches, and the library source above proves a self-stop reaches it; enough for a two-branch hook. Build, 581 backend tests and format:check pass. The aside about F-177 in this resolution does not hold: see F-177.
 
-### F-174 [P3] fixed - 8a.1's plan lists the job names and their id-only payload types; neither was built and the spec does not say they moved
+### F-174 [P3] closed - 8a.1's plan lists the job names and their id-only payload types; neither was built and the spec does not say they moved
 
 **File:** backend/lib/jobs/enqueue-job.ts:19-23 (spec: blueprint/context/current-feature.md, step 8a.1 first bullet and Data / contracts)
 **Found:** 2026-10-05 by independent review of step 8a.1 (scope: 779512a..17a9118; lenses: quality, security, performance, tests)
@@ -461,8 +462,9 @@ is there to catch.
 contracts now (a name union and one payload type per name, which `enqueueJob`
 then takes), or amend step 8a.1 to say they arrive with 8a.2 and 8a.3.
 **Resolution:** Fixed 2026-10-05 by amending the spec: 8a.1 builds `enqueueJob` with payload values ids and numbers only; the job names and payload types arrive with the jobs that use them, in 8a.2 and 8a.3.
+Closed 2026-10-05 by independent review of 8a.1's fixes (scope: 17a9118..882086a): step 8a.1's first bullet (current-feature.md:112-117) now describes what was built, `enqueueJob(executor, name: string, payload: Record<string, string | number | null>, options)` in backend/lib/jobs/enqueue-job.ts:19-24, and says where the names and payload types moved; Files / areas and Data / contracts describe the whole feature, so they rightly still list them. 8a.2 gained the API-by-hand check the amendment moved there.
 
-### F-175 [P3] fixed - The runner's tests leave one job queue row in the database on every run
+### F-175 [P3] closed - The runner's tests leave one job queue row in the database on every run
 
 **File:** backend/lib/jobs/job-runner.test.ts:54-59
 **Found:** 2026-10-05 by independent review of step 8a.1 (scope: 779512a..17a9118; lenses: quality, security, performance, tests)
@@ -479,6 +481,7 @@ made.
 `delete from graphile_worker._private_job_queues where queue_name like 'test-<tag>-%'`
 to `afterAll`, after the jobs are deleted.
 **Resolution:** Fixed 2026-10-05: afterAll also deletes this run's queue rows; the 8 left by earlier runs were removed from scheduleads_dev; a full backend run now leaves 0 jobs and 0 queues.
+Closed 2026-10-05 by independent review of 8a.1's fixes (scope: 17a9118..882086a): `afterAll` (job-runner.test.ts:60-62) deletes `_private_job_queues` rows matching `test-<tag>-%`, which covers the queue test's `test-<tag>-queue`, after the jobs that reference them are gone. After a full backend run here (59 files, 581 tests), a read-only count of scheduleads_dev showed 0 jobs, 0 queues, 0 `test-%` queues and 0 `test-%` tasks.
 
 ### F-176 [P2] open - A deploy's clean stop depends on Railway's grace period, which nothing has confirmed
 
@@ -499,10 +502,54 @@ observed deploy with a job in flight.
 wait in `stop()` so the API exits itself before the SIGKILL.
 **Resolution:** Confirmed 2026-10-05 from Railway's documentation (deployment teardown): an old deployment gets SIGTERM, then SIGKILL after RAILWAY_DEPLOYMENT_DRAINING_SECONDS, about 0 to 3 seconds by default. A job in flight at a deploy can be killed and then waits about 4 hours for its lock to expire. The fix is a Railway setting on the backend service (for example 30 seconds), which only Frank changes; raised with him after 8a.1's review.
 
-### F-177 [P1] fixed - With no job defined, the API's runner dies right after it starts and nothing says so
+### F-177 [P1] invalid - With no job defined, the API's runner dies right after it starts and nothing says so
 
 **File:** backend/lib/jobs/start-job-runner.ts:13; backend/server.ts:31
 **Found:** 2026-10-05 by the builder while fixing F-173 (scope: step 8a.1)
 **Why it matters:** graphile-worker's workers assert at least one runnable task; with 8a.1's empty `jobTasks` every worker exited with "No runnable tasks!", the pool shut down and the runner stopped itself. The API had logged "[jobs] runner working" just before, so 8a.1's check by hand proved nothing; with F-173's fix the API would have exited and restarted in a loop.
 **Suggested fix:** Start the runner only when a job is defined, and say so.
 **Resolution:** Fixed 2026-10-05: `startJobRunner` returns null for an empty task list; `server.ts` logs "[jobs] no jobs defined yet: runner not started" and stops or watches the runner only when there is one. A test checks no runner starts for an empty list; removing the guard fails it. Started by hand, the API printed that line and still answered /health 8 seconds later. The runner's first start in the API is checked in 8a.2, when the first jobs exist.
+Invalid 2026-10-05 by independent review of 8a.1's fixes (scope: 17a9118..882086a): the defect described does not exist in graphile-worker 0.18.0. The "No runnable tasks!" assertion (dist/taskIdentifiers.js:19) is thrown inside `getJob` (sql/getJobs.js:13), which a continuous worker calls inside a try (worker.js:90-134); on an error it logs at debug level ("Failed to acquire job ... contiguous fails") and tries again after `pollInterval` (2 s); only a run-once worker rejects. Run here against scheduleads_dev with `taskList: {}`, concurrency 5 and no stop call: after 9 s `runner.promise` was still pending, each of the 5 workers had logged "Failed to acquire job: No runnable tasks!" 5 times at debug, and nothing else. Repeated with the repo's own `jobRunnerOptions({})` and `exitWhenRunnerStops(runner, () => false)`, `process.exit` stubbed: no exit in 9 s. So 8a.1's API runner never died, and F-173's fix would not have looped; what an empty list really does is five workers failing every 2 s, silently, because our logger drops debug lines. The guard in `startJobRunner` and the null runner in `server.ts` are still right for that reason and stay; the wrong reason they carry is F-178.
+
+### F-178 [P3] fixed - The code and the spec give a library behaviour that does not happen as the reason no runner starts without a job
+
+**File:** backend/lib/jobs/start-job-runner.ts:12; backend/lib/jobs/job-runner.test.ts:203; blueprint/context/current-feature.md:118-119, 132-134
+**Found:** 2026-10-05 by independent review of 8a.1's fixes (scope: 17a9118..882086a; lenses: quality, security, performance, tests)
+**Why it matters:** The comment in `startJobRunner` ("the library's workers
+refuse an empty list and exit at once"), the test's comment ("its workers
+would refuse an empty list and exit") and 8a.1's Done when ("the library
+refuses an empty list") all state what F-177 found invalid: in 0.18.0 the
+workers stay up and retry every 2 s, logging only at debug. 8a.2 and 8a.3
+build on this runner; a reader trusting the comment would expect an empty
+or mistyped task list to stop the runner and, through F-173's watcher,
+restart the API loudly, when in fact it polls silently and works nothing.
+Separately, the bullet "The runner's own tables installed by the API at
+start" (current-feature.md:118) is no longer true while no job is defined,
+since the tables are installed only inside `run()`; nothing in 8a.1 adds a
+job, so nothing breaks before 8a.2.
+**Suggested fix:** Reword the two comments to the real reason (with no task
+the workers would only poll and fail every 2 s, silently, at debug level),
+and amend 8a.1's Done when and its tables bullet to match: no runner and no
+table install at API start until 8a.2 defines the first jobs.
+**Resolution:** Fixed 2026-10-05: both comments now say an empty list would leave the workers polling for nothing, silently; the spec's Done when says the same, and its tables line says the API installs them when its runner starts, once a job is defined.
+
+### F-179 [P3] unverified - A self-stop during a Postgres restart may restart the API into a database that is still down, until Railway's retries run out
+
+**File:** backend/lib/jobs/exit-when-runner-stops.ts:12; backend/server.ts:31 (graphile-worker 0.18.0: dist/lib.js:324-326)
+**Found:** 2026-10-05 by independent review of 8a.1's fixes (scope: 17a9118..882086a; lenses: quality, security, performance, tests)
+**Why it matters:** F-173's case is a Postgres restart while a job is
+closing. The fix exits the API at once, and the restarted API's first act is
+`startJobRunner`, whose `run()` installs the runner's tables through a
+plain `withPgClient` with no retry (lib.js:324-326), so while Postgres is
+still down the start throws and the process crashes again. Railway's restart
+policy docs give the default as On Failure with at most 10 restarts and say
+nothing about a delay between them or whether the count resets. If 10 quick
+restarts fit inside Postgres's downtime, the API stays down after Postgres is
+back: bookings stop, not just the emails F-173 was about. Before the fix the
+same blip left the API serving with no runner. Reachable from 8a.2, when the
+first jobs exist; not reproduced. Missing validation: Railway's delay between
+restarts and whether the count resets, observed once on the backend service.
+**Suggested fix:** Check it alongside F-176's Railway setting; if restarts
+come fast, have the API retry the runner's first start for a bounded time
+(say a minute) before giving up, or raise the service's restart limit.
+**Resolution:**
