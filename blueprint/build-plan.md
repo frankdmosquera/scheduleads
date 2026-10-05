@@ -207,7 +207,7 @@ and a second resource can hold the same time as the first.
   replies still go to the business (feature 6, decision 8, Frank, Oct 2)
   Split on 2026-10-04 into three items, each its own branch, merged and
   tagged as it lands; item 8 is done when all three are:
-  - [ ] 8a. **The background runner** - work that must happen later is kept
+  - [x] 8a. **The background runner** - work that must happen later is kept
     in the database, survives a restart and is retried: the booking, cancel
     and move emails and the Google event writes, removals and moves leave
     the in-memory trackers for it, and a move that gives up on the first
