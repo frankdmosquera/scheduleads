@@ -142,7 +142,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
 
   // Decision 7: a form already booked (a second request after a lost answer) gets that booking.
   // Asked first, and again before any refusal: a copy whose check ran after the first copy was
-  // saved sees that copy's own time as taken (F-92).
+  // saved sees that copy's own time as taken.
   const bookedByThisForm = async (): Promise<BookTimeResultType | null> => {
     if (!requestKey) return null;
     const existing = await findBookedByRequestKey(organizationId, requestKey, timezone);

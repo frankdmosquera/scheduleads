@@ -1,4 +1,4 @@
-// The same form sent again while its first copy is still being saved (F-92). The second copy reads
+// The same form sent again while its first copy is still being saved. The second copy reads
 // the form's key before the first is saved, then its check is held until the first has booked, so
 // the check sees the first copy's own time as taken: exactly the race, without its timing.
 

@@ -124,7 +124,7 @@ seed and the other files rely on that.
 `afterEach`), so a failure still lets the write settle and the cleanup run.
 **Resolution:**
 
-### F-116 [P3] open - Finding numbers in three code comments added by this feature
+### F-116 [P3] fixed - Finding numbers in three code comments added by this feature
 
 **File:** backend/lib/auth/auth-server.ts:157; backend/lib/auth/login-code-timing.test.ts:2; backend/lib/auth/send-login-code.test.ts:37
 **Found:** 2026-10-03 by independent review of feature 6 (scope: 7dc0721..8858d37; lenses: quality, security, performance, tests)
@@ -136,7 +136,7 @@ fixed. Three comments written for the F-97 and F-98 repairs still end in
 find. The comments' reasons are already said in words around them.
 **Suggested fix:** Drop the three parenthesised numbers and keep the
 sentences as they are.
-**Resolution:**
+**Resolution:** Fixed 2026-10-05: the three numbers are gone, and so are two more of the same kind, "(F-92)" in book-time.ts and book-time-resent-while-saving.test.ts; the sentences are unchanged. The "(F-06)" in migrations/0000_adopt_repo_one_tables.sql stays: that migration is already applied.
 
 ### F-128 [P3] unverified - No real calendar has been shown to remove the event from the cancelling invite
 

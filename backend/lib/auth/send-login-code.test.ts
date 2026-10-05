@@ -34,7 +34,7 @@ describe("a login code", () => {
 
     await sendLoginCode({ email: "owner@primopainters.com", otp: "482913", type: "sign-in" });
 
-    // Sent by email, the code never reaches a log line, where Railway would keep it (F-98).
+    // Sent by email, the code never reaches a log line, where Railway would keep it.
     for (const line of lines.flatMap((spy) => spy.mock.calls.flat().map(String))) {
       expect(line).not.toContain("482913");
     }
