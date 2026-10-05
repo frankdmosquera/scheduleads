@@ -13,6 +13,7 @@ import { booking, bookingLink, commitment, lead } from "@scheduleads-app/shared/
 
 import { db } from "../../database.js";
 import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
+import { calendarEventIdOf } from "../calendar/calendar-event-id-of.js";
 import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error.js";
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
@@ -268,9 +269,10 @@ export async function moveBooking(input: {
         sequence
       );
       // The event follows as jobs (decisions 5 and 6): the saved event is updated in place for
-      // the same person. For another person, or with no id saved yet (a write may still be under
-      // way, under any earlier id), the old event is taken out and the new one written, each on
-      // its own.
+      // the same person. For another person, or with no id saved yet, the old event is taken out
+      // and the new one written, each on its own. With none saved, the event can only be under
+      // the id of the write just before this move: any earlier one was taken out by its own
+      // change.
       await enqueueBookingEventJob(tx, {
         name: jobNames.bookingEventMove,
         payload: { organizationId, bookingId, sequence },
@@ -282,8 +284,7 @@ export async function moveBooking(input: {
             organizationId,
             bookingId,
             personId: row.personId,
-            eventId: row.calendarEventId,
-            sequence: row.sequence,
+            eventId: row.calendarEventId ?? calendarEventIdOf(bookingId, row.sequence),
           },
         });
       }

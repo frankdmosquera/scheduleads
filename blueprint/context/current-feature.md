@@ -176,10 +176,11 @@ One package: graphile-worker, installed in `backend` on Frank's yes
     independent of the write, so one failing never skips the other (F-169).
     A move to the same person stays an update in place when an id is saved.
     Amended after the step's review (F-187, Frank's yes, 2026-10-05): with
-    no id saved, the event may sit under the id of any earlier write, so
-    the move or cancel adds a take-out carrying the booking's move number,
-    which removes every id the event may have had, and the move writes the
-    event afresh under its own id.
+    no id saved, the move or cancel adds a take-out of the id the write
+    just before it would have used, and the move writes the event afresh
+    under its own id. Narrowed after the re-review (F-190, Frank's yes):
+    any earlier unsaved write was already taken out by its own change, so
+    one id per change is enough and fast moves cost one call each.
   - The Google tests work the jobs with the helper instead of `settled()`.
   - **Done when** saved tests: a move whose first calendar needs reconnecting
     removes the old event once it is reconnected, within the attempts
@@ -220,8 +221,8 @@ One package: graphile-worker, installed in `backend` on Frank's yes
   sequence }`, kind as `BookingEmailKindType`), `booking_event_write`
   (`{ organizationId, bookingId, sequence }`), `booking_event_move`
   (`{ organizationId, bookingId, sequence }`), `booking_event_remove`
-  (`{ organizationId, bookingId, personId, eventId, sequence }`, eventId
-  null when none was saved, and then every id up to that move number goes). The calendar ones run in the
+  (`{ organizationId, bookingId, personId, eventId }`, eventId the saved
+  one, or the id the last write would have used when none is saved). The calendar ones run in the
   lane `booking-event-<last two characters of bookingId>` (decision 5); the names
   and payloads are settled in 8a.3's plan.
 - **No new environment variable** for the API: the runner uses

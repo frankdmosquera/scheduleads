@@ -10,6 +10,7 @@ import { and, eq } from "drizzle-orm";
 import { booking, commitment, lead } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
+import { calendarEventIdOf } from "../calendar/calendar-event-id-of.js";
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
@@ -99,16 +100,16 @@ export async function cancelBooking(
         ["booking_cancellation", "booking_cancellation_notification"],
         0
       );
-      // The event, wherever it is now: its saved id, or with none saved yet every id it may have
-      // (decision 6). Only a cancel that changed something adds it, so a second press never does.
+      // The event, wherever it is now: its saved id, or with none saved yet the id of the last
+      // write (decision 6). Only a cancel that changed something adds it, so a second press never
+      // does.
       await enqueueBookingEventJob(tx, {
         name: jobNames.bookingEventRemove,
         payload: {
           organizationId,
           bookingId,
           personId: row.personId,
-          eventId: row.calendarEventId,
-          sequence: row.sequence,
+          eventId: row.calendarEventId ?? calendarEventIdOf(bookingId, row.sequence),
         },
       });
       return { cancelled: true, alreadyCancelled: false } as const;

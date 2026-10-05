@@ -55,6 +55,8 @@ let patchAnswer: (() => Response | Promise<Response>) | null; // null: as Google
 let deleteAnswer: () => Response | Promise<Response>;
 let postFails: (authorization: string | null) => boolean; // refused, nothing written
 let postHold: (authorization: string | null) => Promise<void> | null; // written, answer late
+// Taken by Google, then answered with an error, as when its answer is lost: a write or update.
+let takenThenFails: (method: string) => boolean;
 const liveIn = new Map<string, Map<string, string>>(); // access token -> event id -> start
 const deletedIn = new Map<string, Set<string>>(); // access token -> ids deleted in that calendar
 
@@ -66,6 +68,7 @@ beforeEach(() => {
   deleteAnswer = () => new Response(null, { status: 204 });
   postFails = () => false;
   postHold = () => null;
+  takenThenFails = () => false;
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input instanceof Request ? input.url : input);
     const method = init?.method ?? "GET";
@@ -88,6 +91,7 @@ beforeEach(() => {
       if (deleted.has(id) || live.has(id)) return new Response("{}", { status: 409 }); // Google keeps a deleted id
       live.set(id, start);
       await postHold(authorization);
+      if (takenThenFails(method)) return new Response("{}", { status: 503 });
       return new Response(JSON.stringify({ id }));
     }
     const id = decodeURIComponent(url.slice(EVENTS_URL.length + 1));
@@ -96,6 +100,7 @@ beforeEach(() => {
         ? await patchAnswer()
         : new Response("{}", { status: live.has(id) ? 200 : 404 });
       if (answer.ok && live.has(id)) live.set(id, start);
+      if (answer.ok && takenThenFails(method)) return new Response("{}", { status: 503 });
       return answer;
     }
     if (method === "DELETE") {
@@ -588,6 +593,30 @@ describe("a booking's Google event as jobs", () => {
     expect(await savedEventId(janes)).toBe(`${base(janes)}s2`);
   });
 
+  test("quick moves ask Google to remove one event per move, and leave one", async () => {
+    const clinic = await makeClinic("quick-moves");
+    await connect(clinic, clinic.ana, "ana");
+    await connect(clinic, clinic.mei, "mei");
+    const janes = await bookJaneUnwritten(clinic);
+    calls.length = 0;
+
+    const write = holdNextWrite("ana");
+    const working = workEventJobs();
+    await write.reached; // nothing saved while Jane keeps moving
+    const people = [clinic.mei, clinic.ana, clinic.ana, clinic.mei, clinic.ana];
+    for (const [index, personId] of people.entries()) {
+      await move(janes, index % 2 === 0 ? 10 : 11, personId);
+    }
+    write.release();
+    await working;
+    await workEventJobs();
+
+    expect(calls.filter((call) => call.method === "DELETE")).toHaveLength(people.length);
+    expect(liveEvents("ana")).toEqual([event(janes, 5, 10)]);
+    expect(liveEvents("mei")).toEqual([]);
+    expect(await savedEventId(janes)).toBe(`${base(janes)}s5`);
+  });
+
   test("a cancel during a same-person move's write leaves no event", async () => {
     const clinic = await makeClinic("same-cancel");
     await connect(clinic, clinic.ana, "ana");
@@ -619,7 +648,9 @@ describe("a booking's Google event as jobs", () => {
     await write.reached;
     await move(janes, 10, clinic.ana);
     let failures = 0;
-    postFails = () => failures++ === 0; // the move's write is refused once
+    // The move's own call (after the booking's held write) reaches Google, but its answer fails
+    // once: the job waits to retry.
+    takenThenFails = (method) => method !== "DELETE" && failures++ === 1;
     write.release();
     await working;
     await cancelBooking(janes, NOW);

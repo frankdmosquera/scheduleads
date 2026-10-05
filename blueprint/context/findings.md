@@ -915,7 +915,7 @@ more lanes (the last two characters give 256) shrink the share, and the lane
 lock could be released at start-up for workers known to be gone.
 **Resolution:** Fixed 2026-10-05 on Frank's call: 256 lanes, named by the last two characters of the booking's id (bookingEventLaneOf). A crash mid-job still holds its own job and lane for 4 hours (decision 9's accepted cost), but now about 1 booking in 256 shares that lane instead of 1 in 16. The cost is up to 256 small queue rows, made as each lane is first used.
 
-### F-190 [P3] open - With no id saved, a removal asks Google once per move number, so moves made faster than the jobs cost calls that grow with the square of the moves
+### F-190 [P3] fixed - With no id saved, a removal asks Google once per move number, so moves made faster than the jobs cost calls that grow with the square of the moves
 
 **File:** backend/lib/jobs/booking-event-removal-job.ts:25-27; backend/lib/calendar/remove-booking-event.ts:25-27 (added by: backend/lib/booking/move-booking.ts:270-290, backend/lib/booking/cancel-booking.ts:102-113)
 **Found:** 2026-10-05 by independent review of 8a.3's fixes (scope: 40f598e..dea9c59; lenses: quality, security, performance, tests)
@@ -949,9 +949,9 @@ comments at move-booking.ts:271-273 ("under any earlier id"), cancel-booking.ts:
 the job carries, and say so in those three comments. Or, to keep the range as
 cover against a doubled run, bound it (for example to the ids since the last
 person change).
-**Resolution:**
+**Resolution:** Fixed 2026-10-05 on Frank's yes, as suggested: a removal carries one id again, the saved one or, with none saved, the id the write just before the change would have used (calendarEventIdOf(bookingId, row.sequence), read in the transaction); any earlier unsaved write was taken out by its own change. Test: five quick moves between Ana and Mei during a held write make five DELETE calls and leave one event at the last time; on the range version they made 15.
 
-### F-191 [P3] open - The retry test's failing write is refused before Google takes it, so it cannot fail for the case it is named for
+### F-191 [P3] fixed - The retry test's failing write is refused before Google takes it, so it cannot fail for the case it is named for
 
 **File:** backend/lib/calendar/move-booking-event.test.ts:612-631 (fake: 87)
 **Found:** 2026-10-05 by independent review of 8a.3's fixes (scope: 40f598e..dea9c59; lenses: quality, security, performance, tests)
@@ -972,4 +972,4 @@ this is the one saved case that adds nothing, not a gap in what is checked.
 **Suggested fix:** In that test, let the failed write be taken before it is
 refused (record the event, then answer 503), and fail the move job's first
 call whatever its method, so the same test fails on the code before the fix.
-**Resolution:**
+**Resolution:** Fixed 2026-10-05: the fake Google can now take a write or update and then answer 503 (takenThenFails), and the test fails the move's own call that way, after the booking's held write. It passes on the current code and fails on 40f598e (the plain id stays in Ana's calendar for a cancelled booking).
