@@ -124,20 +124,6 @@ seed and the other files rely on that.
 `afterEach`), so a failure still lets the write settle and the cleanup run.
 **Resolution:**
 
-### F-116 [P3] open - Finding numbers in three code comments added by this feature
-
-**File:** backend/lib/auth/auth-server.ts:157; backend/lib/auth/login-code-timing.test.ts:2; backend/lib/auth/send-login-code.test.ts:37
-**Found:** 2026-10-03 by independent review of feature 6 (scope: 7dc0721..8858d37; lenses: quality, security, performance, tests)
-**Why it matters:** coding-standards.md (Comments) rules out history in code
-comments, finding numbers named; F-112 and F-115 were the same slip and were
-fixed. Three comments written for the F-97 and F-98 repairs still end in
-"(F-97)" or "(F-98)". After `/complete` archives the ledger these become
-`6/F-97`, so the bare numbers in the code point at nothing a later reader can
-find. The comments' reasons are already said in words around them.
-**Suggested fix:** Drop the three parenthesised numbers and keep the
-sentences as they are.
-**Resolution:**
-
 ### F-128 [P3] unverified - No real calendar has been shown to remove the event from the cancelling invite
 
 **File:** backend/lib/email/booking-ics.ts:28-43, backend/lib/email/send-cancellation-emails.ts:62-79
@@ -239,58 +225,6 @@ either rename the tenant test to what it checks or add a case that moves
 one business's booking and asserts the other business's rows unchanged.
 **Resolution:** Fixed 2026-10-03: the privacy test also reads console.warn and a refusal's body; the tenant test also makes a real move of ours to a time the other business has booked and checks their booking and rows are untouched. Not closed by independent review of step 7b.3 (2026-10-04): the tenant half holds; the log half still reads a `console.warn` that nothing writes (no calendar is connected in that test, and it reads before `bookingEventMoves.settled()`). A real follow failure's line is now checked for the name and address in move-booking-event.test.ts "a Google error keeps the move and logs one line". Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): the route test is unchanged and still reads `console.warn` and `console.log` before `bookingMoveEmails.settled()` (public-booking-move-routes.test.ts:369-388), so its log half checks only what happens to have run. The move's real log lines are now pinned elsewhere (move-booking-event.test.ts:365, send-move-emails.test.ts:328 and :355), so the remaining gap is the test's name, not the coverage. Not closed by independent review of feature 7b (scope: a55c8ee..6c1fa5d): public-booking-move-routes.test.ts:416-435 is unchanged since that pass. Not closed by independent review of feature 7b (scope: a55c8ee..851fadb): the test file is unchanged since 6c1fa5d.
 
-### F-149 [P2] open - When the follow gives up on the old person's calendar, nothing records that the event is still there, so neither the cancel nor feature 8 can remove it
-
-**File:** backend/lib/calendar/move-booking-event.ts:46,80 (backend/lib/booking/booking-event-moves.ts:2-3; payload: backend/lib/booking/move-booking.ts:241-246; removal: backend/lib/calendar/remove-booking-event.ts:33)
-**Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
-**Why it matters:** Who held the event before a move exists only as the
-in-memory argument to the follow. When the follow fails (F-148's cases, a
-Google 5xx or timeout, a restart before it runs), or a cancel lands before
-it reads the row (line 46 returns "nothing", commented "the removal handles
-it"), the event stays in the old person's calendar while `personId` names
-the new person, and the cancel's removal asks only the current person's
-calendar. Probed: Ana's DELETE answering 503 on a move to Mei, then a
-cancel: the only call is a DELETE in Mei's calendar, `calendarEventId` is
-cleared, and Ana's 9:00 event is never removed. It keeps Ana busy in
-Google's free/busy, so her 9:00 is no longer offered to new customers, and
-nothing can find it: not the booking row, not the `booking_moved` payload
-(`{ bookingId, fromStartsAt, toStartsAt, sequence }`), not the log line.
-booking-event-moves.ts says feature 8 tries again; it has nothing to try
-with. This is the half of F-141 that remains.
-**Suggested fix:** F-141's first option: save whose calendar holds the
-event (`calendarPersonId` beside `calendarEventId`, set by the write,
-cleared by the removal) and have the follow and the removal act on it
-rather than on the handed-over person and the current `personId`. At the
-least, add `fromPersonId` and `toPersonId` to the `booking_moved` payload
-and the spec's contract so feature 8 can redo a person change, and correct
-the comment at line 46.
-**Resolution:** Carried to feature 8 (spec, Notes for the AI): its retry job must carry the first person and the event id being removed; a booking column would only half-solve it.
-
-### F-150 [P3] open - Two moves inside one follow's Google calls leave an orphan event and save the wrong calendar's id
-
-**File:** backend/lib/calendar/move-booking-event.ts:50,57,82 (backend/lib/calendar/write-booking-event.ts:85-88)
-**Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
-**Why it matters:** Each follow pairs the person handed over by its own
-move with the booking row as it stands when it reads, and
-`writeBookingEvent` saves its id unconditionally. Probed with Mei's event
-write held: Jane moved Ana to Mei, then back to Ana, then Mei's answer
-released. Calls: DELETE plain id at Ana, POST `s1` at Mei, DELETE plain id
-at Mei (wrong id, Mei holds `s1`), POST `s2` at Ana; the saved id ends as
-`s1` while the booking is Ana's, and a cancel then deletes `s1` in Ana's
-calendar, leaving `s1` at Mei and `s2` at Ana for a cancelled booking. A
-move in the first moment after booking (event created, id not yet saved)
-can do the same: the PATCH by the plain id misses and `s1` is written
-beside it. The window is one follow's Google calls (about a second today;
-the owner's move in features 11 and 12b adds a second actor). Feature 8's
-retries cannot repair it, since no retry knows which id is right; it
-belongs to this step's design, but it is rare.
-**Suggested fix:** Run one booking's follows one at a time (a per-booking
-chain in booking-event-moves.ts), and with F-149's `calendarPersonId` let
-each follow compare where the event is with where it should be instead of
-trusting the handed-over person; save the written id only while
-`calendarEventId` is still null.
-**Resolution:** Carried to feature 8 with F-149: two moves inside one follow's Google calls; the retry job design covers it.
-
 ### F-153 [P3] unverified - A PATCH of an event the person deleted by hand may answer 200, so the move reports "moved" and the event stays hidden
 
 **File:** backend/lib/calendar/google-calendar-provider.ts:111-113 (fallback: backend/lib/calendar/move-booking-event.ts:50)
@@ -310,22 +244,6 @@ hand, then PATCH it). If it answers 200, read `status` from the answer and
 treat "cancelled" as not there, and cite what was observed beside the line.
 **Resolution:**
 
-### F-156 [P3] open - The sixth copy of the "start and settle" background tracker
-
-**File:** backend/lib/booking/booking-move-emails.ts:9-26 (same body in booking-event-writes.ts, booking-confirmation-emails.ts, booking-event-moves.ts, booking-event-removals.ts, booking-cancellation-emails.ts)
-**Found:** 2026-10-04 by independent review of step 7b.4 (scope: b56d43a..1524a1b; lenses: quality, security, performance, tests)
-**Why it matters:** Each module repeats the same `running` set, the
-`.then/.catch/.finally` chain and `settled()`, differing only in the call
-and the log line. Every test file that books, moves or cancels must now
-list up to six `settled()` calls by hand (this step added the new one to
-four files); a file that forgets one can end the database pool while a
-send is still writing its `email_sent` entry. Feature 8 will add retries
-on top of all six.
-**Suggested fix:** One small helper that takes the work and the log line
-and returns `{ start, settled }`, with one shared "all background work
-settled" for tests; keep the six named exports as thin uses of it.
-**Resolution:** Carried to feature 8 on Frank's call, 2026-10-04: its job runner replaces all six trackers, so a shared helper now would be thrown away. Noted in the spec's Notes for the AI. Stays open until then.
-
 ### F-161 [P3] fixed - The week bar spills out of the card at 320px
 
 **File:** frontend/components/booking-page/change-time-panel.tsx:243-267
@@ -338,28 +256,6 @@ fits, which is the width the step was checked at; small phones still exist.
 `text-center`), or shorten the buttons to icons with `aria-label`s below a
 breakpoint.
 **Resolution:** Fixed 2026-10-04: the week reads "Oct 4 to 10" (both months only across two) with narrower buttons; at 320px Later ends at x=260 inside the card at 289. Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): this reviewer started no dev server and could not measure; the code matches the repair (weekName at change-time-panel.tsx:49-56, `px-2` buttons), but the measurement above was for a same-month week, and a week across two months ("Oct 25 to Nov 1") is about four characters wider. Look at one such week at 320px before closing. Not closed by independent review of feature 7b (scope: a55c8ee..6c1fa5d): no dev server was started, so still unmeasured. Estimated from the code only: the buttons went from `px-3` to `px-2` (16px narrower in all) and a cross-month label is about one character shorter than the "Oct 11 to Oct 17" first measured 12px past the card's border, so Later likely ends inside the border but in the card's padding. A measurement is still needed to close it. Not closed by independent review of feature 7b (scope: a55c8ee..851fadb): no dev server was started; the week bar's markup (change-time-panel.tsx:285-315) is unchanged by the last repair, so still unmeasured across two months at 320px.
-
-### F-169 [P3] open - A failed write into the new person's calendar skips the removal from the first person's
-
-**File:** backend/lib/calendar/move-booking-event.ts:82-89
-**Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..6c1fa5d; lenses: quality, security, performance, tests)
-**Why it matters:** On a person change the follow calls
-`writeBookingEvent` outside any try, and `createEvent` throws on any Google
-answer but success, as does a token refresh that fails. The first person's
-removal sits after it, so one failed write leaves the first person's event
-at the old time even when her calendar is perfectly reachable: she sees an
-appointment that is no longer hers, and Google's free/busy keeps her busy
-there, so that time is not offered to new customers. `calendarEventId` was
-already cleared, so nothing points at the event (F-149's retry gap). F-148
-asked for the two calendars to be independent; the repair made the new
-person's write independent of the first calendar, not the other way round.
-No test makes the new person's write fail (move-booking-event.test.ts
-fakes every POST as accepted unless the id was deleted there).
-**Suggested fix:** Catch the write's failure, run the first person's removal
-in every case, then rethrow (or log both on one line); add a test where the
-new person's POST answers 500 and assert a DELETE still reaches the first
-person's calendar.
-**Resolution:**
 
 ### F-170 [P3] open - The move-times privacy test reads a 503 refusal, not the times, when its file runs in order
 
@@ -412,4 +308,86 @@ today (both work in UTC on YYYY-MM-DD); nothing keeps them agreeing.
 `formatToParts` into `packages/shared/helpers/` with one test each, and
 import them in both the backend and the panel; or leave it for the dashboard
 (features 11 and 12b), which will need the same dates, and note it there.
+**Resolution:**
+
+### F-176 [P2] open - A deploy's clean stop depends on Railway's grace period, which nothing has confirmed
+
+**File:** backend/server.ts:39-49 (spec: decision 9, "a job left mid-run by a crash (not a deploy, which stops cleanly)")
+**Found:** 2026-10-05 by independent review of step 8a.1 (scope: 779512a..17a9118; lenses: quality, security, performance, tests)
+**Why it matters:** On SIGTERM the API waits for `runner.stop()` with no time
+limit, then exits. Railway sends SIGKILL after `RAILWAY_DEPLOYMENT_DRAINING_SECONDS`;
+its docs page on teardown names the variable but this review could not
+confirm its default. If the window is shorter than a running job (a Google
+call or an email send), the job is killed while locked and is only taken
+again when graphile-worker treats the lock as abandoned (about four hours),
+so a confirmation could arrive hours late, the case decision 9 says a deploy
+avoids. The spec's Notes already say the SIGTERM path is first seen on
+Railway. Missing validation: Railway's default draining time and one
+observed deploy with a job in flight.
+**Suggested fix:** Confirm the default and set `RAILWAY_DEPLOYMENT_DRAINING_SECONDS`
+(for example 30) when the runner first runs on Railway; optionally bound the
+wait in `stop()` so the API exits itself before the SIGKILL.
+**Resolution:** Confirmed 2026-10-05 from Railway's documentation (deployment teardown): an old deployment gets SIGTERM, then SIGKILL after RAILWAY_DEPLOYMENT_DRAINING_SECONDS, about 0 to 3 seconds by default. A job in flight at a deploy can be killed and then waits about 4 hours for its lock to expire. The fix is a Railway setting on the backend service (for example 30 seconds), which only Frank changes; raised with him after 8a.1's review. Frank, 2026-10-05: set at the deploy that ships 8a; written into the spec's deploy notes. Stays open until then.
+
+### F-179 [P3] unverified - A self-stop during a Postgres restart may restart the API into a database that is still down, until Railway's retries run out
+
+**File:** backend/lib/jobs/exit-when-runner-stops.ts:12; backend/server.ts:31 (graphile-worker 0.18.0: dist/lib.js:324-326)
+**Found:** 2026-10-05 by independent review of 8a.1's fixes (scope: 17a9118..882086a; lenses: quality, security, performance, tests)
+**Why it matters:** F-173's case is a Postgres restart while a job is
+closing. The fix exits the API at once, and the restarted API's first act is
+`startJobRunner`, whose `run()` installs the runner's tables through a
+plain `withPgClient` with no retry (lib.js:324-326), so while Postgres is
+still down the start throws and the process crashes again. Railway's restart
+policy docs give the default as On Failure with at most 10 restarts and say
+nothing about a delay between them or whether the count resets. If 10 quick
+restarts fit inside Postgres's downtime, the API stays down after Postgres is
+back: bookings stop, not just the emails F-173 was about. Before the fix the
+same blip left the API serving with no runner. Reachable from 8a.2, when the
+first jobs exist; not reproduced. Missing validation: Railway's delay between
+restarts and whether the count resets, observed once on the backend service.
+**Suggested fix:** Check it alongside F-176's Railway setting; if restarts
+come fast, have the API retry the runner's first start for a bounded time
+(say a minute) before giving up, or raise the service's restart limit.
+**Resolution:**
+
+### F-193 [P3] open - A deploy's stop exits without waiting for the requests in flight, so a booking being made at that moment is cut
+
+**File:** backend/server.ts:39-48
+**Found:** 2026-10-05 by /audit independent current (scope: 779512a..dd65fe3; lenses: quality, security, performance, tests)
+**Why it matters:** On SIGTERM, `stop()` calls `server.close()` without waiting
+for it, awaits only `runner.stop()`, then calls `process.exit(0)`. With no job
+in hand the runner stops in milliseconds, and `process.exit` ends the process
+whatever sockets are still open, so a request the old API is still answering
+is dropped: a booking mid-transaction rolls back and Jane sees an error instead
+of her booking, though the deploy notes (F-176) are about to give the old API
+30 seconds it could use to finish it. `server.close()` is the half that
+already does this (it refuses new connections and calls back once the open
+ones end). Not a regression: before this range the API had no SIGTERM handler
+and died at once. The comment above it says "no new requests", which is true;
+it is the requests already accepted that nothing waits for.
+**Suggested fix:** Wait for both before exiting, for example
+`await Promise.all([new Promise((resolve) => server.close(resolve)), runner?.stop(signal)])`,
+optionally bounded a little under the draining time so the API exits itself
+before Railway's SIGKILL.
+**Resolution:**
+
+### F-194 [P3] open - installJobTables ships in the API but only one test calls it, and its comment says the tests use it before their first job, which they do not
+
+**File:** backend/lib/jobs/install-job-tables.ts:1-12 (its one caller: backend/lib/jobs/job-runner.test.ts:55; the setup's own copy: backend/vitest.setup.ts:49-52)
+**Found:** 2026-10-05 by /audit independent current (scope: 779512a..dd65fe3; lenses: quality, security, performance, tests)
+**Why it matters:** The comment says the API's runner installs the tables
+itself and that "tests call it before adding their first job". The second
+half is not what happens: `vitest.setup.ts` runs graphile-worker's
+`runMigrations` on the worker's schema itself before every file, and every
+`run` and `runOnce` migrates again on its own (graphile-worker 0.18.0
+dist/lib.js:323-326, reached from dist/runner.js:24-26 and 43-45). The one
+caller, job-runner.test.ts:55, migrates a schema the setup already migrated.
+So the file is compiled into the API's dist/ with no production caller, and
+a reader looking for where the tables come from is pointed at the wrong
+place. The spec's 8a.1 step says the tables are installed by the API's
+runner and by the test helper; both already do it through the library.
+**Suggested fix:** Delete install-job-tables.ts and its one call in
+job-runner.test.ts (the setup and the library already install the tables),
+and leave the setup's comment as the place that says the tests' schema is
+migrated there.
 **Resolution:**

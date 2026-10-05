@@ -32,14 +32,9 @@ const {
 } = await import("@scheduleads-app/shared/db");
 const { encryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { bookTime } = await import("../booking/book-time.js");
-const { bookingEventWrites } = await import("../booking/booking-event-writes.js");
-const { bookingConfirmationEmails } = await import("../booking/booking-confirmation-emails.js");
+const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { moveBooking } = await import("../booking/move-booking.js");
-const { bookingEventMoves } = await import("../booking/booking-event-moves.js");
-const { bookingMoveEmails } = await import("../booking/booking-move-emails.js");
 const { cancelBooking } = await import("../booking/cancel-booking.js");
-const { bookingEventRemovals } = await import("../booking/booking-event-removals.js");
-const { bookingCancellationEmails } = await import("../booking/booking-cancellation-emails.js");
 const { sendMoveEmails } = await import("./send-move-emails.js");
 
 const tag = randomUUID().slice(0, 8);
@@ -127,12 +122,7 @@ async function makeBusiness(
 type BusinessType = Awaited<ReturnType<typeof makeBusiness>>;
 
 const settled = async () => {
-  await bookingEventWrites.settled();
-  await bookingConfirmationEmails.settled();
-  await bookingEventMoves.settled();
-  await bookingMoveEmails.settled();
-  await bookingEventRemovals.settled();
-  await bookingCancellationEmails.settled();
+  await workDueJobs();
 };
 
 // Booked at nine, then the emails waited for: the customer's answer does not wait, these tests do.
@@ -325,7 +315,7 @@ describe("a moved booking's emails", () => {
     expect(await moveEntriesOf(business)).toHaveLength(2);
   });
 
-  test("Resend failing keeps the move and logs one line", async () => {
+  test("Resend failing keeps the move and logs one line per email", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {}); // the SDK's own line outside production
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const business = await makeBusiness("resend-down");
@@ -339,11 +329,16 @@ describe("a moved booking's emails", () => {
     expect(await move(bookingId, TEN)).toEqual({ moved: true, unchanged: false });
 
     expect(calls).toHaveLength(2); // both were tried
-    expect(warn).toHaveBeenCalledTimes(1);
-    const line = String(warn.mock.calls[0][0]);
-    expect(line).toContain(bookingId);
-    expect(line).toContain("booking_move: Sending an email failed: application_error (500)");
-    expect(line).not.toContain("@");
+    // One line per email that failed, each naming its booking, never an address.
+    const lines = warn.mock.calls.map(([line]) => String(line));
+    expect(lines).toHaveLength(2);
+    expect(lines).toContainEqual(
+      expect.stringContaining("booking_move: Sending an email failed: application_error (500)")
+    );
+    for (const line of lines) {
+      expect(line).toContain(`for booking ${bookingId}`);
+      expect(line).not.toContain("@");
+    }
     expect(await moveEntriesOf(business)).toEqual([]);
     const [moved] = await db
       .select({ startsAt: booking.startsAt, sequence: booking.sequence })

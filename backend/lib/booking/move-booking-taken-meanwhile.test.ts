@@ -34,10 +34,7 @@ const {
 } = await import("@scheduleads-app/shared/db");
 const { bookTime } = await import("./book-time.js");
 const { moveBooking } = await import("./move-booking.js");
-const { bookingEventWrites } = await import("./booking-event-writes.js");
-const { bookingConfirmationEmails } = await import("./booking-confirmation-emails.js");
-const { bookingEventMoves } = await import("./booking-event-moves.js");
-const { bookingMoveEmails } = await import("./booking-move-emails.js");
+const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
@@ -45,10 +42,7 @@ const ELEVEN = new Date("2026-10-05T17:00:00Z");
 const thursdayBefore = new Date("2026-10-01T14:00:00Z");
 
 afterAll(async () => {
-  await bookingEventWrites.settled();
-  await bookingConfirmationEmails.settled();
-  await bookingEventMoves.settled();
-  await bookingMoveEmails.settled();
+  await workDueJobs();
   await db.delete(organization).where(like(organization.slug, `test-move-meanwhile-%-${tag}`));
   await db.$client.end();
 });

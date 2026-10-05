@@ -31,8 +31,9 @@ const {
 } = await import("@scheduleads-app/shared/db");
 const { decryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { bookTime } = await import("../booking/book-time.js");
-const { bookingEventWrites } = await import("../booking/booking-event-writes.js");
-const { bookingConfirmationEmails } = await import("../booking/booking-confirmation-emails.js");
+const { workDueJobs } = await import("../jobs/work-due-jobs.js");
+const { jobNames } = await import("../jobs/job-names.js");
+const { jobTasks } = await import("../jobs/job-tasks.js");
 const { writeBookingEvent } = await import("./write-booking-event.js");
 const { saveCalendarConnection } = await import("./save-calendar-connection.js");
 const { CalendarReconnectNeededError } = await import("./calendar-reconnect-needed-error.js");
@@ -99,7 +100,11 @@ const connect = (clinic: ClinicType, expiresInMs = 60 * 60 * 1000) =>
     },
   });
 
-// Booked, then Google's write waited for: the customer's answer does not wait for it, these tests do.
+// The event's job only: the booking's emails, with no email set up, would add lines of their own.
+const workWriteJobs = () =>
+  workDueJobs({ [jobNames.bookingEventWrite]: jobTasks[jobNames.bookingEventWrite] });
+
+// Booked, then its event's job worked: the customer's answer does not wait for it, these tests do.
 const book = async (clinic: ClinicType, changes: Partial<Parameters<typeof bookTime>[0]> = {}) => {
   const result = await bookTime({
     organizationId: clinic.business,
@@ -115,7 +120,7 @@ const book = async (clinic: ClinicType, changes: Partial<Parameters<typeof bookT
     now: new Date("2026-10-02T14:00:00Z"),
     ...changes,
   });
-  await bookingEventWrites.settled();
+  await workWriteJobs();
   return result;
 };
 
@@ -165,8 +170,6 @@ afterEach(() => {
 });
 
 afterAll(async () => {
-  await bookingEventWrites.settled();
-  await bookingConfirmationEmails.settled(); // nor an email
   await db.delete(organization).where(like(organization.slug, `test-event-%-${tag}`));
   await db.$client.end();
 });
@@ -214,10 +217,13 @@ describe("the booking's event in Google", () => {
       now: new Date("2026-10-02T14:00:00Z"),
     });
     if (!result.booked) throw new Error(`expected a booking, got ${result.reason}`);
-    expect(await eventIdOf(result.booking.id)).toBeNull(); // answered while Google still works
+    expect(await eventIdOf(result.booking.id)).toBeNull(); // answered before Google is asked
 
+    const working = workWriteJobs();
+    await vi.waitFor(() => expect(eventCalls()).toHaveLength(1)); // Google still at work
+    expect(await eventIdOf(result.booking.id)).toBeNull();
     answerGoogle();
-    await bookingEventWrites.settled();
+    await working;
     expect(await eventIdOf(result.booking.id)).toBe("evt-slow");
   });
 

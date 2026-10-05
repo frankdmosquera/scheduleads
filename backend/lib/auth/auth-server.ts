@@ -154,7 +154,7 @@ export const auth = betterAuth({
       // five minutes. Hashed, a leaked table gives no one a way in.
       storeOTP: "hashed",
       // Not awaited: a known address must answer as fast as an unknown one, or the wait for
-      // the email would tell anyone who is a customer (F-97). A failure is logged, never shown.
+      // the email would tell anyone who is a customer. A failure is logged, never shown.
       async sendVerificationOTP({ email, otp, type }) {
         sendLoginCode({ email, otp, type }).catch((error: unknown) => {
           console.warn(`[auth] a login code was not sent: ${safeErrorReason(error)}`);

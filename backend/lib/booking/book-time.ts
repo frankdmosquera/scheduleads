@@ -1,9 +1,8 @@
 // Backend: books one time for a service, the one path every booking takes. A form already booked
 // answers that booking; the time is checked again; then the contact, a new lead in the first stage,
-// the booking, its held time and the timeline entry land in one transaction, or nothing does; then
-// the event starts going into the booked person's Google and the emails start going out, without
-// the answer waiting for either. A customer gets only the free times they are offered; the owner any time nobody is busy
-// (decision 11).
+// the booking, its held time, the timeline entry and the jobs for its Google event and its emails
+// land in one transaction, or nothing does; the answer waits for neither. A customer gets only the
+// free times they are offered; the owner any time nobody is busy (decision 11).
 
 import { randomUUID } from "node:crypto";
 
@@ -23,6 +22,9 @@ import { findFirstPipelineStage } from "../crm/find-first-pipeline-stage.js";
 import { findOrCreateContact } from "../crm/find-or-create-contact.js";
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
+import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
+import { enqueueBookingEventJob } from "../jobs/enqueue-booking-event-job.js";
+import { jobNames } from "../jobs/job-names.js";
 import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
 import { countBookingsThatDay } from "../scheduling/count-bookings-that-day.js";
@@ -34,8 +36,6 @@ import { findStandbyDates } from "../scheduling/find-standby-dates.js";
 import { isRoomFree } from "../scheduling/is-room-free.js";
 import { orderAnyAvailable } from "../scheduling/order-any-available.js";
 import { overlapsAny } from "../scheduling/overlaps-any.js";
-import { bookingConfirmationEmails } from "./booking-confirmation-emails.js";
-import { bookingEventWrites } from "./booking-event-writes.js";
 import { holdFirstFreeChoice } from "./hold-first-free-choice.js";
 
 export type BookTimeInputType = {
@@ -142,7 +142,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
 
   // Decision 7: a form already booked (a second request after a lost answer) gets that booking.
   // Asked first, and again before any refusal: a copy whose check ran after the first copy was
-  // saved sees that copy's own time as taken (F-92).
+  // saved sees that copy's own time as taken.
   const bookedByThisForm = async (): Promise<BookTimeResultType | null> => {
     if (!requestKey) return null;
     const existing = await findBookedByRequestKey(organizationId, requestKey, timezone);
@@ -317,12 +317,21 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         },
         tx
       );
+      // The two emails and the booked person's Google event, as jobs saved with the booking
+      // (decision 1 of the background runner): the answer never waits for them.
+      await enqueueBookingEmails(
+        tx,
+        organizationId,
+        bookingId,
+        ["booking_confirmation", "booking_notification"],
+        0
+      );
+      await enqueueBookingEventJob(tx, {
+        name: jobNames.bookingEventWrite,
+        payload: { organizationId, bookingId, sequence: 0 },
+      });
       return { contactId: contact.id, ...held };
     });
-    // Saved. Now the booked person's Google and the emails, outside the transaction and not
-    // awaited: the answer never waits for either, and a failure keeps the booking (decision 6).
-    bookingEventWrites.start(organizationId, bookingId);
-    bookingConfirmationEmails.start(organizationId, bookingId);
     return {
       booked: true,
       alreadyBooked: false,

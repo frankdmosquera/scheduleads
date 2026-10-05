@@ -1,7 +1,7 @@
 // Backend: sends a booking's emails one by one and records each that went as an email_sent entry
 // on the contact's timeline: the booking, which email, Resend's id, never an address or content.
-// One failing never stops the next; failures make one warning line for the booking, ids and
-// reasons only. Retrying is feature 8.
+// One failing never stops the next; then any failure is thrown, ids and reasons only, so the job
+// that sent them is tried again. A retry reuses each email's key, never a second email.
 
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
@@ -42,6 +42,6 @@ export async function sendAndRecordEmails(
       failed.push(`${email.kind}: ${safeErrorReason(error)}`);
     }
   }
-  if (failed.length > 0) console.warn(`[email] booking ${bookingId}: ${failed.join("; ")}`);
+  if (failed.length > 0) throw new Error(`booking ${bookingId}: ${failed.join("; ")}`);
   return sent;
 }

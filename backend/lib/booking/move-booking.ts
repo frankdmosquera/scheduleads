@@ -4,8 +4,8 @@
 // the way. Then one transaction, the booking row locked: the old held time released, the new held,
 // the booking's times, person, room and invite number saved, and a booking_moved entry, or nothing
 // changes. Until the appointment starts (decision 12). The same start again is one move (decision 4).
-// Once saved, the booked person's Google event starts following it and both sides are told, without
-// the answer waiting.
+// Saved with it, as jobs: the booked person's Google event following it and both sides told, so
+// the answer waits for neither.
 
 import { and, eq } from "drizzle-orm";
 
@@ -13,9 +13,13 @@ import { booking, bookingLink, commitment, lead } from "@scheduleads-app/shared/
 
 import { db } from "../../database.js";
 import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
+import { calendarEventIdOf } from "../calendar/calendar-event-id-of.js";
 import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error.js";
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
+import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
+import { enqueueBookingEventJob } from "../jobs/enqueue-booking-event-job.js";
+import { jobNames } from "../jobs/job-names.js";
 import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
 import { countBookingsThatDay } from "../scheduling/count-bookings-that-day.js";
@@ -27,8 +31,6 @@ import { findStandbyDates } from "../scheduling/find-standby-dates.js";
 import { isRoomFree } from "../scheduling/is-room-free.js";
 import { orderAnyAvailable } from "../scheduling/order-any-available.js";
 import { releaseTime } from "../scheduling/release-time.js";
-import { bookingEventMoves } from "./booking-event-moves.js";
-import { bookingMoveEmails } from "./booking-move-emails.js";
 import { holdFirstFreeChoice } from "./hold-first-free-choice.js";
 
 export type MoveBookingResultType =
@@ -179,10 +181,6 @@ export async function moveBooking(input: {
   }));
   const choices = orderAnyAvailable(people, freeRooms);
 
-  // Who held the booking before and the move's number, once this call moved it. Typed by a cast,
-  // not by the declaration, so TypeScript does not narrow it to null and stop checking its use
-  // after the transaction.
-  let saved = null as { fromPersonId: string; sequence: number } | null;
   let result: MoveBookingResultType;
   try {
     result = await db.transaction(async (tx) => {
@@ -193,6 +191,7 @@ export async function moveBooking(input: {
           startsAt: booking.startsAt,
           personId: booking.personId,
           sequence: booking.sequence,
+          calendarEventId: booking.calendarEventId,
           contactId: lead.contactId,
         })
         .from(booking)
@@ -231,9 +230,18 @@ export async function moveBooking(input: {
       if (!chosen) throw new EveryChoiceTakenError();
 
       const sequence = row.sequence + 1;
+      const personChanged = chosen.personId !== row.personId;
       await tx
         .update(booking)
-        .set({ startsAt, endsAt, personId: chosen.personId, placeId: chosen.placeId, sequence })
+        .set({
+          startsAt,
+          endsAt,
+          personId: chosen.personId,
+          placeId: chosen.placeId,
+          sequence,
+          // Another person's calendar holds the old event: the new person's is written afresh.
+          ...(personChanged && { calendarEventId: null }),
+        })
         .where(and(eq(booking.organizationId, organizationId), eq(booking.id, bookingId)));
       // actorUserId stays null: the customer did it, not a login.
       await recordActivity(
@@ -252,19 +260,40 @@ export async function moveBooking(input: {
         },
         tx
       );
-      saved = { fromPersonId: row.personId, sequence };
+      // The two emails, as jobs saved with the move (decision 1 of the background runner).
+      await enqueueBookingEmails(
+        tx,
+        organizationId,
+        bookingId,
+        ["booking_move", "booking_move_notification"],
+        sequence
+      );
+      // The event follows as jobs (decisions 5 and 6): the saved event is updated in place for
+      // the same person. For another person, or with no id saved yet, the old event is taken out
+      // and the new one written, each on its own. With none saved, the event can only be under
+      // the id of the write just before this move: any earlier one was taken out by its own
+      // change.
+      await enqueueBookingEventJob(tx, {
+        name: jobNames.bookingEventMove,
+        payload: { organizationId, bookingId, sequence },
+      });
+      if (personChanged || !row.calendarEventId) {
+        await enqueueBookingEventJob(tx, {
+          name: jobNames.bookingEventRemove,
+          payload: {
+            organizationId,
+            bookingId,
+            personId: row.personId,
+            eventId: row.calendarEventId ?? calendarEventIdOf(bookingId, row.sequence),
+          },
+        });
+      }
       return { moved: true, unchanged: false } as const;
     });
   } catch (error) {
     if (error instanceof EveryChoiceTakenError) return { moved: false, reason: "time_taken" };
     // Never the database's own error: its message carries the query.
     throw new Error(`Moving a booking failed: ${safeErrorReason(error)}`);
-  }
-  // Saved. Only a move that changed something moves the event and tells both sides, so a second
-  // press never does.
-  if (saved) {
-    bookingEventMoves.start(organizationId, bookingId, saved.fromPersonId);
-    bookingMoveEmails.start(organizationId, bookingId, saved.sequence);
   }
   return result;
 }

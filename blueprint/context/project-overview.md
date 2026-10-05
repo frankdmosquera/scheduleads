@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash 71a9cc16fe9ef91b43957c0c0251bc6c52383c790354c8139235b565771f636e -->
+<!-- blueprint:source-hash 1f5d4b43f1e9e9c68cdb480a8cf949bbc9912013a712e09c459cf2361c85fb25 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -71,7 +71,13 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
      the Google event removed, both sides told.
    - **7b. Reschedule** - free times ignoring the booking's own old time, the
      same booking moved with its event and invite.
-8. **Scheduled messages** - the job runner, confirmation and reminder texts.
+8. **Scheduled messages** - split into three, each merged as it lands:
+   - **8a. The background runner** - jobs kept in the database and retried;
+     the emails and Google calls move onto it.
+   - **8b. The customer's texts** - one Twilio seam, the confirmation and the
+     reminder.
+   - **8c. The worker's text** - the booked worker told when the business
+     runs on one email.
 9. **The booking component** - unstyled trigger, themed modal, one provider
    per host, layout stored on the booking link.
 10. **Tenant zero wired: agents-web**.

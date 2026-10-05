@@ -1,5 +1,5 @@
 // The sign-in form answers before the code's email is sent, so how long it takes never tells
-// anyone whether an address is a customer's (F-97). Against the local seeded database, with
+// anyone whether an address is a customer's. Against the local seeded database, with
 // Resend held: no real email is ever sent.
 
 import { afterAll, describe, expect, test, vi } from "vitest";

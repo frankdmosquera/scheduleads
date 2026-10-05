@@ -19,10 +19,12 @@ import {
   type BookingEmailToSendType,
 } from "./send-and-record-emails.js";
 
-// The kinds that went, in order. Throws only when the booking or the business cannot be read.
+// The kinds that went, in order. Throws when the booking or the business cannot be read, or a
+// send fails.
 export async function sendCancellationEmails(
   organizationId: string,
-  bookingId: string
+  bookingId: string,
+  only?: BookingEmailKindType // the one a job asks for; both when left out
 ): Promise<BookingEmailKindType[]> {
   const context = await findBookingEmailContext(organizationId, bookingId);
   if (context.status !== "cancelled") return [];
@@ -98,5 +100,6 @@ export async function sendCancellationEmails(
     }),
   });
 
-  return sendAndRecordEmails(organizationId, bookingId, context.contactId, emails);
+  const toSend = only ? emails.filter((email) => email.kind === only) : emails;
+  return sendAndRecordEmails(organizationId, bookingId, context.contactId, toSend);
 }

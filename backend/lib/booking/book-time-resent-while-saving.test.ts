@@ -1,4 +1,4 @@
-// The same form sent again while its first copy is still being saved (F-92). The second copy reads
+// The same form sent again while its first copy is still being saved. The second copy reads
 // the form's key before the first is saved, then its check is held until the first has booked, so
 // the check sees the first copy's own time as taken: exactly the race, without its timing.
 
@@ -54,16 +54,14 @@ const {
   resource,
 } = await import("@scheduleads-app/shared/db");
 const { bookTime } = await import("./book-time.js");
-const { bookingEventWrites } = await import("./booking-event-writes.js");
-const { bookingConfirmationEmails } = await import("./booking-confirmation-emails.js");
+const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
 const fridayMorning = new Date("2026-10-02T14:00:00Z");
 
 afterAll(async () => {
-  await bookingEventWrites.settled(); // no Google write outlives the database
-  await bookingConfirmationEmails.settled(); // nor an email
+  await workDueJobs(); // no job outlives the database
   await db.delete(organization).where(like(organization.slug, `test-resent-%-${tag}`));
   await db.$client.end();
 });
