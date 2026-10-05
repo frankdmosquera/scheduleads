@@ -1,9 +1,9 @@
-// Backend: makes a moved booking's event follow it (feature 7b), read when its job runs. With an
-// event to move (the saved id, or the one the move named when none was saved yet), the same event
-// gets the new start and end (decision 7, never deleted and written again); one not there is
-// written afresh. With none, as after a change of person, the event is written into the booked
-// person's calendar; the first person's event goes by a job of its own (decision 6). Nothing for
-// a booking no longer confirmed, or for a person with no calendar. Throws on any failure; the move
+// Backend: makes a moved booking's event follow it (feature 7b), read when its job runs. The saved
+// event gets the new start and end (decision 7, never deleted and written again); one not there
+// is written afresh. With none saved, as after a change of person or while an earlier write had
+// not saved its id, the event is written into the booked person's calendar under this move's own
+// id; whatever was there before goes by a removal job of its own (decision 6). Nothing for a
+// booking no longer confirmed, or for a person with no calendar. Throws on any failure; the move
 // is kept either way and its job tries again.
 
 import { and, eq, isNull } from "drizzle-orm";
@@ -18,8 +18,7 @@ export type BookingEventMoveType = "moved" | "written" | "nothing";
 
 export async function moveBookingEvent(
   organizationId: string,
-  bookingId: string,
-  namedEventId: string | null
+  bookingId: string
 ): Promise<BookingEventMoveType> {
   const [row] = await db
     .select({
@@ -47,7 +46,7 @@ export async function moveBookingEvent(
 
   const written = async () =>
     (await writeBookingEvent(organizationId, bookingId)) ? ("written" as const) : "nothing";
-  const eventId = row.calendarEventId ?? namedEventId;
+  const eventId = row.calendarEventId;
   if (!eventId) return written();
 
   const access = await getFreshAccessToken({ organizationId, resourceId: row.personId });
@@ -57,22 +56,18 @@ export async function moveBookingEvent(
     end: row.endsAt, // the appointment itself, not its buffers
     timezone: row.timezone,
   });
-  // Saved or forgotten only while the booking is still as read, as the write does.
-  const asRead = and(
-    eq(booking.organizationId, organizationId),
-    eq(booking.id, bookingId),
-    eq(booking.personId, row.personId),
-    eq(booking.sequence, row.sequence),
-    eq(booking.status, "confirmed")
-  );
-  if (moved) {
-    if (!row.calendarEventId) {
-      await db.update(booking).set({ calendarEventId: eventId }).where(asRead);
-    }
-    return "moved";
-  }
-  if (row.calendarEventId) {
-    await db.update(booking).set({ calendarEventId: null }).where(asRead); // not there any more
-  }
-  return written(); // under this move's own id, so never refused
+  if (moved) return "moved";
+  // Not there any more: forgotten while the booking still names it, then written afresh under
+  // this move's own id, so never refused.
+  await db
+    .update(booking)
+    .set({ calendarEventId: null })
+    .where(
+      and(
+        eq(booking.organizationId, organizationId),
+        eq(booking.id, bookingId),
+        eq(booking.calendarEventId, eventId)
+      )
+    );
+  return written();
 }

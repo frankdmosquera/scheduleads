@@ -47,21 +47,25 @@ const NOW = new Date("2026-10-02T14:00:00Z"); // Friday 8:00 in Edmonton
 const at = (hour: number) => new Date(`2026-10-05T${String(hour + 6).padStart(2, "0")}:00:00Z`); // Monday, Edmonton
 const EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
 
-// Google's side, faked: every call, the answer a PATCH gets, and each calendar's deleted ids.
+// Google's side, faked: every call, the events each calendar holds and the ids it has deleted,
+// and the answers a test sets. A held write is taken by Google first, as a slow answer is.
 type CallType = { method: string; url: string; authorization: string | null; body: unknown };
 const calls: CallType[] = [];
-let patchAnswer: () => Response | Promise<Response>;
+let patchAnswer: (() => Response | Promise<Response>) | null; // null: as Google, by its events
 let deleteAnswer: () => Response | Promise<Response>;
-// A POST's answer when a test wants it held or failed; null answers as Google does.
-let postAnswer: (authorization: string | null) => Promise<Response> | Response | null;
+let postFails: (authorization: string | null) => boolean; // refused, nothing written
+let postHold: (authorization: string | null) => Promise<void> | null; // written, answer late
+const liveIn = new Map<string, Map<string, string>>(); // access token -> event id -> start
 const deletedIn = new Map<string, Set<string>>(); // access token -> ids deleted in that calendar
 
 beforeEach(() => {
   calls.length = 0;
+  liveIn.clear();
   deletedIn.clear();
-  patchAnswer = () => new Response("{}", { status: 200 });
+  patchAnswer = null;
   deleteAnswer = () => new Response(null, { status: 204 });
-  postAnswer = () => null;
+  postFails = () => false;
+  postHold = () => null;
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input instanceof Request ? input.url : input);
     const method = init?.method ?? "GET";
@@ -72,24 +76,46 @@ beforeEach(() => {
     }
     if (!url.startsWith(EVENTS_URL)) throw new Error(`A test tried to reach ${url}.`);
     calls.push({ method, url, authorization, body });
-    const deleted = deletedIn.get(authorization ?? "") ?? new Set<string>();
-    deletedIn.set(authorization ?? "", deleted);
+    const key = authorization ?? "";
+    const live = liveIn.get(key) ?? new Map<string, string>();
+    liveIn.set(key, live);
+    const deleted = deletedIn.get(key) ?? new Set<string>();
+    deletedIn.set(key, deleted);
+    const start = (body as { start?: { dateTime: string } } | null)?.start?.dateTime ?? "";
     if (method === "POST") {
-      const held = await postAnswer(authorization);
-      if (held) return held;
       const id = (body as { id: string }).id;
-      if (deleted.has(id)) return new Response("{}", { status: 409 }); // Google keeps a deleted id
+      if (postFails(authorization)) return new Response("{}", { status: 503 });
+      if (deleted.has(id) || live.has(id)) return new Response("{}", { status: 409 }); // Google keeps a deleted id
+      live.set(id, start);
+      await postHold(authorization);
       return new Response(JSON.stringify({ id }));
     }
-    if (method === "PATCH") return patchAnswer();
+    const id = decodeURIComponent(url.slice(EVENTS_URL.length + 1));
+    if (method === "PATCH") {
+      const answer = patchAnswer
+        ? await patchAnswer()
+        : new Response("{}", { status: live.has(id) ? 200 : 404 });
+      if (answer.ok && live.has(id)) live.set(id, start);
+      return answer;
+    }
     if (method === "DELETE") {
       const answer = await deleteAnswer();
-      if (answer.ok) deleted.add(decodeURIComponent(url.slice(EVENTS_URL.length + 1)));
+      if (answer.ok) {
+        live.delete(id);
+        deleted.add(id);
+      }
       return answer;
     }
     throw new Error(`Unexpected ${method} ${url}`);
   });
 });
+
+// The events a person's calendar holds now, with their starts.
+const liveEvents = (name: string) =>
+  [...(liveIn.get(`Bearer ya29.${name}`) ?? new Map<string, string>())].map(([id, start]) => ({
+    id,
+    start,
+  }));
 
 afterAll(async () => {
   vi.unstubAllGlobals();
@@ -239,10 +265,14 @@ describe("a moved booking's Google event", () => {
     const clinic = await makeClinic("unwritten");
     const janes = await bookJane(clinic); // nobody connected yet, so no event
     await connect(clinic, clinic.ana, "ana");
-    patchAnswer = () => new Response("{}", { status: 404 });
 
-    await moveTo(janes, 10, clinic.ana);
-    expect(eventCalls().map((call) => call.method)).toEqual(["PATCH", "POST"]);
+    await moveTo(janes, 10, clinic.ana); // with no id saved, every id it could have is taken out
+    expect(
+      eventCalls()
+        .map((call) => call.method)
+        .sort()
+    ).toEqual(["DELETE", "POST"]);
+    expect(liveEvents("ana")).toEqual([{ id: `${base(janes)}s1`, start: at(10).toISOString() }]);
     expect(await savedEventId(janes)).toBe(`${base(janes)}s1`);
   });
 
@@ -341,14 +371,15 @@ describe("a moved booking's Google event", () => {
     expect(eventCalls()).toEqual([{ method: "POST", id: "", authorization: "Bearer ya29.mei" }]);
   });
 
-  test("an event found but never saved gets its id saved", async () => {
+  test("an event written but never saved is replaced, never left behind", async () => {
     const clinic = await makeClinic("unsaved");
     await connect(clinic, clinic.ana, "ana");
     const janes = await bookJane(clinic);
     await db.update(booking).set({ calendarEventId: null }).where(eq(booking.id, janes));
 
-    await moveTo(janes, 10, clinic.ana); // Google answers the PATCH: the event was there
-    expect(await savedEventId(janes)).toBe(base(janes));
+    await moveTo(janes, 10, clinic.ana);
+    expect(liveEvents("ana")).toEqual([{ id: `${base(janes)}s1`, start: at(10).toISOString() }]);
+    expect(await savedEventId(janes)).toBe(`${base(janes)}s1`);
   });
 
   test("two moves at once to the same time move the event once", async () => {
@@ -372,7 +403,7 @@ describe("a moved booking's Google event", () => {
     await db.update(booking).set({ status: "cancelled" }).where(eq(booking.id, janes));
     calls.length = 0;
 
-    expect(await moveBookingEvent(clinic.business, janes, null)).toBe("nothing");
+    expect(await moveBookingEvent(clinic.business, janes)).toBe("nothing");
     expect(calls).toEqual([]);
   });
 
@@ -455,105 +486,8 @@ describe("a moved booking's Google event", () => {
 });
 
 describe("a booking's Google event as jobs", () => {
-  test("a move whose first calendar needs reconnecting removes the old event once it is reconnected", async () => {
-    const clinic = await makeClinic("f149");
-    await connect(clinic, clinic.ana, "ana");
-    await connect(clinic, clinic.mei, "mei");
-    const janes = await bookJane(clinic);
-    await db
-      .update(calendarConnection)
-      .set({ status: "needs_reconnect" })
-      .where(eq(calendarConnection.resourceId, clinic.ana));
-    calls.length = 0;
-
-    await moveTo(janes, 10, clinic.mei); // Mei gets hers; Ana's removal fails and waits
-    expect(eventCalls()).toEqual([{ method: "POST", id: "", authorization: "Bearer ya29.mei" }]);
-    expect(await eventJobsOf(janes)).toEqual([{ attempts: 1 }]);
-
-    await connect(clinic, clinic.ana, "ana"); // Ana reconnects
-    await makeDue(janes);
-    await workEventJobs();
-    expect(eventCalls()[1]).toEqual({
-      method: "DELETE",
-      id: base(janes),
-      authorization: "Bearer ya29.ana",
-    });
-    expect(await eventJobsOf(janes)).toEqual([]);
-    expect(await savedEventId(janes)).toBe(`${base(janes)}s1`);
-  });
-
-  test("two moves close together leave one event, at the last time, in the last person's calendar", async () => {
-    const clinic = await makeClinic("f150");
-    await connect(clinic, clinic.ana, "ana");
-    await connect(clinic, clinic.mei, "mei");
-    const janes = await bookJane(clinic); // Ana's event, the plain id, 9:00
-    calls.length = 0;
-    let answerMei!: () => void;
-    postAnswer = (authorization) =>
-      authorization === "Bearer ya29.mei"
-        ? new Promise<null>((resolve) => (answerMei = () => resolve(null)))
-        : null;
-
-    await moveBooking({ bookingId: janes, startsAt: at(10), personId: clinic.mei, now: NOW });
-    const working = workEventJobs();
-    await vi.waitFor(() => expect(calls.some((call) => call.method === "POST")).toBe(true));
-    // Back to Ana while Mei's write is still in Google's hands.
-    await moveBooking({ bookingId: janes, startsAt: at(11), personId: clinic.ana, now: NOW });
-    answerMei();
-    await working;
-    await workEventJobs();
-
-    expect(sortedById(eventCalls())).toEqual([
-      { method: "DELETE", id: base(janes), authorization: "Bearer ya29.ana" },
-      { method: "DELETE", id: `${base(janes)}s1`, authorization: "Bearer ya29.mei" },
-      { method: "POST", id: "", authorization: "Bearer ya29.ana" },
-      { method: "POST", id: "", authorization: "Bearer ya29.mei" },
-    ]);
-    const anas = calls.find(
-      (call) => call.method === "POST" && call.authorization?.endsWith("ana")
-    );
-    expect(anas?.body).toMatchObject({
-      id: `${base(janes)}s2`,
-      start: { dateTime: at(11).toISOString() },
-    });
-    expect(await savedEventId(janes)).toBe(`${base(janes)}s2`);
-  });
-
-  test("a failed write into the new person's calendar still lets the old event be removed", async () => {
-    const clinic = await makeClinic("f169");
-    await connect(clinic, clinic.ana, "ana");
-    await connect(clinic, clinic.mei, "mei");
-    const janes = await bookJane(clinic);
-    calls.length = 0;
-    let meiFailures = 0;
-    postAnswer = (authorization) =>
-      authorization === "Bearer ya29.mei" && meiFailures++ === 0
-        ? new Response("{}", { status: 503 })
-        : null;
-
-    await moveTo(janes, 10, clinic.mei);
-    expect(sortedById(eventCalls())).toEqual([
-      { method: "DELETE", id: base(janes), authorization: "Bearer ya29.ana" },
-      { method: "POST", id: "", authorization: "Bearer ya29.mei" },
-    ]);
-    expect(await savedEventId(janes)).toBeNull();
-
-    await makeDue(janes);
-    await workEventJobs(); // the write's retry
-    expect(
-      eventCalls()
-        .map((call) => call.method)
-        .sort()
-    ).toEqual(["DELETE", "POST", "POST"]);
-    expect(await savedEventId(janes)).toBe(`${base(janes)}s1`);
-    expect(await eventJobsOf(janes)).toEqual([]);
-  });
-
-  test("a cancel right after booking, before the event's id is saved, still removes it", async () => {
-    const clinic = await makeClinic("early-cancel");
-    await connect(clinic, clinic.ana, "ana");
-    let answerAna!: () => void;
-    postAnswer = () => new Promise<null>((resolve) => (answerAna = () => resolve(null)));
+  // Jane's facial with Ana at 9:00, its event's job not worked yet.
+  async function bookJaneUnwritten(clinic: ClinicType) {
     const result = await bookTime({
       organizationId: clinic.business,
       bookingLinkId: clinic.facial,
@@ -568,19 +502,191 @@ describe("a booking's Google event as jobs", () => {
       now: NOW,
     });
     if (!result.booked) throw new Error(`expected a booking, got ${result.reason}`);
-    const janes = result.booking.id;
+    return result.booking.id;
+  }
 
+  // Holds the next write into a person's calendar mid-call: Google has the event, its answer waits.
+  function holdNextWrite(name: string) {
+    let reach!: () => void;
+    let release!: () => void;
+    const reached = new Promise<void>((resolve) => (reach = resolve));
+    let used = false;
+    postHold = (authorization) => {
+      if (used || authorization !== `Bearer ya29.${name}`) return null;
+      used = true;
+      reach();
+      return new Promise<void>((resolve) => (release = resolve));
+    };
+    return { reached, release: () => release() };
+  }
+
+  const move = (bookingId: string, hour: number, personId: string) =>
+    moveBooking({ bookingId, startsAt: at(hour), personId, now: NOW });
+  const event = (bookingId: string, sequence: number, hour: number) => ({
+    id: sequence === 0 ? base(bookingId) : `${base(bookingId)}s${sequence}`,
+    start: at(hour).toISOString(),
+  });
+
+  test("a move whose first calendar needs reconnecting removes the old event once it is reconnected", async () => {
+    const clinic = await makeClinic("f149");
+    await connect(clinic, clinic.ana, "ana");
+    await connect(clinic, clinic.mei, "mei");
+    const janes = await bookJane(clinic);
+    await db
+      .update(calendarConnection)
+      .set({ status: "needs_reconnect" })
+      .where(eq(calendarConnection.resourceId, clinic.ana));
+
+    await moveTo(janes, 10, clinic.mei); // Mei gets hers; Ana's removal fails and waits
+    expect(liveEvents("mei")).toEqual([event(janes, 1, 10)]);
+    expect(liveEvents("ana")).toEqual([event(janes, 0, 9)]);
+    expect(await eventJobsOf(janes)).toEqual([{ attempts: 1 }]);
+
+    await connect(clinic, clinic.ana, "ana"); // Ana reconnects
+    await makeDue(janes);
+    await workEventJobs();
+    expect(liveEvents("ana")).toEqual([]);
+    expect(await eventJobsOf(janes)).toEqual([]);
+    expect(await savedEventId(janes)).toBe(`${base(janes)}s1`);
+  });
+
+  test("two moves close together leave one event, at the last time, in the last person's calendar", async () => {
+    const clinic = await makeClinic("f150");
+    await connect(clinic, clinic.ana, "ana");
+    await connect(clinic, clinic.mei, "mei");
+    const janes = await bookJane(clinic); // Ana's event, 9:00
+
+    await move(janes, 10, clinic.mei);
+    const meis = holdNextWrite("mei");
     const working = workEventJobs();
-    await vi.waitFor(() => expect(calls.some((call) => call.method === "POST")).toBe(true));
-    await cancelBooking(janes, NOW); // the write is still in Google's hands
-    answerAna();
+    await meis.reached;
+    await move(janes, 11, clinic.ana); // back to Ana while Mei's write is mid-call
+    meis.release();
     await working;
     await workEventJobs();
 
-    expect(eventCalls()).toEqual([
-      { method: "POST", id: "", authorization: "Bearer ya29.ana" },
-      { method: "DELETE", id: base(janes), authorization: "Bearer ya29.ana" },
-    ]);
+    expect(liveEvents("ana")).toEqual([event(janes, 2, 11)]);
+    expect(liveEvents("mei")).toEqual([]);
+    expect(await savedEventId(janes)).toBe(`${base(janes)}s2`);
+  });
+
+  test("two moves with the same person during the booking's write leave one event", async () => {
+    const clinic = await makeClinic("same-twice");
+    await connect(clinic, clinic.ana, "ana");
+    const janes = await bookJaneUnwritten(clinic);
+
+    const write = holdNextWrite("ana");
+    const working = workEventJobs();
+    await write.reached; // Google has the 9:00 event, its id not saved
+    await move(janes, 10, clinic.ana);
+    await move(janes, 11, clinic.ana);
+    write.release();
+    await working;
+    await workEventJobs();
+
+    expect(liveEvents("ana")).toEqual([event(janes, 2, 11)]);
+    expect(await savedEventId(janes)).toBe(`${base(janes)}s2`);
+  });
+
+  test("a cancel during a same-person move's write leaves no event", async () => {
+    const clinic = await makeClinic("same-cancel");
+    await connect(clinic, clinic.ana, "ana");
+    const janes = await bookJaneUnwritten(clinic);
+
+    const write = holdNextWrite("ana");
+    const working = workEventJobs();
+    await write.reached;
+    await move(janes, 10, clinic.ana);
+    const moved = holdNextWrite("ana");
+    write.release();
+    await moved.reached; // the move's own write is mid-call
+    await cancelBooking(janes, NOW);
+    moved.release();
+    await working;
+    await workEventJobs();
+
+    expect(liveEvents("ana")).toEqual([]);
+    expect(await savedEventId(janes)).toBeNull();
+  });
+
+  test("a cancel while a same-person move's write waits for its retry leaves no event", async () => {
+    const clinic = await makeClinic("same-retry");
+    await connect(clinic, clinic.ana, "ana");
+    const janes = await bookJaneUnwritten(clinic);
+
+    const write = holdNextWrite("ana");
+    const working = workEventJobs();
+    await write.reached;
+    await move(janes, 10, clinic.ana);
+    let failures = 0;
+    postFails = () => failures++ === 0; // the move's write is refused once
+    write.release();
+    await working;
+    await cancelBooking(janes, NOW);
+    await makeDue(janes);
+    await workEventJobs();
+
+    expect(liveEvents("ana")).toEqual([]);
+    expect(await eventJobsOf(janes)).toEqual([]);
+  });
+
+  test("a move to another person during a same-person move's write leaves one event", async () => {
+    const clinic = await makeClinic("same-then-mei");
+    await connect(clinic, clinic.ana, "ana");
+    await connect(clinic, clinic.mei, "mei");
+    const janes = await bookJaneUnwritten(clinic);
+
+    const write = holdNextWrite("ana");
+    const working = workEventJobs();
+    await write.reached;
+    await move(janes, 10, clinic.ana);
+    const moved = holdNextWrite("ana");
+    write.release();
+    await moved.reached;
+    await move(janes, 11, clinic.mei);
+    moved.release();
+    await working;
+    await workEventJobs();
+
+    expect(liveEvents("ana")).toEqual([]);
+    expect(liveEvents("mei")).toEqual([event(janes, 2, 11)]);
+    expect(await savedEventId(janes)).toBe(`${base(janes)}s2`);
+  });
+
+  test("a failed write into the new person's calendar still lets the old event be removed", async () => {
+    const clinic = await makeClinic("f169");
+    await connect(clinic, clinic.ana, "ana");
+    await connect(clinic, clinic.mei, "mei");
+    const janes = await bookJane(clinic);
+    let meiFailures = 0;
+    postFails = (authorization) => authorization === "Bearer ya29.mei" && meiFailures++ === 0;
+
+    await moveTo(janes, 10, clinic.mei);
+    expect(liveEvents("ana")).toEqual([]);
+    expect(liveEvents("mei")).toEqual([]);
+    expect(await savedEventId(janes)).toBeNull();
+
+    await makeDue(janes);
+    await workEventJobs(); // the write's retry
+    expect(liveEvents("mei")).toEqual([event(janes, 1, 10)]);
+    expect(await savedEventId(janes)).toBe(`${base(janes)}s1`);
+    expect(await eventJobsOf(janes)).toEqual([]);
+  });
+
+  test("a cancel right after booking, before the event's id is saved, still removes it", async () => {
+    const clinic = await makeClinic("early-cancel");
+    await connect(clinic, clinic.ana, "ana");
+    const janes = await bookJaneUnwritten(clinic);
+
+    const write = holdNextWrite("ana");
+    const working = workEventJobs();
+    await write.reached;
+    await cancelBooking(janes, NOW); // the write is still in Google's hands
+    write.release();
+    await working;
+    await workEventJobs();
+
+    expect(liveEvents("ana")).toEqual([]);
     expect(await savedEventId(janes)).toBeNull();
   });
 
@@ -593,7 +699,7 @@ describe("a booking's Google event as jobs", () => {
     patchAnswer = () =>
       new Promise((resolve) => (answerAna = () => resolve(new Response("{}", { status: 200 }))));
 
-    await moveBooking({ bookingId: janes, startsAt: at(10), personId: clinic.ana, now: NOW });
+    await move(janes, 10, clinic.ana);
     const first = workEventJobs();
     await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
     await cancelBooking(janes, NOW); // its removal waits in the same lane
@@ -604,31 +710,16 @@ describe("a booking's Google event as jobs", () => {
     await first;
     await workEventJobs();
     expect(eventCalls().map((call) => call.method)).toEqual(["PATCH", "DELETE"]);
+    expect(liveEvents("ana")).toEqual([]);
   });
 
   test("a booking moved before its event was written gets one event, at the moved time", async () => {
     const clinic = await makeClinic("moved-early");
     await connect(clinic, clinic.ana, "ana");
-    const result = await bookTime({
-      organizationId: clinic.business,
-      bookingLinkId: clinic.facial,
-      personId: clinic.ana,
-      startsAt: at(9),
-      requestKey: randomUUID(),
-      customer: { name: "Jane Doe", email: `jane-${tag}@example.com` },
-      location: "12 Main Street, Calgary",
-      details: null,
-      source: "widget",
-      actorUserId: null,
-      now: NOW,
-    });
-    if (!result.booked) throw new Error(`expected a booking, got ${result.reason}`);
-    const janes = result.booking.id;
-    patchAnswer = () => new Response("{}", { status: 404 }); // never written, as Google knows
+    const janes = await bookJaneUnwritten(clinic);
 
     await moveTo(janes, 10, clinic.ana); // the booking's own write is replaced by the move's
-    expect(eventCalls().map((call) => call.method)).toEqual(["PATCH", "POST"]);
-    expect(calls[1].body).toMatchObject({ start: { dateTime: at(10).toISOString() } });
+    expect(liveEvents("ana")).toEqual([event(janes, 1, 10)]);
     expect(await savedEventId(janes)).toBe(`${base(janes)}s1`);
   });
 
@@ -636,7 +727,7 @@ describe("a booking's Google event as jobs", () => {
     const clinic = await makeClinic("started");
     await connect(clinic, clinic.ana, "ana");
     const janes = await bookJane(clinic);
-    await moveBooking({ bookingId: janes, startsAt: at(10), personId: clinic.ana, now: NOW });
+    await move(janes, 10, clinic.ana);
     calls.length = 0;
     const warn = vi.mocked(console.warn);
     warn.mockClear();

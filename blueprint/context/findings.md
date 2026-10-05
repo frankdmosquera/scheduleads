@@ -124,7 +124,7 @@ seed and the other files rely on that.
 `afterEach`), so a failure still lets the write settle and the cleanup run.
 **Resolution:**
 
-### F-116 [P3] fixed - Finding numbers in three code comments added by this feature
+### F-116 [P3] closed - Finding numbers in three code comments added by this feature
 
 **File:** backend/lib/auth/auth-server.ts:157; backend/lib/auth/login-code-timing.test.ts:2; backend/lib/auth/send-login-code.test.ts:37
 **Found:** 2026-10-03 by independent review of feature 6 (scope: 7dc0721..8858d37; lenses: quality, security, performance, tests)
@@ -137,6 +137,7 @@ find. The comments' reasons are already said in words around them.
 **Suggested fix:** Drop the three parenthesised numbers and keep the
 sentences as they are.
 **Resolution:** Fixed 2026-10-05: the three numbers are gone, and so are two more of the same kind, "(F-92)" in book-time.ts and book-time-resent-while-saving.test.ts; the sentences are unchanged. The "(F-06)" in migrations/0000_adopt_repo_one_tables.sql stays: that migration is already applied.
+Closed 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e): `git grep` for `(F-` and bare `F-NNN` across backend, frontend and packages finds no finding number in any code comment outside the applied migration this resolution names; the three originals and the two "(F-92)" are gone.
 
 ### F-128 [P3] unverified - No real calendar has been shown to remove the event from the cancelling invite
 
@@ -239,7 +240,7 @@ either rename the tenant test to what it checks or add a case that moves
 one business's booking and asserts the other business's rows unchanged.
 **Resolution:** Fixed 2026-10-03: the privacy test also reads console.warn and a refusal's body; the tenant test also makes a real move of ours to a time the other business has booked and checks their booking and rows are untouched. Not closed by independent review of step 7b.3 (2026-10-04): the tenant half holds; the log half still reads a `console.warn` that nothing writes (no calendar is connected in that test, and it reads before `bookingEventMoves.settled()`). A real follow failure's line is now checked for the name and address in move-booking-event.test.ts "a Google error keeps the move and logs one line". Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): the route test is unchanged and still reads `console.warn` and `console.log` before `bookingMoveEmails.settled()` (public-booking-move-routes.test.ts:369-388), so its log half checks only what happens to have run. The move's real log lines are now pinned elsewhere (move-booking-event.test.ts:365, send-move-emails.test.ts:328 and :355), so the remaining gap is the test's name, not the coverage. Not closed by independent review of feature 7b (scope: a55c8ee..6c1fa5d): public-booking-move-routes.test.ts:416-435 is unchanged since that pass. Not closed by independent review of feature 7b (scope: a55c8ee..851fadb): the test file is unchanged since 6c1fa5d.
 
-### F-149 [P2] fixed - When the follow gives up on the old person's calendar, nothing records that the event is still there, so neither the cancel nor feature 8 can remove it
+### F-149 [P2] closed - When the follow gives up on the old person's calendar, nothing records that the event is still there, so neither the cancel nor feature 8 can remove it
 
 **File:** backend/lib/calendar/move-booking-event.ts:46,80 (backend/lib/booking/booking-event-moves.ts:2-3; payload: backend/lib/booking/move-booking.ts:241-246; removal: backend/lib/calendar/remove-booking-event.ts:33)
 **Found:** 2026-10-04 by independent review of step 7b.3 (scope: 3ba8593..c855db2; lenses: quality, security, performance, tests)
@@ -265,6 +266,7 @@ least, add `fromPersonId` and `toPersonId` to the `booking_moved` payload
 and the spec's contract so feature 8 can redo a person change, and correct
 the comment at line 46.
 **Resolution:** Carried to feature 8 (spec, Notes for the AI): its retry job must carry the first person and the event id being removed; a booking column would only half-solve it. Fixed 2026-10-05 in 8a.3: a move to another person and a cancel add a removal job carrying the person and the event id read inside the transaction (the saved id, or the id the event has when none is saved yet), retried on its own. Test: a move whose first calendar needs reconnecting removes the old event once it is reconnected.
+Closed 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e): move-booking.ts:279-284 and cancel-booking.ts:105-113 add a removal job carrying the first person and the event id inside the transaction, and remove-booking-event.ts acts only on those, never on where the booking is now; the test "a move whose first calendar needs reconnecting removes the old event once it is reconnected" passed in 8 of 8 full runs, and the original probe's case (Ana's DELETE failing, then a cancel) now leaves Ana's removal job to retry on its own. A compound race that still leaves an event under an older move's id is F-187.
 
 ### F-150 [P3] fixed - Two moves inside one follow's Google calls leave an orphan event and save the wrong calendar's id
 
@@ -290,6 +292,7 @@ each follow compare where the event is with where it should be instead of
 trusting the handed-over person; save the written id only while
 `calendarEventId` is still null.
 **Resolution:** Carried to feature 8 with F-149: two moves inside one follow's Google calls; the retry job design covers it. Fixed 2026-10-05 in 8a.3: a booking's calendar jobs run one at a time in its lane, a write or move does nothing once a later move added its own job, and an event id is saved only while the booking still has the person and move number the job read. Test: two moves close together, the middle person's write held mid-call, leave one event at the last time in the last person's calendar.
+Not closed by independent review of step 8a.3 (scope: 56f1bae..40f598e): the original case holds (Ana to Mei to Ana with Mei's write held leaves one event, `s2` in Ana's calendar, saved), but two changes inside one Google call still leave an event behind when the first change keeps the person: see F-187.
 
 ### F-153 [P3] unverified - A PATCH of an event the person deleted by hand may answer 200, so the move reports "moved" and the event stays hidden
 
@@ -310,7 +313,7 @@ hand, then PATCH it). If it answers 200, read `status` from the answer and
 treat "cancelled" as not there, and cite what was observed beside the line.
 **Resolution:**
 
-### F-156 [P3] fixed - The sixth copy of the "start and settle" background tracker
+### F-156 [P3] closed - The sixth copy of the "start and settle" background tracker
 
 **File:** backend/lib/booking/booking-move-emails.ts:9-26 (same body in booking-event-writes.ts, booking-confirmation-emails.ts, booking-event-moves.ts, booking-event-removals.ts, booking-cancellation-emails.ts)
 **Found:** 2026-10-04 by independent review of step 7b.4 (scope: b56d43a..1524a1b; lenses: quality, security, performance, tests)
@@ -325,6 +328,7 @@ on top of all six.
 and returns `{ start, settled }`, with one shared "all background work
 settled" for tests; keep the six named exports as thin uses of it.
 **Resolution:** Carried to feature 8 on Frank's call, 2026-10-04: its job runner replaces all six trackers, so a shared helper now would be thrown away. Noted in the spec's Notes for the AI. Stays open until then. Fixed 2026-10-05 in 8a.3: the three event trackers are removed; with 8a.2's three email trackers, all six are now jobs, and no test waits with settled().
+Closed 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e): no `booking-event-*` or `booking-*-emails` tracker module is left, `git grep` finds no `new Set<Promise` or tracker import in backend, and the `settled()` calls that remain are each email test file's local name for `workDueJobs()`.
 
 ### F-161 [P3] fixed - The week bar spills out of the card at 320px
 
@@ -339,7 +343,7 @@ fits, which is the width the step was checked at; small phones still exist.
 breakpoint.
 **Resolution:** Fixed 2026-10-04: the week reads "Oct 4 to 10" (both months only across two) with narrower buttons; at 320px Later ends at x=260 inside the card at 289. Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): this reviewer started no dev server and could not measure; the code matches the repair (weekName at change-time-panel.tsx:49-56, `px-2` buttons), but the measurement above was for a same-month week, and a week across two months ("Oct 25 to Nov 1") is about four characters wider. Look at one such week at 320px before closing. Not closed by independent review of feature 7b (scope: a55c8ee..6c1fa5d): no dev server was started, so still unmeasured. Estimated from the code only: the buttons went from `px-3` to `px-2` (16px narrower in all) and a cross-month label is about one character shorter than the "Oct 11 to Oct 17" first measured 12px past the card's border, so Later likely ends inside the border but in the card's padding. A measurement is still needed to close it. Not closed by independent review of feature 7b (scope: a55c8ee..851fadb): no dev server was started; the week bar's markup (change-time-panel.tsx:285-315) is unchanged by the last repair, so still unmeasured across two months at 320px.
 
-### F-169 [P3] fixed - A failed write into the new person's calendar skips the removal from the first person's
+### F-169 [P3] closed - A failed write into the new person's calendar skips the removal from the first person's
 
 **File:** backend/lib/calendar/move-booking-event.ts:82-89
 **Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..6c1fa5d; lenses: quality, security, performance, tests)
@@ -360,6 +364,7 @@ in every case, then rethrow (or log both on one line); add a test where the
 new person's POST answers 500 and assert a DELETE still reaches the first
 person's calendar.
 **Resolution:** Fixed 2026-10-05 in 8a.3: the new person's write and the first person's removal are separate jobs. Test: a failed write into the new person's calendar still lets the old event be removed, and the write lands on its retry.
+Closed 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e): the new person's write is a `booking_event_move` job and the first person's removal a `booking_event_remove` job (move-booking.ts:275-284), so neither depends on the other; the test "a failed write into the new person's calendar still lets the old event be removed" sees the DELETE after a 503 POST and the write land on its retry, 8 of 8 full runs.
 
 ### F-170 [P3] open - The move-times privacy test reads a 503 refusal, not the times, when its file runs in order
 
@@ -781,7 +786,7 @@ nothing is masked. Every leftover locked row is deleted by the setup's `afterEac
 calls it mocks `database.js`. (4) 10 of 10 full runs green (F-183). What this repair does
 not reach is the same library behaviour in the API's own stop: F-185.
 
-### F-185 [P2] fixed - A deploy's clean stop can exit before a job that just finished is marked done, so that job stays locked for about four hours
+### F-185 [P2] closed - A deploy's clean stop can exit before a job that just finished is marked done, so that job stays locked for about four hours
 
 **File:** backend/server.ts:47-48; backend/lib/jobs/job-runner-options.ts:33-47; backend/lib/jobs/job-runner.test.ts:173-175 (graphile-worker 0.18.0: dist/worker.js:262, 283; dist/main.js:376, 433-437, 898-899, 920-921; dist/sql/000004.sql:113)
 **Found:** 2026-10-05 by independent review of 8a.2's second fixes (scope: f3c983f..b4210e9; lenses: quality, security, performance, tests)
@@ -812,8 +817,9 @@ the delete landed. Add a test that stops a runner right after a job's task retur
 expects the job gone. With that in place `workDueJobs`' polling wait is no longer
 needed and can go, or stay as a guard.
 **Resolution:** Fixed 2026-10-05 as the review proposed: jobRunnerOptions sets the library's completeJobBatchDelay and failJobBatchDelay to 0, so a job's end goes through the batch the runner flushes when it stops, and server.ts's exit after runner.stop() no longer leaves a finished job locked (the review's probe: 12 of 12 clean with this setting, 5 of 20 left locked without). The test "a job added while no runner is running is worked by the next one started" checks the job is gone right after runner.stop(). Three full backend runs passed afterwards (587 of 587).
+Closed 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e): job-runner-options.ts sets `completeJobBatchDelay: 0` and `failJobBatchDelay: 0`, and graphile-worker 0.18.0's `terminate()` awaits both batchers' `release()` (dist/main.js:428-437) before server.ts:47-48 exits; job-runner.test.ts:164-176 reads the job gone straight after `runner.stop()` and passed in 8 of 8 full runs.
 
-### F-186 [P3] fixed - Finding and step numbers in code comments again, two of them added by this range
+### F-186 [P3] closed - Finding and step numbers in code comments again, two of them added by this range
 
 **File:** backend/lib/jobs/work-due-jobs.ts:18; backend/vitest.config.ts:2-3; backend/vitest.setup.ts:3; backend/lib/jobs/booking-email-job.ts:3
 **Found:** 2026-10-05 by independent review of 8a.2's second fixes (scope: f3c983f..b4210e9; lenses: quality, security, performance, tests)
@@ -827,3 +833,81 @@ vitest.config.ts:2 carries "(8a.2)". After `/complete` the ledger's numbers beco
 in words.
 **Suggested fix:** Drop the five parenthesised numbers and keep the sentences.
 **Resolution:** Fixed 2026-10-05: the finding and step numbers are gone from the comments in work-due-jobs.ts, vitest.config.ts, vitest.setup.ts, booking-email-job.ts and its test, send-and-record-emails.ts and the three booking files; booking-email-job.ts's header is rewrapped to the usual width.
+Closed 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e): the five numbers are gone (`git grep` finds no `(F-` or `8a.` step number in backend, frontend or packages comments), and the comments this range adds carry none either.
+
+### F-187 [P2] fixed - Two changes inside one Google call still leave an event behind when the first one keeps the person: an extra event, or one for a cancelled booking
+
+**File:** backend/lib/booking/move-booking.ts:235,277; backend/lib/booking/cancel-booking.ts:111; backend/lib/calendar/move-booking-event.ts:50 (save that loses the race: backend/lib/calendar/write-booking-event.ts:87-100, move-booking-event.ts:61-71)
+**Found:** 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e; lenses: quality, security, performance, tests)
+**Why it matters:** When no id is saved, a move or cancel names the event as
+`calendarEventIdOf(bookingId, row.sequence)`, the id the current move number
+would give. That is only right if the event was written under that number. A
+same-person move whose job has not saved its id yet leaves the event under the
+previous number's id, known only to that move's job payload; the next change
+names the wrong id, and the older event is never touched again. Probed with a
+scratch test (this file's Google fake, extended to keep each calendar's live
+events and to take a POST before its answer is held), 1 of 1 each:
+(A) the booking's write held mid-call, two moves with Ana to 10:00 and 11:00:
+Ana's calendar ends with the plain id at 9:00 and `s2` at 11:00, two events for
+one booking; (B1) write held, move with Ana to 10:00, then a cancel while that
+move's PATCH of the plain id is mid-call: the removal deletes `s1`, the plain id
+stays at 10:00 for a cancelled booking; (B2) the same with the move's PATCH
+failing once (503) and the cancel landing before its retry: the plain id stays
+at 9:00, cancelled; (C) as B1 but a move to Mei instead of the cancel: Mei gets
+`s2`, Ana keeps the plain id at 10:00 while the booking is Mei's. B2 needs only
+one transient Google error after a move in the first second after booking; the
+others need two changes inside one call (the owner's screens, features 11 and
+12b, add a second actor). A cancelled appointment left in a worker's calendar
+can send them to a customer's house, and it holds that time busy in free/busy.
+This is F-150's title in its same-person form; the step's test covers only the
+person-change form, and its fake answers a held POST before recording it, so it
+cannot see an event Google took but answered late.
+**Suggested fix:** Make the id the event may have survive same-person moves:
+for example save the intended id on the booking inside the transaction that
+adds the write or move job (the write already knows it before calling Google),
+so the next change always names the event that exists; or have the removal and
+the same-person update try every unsaved id since the last person change
+(404 and 410 already count as gone). Add a test with a fake that records a POST
+or PATCH before holding its answer, asserting the live events per calendar.
+**Resolution:** Fixed 2026-10-05 on Frank's yes: a move that keeps the person updates the saved event in place only when an id is saved. With none saved, as while an earlier write has not saved its id, the move or cancel adds a removal carrying the booking's move number, which takes out every id the event may have had (one never written is gone already, as Google answers), and the move's job writes the event afresh under its own id. The move job no longer takes an event id. Tests, with a fake Google that keeps each calendar's live events and takes a held write before answering: the reviewer's four cases (two same-person moves during the booking's write; a cancel during a same-person move's write; a cancel while that write waits for its retry; a move to another person during it) each end with one event at the last time, or none for a cancelled booking. Three of the four fail on the code before the fix; the retry case passes there too, since the old code moved in place instead of writing.
+
+### F-188 [P3] fixed - A test that ends with a calendar job still running leaves its lane locked in the worker's schema, and later runs fail for four hours
+
+**File:** backend/vitest.setup.ts:55-59; backend/lib/jobs/work-due-jobs.ts:34-46 (graphile-worker 0.18.0: dist/sql/completeJobs.js, failJobs.js, resetLockedAt.js)
+**Found:** 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e; lenses: quality, security, performance, tests)
+**Why it matters:** The setup clears `_private_jobs` after each test but not
+`_private_job_queues`. A queue is unlocked only in the same statement that ends
+its job (`... from j where job_queues.id = j.job_queue_id`), so a job deleted
+while it runs can never unlock its lane; only `resetLockedAt` frees it, after 4
+hours. The lane names are now fixed (`booking-event-0` to `-f`) and the
+per-worker schemas persist between runs, so a test that times out or is stopped
+with a held Google answer (F-95's shape) poisons that lane for every later run
+on that Vitest pool id. Probed: a booking's write held mid-call, the jobs
+deleted as `afterEach` does, the hold released: the lane row stayed locked, and
+a later job in the same lane made `workDueJobs` throw "Jobs were still due
+after 20 runs" (the probe then unlocked it by hand). Roughly one booking in 16
+per test would then fail on that worker, a flake that looks random for hours.
+**Suggested fix:** In `vitest.setup.ts`, clear the lanes with the jobs
+(`update ... _private_job_queues set locked_at = null, locked_by = null`, or
+delete the queue rows), before the file and after each test.
+**Resolution:** Fixed 2026-10-05 as suggested: vitest.setup.ts unlocks every lane in the worker's schema along with clearing its jobs, before each file and after each test.
+
+### F-189 [P3] open - A crash mid-job now holds a sixteenth of every business's calendar jobs for four hours, not only that booking's
+
+**File:** backend/lib/jobs/booking-event-lane-of.ts:4-6; blueprint/context/current-feature.md (decisions 5 and 9) (graphile-worker 0.18.0: dist/sql/getJobs.js queue clause, dist/sql/resetLockedAt.js)
+**Found:** 2026-10-05 by independent review of step 8a.3 (scope: 56f1bae..40f598e; lenses: quality, security, performance, tests)
+**Why it matters:** Decision 9 accepts that a job left mid-run by a crash
+waits for its 4-hour lock. With 16 lanes shared by every tenant, its lane
+stays locked too: `getJobs` takes a queued job only while its queue row is
+available, and `resetLockedAt` frees the row only after 4 hours. So every
+calendar job of every business whose booking id ends in that character waits
+4 hours, and a write or move for an appointment starting within that time is
+then skipped as started (decision 4): the worker never gets those events. F-188's
+probe shows the same mechanism in the tests: one locked lane holds another
+booking's job. Decision 5's amendment weighed queue-name count and retry order,
+not this blast radius. Rare (a crash, not a deploy, while one of up to 5 jobs is
+in a Google call), so a note rather than a defect.
+**Suggested fix:** Record the cost in decision 5 as accepted, or narrow it:
+more lanes (the last two characters give 256) shrink the share, and the lane
+lock could be released at start-up for workers known to be gone.
+**Resolution:**

@@ -13,7 +13,6 @@ import { booking, bookingLink, commitment, lead } from "@scheduleads-app/shared/
 
 import { db } from "../../database.js";
 import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
-import { calendarEventIdOf } from "../calendar/calendar-event-id-of.js";
 import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error.js";
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
@@ -231,8 +230,6 @@ export async function moveBooking(input: {
 
       const sequence = row.sequence + 1;
       const personChanged = chosen.personId !== row.personId;
-      // The event as it stands: its saved id, or the id it has if a write is still under way.
-      const eventId = row.calendarEventId ?? calendarEventIdOf(bookingId, row.sequence);
       await tx
         .update(booking)
         .set({
@@ -270,16 +267,24 @@ export async function moveBooking(input: {
         ["booking_move", "booking_move_notification"],
         sequence
       );
-      // The event follows as jobs (decisions 5 and 6): updated in place for the same person; for
-      // another, written into the new calendar and taken out of the first, each on its own.
+      // The event follows as jobs (decisions 5 and 6): the saved event is updated in place for
+      // the same person. For another person, or with no id saved yet (a write may still be under
+      // way, under any earlier id), the old event is taken out and the new one written, each on
+      // its own.
       await enqueueBookingEventJob(tx, {
         name: jobNames.bookingEventMove,
-        payload: { organizationId, bookingId, sequence, eventId: personChanged ? null : eventId },
+        payload: { organizationId, bookingId, sequence },
       });
-      if (personChanged) {
+      if (personChanged || !row.calendarEventId) {
         await enqueueBookingEventJob(tx, {
           name: jobNames.bookingEventRemove,
-          payload: { organizationId, bookingId, personId: row.personId, eventId },
+          payload: {
+            organizationId,
+            bookingId,
+            personId: row.personId,
+            eventId: row.calendarEventId,
+            sequence: row.sequence,
+          },
         });
       }
       return { moved: true, unchanged: false } as const;

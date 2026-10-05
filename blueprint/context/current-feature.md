@@ -165,13 +165,16 @@ One package: graphile-worker, installed in `backend` on Frank's yes
     number it read, so a change landing during its Google call never gets
     the wrong calendar's id (F-150).
   - A move to another person, and a cancel, add a take-out carrying the
-    person and the event id at that moment, read inside the transaction:
-    the saved id, or the id the event would have when none is saved yet
+    person and the event id at that moment, read inside the transaction
     (decision 6, F-149). A take-out runs even after the appointment has
     started, since the event it removes can be at another time, and it is
     independent of the write, so one failing never skips the other (F-169).
-    A move to the same person stays an update in place, by the saved id or,
-    when none is saved, the id the event would have.
+    A move to the same person stays an update in place when an id is saved.
+    Amended after the step's review (F-187, Frank's yes, 2026-10-05): with
+    no id saved, the event may sit under the id of any earlier write, so
+    the move or cancel adds a take-out carrying the booking's move number,
+    which removes every id the event may have had, and the move writes the
+    event afresh under its own id.
   - The Google tests work the jobs with the helper instead of `settled()`.
   - **Done when** saved tests: a move whose first calendar needs reconnecting
     removes the old event once it is reconnected, within the attempts
@@ -211,9 +214,9 @@ One package: graphile-worker, installed in `backend` on Frank's yes
 - **Job names**: `booking_email` (`{ organizationId, bookingId, kind,
   sequence }`, kind as `BookingEmailKindType`), `booking_event_write`
   (`{ organizationId, bookingId, sequence }`), `booking_event_move`
-  (`{ organizationId, bookingId, sequence, eventId }`, eventId null unless
-  the move kept the person), `booking_event_remove` (`{ organizationId,
-  bookingId, personId, eventId }`). The calendar ones run in the
+  (`{ organizationId, bookingId, sequence }`), `booking_event_remove`
+  (`{ organizationId, bookingId, personId, eventId, sequence }`, eventId
+  null when none was saved, and then every id up to that move number goes). The calendar ones run in the
   lane `booking-event-<last character of bookingId>` (decision 5); the names
   and payloads are settled in 8a.3's plan.
 - **No new environment variable** for the API: the runner uses
@@ -288,6 +291,14 @@ own tests. Each test removes the jobs it made. The frontend is untouched.
   same person and sees no removal, since the removal no longer reads the
   booking's status. The answer-does-not-wait tests now see Google asked only
   once the jobs are worked.
+- After 8a.3's review (F-187): two more tests changed what they check. "An
+  event never written gets written" now sees a removal and a write instead
+  of an update and a write, and "an event found but never saved gets its id
+  saved" became "an event written but never saved is replaced, never left
+  behind". The move tests' fake Google now keeps each calendar's live
+  events and takes a held write before answering, so tests check the events
+  a calendar holds, not only the calls. After F-188, every test also starts
+  with every lane in its worker's schema unlocked.
 - On Windows a stop signal cannot be sent to a process, so the API's stop on SIGTERM is
   first seen on Railway; the runner's own stop is proved by the tests.
 

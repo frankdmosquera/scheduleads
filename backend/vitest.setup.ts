@@ -52,7 +52,14 @@ await runMigrations({
   preset: { disablePlugins: ["LoadTaskFromExecutableFilePlugin"] }, // as the API's runner
 });
 const client = postgres(url!, { max: 1, onnotice: () => {} });
-const clearJobs = () => client.unsafe(`delete from "${schema}"._private_jobs`);
+// No job left waiting, and no lane left locked by a job a test ended in the middle of: its end,
+// which unlocks the lane, would never be written.
+const clearJobs = async () => {
+  await client.unsafe(`delete from "${schema}"._private_jobs`);
+  await client.unsafe(
+    `update "${schema}"._private_job_queues set locked_at = null, locked_by = null`
+  );
+};
 await clearJobs();
 
 afterEach(async () => {
