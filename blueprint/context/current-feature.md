@@ -4,6 +4,11 @@
 
 **Branch:** feature/08a-the-background-runner
 
+**Status:** verified. Feature 8 split into 8a, 8b and 8c on Frank's yes;
+steps 8a.1 to 8a.3 built, tested and reviewed step by step, each with its
+re-reviews; no P0 or P1 left open or fixed; decisions 5 and 6 amended with
+Frank along the way. The checkpoint for the final review.
+
 ## Goal
 
 Work that has to happen after a booking is saved (its emails, its event in
