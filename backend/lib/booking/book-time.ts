@@ -24,6 +24,7 @@ import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
 import { enqueueBookingEventJob } from "../jobs/enqueue-booking-event-job.js";
+import { enqueueBookingTexts } from "../jobs/enqueue-booking-texts.js";
 import { jobNames } from "../jobs/job-names.js";
 import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
@@ -329,6 +330,15 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
       await enqueueBookingEventJob(tx, {
         name: jobNames.bookingEventWrite,
         payload: { organizationId, bookingId, sequence: 0 },
+      });
+      // The customer's texts (feature 8b): the confirmation and the business's reminders.
+      await enqueueBookingTexts(tx, {
+        organizationId,
+        bookingId,
+        sequence: 0,
+        startsAt,
+        now,
+        confirmation: true,
       });
       return { contactId: contact.id, ...held };
     });

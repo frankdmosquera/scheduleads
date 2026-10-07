@@ -391,3 +391,65 @@ job-runner.test.ts (the setup and the library already install the tables),
 and leave the setup's comment as the place that says the tests' schema is
 migrated there.
 **Resolution:**
+
+### F-229 [P3] unverified - Nothing limits how many replies are passed on, so anyone with a business's number makes the agency pay for a text per text they send
+
+**File:** backend/routes/public-text-routes.ts:46-57; backend/lib/text/pass-on-reply.ts:48-69
+**Found:** 2026-10-07 by independent step review (scope: 8b.4, ad5e703..63da7b7; lenses: quality, security, performance, tests)
+**Why it matters:** Every signed incoming text to a business's number becomes
+a job and, with a reply phone, an outgoing text that is longer than the
+incoming one (60 or more characters of wrapper), all on the agency's Twilio
+account; there is no limit per sender or per business. A spammer, or a
+customer's phone stuck in an auto-reply exchange with some other system, costs
+the agency the incoming and the outgoing parts of every message, and fills
+the business's phone. Unverified: whether Twilio's own filtering stops such
+volume first, and what volume is realistic, need live evidence; the spec is
+silent.
+**Suggested fix:** Only a note for later, a scope question for Frank: a cap
+per sender per hour on the pass-on text (the email can still carry the rest),
+or watching Twilio's usage alerts at deploy.
+**Resolution:** Carried 2026-10-07 to the note for later on how many messages each package includes (spec Notes): a cap on replies passed on as texts is a cost and package question for Frank, not 8b's scope; the email route costs nothing.
+
+### F-238 [P3] unverified - A pass-on text refused with a 5xx lets its claim go, so if Twilio took it anyway the retry sends it again unchecked
+
+**File:** backend/lib/text/pass-on-reply.ts:165-172; backend/lib/text/send-text.ts:73-81
+**Found:** 2026-10-07 by the independent review of feature 8b (scope: current, 3b47c1c..43d308e; lenses: quality, security, performance, tests)
+**Why it matters:** The release counts any send answered with status 400 or
+more as "Twilio refused the send, so surely it did not go". A 4xx is a
+refusal. A 5xx (500 Internal Server Error, 502 or 504 from a gateway in front
+of Twilio, 503) says only that the answer failed: the message may already be
+created. On a 5xx the claim is nulled, the next run reads triedBefore false
+(:56), skips findSentText (:147-149) and sends the reply to the business's
+phone again. The booking texts are not affected: they check Twilio on every
+retry (send-booking-text.ts:94-106). Unverified: whether Twilio ever creates a
+message and still answers 5xx needs Twilio's own statement or a live
+observation; the code path itself is confirmed by reading. Only a duplicate
+notification to the business's own phone is at stake, hence P3.
+**Suggested fix:** Let the claim go only for 400 to 499 (and keep 429 among
+them); treat a 5xx like a lost answer, so the next run asks Twilio first. One
+route test with a 503 on the first send and the text found on the retry.
+**Resolution:**
+
+### F-239 [P3] open - The record says identical replies are never taken for one and both ways are claimed, which the built check does not promise
+
+**File:** blueprint/context/current-feature.md:241-243; packages/shared/db/text-tables/text-reply-table.ts:2-4; backend/routes/public-text-routes.test.ts:359
+**Found:** 2026-10-07 by the independent review of feature 8b (scope: current, 3b47c1c..43d308e; lens: quality)
+**Why it matters:** The spec's 8b.4 says the lost-answer check counts "from
+when the reply was recorded, so two replies in the same words are never taken
+for one". That holds when the identical reply was passed on before this one
+was recorded (the code comment at pass-on-reply.ts:144-146 says exactly
+that). It does not hold after: Jane texts "Yes" (reply A) and "Yes" again
+(reply B) a few seconds later; A's send times out without reaching Twilio, B
+is passed on, and A's retry a minute later finds B's text, same words, after
+A's record, and sends nothing, so the business's phone hears one "Yes" (the
+email still carries both). Twilio takes no idempotency key, so this residue is
+inherent, but /complete archives the spec as the record. The table's header
+also says "A run claims each way (the text, the email)": only the text is
+claimed; the email relies on Resend's idempotency key. And the test named "a
+retry counts only from its own claim" now pins a check that counts from the
+reply's record (F-237).
+**Suggested fix:** Say "an identical reply passed on before this one was
+recorded is never taken for it" in the spec, say in the table comment that the
+text is claimed and the email keyed, and rename the test to "counts from the
+reply's record". No code change.
+**Resolution:**

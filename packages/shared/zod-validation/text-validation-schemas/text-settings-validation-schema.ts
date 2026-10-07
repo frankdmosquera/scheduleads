@@ -1,0 +1,48 @@
+// Shared Zod schema: a business's text settings (feature 8b, decision 2), as client setup saves
+// them and Settings (feature 12) will. The numbers are stored as Twilio texts them, "+14035550148".
+
+import { z } from "zod";
+
+import { textablePhoneNumber } from "../../helpers/textable-phone-number.js";
+import { emailAddressValidationSchema } from "../auth-validation-schemas/email-address-validation-schema.js";
+
+const textableNumber = z.string().transform((typed, context) => {
+  const number = textablePhoneNumber(typed);
+  if (!number) {
+    context.addIssue({
+      code: "custom",
+      message: "Use a Canadian or US number, like 403 555 0148.",
+    });
+    return z.NEVER;
+  }
+  return number;
+});
+
+export const textSettingsValidationSchema = z
+  .object({
+    fromNumber: textableNumber,
+    confirmationOn: z.boolean(),
+    reminderMinutesBefore: z
+      .array(
+        z
+          .int32("Give each reminder in whole minutes.")
+          .positive("A reminder goes at least a minute before.")
+      )
+      .refine(
+        (minutes) => new Set(minutes).size === minutes.length,
+        "That reminder is there twice."
+      ),
+    replyPhone: textableNumber.nullable(),
+    replyEmail: emailAddressValidationSchema.nullable(),
+  })
+  .refine((settings) => settings.replyPhone !== null || settings.replyEmail !== null, {
+    message: "Choose where replies go: a phone, an email, or both.",
+    path: ["replyPhone"],
+  })
+  .refine((settings) => settings.replyPhone !== settings.fromNumber, {
+    message: "Replies cannot go to the texting number itself.",
+    path: ["replyPhone"],
+  });
+
+export type TextSettingsInputType = z.input<typeof textSettingsValidationSchema>;
+export type TextSettingsType = z.output<typeof textSettingsValidationSchema>;

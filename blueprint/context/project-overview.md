@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash 1f5d4b43f1e9e9c68cdb480a8cf949bbc9912013a712e09c459cf2361c85fb25 -->
+<!-- blueprint:source-hash cfad39c844c63e9236075e681bcea6de5ae0519cf3c1009a9c6627c71a550383 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -84,7 +84,7 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 11. **Leads list and contact page** - timeline, next steps, a lead by hand.
 12. **Settings** - services, people and places, who does what, bookable hours,
     closed and opened days, the holiday picker (none by default), notice,
-    horizon, time zone, calendar.
+    horizon, time zone, calendar, text settings.
 - **12b. Calendars** - every person and place has an in-app calendar.
 - **12c. Backups, restore and retention** - before any real client's data.
 13. **Primo Painters** - Calendly out. Needs 12c and item 22's calendar half.
@@ -94,7 +94,7 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 17. **Face and Body** - Cal.com out; 45 services, practitioners, rooms.
 18. **The Latam Painters** - after its site and siteConfig exist.
 19. **Crew and job scheduling** - jobs of daily visits, crews as saved lists.
-20. **Reports**. 21. **WhatsApp**. 22. **Google OAuth verification**
+20. **Reports**. 21. **WhatsApp**. 21b. **RCS**. 22. **Google OAuth verification**
     (calendar half before 13). 23. **Packages ladder and admin area**.
     24. **Hosted booking page** `/book/<slug>`. 25. **Self-serve and
     billing**. 26. **Two-way Gmail sync**.

@@ -6,11 +6,15 @@ import { bookingEmailJob } from "./booking-email-job.js";
 import { bookingEventMoveJob } from "./booking-event-move-job.js";
 import { bookingEventRemovalJob } from "./booking-event-removal-job.js";
 import { bookingEventWriteJob } from "./booking-event-write-job.js";
+import { bookingTextJob } from "./booking-text-job.js";
 import { jobNames } from "./job-names.js";
+import { textReplyJob } from "./text-reply-job.js";
 
 export const jobTasks: TaskList = {
   [jobNames.bookingEmail]: bookingEmailJob,
   [jobNames.bookingEventWrite]: bookingEventWriteJob,
   [jobNames.bookingEventMove]: bookingEventMoveJob,
   [jobNames.bookingEventRemove]: bookingEventRemovalJob,
+  [jobNames.bookingText]: bookingTextJob,
+  [jobNames.textReply]: textReplyJob,
 };

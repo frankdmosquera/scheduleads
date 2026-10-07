@@ -6,4 +6,6 @@ export const jobNames = {
   bookingEventWrite: "booking_event_write",
   bookingEventMove: "booking_event_move",
   bookingEventRemove: "booking_event_remove",
+  bookingText: "booking_text",
+  textReply: "text_reply",
 } as const;

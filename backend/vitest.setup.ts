@@ -22,6 +22,11 @@ process.env.JOBS_SCHEMA = schema; // read by lib/jobs/job-schema.ts when a test 
 
 jobClock.now = () => new Date("2026-10-02T14:00:00Z");
 
+// No test texts with the real Twilio keys a .env may hold: set empty here, a .env loaded later
+// never overrides them. A test that sends sets its own and fakes Twilio.
+process.env.TWILIO_ACCOUNT_SID = "";
+process.env.TWILIO_AUTH_TOKEN = "";
+
 // The real fetch, kept to this machine: a file that unstubs its fake and then works a job can no
 // longer send a real email or call Google.
 const realFetch = globalThis.fetch;

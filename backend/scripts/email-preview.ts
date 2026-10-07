@@ -34,7 +34,8 @@ const sampleFacts: BookingEmailFactsType = {
 };
 
 // A link of the right shape; the preview opens nothing.
-const sampleBookingPageUrl = "http://localhost:3400/b/00000000-0000-4000-8000-000000000000.sample";
+const sampleBookingPageUrl =
+  "http://localhost:3400/b/AAAAAAAAQACAAAAAAAAAAA.sampleSignatureForPrev";
 
 // A move from the day before to the sample time.
 const sampleMovedFrom = new Date("2026-10-07T21:30:00Z"); // 3:30 p.m. in Edmonton

@@ -212,7 +212,7 @@ and a second resource can hold the same time as the first.
     and move emails and the Google event writes, removals and moves leave
     the in-memory trackers for it, and a move that gives up on the first
     person's calendar is retried instead of leaving the event behind
-  - [ ] 8b. **The customer's texts** - one place in the code sends every
+  - [x] 8b. **The customer's texts** - one place in the code sends every
     text, through Twilio; the confirmation text when a booking is made and
     the reminder before the appointment, moved or dropped with the booking
   - [ ] 8c. **The worker's text** - when a business runs on one email, the
@@ -300,6 +300,11 @@ without Frank touching the database.
     name, so a renamed holiday would break that business's booking page.
     Decide here: check picks when they are saved, or save a name that never
     changes.
+  - Text settings (8b, Frank, Oct 7): the business's texting number,
+    whether the confirmation text goes, any number of reminders, each any
+    number of minutes before, and where a customer's reply is passed on (a
+    phone, an email, or both). Nothing on by default. Saving refuses a reply
+    phone that is any business's texting number (8b, F-199).
   - Changing a service's length or someone's hours keeps existing bookings
     and warns the owner which ones now fall outside.
   - Opening hours for the public (the website, the Google profile) are a
@@ -399,6 +404,16 @@ reads a report page instead of asking Frank how the month went.
   on shadcn charts
 - [ ] 21. **WhatsApp** - Meta verification, a dedicated number, approved
   templates; sent and logged like SMS
+- [ ] 21b. **RCS** (Frank, Oct 7) - the branded chat version of a text, in
+  the phone's own Messages app: the business's verified name and logo,
+  buttons such as "Change booking", read receipts. Twilio carries it to
+  Canada (about $0.0083 a basic message, $0.022 a rich one, plus carrier
+  fees, checked Oct 7). Each business's brand is approved by Twilio, the
+  carriers and Google first, with no promised timeline, so it is switched on
+  per business once its approval lands. Phones without RCS still get item
+  8's SMS, which stays the base. Sent through item 8's one door, so it
+  changes that one place plus a sign-up per client. Numbered 21b so nothing
+  after it renumbers
 
 ## Phase 9. Packages and self-serve
 

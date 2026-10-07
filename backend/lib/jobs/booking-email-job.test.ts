@@ -120,12 +120,13 @@ async function book(business: BusinessType): Promise<string> {
   return result.booking.id;
 }
 
-// The email jobs still waiting for a booking, by kind, with their tries so far. The library's
-// public view hides the payload, so its own table is read.
+// The email jobs still waiting for a booking, by kind, with their tries so far: its texts' jobs
+// (feature 8b) are not counted. The library's public view hides the payload, so its own table is
+// read.
 const jobsOf = async (bookingId: string) =>
   (await db.execute(
     sql`select payload->>'kind' as kind, attempts from ${schema}._private_jobs
-        where payload->>'bookingId' = ${bookingId} and payload->>'kind' is not null order by id`
+        where payload->>'bookingId' = ${bookingId} and starts_with(payload->>'kind', 'booking_') order by id`
   )) as unknown as { kind: string; attempts: number }[];
 
 // A failed job waits seconds for its next try; the tests do not wait for it.
@@ -133,6 +134,11 @@ const makeDue = (bookingId: string) =>
   db.execute(
     sql`update ${schema}._private_jobs set run_at = now() where payload->>'bookingId' = ${bookingId}`
   );
+
+// The keys of the emails Resend was asked for, in no order: jobs saved in one transaction share
+// their moment, and the runner works those in any order (8a: emails need none).
+const sentKeys = () => calls.map((call) => call.key).sort();
+const keysOf = (keys: string[]) => [...keys].sort();
 
 const sentEntriesOf = async (business: BusinessType) =>
   (
@@ -196,14 +202,16 @@ describe("a booking's emails as jobs", () => {
     ]);
     await workDueJobs();
 
-    expect(calls.map((call) => call.key)).toEqual([
-      `booking-confirmation/${id}`,
-      `booking-notification/${id}`,
-      `booking-moved/${id}/1`,
-      `booking-moved-notification/${id}/1`,
-      `booking-cancelled/${id}`,
-      `booking-cancelled-notification/${id}`,
-    ]);
+    expect(sentKeys()).toEqual(
+      keysOf([
+        `booking-confirmation/${id}`,
+        `booking-notification/${id}`,
+        `booking-moved/${id}/1`,
+        `booking-moved-notification/${id}/1`,
+        `booking-cancelled/${id}`,
+        `booking-cancelled-notification/${id}`,
+      ])
+    );
     expect(await jobsOf(id)).toEqual([]); // every job done and gone
   });
 
@@ -256,12 +264,14 @@ describe("a booking's emails as jobs", () => {
     await cancelBooking(cancelled, NOW);
     await workDueJobs();
 
-    expect(calls.map((call) => call.key)).toEqual([
-      `booking-moved/${moved}/1`,
-      `booking-moved-notification/${moved}/1`,
-      `booking-cancelled/${cancelled}`,
-      `booking-cancelled-notification/${cancelled}`,
-    ]);
+    expect(sentKeys()).toEqual(
+      keysOf([
+        `booking-moved/${moved}/1`,
+        `booking-moved-notification/${moved}/1`,
+        `booking-cancelled/${cancelled}`,
+        `booking-cancelled-notification/${cancelled}`,
+      ])
+    );
     expect(await jobsOf(moved)).toEqual([]);
     expect(await jobsOf(cancelled)).toEqual([]);
   });
@@ -275,10 +285,9 @@ describe("a booking's emails as jobs", () => {
     await moveBooking({ bookingId: id, startsAt: ELEVEN, personId: null, now: NOW });
     await workDueJobs(); // the first move's emails run after the second move
 
-    expect(calls.map((call) => call.key)).toEqual([
-      `booking-moved/${id}/2`,
-      `booking-moved-notification/${id}/2`,
-    ]);
+    expect(sentKeys()).toEqual(
+      keysOf([`booking-moved/${id}/2`, `booking-moved-notification/${id}/2`])
+    );
     expect(await jobsOf(id)).toEqual([]);
     const lines = vi.mocked(console.warn).mock.calls.map(([line]) => String(line));
     expect(lines).toContain(
@@ -302,10 +311,13 @@ describe("a booking's emails as jobs", () => {
     const lines = vi
       .mocked(console.warn)
       .mock.calls.map(([line]) => String(line))
-      .filter((line) => line.startsWith("[email]")); // the event's job has its own line
-    expect(lines).toEqual([
-      `[email] booking ${id}: booking_confirmation not sent, the appointment has started`,
-      `[email] booking ${id}: booking_notification not sent, the appointment has started`,
-    ]);
+      .filter((line) => line.startsWith("[email]")) // the event's job has its own line
+      .sort(); // the two jobs share their moment, and the runner works those in any order
+    expect(lines).toEqual(
+      [
+        `[email] booking ${id}: booking_confirmation not sent, the appointment has started`,
+        `[email] booking ${id}: booking_notification not sent, the appointment has started`,
+      ].sort()
+    );
   });
 });
