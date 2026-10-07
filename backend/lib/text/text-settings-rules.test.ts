@@ -103,6 +103,7 @@ describe("text settings rules in the database", () => {
   test.each([
     ["no minutes", [0]],
     ["after the start", [1200, -30]],
+    ["left blank", [60, null]],
   ])("a reminder of %s is refused", async (name, reminderMinutesBefore) => {
     const business = await makeBusiness(`reminder-${name.replace(/\W+/g, "-")}`);
     await expect(

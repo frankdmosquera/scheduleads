@@ -92,13 +92,24 @@ is on by default; a business with no text settings sends no texts.
    applies to bookings made or moved after it.
 7. **Retried like the emails, except what retrying cannot fix.** A failed send
    is retried up to 10 times with growing waits (8a decision 4), never once
-   the appointment has started. Twilio refusals that retrying cannot change
-   (a number that cannot take texts, a customer who texted STOP, a landline)
-   are logged and not retried.
+   the appointment has started. Twilio refusals about this customer or this
+   text, which retrying cannot change (a number that cannot take texts, a
+   customer who texted STOP, a landline, words too long), are logged and not
+   retried. A refusal about the agency's own account (its keys, a country not
+   switched on, a number not in it) is retried, so once it is fixed in
+   Twilio's console the waiting texts still go (amended after 8b.1's review,
+   F-198).
 8. **A retry never sends a text twice.** Twilio takes no idempotency key, so
    a send whose answer was lost may have gone. Before a retry sends, it asks
    Twilio for a text with the same body from the business's number to Jane's
-   in the last day; if one is there, that one is recorded and nothing is sent.
+   since this text's first try; if one is there, that one is recorded and
+   nothing is sent. The first try is the booking's creation for the
+   confirmation, and the appointment minus its minutes for a reminder, so a
+   booking's earlier reminder (the same words) is never taken for a later one.
+   Twilio's clock may differ from ours by up to 10 seconds, well under the one
+   minute that is the smallest gap between two reminders (amended after
+   8b.1's review, F-195: "in the last day" would have taken the 20-hour
+   reminder for the 1-hour one and skipped it).
 9. **Replies go where the business chose, and only from customers.** Twilio
    posts each incoming text to a public API route, checked by Twilio's
    signature, which answers at once and adds a job to pass it on. A text from
@@ -181,12 +192,17 @@ Frank's yes; every test fakes Twilio.
   passes the text on to the reply phone (a text from the business's number:
   who sent it, their number, the words, "reply to them directly") and/or the
   reply email (through the business's own Resend, as feature 6 sends), never
-  from the reply phone itself (decision 9). The sender is named when their
-  number matches a contact of that business.
+  from the reply phone itself (decision 9), and never to a reply phone that
+  is any business's texting number (F-199: a setup mistake would hand Jane's
+  words to another business, or two businesses would drop each other's
+  replies); then it goes only to the reply email, or is logged as not passed
+  on when there is none. The sender is named when their number matches a
+  contact of that business.
   **Done when:** route tests with signatures made from a test auth token: a
   valid one is accepted and passed on to each destination the settings name;
   a missing or wrong signature is refused 403 and adds no job; an unknown
-  number adds no job; a text from the reply phone is not passed on; the
+  number adds no job; a text from the reply phone is not passed on; a reply
+  phone that is another business's texting number gets nothing; the
   frontend build passes (the route reaches `AppType`).
 
 ## Files / areas
@@ -266,8 +282,11 @@ is a hand check at deploy, with Frank's Twilio keys, on his yes.
   no question to Frank about a fixed rule or a client's first value.
 - Twilio's Messages API: `POST https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json`,
   form-encoded `From`, `To`, `Body`, basic auth sid:token. Refusals that never
-  retry include 21211, 21408, 21610, 21612 and 21614; check the current list
-  against Twilio's error reference when building 8b.1.
+  retry, checked against Twilio's error reference on 2026-10-07: 21211, 21610,
+  21612, 21614, 21617 and 21266; everything else, 21408, 21606 and 20003
+  among them, is retried (decision 7).
+- Feature 12 (Settings): saving text settings refuses a reply phone that is
+  any business's texting number (F-199), as the pass-on job already does.
 - The signature is HMAC-SHA1 of the full URL plus the POST params sorted by
   name and concatenated, base64, compared in constant time. Behind Railway
   the URL is the public one; build it from the API's own origin, never the

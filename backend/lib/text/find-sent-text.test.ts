@@ -79,18 +79,53 @@ describe("findSentText", () => {
     expect(await findSentText(text)).toBeNull();
   });
 
-  test("a text Twilio's clock stamps a little before ours still counts", async () => {
+  test("a text Twilio's clock stamps a few seconds before ours still counts", async () => {
     fakeTwilio(() =>
-      Response.json({ messages: [message({ date_created: "Wed, 07 Oct 2026 15:59:30 +0000" })] })
+      Response.json({ messages: [message({ date_created: "Wed, 07 Oct 2026 15:59:55 +0000" })] })
     );
 
     expect(await findSentText(text)).toBe("SM1");
+  });
+
+  test("the same words a minute or more before the first try are another text: a reminder an hour earlier is never taken for this one", async () => {
+    fakeTwilio(() =>
+      Response.json({ messages: [message({ date_created: "Wed, 07 Oct 2026 15:59:00 +0000" })] })
+    );
+
+    expect(await findSentText(text)).toBeNull();
   });
 
   test("when Twilio cannot answer, the check fails and the job tries again later", async () => {
     fakeTwilio(() => Response.json({ code: 20503, status: 503 }, { status: 503 }));
 
     await expect(findSentText(text)).rejects.toMatchObject({ code: "20503", retry: true });
+  });
+
+  test.each([
+    ["not JSON", () => new Response("<html>ok</html>")],
+    ["JSON without a list", () => Response.json({ page: 0 })],
+  ])("an answer that is %s fails the check, and the job tries again later", async (_, answer) => {
+    fakeTwilio(answer);
+
+    await expect(findSentText(text)).rejects.toMatchObject({
+      code: "unreadable_answer",
+      retry: true,
+    });
+  });
+
+  test("no answer within the limit fails the check as a timeout", async () => {
+    vi.stubGlobal(
+      "fetch",
+      (_: RequestInfo | URL, init: RequestInit = {}) =>
+        new Promise((__, reject) =>
+          init.signal?.addEventListener("abort", () => reject(init.signal?.reason))
+        )
+    );
+
+    await expect(findSentText(text, { timeoutMs: 50 })).rejects.toMatchObject({
+      code: "timeout",
+      retry: true,
+    });
   });
 
   test("without keys nothing could have been sent: none found, Twilio not asked", async () => {

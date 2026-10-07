@@ -391,3 +391,121 @@ job-runner.test.ts (the setup and the library already install the tables),
 and leave the setup's comment as the place that says the tests' schema is
 migrated there.
 **Resolution:**
+
+### F-195 [P2] fixed - Decision 8 says the duplicate check looks back a day, which would take a booking's earlier reminder for the one being retried
+
+**File:** blueprint/context/current-feature.md:98-101 (the code it governs: backend/lib/text/find-sent-text.ts:24, 56-62; the wording: current-feature.md:249)
+**Found:** 2026-10-07 by /audit (scope: 8b.1, 3b47c1c..7582593; lenses: quality, security, performance, tests)
+**Why it matters:** Every reminder of one booking has the same words: the
+spec's reminder wording names the business, service, time and link, never
+how far ahead it is (line 249). Decision 8 tells the caller to look for "the
+same body ... in the last day". With Summit's seeded reminders at 1200 and 60
+minutes, the 1200 one goes about 19 hours before the 60 one; if the 60 one's
+first send loses its answer, a one-day look-back finds the 1200 one, records
+it as sent, and Jane gets no last reminder. `findSentText` itself is right: it
+takes `since` and matches only texts from then on (minus 60 s of clock slack),
+but the spec 8b.2 and 8b.3 build from still describes the unsafe window and
+does not say what `since` is. The obvious job field is also wrong for a
+reminder: graphile-worker's `created_at` is when the booking was made, before
+the earlier reminder went, and `run_at` moves on each retry. Residual even
+with the right `since`: two reminders set within a minute of each other (the
+schema allows 61 and 60) fall inside the 60 s slack.
+**Suggested fix:** Amend decision 8 to "since this text's first try", and say
+in 8b.2/8b.3 what that is: the job's creation for the confirmation, the
+appointment minus `minutesBefore` for a reminder (never the job's
+`created_at`). Optionally make each reminder's words differ (or refuse
+reminders less than two minutes apart) so the slack cannot bridge two of them.
+**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes: decision 8 now says "since this text's first try", defined as the booking's creation for the confirmation and the appointment minus its minutes for a reminder; the clock slack in find-sent-text.ts is 10 s, under the one-minute smallest gap between two reminders (F-200's test bounds it). 8b.2 and 8b.3 pass that `since`.
+
+### F-196 [P3] fixed - The text settings check's refusal of a blank reminder has no test, and it is the only thing refusing one
+
+**File:** packages/shared/db/text-tables/text-settings-table.ts:49-52 (tests: backend/lib/text/text-settings-rules.test.ts:103-111)
+**Found:** 2026-10-07 by /audit (scope: 8b.1, 3b47c1c..7582593; lenses: quality, security, performance, tests)
+**Why it matters:** Against the local database, `0 < all(array[60,null]::int[])`
+is null, which a check accepts, while `array_position(array[60,null]::int[], null)`
+is 2 (read-only query run during this audit). So the `array_position` half
+is the only guard against a reminder with no minutes, which 8b.3 would turn
+into a job with no time. The rules test covers 0 and -30 but no null element,
+so deleting that half would leave every test green.
+**Suggested fix:** Add `["a blank", [60, null]]` to the reminder `test.each` in
+text-settings-rules.test.ts, expecting `text_settings_reminder_minutes_check`.
+**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes: text-settings-rules.test.ts refuses a reminder "left blank", [60, null], by text_settings_reminder_minutes_check.
+
+### F-197 [P3] fixed - Twilio's answer is read outside the error sorting, so a body that fails to arrive or parse escapes as a plain error
+
+**File:** backend/lib/text/send-text.ts:70-72; backend/lib/text/find-sent-text.ts:55-57
+**Found:** 2026-10-07 by /audit (scope: 8b.1, 3b47c1c..7582593; lenses: quality, security, performance, tests)
+**Why it matters:** The contract (current-feature.md, `sendText`) is that a
+failure throws `SendTextError` with `retry`. The `AbortSignal.timeout` also
+covers reading the body, and `response.json()` sits outside both try blocks:
+a 201 whose body stalls past the limit throws a bare `TimeoutError`
+(DOMException), and a 200 list answer that is not JSON, or has no `messages`,
+throws a `SyntaxError` or `TypeError` from `.find`. 8b.2's job will branch on
+`SendTextError.retry`; these arrive as something else. The send's case is the
+very one decision 8 is for (the text went, the answer was lost).
+**Suggested fix:** Read the success body inside a try and map a failure to
+`SendTextError("no_answer", status, true, ...)`; in findSentText also treat a
+missing `messages` array as a retryable `SendTextError`. A test each.
+**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes: send-text.ts reads Twilio's answer inside its own handling, so a 2xx whose body is cut off, not JSON or has no id throws SendTextError unreadable_answer, retried (the retry checks first); find-sent-text.ts does the same for a list answer, and reports a timeout as "timeout". Tests: not JSON, JSON without an id, an answer that stops halfway (cut by the time limit), a list answer not JSON or without a list, a list timeout.
+
+### F-198 [P3] fixed - The never-retry list may miss Twilio refusals that no retry fixes, and the spec's "check the current list" left no record
+
+**File:** backend/lib/text/send-text.ts:10-12
+**Found:** 2026-10-07 by /audit (scope: 8b.1, 3b47c1c..7582593; lenses: quality, security, performance, tests)
+**Why it matters:** The spec (Notes for the AI) asks for the five codes to be
+checked against Twilio's current error reference at 8b.1; nothing in the spec,
+code or commit records that it was. From memory, and not checked here because
+the audit may not reach the network: 21606 (the From number cannot send to
+this destination), 21617 (body over 1600 characters) and 21266 (To and From
+the same) are refusals a retry cannot change, and each would be tried 10
+times, each retry preceded by a `findSentText` call. Not a wrong text, only
+wasted calls and a late log line, hence a lead.
+**Suggested fix:** Check the codes against https://www.twilio.com/docs/api/errors
+and either add the ones that cannot change on retry or record in the spec that
+config refusals stay retried on purpose (fixed config, then the retry sends).
+**Step review note (independent, 2026-10-07):** agreed, still unverified (no
+network here either). One more thing to settle in the same pass: the list
+already sorts config refusals both ways. 21408 (the region not enabled in the
+account's geo permissions) is fixed in Twilio's console like 20003 (keys not
+taken), yet 21408 is never retried (send-text.ts:12) and 20003 is
+(send-text.test.ts:81). Whichever rule is chosen should cover both.
+**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes, codes checked against Twilio's error pages that day: never retried are the refusals about this customer or this text, 21211, 21610, 21612, 21614, 21617 (over 1600 characters) and 21266 (to the sending number itself); refusals about the agency's account, 21408, 21606 and 20003, are retried, so a fix in Twilio's console lets the waiting texts go. Spec decision 7 and its notes amended; send-text.test.ts covers each.
+
+### F-199 [P3] open - A reply phone may be another business's texting number, which hands one business's customer replies to another, or loses them
+
+**File:** packages/shared/db/text-tables/text-settings-table.ts:37-41; packages/shared/zod-validation/text-validation-schemas/text-settings-validation-schema.ts:42-45
+**Found:** 2026-10-07 by independent step review (scope: 8b.1, 3b47c1c..7582593; lenses: quality, security, performance, tests)
+**Why it matters:** The table and the schema refuse a reply phone equal to the
+row's own `fromNumber`, but nothing refuses one equal to another row's
+`fromNumber`, and a check cannot see other rows. Following 8b.4 as the spec
+writes it (current-feature.md:174-185): if Summit's reply phone is set to
+Riverbend's texting number, Summit's passed-on reply goes from Summit's number
+to Riverbend's, Twilio posts it to `/texts/incoming`, the business is found by
+the number texted (Riverbend), the sender is not Riverbend's reply phone, so it
+is passed on to Riverbend's owner: Jane's number and words reach another
+tenant. Set both ways, decision 9's own-reply-phone rule drops it instead, and
+Jane's reply reaches no one, against decision 2's "a reply is never lost".
+Reachable only through a setup mistake (the platform admin types the values),
+hence P3; that Twilio delivers between two numbers of one account is assumed,
+not tested here.
+**Suggested fix:** In 8b.4's pass-on job, refuse (log, without the number) a
+reply phone that is any business's `fromNumber`; and have client setup and
+Settings (feature 12) refuse such a value when saving. A test for the job's
+refusal.
+**Resolution:** Carried to 8b.4, where the harm would happen: its spec now says the pass-on job never texts a reply phone that is any business's texting number (then the reply email only, or logged), with a test in its Done when; feature 12's Settings refuses it on save (spec notes). Stays open until 8b.4 builds and tests it.
+
+### F-200 [P3] fixed - No test bounds the duplicate check's clock slack, so widening it to a day would keep every test green
+
+**File:** backend/lib/text/find-sent-text.ts:12, 56 (tests: backend/lib/text/find-sent-text.test.ts:66-90)
+**Found:** 2026-10-07 by independent step review (scope: 8b.1, 3b47c1c..7582593; lenses: quality, security, performance, tests)
+**Why it matters:** The only match dated before `since` is 30 seconds before
+(test line 84); the only earlier non-match is 31 hours before (line 71, Oct 6
+09:00 against Oct 7 16:00). Any `CLOCK_SLACK_MS` from 30 s up to 31 h passes
+the suite, so a change that widened the slack toward the one-day look-back the
+spec's decision 8 still describes would take an earlier reminder with the same
+words for the one being retried (the risk F-195 records) without a red test.
+The slack's upper side is the part that keeps two reminders of one booking
+apart.
+**Suggested fix:** Add a case with the same words a few minutes before `since`
+(for example 16:00 minus 2 minutes, outside the 60 s slack), expecting null.
+**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes: find-sent-text.test.ts finds the same words 5 s before the first try and refuses them a minute before, so a slack of a minute or more fails a test.

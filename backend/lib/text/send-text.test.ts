@@ -63,10 +63,11 @@ describe("sendText", () => {
 
   test.each([
     ["a number that is not one", 21211],
-    ["a country the account cannot text", 21408],
     ["a customer who texted STOP", 21610],
-    ["a number no carrier can text", 21612],
+    ["a number no carrier can text from ours", 21612],
     ["a landline", 21614],
+    ["words over Twilio's 1600 characters", 21617],
+    ["a text to the sending number itself", 21266],
   ])("%s is refused for good: never retried", async (_, code) => {
     fakeTwilio(() => refusal(400, code));
 
@@ -79,6 +80,8 @@ describe("sendText", () => {
     ["too many at once", 429, 20429],
     ["Twilio down for a moment", 503, 20503],
     ["keys Twilio does not take", 401, 20003],
+    ["a country not yet switched on in the account", 400, 21408],
+    ["a sending number not in the account", 400, 21606],
   ])("%s fails for now: retried", async (_, status, code) => {
     fakeTwilio(() => refusal(status, code));
 
@@ -105,6 +108,43 @@ describe("sendText", () => {
 
     await expect(sendText(text, { timeoutMs: 50 })).rejects.toMatchObject({
       code: "timeout",
+      retry: true,
+    });
+  });
+
+  test.each([
+    ["not JSON", () => new Response("<html>ok</html>", { status: 201 })],
+    ["JSON without an id", () => Response.json({ status: "queued" }, { status: 201 })],
+  ])(
+    "Twilio took it but its answer is %s: retried, so the retry checks first",
+    async (_, answer) => {
+      fakeTwilio(answer);
+
+      await expect(sendText(text)).rejects.toMatchObject({
+        code: "unreadable_answer",
+        status: 201,
+        retry: true,
+      });
+    }
+  );
+
+  test("Twilio took it but its answer stops halfway: retried, so the retry checks first", async () => {
+    // Half an answer, then nothing, until the time limit cuts the read as a real fetch does.
+    fakeTwilio(
+      (init) =>
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode('{"sid":"SM'));
+              init.signal?.addEventListener("abort", () => controller.error(init.signal?.reason));
+            },
+          }),
+          { status: 201 }
+        )
+    );
+
+    await expect(sendText(text, { timeoutMs: 50 })).rejects.toMatchObject({
+      code: "unreadable_answer",
       retry: true,
     });
   });

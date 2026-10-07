@@ -7,9 +7,12 @@ import { SendTextError } from "./send-text-error.js";
 import { readTwilioAccount } from "./twilio-account.js";
 import { twilioErrorCode } from "./twilio-error-code.js";
 
-// Refusals no retry can change (decision 7): a number that is not one, a country the account
-// cannot text, a customer who texted STOP, a number no carrier can text, a landline.
-const NEVER_RETRY = new Set(["21211", "21408", "21610", "21612", "21614"]);
+// Refusals about this customer or this text, which no retry can change (decision 7): a number
+// that is not one, a customer who texted STOP, a number no carrier can text from ours, a
+// landline, words over Twilio's 1600 characters, a text to the sending number itself. A refusal
+// about the agency's own account (its keys, a country not switched on, a number not in it) is
+// retried: fixed in Twilio's console, the waiting texts still go.
+const NEVER_RETRY = new Set(["21211", "21610", "21612", "21614", "21617", "21266"]);
 
 export type SendTextInputType = {
   kind: string; // for the log line only: "booking_confirmation", ...
@@ -67,15 +70,26 @@ export async function sendText(
     );
   }
 
-  if (response.ok) {
-    const { sid } = (await response.json()) as { sid: string };
-    return sid;
+  if (!response.ok) {
+    const code = await twilioErrorCode(response);
+    throw new SendTextError(
+      code,
+      response.status,
+      !NEVER_RETRY.has(code),
+      `Sending a text failed: Twilio ${code} (${response.status}).`
+    );
   }
-  const code = await twilioErrorCode(response);
+  try {
+    const { sid } = (await response.json()) as { sid?: unknown }; // the time limit covers this too
+    if (typeof sid === "string") return sid;
+  } catch {
+    // cut off or not JSON: handled below
+  }
+  // Twilio took it, but its answer was lost: the text may have gone, so a retry checks first.
   throw new SendTextError(
-    code,
+    "unreadable_answer",
     response.status,
-    !NEVER_RETRY.has(code),
-    `Sending a text failed: Twilio ${code} (${response.status}).`
+    true,
+    `Sending a text failed: Twilio's answer (${response.status}) could not be read.`
   );
 }

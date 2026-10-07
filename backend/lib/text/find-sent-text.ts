@@ -9,7 +9,9 @@ import { readTwilioAccount } from "./twilio-account.js";
 import { twilioErrorCode } from "./twilio-error-code.js";
 
 const NOT_DELIVERED = new Set(["failed", "undelivered", "canceled"]);
-const CLOCK_SLACK_MS = 60_000; // Twilio's clock and ours may differ by a little
+// Twilio's clock and ours may differ by a little. Kept well under a minute, the smallest gap
+// between two of a booking's reminders, so one reminder is never taken for another.
+const CLOCK_SLACK_MS = 10_000;
 
 type TwilioMessageType = {
   sid: string;
@@ -34,9 +36,10 @@ export async function findSentText(
       headers: { Authorization: account.authorization },
       signal: AbortSignal.timeout(timeoutMs),
     });
-  } catch {
+  } catch (error) {
+    const timedOut = error instanceof Error && error.name === "TimeoutError";
     throw new SendTextError(
-      "no_connection",
+      timedOut ? "timeout" : "no_connection",
       null,
       true,
       "Checking for a sent text failed: no answer from Twilio."
@@ -52,7 +55,18 @@ export async function findSentText(
     );
   }
 
-  const { messages } = (await response.json()) as { messages: TwilioMessageType[] };
+  let messages: TwilioMessageType[];
+  try {
+    ({ messages } = (await response.json()) as { messages: TwilioMessageType[] });
+    if (!Array.isArray(messages)) throw new Error("no list");
+  } catch {
+    throw new SendTextError(
+      "unreadable_answer",
+      response.status,
+      true,
+      `Checking for a sent text failed: Twilio's answer (${response.status}) could not be read.`
+    );
+  }
   const earliest = input.since.getTime() - CLOCK_SLACK_MS;
   const sent = messages.find(
     (message) =>
