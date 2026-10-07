@@ -531,7 +531,7 @@ when case: with Summit's 1200 and 60 reminders, the 1200 one sent, the 60
 one's first send losing its answer, the retry still sends the 60 one.
 **Resolution:** Fixed 2026-10-07 after the re-review: 8b.3's spec says a reminder's retry checks Twilio with since = the appointment minus its minutes, never the job's created_at or run_at, and its Done when adds "the 60-minute reminder's retry still sends after the 1200-minute one went".
 
-### F-202 [P3] open - The feature 12 half of F-199 lives only in this spec's notes, which are archived with 8b, and item 12 has no line for text settings at all
+### F-202 [P3] fixed - The feature 12 half of F-199 lives only in this spec's notes, which are archived with 8b, and item 12 has no line for text settings at all
 
 **File:** blueprint/context/current-feature.md:288-289 (plan: blueprint/build-plan.md:264-307)
 **Found:** 2026-10-07 by re-review of 8b.1's fixes (scope: 7582593..9b8793a, with 3b47c1c..9b8793a as context; lenses: quality, security, performance, tests)
@@ -548,7 +548,7 @@ accepts a value the job then silently ignores.
 **Suggested fix:** With Frank's yes (the build plan is his), add to item 12 a
 line for the text settings screen, including the F-199 refusal on save (and
 the no-repeats rule the table cannot enforce).
-**Resolution:**
+**Resolution:** Fixed 2026-10-07 on Frank's yes: build-plan item 12 has a "Text settings" line (the number, the confirmation, any reminders, where replies go, nothing on by default; saving refuses a reply phone that is any business's texting number), and the overview's Settings line names text settings, its fingerprint refreshed.
 
 ### F-203 [P3] fixed - SendTextError's list of codes leaves out the new "unreadable_answer" (and "http_NNN")
 

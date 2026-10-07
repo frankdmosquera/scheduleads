@@ -300,6 +300,11 @@ without Frank touching the database.
     name, so a renamed holiday would break that business's booking page.
     Decide here: check picks when they are saved, or save a name that never
     changes.
+  - Text settings (8b, Frank, Oct 7): the business's texting number,
+    whether the confirmation text goes, any number of reminders, each any
+    number of minutes before, and where a customer's reply is passed on (a
+    phone, an email, or both). Nothing on by default. Saving refuses a reply
+    phone that is any business's texting number (8b, F-199).
   - Changing a service's length or someone's hours keeps existing bookings
     and warns the owner which ones now fall outside.
   - Opening hours for the public (the website, the Google profile) are a
