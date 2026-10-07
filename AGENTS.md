@@ -84,6 +84,22 @@ The frontend gets exactly one variable, `NEXT_PUBLIC_API_URL`, which is public
 by definition. Never put a secret in a `NEXT_PUBLIC_*` name, and never add a
 `backend/.env` - nothing loads it.
 
+## The client decides everything
+
+**Decided by Frank, 2026-09-28 (project plan decision 30), for the whole app,
+and restated on 2026-10-07 because it kept being asked again.** Every choice
+that depends on the business is the business's own setting: its hours, closed
+days, which messages go out, when a reminder goes (half an hour before, two
+hours, the evening before), where replies land, and anything like them. The
+product builds the choice and offers every reasonable option; it never fixes
+one rule for everyone and nothing is on by default. A feature that adds a
+behaviour adds it as a setting, set per business at client setup until the
+Settings screen (feature 12) exists.
+
+Never ask Frank to pick one fixed rule for all businesses, and never ask him
+for a real client's first value while planning: both are already answered
+here. Plan the setting, write the plan, and move on.
+
 ## Read these when relevant
 
 - `blueprint/config.json` - deterministic project workflow settings

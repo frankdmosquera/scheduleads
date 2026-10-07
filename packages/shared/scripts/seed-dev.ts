@@ -20,11 +20,13 @@ import {
   pipelineStage,
   resource,
   standbyDate,
+  textSettings,
   user,
 } from "@scheduleads-app/shared/db";
 import {
   businessAvailabilityRuleValidationSchema,
   personAvailabilityRuleValidationSchema,
+  textSettingsValidationSchema,
   type DateHoursType,
   type WeeklyHoursType,
 } from "@scheduleads-app/shared/zod-validation";
@@ -116,6 +118,16 @@ const ACCOUNTS = [
         phone: "403 555 0100",
         website: "https://example.com",
         brandColor: "#1d4ed8",
+      },
+      // Its texts (feature 8b), Primo's shape: a made-up 555 number, so nothing could reach a
+      // real phone, and without Twilio keys dev sends nothing anyway. Riverbend has none, so it
+      // shows a business that sends no texts.
+      textSettings: {
+        fromNumber: "403 555 0199",
+        confirmationOn: true,
+        reminderMinutesBefore: [1200, 60],
+        replyPhone: "403 555 0100",
+        replyEmail: null,
       },
       hours: {
         weeklyHours: {
@@ -377,6 +389,21 @@ try {
         .set(business.emailDetails)
         .where(and(eq(organization.id, organizationId), isNull(organization.senderEmail)));
 
+      // Its text settings, only while it has none, so settings changed by hand survive a reseed.
+      // Parsed before writing: the schema refuses repeated reminders, which the table cannot.
+      const textSettingsMade =
+        "textSettings" in business &&
+        (
+          await tx
+            .insert(textSettings)
+            .values({
+              organizationId,
+              ...textSettingsValidationSchema.parse(business.textSettings),
+            })
+            .onConflictDoNothing({ target: textSettings.organizationId })
+            .returning({ id: textSettings.organizationId })
+        ).length > 0;
+
       // The first person. Made here because inserting the business directly skips the
       // Better Auth hook that normally makes it.
       const firstPerson = await ensureResource(tx, organizationId, business.name, "person");
@@ -540,6 +567,7 @@ try {
         standbyMade && `${standbyMade} standby dates`,
         servicesMade && `${servicesMade} services`,
         ticksMade && `${ticksMade} who-does-what ticks`,
+        textSettingsMade && "text settings",
       ].filter(Boolean);
       console.log(
         `${account.email.padEnd(20)} ${account.role === "admin" ? "platform admin" : "ordinary owner"}, ` +

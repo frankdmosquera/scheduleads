@@ -134,6 +134,13 @@
       "when": 1791084321186,
       "tag": "0018_booking_moved_and_sequence",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791391666626,
+      "tag": "0019_text_settings",
+      "breakpoints": true
     }
   ]
 }
