@@ -404,6 +404,16 @@ reads a report page instead of asking Frank how the month went.
   on shadcn charts
 - [ ] 21. **WhatsApp** - Meta verification, a dedicated number, approved
   templates; sent and logged like SMS
+- [ ] 21b. **RCS** (Frank, Oct 7) - the branded chat version of a text, in
+  the phone's own Messages app: the business's verified name and logo,
+  buttons such as "Change booking", read receipts. Twilio carries it to
+  Canada (about $0.0083 a basic message, $0.022 a rich one, plus carrier
+  fees, checked Oct 7). Each business's brand is approved by Twilio, the
+  carriers and Google first, with no promised timeline, so it is switched on
+  per business once its approval lands. Phones without RCS still get item
+  8's SMS, which stays the base. Sent through item 8's one door, so it
+  changes that one place plus a sign-up per client. Numbered 21b so nothing
+  after it renumbers
 
 ## Phase 9. Packages and self-serve
 

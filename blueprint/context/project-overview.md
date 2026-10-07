@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash caf441cf8a70c963705f9e8b3acee89b7dd51c13037524915aee2f9760643bcb -->
+<!-- blueprint:source-hash cfad39c844c63e9236075e681bcea6de5ae0519cf3c1009a9c6627c71a550383 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -94,7 +94,7 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 17. **Face and Body** - Cal.com out; 45 services, practitioners, rooms.
 18. **The Latam Painters** - after its site and siteConfig exist.
 19. **Crew and job scheduling** - jobs of daily visits, crews as saved lists.
-20. **Reports**. 21. **WhatsApp**. 22. **Google OAuth verification**
+20. **Reports**. 21. **WhatsApp**. 21b. **RCS**. 22. **Google OAuth verification**
     (calendar half before 13). 23. **Packages ladder and admin area**.
     24. **Hosted booking page** `/book/<slug>`. 25. **Self-serve and
     billing**. 26. **Two-way Gmail sync**.
