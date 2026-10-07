@@ -217,7 +217,10 @@ Frank's yes; every test fakes Twilio.
   from the settings does not send; a booking made 30 minutes ahead gets no
   1200-minute reminder; a reminder still failing when the appointment starts
   is never sent; the 60-minute reminder's retry still sends after the
-  1200-minute one went (same words, earlier); every case on the build log's Simulate page (cases a to f)
+  1200-minute one went (same words, earlier); the reminder's wording goes
+  through `fitBusinessName` and Summit's, The Latam Painters', Face and
+  Body's and Primo's reminders each fit one piece with a 30-character app
+  address (F-212); every case on the build log's Simulate page (cases a to f)
   is a saved test under the same name; the suite passes several runs in a row.
 
 - [ ] **8b.4 Jane's replies.** `POST /texts/incoming`, public, answering only
@@ -257,8 +260,10 @@ Frank's yes; every test fakes Twilio.
   `twilio-account.ts` and `twilio-error-code.ts` (added in 8b.1, one export per file),
   `text-settings-rules.test.ts`; in 8b.2 `format-text-time.ts`, `plain-text.ts`,
   `render-confirmation-text.ts` (one export per file, so the reminder's wording
-  is its own file in 8b.3), `find-booking-text-context.ts`,
-  `send-confirmation-text.ts`, `log-text-not-sent.ts`;
+  is its own file in 8b.3), `fit-business-name.ts` and `text-piece-length.ts`
+  (the one-piece rule, both texts use them; added in 8b.2's review, F-204),
+  `find-booking-text-context.ts`, `send-confirmation-text.ts`,
+  `log-text-not-sent.ts`;
   `find-text-settings.ts`, `booking-texts.ts` (the wording),
   `verify-twilio-signature.ts`, `pass-on-reply.ts`, with tests.
 - `backend/lib/jobs/job-task.ts` hands each job its try number (8b.2);
@@ -304,8 +309,9 @@ for a reminder). Never a phone number or the words.
 **`POST /texts/incoming`**: Twilio's form post; 403 without a valid
 `X-Twilio-Signature`; otherwise 200 `text/xml` `<Response/>`.
 
-**Wording** (plain ASCII, one piece, at most 160 characters; `{when}` is
-"Tue Oct 13, 7:30am" in the business's zone):
+**Wording** (plain ASCII, one piece: at most 160 by `textPieceLength`, which
+counts the eight double-cost characters as two; a name too long is cut by
+`fitBusinessName`; `{when}` is "Tue Oct 13, 7:30am" in the business's zone):
 - Confirmation: `{Business}: booked {when}. Details or changes: {link}`
 - Reminder: `{Business} reminder: {when}. Details or changes: {link}`
 - Passed-on reply: `Text to {Business} from {name or number} ({number}): {words} - reply to them directly, not to this number.`

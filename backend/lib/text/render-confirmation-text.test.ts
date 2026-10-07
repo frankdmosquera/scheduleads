@@ -12,7 +12,7 @@ const ONE_PIECE = 160; // what one billed piece carries
 const PLAIN = /^[\x20-\x5f\x61-\x7e]*$/; // printable ASCII without the backtick
 
 // The longest app address the texts are planned for, and a packed link's 45 characters.
-const link = `https://app.scheduleads-mail.com/b/${"D".repeat(22)}.${"m".repeat(22)}`;
+const link = `https://booking.example-app.ca/b/${"D".repeat(22)}.${"m".repeat(22)}`;
 
 describe("formatTextTime", () => {
   test.each([
@@ -105,6 +105,29 @@ describe("renderConfirmationText", () => {
       bookingPageUrl: link,
     });
     expect(textPieceLength(text)).toBeLessThanOrEqual(ONE_PIECE);
+  });
+
+  test("a name whose text is 160 characters but more by the double count is cut to fit", () => {
+    const text = renderConfirmationText({
+      businessName: "Face | Body Aesthetics Clinic AB", // 160 characters of text, 161 by the count
+      startsAt: new Date("2026-09-30T17:45:00Z"),
+      timezone: EDMONTON,
+      bookingPageUrl: link,
+    });
+
+    expect(text.startsWith("Face | Body Aesthetics Clinic: booked")).toBe(true);
+    expect(textPieceLength(text)).toBeLessThanOrEqual(ONE_PIECE);
+  });
+
+  test("a cut name never ends on a joining mark", () => {
+    const text = renderConfirmationText({
+      businessName: "Summit Painting, Decorating & Renovations of Southern Alberta Ltd.",
+      startsAt: new Date("2026-09-30T17:45:00Z"),
+      timezone: EDMONTON,
+      bookingPageUrl: link,
+    });
+
+    expect(text).toMatch(/^[\w ,&]*\w: booked /);
   });
 
   test("a business name with accents or curly quotes still makes a plain text", () => {
