@@ -4,8 +4,10 @@
 
 **Branch:** feature/08b-the-customer-s-texts
 
-**Status:** 8b.1 to 8b.3 built and reviewed 2026-10-07; 8b.4 built the same
-day, its audit and independent review next, then the feature's final review.
+**Status:** verified. Steps 8b.1 to 8b.4 built, tested and reviewed step by step
+(audit, independent review, re-reviews), 2026-10-07; plans amended with Frank
+along the way (one-piece texts, the packed link, RCS as item 21b, text settings
+in item 12). No P0 or P1 open or fixed. The checkpoint for the final review.
 
 ## Goal
 
