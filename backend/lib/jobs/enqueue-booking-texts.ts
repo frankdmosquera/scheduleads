@@ -26,22 +26,23 @@ export async function enqueueBookingTexts(
   owed: BookingTextsOwedType
 ): Promise<void> {
   const { organizationId, bookingId, sequence, startsAt, now } = owed;
-  const payload = (
-    kind: BookingTextJobPayloadType["kind"],
-    minutesBefore: number | null
-  ): BookingTextJobPayloadType => ({ organizationId, bookingId, kind, sequence, minutesBefore });
+  const ids = { organizationId, bookingId, sequence };
 
   // Added whatever the settings say now: the job reads them when it runs.
   if (owed.confirmation) {
-    await enqueueJob(executor, jobNames.bookingText, payload("confirmation", null));
+    const confirmation: BookingTextJobPayloadType = {
+      ...ids,
+      kind: "confirmation",
+      minutesBefore: null,
+    };
+    await enqueueJob(executor, jobNames.bookingText, confirmation);
   }
 
   const settings = await findTextSettings(organizationId, executor);
   for (const minutesBefore of settings?.reminderMinutesBefore ?? []) {
     const runAt = new Date(startsAt.getTime() - minutesBefore * MINUTE_MS);
     if (runAt.getTime() <= now.getTime()) continue;
-    await enqueueJob(executor, jobNames.bookingText, payload("reminder", minutesBefore), {
-      runAt,
-    });
+    const reminder: BookingTextJobPayloadType = { ...ids, kind: "reminder", minutesBefore };
+    await enqueueJob(executor, jobNames.bookingText, reminder, { runAt });
   }
 }

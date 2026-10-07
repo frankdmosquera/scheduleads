@@ -564,7 +564,7 @@ not. Nothing branches on the code today (callers branch on `retry`), hence P3.
 "http_502", "timeout", "no_connection", "no_keys" or "unreadable_answer"").
 **Resolution:** Fixed 2026-10-07 after the re-review: the comment on SendTextError's code lists http_<status> and unreadable_answer too. Closed 2026-10-07 by /audit of 8b.2 (bab087f..23ebb83): send-text-error.ts:7-8 names "http_<status>", "unreadable_answer", "timeout", "no_connection" and "no_keys"; every `new SendTextError` in backend/lib (send-text.ts:33, 58, 65, 75, 89; find-sent-text.ts:41, 50, 63) throws one of those or Twilio's own code, and twilio-error-code.ts returns only Twilio's code or `http_<status>`. 8b.2 logs the code only for a never-retry refusal (send-confirmation-text.ts:77), whose codes are Twilio's fixed numbers.
 
-### F-204 [P3] fixed - The confirmation is one piece only for business names of up to 30 plain characters; nothing keeps a longer name, or one with | ~ { } [ ] ^ \, to one piece
+### F-204 [P3] closed - The confirmation is one piece only for business names of up to 30 plain characters; nothing keeps a longer name, or one with | ~ { } [ ] ^ \, to one piece
 
 **File:** backend/lib/text/render-confirmation-text.ts:15-20 (test: backend/lib/text/render-confirmation-text.test.ts:11, 75)
 **Found:** 2026-10-07 by /audit (scope: 8b.2, bab087f..23ebb83; lenses: quality, security, performance, tests)
@@ -585,7 +585,7 @@ while `text.length <= 160` still passes. 8b.3's reminder wording
 setup / Settings), and record the budget in the spec; count extension
 characters as two in the one-piece test (or strip them in `plainText`). Cover
 the reminder's wording in 8b.3's length test.
-**Resolution:** Fixed 2026-10-07 in 8b.2's review fixes: text-piece-length.ts counts the eight double-cost characters as two, and fit-business-name.ts cuts a business name a word at a time from its end until the text fits 160; render-confirmation-text.ts uses it (8b.3's reminder will too). Tests: a 70-character name keeps its start, the time and the link and fits; a name full of | { } ~ [ ] ^ fits by that count. Spec decision 4 says so; the deploy notes say APP_ORIGIN must stay short (about 30 characters) and must not name the product. Re-review of 8b.2's fixes (2026-10-07): left `fixed`. The code holds: probed against the built renderer, the 70-character Summit name is cut to "Summit Painting and Decorating" at 160, and the name full of | { } ~ [ ] ^ to "Face | Body {Clinic} ~ Spa" at 156 characters, 160 by the piece count. But the test does not pin the double count where the fitter uses it: with fit-business-name.ts:14 changed to `text.length > ONE_PIECE`, all 20 tests in render-confirmation-text.test.ts still pass (run in this pass; file restored, cmp identical, `git status` unchanged), because the next word, "[Calgary]", overshoots both counts. A name that splits the two counts would pin it: "Face | Body Aesthetics Clinics" makes a text of 160 characters but 161 by the piece count, which the fitter cuts to "Face | Body Aesthetics" (153) and a length count would send whole, in two pieces. The repair also brings F-210. Fixed again 2026-10-07 after the re-review: render-confirmation-text.test.ts has "a name whose text is 160 characters but more by the double count is cut to fit" (Face | Body Aesthetics Clinic AB, cut to Face | Body Aesthetics Clinic); proved: the fitter counting text.length fails it.
+**Resolution:** Fixed 2026-10-07 in 8b.2's review fixes: text-piece-length.ts counts the eight double-cost characters as two, and fit-business-name.ts cuts a business name a word at a time from its end until the text fits 160; render-confirmation-text.ts uses it (8b.3's reminder will too). Tests: a 70-character name keeps its start, the time and the link and fits; a name full of | { } ~ [ ] ^ fits by that count. Spec decision 4 says so; the deploy notes say APP_ORIGIN must stay short (about 30 characters) and must not name the product. Re-review of 8b.2's fixes (2026-10-07): left `fixed`. The code holds: probed against the built renderer, the 70-character Summit name is cut to "Summit Painting and Decorating" at 160, and the name full of | { } ~ [ ] ^ to "Face | Body {Clinic} ~ Spa" at 156 characters, 160 by the piece count. But the test does not pin the double count where the fitter uses it: with fit-business-name.ts:14 changed to `text.length > ONE_PIECE`, all 20 tests in render-confirmation-text.test.ts still pass (run in this pass; file restored, cmp identical, `git status` unchanged), because the next word, "[Calgary]", overshoots both counts. A name that splits the two counts would pin it: "Face | Body Aesthetics Clinics" makes a text of 160 characters but 161 by the piece count, which the fitter cuts to "Face | Body Aesthetics" (153) and a length count would send whole, in two pieces. The repair also brings F-210. Fixed again 2026-10-07 after the re-review: render-confirmation-text.test.ts has "a name whose text is 160 characters but more by the double count is cut to fit" (Face | Body Aesthetics Clinic AB, cut to Face | Body Aesthetics Clinic); proved: the fitter counting text.length fails it. Closed 2026-10-07 by the audit of 8b.3: probed against the built renderers (backend/dist, Wed Sep 30 11:45am, the tests' 30-character origin), "Face | Body Aesthetics Clinic AB" makes a confirmation of 160 characters but 161 by the piece count, so a length-counting fitter would send it whole, while fit-business-name.ts:18 cuts it to "Face | Body Aesthetics Clinic" (158 by the count; the reminder 160); render-confirmation-text.test.ts pins it. The reminder goes through the same fitter (render-reminder-text.ts:9-13), and render-reminder-text.test.ts covers the four tenants and a 70-character name at the longest time, each one piece by textPieceLength.
 
 ### F-205 [P3] closed - The email preview's sample link and the link helper's comment still describe the old link
 
@@ -682,7 +682,7 @@ booking) and list the text dated a minute after it; add a twin case with the
 same words dated a minute before that `createdAt`, expecting a POST.
 **Resolution:** Fixed 2026-10-07 in 8b.2's review fixes: the lost-answer test pins the booking's creation to 2026-10-01 12:00 and runs twice, the same words dated a minute after (found, nothing sent again, SM7 recorded) and a minute before (another text, sent). Proved: since: context.startsAt fails the first case. Closed 2026-10-07 by re-review of 8b.2's fixes: booking-text-job.test.ts pins the booking's createdAt to 2026-10-01 12:00 and lists the same words a minute after (found, GET only, SM7 recorded) and a minute before (sent, SM1 recorded); send-confirmation-text.ts:66 passes context.createdAt. Proved in this pass: `since: jobClock.now()` fails the minute-after case and `since: new Date(0)` fails the minute-before case (1 failed, 13 passed each); file restored (cmp), `git status` unchanged.
 
-### F-210 [P3] fixed - A business name cut to fit can end on "&", a comma or a hyphen, so the text opens "Summit Painting, Decorating &: booked"
+### F-210 [P3] closed - A business name cut to fit can end on "&", a comma or a hyphen, so the text opens "Summit Painting, Decorating &: booked"
 
 **File:** backend/lib/text/fit-business-name.ts:14-17
 **Found:** 2026-10-07 by re-review of 8b.2's fixes (scope: 23ebb83..f5c4f6d, with bab087f..f5c4f6d as context; lenses: quality, security, performance, tests)
@@ -701,9 +701,9 @@ or digit ("&", "-", "|") and trailing commas, hyphens and colons from the
 last word kept; a test with "Summit Painting, Decorating & Renovations Ltd."
 expecting "Summit Painting, Decorating: booked". Whether to drop "and" and
 "of" too is a wording call for Frank, not needed for the fix.
-**Resolution:** Fixed 2026-10-07 after the re-review: fit-business-name.ts trims a joining mark (& + , ; : / ( - and spaces) from the end of a cut name. Test: "a cut name never ends on a joining mark"; proved: cutting without the trim fails it.
+**Resolution:** Fixed 2026-10-07 after the re-review: fit-business-name.ts trims a joining mark (& + , ; : / ( - and spaces) from the end of a cut name. Test: "a cut name never ends on a joining mark"; proved: cutting without the trim fails it. Closed 2026-10-07 by the audit of 8b.3: fit-business-name.ts:12 trims & + , ; : / ( - and spaces from the end of a cut name, and the fit is measured on the trimmed name (:20); probed against the built renderers, "Summit Painting, Decorating & Renovations of Southern Alberta Ltd." opens "Summit Painting, Decorating: booked" (155) and "Summit Painting, Decorating reminder:" (157). The confirmation test pins it and the reminder uses the same function.
 
-### F-211 [P3] fixed - fit-business-name.ts exports an unused ONE_PIECE beside the function, and the test keeps its own copy of 160
+### F-211 [P3] closed - fit-business-name.ts exports an unused ONE_PIECE beside the function, and the test keeps its own copy of 160
 
 **File:** backend/lib/text/fit-business-name.ts:8 (test: backend/lib/text/render-confirmation-text.test.ts:11)
 **Found:** 2026-10-07 by re-review of 8b.2's fixes (scope: 23ebb83..f5c4f6d, with bab087f..f5c4f6d as context; lenses: quality, security, performance, tests)
@@ -717,9 +717,9 @@ whose comment names "a text piece's 160", is where the measure belongs.
 **Suggested fix:** Keep 160 private to the fitter (drop the `export`), or
 move the fit check beside the measure (`fitsOnePiece(text)` in its own
 file) and have both the fitter and the test use it rather than their own 160.
-**Resolution:** Fixed 2026-10-07 after the re-review: ONE_PIECE is no longer exported from fit-business-name.ts; it is the file's own constant.
+**Resolution:** Fixed 2026-10-07 after the re-review: ONE_PIECE is no longer exported from fit-business-name.ts; it is the file's own constant. Closed 2026-10-07 by the audit of 8b.3: `git grep ONE_PIECE` finds the fitter's private const (fit-business-name.ts:8, used at :18) and each test file's own copy (render-confirmation-text.test.ts:11, render-reminder-text.test.ts:9), the first option the suggested fix allowed; fit-business-name.ts exports only the function.
 
-### F-212 [P3] fixed - The spec's Wording and file list, and 8b.3, were not brought along with decision 4's new count and the fitter
+### F-212 [P3] closed - The spec's Wording and file list, and 8b.3, were not brought along with decision 4's new count and the fitter
 
 **File:** blueprint/context/current-feature.md:307, 255-262, 205-219 (rule: decision 4 at :83-85; test: backend/lib/text/render-confirmation-text.test.ts:14-15)
 **Found:** 2026-10-07 by re-review of 8b.2's fixes (scope: 23ebb83..f5c4f6d, with bab087f..f5c4f6d as context; lenses: quality, security, performance, tests)
@@ -741,4 +741,86 @@ fitted as decision 4 says"; list the two new files under 8b.2; add to 8b.3's
 Done when "with the same app address and the longest time, the reminder is
 plain and one piece by the piece count, a long name cut". Give the test's
 sample origin a neutral name of the same length.
-**Resolution:** Fixed 2026-10-07 after the re-review: the spec's Wording block counts by textPieceLength and names fitBusinessName, the file list names fit-business-name.ts and text-piece-length.ts, 8b.3's Done when has the reminder's one-piece cases through fitBusinessName, and the tests' sample app address is https://booking.example-app.ca (30 characters, not the product's name).
+**Resolution:** Fixed 2026-10-07 after the re-review: the spec's Wording block counts by textPieceLength and names fitBusinessName, the file list names fit-business-name.ts and text-piece-length.ts, 8b.3's Done when has the reminder's one-piece cases through fitBusinessName, and the tests' sample app address is https://booking.example-app.ca (30 characters, not the product's name). Closed 2026-10-07 by the audit of 8b.3: current-feature.md's Wording block counts "at most 160 by `textPieceLength`" and cuts a long name "by `fitBusinessName`"; the file list names fit-business-name.ts, text-piece-length.ts and render-reminder-text.ts; 8b.3's Done when has the reminder through fitBusinessName and the four tenants' one-piece cases, built as render-reminder-text.test.ts; both render test files use https://booking.example-app.ca, and `git grep scheduleads-mail` in backend finds nothing.
+
+### F-213 [P3] fixed - The reminder retry's `since` is pinned only against the booking's creation; a `since` of the retry's own time or its run_at keeps every test green
+
+**File:** backend/lib/text/send-booking-text.ts:94-101 (test: backend/lib/jobs/booking-text-job.test.ts:603)
+**Found:** 2026-10-07 by /audit (scope: 8b.3, 0e863ac..6a646a9; lenses: quality, security, performance, tests)
+**Why it matters:** 8b.3 says the reminder's retry checks Twilio with
+`since` = the appointment minus its minutes, "never the job's `created_at`
+(the booking's time) or `run_at` (which moves with each retry)" (F-201). The
+one reminder retry test ("the 60-minute reminder's retry still sends after
+the 1200-minute one went") lists a text dated at the 1200-minute moment
+(2026-10-04 19:00Z) and fails only for a `since` at or before that, such as
+the booking's creation or the pinned job clock. A `since` of `new Date()` or
+the job's `run_at` (both the real day, 2026-10-07, in the tests, after
+makeDue) also passes over that text and sends, so the test stays green. No
+reminder test has the lost-answer case the confirmation has
+(booking-text-job.test.ts:362-411): a reminder Twilio took at its own moment,
+its answer lost, the retry finding it and sending nothing. With either wrong
+`since` in production, every reminder whose answer was lost is sent twice,
+which is what decision 8 exists to prevent. Same gap F-209 closed for the
+confirmation.
+**Suggested fix:** A reminder twin of the confirmation's lost-answer
+`test.each`: the 60-minute reminder's first try taken with its answer lost,
+Twilio listing the same words dated a minute after the reminder's moment
+(found: POST then GET, nothing sent again, the listed sid recorded with
+minutesBefore 60) and dated a minute before it, past the 10-second slack
+(sent again).
+**Resolution:** Fixed 2026-10-07 in 8b.3's review fixes: booking-text-job.test.ts has "a reminder's retry after its answer was lost" twice, the same words dated a minute after the reminder's moment (found, not sent again, SM7 recorded) and a minute before (sent). Proved: since = new Date() fails the first case.
+
+### F-214 [P3] fixed - A reminder job whose payload has no minutes is sent as the confirmation text
+
+**File:** backend/lib/jobs/booking-text-job.ts:10-24
+**Found:** 2026-10-07 by /audit (scope: 8b.3, 0e863ac..6a646a9; lenses: quality, security, performance, tests)
+**Why it matters:** The payload type allows `{ kind: "reminder",
+minutesBefore: null }`, and the job turns anything that is not a reminder
+with minutes into `{ kind: "confirmation" }`. A malformed reminder payload,
+or a later kind added to `booking_text` without this line, would send the
+customer a "booked" text they never asked for, bill it, and record it as a
+confirmation, instead of failing where it can be seen. Not reachable from the
+only producer today, enqueue-booking-texts.ts:35-46, which always sets the
+minutes for a reminder, hence P3.
+**Suggested fix:** Make the payload a union (`{ kind: "confirmation";
+minutesBefore: null } | { kind: "reminder"; minutesBefore: number }`) and
+map each kind explicitly, throwing on anything else, so an impossible
+payload never becomes a text.
+**Resolution:** Fixed 2026-10-07 in 8b.3's review fixes: BookingTextJobPayloadType is a union (a confirmation's minutesBefore is null, a reminder's a number); the job sends a reminder only with its minutes, a confirmation only as one, and throws for anything else. Test: "a job that is neither text sends nothing and fails, so it is seen"; proved: falling back to the confirmation fails it.
+
+### F-215 [P3] fixed - No test books with one reminder already past and another still ahead, so adding none once any is past keeps every test green
+
+**File:** backend/lib/jobs/enqueue-booking-texts.ts:42 (test: backend/lib/jobs/booking-text-job.test.ts:557)
+**Found:** 2026-10-07 by independent review of 8b.3 (scope: 0e863ac..6a646a9; lenses: quality, security, performance, tests)
+**Why it matters:** 8b.3 says "none added for a time already past", which
+means each reminder is judged on its own: a booking made 90 minutes ahead
+with Summit's [1200, 60] gets the 60 and not the 1200. The only past-time
+test ("a booking made 30 minutes ahead gets no 1200-minute reminder") books
+at 8:30 for 9:00, where both reminders are past, and expects none. Every
+other reminder test books on the Friday, where none is past. So changing
+`continue` at :42 to `return` or `break` (stop at the first past one, with
+the settings stored [1200, 60]) still passes all seven reminder tests, and
+in production every booking made under 20 hours ahead would lose its
+60-minute reminder too. Found by reading; not mutation-run, since this pass
+edits no source.
+**Suggested fix:** In that test, or a twin, book 90 minutes ahead (7:30 for
+9:00) and expect exactly one job, `{ runAt: 2026-10-05T14:00Z, minutesBefore:
+60, sequence: 0 }`, and the 60-minute reminder sent.
+**Resolution:** Fixed 2026-10-07 in 8b.3's review fixes: "a booking made 90 minutes ahead gets its 60-minute reminder and not its 1200-minute one" expects exactly the 60-minute job; proved: continue changed to break fails it.
+
+### F-216 [P3] fixed - The spec's file list still names a booking-texts.ts for the wording, and the text job test's header still says it covers the confirmation
+
+**File:** blueprint/context/current-feature.md:269; backend/lib/jobs/booking-text-job.test.ts:1
+**Found:** 2026-10-07 by independent review of 8b.3 (scope: 0e863ac..6a646a9; lenses: quality, security, performance, tests)
+**Why it matters:** 8b.3 edited this list to add send-booking-text.ts and
+render-reminder-text.ts, and the same list says the wording is one file per
+text ("so the reminder's wording is its own file in 8b.3"), yet two lines
+down it still names `booking-texts.ts` (the wording), which does not exist
+(`ls backend/lib/text`). 8b.4 builds from this list, and the passed-on
+reply's wording could land in a booking-texts.ts beside the one-per-file
+render files. The test file now holds the reminders' seven cases, but its
+first line reads "A booking's confirmation text as a job".
+**Suggested fix:** Drop `booking-texts.ts` (the wording) from the list, or
+name the reply's wording file 8b.4 will add (for example
+render-reply-text.ts); say "A booking's texts as jobs" in the test's header.
+**Resolution:** Fixed 2026-10-07 in 8b.3's review fixes: the spec's file list no longer names booking-texts.ts (the wording is one render file per text), and booking-text-job.test.ts's first lines say it holds the confirmation and the reminders.

@@ -1,6 +1,6 @@
-// A booking's confirmation text as a job (feature 8b), against the local database with
-// Twilio faked: no test ever sends a real text. Every business here is a throwaway carrying this
-// run's tag, removed after.
+// A booking's texts as jobs, the confirmation and the reminders (feature 8b), against the local
+// database with Twilio faked: no test ever sends a real text. Every business here is a throwaway
+// carrying this run's tag, removed after.
 
 import { randomInt, randomUUID } from "node:crypto";
 
@@ -43,6 +43,8 @@ const { localDate } = await import("../local-time/local-date.js");
 const { jobClock } = await import("./job-clock.js");
 const { jobSchema } = await import("./job-schema.js");
 const { workDueJobs } = await import("./work-due-jobs.js");
+const { enqueueJob } = await import("./enqueue-job.js");
+const { jobNames } = await import("./job-names.js");
 
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
@@ -628,5 +630,92 @@ describe("a booking's reminders", () => {
     expect(calls.filter((call) => call.method === "GET")).toHaveLength(1); // the retry checked
     expect(reminderPosts()).toHaveLength(3); // 1200, the 60 that failed, the 60 on its retry
     expect(await reminderMinutesSent(business)).toEqual([60, 1200]);
+  });
+
+  // The reminder's own moment, Monday 8:00 in Edmonton, pins the check's "since": never the
+  // booking's creation, the retry's moment, the job's next run or the appointment itself.
+  const SIXTY_BEFORE = new Date(NINE.getTime() - 60 * 60_000);
+  test.each([
+    ["a minute after its moment", 60_000, 1, "SM7"],
+    ["a minute before its moment", -60_000, 2, "SM-again"],
+  ])(
+    "a reminder's retry after its answer was lost, with the same words sent %s",
+    async (_, offset, reminderSends, recorded) => {
+      const business = await makeBusiness(`rem-lost-${offset}`, { reminderMinutesBefore: [60] });
+      const id = await book(business);
+      let reminderBody = "";
+      sendAnswer = (form) => {
+        if (!form.Body.includes(" reminder: ")) return sent("SM-confirmation");
+        if (reminderBody) return sent("SM-again");
+        reminderBody = form.Body;
+        return new Response("<html>gateway</html>", { status: 201 }); // taken, the answer lost
+      };
+      listAnswer = () =>
+        Response.json({
+          messages: [
+            {
+              sid: "SM7",
+              body: reminderBody,
+              direction: "outbound-api",
+              status: "sent",
+              date_created: new Date(SIXTY_BEFORE.getTime() + offset).toUTCString(),
+            },
+          ],
+        });
+
+      await workDueJobs();
+      await makeDue(id);
+      await workDueJobs();
+
+      // Found since its moment: not sent again, the text Twilio has recorded. From before it:
+      // another text, so this one is sent.
+      expect(reminderPosts()).toHaveLength(reminderSends);
+      const entries = (await textEntriesOf(business)).filter(
+        (entry) => (entry as { kind: string }).kind === "booking_reminder"
+      );
+      expect(entries).toEqual([
+        { bookingId: id, kind: "booking_reminder", minutesBefore: 60, twilioSid: recorded },
+      ]);
+    }
+  );
+
+  test("a booking made 90 minutes ahead gets its 60-minute reminder and not its 1200-minute one", async () => {
+    const business = await makeBusiness("rem-90", TWO_REMINDERS);
+    const result = await bookTime({
+      organizationId: business.business,
+      bookingLinkId: business.estimate,
+      personId: business.marco,
+      startsAt: NINE,
+      requestKey: randomUUID(),
+      customer: jane,
+      location: "12 Main Street, Calgary",
+      details: "",
+      source: "widget",
+      actorUserId: null,
+      now: new Date(NINE.getTime() - 90 * 60_000), // 7:30 the same morning
+    });
+    if (!result.booked) throw new Error(`expected a booking, got ${result.reason}`);
+
+    expect(await reminderJobsOf(result.booking.id)).toEqual([
+      { runAt: "2026-10-05T14:00:00.000Z", minutesBefore: 60, sequence: 0 },
+    ]);
+  });
+
+  test("a job that is neither text sends nothing and fails, so it is seen", async () => {
+    const business = await makeBusiness("rem-bad");
+    const id = await book(business);
+    await db.execute(sql`delete from ${schema}._private_jobs`); // only the broken job below
+    await enqueueJob(db, jobNames.bookingText, {
+      organizationId: business.business,
+      bookingId: id,
+      sequence: 0,
+      kind: "reminder",
+      minutesBefore: null,
+    });
+
+    await workDueJobs();
+
+    expect(calls).toEqual([]);
+    expect(await textJobsOf(id)).toEqual([{ attempts: 1 }]); // failed, waiting for a fix
   });
 });

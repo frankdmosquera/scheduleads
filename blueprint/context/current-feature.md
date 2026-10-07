@@ -266,7 +266,7 @@ Frank's yes; every test fakes Twilio.
   `send-booking-text.ts` (8b.2's confirmation sender, made in 8b.3 the one
   sender for both texts, so their rules cannot drift apart) and
   `render-reminder-text.ts`;
-  `find-text-settings.ts`, `booking-texts.ts` (the wording),
+  `find-text-settings.ts` (the wording is one render file per text, above),
   `verify-twilio-signature.ts`, `pass-on-reply.ts`, with tests.
 - `backend/lib/jobs/job-task.ts` hands each job its try number (8b.2);
   `backend/vitest.setup.ts` blanks the Twilio keys so no test uses real ones.
