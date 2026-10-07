@@ -120,12 +120,13 @@ async function book(business: BusinessType): Promise<string> {
   return result.booking.id;
 }
 
-// The email jobs still waiting for a booking, by kind, with their tries so far. The library's
-// public view hides the payload, so its own table is read.
+// The email jobs still waiting for a booking, by kind, with their tries so far: its texts' jobs
+// (feature 8b) are not counted. The library's public view hides the payload, so its own table is
+// read.
 const jobsOf = async (bookingId: string) =>
   (await db.execute(
     sql`select payload->>'kind' as kind, attempts from ${schema}._private_jobs
-        where payload->>'bookingId' = ${bookingId} and payload->>'kind' is not null order by id`
+        where payload->>'bookingId' = ${bookingId} and starts_with(payload->>'kind', 'booking_') order by id`
   )) as unknown as { kind: string; attempts: number }[];
 
 // A failed job waits seconds for its next try; the tests do not wait for it.

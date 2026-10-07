@@ -93,16 +93,18 @@ describe("the job runner", () => {
     await workDueJobs({ [taskName("committed")]: jobTask(work) });
 
     expect(work).toHaveBeenCalledTimes(1);
-    expect(work).toHaveBeenCalledWith({ bookingId: "b-2" });
+    expect(work).toHaveBeenCalledWith({ bookingId: "b-2" }, { attempt: 1 }); // told its first try
     expect(await jobsOf("committed")).toEqual([]); // done jobs leave the table
   });
 
   test("a task that fails twice then succeeds runs three times with growing waits", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     let calls = 0;
+    const tries: number[] = [];
     const tasks = {
-      [taskName("flaky")]: jobTask(async () => {
+      [taskName("flaky")]: jobTask(async (_, { attempt }) => {
         calls += 1;
+        tries.push(attempt);
         if (calls < 3) throw new Error("Resend did not answer");
       }),
     };
@@ -117,6 +119,7 @@ describe("the job runner", () => {
     await workDueJobs(tasks);
 
     expect(calls).toBe(3);
+    expect(tries).toEqual([1, 2, 3]); // each run told which try it is, so a text can check first
     expect(afterFirst).toMatchObject({ attempts: 1, last_error: "Resend did not answer" });
     expect(afterSecond?.attempts).toBe(2);
     expect(afterFirst!.wait_seconds).toBeGreaterThan(1); // e^1, about 2.7 seconds

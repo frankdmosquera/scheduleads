@@ -4,8 +4,9 @@
 
 **Branch:** feature/08b-the-customer-s-texts
 
-**Status:** 8b.1 built 2026-10-07 (whole feature seen and 8b.1's plan approved
-by Frank the same day); its audit and independent review next.
+**Status:** 8b.1 built and reviewed 2026-10-07; 8b.2 built the same day (its
+plan amended with Frank: one-piece texts, the packed link); its audit and
+independent review next.
 
 ## Goal
 
@@ -70,12 +71,22 @@ is on by default; a business with no text settings sends no texts.
    hours, or the evening before), which fixes a business's choice for it.
 3. **The texts carry Jane's booking page link** (Frank, 2026-10-07, option A).
    The same signed link as the email's button, so a phone-only booking can
-   still cancel or move. Cost: the link is about 110 characters, so each text
-   is two billed parts instead of one. Rejected: only the business's phone
-   number, which leaves a phone-only customer having to call.
-4. **The wording is fixed, under the business's name**, like the emails:
-   business name first, the product never named, plain ASCII so a text is
-   never re-encoded into the pricier character set by a curly apostrophe.
+   still cancel or move. Rejected: only the business's phone number, which
+   leaves a phone-only customer having to call. Amended with Frank,
+   2026-10-07, planning 8b.2: the link was about 110 characters, making every
+   text two billed pieces; it is now packed to about half (decision 11).
+4. **A text says only what is needed, in one piece** (Frank, 2026-10-07,
+   planning 8b.2: "we want to update people, but we don't want to be stupid
+   by sending a whole letter"). Every message costs money, and packages will
+   count them, so a text carries the business's name, the time and the link,
+   nothing else; the details are on Jane's booking page and in the email.
+   Each text fits one billed piece: at most 160 plain characters. The
+   wording is fixed, like the emails, the product never named, plain ASCII
+   (any other character, a curly apostrophe or a special space in a time,
+   re-encodes the whole text at 70 characters a piece). Rejected: the
+   service and a full sentence ("you're booked for Interior estimate,
+   Tuesday, October 13 at 7:30 a.m. MDT"), about 220 characters with the
+   link, two pieces, twice the cost.
 5. **Plain `fetch` to Twilio, no SDK.** The conventional way is the official
    `twilio` package; this feature calls two Twilio endpoints (send, list) and
    checks one webhook signature (an HMAC in about ten lines), so the package
@@ -120,6 +131,15 @@ is on by default; a business with no text settings sends no texts.
     digits, or eleven starting with 1, after dropping everything else, become
     `+1XXXXXXXXXX`. Anything else is logged as not textable; the booking and
     its emails are untouched. Every tenant is in Canada.
+11. **The booking page link is packed to about half its length**
+    (Frank, 2026-10-07, planning 8b.2). The same signed token (feature 7a,
+    decision 10: signed, never stored), written tighter: the booking id as
+    22 base64url characters instead of 36 hex, and the signature cut to its
+    first 16 bytes (22 characters, 128 bits, still far past guessing)
+    instead of 43. About 45 characters after `/b/` instead of 80. The emails
+    use the same link, so there is one link everywhere; links made before
+    stop opening, which costs nothing while no customer has one. Rejected:
+    a short code stored per booking, which would undo 7a's "never stored".
 
 ## Build loop
 
@@ -155,18 +175,30 @@ Frank's yes; every test fakes Twilio.
   a row with no reply destination, a reminder of zero or fewer minutes and a
   number used by two businesses.
 
-- [ ] **8b.2 The confirmation text.** A `booking_text` job, added with the
+- [x] **8b.2 The confirmation text.** A `booking_text` job, added with the
   booking's emails in `book-time.ts`, owner-made bookings included like the
-  confirmation email. It reads the booking afresh: not confirmed, moved
-  already, appointment started, no settings, confirmation off, no textable
-  phone: logged and nothing sent. Otherwise it renders the text (decision 4)
+  confirmation email. It reads the booking afresh: not confirmed,
+  appointment started, no settings, confirmation off, no time zone, no
+  textable phone: logged and nothing sent. A booking moved before its text
+  went is confirmed at its new time (changed while building: there is no move
+  text, so skipping it would leave a phone-only customer with no text at all). Otherwise it renders the text (decision 4)
   with the booking page link, sends it, and records `sms_sent` (booking, kind,
-  Twilio's id; never a number or the words). On a retry, decision 8 first.
+  Twilio's id; never a number or the words). On a retry, decision 8 first,
+  since the booking's creation. The booking page link is packed (decision
+  11) in `booking-page-token.ts`, its reader and tests, so the emails carry
+  the short link too. The text's time is short and in the business's zone,
+  "Tue Oct 13, 7:30am", plain ASCII whatever the server's ICU prints. The
+  runner wrapper (`job-task.ts`) hands a job its try number, so the check of
+  decision 8 runs only on a retry. In development without Twilio keys
+  nothing is sent and the timeline still gets its entry, as the emails do.
   **Done when:** booking through the public route with Summit's settings
   sends one fake Twilio request with the business's number, Jane's `+1`
   number and the link, and one `sms_sent` entry; each skip case sends nothing;
   a failure is retried; a retry after a send whose answer was lost sends
-  nothing; the backend suite passes several runs in a row.
+  nothing; with an app address of up to 30 characters, Summit's confirmation
+  is plain ASCII and at most 160 characters; the packed link opens the
+  booking page and a changed or cut link does not; the backend suite passes
+  several runs in a row.
 
 - [ ] **8b.3 The reminders.** One `booking_text` reminder job per reminder in
   the business's settings, run at the appointment minus its minutes, added
@@ -221,9 +253,15 @@ Frank's yes; every test fakes Twilio.
 - `packages/shared/scripts/seed-dev.ts`: Summit's text settings.
 - `backend/lib/text/`: `send-text.ts`, `send-text-error.ts`, `find-sent-text.ts`,
   `twilio-account.ts` and `twilio-error-code.ts` (added in 8b.1, one export per file),
-  `text-settings-rules.test.ts`,
+  `text-settings-rules.test.ts`; in 8b.2 `format-text-time.ts`, `plain-text.ts`,
+  `render-confirmation-text.ts` (one export per file, so the reminder's wording
+  is its own file in 8b.3), `find-booking-text-context.ts`,
+  `send-confirmation-text.ts`, `log-text-not-sent.ts`;
   `find-text-settings.ts`, `booking-texts.ts` (the wording),
   `verify-twilio-signature.ts`, `pass-on-reply.ts`, with tests.
+- `backend/lib/jobs/job-task.ts` hands each job its try number (8b.2);
+  `backend/vitest.setup.ts` blanks the Twilio keys so no test uses real ones.
+- `backend/lib/booking/booking-page-token.ts`: the packed link (decision 11).
 - `backend/lib/jobs/`: `booking-text-job.ts`, `enqueue-booking-texts.ts`,
   `text-reply-job.ts`; `job-names.ts` and `job-tasks.ts` gain both names.
 - `backend/lib/booking/book-time.ts`, `move-booking.ts`: add the text jobs in
@@ -264,9 +302,10 @@ for a reminder). Never a phone number or the words.
 **`POST /texts/incoming`**: Twilio's form post; 403 without a valid
 `X-Twilio-Signature`; otherwise 200 `text/xml` `<Response/>`.
 
-**Wording** (ASCII, the link in full):
-- Confirmation: `{Business}: you're booked for {service}, {when}. To change or cancel: {link}`
-- Reminder: `{Business}: a reminder of your {service}, {when}. To change or cancel: {link}`
+**Wording** (plain ASCII, one piece, at most 160 characters; `{when}` is
+"Tue Oct 13, 7:30am" in the business's zone):
+- Confirmation: `{Business}: booked {when}. Details or changes: {link}`
+- Reminder: `{Business} reminder: {when}. Details or changes: {link}`
 - Passed-on reply: `Text to {Business} from {name or number} ({number}): {words} - reply to them directly, not to this number.`
 
 ## Testing
@@ -297,8 +336,11 @@ is a hand check at deploy, with Frank's Twilio keys, on his yes.
   `Host` header.
 - Canada: Twilio prices checked 2026-10-07: $0.0083 per part sent plus a
   carrier fee of about $0.007 to $0.009, $0.0083 per part received plus a
-  carrier fee, a local number $1.15 a month (USD). A confirmation with the
-  link is about two parts.
+  carrier fee, a local number $1.15 a month (USD). A one-piece text is about
+  1.6 cents, so Summit's confirmation and two reminders are about 5 cents a
+  booking (decision 4).
+- Only a note for later (Frank, 2026-10-07): how many messages each package
+  includes. Raise it when packages and their limits come up; not 8b's scope.
 - CASL: these are messages about a booking Jane asked for. Twilio's own STOP
   handling stays on.
 - Owner-made bookings get the texts, as they get the confirmation email.

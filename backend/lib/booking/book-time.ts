@@ -24,6 +24,7 @@ import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
 import { enqueueBookingEventJob } from "../jobs/enqueue-booking-event-job.js";
+import { enqueueBookingTexts } from "../jobs/enqueue-booking-texts.js";
 import { jobNames } from "../jobs/job-names.js";
 import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
@@ -330,6 +331,11 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         name: jobNames.bookingEventWrite,
         payload: { organizationId, bookingId, sequence: 0 },
       });
+      // The customer's confirmation text (feature 8b), whatever the business's settings now: the
+      // job reads them when it runs.
+      await enqueueBookingTexts(tx, [
+        { organizationId, bookingId, kind: "confirmation", sequence: 0, minutesBefore: null },
+      ]);
       return { contactId: contact.id, ...held };
     });
     return {

@@ -16,17 +16,18 @@ describe("a booking's private link", () => {
   test("a made token reads back to its booking", () => {
     const token = makeBookingPageToken(bookingId, key);
 
-    expect(token).toMatch(/^[0-9a-f-]{36}\.[A-Za-z0-9_-]{43}$/);
+    expect(token).toMatch(/^[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{22}$/); // 45 characters, packed for a text
     expect(readBookingPageToken(token, key)).toBe(bookingId);
     expect(makeBookingPageToken(bookingId, key)).toBe(token); // the same link every time
   });
 
-  // Links are permanent (decision 10): any change to how they are made ends every link already sent.
+  // Links are permanent (decision 10): any change to how they are made ends every link already
+  // sent. Packed once, in 8b before any customer had one (8b, decision 11).
   test("a link is made exactly the same way, always", () => {
     const id = "0f9c2a4e-3b1d-4e8a-9c7f-5d2e1a6b8c90";
 
     expect(makeBookingPageToken(id, Buffer.alloc(32, 7))).toBe(
-      `${id}.mVah-Rh6TSaGRd82Yl_yDu_4tycDhUlj167g8nwiu_s`
+      "D5wqTjsdToqcf10uGmuMkA.mVah-Rh6TSaGRd82Yl_yDg"
     );
   });
 
@@ -34,7 +35,7 @@ describe("a booking's private link", () => {
     const token = makeBookingPageToken(bookingId, key);
 
     for (let index = 0; index < token.length; index++) {
-      if (token[index] === "." || token[index] === "-") continue;
+      if (token[index] === ".") continue;
       expect(readBookingPageToken(swapAt(token, index), key)).toBeNull();
     }
     expect(readBookingPageToken("hello", key)).toBeNull();
@@ -48,27 +49,28 @@ describe("a booking's private link", () => {
     for (const bad of [
       token.slice(0, -1), // cut off
       token.split(".")[0], // the booking id alone
-      `${bookingId}.${otherSignature}`, // another booking's signature
+      `${token.split(".")[0]}.${otherSignature}`, // another booking's signature
       `${token}.extra`,
       "",
-      `${bookingId.toUpperCase()}.${token.split(".")[1]}`,
+      `${bookingId}.${token.split(".")[1]}`, // the booking id written out, as links once were
       `../${token}`,
     ]) {
       expect(readBookingPageToken(bad, key)).toBeNull();
     }
   });
 
-  test("a second spelling of the same signature opens nothing", () => {
-    // The last character of 43 carries two spare bits: flipping one spells the same bytes.
+  test("a second spelling of the same signature or booking opens nothing", () => {
+    // The last character of 22 carries four spare bits: flipping one spells the same bytes.
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-    const token = makeBookingPageToken(bookingId, key);
-    const last = alphabet[alphabet.indexOf(token.at(-1)!) ^ 1];
-    const respelled = token.slice(0, -1) + last;
+    const respell = (part: string) =>
+      part.slice(0, -1) + alphabet[alphabet.indexOf(part.at(-1)!) ^ 1];
+    const [packedId, signature] = makeBookingPageToken(bookingId, key).split(".");
 
-    expect(Buffer.from(respelled.split(".")[1], "base64url")).toEqual(
-      Buffer.from(token.split(".")[1], "base64url")
-    );
-    expect(readBookingPageToken(respelled, key)).toBeNull();
+    for (const part of [packedId, signature]) {
+      expect(Buffer.from(respell(part), "base64url")).toEqual(Buffer.from(part, "base64url"));
+    }
+    expect(readBookingPageToken(`${packedId}.${respell(signature)}`, key)).toBeNull();
+    expect(readBookingPageToken(`${respell(packedId)}.${signature}`, key)).toBeNull();
   });
 
   test("a link signed with another key opens nothing", () => {
