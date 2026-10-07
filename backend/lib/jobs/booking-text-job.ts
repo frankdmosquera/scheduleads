@@ -2,7 +2,7 @@
 // text reads the booking afresh when it runs (decision 6). A failure throws, so the runner tries
 // again.
 
-import { sendConfirmationText } from "../text/send-confirmation-text.js";
+import { sendBookingText } from "../text/send-booking-text.js";
 import { jobTask } from "./job-task.js";
 
 // `sequence` is the booking's move number when the job was added; `minutesBefore` is a
@@ -10,12 +10,17 @@ import { jobTask } from "./job-task.js";
 export type BookingTextJobPayloadType = {
   organizationId: string;
   bookingId: string;
-  kind: "confirmation";
+  kind: "confirmation" | "reminder";
   sequence: number;
   minutesBefore: number | null;
 };
 
 export const bookingTextJob = jobTask(async (payload, { attempt }) => {
-  const { organizationId, bookingId } = payload as BookingTextJobPayloadType;
-  await sendConfirmationText(organizationId, bookingId, attempt);
+  const { organizationId, bookingId, kind, sequence, minutesBefore } =
+    payload as BookingTextJobPayloadType;
+  const text =
+    kind === "reminder" && minutesBefore !== null
+      ? ({ kind, sequence, minutesBefore } as const)
+      : ({ kind: "confirmation" } as const);
+  await sendBookingText(organizationId, bookingId, text, attempt);
 });

@@ -331,11 +331,15 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         name: jobNames.bookingEventWrite,
         payload: { organizationId, bookingId, sequence: 0 },
       });
-      // The customer's confirmation text (feature 8b), whatever the business's settings now: the
-      // job reads them when it runs.
-      await enqueueBookingTexts(tx, [
-        { organizationId, bookingId, kind: "confirmation", sequence: 0, minutesBefore: null },
-      ]);
+      // The customer's texts (feature 8b): the confirmation and the business's reminders.
+      await enqueueBookingTexts(tx, {
+        organizationId,
+        bookingId,
+        sequence: 0,
+        startsAt,
+        now,
+        confirmation: true,
+      });
       return { contactId: contact.id, ...held };
     });
     return {

@@ -447,3 +447,186 @@ describe("a booking's confirmation text", () => {
     ]);
   });
 });
+
+// The reminder jobs still waiting for a booking: when each is due, and which reminder it is.
+const reminderJobsOf = async (bookingId: string) =>
+  (
+    (await db.execute(
+      sql`select jobs.run_at, jobs.payload->>'minutesBefore' as minutes,
+          jobs.payload->>'sequence' as sequence
+          from ${schema}._private_jobs jobs
+          join ${schema}._private_tasks tasks on tasks.id = jobs.task_id
+          where tasks.identifier = 'booking_text' and jobs.payload->>'bookingId' = ${bookingId}
+          and jobs.payload->>'kind' = 'reminder' order by jobs.run_at`
+    )) as unknown as { run_at: string | Date; minutes: string; sequence: string }[]
+  ).map((job) => ({
+    runAt: new Date(job.run_at).toISOString(),
+    minutesBefore: Number(job.minutes),
+    sequence: Number(job.sequence),
+  }));
+
+const reminderPosts = () => posts().filter((call) => call.form.Body.includes(" reminder: "));
+const reminderMinutesSent = async (business: BusinessType) =>
+  (await textEntriesOf(business))
+    .map((entry) => entry as { kind: string; minutesBefore?: number })
+    .filter((entry) => entry.kind === "booking_reminder")
+    .map((entry) => entry.minutesBefore ?? 0)
+    .sort((a, b) => a - b);
+const loggedReminderNotSent = (reason: string) =>
+  log.mock.calls.some(
+    ([line]) => typeof line === "string" && line.includes("booking_reminder not sent, " + reason)
+  );
+
+const TWO_REMINDERS = { reminderMinutesBefore: [1200, 60] };
+
+// Reminders run first, being due earliest: the 1200-minute one goes, the 60-minute one finds
+// Twilio down on its first try.
+const failSecondReminder = () => {
+  let remindersAsked = 0;
+  sendAnswer = (form) =>
+    form.Body.includes(" reminder: ") && ++remindersAsked === 2
+      ? Response.json({ code: 20503, status: 503 }, { status: 503 })
+      : sent(`SM${calls.length}`);
+};
+
+// The cases on the feature's Simulate page in the build log, under the same names.
+describe("a booking's reminders", () => {
+  test("a booking gets its reminders at the right instants in the business's time zone", async () => {
+    const business = await makeBusiness("rem-a", TWO_REMINDERS);
+    const id = await book(business);
+
+    // Monday 9:00 in Edmonton, minus 1200 minutes is Sunday 1:00 p.m.; minus 60 is 8:00 a.m.
+    expect(await reminderJobsOf(id)).toEqual([
+      { runAt: "2026-10-04T19:00:00.000Z", minutesBefore: 1200, sequence: 0 },
+      { runAt: "2026-10-05T14:00:00.000Z", minutesBefore: 60, sequence: 0 },
+    ]);
+    await workDueJobs();
+
+    expect(reminderPosts().map((call) => call.form.Body.split(". Details")[0])).toEqual([
+      "Summit Painting reminder: Mon Oct 5, 9:00am",
+      "Summit Painting reminder: Mon Oct 5, 9:00am",
+    ]);
+    expect(await reminderMinutesSent(business)).toEqual([60, 1200]);
+  });
+
+  test("after a move only the new ones send, at the new times", async () => {
+    const business = await makeBusiness("rem-b", TWO_REMINDERS);
+    const id = await book(business);
+    expect(await moveBooking({ bookingId: id, startsAt: TEN, personId: null, now: NOW })).toEqual(
+      expect.objectContaining({ moved: true })
+    );
+    expect((await reminderJobsOf(id)).filter((job) => job.sequence === 1)).toEqual([
+      { runAt: "2026-10-04T20:00:00.000Z", minutesBefore: 1200, sequence: 1 },
+      { runAt: "2026-10-05T15:00:00.000Z", minutesBefore: 60, sequence: 1 },
+    ]);
+
+    await workDueJobs();
+
+    expect(reminderPosts().map((call) => call.form.Body.split(". Details")[0])).toEqual([
+      "Summit Painting reminder: Mon Oct 5, 10:00am",
+      "Summit Painting reminder: Mon Oct 5, 10:00am",
+    ]);
+    expect(loggedReminderNotSent("a later move replaced it")).toBe(true);
+  });
+
+  test("after a cancel none send", async () => {
+    const business = await makeBusiness("rem-c", TWO_REMINDERS);
+    const id = await book(business);
+    expect(await cancelBooking(id, NOW)).toEqual({ cancelled: true, alreadyCancelled: false });
+
+    await workDueJobs();
+
+    expect(calls).toEqual([]);
+    expect(loggedReminderNotSent("the booking was cancelled")).toBe(true);
+  });
+
+  test("a reminder removed from the settings does not send", async () => {
+    const business = await makeBusiness("rem-d", TWO_REMINDERS);
+    await book(business);
+    await db
+      .update(textSettings)
+      .set({ reminderMinutesBefore: [60] })
+      .where(eq(textSettings.organizationId, business.business));
+
+    await workDueJobs();
+
+    expect(await reminderMinutesSent(business)).toEqual([60]);
+    expect(loggedReminderNotSent("the business no longer has that reminder")).toBe(true);
+  });
+
+  test("a booking made 30 minutes ahead gets no 1200-minute reminder", async () => {
+    const business = await makeBusiness("rem-e", TWO_REMINDERS);
+    const result = await bookTime({
+      organizationId: business.business,
+      bookingLinkId: business.estimate,
+      personId: business.marco,
+      startsAt: NINE,
+      requestKey: randomUUID(),
+      customer: jane,
+      location: "12 Main Street, Calgary",
+      details: "",
+      source: "widget",
+      actorUserId: null,
+      now: new Date(NINE.getTime() - 30 * 60_000), // 8:30 the same morning
+    });
+    if (!result.booked) throw new Error(`expected a booking, got ${result.reason}`);
+
+    // 1200 minutes before had long passed, and so had 60: neither is added.
+    expect(await reminderJobsOf(result.booking.id)).toEqual([]);
+    await workDueJobs();
+
+    // Her confirmation still goes.
+    expect(posts().map((call) => call.form.Body.split(". Details")[0])).toEqual([
+      "Summit Painting: booked Mon Oct 5, 9:00am",
+    ]);
+  });
+
+  test("a reminder still failing when the appointment starts is never sent", async () => {
+    const business = await makeBusiness("rem-f", TWO_REMINDERS);
+    const id = await book(business);
+    failSecondReminder();
+
+    await workDueJobs();
+    expect(await reminderJobsOf(id)).toEqual([
+      { runAt: expect.any(String), minutesBefore: 60, sequence: 0 },
+    ]);
+    jobClock.now = () => new Date(NINE.getTime() + 60_000); // Twilio still down at 9:00
+    await makeDue(id);
+    await workDueJobs();
+
+    expect(reminderPosts()).toHaveLength(2); // the 1200 that went, the 60 that failed
+    expect(await reminderMinutesSent(business)).toEqual([1200]);
+    expect(await reminderJobsOf(id)).toEqual([]); // finished, not waiting for another try
+    expect(loggedReminderNotSent("the appointment has started")).toBe(true);
+  });
+
+  test("the 60-minute reminder's retry still sends after the 1200-minute one went", async () => {
+    const business = await makeBusiness("rem-g", TWO_REMINDERS);
+    const id = await book(business);
+    // Made on the Friday, before either reminder: a retry counting from the booking's creation
+    // would take the 1200-minute text for this one and stay quiet.
+    await db.update(booking).set({ createdAt: NOW }).where(eq(booking.id, id));
+    failSecondReminder();
+    // Twilio lists the 1200-minute reminder: the same words, sent at its own time.
+    listAnswer = () =>
+      Response.json({
+        messages: [
+          {
+            sid: "SM-1200",
+            body: reminderPosts()[0]!.form.Body,
+            direction: "outbound-api",
+            status: "delivered",
+            date_created: new Date(NINE.getTime() - 1200 * 60_000).toUTCString(),
+          },
+        ],
+      });
+
+    await workDueJobs();
+    await makeDue(id);
+    await workDueJobs();
+
+    expect(calls.filter((call) => call.method === "GET")).toHaveLength(1); // the retry checked
+    expect(reminderPosts()).toHaveLength(3); // 1200, the 60 that failed, the 60 on its retry
+    expect(await reminderMinutesSent(business)).toEqual([60, 1200]);
+  });
+});

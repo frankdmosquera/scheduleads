@@ -4,9 +4,9 @@
 
 **Branch:** feature/08b-the-customer-s-texts
 
-**Status:** 8b.1 built and reviewed 2026-10-07; 8b.2 built the same day (its
-plan amended with Frank: one-piece texts, the packed link); its audit and
-independent review next.
+**Status:** 8b.1 and 8b.2 built and reviewed 2026-10-07 (8b.2's plan amended
+with Frank: one-piece texts, the packed link); 8b.3 built the same day, its
+audit and independent review next.
 
 ## Goal
 
@@ -202,7 +202,7 @@ Frank's yes; every test fakes Twilio.
   booking page and a changed or cut link does not; the backend suite passes
   several runs in a row.
 
-- [ ] **8b.3 The reminders.** One `booking_text` reminder job per reminder in
+- [x] **8b.3 The reminders.** One `booking_text` reminder job per reminder in
   the business's settings, run at the appointment minus its minutes, added
   in `book-time.ts` and again in `move-booking.ts` with the move's number;
   none added for a time already past. It skips itself when the booking was
@@ -262,8 +262,10 @@ Frank's yes; every test fakes Twilio.
   `render-confirmation-text.ts` (one export per file, so the reminder's wording
   is its own file in 8b.3), `fit-business-name.ts` and `text-piece-length.ts`
   (the one-piece rule, both texts use them; added in 8b.2's review, F-204),
-  `find-booking-text-context.ts`, `send-confirmation-text.ts`,
-  `log-text-not-sent.ts`;
+  `find-booking-text-context.ts`, `log-text-not-sent.ts`;
+  `send-booking-text.ts` (8b.2's confirmation sender, made in 8b.3 the one
+  sender for both texts, so their rules cannot drift apart) and
+  `render-reminder-text.ts`;
   `find-text-settings.ts`, `booking-texts.ts` (the wording),
   `verify-twilio-signature.ts`, `pass-on-reply.ts`, with tests.
 - `backend/lib/jobs/job-task.ts` hands each job its try number (8b.2);

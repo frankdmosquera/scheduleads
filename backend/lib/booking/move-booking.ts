@@ -19,6 +19,7 @@ import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
 import { enqueueBookingEventJob } from "../jobs/enqueue-booking-event-job.js";
+import { enqueueBookingTexts } from "../jobs/enqueue-booking-texts.js";
 import { jobNames } from "../jobs/job-names.js";
 import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
@@ -268,6 +269,16 @@ export async function moveBooking(input: {
         ["booking_move", "booking_move_notification"],
         sequence
       );
+      // The reminders again, at the new time (feature 8b, decision 6): the old ones see this
+      // move's number and stay quiet.
+      await enqueueBookingTexts(tx, {
+        organizationId,
+        bookingId,
+        sequence,
+        startsAt,
+        now,
+        confirmation: false,
+      });
       // The event follows as jobs (decisions 5 and 6): the saved event is updated in place for
       // the same person. For another person, or with no id saved yet, the old event is taken out
       // and the new one written, each on its own. With none saved, the event can only be under
