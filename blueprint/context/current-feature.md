@@ -237,9 +237,10 @@ Frank's yes; every test fakes Twilio.
   before a failure is thrown, so one that keeps failing never holds back the
   other (F-218, F-232). Each reply has a `text_reply` row keyed by Twilio's
   message id recording how far it got: a run claims the text for a minute
-  before sending, so two runs never both send, and only a run that follows a
-  lost answer asks Twilio first, counting from that claim, so two replies in
-  the same words are never taken for one (F-217, F-231). Never from the reply
+  before sending, so two runs never both send; the claim is let go only when
+  Twilio refused the send itself, and only a run that follows an unclear
+  answer asks Twilio first, counting from when the reply was recorded, so two
+  replies in the same words are never taken for one (F-217, F-231, F-236). Never from the reply
   phone itself (decision 9), and never to a reply phone that is any
   business's texting number (F-199: a setup mistake would hand Jane's words
   to another business, or two businesses would drop each other's replies);
@@ -314,7 +315,7 @@ Check: `replyPhone` or `replyEmail` is set.
 
 **`text_reply`**, one row per customer reply (added in 8b.4's review): `messageSid`
 (PK, Twilio's id), `organizationId` (cascade), `textTriedAt` (a run's claim on the
-text, held 60 seconds), `textSentAt`, `emailSentAt`, `createdAt`. No number and no words.
+text, held 60 seconds, let go only when Twilio refused the send), `textSentAt`, `emailSentAt`, `createdAt`. No number and no words.
 
 **Job payloads**, ids only (8a rule):
 `booking_text`: `{ organizationId, bookingId, kind: "confirmation" | "reminder", sequence, minutesBefore: number | null }`.

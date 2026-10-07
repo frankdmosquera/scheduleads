@@ -5,7 +5,7 @@
 
 import { createHmac, randomBytes, randomInt, randomUUID } from "node:crypto";
 
-import { like, sql } from "drizzle-orm";
+import { eq, like, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
@@ -336,7 +336,7 @@ describe("a customer's text reply", () => {
   const lapseClaims = () =>
     db.execute(
       sql`update text_reply set "textTriedAt" = now() - interval '2 minutes'
-          where "textSentAt" is null and "organizationId" in (
+          where "textSentAt" is null and "textTriedAt" is not null and "organizationId" in (
             select id from organization where slug like ${`test-textreply-%-${tag}-dev`}
           )`
     );
@@ -379,6 +379,46 @@ describe("a customer's text reply", () => {
 
     expect(textsSent()).toHaveLength(2); // the unreached try, then the real send
     expect(outbox.filter((text) => text.sid !== "SM-earlier")).toHaveLength(1);
+  });
+
+  test("a check that fails after a lost answer keeps the claim: the next run still finds the text and sends nothing", async () => {
+    const business = await makeBusiness("check-down");
+    let first = true;
+    sendAnswer = () => (first ? ((first = false), "lost") : "sent");
+    const fields = janeTexts(business, "Can we make it 8 instead?");
+    await post(fields);
+    await workDueJobs(); // sent, the answer lost
+    // The reply was recorded five minutes ago and its text went four minutes ago: only a check
+    // counting from the record finds it, not one from a later claim or from now.
+    await db
+      .update(textReply)
+      .set({ createdAt: new Date(Date.now() - 5 * 60_000) })
+      .where(eq(textReply.messageSid, fields.MessageSid));
+    for (const text of outbox) text.date_created = new Date(Date.now() - 4 * 60_000).toUTCString();
+
+    // Twilio cannot list texts on the next run, then can.
+    let listFailures = 1;
+    const listedBy = globalThis.fetch;
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init: RequestInit = {}) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (
+        (init.method ?? "GET") === "GET" &&
+        url.includes("/Messages.json?") &&
+        listFailures-- > 0
+      ) {
+        return Response.json({ code: 20503, status: 503 }, { status: 503 });
+      }
+      return listedBy(input, init);
+    });
+    await lapseClaims();
+    await makeDue();
+    await workDueJobs(); // the check fails
+    await lapseClaims();
+    await makeDue();
+    await workDueJobs(); // the check finds the text
+
+    expect(textsSent()).toHaveLength(1);
+    expect(await replyJobs()).toEqual([]);
   });
 
   test("two replies in the same words are both passed on", async () => {

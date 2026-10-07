@@ -30,16 +30,16 @@ const notPassedOn = (messageSid: string, reason: string) =>
 
 const ofThisReply = (messageSid: string) => eq(textReply.messageSid, messageSid);
 
-// The text's claim, taken atomically: only one run sends at a time. The time of an earlier claim
-// whose run never said how it went (a lost answer) comes back too, so this run asks Twilio first.
-async function claimText(messageSid: string): Promise<{ claimed: boolean; earlier: Date | null }> {
+// The text's claim, taken atomically: only one run sends at a time. Whether an earlier run claimed
+// it and never said how it went (a lost answer) comes back too, so this run asks Twilio first.
+async function claimText(messageSid: string): Promise<{ claimed: boolean; triedBefore: boolean }> {
   return db.transaction(async (tx) => {
     const [row] = await tx
       .select({ triedAt: textReply.textTriedAt, sentAt: textReply.textSentAt })
       .from(textReply)
       .where(ofThisReply(messageSid))
       .for("update");
-    if (!row || row.sentAt) return { claimed: false, earlier: null };
+    if (!row || row.sentAt) return { claimed: false, triedBefore: false };
     const claimed = await tx
       .update(textReply)
       .set({ textTriedAt: sql`now()` })
@@ -53,7 +53,7 @@ async function claimText(messageSid: string): Promise<{ claimed: boolean; earlie
         )
       )
       .returning({ messageSid: textReply.messageSid });
-    return { claimed: claimed.length > 0, earlier: row.triedAt };
+    return { claimed: claimed.length > 0, triedBefore: row.triedAt !== null };
   });
 }
 
@@ -139,13 +139,18 @@ export async function passOnReply(organizationId: string, messageSid: string): P
       // Another run holds the claim, still sending or lost mid-send: try again once it lapses.
       failures.push(new Error(`Passing on reply ${messageSid} by text: another run holds it.`));
     } else {
+      let sending = false;
       try {
-        // An earlier run's send may have gone with its answer lost: Twilio is asked first, for
-        // this text since that run's claim, so another reply in the same words is never this one.
-        const already = claim.earlier
-          ? await findSentText({ ...text, since: claim.earlier })
+        // An earlier run's send may have gone with its answer lost: Twilio is asked first, since
+        // this reply was recorded, before any try, so neither a check that failed in between nor
+        // another reply in the same words, passed on before it came, is taken for this one.
+        const already = claim.triedBefore
+          ? await findSentText({ ...text, since: record.createdAt })
           : null;
-        if (!already) await sendText(text);
+        if (!already) {
+          sending = true;
+          await sendText(text);
+        }
         await db
           .update(textReply)
           .set({ textSentAt: sql`now()` })
@@ -154,9 +159,15 @@ export async function passOnReply(organizationId: string, messageSid: string): P
         if (error instanceof SendTextError && !error.retry) {
           notPassedOn(messageSid, `Twilio ${error.code} for the reply phone`);
         } else {
-          // Refused by Twilio, so surely not sent: the claim is let go for the next try. With no
-          // answer at all it stays, and the next run asks Twilio once it lapses.
-          if (error instanceof SendTextError && error.status !== null) {
+          // Only Twilio refusing the send itself means it surely did not go: then the claim is let
+          // go for the next try. Otherwise (no answer, an unreadable one, a failed check) it stays,
+          // and the next run asks Twilio once it lapses.
+          const refused =
+            sending &&
+            error instanceof SendTextError &&
+            error.status !== null &&
+            error.status >= 400;
+          if (refused) {
             await db.update(textReply).set({ textTriedAt: null }).where(ofThisReply(messageSid));
           }
           failures.push(error);
