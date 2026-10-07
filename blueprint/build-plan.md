@@ -212,7 +212,7 @@ and a second resource can hold the same time as the first.
     and move emails and the Google event writes, removals and moves leave
     the in-memory trackers for it, and a move that gives up on the first
     person's calendar is retried instead of leaving the event behind
-  - [ ] 8b. **The customer's texts** - one place in the code sends every
+  - [x] 8b. **The customer's texts** - one place in the code sends every
     text, through Twilio; the confirmation text when a booking is made and
     the reminder before the appointment, moved or dropped with the booking
   - [ ] 8c. **The worker's text** - when a business runs on one email, the
