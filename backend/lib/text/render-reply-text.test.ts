@@ -46,4 +46,11 @@ describe("renderReplyText", () => {
     expect(text.length).toBeLessThanOrEqual(1600);
     expect(text).toMatch(/^Reply from Jane Doe, 403-555-0148: (👍)+\.\.\. \(answer at/);
   });
+
+  test("a long reply with a picture keeps the picture note when its words are cut", () => {
+    const text = renderReplyText({ ...jane, words: "a".repeat(1560), hasPicture: true });
+
+    expect(text.length).toBeLessThanOrEqual(1600);
+    expect(text).toMatch(/a\.\.\. \[picture not shown\] \(answer at 403-555-0148, not here\)$/);
+  });
 });

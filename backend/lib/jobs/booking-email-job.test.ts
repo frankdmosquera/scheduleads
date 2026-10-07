@@ -311,10 +311,13 @@ describe("a booking's emails as jobs", () => {
     const lines = vi
       .mocked(console.warn)
       .mock.calls.map(([line]) => String(line))
-      .filter((line) => line.startsWith("[email]")); // the event's job has its own line
-    expect(lines).toEqual([
-      `[email] booking ${id}: booking_confirmation not sent, the appointment has started`,
-      `[email] booking ${id}: booking_notification not sent, the appointment has started`,
-    ]);
+      .filter((line) => line.startsWith("[email]")) // the event's job has its own line
+      .sort(); // the two jobs share their moment, and the runner works those in any order
+    expect(lines).toEqual(
+      [
+        `[email] booking ${id}: booking_confirmation not sent, the appointment has started`,
+        `[email] booking ${id}: booking_notification not sent, the appointment has started`,
+      ].sort()
+    );
   });
 });

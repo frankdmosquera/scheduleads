@@ -24,3 +24,4 @@ export * from "./scheduling-tables/commitment-table.js";
 export * from "./scheduling-tables/booking-link-resource-table.js";
 export * from "./scheduling-tables/standby-date-table.js";
 export * from "./text-tables/text-settings-table.js";
+export * from "./text-tables/text-reply-table.js";

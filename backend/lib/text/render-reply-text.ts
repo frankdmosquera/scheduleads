@@ -23,16 +23,17 @@ export function renderReplyText(facts: ReplyTextFactsType): string {
   const write = (said: string) => `Reply from ${who}: ${said} (answer at ${shown}, not here)`;
 
   // Their words are never changed, even when an emoji makes the text cost more.
-  const said = facts.hasPicture ? `${facts.words} [picture not shown]`.trim() : facts.words;
-  if (write(said).length <= MOST_CHARACTERS) return write(said);
+  const note = facts.hasPicture ? "[picture not shown]" : "";
+  const withNote = (words: string) => [words, note].filter(Boolean).join(" ");
+  if (write(withNote(facts.words)).length <= MOST_CHARACTERS) return write(withNote(facts.words));
 
-  // Too long for one text: cut, never split inside a character, rather than lose it all. The
-  // email, when the business has one, carries every word.
-  const room = MOST_CHARACTERS - write("...").length;
+  // Too long for one text: their words are cut, never inside a character and never the picture
+  // note, rather than lose it all. The email, when the business has one, carries every word.
+  const room = MOST_CHARACTERS - write(withNote("...")).length;
   let cut = "";
-  for (const character of said) {
+  for (const character of facts.words) {
     if (cut.length + character.length > room) break;
     cut += character;
   }
-  return write(`${cut}...`);
+  return write(withNote(`${cut}...`));
 }

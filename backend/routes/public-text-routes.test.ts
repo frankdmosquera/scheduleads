@@ -21,7 +21,7 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the text reply route tests
 // Imported after the env is loaded: they read it the moment they load.
 const { app } = await import("../app.js");
 const { db } = await import("../database.js");
-const { contact, emailSendingKey, lead, organization, pipelineStage, textSettings } =
+const { contact, emailSendingKey, lead, organization, pipelineStage, textReply, textSettings } =
   await import("@scheduleads-app/shared/db");
 const { encryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { apiOrigin } = await import("../lib/auth/auth-server.js");
@@ -131,7 +131,8 @@ type OutboxTextType = Record<
   string
 >;
 let outbox: OutboxTextType[];
-let sendAnswer: (form: Record<string, string>) => "sent" | "lost" | Response;
+let sendAnswer: (form: Record<string, string>) => "sent" | "lost" | "unreached" | Response;
+let resendAnswer: () => Response;
 
 let log: ReturnType<typeof vi.spyOn>;
 let warn: ReturnType<typeof vi.spyOn>;
@@ -140,6 +141,7 @@ beforeEach(() => {
   held = new Map();
   outbox = [];
   sendAnswer = () => "sent";
+  resendAnswer = () => Response.json({ id: `email-${calls.length}` });
   vi.stubEnv("TWILIO_ACCOUNT_SID", "AC123");
   vi.stubEnv("TWILIO_AUTH_TOKEN", TOKEN);
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init: RequestInit = {}) => {
@@ -147,7 +149,7 @@ beforeEach(() => {
     const method = init.method ?? "GET";
     if (url === "https://api.resend.com/emails") {
       calls.push({ method, url, form: JSON.parse(String(init.body)) });
-      return Response.json({ id: `email-${calls.length}` });
+      return resendAnswer();
     }
     if (!url.startsWith(ACCOUNT)) throw new Error(`A test tried to reach ${new URL(url).origin}.`);
     const form =
@@ -163,6 +165,7 @@ beforeEach(() => {
     if (method === "POST") {
       const answer = sendAnswer(form);
       if (answer instanceof Response) return answer; // refused: Twilio keeps nothing
+      if (answer === "unreached") throw new TypeError("fetch failed"); // never got there
       const sid = `SM-out-${calls.length}`;
       outbox.push({
         sid,
@@ -329,6 +332,14 @@ describe("a customer's text reply", () => {
 
   // A failed run waits seconds for its next try; the tests do not wait for it.
   const makeDue = () => db.execute(sql`update ${schema}._private_jobs set run_at = now()`);
+  // A run's claim on a text holds a minute; the tests let it lapse rather than wait.
+  const lapseClaims = () =>
+    db.execute(
+      sql`update text_reply set "textTriedAt" = now() - interval '2 minutes'
+          where "textSentAt" is null and "organizationId" in (
+            select id from organization where slug like ${`test-textreply-%-${tag}-dev`}
+          )`
+    );
 
   test("a retry after the pass-on's answer was lost sends nothing again", async () => {
     const business = await makeBusiness("lost", { replyEmail: "office@summitpainting.com" });
@@ -337,15 +348,81 @@ describe("a customer's text reply", () => {
     await post(janeTexts(business, "Can we make it 8 instead?"));
 
     await workDueJobs();
+    await lapseClaims();
     await makeDue();
     await workDueJobs();
 
+    expect(textsSent()).toHaveLength(1); // asked Twilio, found it, sent nothing again
+    expect(emailsSent()).toHaveLength(1); // the email went on the first run and is not sent again
+  });
+
+  test("a retry counts only from its own claim: the same words passed on for an earlier reply are not this one", async () => {
+    const business = await makeBusiness("since");
+    // An earlier reply's pass-on, in the same words, an hour ago.
+    outbox.push({
+      sid: "SM-earlier",
+      from: business.fromNumber,
+      to: business.replyPhone,
+      body: "Reply from Jane Doe, 403-555-0148: Yes (answer at 403-555-0148, not here)",
+      direction: "outbound-api",
+      status: "delivered",
+      date_created: new Date(Date.now() - 3_600_000).toUTCString(),
+    });
+    let first = true;
+    sendAnswer = () => (first ? ((first = false), "unreached") : "sent");
+    await post(janeTexts(business, "Yes"));
+
+    await workDueJobs();
+    await lapseClaims();
+    await makeDue();
+    await workDueJobs();
+
+    expect(textsSent()).toHaveLength(2); // the unreached try, then the real send
+    expect(outbox.filter((text) => text.sid !== "SM-earlier")).toHaveLength(1);
+  });
+
+  test("two replies in the same words are both passed on", async () => {
+    const business = await makeBusiness("yes-twice");
+    await post(janeTexts(business, "Yes"));
+    await workDueJobs();
+    await post(janeTexts(business, "Yes"));
+    await workDueJobs();
+
+    expect(textsSent()).toHaveLength(2);
+  });
+
+  test("a run that finds another run holding the text sends nothing and tries again later", async () => {
+    const business = await makeBusiness("held");
+    const fields = janeTexts(business, "Can we make it 8 instead?");
+    await db.insert(textReply).values({
+      messageSid: fields.MessageSid,
+      organizationId: business.business,
+      textTriedAt: new Date(), // a run that is still sending
+    });
+    await post(fields);
+
+    await workDueJobs();
+
+    expect(textsSent()).toEqual([]);
+    expect(await replyJobs()).toHaveLength(1); // waiting for its next try
+  });
+
+  test("an email that keeps failing never holds back the text", async () => {
+    const business = await makeBusiness("email-down", { replyEmail: "office@summitpainting.com" });
+    resendAnswer = () =>
+      Response.json(
+        { name: "application_error", statusCode: 500, message: "down" },
+        { status: 500 }
+      );
+    await post(janeTexts(business, "Can we make it 8 instead?"));
+
+    await workDueJobs();
     expect(textsSent()).toHaveLength(1);
-    expect(emailsSent()).toHaveLength(2); // the retry's email reuses its key: Resend sends one
-    expect(new Set(emailsSent().map((call) => JSON.stringify(call.form)))).toHaveProperty(
-      "size",
-      1
-    );
+    expect(await replyJobs()).toHaveLength(1); // the email still waits for its next try
+    await makeDue();
+    await workDueJobs();
+
+    expect(textsSent()).toHaveLength(1); // the text is not sent again
   });
 
   test("Twilio posting the same text again after it was passed on sends nothing again", async () => {

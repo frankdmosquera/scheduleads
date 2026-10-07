@@ -228,16 +228,21 @@ Frank's yes; every test fakes Twilio.
   number is answered and dropped, logged without the sender), then adding a
   `text_reply` job keyed by Twilio's message id (so Twilio posting the same
   text twice adds one job; `enqueueJob` gains a `jobKey` option) and
-  answering Twilio an empty reply at once. The job
-  passes the text on to the reply email first (so a text that keeps failing
-  never holds it back; F-218) and/or the reply phone (a text from the
-  business's number: who sent it, their number, the words, where to answer),
-  checked with Twilio before every send (F-217), the reply email (through the business's own Resend, as feature 6 sends), never
-  from the reply phone itself (decision 9), and never to a reply phone that
-  is any business's texting number (F-199: a setup mistake would hand Jane's
-  words to another business, or two businesses would drop each other's
-  replies); then it goes only to the reply email, or is logged as not passed
-  on when there is none. The sender is named when their number matches a
+  answering Twilio an empty reply at once. The job passes the reply on to
+  the reply email (through the business's own Resend, as feature 6 sends)
+  and/or the reply phone (a text from the business's number: who sent it,
+  their number, the words, where to answer). Both are tried on every run
+  before a failure is thrown, so one that keeps failing never holds back the
+  other (F-218, F-232). Each reply has a `text_reply` row keyed by Twilio's
+  message id recording how far it got: a run claims the text for a minute
+  before sending, so two runs never both send, and only a run that follows a
+  lost answer asks Twilio first, counting from that claim, so two replies in
+  the same words are never taken for one (F-217, F-231). Never from the reply
+  phone itself (decision 9), and never to a reply phone that is any
+  business's texting number (F-199: a setup mistake would hand Jane's words
+  to another business, or two businesses would drop each other's replies);
+  then it goes only to the reply email, or is logged as not passed on when
+  there is none. The sender is named when their number matches a lead or
   contact of that business.
   **Done when:** route tests with signatures made from a test auth token: a
   valid one is accepted and passed on to each destination the settings name;
@@ -282,6 +287,8 @@ Frank's yes; every test fakes Twilio.
   the same transaction. `cancel-booking.ts` unchanged (decision 6).
 - `backend/routes/public-text-routes.ts` mounted in `backend/app.ts` at
   `/texts`, so Twilio posts to `/texts/incoming`; no CORS, no browser calls it.
+- `packages/shared/db/text-tables/text-reply-table.ts` and migration
+  `0020_text_reply` (8b.4's review: one row per reply, how far its passing on got).
 - `backend/lib/jobs/enqueue-job.ts` gains `jobKey`; `twilio-account.ts` also
   hands back the auth token, for the signature.
 - `.env.example`: the two Twilio keys. `AGENTS.md`: the client-decides rule
@@ -302,6 +309,10 @@ Frank's yes; every test fakes Twilio.
 | `updatedAt` | timestamptz | |
 
 Check: `replyPhone` or `replyEmail` is set.
+
+**`text_reply`**, one row per customer reply (added in 8b.4's review): `messageSid`
+(PK, Twilio's id), `organizationId` (cascade), `textTriedAt` (a run's claim on the
+text, held 60 seconds), `textSentAt`, `emailSentAt`, `createdAt`. No number and no words.
 
 **Job payloads**, ids only (8a rule):
 `booking_text`: `{ organizationId, bookingId, kind: "confirmation" | "reminder", sequence, minutesBefore: number | null }`.

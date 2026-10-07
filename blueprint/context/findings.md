@@ -844,7 +844,7 @@ overrides, hence P3.
 the `attempt > 1` condition; one GET per reply), and add a test that posts
 the same text again after the job ran and expects one text. Note in the
 comment that two identical replies within the clock slack then pass on once.
-**Resolution:** Independent step review 2026-10-07: confirmed by reading graphile-worker 0.18.0 `sql/000020.sql`: add_jobs clears the key of a running job and inserts a fresh one (:120-131), and resets a waiting job, a once-failed one included, to `attempts = 0` (:186-189), so the repost runs as attempt 1 and skips findSentText (pass-on-reply.ts:57-58). Valid, P3 agreed. The same path is reached by a replay of a captured signed post, which Twilio's signature cannot refuse (it carries no time); the words are still read back from Twilio, so a replay can only repeat a pass-on, never change one. Fixed 2026-10-07 in 8b.4's review fixes: the pass-on text is checked with Twilio before every send, not only on a retry (a job Twilio's repost starts afresh is covered). Test: "Twilio posting the same text again after it was passed on sends nothing again"; proved: dropping the check fails it.
+**Resolution:** Independent step review 2026-10-07: confirmed by reading graphile-worker 0.18.0 `sql/000020.sql`: add_jobs clears the key of a running job and inserts a fresh one (:120-131), and resets a waiting job, a once-failed one included, to `attempts = 0` (:186-189), so the repost runs as attempt 1 and skips findSentText (pass-on-reply.ts:57-58). Valid, P3 agreed. The same path is reached by a replay of a captured signed post, which Twilio's signature cannot refuse (it carries no time); the words are still read back from Twilio, so a replay can only repeat a pass-on, never change one. Fixed 2026-10-07 in 8b.4's review fixes: the pass-on text is checked with Twilio before every send, not only on a retry (a job Twilio's repost starts afresh is covered). Test: "Twilio posting the same text again after it was passed on sends nothing again"; proved: dropping the check fails it. Re-review 2026-10-07 of 8b.4's fixes: left `fixed`. The repost after a finished run is gone (the test stands). Two things remain, recorded as F-231: the "while it runs" half of the title is not closed, because the runner works 5 jobs at once (start-job-runner.ts:10) and add_jobs gives a locked job's key to a fresh, at-once-due job (graphile-worker sql/000020.sql:120-131), so both runs pass findSentText before either sends; and the repair adds a new loss, since the check now runs on every first try and matches by words: identical replies close together pass on as one text. The comment this finding's own suggested fix asked for (identical replies within the slack pass on once) was not added. Close with F-231. Fixed again 2026-10-07 after the re-review: each reply has a text_reply row (migration 0020) keyed by Twilio's id; a run claims the text for 60 seconds before sending (an atomic update under a row lock), so a repost's job running beside the first finds the claim held and tries later. Test: "a run that finds another run holding the text sends nothing and tries again later"; proved: ignoring the claim fails it.
 
 ### F-218 [P3] fixed - A pass-on text that keeps failing holds back the reply email, and after the last try the reply reaches neither
 
@@ -860,7 +860,7 @@ does not depend on Twilio's send at all.
 **Suggested fix:** Send the email first (its idempotency key makes a retry
 safe), or catch the text's error, send the email, then rethrow. A test where
 the pass-on text keeps failing and the email still goes on the first try.
-**Resolution:** Independent step review 2026-10-07: confirmed by reading pass-on-reply.ts:63-67, where a retryable SendTextError is rethrown before the email at :73 is tried. Valid, P3 kept (the reachable cases are an account-level refusal for the reply phone, such as 21408 for a reply phone outside an enabled country, or a long Twilio outage), but it is the one path where decision 2's "a reply is never lost" fails while a working destination exists, and the fix is a reorder; worth taking in this step's review fixes. Fixed 2026-10-07 in 8b.4's review fixes: the email is sent before the text, so a text that keeps failing never holds it back. Test: "a text to the reply phone that keeps failing never holds back the email" (21606, retried: the email went, the job waits).
+**Resolution:** Independent step review 2026-10-07: confirmed by reading pass-on-reply.ts:63-67, where a retryable SendTextError is rethrown before the email at :73 is tried. Valid, P3 kept (the reachable cases are an account-level refusal for the reply phone, such as 21408 for a reply phone outside an enabled country, or a long Twilio outage), but it is the one path where decision 2's "a reply is never lost" fails while a working destination exists, and the fix is a reorder; worth taking in this step's review fixes. Fixed 2026-10-07 in 8b.4's review fixes: the email is sent before the text, so a text that keeps failing never holds it back. Test: "a text to the reply phone that keeps failing never holds back the email" (21606, retried: the email went, the job waits). Re-review 2026-10-07 of 8b.4's fixes: left `fixed`. The original defect is gone (proved: putting the text back before the email fails that test and the lost-answer test). But the reorder moves the same defect to the other side: an email that keeps failing now holds back the text, and after the last try the reply reaches neither (F-232). The comment at pass-on-reply.ts:40-41 ("a reply is never lost while one way to the business works") is true only for a failing text. Close with F-232.
 
 ### F-219 [P3] fixed - The reply job's retry and refusal paths have no test: dropping the pass-on text's Twilio check, or rethrowing a never-retry refusal, keeps every test green
 
@@ -880,9 +880,9 @@ and the retry checks Twilio and sends no second text (plus the same words
 dated before receivedAt, sent); Twilio answers 21610 for the reply phone and
 the email still goes, one try; Twilio's message names another `to`, and
 nothing is passed on.
-**Resolution:** Independent step review 2026-10-07: agreed, by reading all eleven cases in public-text-routes.test.ts (every one runs the job once, successfully, with Twilio's `to` equal to the business's number). Also missing: a business with no reply phone (email only), the third shape decision 2 allows; worth adding beside the three suggested. Fixed 2026-10-07 in 8b.4's review fixes: tests for the retry after a lost answer (one text, the email under its key), a reply phone refused for good with the email still sent, a text Twilio says went to another number (never passed on; proved: dropping the check fails it), and a business with only a reply email. The fake Twilio now keeps the texts it took and lists them, so the duplicate check runs against real state.
+**Resolution:** Independent step review 2026-10-07: agreed, by reading all eleven cases in public-text-routes.test.ts (every one runs the job once, successfully, with Twilio's `to` equal to the business's number). Also missing: a business with no reply phone (email only), the third shape decision 2 allows; worth adding beside the three suggested. Fixed 2026-10-07 in 8b.4's review fixes: tests for the retry after a lost answer (one text, the email under its key), a reply phone refused for good with the email still sent, a text Twilio says went to another number (never passed on; proved: dropping the check fails it), and a business with only a reply email. The fake Twilio now keeps the texts it took and lists them, so the duplicate check runs against real state. Re-review 2026-10-07 of 8b.4's fixes: left `fixed`. The title's two mutations are caught now (dropping the check fails the repost test; rethrowing a never-retry refusal fails "a reply phone refused for good", which expects no job left), and so is deleting the `message.to` check. The `since` half of this finding is still unpinned, and its suggested fix named the case ("the same words dated before receivedAt, sent"). Proved in this re-review: changing pass-on-reply.ts:84 to `since: new Date(0)` keeps all 19 route tests green (file restored, `git status` clean). With that mutation, a reply whose passed-on words match any of the last 20 texts to that reply phone (Jane's "Yes" last week, or a second picture) would never be passed on as a text. Suggested: one test where an identical pass-on text already sits in the fake outbox dated well before the reply arrived, and the new reply's text is still sent. Close with that test. Fixed again 2026-10-07 after the re-review: the retry's since is pinned: "a retry counts only from its own claim: the same words passed on for an earlier reply are not this one" (an identical pass-on an hour earlier is not taken for this one); proved: since: new Date(0) fails it.
 
-### F-220 [P3] fixed - The spec's passed-on reply wording is not the one built, and the built one drops the business's name
+### F-220 [P3] closed - The spec's passed-on reply wording is not the one built, and the built one drops the business's name
 
 **File:** blueprint/context/current-feature.md:326, :233; backend/lib/text/render-reply-text.ts:13
 **Found:** 2026-10-07 by /audit (scope: 8b.4, ad5e703..63da7b7; lenses: quality, security, performance, tests)
@@ -896,9 +896,9 @@ the replies of two businesses (an owner with two, or the agency's own) cannot
 tell which one Jane texted. /complete archives this spec as the record.
 **Suggested fix:** Amend the Wording line and 8b.4 to the built wording, and
 say whether leaving out the business's name was meant; if not, put it back.
-**Resolution:** Independent step review 2026-10-07: agreed, current-feature.md:326 and :233 against render-reply-text.ts:13 and the route test's expected bodies. One mitigating fact for the business-name half: the passed-on text comes from that business's own number (pass-on-reply.ts:53), so a phone holding two businesses' replies sees two senders; it still cannot tell which business without that number saved as a contact. P3 kept. Fixed 2026-10-07 in 8b.4's review fixes: the spec's Contracts give the built wording, "Reply from {name, }{number}: {words} (answer at {number}, not here)", and why the business is not named (the text comes from its own number).
+**Resolution:** Independent step review 2026-10-07: agreed, current-feature.md:326 and :233 against render-reply-text.ts:13 and the route test's expected bodies. One mitigating fact for the business-name half: the passed-on text comes from that business's own number (pass-on-reply.ts:53), so a phone holding two businesses' replies sees two senders; it still cannot tell which business without that number saved as a contact. P3 kept. Fixed 2026-10-07 in 8b.4's review fixes: the spec's Contracts give the built wording, "Reply from {name, }{number}: {words} (answer at {number}, not here)", and why the business is not named (the text comes from its own number). Closed 2026-10-07 by re-review of 8b.4's fixes: current-feature.md's Wording line gives "Reply from {name, }{number}: {words} (answer at {number}, not here)" and why the business is not named; render-reply-text.ts:23 builds exactly that, and the route tests' expected bodies match it. (The 8b.4 step text around it is garbled by the same commit; recorded separately as F-235.)
 
-### F-221 [P3] fixed - A reply longer than about 1540 characters cannot be passed on as a text, and is lost when the phone is the only destination
+### F-221 [P3] closed - A reply longer than about 1540 characters cannot be passed on as a text, and is lost when the phone is the only destination
 
 **File:** backend/lib/text/render-reply-text.ts:13; backend/lib/text/send-text.ts:15; backend/lib/text/pass-on-reply.ts:65-67
 **Found:** 2026-10-07 by /audit (scope: 8b.4, ad5e703..63da7b7; lenses: quality, security, performance, tests)
@@ -911,7 +911,7 @@ practice, hence P3.
 **Suggested fix:** When the wrapped text would pass 1600, send the words in
 two texts (the wrapper on the first), keeping them unchanged; or record in
 the spec that such a reply reaches only the email.
-**Resolution:** Independent step review 2026-10-07: agreed by arithmetic on render-reply-text.ts:13. The wrapper is 60 characters with no name ("Reply from " 11, the number 12, ": " 2, " (answer at 403-555-0148, not here)" 35) and up to 182 with a 120-character name (contact-validation-schema.ts:9), so words over 1540 (1418 with the longest name) pass 1600; 21617 is in NEVER_RETRY (send-text.ts:15). P3 kept. Fixed 2026-10-07 in 8b.4's review fixes: render-reply-text.ts cuts their words with "..." only past Twilio's 1600 characters, never inside a character; the email carries every word. Test: 1000 thumbs-up emoji fit 1600.
+**Resolution:** Independent step review 2026-10-07: agreed by arithmetic on render-reply-text.ts:13. The wrapper is 60 characters with no name ("Reply from " 11, the number 12, ": " 2, " (answer at 403-555-0148, not here)" 35) and up to 182 with a 120-character name (contact-validation-schema.ts:9), so words over 1540 (1418 with the longest name) pass 1600; 21617 is in NEVER_RETRY (send-text.ts:15). P3 kept. Fixed 2026-10-07 in 8b.4's review fixes: render-reply-text.ts cuts their words with "..." only past Twilio's 1600 characters, never inside a character; the email carries every word. Test: 1000 thumbs-up emoji fit 1600. Closed 2026-10-07 by re-review of 8b.4's fixes: render-reply-text.ts:27-37 returns at most 1600 UTF-16 units (room = 1600 minus the wrapper with "..."), iterating by code point so no surrogate pair is split; run against the build, 1560 words give a 1600-character text; render-reply-text.test.ts's 1000-emoji case pins the length and the whole-emoji cut. The cut's interaction with the picture note is recorded as F-233, against F-222.
 
 ### F-222 [P3] fixed - A picture sent as a reply is passed on as empty words, with nothing saying a picture came
 
@@ -928,9 +928,9 @@ silent on pictures.
 "(sent N pictures)" to both, so the business knows to look; whether the
 picture itself is passed on is a scope question for Frank, only a note for
 later.
-**Resolution:** Independent step review 2026-10-07: agreed by reading read-twilio-message.ts:53-68 (only `body` is read) and public-text-routes.ts:20 (MM ids are taken). That Twilio's Canadian local numbers take MMS is from this reviewer's knowledge, not re-checked (no network). P3 kept. Fixed 2026-10-07 in 8b.4's review fixes: read-twilio-message.ts reads num_media; the text says "[picture not shown]" and the email "They also sent a picture, which is not passed on." Tests in render-reply-text.test.ts and the route tests. Passing the picture itself on stays out of scope.
+**Resolution:** Independent step review 2026-10-07: agreed by reading read-twilio-message.ts:53-68 (only `body` is read) and public-text-routes.ts:20 (MM ids are taken). That Twilio's Canadian local numbers take MMS is from this reviewer's knowledge, not re-checked (no network). P3 kept. Fixed 2026-10-07 in 8b.4's review fixes: read-twilio-message.ts reads num_media; the text says "[picture not shown]" and the email "They also sent a picture, which is not passed on." Tests in render-reply-text.test.ts and the route tests. Passing the picture itself on stays out of scope. Re-review 2026-10-07 of 8b.4's fixes: left `fixed`. A short or empty reply with a picture now says so in both (proved: removing the note fails the render test and the route test, file restored). But the note goes on after the words and the 1600 cut runs after that, so a long reply with a picture loses the note in the text. Run against the build, 1560 words plus a picture give a 1600-character text with no "picture" in it (F-233). Close with F-233. Fixed again 2026-10-07 after the re-review: see F-233: the picture note survives a cut.
 
-### F-223 [P3] fixed - A post refused for its signature leaves no log line, so a webhook address one character off loses every reply unseen
+### F-223 [P3] closed - A post refused for its signature leaves no log line, so a webhook address one character off loses every reply unseen
 
 **File:** backend/routes/public-text-routes.ts:34-44; backend/lib/auth/auth-server.ts:47-49
 **Found:** 2026-10-07 by /audit (scope: 8b.4, ad5e703..63da7b7; lenses: quality, security, performance, tests)
@@ -946,9 +946,9 @@ example "[text] a post to /texts/incoming refused: no valid signature"),
 and in the spec's deploy notes that the webhook must be exactly
 BETTER_AUTH_URL plus /texts/incoming. Add Twilio's signature to apiOrigin's
 comment.
-**Resolution:** Independent step review 2026-10-07: agreed by reading public-text-routes.ts:34-44, where the 403 returns with no log line. P3 kept. Related but separate: F-226, a malformed message id logged under the unknown-number reason. Fixed 2026-10-07 in 8b.4's review fixes: a refused post is logged with the address it was checked against (no secret, no number); apiOrigin's comment names Twilio's signing; the spec's deploy notes say the webhook must be exactly ${BETTER_AUTH_URL}/texts/incoming. Test: "a refused post is logged with the address it was checked against".
+**Resolution:** Independent step review 2026-10-07: agreed by reading public-text-routes.ts:34-44, where the 403 returns with no log line. P3 kept. Related but separate: F-226, a malformed message id logged under the unknown-number reason. Fixed 2026-10-07 in 8b.4's review fixes: a refused post is logged with the address it was checked against (no secret, no number); apiOrigin's comment names Twilio's signing; the spec's deploy notes say the webhook must be exactly ${BETTER_AUTH_URL}/texts/incoming. Test: "a refused post is logged with the address it was checked against". Closed 2026-10-07 by re-review of 8b.4's fixes: public-text-routes.ts:36 warns with the address only (apiOrigin, not a secret; no field value, no number, no signature), before the 403; auth-server.ts:47-48 names Twilio's signing; the spec's deploy notes say the webhook must be exactly `${BETTER_AUTH_URL}/texts/incoming`; the route test checks the line.
 
-### F-224 [P2] fixed - The refused-signature test names its three businesses from 1000 random numbers, so two can share a slug and the suite fails about one run in 330
+### F-224 [P2] closed - The refused-signature test names its three businesses from 1000 random numbers, so two can share a slug and the suite fails about one run in 330
 
 **File:** backend/routes/public-text-routes.test.ts:219
 **Found:** 2026-10-07 by independent step review (scope: 8b.4, ad5e703..63da7b7; lenses: quality, security, performance, tests)
@@ -964,9 +964,9 @@ running the suite several times in a row exist because 8a's flakes only showed
 over 7 to 10 runs; a known random failure erodes that signal.
 **Suggested fix:** Name each case's business by something unique: the case's
 own label, or `refused-${randomUUID().slice(0, 8)}`.
-**Resolution:** Fixed 2026-10-07 in 8b.4's review fixes: the refused-signature cases name their businesses with randomUUID().slice(0, 8), so two never share a slug.
+**Resolution:** Fixed 2026-10-07 in 8b.4's review fixes: the refused-signature cases name their businesses with randomUUID().slice(0, 8), so two never share a slug. Closed 2026-10-07 by re-review of 8b.4's fixes: public-text-routes.test.ts:252 uses randomUUID().slice(0, 8) (32 bits per case); the backend suite passed 10 runs in a row in this re-review.
 
-### F-225 [P3] fixed - A sender whose name has no Latin letters is passed on as "Reply from , 403-555-0148"
+### F-225 [P3] closed - A sender whose name has no Latin letters is passed on as "Reply from , 403-555-0148"
 
 **File:** backend/lib/text/render-reply-text.ts:12
 **Found:** 2026-10-07 by independent step review (scope: 8b.4, ad5e703..63da7b7; lenses: quality, security, performance, tests)
@@ -980,9 +980,9 @@ Chinese, Russian, Arabic or Greek name is ordinary for a Canadian business's
 customers. The reply email keeps the name as typed, so only the text is hit.
 **Suggested fix:** Make the name plain first and treat an empty result as no
 name (number only); a test with a name that has no Latin letters.
-**Resolution:** Fixed 2026-10-07 in 8b.4's review fixes: a name that plainText empties ("李明", "Ольга") is shown by number. Test in render-reply-text.test.ts.
+**Resolution:** Fixed 2026-10-07 in 8b.4's review fixes: a name that plainText empties ("李明", "Ольга") is shown by number. Test in render-reply-text.test.ts. Closed 2026-10-07 by re-review of 8b.4's fixes: render-reply-text.ts:20-21 makes the name plain and trimmed before choosing the named form, so an empty or blank result shows the number alone; the test.each over both names expects "Reply from 403-555-0148: Hello ...".
 
-### F-226 [P3] fixed - A post whose message id does not match the pattern is dropped under the unknown-number log line, and the pattern refuses capital hex digits
+### F-226 [P3] closed - A post whose message id does not match the pattern is dropped under the unknown-number log line, and the pattern refuses capital hex digits
 
 **File:** backend/routes/public-text-routes.ts:20, :50-51
 **Found:** 2026-10-07 by independent step review (scope: 8b.4, ad5e703..63da7b7; lenses: quality, security, performance, tests)
@@ -995,9 +995,9 @@ network), gives message ids as `^(SM|MM)[0-9a-fA-F]{32}$`; ids seen in practice
 are lower case, so this is a guard against a change rather than a live loss.
 **Suggested fix:** Accept `[0-9a-fA-F]`, and log a malformed id as its own
 reason (no field values).
-**Resolution:** Fixed 2026-10-07 in 8b.4's review fixes: a malformed message id has its own log line, and the id pattern takes capital hex digits too.
+**Resolution:** Fixed 2026-10-07 in 8b.4's review fixes: a malformed message id has its own log line, and the id pattern takes capital hex digits too. Closed 2026-10-07 by re-review of 8b.4's fixes: public-text-routes.ts:17 is `/^(SM|MM)[0-9a-fA-F]{32}$/`; :42-45 drops a malformed id under its own line (no field value) before the business is looked up; :47-49 logs the unknown number with the now-validated id only, so nothing a caller typed reaches the log unchecked.
 
-### F-227 [P3] fixed - pass-on-reply.ts opens with an eight-line block narrating the code below it, with a finding number in it
+### F-227 [P3] closed - pass-on-reply.ts opens with an eight-line block narrating the code below it, with a finding number in it
 
 **File:** backend/lib/text/pass-on-reply.ts:1-8; backend/routes/public-text-routes.ts:1-5
 **Found:** 2026-10-07 by independent step review (scope: 8b.4, ad5e703..63da7b7; lenses: quality, security, performance, tests)
@@ -1013,9 +1013,9 @@ header likewise narrates the signature check, the empty reply and the job key
 that sit at :34-56. Frank's reviews target exactly this.
 **Suggested fix:** Keep two lines at the top of each file on why it exists;
 move each rule to the line it guards; drop "(F-199)".
-**Resolution:** Fixed 2026-10-07 in 8b.4's review fixes: pass-on-reply.ts and public-text-routes.ts open with two lines each; every reason sits beside its line, and no finding number is in a comment.
+**Resolution:** Fixed 2026-10-07 in 8b.4's review fixes: pass-on-reply.ts and public-text-routes.ts open with two lines each; every reason sits beside its line, and no finding number is in a comment. Closed 2026-10-07 by re-review of 8b.4's fixes: pass-on-reply.ts:1-3 and public-text-routes.ts:1-2 say only what the file is for; the reply-phone, texting-number, email-first and check-every-run reasons sit at :30, :33, :40, :67 and :83, the job key's at the route's :52; `git grep -n "(F-[0-9]"` over backend, packages and frontend (migrations aside) finds nothing.
 
-### F-228 [P3] fixed - Two different shapes are both called TwilioMessageType in backend/lib/text
+### F-228 [P3] closed - Two different shapes are both called TwilioMessageType in backend/lib/text
 
 **File:** backend/lib/text/read-twilio-message.ts:9; backend/lib/text/find-sent-text.ts:16
 **Found:** 2026-10-07 by independent step review (scope: 8b.4, ad5e703..63da7b7; lenses: quality, security, performance, tests)
@@ -1029,7 +1029,7 @@ naming rule is no vague names.
 **Suggested fix:** Name them for what they hold, for example
 `ReceivedTextType` for the exported one and `TwilioListedMessageType` for the
 private one.
-**Resolution:** Fixed 2026-10-07 in 8b.4's review fixes: read-twilio-message.ts exports IncomingTextType; find-sent-text.ts keeps TwilioListedTextType.
+**Resolution:** Fixed 2026-10-07 in 8b.4's review fixes: read-twilio-message.ts exports IncomingTextType; find-sent-text.ts keeps TwilioListedTextType. Closed 2026-10-07 by re-review of 8b.4's fixes: `TwilioMessageType` no longer appears in backend; the two shapes are IncomingTextType (read-twilio-message.ts:9) and the private TwilioListedTextType (find-sent-text.ts:16); the backend build passes.
 
 ### F-229 [P3] unverified - Nothing limits how many replies are passed on, so anyone with a business's number makes the agency pay for a text per text they send
 
@@ -1055,4 +1055,92 @@ or watching Twilio's usage alerts at deploy.
 **Found:** 2026-10-07 while verifying 8b.4's review fixes (scope: current; lens: tests)
 **Why it matters:** graphile-worker picks due jobs by priority and run_at only (node_modules/graphile-worker/dist/sql/getJobs.js:179), with no tie-break; jobs added in one transaction share run_at, so a move's two emails can run in either order. The tests listed the Resend keys in saved order. Captured failure: ["booking-moved-notification/<id>/2", "booking-moved/<id>/2"] against the reverse. Latent since 8a; feature 8b's extra text jobs per booking made it show (2 of 7 runs, then 1 of 12). Nothing changes for customers: 8a decided emails need no order.
 **Suggested fix:** compare which emails were asked for, not their order.
-**Resolution:** Fixed 2026-10-07: sentKeys() and keysOf() compare the keys sorted, with a comment saying why. The backend suite then passed 10 runs in a row (732 tests).
+**Resolution:** Fixed 2026-10-07: sentKeys() and keysOf() compare the keys sorted, with a comment saying why. The backend suite then passed 10 runs in a row (732 tests). Re-review 2026-10-07 of 8b.4's fixes: left `fixed`. The three assertions named are order-free now (booking-email-job.test.ts:205, :267, :288), and the suite passed 10 runs in a row here too. But a fourth assertion in the same file makes the same assumption: "no email is sent after the appointment has started" expects the confirmation's warn line before the notification's (:315-318), and those two jobs are saved in one transaction too (F-234). Close with F-234. Fixed again 2026-10-07 after the re-review: see F-234: the fourth order-dependent assertion is order-free too.
+
+### F-231 [P3] fixed - The Twilio check before every pass-on text matches by words, not by reply: identical replies close together pass on as one text, and two runs of one reply at once both send
+
+**File:** backend/lib/text/pass-on-reply.ts:72-85; backend/lib/text/find-sent-text.ts:70-77; backend/lib/jobs/start-job-runner.ts:10
+**Found:** 2026-10-07 by re-review of 8b.4's fixes (scope: 63da7b7..18c1f81, with ad5e703..18c1f81 as context; lenses: quality, security, performance, tests)
+**Why it matters:** F-217's repair runs findSentText before the first send
+too. The check looks for any outbound text from the business's number to
+its reply phone with the same body, dated after this reply's receivedAt minus
+10 seconds. Two different replies with the same words get the same body. Jane
+sends three photos as three MMS a few seconds apart, each with no words (common
+from a phone). Each becomes "Reply from Jane Doe, 403-555-0148: [picture not
+shown] (answer ...)". The second and third jobs find the first one's text and
+send nothing, so a phone-only business hears of one picture, not three. The
+same goes for "Yes" sent twice. The email still carries each (its key is the
+message id). The check is also not a lock. The runner works 5 jobs at once,
+and a repost while the first job runs gives the key to a fresh job that is due
+at once (graphile-worker sql/000020.sql:120-131). Both runs then ask Twilio
+before either has sent, and both send. A replayed signed post (F-217's note)
+reaches the same path. Only the count or a duplicate is at stake, never the
+words, hence P3.
+**Suggested fix:** Either record each pass-on in the database keyed by
+the message id, claimed before sending (insert ... on conflict do nothing),
+and keep the Twilio check for a retry after a lost answer only. Or keep the
+current check, say in pass-on-reply.ts:83 and the spec that identical replies
+within seconds pass on as one text, and ask Frank whether that is acceptable.
+
+### F-232 [P3] fixed - An email that keeps failing now holds back the reply text, and after the last try the reply reaches neither
+
+**File:** backend/lib/text/pass-on-reply.ts:40-64, :66; backend/lib/email/send-email.ts:68-75
+**Found:** 2026-10-07 by re-review of 8b.4's fixes (scope: 63da7b7..18c1f81; lenses: quality, security, performance, tests)
+**Why it matters:** F-218's repair moved the email first. sendEmail throws a
+SendEmailError for every Resend error (send-email.ts:68-75), including ones a
+retry cannot fix: a revoked key, a sending domain no longer verified, a
+refused address. It has no never-retry set, unlike sendText. Nothing at
+pass-on-reply.ts:54 catches it, so the text block at :66 is never reached.
+After 10 tries the reply has reached neither destination, while the reply
+phone worked all along. Before the repair a failing email could not block the
+text, which went first. This is F-218's defect on the other side, and the
+comment at :40-41 claims the opposite. No test has the email fail with a
+reply phone set.
+**Suggested fix:** Try both on every run: catch the email's error, do the
+text, then rethrow the email's error, or the text's if only it failed. Both
+are already safe to repeat (the email's key, the Twilio check). Add a test
+where Resend keeps refusing and the text still goes on the first try.
+
+### F-233 [P3] fixed - A long reply with a picture loses "[picture not shown]" when the text is cut to 1600
+
+**File:** backend/lib/text/render-reply-text.ts:26-37
+**Found:** 2026-10-07 by re-review of 8b.4's fixes (scope: 63da7b7..18c1f81; lenses: quality, security, performance, tests)
+**Why it matters:** The note is added after the words (:26), and the cut
+then trims from the end (:31-37), so the note goes first. Run against the
+build, `renderReplyText({ senderName: "Jane Doe", number: "+14035550148",
+words: "a".repeat(1560), hasPicture: true })` gives 1600 characters that end
+"aaa... (answer at 403-555-0148, not here)", with no word of the picture. The
+email says it, so only a phone-only business misses it. Rare, hence P3.
+**Suggested fix:** Cut the words alone, with room left for the note, then
+add the note. One render test with long words and a picture.
+
+### F-234 [P2] fixed - "no email is sent after the appointment has started" still assumes the order of two emails saved in one transaction
+
+**File:** backend/lib/jobs/booking-email-job.test.ts:315-318
+**Found:** 2026-10-07 by re-review of 8b.4's fixes (scope: 63da7b7..18c1f81; lens: tests)
+**Why it matters:** This is F-230's flake in an assertion its repair missed.
+The test expects the warn lines in saved order: booking_confirmation's, then
+booking_notification's. book() saves both jobs in one transaction, so they
+share run_at, and graphile-worker 0.18.0 picks due jobs ordered only by
+priority and run_at (node_modules/graphile-worker/dist/sql/getJobs.js:179).
+The two can run in either order. It passed 10 runs in a row here, as did the
+other three for about 30 runs before they failed. The mechanism is the
+captured one from F-230.
+**Suggested fix:** Compare the lines sorted, as sentKeys() does, or use
+`expect.arrayContaining` plus a length check.
+
+### F-235 [P3] fixed - The 8b.4 step text in the spec is garbled by the fix: "the reply email" twice, and the email clause reads as "never from the reply phone itself"
+
+**File:** blueprint/context/current-feature.md:232-240
+**Found:** 2026-10-07 by re-review of 8b.4's fixes (scope: 63da7b7..18c1f81; lens: quality)
+**Why it matters:** The amended sentence reads "passes the text on to the
+reply email first (...) and/or the reply phone (...), checked with Twilio
+before every send (F-217), the reply email (through the business's own
+Resend, as feature 6 sends), never from the reply phone itself". The email
+appears twice, and the old phone clause is now attached to it. /complete
+archives this spec as the record of what was built.
+**Suggested fix:** One clause per destination: the email first, through the
+business's own Resend; then the text, from the business's number, checked
+with Twilio first, never for a text from the reply phone itself, and never
+to any business's texting number. Bring it in line with F-232's fix when
+that lands.
