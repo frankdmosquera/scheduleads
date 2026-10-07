@@ -19,6 +19,7 @@ export type TextReplyFactsType = {
   senderName: string | null; // when the number is on one of the business's leads
   number: string; // "403-555-0148"
   words: string;
+  hasPicture: boolean; // a picture came too; only the words are passed on
 };
 
 export async function renderTextReplyNotification(
@@ -61,6 +62,11 @@ function TextReplyNotificationEmail({ facts, who }: { facts: TextReplyFactsType;
           <Fragment>{line}</Fragment>
         </Text>
       ))}
+      {facts.hasPicture ? (
+        <Text style={{ margin: "0 0 12px", fontSize: "14px", color: emailColors.muted }}>
+          They also sent a picture, which is not passed on.
+        </Text>
+      ) : null}
       <EmailField label="Phone">
         <Link href={telHref(facts.number)} style={{ color: brand, textDecoration: "none" }}>
           {facts.number}

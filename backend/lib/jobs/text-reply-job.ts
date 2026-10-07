@@ -7,7 +7,7 @@ import { jobTask } from "./job-task.js";
 
 export type TextReplyJobPayloadType = { organizationId: string; messageSid: string };
 
-export const textReplyJob = jobTask(async (payload, { attempt }) => {
+export const textReplyJob = jobTask(async (payload) => {
   const { organizationId, messageSid } = payload as TextReplyJobPayloadType;
-  await passOnReply(organizationId, messageSid, attempt);
+  await passOnReply(organizationId, messageSid);
 });

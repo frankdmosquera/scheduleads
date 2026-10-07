@@ -44,8 +44,8 @@ function settingWithDevDefault(name: string, developmentDefault: string): string
 // CORS middleware reads the same value, and the customer's booking page lives there too.
 export const appOrigin = settingWithDevDefault("APP_ORIGIN", "http://localhost:3400");
 
-// The API's own address. Better Auth builds its URLs from it, and so does the calendar's
-// return address from Google.
+// The API's own public address. Better Auth builds its URLs from it, so does the calendar's
+// return address from Google, and Twilio signs customers' replies for /texts/incoming on it.
 export const apiOrigin = settingWithDevDefault("BETTER_AUTH_URL", "http://localhost:3401");
 
 // Every action a business role can be granted. Written out instead of importing Better

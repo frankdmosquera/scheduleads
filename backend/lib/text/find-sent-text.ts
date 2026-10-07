@@ -13,7 +13,7 @@ const NOT_DELIVERED = new Set(["failed", "undelivered", "canceled"]);
 // between two of a booking's reminders, so one reminder is never taken for another.
 const CLOCK_SLACK_MS = 10_000;
 
-type TwilioMessageType = {
+type TwilioListedTextType = {
   sid: string;
   body: string;
   direction: string;
@@ -55,9 +55,9 @@ export async function findSentText(
     );
   }
 
-  let messages: TwilioMessageType[];
+  let messages: TwilioListedTextType[];
   try {
-    ({ messages } = (await response.json()) as { messages: TwilioMessageType[] });
+    ({ messages } = (await response.json()) as { messages: TwilioListedTextType[] });
     if (!Array.isArray(messages)) throw new Error("no list");
   } catch {
     throw new SendTextError(

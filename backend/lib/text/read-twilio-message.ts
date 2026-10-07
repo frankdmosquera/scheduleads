@@ -6,15 +6,27 @@ import { SendTextError } from "./send-text-error.js";
 import { readTwilioAccount } from "./twilio-account.js";
 import { twilioErrorCode } from "./twilio-error-code.js";
 
-export type TwilioMessageType = { from: string; to: string; body: string; receivedAt: Date };
+export type IncomingTextType = {
+  from: string;
+  to: string;
+  body: string;
+  hasPicture: boolean; // a picture or file came with it; only the words are passed on
+  receivedAt: Date;
+};
 
-type TwilioAnswerType = { from?: unknown; to?: unknown; body?: unknown; date_created?: unknown };
+type TwilioAnswerType = {
+  from?: unknown;
+  to?: unknown;
+  body?: unknown;
+  num_media?: unknown; // Twilio gives it as text, "0" or "1"
+  date_created?: unknown;
+};
 
 // Null without Twilio keys: there is no account to read from.
 export async function readTwilioMessage(
   messageSid: string,
   { timeoutMs = 10_000 }: { timeoutMs?: number } = {}
-): Promise<TwilioMessageType | null> {
+): Promise<IncomingTextType | null> {
   const account = readTwilioAccount();
   if (!account) return null;
 
@@ -50,7 +62,7 @@ export async function readTwilioMessage(
   } catch {
     answer = {};
   }
-  const { from, to, body, date_created: dateCreated } = answer;
+  const { from, to, body, num_media: numMedia, date_created: dateCreated } = answer;
   if (typeof from !== "string" || typeof to !== "string" || typeof body !== "string") {
     throw new SendTextError(
       "unreadable_answer",
@@ -64,6 +76,7 @@ export async function readTwilioMessage(
     from,
     to,
     body,
+    hasPicture: Number(numMedia) > 0,
     receivedAt: Number.isNaN(receivedAt.getTime()) ? new Date() : receivedAt,
   };
 }

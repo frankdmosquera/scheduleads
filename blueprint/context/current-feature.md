@@ -229,9 +229,10 @@ Frank's yes; every test fakes Twilio.
   `text_reply` job keyed by Twilio's message id (so Twilio posting the same
   text twice adds one job; `enqueueJob` gains a `jobKey` option) and
   answering Twilio an empty reply at once. The job
-  passes the text on to the reply phone (a text from the business's number:
-  who sent it, their number, the words, "reply to them directly") and/or the
-  reply email (through the business's own Resend, as feature 6 sends), never
+  passes the text on to the reply email first (so a text that keeps failing
+  never holds it back; F-218) and/or the reply phone (a text from the
+  business's number: who sent it, their number, the words, where to answer),
+  checked with Twilio before every send (F-217), the reply email (through the business's own Resend, as feature 6 sends), never
   from the reply phone itself (decision 9), and never to a reply phone that
   is any business's texting number (F-199: a setup mistake would hand Jane's
   words to another business, or two businesses would drop each other's
@@ -323,7 +324,11 @@ counts the eight double-cost characters as two; a name too long is cut by
 `fitBusinessName`; `{when}` is "Tue Oct 13, 7:30am" in the business's zone):
 - Confirmation: `{Business}: booked {when}. Details or changes: {link}`
 - Reminder: `{Business} reminder: {when}. Details or changes: {link}`
-- Passed-on reply: `Text to {Business} from {name or number} ({number}): {words} - reply to them directly, not to this number.`
+- Passed-on reply (as built in 8b.4; F-220): `Reply from {name, }{number}: {words} (answer at {number}, not here)`,
+  the number as 403-555-0148; their words untouched, `[picture not shown]` added
+  when a picture came, cut with `...` only past Twilio's 1600 characters; it
+  comes from the business's own number, so the business is not named. The
+  email: subject `Text from {name or number}`, every word.
 
 ## Testing
 
@@ -358,13 +363,18 @@ is a hand check at deploy, with Frank's Twilio keys, on his yes.
   booking (decision 4).
 - Only a note for later (Frank, 2026-10-07): how many messages each package
   includes. Raise it when packages and their limits come up; not 8b's scope.
+  With it, a cap on replies passed on as texts (8b.4's review, F-229): anyone
+  who knows a business's number makes the agency pay for a text in and one
+  out per message; the email route costs nothing.
 - CASL: these are messages about a booking Jane asked for. Twilio's own STOP
   handling stays on.
 - Owner-made bookings get the texts, as they get the confirmation email.
 - Deploy notes carried from 8a: F-176 (`RAILWAY_DEPLOYMENT_DRAINING_SECONDS=30`)
   and F-179, remind Frank at the deploy that ships 8a and 8b. At that deploy
   also: the Twilio keys on Railway, a number bought per business, and each
-  number's incoming-message webhook pointed at `/texts/incoming`. The app's
+  number's incoming-message webhook set to exactly `${BETTER_AUTH_URL}/texts/incoming`
+  (Twilio signs that address; any other, even a trailing slash, has every reply
+  refused, logged as "not signed by Twilio for it"; F-223). The app's
   address (`APP_ORIGIN`) is in every text's link, so it must be short (the
   one-piece tests assume up to about 30 characters) and must not name the
   product (decision 4; noted by 8b.2's review).

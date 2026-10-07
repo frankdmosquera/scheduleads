@@ -86,7 +86,7 @@ type BusinessType = Awaited<ReturnType<typeof makeBusiness>>;
 // Twilio's side and Resend's, faked: the texts Twilio holds, every request, and its answers.
 type CallType = { method: string; url: string; form: Record<string, string> };
 let calls: CallType[];
-let held: Map<string, { from: string; to: string; body: string }>;
+let held: Map<string, { from: string; to: string; body: string; num_media: string }>;
 
 // Signs a post exactly as Twilio does, for the API's own address.
 function signed(fields: Record<string, string>, address = `${apiOrigin}/texts/incoming`) {
@@ -97,9 +97,9 @@ function signed(fields: Record<string, string>, address = `${apiOrigin}/texts/in
 }
 
 // Jane's text, as Twilio keeps it and posts it.
-function janeTexts(business: BusinessType, body: string, from = JANE) {
+function janeTexts(business: BusinessType, body: string, from = JANE, pictures = 0) {
   const sid = messageSid();
-  held.set(sid, { from, to: business.fromNumber, body });
+  held.set(sid, { from, to: business.fromNumber, body, num_media: String(pictures) });
   return { MessageSid: sid, AccountSid: "AC123", From: from, To: business.fromNumber, Body: body };
 }
 
@@ -124,10 +124,22 @@ const textsSent = () =>
   calls.filter((call) => call.method === "POST" && call.url.endsWith("/Messages.json"));
 const emailsSent = () => calls.filter((call) => call.url === "https://api.resend.com/emails");
 
+// The texts Twilio took, and how it answers the next send: taken ("sent"), taken with the answer
+// lost ("lost"), or refused (a Response).
+type OutboxTextType = Record<
+  "sid" | "from" | "to" | "body" | "direction" | "status" | "date_created",
+  string
+>;
+let outbox: OutboxTextType[];
+let sendAnswer: (form: Record<string, string>) => "sent" | "lost" | Response;
+
 let log: ReturnType<typeof vi.spyOn>;
+let warn: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   calls = [];
   held = new Map();
+  outbox = [];
+  sendAnswer = () => "sent";
   vi.stubEnv("TWILIO_ACCOUNT_SID", "AC123");
   vi.stubEnv("TWILIO_AUTH_TOKEN", TOKEN);
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init: RequestInit = {}) => {
@@ -148,11 +160,32 @@ beforeEach(() => {
         ? Response.json({ ...text, date_created: new Date().toUTCString() })
         : Response.json({ code: 20404, status: 404 }, { status: 404 });
     }
-    if (method === "POST") return Response.json({ sid: `SM-out-${calls.length}` }, { status: 201 });
-    return Response.json({ messages: [] });
+    if (method === "POST") {
+      const answer = sendAnswer(form);
+      if (answer instanceof Response) return answer; // refused: Twilio keeps nothing
+      const sid = `SM-out-${calls.length}`;
+      outbox.push({
+        sid,
+        from: form.From!,
+        to: form.To!,
+        body: form.Body!,
+        direction: "outbound-api",
+        status: "sent",
+        date_created: new Date().toUTCString(),
+      });
+      return answer === "sent"
+        ? Response.json({ sid }, { status: 201 })
+        : new Response("<html>gateway</html>", { status: 201 }); // taken, the answer lost
+    }
+    const asked = new URL(url).searchParams;
+    return Response.json({
+      messages: outbox
+        .filter((text) => text.to === asked.get("To") && text.from === asked.get("From"))
+        .reverse(), // newest first, as Twilio lists them
+    });
   });
   log = vi.spyOn(console, "log").mockImplementation(() => {});
-  vi.spyOn(console, "warn").mockImplementation(() => {});
+  warn = vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
@@ -216,7 +249,7 @@ describe("a customer's text reply", () => {
         post({ ...fields, Body: "Cancel everything" }, signed(fields)),
     ],
   ])("a post with %s is refused and saves nothing", async (_, send) => {
-    const business = await makeBusiness(`refused-${randomInt(1000)}`);
+    const business = await makeBusiness(`refused-${randomUUID().slice(0, 8)}`);
     const response = await send(janeTexts(business, "Can we make it 8 instead?"));
 
     expect(response.status).toBe(403);
@@ -292,6 +325,112 @@ describe("a customer's text reply", () => {
     expect(textsSent().map((call) => call.form.Body)).toEqual([
       "Reply from 403-555-0177: On my way 👍 (answer at 403-555-0177, not here)",
     ]);
+  });
+
+  // A failed run waits seconds for its next try; the tests do not wait for it.
+  const makeDue = () => db.execute(sql`update ${schema}._private_jobs set run_at = now()`);
+
+  test("a retry after the pass-on's answer was lost sends nothing again", async () => {
+    const business = await makeBusiness("lost", { replyEmail: "office@summitpainting.com" });
+    let first = true;
+    sendAnswer = () => (first ? ((first = false), "lost") : "sent");
+    await post(janeTexts(business, "Can we make it 8 instead?"));
+
+    await workDueJobs();
+    await makeDue();
+    await workDueJobs();
+
+    expect(textsSent()).toHaveLength(1);
+    expect(emailsSent()).toHaveLength(2); // the retry's email reuses its key: Resend sends one
+    expect(new Set(emailsSent().map((call) => JSON.stringify(call.form)))).toHaveProperty(
+      "size",
+      1
+    );
+  });
+
+  test("Twilio posting the same text again after it was passed on sends nothing again", async () => {
+    const business = await makeBusiness("again");
+    const fields = janeTexts(business, "Can we make it 8 instead?");
+
+    await post(fields);
+    await workDueJobs();
+    await post(fields);
+    await workDueJobs();
+
+    expect(textsSent()).toHaveLength(1);
+  });
+
+  test("a text to the reply phone that keeps failing never holds back the email", async () => {
+    const business = await makeBusiness("down", { replyEmail: "office@summitpainting.com" });
+    sendAnswer = () => Response.json({ code: 21606, status: 400 }, { status: 400 }); // retried
+    await post(janeTexts(business, "Can we make it 8 instead?"));
+
+    await workDueJobs();
+
+    expect(emailsSent()).toHaveLength(1);
+    expect(await replyJobs()).toHaveLength(1); // the text still waits for its next try
+  });
+
+  test("a reply phone refused for good is logged, and the email still goes", async () => {
+    const business = await makeBusiness("refused-phone", {
+      replyEmail: "office@summitpainting.com",
+    });
+    sendAnswer = () => Response.json({ code: 21610, status: 400 }, { status: 400 });
+    await post(janeTexts(business, "Can we make it 8 instead?"));
+
+    await workDueJobs();
+
+    expect(emailsSent()).toHaveLength(1);
+    expect(await replyJobs()).toEqual([]);
+    expect(logged("Twilio 21610 for the reply phone")).toBe(true);
+  });
+
+  test("a business with only a reply email gets the email and no text", async () => {
+    const business = await makeBusiness("email-only", {
+      replyPhone: null,
+      replyEmail: "office@summitpainting.com",
+    });
+    await post(janeTexts(business, "Can we make it 8 instead?"));
+
+    await workDueJobs();
+
+    expect(textsSent()).toEqual([]);
+    expect(emailsSent()).toHaveLength(1);
+  });
+
+  test("a text Twilio says went to another number is never passed on to this business", async () => {
+    const business = await makeBusiness("other-number");
+    const fields = janeTexts(business, "Can we make it 8 instead?");
+    held.get(fields.MessageSid)!.to = madeUpNumber();
+    await post(fields);
+
+    await workDueJobs();
+
+    expect(textsSent()).toEqual([]);
+    expect(logged("it was sent to another number")).toBe(true);
+  });
+
+  test("a picture is said, not passed on", async () => {
+    const business = await makeBusiness("picture", { replyEmail: "office@summitpainting.com" });
+    await post(janeTexts(business, "", JANE, 1));
+
+    await workDueJobs();
+
+    expect(textsSent().map((call) => call.form.Body)).toEqual([
+      "Reply from Jane Doe, 403-555-0148: [picture not shown] (answer at 403-555-0148, not here)",
+    ]);
+    expect(String(emailsSent()[0]!.form.text)).toContain("They also sent a picture");
+  });
+
+  test("a refused post is logged with the address it was checked against", async () => {
+    const business = await makeBusiness("logged");
+    await post(janeTexts(business, "Hello?"), null);
+
+    expect(
+      warn.mock.calls.some(
+        ([line]) => typeof line === "string" && line.includes(`${apiOrigin}/texts/incoming refused`)
+      )
+    ).toBe(true);
   });
 
   test("STOP is passed on too, so the business knows the customer opted out", async () => {
