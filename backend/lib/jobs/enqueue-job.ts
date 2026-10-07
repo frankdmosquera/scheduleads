@@ -14,6 +14,7 @@ export type EnqueueJobOptionsType = {
   runAt?: Date; // not before then; now when left out
   queueName?: string; // one job at a time per queue; a failed one retries behind later ones
   maxAttempts?: number;
+  jobKey?: string; // one waiting job per key: adding the same key again replaces it
 };
 
 // The payload holds ids only: never a customer's details, a token or a key.
@@ -21,7 +22,7 @@ export async function enqueueJob(
   executor: DatabaseExecutorType,
   name: string,
   payload: Record<string, string | number | null>,
-  { runAt, queueName, maxAttempts = MOST_ATTEMPTS }: EnqueueJobOptionsType = {}
+  { runAt, queueName, maxAttempts = MOST_ATTEMPTS, jobKey }: EnqueueJobOptionsType = {}
 ): Promise<void> {
   await executor.execute(
     sql`select ${sql.identifier(jobSchema)}.add_job(
@@ -29,7 +30,8 @@ export async function enqueueJob(
       ${JSON.stringify(payload)}::text::json, -- text first, so no driver encodes it twice
       queue_name => ${queueName ?? null}::text,
       run_at => ${runAt?.toISOString() ?? null}::timestamptz,
-      max_attempts => ${maxAttempts}::int
+      max_attempts => ${maxAttempts}::int,
+      job_key => ${jobKey ?? null}::text
     )`
   );
 }

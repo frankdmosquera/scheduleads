@@ -4,9 +4,8 @@
 
 **Branch:** feature/08b-the-customer-s-texts
 
-**Status:** 8b.1 and 8b.2 built and reviewed 2026-10-07 (8b.2's plan amended
-with Frank: one-piece texts, the packed link); 8b.3 built the same day, its
-audit and independent review next.
+**Status:** 8b.1 to 8b.3 built and reviewed 2026-10-07; 8b.4 built the same
+day, its audit and independent review next, then the feature's final review.
 
 ## Goal
 
@@ -223,7 +222,7 @@ Frank's yes; every test fakes Twilio.
   address (F-212); every case on the build log's Simulate page (cases a to f)
   is a saved test under the same name; the suite passes several runs in a row.
 
-- [ ] **8b.4 Jane's replies.** `POST /texts/incoming`, public, answering only
+- [x] **8b.4 Jane's replies.** `POST /texts/incoming`, public, answering only
   a request carrying Twilio's valid signature for the API's own address
   (403 otherwise), finding the business by the number texted (an unknown
   number is answered and dropped, logged without the sender), then adding a
@@ -267,7 +266,12 @@ Frank's yes; every test fakes Twilio.
   sender for both texts, so their rules cannot drift apart) and
   `render-reminder-text.ts`;
   `find-text-settings.ts` (the wording is one render file per text, above),
-  `verify-twilio-signature.ts`, `pass-on-reply.ts`, with tests.
+  `verify-twilio-signature.ts`, `pass-on-reply.ts`, with tests; in 8b.4 also
+  `find-texting-business.ts` (whose number it is, also the F-199 guard),
+  `read-twilio-message.ts` (the job reads the words back from Twilio),
+  `find-reply-sender-name.ts`, `readable-phone-number.ts`,
+  `render-reply-text.ts`, and `backend/emails/text-reply-notification.tsx`
+  (the reply by email, from the business's own sender).
 - `backend/lib/jobs/job-task.ts` hands each job its try number (8b.2);
   `backend/vitest.setup.ts` blanks the Twilio keys so no test uses real ones.
 - `backend/lib/booking/booking-page-token.ts`: the packed link (decision 11).
@@ -275,7 +279,10 @@ Frank's yes; every test fakes Twilio.
   `text-reply-job.ts`; `job-names.ts` and `job-tasks.ts` gain both names.
 - `backend/lib/booking/book-time.ts`, `move-booking.ts`: add the text jobs in
   the same transaction. `cancel-booking.ts` unchanged (decision 6).
-- `backend/routes/public-text-routes.ts` mounted in `backend/app.ts`.
+- `backend/routes/public-text-routes.ts` mounted in `backend/app.ts` at
+  `/texts`, so Twilio posts to `/texts/incoming`; no CORS, no browser calls it.
+- `backend/lib/jobs/enqueue-job.ts` gains `jobKey`; `twilio-account.ts` also
+  hands back the auth token, for the signature.
 - `.env.example`: the two Twilio keys. `AGENTS.md`: the client-decides rule
   (written with this spec).
 

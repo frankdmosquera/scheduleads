@@ -5,6 +5,7 @@
 export type TwilioAccountType = {
   messagesUrl: string; // Twilio's Messages API for this account
   authorization: string; // the Basic header; never logged
+  authToken: string; // checks that an incoming text came from Twilio; never logged
 };
 
 export function readTwilioAccount(): TwilioAccountType | null {
@@ -14,5 +15,6 @@ export function readTwilioAccount(): TwilioAccountType | null {
   return {
     messagesUrl: `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(accountSid)}/Messages.json`,
     authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+    authToken,
   };
 }

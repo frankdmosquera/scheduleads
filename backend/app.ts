@@ -16,6 +16,7 @@ import { emailSendingRoutes } from "./routes/email-sending-routes.js";
 import { publicBookingLinksRoutes } from "./routes/public-booking-links-routes.js";
 import { publicBookingPageRoutes } from "./routes/public-booking-page-routes.js";
 import { publicBookingsRoutes } from "./routes/public-bookings-routes.js";
+import { publicTextRoutes } from "./routes/public-text-routes.js";
 
 export const app = new Hono()
   // Every dashboard route mounts both; the ones that change something also check the origin.
@@ -63,6 +64,8 @@ export const app = new Hono()
   .route("/public", publicBookingLinksRoutes)
   .route("/public", publicBookingsRoutes)
   .route("/public", publicBookingPageRoutes)
+  // Twilio posts customers' replies here, signed; no browser calls it, so no CORS.
+  .route("/texts", publicTextRoutes)
 
   // For Railway. No database on purpose: an outage there should not restart a healthy API.
   .get("/health", (c) => c.json({ ok: true }));
