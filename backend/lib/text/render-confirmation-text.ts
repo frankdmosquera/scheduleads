@@ -2,8 +2,8 @@
 // only what is needed, the time and the link to the booking's own page for everything else, so it
 // fits one piece (feature 8b, decision 4).
 
+import { fitBusinessName } from "./fit-business-name.js";
 import { formatTextTime } from "./format-text-time.js";
-import { plainText } from "./plain-text.js";
 
 export type BookingTextFactsType = {
   businessName: string;
@@ -14,7 +14,8 @@ export type BookingTextFactsType = {
 
 export function renderConfirmationText(facts: BookingTextFactsType): string {
   const when = formatTextTime(facts.startsAt, facts.timezone);
-  return plainText(
-    `${facts.businessName}: booked ${when}. Details or changes: ${facts.bookingPageUrl}`
+  return fitBusinessName(
+    facts.businessName,
+    (name) => `${name}: booked ${when}. Details or changes: ${facts.bookingPageUrl}`
   );
 }

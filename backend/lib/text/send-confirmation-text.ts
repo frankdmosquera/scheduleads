@@ -1,5 +1,5 @@
-// Backend: sends one booking's confirmation text, from the business's own number (feature 8b,
-// step 8b.2). It does what is still true when it runs (decision 6): a cancelled booking, a started
+// Backend: sends one booking's confirmation text, from the business's own number (feature 8b).
+// It does what is still true when it runs (decision 6): a cancelled booking, a started
 // appointment, a business without texts or with the confirmation off, or a customer without a
 // phone that takes texts sends nothing, in one log line. A booking moved before it went is
 // confirmed at its new time. On a retry it first asks Twilio whether the text already went

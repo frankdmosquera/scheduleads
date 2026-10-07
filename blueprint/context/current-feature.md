@@ -80,7 +80,9 @@ is on by default; a business with no text settings sends no texts.
    by sending a whole letter"). Every message costs money, and packages will
    count them, so a text carries the business's name, the time and the link,
    nothing else; the details are on Jane's booking page and in the email.
-   Each text fits one billed piece: at most 160 plain characters. The
+   Each text fits one billed piece: at most 160, counting the eight plain
+   characters a text carries at double cost (`[ ] \ ^ { | } ~`) as two; a
+   business name too long for that loses words from its end (F-204). The
    wording is fixed, like the emails, the product never named, plain ASCII
    (any other character, a curly apostrophe or a special space in a time,
    re-encodes the whole text at 70 characters a piece). Rejected: the
@@ -347,4 +349,7 @@ is a hand check at deploy, with Frank's Twilio keys, on his yes.
 - Deploy notes carried from 8a: F-176 (`RAILWAY_DEPLOYMENT_DRAINING_SECONDS=30`)
   and F-179, remind Frank at the deploy that ships 8a and 8b. At that deploy
   also: the Twilio keys on Railway, a number bought per business, and each
-  number's incoming-message webhook pointed at `/texts/incoming`.
+  number's incoming-message webhook pointed at `/texts/incoming`. The app's
+  address (`APP_ORIGIN`) is in every text's link, so it must be short (the
+  one-piece tests assume up to about 30 characters) and must not name the
+  product (decision 4; noted by 8b.2's review).

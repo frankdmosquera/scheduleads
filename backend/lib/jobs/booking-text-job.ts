@@ -6,7 +6,7 @@ import { sendConfirmationText } from "../text/send-confirmation-text.js";
 import { jobTask } from "./job-task.js";
 
 // `sequence` is the booking's move number when the job was added; `minutesBefore` is a
-// reminder's (feature 8b, step 8b.3), null for the confirmation.
+// reminder's, null for the confirmation.
 export type BookingTextJobPayloadType = {
   organizationId: string;
   bookingId: string;

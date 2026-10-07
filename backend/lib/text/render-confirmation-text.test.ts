@@ -5,9 +5,10 @@ import { describe, expect, test } from "vitest";
 import { formatTextTime } from "./format-text-time.js";
 import { plainText } from "./plain-text.js";
 import { renderConfirmationText } from "./render-confirmation-text.js";
+import { textPieceLength } from "./text-piece-length.js";
 
 const EDMONTON = "America/Edmonton";
-const ONE_PIECE = 160; // plain characters in one billed piece
+const ONE_PIECE = 160; // what one billed piece carries
 const PLAIN = /^[\x20-\x5f\x61-\x7e]*$/; // printable ASCII without the backtick
 
 // The longest app address the texts are planned for, and a packed link's 45 characters.
@@ -21,12 +22,12 @@ describe("formatTextTime", () => {
   ])("%s in the business's zone: %s is %s", (_, moment, expected) => {
     expect(formatTextTime(new Date(moment), EDMONTON)).toBe(expected);
   });
-});
 
-test("another business's zone says its own time", () => {
-  expect(formatTextTime(new Date("2026-10-13T13:30:00Z"), "America/Toronto")).toBe(
-    "Tue Oct 13, 9:30am"
-  );
+  test("another business's zone says its own time", () => {
+    expect(formatTextTime(new Date("2026-10-13T13:30:00Z"), "America/Toronto")).toBe(
+      "Tue Oct 13, 9:30am"
+    );
+  });
 });
 
 describe("plainText", () => {
@@ -36,6 +37,11 @@ describe("plainText", () => {
     ["curly quotes become plain ones", "“Primo”", '"Primo"'],
     ["a long dash becomes a hyphen", "Face — Body", "Face - Body"],
     ["special spaces become plain ones", "7:30 a.m. MDT", "7:30 a.m. MDT"],
+    [
+      "letters with no plain form are spelled out",
+      "Bjørn's Cœur Straße Łódź",
+      "Bjorn's Coeur Strasse Lodz",
+    ],
     ["the backtick goes: texts cannot carry it", "Primo`s", "Primos"],
     ["anything else outside the plain set goes", "Summit ☀ Painting", "Summit  Painting"],
   ])("%s", (_, typed, expected) => {
@@ -72,9 +78,34 @@ describe("renderConfirmationText", () => {
       });
 
       expect(text).toMatch(PLAIN);
-      expect(text.length).toBeLessThanOrEqual(ONE_PIECE);
+      expect(textPieceLength(text)).toBeLessThanOrEqual(ONE_PIECE);
     }
   );
+
+  test("a long business name loses words from its end until the text fits one piece", () => {
+    const text = renderConfirmationText({
+      businessName: "Summit Painting and Decorating Contractors of Southern Alberta Limited",
+      startsAt: new Date("2026-09-30T17:45:00Z"),
+      timezone: EDMONTON,
+      bookingPageUrl: link,
+    });
+
+    expect(textPieceLength(text)).toBeLessThanOrEqual(ONE_PIECE);
+    expect(text).toMatch(/^Summit Painting and Decorating( \w+)*: booked Wed Sep 30, 11:45am\. /);
+    expect(text).not.toContain("Limited"); // the tail went, not the time or the link
+    expect(text.endsWith(link)).toBe(true);
+  });
+
+  test("the characters a text carries at double cost are counted double", () => {
+    expect(textPieceLength("Face | Body {Clinic} ~ Spa")).toBe(30);
+    const text = renderConfirmationText({
+      businessName: "Face | Body {Clinic} ~ Spa [Calgary] ^ Downtown Location",
+      startsAt: new Date("2026-09-30T17:45:00Z"),
+      timezone: EDMONTON,
+      bookingPageUrl: link,
+    });
+    expect(textPieceLength(text)).toBeLessThanOrEqual(ONE_PIECE);
+  });
 
   test("a business name with accents or curly quotes still makes a plain text", () => {
     const text = renderConfirmationText({

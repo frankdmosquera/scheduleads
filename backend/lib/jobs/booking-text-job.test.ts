@@ -1,4 +1,4 @@
-// A booking's confirmation text as a job (feature 8b, step 8b.2), against the local database with
+// A booking's confirmation text as a job (feature 8b), against the local database with
 // Twilio faked: no test ever sends a real text. Every business here is a throwaway carrying this
 // run's tag, removed after.
 
@@ -23,6 +23,7 @@ const { db } = await import("../../database.js");
 const {
   activity,
   availabilityRule,
+  booking,
   bookingLink,
   bookingLinkResource,
   member,
@@ -358,40 +359,66 @@ describe("a booking's confirmation text", () => {
     expect(await textJobsOf(id)).toEqual([]);
   });
 
-  test("a retry after a send whose answer was lost sends nothing: the text Twilio has is recorded", async () => {
-    const business = await makeBusiness("lost");
-    const id = await book(business);
-    let body = "";
-    sendAnswer = (form) => {
-      body = form.Body;
-      return new Response("<html>gateway</html>", { status: 201 }); // taken, the answer lost
-    };
-    listAnswer = () =>
-      Response.json({
-        messages: [
-          {
-            sid: "SM7",
-            body,
-            direction: "outbound-api",
-            status: "sent",
-            date_created: new Date().toUTCString(),
-          },
-        ],
+  // The booking is made at a fixed moment, so the check's "since" is pinned: the booking's creation,
+  // never its appointment or the moment of the retry (decision 8).
+  const MADE_AT = new Date("2026-10-01T12:00:00Z");
+  test.each([
+    ["a minute after the booking was made", 60_000, ["POST", "GET"], "SM7"],
+    ["a minute before the booking was made", -60_000, ["POST", "GET", "POST"], "SM1"],
+  ])(
+    "a retry after a send whose answer was lost, with the same words sent %s",
+    async (_, offset, methods, recorded) => {
+      const business = await makeBusiness(`lost-${offset}`);
+      const id = await book(business);
+      await db.update(booking).set({ createdAt: MADE_AT }).where(eq(booking.id, id));
+      let body = "";
+      let lost = true;
+      sendAnswer = (form) => {
+        body = form.Body;
+        if (!lost) return sent("SM1");
+        lost = false;
+        return new Response("<html>gateway</html>", { status: 201 }); // taken, the answer lost
+      };
+      listAnswer = () =>
+        Response.json({
+          messages: [
+            {
+              sid: "SM7",
+              body,
+              direction: "outbound-api",
+              status: "sent",
+              date_created: new Date(MADE_AT.getTime() + offset).toUTCString(),
+            },
+          ],
+        });
+
+      await workDueJobs();
+      await makeDue(id);
+      await workDueJobs();
+
+      // Found since the booking was made: nothing sent again, the text Twilio has recorded. From
+      // before it: another text, so this one is sent.
+      expect(calls.map((call) => call.method)).toEqual(methods);
+      expect(calls[1].form).toEqual({
+        From: business.fromNumber,
+        To: "+14035550148",
+        PageSize: "20",
       });
+      expect(await textEntriesOf(business)).toEqual([
+        { bookingId: id, kind: "booking_confirmation", twilioSid: recorded },
+      ]);
+    }
+  );
+
+  test("a business with no time zone: nothing is sent", async () => {
+    const business = await makeBusiness("no-zone");
+    await book(business);
+    await db.delete(availabilityRule).where(eq(availabilityRule.organizationId, business.business));
 
     await workDueJobs();
-    await makeDue(id);
-    await workDueJobs();
 
-    expect(calls.map((call) => call.method)).toEqual(["POST", "GET"]);
-    expect(calls[1].form).toEqual({
-      From: business.fromNumber,
-      To: "+14035550148",
-      PageSize: "20",
-    });
-    expect(await textEntriesOf(business)).toEqual([
-      { bookingId: id, kind: "booking_confirmation", twilioSid: "SM7" },
-    ]);
+    expect(calls).toEqual([]);
+    expect(loggedNotSent("the business has no time zone")).toBe(true);
   });
 
   test("a customer who texted STOP is not retried: one try, one log line, no entry", async () => {

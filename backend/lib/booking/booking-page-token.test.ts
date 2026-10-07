@@ -22,7 +22,7 @@ describe("a booking's private link", () => {
   });
 
   // Links are permanent (decision 10): any change to how they are made ends every link already
-  // sent. Packed once, in 8b before any customer had one (8b, decision 11).
+  // sent.
   test("a link is made exactly the same way, always", () => {
     const id = "0f9c2a4e-3b1d-4e8a-9c7f-5d2e1a6b8c90";
 
@@ -52,7 +52,7 @@ describe("a booking's private link", () => {
       `${token.split(".")[0]}.${otherSignature}`, // another booking's signature
       `${token}.extra`,
       "",
-      `${bookingId}.${token.split(".")[1]}`, // the booking id written out, as links once were
+      `${bookingId}.${token.split(".")[1]}`, // the booking id written out in full
       `../${token}`,
     ]) {
       expect(readBookingPageToken(bad, key)).toBeNull();

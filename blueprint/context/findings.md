@@ -510,7 +510,7 @@ apart.
 (for example 16:00 minus 2 minutes, outside the 60 s slack), expecting null.
 **Resolution:** Fixed 2026-10-07 in 8b.1's review fixes: find-sent-text.test.ts finds the same words 5 s before the first try and refuses them a minute before, so a slack of a minute or more fails a test. Closed 2026-10-07 by re-review of 8b.1's fixes: find-sent-text.test.ts:82-96 bounds the slack on both sides (15:59:55 found, 15:59:00 not, against a 16:00:00 first try). Proved in this pass: CLOCK_SLACK_MS at 120_000 and at 60_000 each fail "the same words a minute or more before the first try are another text" (1 failed, 14 passed); the file was restored and `git status` showed it unchanged.
 
-### F-201 [P3] fixed - 8b.3 never says which `since` a reminder's retry passes, and its Done when has no case where an earlier reminder has gone
+### F-201 [P3] closed - 8b.3 never says which `since` a reminder's retry passes, and its Done when has no case where an earlier reminder has gone
 
 **File:** blueprint/context/current-feature.md:171-183 (rule: decision 8 at :102-112; the check: backend/lib/text/find-sent-text.ts:70-77)
 **Found:** 2026-10-07 by re-review of 8b.1's fixes (scope: 7582593..9b8793a, with 3b47c1c..9b8793a as context; lenses: quality, security, performance, tests)
@@ -529,7 +529,7 @@ correct `since`.
 the appointment minus its minutes (never the job's `created_at`)" and a Done
 when case: with Summit's 1200 and 60 reminders, the 1200 one sent, the 60
 one's first send losing its answer, the retry still sends the 60 one.
-**Resolution:** Fixed 2026-10-07 after the re-review: 8b.3's spec says a reminder's retry checks Twilio with since = the appointment minus its minutes, never the job's created_at or run_at, and its Done when adds "the 60-minute reminder's retry still sends after the 1200-minute one went".
+**Resolution:** Fixed 2026-10-07 after the re-review: 8b.3's spec says a reminder's retry checks Twilio with since = the appointment minus its minutes, never the job's created_at or run_at, and its Done when adds "the 60-minute reminder's retry still sends after the 1200-minute one went". Closed 2026-10-07 by /audit of 8b.2 (bab087f..23ebb83): current-feature.md:207-211 says 8b.3's retry checks Twilio first (decision 8) with since = the appointment minus its minutes, never the job's created_at or run_at, and :217-218 has the 60-after-1200 retry case in the Done when. 8b.2's code does not pre-empt it: the only `since` passed today is the confirmation's, the booking's creation (send-confirmation-text.ts:66), and booking-text-job.ts leaves the reminder path to 8b.3.
 
 ### F-202 [P3] fixed - The feature 12 half of F-199 lives only in this spec's notes, which are archived with 8b, and item 12 has no line for text settings at all
 
@@ -550,7 +550,7 @@ line for the text settings screen, including the F-199 refusal on save (and
 the no-repeats rule the table cannot enforce).
 **Resolution:** Fixed 2026-10-07 on Frank's yes: build-plan item 12 has a "Text settings" line (the number, the confirmation, any reminders, where replies go, nothing on by default; saving refuses a reply phone that is any business's texting number), and the overview's Settings line names text settings, its fingerprint refreshed.
 
-### F-203 [P3] fixed - SendTextError's list of codes leaves out the new "unreadable_answer" (and "http_NNN")
+### F-203 [P3] closed - SendTextError's list of codes leaves out the new "unreadable_answer" (and "http_NNN")
 
 **File:** backend/lib/text/send-text-error.ts:7 (codes thrown: backend/lib/text/send-text.ts:168-173, backend/lib/text/find-sent-text.ts:63-68, backend/lib/text/twilio-error-code.ts:10)
 **Found:** 2026-10-07 by re-review of 8b.1's fixes (scope: 7582593..9b8793a, with 3b47c1c..9b8793a as context; lenses: quality, security, performance, tests)
@@ -562,4 +562,122 @@ the no-repeats rule the table cannot enforce).
 not. Nothing branches on the code today (callers branch on `retry`), hence P3.
 **Suggested fix:** Name every code in the comment ("Twilio's error code,
 "http_502", "timeout", "no_connection", "no_keys" or "unreadable_answer"").
-**Resolution:** Fixed 2026-10-07 after the re-review: the comment on SendTextError's code lists http_<status> and unreadable_answer too.
+**Resolution:** Fixed 2026-10-07 after the re-review: the comment on SendTextError's code lists http_<status> and unreadable_answer too. Closed 2026-10-07 by /audit of 8b.2 (bab087f..23ebb83): send-text-error.ts:7-8 names "http_<status>", "unreadable_answer", "timeout", "no_connection" and "no_keys"; every `new SendTextError` in backend/lib (send-text.ts:33, 58, 65, 75, 89; find-sent-text.ts:41, 50, 63) throws one of those or Twilio's own code, and twilio-error-code.ts returns only Twilio's code or `http_<status>`. 8b.2 logs the code only for a never-retry refusal (send-confirmation-text.ts:77), whose codes are Twilio's fixed numbers.
+
+### F-204 [P3] fixed - The confirmation is one piece only for business names of up to 30 plain characters; nothing keeps a longer name, or one with | ~ { } [ ] ^ \, to one piece
+
+**File:** backend/lib/text/render-confirmation-text.ts:15-20 (test: backend/lib/text/render-confirmation-text.test.ts:11, 75)
+**Found:** 2026-10-07 by /audit (scope: 8b.2, bab087f..23ebb83; lenses: quality, security, performance, tests)
+**Why it matters:** Decision 4 says each text fits one billed piece. With a
+32-character app address the fixed parts take 130 characters, so the name
+gets 30. Measured against the built renderer (scratch script, Wed Sep 30
+11:45am, the test's link): a 30-character name gives 160, a 31-character name
+161, "Face & Body Aesthetics Clinic Inc." 164, two pieces each. Business names
+are allowed up to 80 characters (business-name-validation-schema.ts:11), so
+the four tenants' current names pass only by luck of length. Separately, the
+test counts every plain character as one, but `[ ] \ ^ { | } ~` are GSM-7
+extension characters that cost two each: "Face | Body {Clinic} ~ Spa" renders
+at 156 characters, 160 septets, and one more such character would split it
+while `text.length <= 160` still passes. 8b.3's reminder wording
+(" reminder: " is two characters longer than ": booked ") leaves 28.
+**Suggested fix:** Decide with Frank what a too-long text does (a short
+"text name" in text_settings, cutting the name, or a limit refused at client
+setup / Settings), and record the budget in the spec; count extension
+characters as two in the one-piece test (or strip them in `plainText`). Cover
+the reminder's wording in 8b.3's length test.
+**Resolution:** Fixed 2026-10-07 in 8b.2's review fixes: text-piece-length.ts counts the eight double-cost characters as two, and fit-business-name.ts cuts a business name a word at a time from its end until the text fits 160; render-confirmation-text.ts uses it (8b.3's reminder will too). Tests: a 70-character name keeps its start, the time and the link and fits; a name full of | { } ~ [ ] ^ fits by that count. Spec decision 4 says so; the deploy notes say APP_ORIGIN must stay short (about 30 characters) and must not name the product.
+
+### F-205 [P3] fixed - The email preview's sample link and the link helper's comment still describe the old link
+
+**File:** backend/scripts/email-preview.ts:36-37; backend/lib/booking/booking-page-url.ts:1
+**Found:** 2026-10-07 by /audit (scope: 8b.2, bab087f..23ebb83; lenses: quality, security, performance, tests)
+**Why it matters:** Decision 11 changed the link to 22 + 22 base64url
+characters. The preview script says "A link of the right shape" over
+`/b/00000000-0000-4000-8000-000000000000.sample`, the old 36-hex form, so the
+preview's email shows a link about twice the real length and the comment is
+now false. booking-page-url.ts says the address is "as the customer's emails
+link it"; since 8b.2 the confirmation text carries it too
+(send-confirmation-text.ts:54).
+**Suggested fix:** Make the sample a packed-shape link (for example 22 and 22
+characters) and say emails and texts in booking-page-url.ts.
+**Resolution:** Fixed 2026-10-07 in 8b.2's review fixes: the email preview's sample link has the packed shape (22.22 characters), and booking-page-url.ts says emails and texts carry it.
+
+### F-206 [P3] fixed - 8b.2 brings the first step numbers and history into code comments
+
+**File:** backend/lib/text/send-confirmation-text.ts:1-2; backend/lib/jobs/booking-text-job.ts:8-9; backend/lib/jobs/booking-text-job.test.ts:1; backend/lib/booking/booking-page-token.test.ts:25, 55
+**Found:** 2026-10-07 by /audit (scope: 8b.2, bab087f..23ebb83; lenses: quality, security, performance, tests)
+**Why it matters:** coding-standards.md:358-359: "No history in code comments
+(step numbers, finding numbers, ...): that lives in the build log." `git grep`
+for `// ... step N.M` finds no match at bab087f and three at 23ebb83
+("step 8b.2", "step 8b.3", "step 8b.2"). The token test adds history too:
+"Packed once, in 8b before any customer had one" and "as links once were".
+Feature and decision pointers ("feature 8b, decision 11") are the codebase's
+usual form and are not part of this.
+**Suggested fix:** Drop the step numbers (keep "feature 8b"), and say what the
+token test checks rather than when the link changed ("the booking id written
+out in full opens nothing").
+**Resolution:** Fixed 2026-10-07 in 8b.2's review fixes: the step numbers are out of send-confirmation-text.ts, booking-text-job.ts and booking-text-job.test.ts, and the history lines are out of booking-page-token.test.ts; `git grep -n "step 8b"` in backend finds none.
+
+### F-207 [P3] fixed - plainText drops letters that do not decompose, so "Bjørn" becomes "Bjrn" and "Cœur" becomes "Cur"
+
+**File:** backend/lib/text/plain-text.ts:9-15
+**Found:** 2026-10-07 by /audit (scope: 8b.2, bab087f..23ebb83; lenses: quality, security, performance, tests)
+**Why it matters:** NFKD splits é, è, ç and ô into a letter and a mark, but
+ø, æ, œ, ß, ł and đ have no decomposition, so the last replace deletes them.
+Measured with the built renderer: "Bjørn's Painting" is sent as "Bjrn's
+Painting". Every tenant is in Canada, where œ appears in French names
+("Cœur", "Sœurs"). Decision 4 asks for plain ASCII, not for dropped letters;
+the business's own name is the one word the text must get right.
+**Suggested fix:** Map the few letters NFKD leaves alone before the final
+replace (ø→o, æ→ae, œ→oe, ß→ss, ł→l, đ→d, and their capitals), with a test
+case in render-confirmation-text.test.ts.
+**Resolution:** Fixed 2026-10-07 in 8b.2's review fixes: plainText spells out the letters NFKD does not split (o for ø, ae for æ, oe for œ, ss for ß, l for ł, d for đ, th for þ, and their capitals, plus ð and dotless i). Test: "Bjørn's Cœur Straße Łódź" becomes "Bjorn's Coeur Strasse Lodz".
+
+### F-208 [P3] fixed - The "no time zone" skip has no test, the one skip case of 8b.2's Done when left uncovered
+
+**File:** backend/lib/text/send-confirmation-text.ts:42 (tests: backend/lib/jobs/booking-text-job.test.ts)
+**Found:** 2026-10-07 by /audit (scope: 8b.2, bab087f..23ebb83; lenses: quality, security, performance, tests)
+**Why it matters:** 8b.2's Done when says "each skip case sends nothing", and
+the step lists six: not confirmed, started, no settings, confirmation off, no
+time zone, no textable phone. The job test covers five; nothing builds a
+business without its own availability rule. Today `tsc` would refuse a null
+zone reaching `renderConfirmationText`, but a change that defaults it (say to
+the server's zone) keeps both the build and the suite green while the text
+states a wrong time; without the guard and the types, `Intl.DateTimeFormat`
+throws "Invalid time zone specified: null" (checked with node) and the job
+retries ten times for nothing.
+**Suggested fix:** A case in booking-text-job.test.ts: book, then delete the
+business's own availability rule before working the job; expect no Twilio
+call and the "the business has no time zone" log line.
+**Step review note (independent, 2026-10-07):** agreed, P3. The guard is
+reachable only that way: `availability_rule_row_kind_check`
+(availability-rule-table.ts) refuses a business row without a timezone and
+`availability_rule_business_unique` allows one per business, so the left join
+in find-booking-text-context.ts yields null only when the business's own row
+is gone, which is what the suggested test sets up.
+**Resolution:** Fixed 2026-10-07 in 8b.2's review fixes: booking-text-job.test.ts has "a business with no time zone: nothing is sent" (its hours row removed after booking), which checks the logged reason.
+
+### F-209 [P3] fixed - The lost-answer test does not pin which `since` the confirmation's retry passes; the booking's time or the retry's own time would keep it green
+
+**File:** backend/lib/jobs/booking-text-job.test.ts:361-392 (code: backend/lib/text/send-confirmation-text.ts:66)
+**Found:** 2026-10-07 by independent step review (scope: 8b.2, bab087f..23ebb83; lenses: quality, security, performance, tests)
+**Why it matters:** Decision 8 and F-201 put the harm in the job's choice of
+`since`: the booking's creation for the confirmation. The only job-level test
+of the check lists Twilio's text with `date_created: new Date()` (test line
+377), the real clock at list time, while the booking's time NINE is
+2026-10-05 (line 47), already in the real past, and the job clock is pinned to
+2026-10-02. So `since: context.startsAt` (earliest Oct 5 14:59:50, before the
+listed Oct 7 date) and `since: new Date()` at the retry (earliest 10 s before
+a date taken after it) both still find the text and pass, as `createdAt` does.
+In production both are wrong: the confirmation goes days before `startsAt`, so
+a `startsAt` cutoff never finds it and Jane gets the text twice; a retry-time
+cutoff misses any text sent more than 10 s before the retry, which is every
+timed-out send (10 s limit plus the e^1 s wait). 8b.3 adds the reminder's
+`since` (the appointment minus its minutes) to the same job, the likeliest
+moment for the confirmation's to be unified with it, and nothing would turn
+red. find-sent-text.test.ts bounds only the slack, given a correct `since`.
+**Suggested fix:** In that test, set the booking's `createdAt` to a fixed
+moment before NINE (for example update it to 2026-10-02T13:59:00Z after
+booking) and list the text dated a minute after it; add a twin case with the
+same words dated a minute before that `createdAt`, expecting a POST.
+**Resolution:** Fixed 2026-10-07 in 8b.2's review fixes: the lost-answer test pins the booking's creation to 2026-10-01 12:00 and runs twice, the same words dated a minute after (found, nothing sent again, SM7 recorded) and a minute before (another text, sent). Proved: since: context.startsAt fails the first case.
