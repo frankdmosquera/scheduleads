@@ -392,7 +392,7 @@ and leave the setup's comment as the place that says the tests' schema is
 migrated there.
 **Resolution:**
 
-### F-195 [P2] fixed - Decision 8 says the duplicate check looks back a day, which would take a booking's earlier reminder for the one being retried
+### F-195 [P2] closed - Decision 8 says the duplicate check looks back a day, which would take a booking's earlier reminder for the one being retried
 
 **File:** blueprint/context/current-feature.md:98-101 (the code it governs: backend/lib/text/find-sent-text.ts:24, 56-62; the wording: current-feature.md:249)
 **Found:** 2026-10-07 by /audit (scope: 8b.1, 3b47c1c..7582593; lenses: quality, security, performance, tests)
@@ -415,9 +415,9 @@ in 8b.2/8b.3 what that is: the job's creation for the confirmation, the
 appointment minus `minutesBefore` for a reminder (never the job's
 `created_at`). Optionally make each reminder's words differ (or refuse
 reminders less than two minutes apart) so the slack cannot bridge two of them.
-**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes: decision 8 now says "since this text's first try", defined as the booking's creation for the confirmation and the appointment minus its minutes for a reminder; the clock slack in find-sent-text.ts is 10 s, under the one-minute smallest gap between two reminders (F-200's test bounds it). 8b.2 and 8b.3 pass that `since`.
+**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes: decision 8 now says "since this text's first try", defined as the booking's creation for the confirmation and the appointment minus its minutes for a reminder; the clock slack in find-sent-text.ts is 10 s, under the one-minute smallest gap between two reminders (F-200's test bounds it). 8b.2 and 8b.3 pass that `since`. Closed 2026-10-07 by re-review of 8b.1's fixes: decision 8 (current-feature.md:102-112) no longer says "in the last day" and defines `since` per kind (the booking's creation, the appointment minus its minutes), so neither the job's `created_at` nor the moving `run_at` is left as the obvious reading; find-sent-text.ts:14 is 10 s, under the one-minute gap the schema leaves between two distinct whole-minute reminders. Setting it to 60_000 or 120_000 fails find-sent-text.test.ts:90 (run in this pass, file restored, `git status` clean). One gap remains outside this finding: 8b.3's own text does not cite decision 8 and its Done when has no reminder-retry case, recorded as F-201.
 
-### F-196 [P3] fixed - The text settings check's refusal of a blank reminder has no test, and it is the only thing refusing one
+### F-196 [P3] closed - The text settings check's refusal of a blank reminder has no test, and it is the only thing refusing one
 
 **File:** packages/shared/db/text-tables/text-settings-table.ts:49-52 (tests: backend/lib/text/text-settings-rules.test.ts:103-111)
 **Found:** 2026-10-07 by /audit (scope: 8b.1, 3b47c1c..7582593; lenses: quality, security, performance, tests)
@@ -429,9 +429,9 @@ into a job with no time. The rules test covers 0 and -30 but no null element,
 so deleting that half would leave every test green.
 **Suggested fix:** Add `["a blank", [60, null]]` to the reminder `test.each` in
 text-settings-rules.test.ts, expecting `text_settings_reminder_minutes_check`.
-**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes: text-settings-rules.test.ts refuses a reminder "left blank", [60, null], by text_settings_reminder_minutes_check.
+**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes: text-settings-rules.test.ts refuses a reminder "left blank", [60, null], by text_settings_reminder_minutes_check. Closed 2026-10-07 by re-review of 8b.1's fixes: text-settings-rules.test.ts:106 adds `[60, null]` to the reminder `test.each`, expecting `text_settings_reminder_minutes_check` (23514); with that array `0 < all(...)` is null, so only the `array_position` half refuses it, and dropping that half would fail this case. The backend suite passed three runs in a row with it.
 
-### F-197 [P3] fixed - Twilio's answer is read outside the error sorting, so a body that fails to arrive or parse escapes as a plain error
+### F-197 [P3] closed - Twilio's answer is read outside the error sorting, so a body that fails to arrive or parse escapes as a plain error
 
 **File:** backend/lib/text/send-text.ts:70-72; backend/lib/text/find-sent-text.ts:55-57
 **Found:** 2026-10-07 by /audit (scope: 8b.1, 3b47c1c..7582593; lenses: quality, security, performance, tests)
@@ -446,9 +446,9 @@ very one decision 8 is for (the text went, the answer was lost).
 **Suggested fix:** Read the success body inside a try and map a failure to
 `SendTextError("no_answer", status, true, ...)`; in findSentText also treat a
 missing `messages` array as a retryable `SendTextError`. A test each.
-**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes: send-text.ts reads Twilio's answer inside its own handling, so a 2xx whose body is cut off, not JSON or has no id throws SendTextError unreadable_answer, retried (the retry checks first); find-sent-text.ts does the same for a list answer, and reports a timeout as "timeout". Tests: not JSON, JSON without an id, an answer that stops halfway (cut by the time limit), a list answer not JSON or without a list, a list timeout.
+**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes: send-text.ts reads Twilio's answer inside its own handling, so a 2xx whose body is cut off, not JSON or has no id throws SendTextError unreadable_answer, retried (the retry checks first); find-sent-text.ts does the same for a list answer, and reports a timeout as "timeout". Tests: not JSON, JSON without an id, an answer that stops halfway (cut by the time limit), a list answer not JSON or without a list, a list timeout. Closed 2026-10-07 by re-review of 8b.1's fixes: send-text.ts:161-173 reads the 2xx body in a try, and a body that throws, is not JSON or has no string `sid` throws SendTextError("unreadable_answer", status, true); find-sent-text.ts:58-69 does the same for the list and checks `Array.isArray`; a fetch timeout there is now "timeout" (:39-42). The halfway test (send-text.test.ts:131-150) errors the body stream through the same `init.signal` the code passes, so it fails if the read moves back outside the try. No new defect, apart from the error class's code comment not naming the new code (F-203).
 
-### F-198 [P3] fixed - The never-retry list may miss Twilio refusals that no retry fixes, and the spec's "check the current list" left no record
+### F-198 [P3] closed - The never-retry list may miss Twilio refusals that no retry fixes, and the spec's "check the current list" left no record
 
 **File:** backend/lib/text/send-text.ts:10-12
 **Found:** 2026-10-07 by /audit (scope: 8b.1, 3b47c1c..7582593; lenses: quality, security, performance, tests)
@@ -469,7 +469,7 @@ already sorts config refusals both ways. 21408 (the region not enabled in the
 account's geo permissions) is fixed in Twilio's console like 20003 (keys not
 taken), yet 21408 is never retried (send-text.ts:12) and 20003 is
 (send-text.test.ts:81). Whichever rule is chosen should cover both.
-**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes, codes checked against Twilio's error pages that day: never retried are the refusals about this customer or this text, 21211, 21610, 21612, 21614, 21617 (over 1600 characters) and 21266 (to the sending number itself); refusals about the agency's account, 21408, 21606 and 20003, are retried, so a fix in Twilio's console lets the waiting texts go. Spec decision 7 and its notes amended; send-text.test.ts covers each.
+**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes, codes checked against Twilio's error pages that day: never retried are the refusals about this customer or this text, 21211, 21610, 21612, 21614, 21617 (over 1600 characters) and 21266 (to the sending number itself); refusals about the agency's account, 21408, 21606 and 20003, are retried, so a fix in Twilio's console lets the waiting texts go. Spec decision 7 and its notes amended; send-text.test.ts covers each. Closed 2026-10-07 by re-review of 8b.1's fixes: the list now follows one rule, stated alike in decision 7, the spec's notes (current-feature.md:283-287) and send-text.ts:9-14 (refusals about this customer or this text never retry; refusals about the agency's account, 21408, 21606 and 20003, retry), which settles the step review's 21408/20003 split. The codes' meanings match this reviewer's knowledge of Twilio's reference (not re-fetched: no network in this pass). send-text.test.ts:64-89 sorts each code; putting 21408 back in NEVER_RETRY fails "a country not yet switched on in the account fails for now: retried" (run in this pass, file restored, `git status` clean).
 
 ### F-199 [P3] open - A reply phone may be another business's texting number, which hands one business's customer replies to another, or loses them
 
@@ -492,9 +492,9 @@ not tested here.
 reply phone that is any business's `fromNumber`; and have client setup and
 Settings (feature 12) refuse such a value when saving. A test for the job's
 refusal.
-**Resolution:** Carried to 8b.4, where the harm would happen: its spec now says the pass-on job never texts a reply phone that is any business's texting number (then the reply email only, or logged), with a test in its Done when; feature 12's Settings refuses it on save (spec notes). Stays open until 8b.4 builds and tests it.
+**Resolution:** Carried to 8b.4, where the harm would happen: its spec now says the pass-on job never texts a reply phone that is any business's texting number (then the reply email only, or logged), with a test in its Done when; feature 12's Settings refuses it on save (spec notes). Stays open until 8b.4 builds and tests it. Re-review of 8b.1's fixes (2026-10-07): the carried text is coherent. 8b.4 (current-feature.md:185-206) refuses a reply phone that is any business's texting number when the job runs, so a value saved before or after the other business's number still cannot leak; it falls back to the reply email or a log line, and its Done when has the matching case (worth also asserting that the reply email still gets the text when one is set). The feature 12 half lives only in this spec's Notes for the AI (:288-289), which `/complete` archives with 8b; recorded as F-202 so it outlives this entry.
 
-### F-200 [P3] fixed - No test bounds the duplicate check's clock slack, so widening it to a day would keep every test green
+### F-200 [P3] closed - No test bounds the duplicate check's clock slack, so widening it to a day would keep every test green
 
 **File:** backend/lib/text/find-sent-text.ts:12, 56 (tests: backend/lib/text/find-sent-text.test.ts:66-90)
 **Found:** 2026-10-07 by independent step review (scope: 8b.1, 3b47c1c..7582593; lenses: quality, security, performance, tests)
@@ -508,4 +508,58 @@ The slack's upper side is the part that keeps two reminders of one booking
 apart.
 **Suggested fix:** Add a case with the same words a few minutes before `since`
 (for example 16:00 minus 2 minutes, outside the 60 s slack), expecting null.
-**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes: find-sent-text.test.ts finds the same words 5 s before the first try and refuses them a minute before, so a slack of a minute or more fails a test.
+**Resolution:** Fixed 2026-10-07 in 8b.1's review fixes: find-sent-text.test.ts finds the same words 5 s before the first try and refuses them a minute before, so a slack of a minute or more fails a test. Closed 2026-10-07 by re-review of 8b.1's fixes: find-sent-text.test.ts:82-96 bounds the slack on both sides (15:59:55 found, 15:59:00 not, against a 16:00:00 first try). Proved in this pass: CLOCK_SLACK_MS at 120_000 and at 60_000 each fail "the same words a minute or more before the first try are another text" (1 failed, 14 passed); the file was restored and `git status` showed it unchanged.
+
+### F-201 [P3] fixed - 8b.3 never says which `since` a reminder's retry passes, and its Done when has no case where an earlier reminder has gone
+
+**File:** blueprint/context/current-feature.md:171-183 (rule: decision 8 at :102-112; the check: backend/lib/text/find-sent-text.ts:70-77)
+**Found:** 2026-10-07 by re-review of 8b.1's fixes (scope: 7582593..9b8793a, with 3b47c1c..9b8793a as context; lenses: quality, security, performance, tests)
+**Why it matters:** F-195's harm is decided by the job, not by `findSentText`:
+the job picks `since`. The fix defined it in decision 8 only. 8b.2 points to
+decision 8 ("On a retry, decision 8 first"), but 8b.3 names neither decision 8
+nor the retry check, and F-195's suggested warning (never the job's
+`created_at`, which for a reminder is when the booking was made) is written
+nowhere. 8b.3's Done when lists cancels, moves, removed reminders and late
+starts, but no "the 60-minute reminder's retry still sends after the
+1200-minute one went", so a job that passes the booking's creation or the
+job's `created_at` would keep every planned test green while Jane loses her
+last reminder. find-sent-text.test.ts:90 bounds only the slack, given a
+correct `since`.
+**Suggested fix:** In 8b.3, add "on a retry, decision 8 first, with `since`
+the appointment minus its minutes (never the job's `created_at`)" and a Done
+when case: with Summit's 1200 and 60 reminders, the 1200 one sent, the 60
+one's first send losing its answer, the retry still sends the 60 one.
+**Resolution:** Fixed 2026-10-07 after the re-review: 8b.3's spec says a reminder's retry checks Twilio with since = the appointment minus its minutes, never the job's created_at or run_at, and its Done when adds "the 60-minute reminder's retry still sends after the 1200-minute one went".
+
+### F-202 [P3] open - The feature 12 half of F-199 lives only in this spec's notes, which are archived with 8b, and item 12 has no line for text settings at all
+
+**File:** blueprint/context/current-feature.md:288-289 (plan: blueprint/build-plan.md:264-307)
+**Found:** 2026-10-07 by re-review of 8b.1's fixes (scope: 7582593..9b8793a, with 3b47c1c..9b8793a as context; lenses: quality, security, performance, tests)
+**Why it matters:** The fix commit records "Feature 12 (Settings): saving text
+settings refuses a reply phone that is any business's texting number" in 8b's
+Notes for the AI. `/complete` archives this spec with feature 8b, and feature
+12's spec is drafted from build-plan.md, whose item 12 (264-307) names no
+text settings at all, although the spec's Out of scope puts the Settings
+screen for texts in feature 12. The earlier carried note of the same kind,
+F-32, was written onto item 12 for that reason. Once 8b.4 closes F-199, the
+save-time refusal survives only in an archive nobody specs from. The run-time
+guard in 8b.4 still protects Jane, so the cost is a Settings screen that
+accepts a value the job then silently ignores.
+**Suggested fix:** With Frank's yes (the build plan is his), add to item 12 a
+line for the text settings screen, including the F-199 refusal on save (and
+the no-repeats rule the table cannot enforce).
+**Resolution:**
+
+### F-203 [P3] fixed - SendTextError's list of codes leaves out the new "unreadable_answer" (and "http_NNN")
+
+**File:** backend/lib/text/send-text-error.ts:7 (codes thrown: backend/lib/text/send-text.ts:168-173, backend/lib/text/find-sent-text.ts:63-68, backend/lib/text/twilio-error-code.ts:10)
+**Found:** 2026-10-07 by re-review of 8b.1's fixes (scope: 7582593..9b8793a, with 3b47c1c..9b8793a as context; lenses: quality, security, performance, tests)
+**Why it matters:** The field's comment reads "Twilio's error code, "timeout",
+"no_connection" or "no_keys"". The fix commit adds a fourth code,
+"unreadable_answer", thrown by both send-text.ts and find-sent-text.ts, and
+`twilioErrorCode` already returns `http_<status>`. 8b.2 will log this code on
+`sms` failures, so a reader of the class is told the set is closed when it is
+not. Nothing branches on the code today (callers branch on `retry`), hence P3.
+**Suggested fix:** Name every code in the comment ("Twilio's error code,
+"http_502", "timeout", "no_connection", "no_keys" or "unreadable_answer"").
+**Resolution:** Fixed 2026-10-07 after the re-review: the comment on SendTextError's code lists http_<status> and unreadable_answer too.

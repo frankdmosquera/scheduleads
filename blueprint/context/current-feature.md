@@ -173,13 +173,17 @@ Frank's yes; every test fakes Twilio.
   in `book-time.ts` and again in `move-booking.ts` with the move's number;
   none added for a time already past. It skips itself when the booking was
   cancelled, a later move replaced it, the business no longer has that
-  reminder, or the appointment has started (decision 6).
+  reminder, or the appointment has started (decision 6). On a retry it
+  checks Twilio first (decision 8) with `since` = the appointment minus its
+  minutes, never the job's `created_at` (the booking's time) or `run_at`
+  (which moves with each retry) (F-201).
   **Done when:** with the job clock pinned, a booking gets its reminders at
   the right instants in the business's time zone; after a move only the new
   ones send, at the new times; after a cancel none send; a reminder removed
   from the settings does not send; a booking made 30 minutes ahead gets no
   1200-minute reminder; a reminder still failing when the appointment starts
-  is never sent; every case on the build log's Simulate page (cases a to f)
+  is never sent; the 60-minute reminder's retry still sends after the
+  1200-minute one went (same words, earlier); every case on the build log's Simulate page (cases a to f)
   is a saved test under the same name; the suite passes several runs in a row.
 
 - [ ] **8b.4 Jane's replies.** `POST /texts/incoming`, public, answering only

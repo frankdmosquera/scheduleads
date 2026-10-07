@@ -4,7 +4,9 @@
 
 export class SendTextError extends Error {
   constructor(
-    readonly code: string, // Twilio's error code, "timeout", "no_connection" or "no_keys"
+    // Twilio's error code, "http_<status>" when it gave none, "unreadable_answer", "timeout",
+    // "no_connection" or "no_keys"
+    readonly code: string,
     readonly status: number | null,
     readonly retry: boolean,
     message: string
