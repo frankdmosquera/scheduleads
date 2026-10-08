@@ -4,6 +4,10 @@
 
 **Branch:** feature/08c-the-worker-s-text
 
+**Status:** verified. Steps 8c.1 to 8c.3 built, tested and reviewed step by step
+(audit, independent review, re-reviews), 2026-10-07 to 2026-10-08. F-251 accepted
+by Frank 2026-10-08. No P0 or P1 open or fixed. The checkpoint for the final review.
+
 ## Goal
 
 Pedro paints for Summit. He has no Google calendar connected and no email of
