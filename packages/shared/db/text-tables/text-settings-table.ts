@@ -7,7 +7,7 @@ import { sql } from "drizzle-orm";
 import { boolean, check, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { organization } from "../auth-tables/organization-table.js";
-import { NORTH_AMERICAN_NUMBER } from "./north-american-number.js";
+import { STORED_TEXTABLE_PHONE_PATTERN } from "./stored-textable-phone-pattern.js";
 
 export const textSettings = pgTable(
   "text_settings",
@@ -30,12 +30,12 @@ export const textSettings = pgTable(
   (table) => [
     check(
       "text_settings_from_number_check",
-      sql`${table.fromNumber} ~ ${sql.raw(`'${NORTH_AMERICAN_NUMBER}'`)}`
+      sql`${table.fromNumber} ~ ${sql.raw(`'${STORED_TEXTABLE_PHONE_PATTERN}'`)}`
     ),
     // Its own number would pass every reply straight back to itself.
     check(
       "text_settings_reply_phone_check",
-      sql`${table.replyPhone} ~ ${sql.raw(`'${NORTH_AMERICAN_NUMBER}'`)} and ${table.replyPhone} <> ${table.fromNumber}`
+      sql`${table.replyPhone} ~ ${sql.raw(`'${STORED_TEXTABLE_PHONE_PATTERN}'`)} and ${table.replyPhone} <> ${table.fromNumber}`
     ),
     // Somewhere for every reply to go, so none is ever lost.
     check(

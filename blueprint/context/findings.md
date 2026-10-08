@@ -453,3 +453,38 @@ recorded is never taken for it" in the spec, say in the table comment that the
 text is claimed and the email keyed, and rename the test to "counts from the
 reply's record". No code change.
 **Resolution:**
+
+### F-240 [P3] fixed - The shared-phone test puts the two people in different businesses, so a one-phone-per-business rule would still pass it
+
+**File:** backend/lib/text/worker-text-settings-rules.test.ts:86-91
+**Found:** 2026-10-07 by independent step review (scope: 8c.1, ddca0e1..e165362; lenses: quality, security, performance, tests)
+**Why it matters:** The contract says "The phone is not unique: two people
+may share one", and the table comment says the same. The test that pins it
+makes Pedro in business "share-first" and Pedro in business "share-second",
+so it only proves there is no unique index on `phone` alone. A
+`unique(organizationId, phone)` added later (the likely mistake, since 8b's
+`text_settings` has unique numbers) would pass it, while the real case is
+inside one business: two of Summit's painters on the crew lead's phone. The
+test name promises more than it checks.
+**Suggested fix:** Give the second person to the same business (a second
+`resource` row in `first.organizationId`) and insert both rows with the same
+phone. Keep the cross-business case as a second line if wanted.
+**Resolution:** Fixed 2026-10-07 with Frank's yes: the test is now "two people of one business may share one phone" (Carlos added to Pedro's business, both rows the same phone). Proved: a temporary unique ("organizationId", phone) on the dev database failed it, and it passed again once dropped. The cross-business line was not kept: nothing promises it beyond the phone not being unique on its own, which the one-business case already covers.
+
+### F-241 [P3] fixed - NORTH_AMERICAN_NUMBER is a regex pattern, not a number, and the same rule now lives in two shapes
+
+**File:** packages/shared/db/text-tables/north-american-number.ts:4; packages/shared/helpers/textable-phone-number.ts:6
+**Found:** 2026-10-07 by independent step review (scope: 8c.1, ddca0e1..e165362; lenses: quality, security, performance, tests)
+**Why it matters:** 8c.1 lifted the constant out of `text-settings-table.ts`
+into its own file so a second table can share it, which makes it a named,
+imported thing. The import reads as "a North American number", but it is the
+source of a Postgres regular expression for a stored phone ("+1" and ten
+digits), and the file sits among the tables. The coding standards ask that
+the imported name carry the full meaning. The rule it encodes also exists as
+`NORTH_AMERICAN` in `textable-phone-number.ts` (the typed shape, before
+"+1"), so the two are kept in step only by a comment.
+**Suggested fix:** Rename to say what it is, for example
+`STORED_TEXTABLE_PHONE_PATTERN` in `stored-textable-phone-pattern.ts`, and
+keep the pointer comment to `textable-phone-number.ts`. A rename only: the
+SQL in the migrations is unchanged, so no new migration.
+**Resolution:** Fixed 2026-10-07 with Frank's yes: renamed to `STORED_TEXTABLE_PHONE_PATTERN` in `packages/shared/db/text-tables/stored-textable-phone-pattern.ts`, keeping the pointer to `textable-phone-number.ts`; both tables import it. A rename only: `db:generate` reports "No schema changes", backend build clean, shared 154 and backend 747 tests passed (3 runs).

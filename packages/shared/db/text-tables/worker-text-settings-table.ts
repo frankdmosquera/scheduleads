@@ -7,7 +7,7 @@ import { sql } from "drizzle-orm";
 import { boolean, check, foreignKey, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { resource } from "../booking-tables/resource-table.js";
-import { NORTH_AMERICAN_NUMBER } from "./north-american-number.js";
+import { STORED_TEXTABLE_PHONE_PATTERN } from "./stored-textable-phone-pattern.js";
 
 export const workerTextSettings = pgTable(
   "worker_text_settings",
@@ -33,7 +33,7 @@ export const workerTextSettings = pgTable(
     }).onDelete("cascade"),
     check(
       "worker_text_settings_phone_check",
-      sql`${table.phone} ~ ${sql.raw(`'${NORTH_AMERICAN_NUMBER}'`)}`
+      sql`${table.phone} ~ ${sql.raw(`'${STORED_TEXTABLE_PHONE_PATTERN}'`)}`
     ),
   ]
 );

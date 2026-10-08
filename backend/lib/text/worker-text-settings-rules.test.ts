@@ -83,11 +83,14 @@ describe("worker text settings rules in the database", () => {
     expect(left).toHaveLength(0);
   });
 
-  test("two people may share one phone", async () => {
-    const first = await makeBusiness("share-first");
-    const second = await makeBusiness("share-second");
-    await db.insert(workerTextSettings).values(settingsRow(first));
-    await expect(db.insert(workerTextSettings).values(settingsRow(second))).resolves.toBeDefined();
+  test("two people of one business may share one phone", async () => {
+    const pedro = await makeBusiness("share");
+    const carlos = { organizationId: pedro.organizationId, personId: randomUUID() };
+    await db
+      .insert(resource)
+      .values({ id: carlos.personId, organizationId: carlos.organizationId, name: "Carlos" });
+    await db.insert(workerTextSettings).values(settingsRow(pedro));
+    await expect(db.insert(workerTextSettings).values(settingsRow(carlos))).resolves.toBeDefined();
   });
 
   test.each([["4035550161"], ["403-555-0161"], ["+14031550161"]])(
