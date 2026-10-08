@@ -343,6 +343,36 @@ describe("moving a booking", () => {
     expect(await movedEntries(clinic)).toEqual([]);
   });
 
+  // F-263: a time-only move keeps the booked person while free, though another has fewer bookings.
+  test.each(["business_assigns", "customer_picks"] as const)(
+    "a move with nobody picked keeps her own person when free (%s)",
+    async (personChoice) => {
+      const clinic = await makeClinic(`keep-own-${personChoice}`);
+      await book(clinic, clinic.ana, 15); // Ana now has two bookings that day, Mei one
+      await db.update(bookingLink).set({ personChoice }).where(eq(bookingLink.id, clinic.facial));
+      const response = await move(clinic.janesBooking, at(11));
+
+      expect(response.status).toBe(200);
+      expect(await bookingRow(clinic.janesBooking)).toMatchObject({
+        startsAt: new Date(at(11)),
+        personId: clinic.ana,
+      });
+    }
+  );
+
+  test("a move with nobody picked goes to someone else only when her own person is busy", async () => {
+    const clinic = await makeClinic("own-busy");
+    await book(clinic, clinic.ana, 11); // Ana is taken at 11:00
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+    const response = await move(clinic.janesBooking, at(11));
+
+    expect(response.status).toBe(200);
+    expect((await bookingRow(clinic.janesBooking)).personId).toBe(clinic.mei);
+  });
+
   test("a service the business assigns moves with nobody picked, and a second press answers the same", async () => {
     const clinic = await makeClinic("assigns-move");
     await db

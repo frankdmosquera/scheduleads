@@ -714,7 +714,7 @@ is asserted before the wait.
 **Resolution:** Fixed 2026-10-08 in 9.1's third review fixes, as suggested: the four `vi.waitFor` calls (move-booking-event.test.ts two, remove-booking-event.test.ts, write-booking-event.test.ts) wait up to 10 seconds; each test's claim, that the answer came before Google, is asserted before the wait and unchanged. Shown by reading: the 1-second default failed once in a slow full run, and is not reproducible on demand.
 Closed 2026-10-08 by independent review of 9.1b (scope: bd63ab6..d21a3e9): all four waits on a job's Google call now pass `{ timeout: 10_000 }` (move-booking-event.test.ts:489-491 and :739-741, remove-booking-event.test.ts:267, write-booking-event.test.ts:226), and they are the only `vi.waitFor` calls in the backend's tests. The three "does not wait for Google" tests still assert "answered before Google is asked" before their wait (the fourth, "two of one booking's jobs never run at the same time", only waits for the PATCH to begin) (move-booking-event.test.ts:486-487, remove-booking-event.test.ts:264, write-booking-event.test.ts:223), so the claim is unchanged; the 10 seconds sit inside the backend's own `testTimeout: 30_000` (vitest.config.ts), so the wait, not the test, is what gives up. Three full backend runs in this review passed 816 each (31 to 32 s); a timing flake cannot be shown fixed by passing runs, only by the wider bound, which is in place.
 
-### F-263 [P2] open - On a service the business assigns, "Change the time" always moves with any available, so the customer's booked person can be swapped for another while free, and the confirm names nobody
+### F-263 [P2] fixed - On a service the business assigns, "Change the time" always moves with any available, so the customer's booked person can be swapped for another while free, and the confirm names nobody
 
 **File:** frontend/components/booking-page/change-time-panel.tsx:80,175-181 (the order it inherits: backend/lib/booking/find-booking-choices.ts:120-135, backend/lib/scheduling/order-any-available.ts; the rule it re-opens: blueprint/history/features/07b-reschedule.md decision 14, 7b/F-168)
 **Found:** 2026-10-08 by independent review of 9.1b (scope: bd63ab6..d21a3e9; lenses: quality, security, performance, tests)
@@ -741,7 +741,7 @@ when free (findBookingChoices, a `preferPersonId` for `movingBooking`), so
 "any available" means "whoever is free, keeping yours if you can"; a route
 test like the probe above. Or keep the swap and say so in the confirm and the
 spec ("the business may send someone else").
-**Resolution:**
+**Resolution:** Frank decided 2026-10-08: keep her person first (option A). Fixed 2026-10-08: findBookingChoices puts the moving booking's own person first when a move names nobody, so a time-only move keeps who comes while they are free, for both settings (7b decision 14 holds again); someone else only when they are busy. Tests in public-booking-move-routes.test.ts: "a move with nobody picked keeps her own person when free" (business_assigns and customer_picks, Ana with more bookings than Mei still kept) and "a move with nobody picked goes to someone else only when her own person is busy"; proved: dropping the preference fails both cases of the first.
 
 ### F-264 [P3] fixed - Two of 9.1b's claims are pinned by no test: the page answering business_assigns, and the refusal sitting after "already there"
 

@@ -118,7 +118,9 @@ export async function findBookingChoices(
   }
 
   // The order to try: fewest bookings that day (the moving booking not counted), then name, then
-  // id, each person with the free rooms by name.
+  // id, each person with the free rooms by name. A move with nobody picked tries its own person
+  // first, so changing only the time never changes who comes while they are free (7b decision 14,
+  // F-263).
   const dayRows = (
     await findCommitments(
       organizationId,
@@ -132,5 +134,14 @@ export async function findBookingChoices(
     ...person,
     bookingsThatDay: counts.get(person.resourceId) ?? 0,
   }));
-  return { found: true, choices: orderAnyAvailable(people, freeRooms) };
+  const choices = orderAnyAvailable(people, freeRooms);
+  const ownPerson = personId === null ? input.movingBooking?.personId : undefined;
+  if (!ownPerson) return { found: true, choices };
+  return {
+    found: true,
+    choices: [
+      ...choices.filter((choice) => choice.personId === ownPerson),
+      ...choices.filter((choice) => choice.personId !== ownPerson),
+    ],
+  };
 }
