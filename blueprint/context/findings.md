@@ -361,7 +361,8 @@ it is the requests already accepted that nothing waits for.
 `await Promise.all([new Promise((resolve) => server.close(resolve)), runner?.stop(signal)])`,
 optionally bounded a little under the draining time so the API exits itself
 before Railway's SIGKILL.
-**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the stop is now backend/lib/server/stop-gracefully.ts (stopGracefully), which waits for both server.close (refuses new connections, calls back once the open requests end) and runner.stop, bounded; server.ts calls it with a 25 second limit, under the 30 seconds F-176 asks Railway to allow, logs when the limit is hit, then exits 0. Tests (lib/server/stop-gracefully.test.ts, a real HTTP server with a held request): a request in flight finishes before the stop resolves; a new request is refused once stopping; the runner gets the signal and is waited for; a request that never ends lets it stop at the limit. Proved: not waiting for server.close fails two of them (file restored, cmp identical). The built API starts and answers /health 200. Not exercised: a real SIGTERM, which Windows cannot send; Railway's draining is still F-176.
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the stop is now backend/lib/server/stop-gracefully.ts (stopGracefully), which waits for both server.close (refuses new connections, calls back once the open requests end) and runner.stop, bounded; server.ts calls it with a 25 second limit, under the 30 seconds F-176 asks Railway to allow, logs when the limit is hit, then exits 0. Tests (lib/server/stop-gracefully.test.ts, a real HTTP server with a held request): a request in flight finishes before the stop resolves; a new request is refused once stopping; the runner gets the signal and is waited for; a request that never ends lets it stop at the limit. Proved: not waiting for server.close fails two of them (file restored, cmp identical). The built API starts and answers /health 200. Not exercised: a real SIGTERM, which Windows cannot send; Railway's draining is still F-176. Re-reviewed 2026-10-08 by independent review of chore/cleanup-before-9 (daa79f7..4fe2e61; lenses: quality, security, performance, tests); stays fixed, for F-254. What holds: @hono/node-server 2.1.1's serve (dist/index.mjs:1285-1311) returns a plain node:http Server, so server.close is Node's own; on Node 26.7.0 a scratch probe showed close() drops an idle keep-alive connection at once (2 open connections to 1) and calls back only after the open request ends, so the original cut is gone and nothing hangs on an idle connection. The limit's timer is cleared in finally on both paths; a stop that times out leaves server.close and runner.stop pending, which process.exit(0) ends. exitWhenRunnerStops still holds: stopping is set before runner.stop, so the runner's promise settling during the stop returns without exit(1). Exit 0 at the limit is right given F-179: the stop was asked for, and a non-zero exit is what Railway's On Failure policy restarts and counts. Each test bites (stop-gracefully.ts sha256 14691a8ab487d4fa... before and after, cmp identical): close not awaited fails tests 1 and 4; close never called fails 1, 2 and 4; runner.stop() without the signal fails 3; runner.stop not awaited fails 3; no race with the limit fails 4. A temporary probe test, deleted after, showed that a runner.stop that rejects (graphile-worker 0.18.0 runner.js:112, "Runner is already stopped", only while the runner is already stopping itself) makes stopGracefully reject at once with the request still open, so server.ts's stop becomes an unhandled rejection and exits 1; not recorded, since that same window ends in exitWhenRunnerStops' exit(1) anyway. What does not hold is F-254: a connection busy when the stop begins stays open after its answer, and the API keeps answering new requests on it. Also, server.ts:40-41 says Railway "is set to allow" 30 seconds; F-176 is still open, so until that setting lands Railway's 0 to 3 second default is the real bound. Backend tests 793 passed twice, build and format:check pass, the built API answered /health 200 and 3401 was free after.
+
 ### F-194 [P3] closed - installJobTables ships in the API but only one test calls it, and its comment says the tests use it before their first job, which they do not
 
 **File:** backend/lib/jobs/install-job-tables.ts:1-12 (its one caller: backend/lib/jobs/job-runner.test.ts:55; the setup's own copy: backend/vitest.setup.ts:49-52)
@@ -494,3 +495,34 @@ off that person's Google busy, as findFreeTimes does, with a test of the owner
 moving into a time overlapping the old one; or until then, type the input so
 movingBooking only goes with byOwner false.
 **Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9 (the second suggestion, until the owner's move): the input type is a union, so movingBooking goes only with byOwner false; the header says the owner's check does not take a moving booking yet (features 11 and 12b). Proved: a temporary call with byOwner true and movingBooking fails tsc (TS2345), removed after. Typecheck, build, format and backend 789 three runs pass. Closed 2026-10-08 by independent review of chore/cleanup-before-9 (9610596..177f12e; lenses: quality, security, performance, tests): find-booking-choices.ts:36-39 is a union on byOwner, and the header (:4-5) says the owner's check takes no moving booking yet. A temporary backend/lib/booking/zz-probe-f253.ts, deleted after, run through tsc --noEmit: byOwner true with movingBooking fails TS2345 (movingBooking not assignable to undefined), and byOwner typed boolean with movingBooking fails TS2345 (boolean not assignable to false), while byOwner false with movingBooking and byOwner boolean without it both pass. Both callers typecheck in the backend build: book-time.ts:189 passes byOwner: source === "manual" with no movingBooking, move-booking.ts:120-121 byOwner false with movingBooking; no test file passes movingBooking (tests sit outside tsc). The owner's move (features 11 and 12b) will have to widen the union and honour the moving booking on the owner path.
+
+### F-254 [P3] open - A connection busy when the stop begins is kept alive after its answer, so the API keeps taking new requests on it and a client that reuses it holds the stop to the 25 second limit
+
+**File:** backend/lib/server/stop-gracefully.ts:1-2,20 (the claim's test: backend/lib/server/stop-gracefully.test.ts:50)
+**Found:** 2026-10-08 by independent review of chore/cleanup-before-9 (scope: daa79f7..4fe2e61; lenses: quality, security, performance, tests)
+**Why it matters:** The header says new requests are refused at once. Node's
+server.close (Node 26.7.0, on the http Server @hono/node-server 2.1.1 returns)
+refuses new connections and drops the idle ones when it is called, but a
+connection that is busy then is not marked to close: its answer goes out with
+Connection: keep-alive and the socket stays open. A scratch probe (an
+http.Agent with keepAlive, one held request, close(), the held answer, then a
+request a second on the same agent) had the closing server answer 30 more
+requests on that socket over 30 seconds, and its close callback fired only
+5 seconds (keepAliveTimeout) after the last one. So the stop always waits out
+the keep-alive linger after the last answer (tests 1 and 2 take about 3
+seconds each because fetch's client hangs up its idle socket then, not
+because the API finished), and a client that keeps reusing the connection
+(whether Railway's proxy does so with the old deployment after the switch is
+not known) feeds it requests until the 25 second limit, when process.exit
+cuts whichever one is running: F-193's cut booking, for a request accepted
+after the stop began. Test 2 proves only that a new connection is refused,
+which its name does not say.
+**Suggested fix:** While stopping, end each kept connection once its answer is
+out, for example server.closeIdleConnections() on a short unref'd interval,
+cleared when close calls back or at the limit. The same probe with a 100 ms
+sweep had close call back the moment the held answer went out, and the next
+request was refused (ECONNREFUSED). Add a test that sends a second request on
+the held request's connection (an http.Agent with keepAlive) and expects it
+refused and the stop finished promptly, and make the header and test 2 say
+what they prove.
+**Resolution:**
