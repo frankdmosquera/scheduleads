@@ -25,4 +25,15 @@ export const createBookingValidationSchema = z.object({
     .min(1, "Enter the address.")
     .max(300, "That address is too long."),
   details: z.string().trim().max(2000, "Keep it to 2000 characters.").optional(),
+  // The business's own questions (feature 9, decision 5), checked against its questions by the API.
+  answers: z
+    .array(
+      z.object({
+        questionId: idOf("That is not a question id."),
+        answer: z.string("Answer in words.").trim().max(500, "Keep each answer to 500 characters."),
+      }),
+      "That is not a list of answers."
+    )
+    .max(20, "That is too many answers.")
+    .optional(),
 });

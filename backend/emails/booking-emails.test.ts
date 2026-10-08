@@ -28,6 +28,10 @@ const facts: BookingEmailFactsType = {
     email: "jane@example.com",
     phone: "(403) 555-0148",
     details: "Two storeys, stucco.\n\nThe back fence too, please.",
+    answers: [
+      { question: "Interior or exterior?", answer: "Exterior" },
+      { question: "How many rooms?", answer: "None, the whole outside" },
+    ],
   },
 };
 
@@ -35,7 +39,12 @@ const typedScript = "<script>alert(1)</script>";
 const scriptFacts: BookingEmailFactsType = {
   ...facts,
   location: `12 Main ${typedScript}`,
-  customer: { ...facts.customer, name: `Jane ${typedScript}`, details: typedScript },
+  customer: {
+    ...facts.customer,
+    name: `Jane ${typedScript}`,
+    details: typedScript,
+    answers: [{ question: `Pets? ${typedScript}`, answer: typedScript }],
+  },
 };
 
 const productName = /scheduleads/i;
@@ -188,6 +197,40 @@ describe("the business's notification", () => {
     expect(text).toContain("Line one\nLine two");
   });
 
+  // Feature 9: the business's own questions, each with the customer's answer.
+  test("each of the business's own questions comes with its answer, in the HTML and the plain-text twin", async () => {
+    const { html, text } = await renderBookingNotification(facts);
+
+    for (const fact of [
+      "Interior or exterior?",
+      "Exterior",
+      "How many rooms?",
+      "None, the whole outside",
+    ]) {
+      expect(html).toContain(fact);
+      expect(text).toContain(fact);
+    }
+    expect(html.indexOf("Interior or exterior?")).toBeLessThan(html.indexOf("How many rooms?"));
+  });
+
+  test("an answer's own line breaks survive", async () => {
+    const { html } = await renderBookingNotification({
+      ...facts,
+      customer: { ...facts.customer, answers: [{ question: "Pets?", answer: "A dog\nA cat" }] },
+    });
+
+    expect(html).toContain("A dog<br/>A cat");
+  });
+
+  test("a booking with no answers shows no questions", async () => {
+    const { html } = await renderBookingNotification({
+      ...facts,
+      customer: { ...facts.customer, answers: [] },
+    });
+
+    expect(html).not.toContain("Interior or exterior?");
+  });
+
   test("a phone-only booking has no email line and says to call", async () => {
     const { html } = await renderBookingNotification({
       ...facts,
@@ -209,6 +252,7 @@ describe("the business's notification", () => {
 
     expect(html).not.toContain("<script");
     expect(html).toContain("&lt;script&gt;");
+    expect(html).toContain("Pets? &lt;script&gt;"); // a question's own words too
   });
 
   test("the plain-text twin carries the same facts", async () => {

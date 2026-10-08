@@ -2,11 +2,24 @@
 // in, where it came from and what the customer wrote. A contact who comes back is a new lead.
 
 import { sql } from "drizzle-orm";
-import { check, foreignKey, index, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
+import {
+  check,
+  foreignKey,
+  index,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+} from "drizzle-orm/pg-core";
 
 import { organization } from "../auth-tables/organization-table.js";
 import { contact } from "./contact-table.js";
 import { pipelineStage } from "./pipeline-stage-table.js";
+
+// One answer to the business's own question, with the question's words as they were asked, so
+// rewording a question later never changes what a customer was asked (feature 9, decision 5).
+export type LeadAnswerType = { questionId: string; question: string; answer: string };
 
 export const lead = pgTable(
   "lead",
@@ -20,6 +33,9 @@ export const lead = pgTable(
     source: text("source").notNull(),
     details: text("details"), // the customer's own words; shown as text, never HTML
     phone: text("phone"), // the phone given with this request; the contact keeps the first one given
+    // The answers to the business's own questions, in its order; a blank optional one is left
+    // out. Null when the business asked nothing. Shown as text, never HTML.
+    answers: jsonb("answers").$type<LeadAnswerType[]>(),
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })
       .notNull()

@@ -163,6 +163,11 @@ describe("the documented shape", () => {
       name: "Summit Painting (dev)",
       logo: null,
       phone: "403 555 0100",
+      // Its own questions, in its order (feature 9).
+      questions: [
+        { id: expect.any(String), label: "Interior or exterior?", required: true },
+        { id: expect.any(String), label: "How many rooms?", required: false },
+      ],
     });
     expect(body.bookingLinks.map((link: { name: string }) => link.name)).toEqual([
       "Colour consultation",

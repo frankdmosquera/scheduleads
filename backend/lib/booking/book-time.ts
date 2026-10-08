@@ -28,7 +28,9 @@ import { enqueueWorkerText } from "../jobs/enqueue-worker-text.js";
 import { jobNames } from "../jobs/job-names.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
 import { findServiceResources } from "../scheduling/find-service-resources.js";
+import { checkAnswers } from "./check-answers.js";
 import { findBookingChoices } from "./find-booking-choices.js";
+import { findBookingQuestions } from "./find-booking-questions.js";
 import { holdFirstFreeChoice } from "./hold-first-free-choice.js";
 
 export type BookTimeInputType = {
@@ -40,6 +42,7 @@ export type BookTimeInputType = {
   customer: ContactInputType;
   location: string; // the customer's address
   details: string | null; // what they wrote
+  answers?: { questionId: string; answer: string }[]; // to the business's own questions (feature 9)
   source: "widget" | "hosted" | "manual";
   actorUserId: string | null; // the owner's login when source is manual, checked here
   now: Date;
@@ -67,8 +70,11 @@ export type BookTimeResultType =
         | "unavailable"
         | "request_key_used"
         | "in_the_past"
-        | "person_not_taken";
-    };
+        | "person_not_taken"
+        | "unknown_question"
+        | "answered_twice";
+    }
+  | { booked: false; reason: "answer_needed"; question: string }; // the question's words
 
 const MINUTE_MS = 60_000;
 const NOT_FOUND = { booked: false, reason: "not_found" } as const;
@@ -176,6 +182,18 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
   // owner may. Asked after the form's own booking, so a retry of a booked form still gets it.
   if (source !== "manual" && service.personChoice === "business_assigns" && personId !== null)
     return PERSON_NOT_TAKEN;
+  // The business's own questions (feature 9, decision 5): a customer answers the required ones; the
+  // owner, booking from a phone call, need not.
+  const checkedAnswers = checkAnswers(
+    await findBookingQuestions(organizationId),
+    input.answers ?? [],
+    { requireAnswers: source !== "manual" }
+  );
+  if (!checkedAnswers.ok) {
+    return checkedAnswers.reason === "answer_needed"
+      ? { booked: false, reason: "answer_needed", question: checkedAnswers.question }
+      : { booked: false, reason: checkedAnswers.reason };
+  }
   const offered = await findServiceResources(organizationId, bookingLinkId);
   if (!offered) return NOT_FOUND;
   if (personId !== null && !offered.peopleIds.includes(personId)) return NOT_FOUND;
@@ -220,6 +238,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         stageId: stage.id,
         source,
         details: input.details,
+        answers: checkedAnswers.answers,
         // The phone given with this request, kept with it for its event (decision 15).
         phone: contactValidationSchema.parse(input.customer).phone ?? null,
       });

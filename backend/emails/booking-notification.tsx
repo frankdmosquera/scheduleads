@@ -109,6 +109,37 @@ function BookingNotificationEmail({ facts, when }: { facts: BookingEmailFactsTyp
         </>
       ) : null}
 
+      {/* The business's own questions and the customer's answers (feature 9), as text. */}
+      {customer.answers.map(({ question, answer }, index) => (
+        <Fragment key={`answer-${index}`}>
+          <Text
+            style={{
+              margin: "8px 0 2px",
+              fontSize: "13px",
+              lineHeight: "18px",
+              color: emailColors.muted,
+            }}
+          >
+            {question}
+          </Text>
+          <Text
+            style={{
+              margin: "0 0 12px",
+              fontSize: "16px",
+              lineHeight: "24px",
+              color: emailColors.ink,
+            }}
+          >
+            {answer.split("\n").map((line, lineIndex) => (
+              <Fragment key={lineIndex}>
+                {lineIndex > 0 ? <br /> : null}
+                {line}
+              </Fragment>
+            ))}
+          </Text>
+        </Fragment>
+      ))}
+
       {customer.phone ? (
         <EmailButton href={telHref(customer.phone)} color={brand}>
           {`Call ${customer.name}`}

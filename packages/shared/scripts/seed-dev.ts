@@ -15,6 +15,7 @@ import {
   availabilityRule,
   bookingLink,
   bookingLinkResource,
+  bookingQuestion,
   member,
   organization,
   pipelineStage,
@@ -117,6 +118,11 @@ const ACCOUNTS = [
       slug: "painting-dev",
       // Who does the job (feature 9): Primo sends whoever is free, so the customer never picks.
       personChoice: "business_assigns",
+      // Its own booking questions (feature 9), as Primo would ask them.
+      questions: [
+        { label: "Interior or exterior?", required: true },
+        { label: "How many rooms?", required: false },
+      ],
       // What its emails need (feature 6). No Resend key: dev sends nothing real.
       emailDetails: {
         senderEmail: "bookings@example.com",
@@ -194,6 +200,10 @@ const ACCOUNTS = [
       slug: "clinic-dev",
       // Who does the job (feature 9): a clinic's customer picks a practitioner, or any available.
       personChoice: "customer_picks",
+      questions: [
+        { label: "Any allergies or skin conditions?", required: true },
+        { label: "Is this your first visit?", required: false },
+      ],
       emailDetails: {
         senderEmail: "hello@example.com",
         notifyEmail: "owner@example.com",
@@ -448,6 +458,24 @@ try {
         );
       }
 
+      // Its own booking questions (feature 9). Only when it has none, so questions changed by hand
+      // survive a reseed.
+      const [anyQuestion] = await tx
+        .select({ id: bookingQuestion.id })
+        .from(bookingQuestion)
+        .where(eq(bookingQuestion.organizationId, organizationId))
+        .limit(1);
+      if (!anyQuestion) {
+        await tx.insert(bookingQuestion).values(
+          business.questions.map((question, index) => ({
+            id: randomUUID(),
+            organizationId,
+            position: index + 1,
+            ...question,
+          }))
+        );
+      }
+
       // Parsed before writing: the jsonb columns would accept a bad week.
       const [existingBusinessHours] = await tx
         .select({
@@ -614,6 +642,7 @@ try {
         !existingOrg && "business",
         !existingMember && "membership",
         !anyStage && "pipeline stages",
+        !anyQuestion && "booking questions",
         firstPerson.made && "first person",
         linked.length && "first person's login link",
         !existingBusinessHours && "business hours",

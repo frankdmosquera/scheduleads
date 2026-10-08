@@ -56,6 +56,7 @@ export async function findBookingEmailContext(
       phone: lead.phone, // the one given with this booking
       contactPhone: contact.phone,
       details: lead.details,
+      answers: lead.answers,
       source: lead.source,
     })
     .from(booking)
@@ -132,6 +133,7 @@ export async function findBookingEmailContext(
           email: row.customerEmail,
           phone: row.phone ?? row.contactPhone,
           details: row.details,
+          answers: (row.answers ?? []).map(({ question, answer }) => ({ question, answer })),
         },
       },
     },

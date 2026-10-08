@@ -69,3 +69,40 @@ describe("the booking form", () => {
     expect(message({ ...form, ...change })).toBe(expected);
   });
 });
+
+describe("the business's own questions (feature 9)", () => {
+  test("answers are trimmed, and a blank one stays for the API to judge", () => {
+    const parsed = createBookingValidationSchema.parse({
+      ...form,
+      answers: [
+        { questionId: "q1", answer: " Latex " },
+        { questionId: "q2", answer: "   " },
+      ],
+    });
+    expect(parsed.answers).toEqual([
+      { questionId: "q1", answer: "Latex" },
+      { questionId: "q2", answer: "" },
+    ]);
+  });
+
+  test("no answers at all is fine", () => {
+    expect(message(form)).toBeUndefined();
+  });
+
+  test("an answer over 500 characters is refused", () => {
+    expect(message({ ...form, answers: [{ questionId: "q1", answer: "a".repeat(501) }] })).toBe(
+      "Keep each answer to 500 characters."
+    );
+  });
+
+  test("more than 20 answers are refused", () => {
+    const answers = Array.from({ length: 21 }, (_, i) => ({ questionId: `q${i}`, answer: "Yes" }));
+    expect(message({ ...form, answers })).toBe("That is too many answers.");
+  });
+
+  test("a question id with a quote is refused", () => {
+    expect(message({ ...form, answers: [{ questionId: "q'1", answer: "Yes" }] })).toBe(
+      "That is not a question id."
+    );
+  });
+});

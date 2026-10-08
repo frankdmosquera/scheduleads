@@ -19,5 +19,7 @@ export type BookingEmailFactsType = {
     email: string | null; // a phone-only booking has none
     phone: string | null;
     details: string | null; // the customer's own words
+    // Their answers to the business's own questions, as asked (feature 9); empty when none.
+    answers: { question: string; answer: string }[];
   };
 };

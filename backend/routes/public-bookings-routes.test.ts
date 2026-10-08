@@ -27,6 +27,7 @@ const {
   booking,
   bookingLink,
   bookingLinkResource,
+  bookingQuestion,
   calendarConnection,
   lead,
   organization,
@@ -216,11 +217,12 @@ describe("a booking is made", () => {
     }
     // An online booking: its lead says it came from the widget.
     const [saved] = await db
-      .select({ source: lead.source })
+      .select({ source: lead.source, answers: lead.answers })
       .from(booking)
       .innerJoin(lead, eq(lead.id, booking.leadId))
       .where(and(eq(booking.organizationId, clinic.id), eq(booking.id, body.booking.id)));
     expect(saved?.source).toBe("widget");
+    expect(saved?.answers).toBeNull(); // this business asks no questions of its own
     expect(await freeTimes(clinic.ana)).not.toContain(startsAt); // the time is held
   });
 
@@ -255,6 +257,104 @@ describe("a booking is made", () => {
     expect(first.status).toBe(201);
     expect(second.status).toBe(201);
     expect((await second.json()).booking.id).toBe((await first.json()).booking.id);
+  });
+});
+
+describe("the business's own questions (feature 9)", () => {
+  const allergies = id();
+  const firstVisit = id();
+  const answerFor = (questionId: string, answer: string) => ({ questionId, answer });
+  const refusal = async (response: Response) => {
+    expect(response.status).toBe(400);
+    return (await response.json()).error;
+  };
+
+  beforeAll(async () => {
+    await db.insert(bookingQuestion).values([
+      {
+        id: allergies,
+        organizationId: clinic.id,
+        position: 1,
+        label: "Any allergies or skin conditions?",
+        required: true,
+      },
+      {
+        id: firstVisit,
+        organizationId: clinic.id,
+        position: 2,
+        label: "Is this your first visit?",
+        required: false,
+      },
+    ]);
+  });
+
+  afterAll(async () => {
+    await db.delete(bookingQuestion).where(eq(bookingQuestion.organizationId, clinic.id));
+  });
+
+  test("the answers are saved on the lead, with each question's words as asked", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const response = await post(
+      bookingsPath,
+      form(startsAt, {
+        answers: [answerFor(firstVisit, " Yes "), answerFor(allergies, "Latex")],
+      })
+    );
+    const { booking: made } = await response.json();
+    const [saved] = await db
+      .select({ answers: lead.answers })
+      .from(booking)
+      .innerJoin(lead, eq(lead.id, booking.leadId))
+      .where(eq(booking.id, made.id));
+
+    expect(response.status).toBe(201);
+    expect(saved?.answers).toEqual([
+      { questionId: allergies, question: "Any allergies or skin conditions?", answer: "Latex" },
+      { questionId: firstVisit, question: "Is this your first visit?", answer: "Yes" },
+    ]);
+  });
+
+  test.each([
+    ["left out", () => []],
+    ["blank", () => [answerFor(allergies, "   ")]],
+  ])("a required question %s is a 400 naming it, and books nothing", async (_name, answers) => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const response = await post(bookingsPath, form(startsAt, { answers: answers() }));
+
+    expect(await refusal(response)).toEqual({
+      code: "bad_request",
+      message: "Answer: Any allergies or skin conditions?",
+    });
+    expect(await freeTimes(clinic.ana)).toContain(startsAt);
+  });
+
+  test("an answer to a question this business does not have is a 400", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const response = await post(
+      bookingsPath,
+      form(startsAt, { answers: [answerFor(allergies, "None"), answerFor(id(), "Yes")] })
+    );
+
+    expect((await refusal(response)).message).toBe("That is not one of this business's questions.");
+  });
+
+  test("two answers to one question are a 400", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const response = await post(
+      bookingsPath,
+      form(startsAt, { answers: [answerFor(allergies, "None"), answerFor(allergies, "Latex")] })
+    );
+
+    expect((await refusal(response)).message).toBe("Each question takes one answer.");
+  });
+
+  test("twenty full answers in three-byte letters are not too large", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const answers = Array.from({ length: 20 }, () => answerFor(id(), "語".repeat(500)));
+    const response = await post(bookingsPath, form(startsAt, { answers }));
+
+    // Read whole and judged (they are not this business's questions), never cut off as too large.
+    expect((await refusal(response)).message).toBe("That is not one of this business's questions.");
   });
 });
 
@@ -388,9 +488,9 @@ describe("a booking is refused", () => {
     expect(made).toEqual([]);
   });
 
-  test("a request over 16 KB is a 413 and books nothing", async () => {
+  test("a request over 64 KB is a 413 and books nothing", async () => {
     const [startsAt] = await freeTimes(clinic.ana);
-    const response = await post(bookingsPath, form(startsAt, { details: "a".repeat(17_000) }));
+    const response = await post(bookingsPath, form(startsAt, { details: "a".repeat(66_000) }));
 
     expect(response.status).toBe(413);
     expect((await response.json()).error.code).toBe("bad_request");

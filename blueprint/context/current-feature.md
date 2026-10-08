@@ -192,7 +192,7 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   painter list and a clinic-dev booking's page still shows its picker,
   screenshots taken; suites pass.
 
-- [ ] **9.2 The business's own questions, answered and saved on the lead.**
+- [x] **9.2 The business's own questions, answered and saved on the lead.**
   Shared: `booking_question` (`id`, `organizationId`, `position` integer,
   `label` 1 to 200 characters, `required` boolean, timestamps;
   organization-scoped, cascade with the business) and `lead.answers` (jsonb,

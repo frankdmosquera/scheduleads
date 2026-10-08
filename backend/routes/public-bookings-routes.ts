@@ -20,7 +20,9 @@ import { notBookableHere } from "../lib/errors/not-bookable-here.js";
 import { personNotTaken } from "../lib/errors/person-not-taken.js";
 import { refuse } from "../lib/errors/refuse.js";
 
-const MOST_BYTES = 16 * 1024; // decision 10: a form with every field full is far below this
+// Decision 10: a form with every field full is far below this, 20 full answers in any script
+// included (feature 9).
+const MOST_BYTES = 64 * 1024;
 
 const notValid = refuse("bad_request", "That is not a valid booking.");
 
@@ -64,6 +66,7 @@ export const publicBookingsRoutes = new Hono()
         customer: body.customer,
         location: body.location,
         details: body.details || null, // an empty box is no words
+        answers: body.answers,
         source: "widget",
         actorUserId: null,
         now: new Date(),
@@ -75,6 +78,15 @@ export const publicBookingsRoutes = new Hono()
             return c.json(notBookableHere, 404);
           case "person_not_taken":
             return c.json(personNotTaken, 400);
+          case "unknown_question":
+            return c.json(
+              refuse("bad_request", "That is not one of this business's questions."),
+              400
+            );
+          case "answered_twice":
+            return c.json(refuse("bad_request", "Each question takes one answer."), 400);
+          case "answer_needed":
+            return c.json(refuse("bad_request", `Answer: ${result.question}`), 400);
           case "time_taken":
             return c.json(
               refuse(
