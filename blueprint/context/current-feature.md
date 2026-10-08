@@ -123,8 +123,14 @@ settings gets no texts.
      missing is one log line, nothing sent. (A phone a text cannot reach
      cannot be stored: 8c.1's database check refuses it, so 8c.2 has no such
      case.)
-   Tolerated, and true: an added text that runs after a quick move already
-   says the new time, and the move's own text repeats it.
+   - added and moved are both skipped when the person was already told
+     after this change: an added or moved text to them for this booking was
+     recorded at or after the job's `changedAt` (the same entries "knew of
+     it" reads). So Marco to Pedro and straight back before the jobs run
+     texts Marco "new booking" once, not twice, and a moved text never
+     repeats an added text that ran late and already said the new time
+     (F-242, Frank, 2026-10-07; this replaces the repeat this decision first
+     tolerated).
 6. **From the business's own texting number, and never to a texting
    number.** A business without `text_settings` sends no worker texts. A
    worker's phone that is any business's texting number is never texted
@@ -200,7 +206,10 @@ fakes Twilio.
   person texts them the new time; a later move replaces an earlier moved
   text, which then sends nothing; a move to another person texts the first
   "off your day" with the time they had and the second "new booking"; a
-  booking moved away and back sends the first no taken off; one moved to a
+  booking moved away and back sends the first no taken off, and one moved
+  away and straight back before the jobs ran texts the first "new booking"
+  once, not twice; a moved text that a late "new booking" already covered
+  sends nothing; one moved to a
   second person and straight back before the jobs ran texts the second
   nothing; a cancel texts the person "off your day"; a booking cancelled
   before its added text went sends no taken off, unless the person's added

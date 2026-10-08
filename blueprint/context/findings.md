@@ -513,4 +513,4 @@ entry for this person and booking was recorded at or after this job's
 `changedAt` (the same entries decision 5's "knew of it" reads), with a test
 of the same name as the Simulate case. Or state in decision 5 that the
 duplicate is tolerated, so it is a choice and not a surprise.
-**Resolution:**
+**Resolution:** Carried to 8c.3 with Frank's yes (2026-10-07): spec decision 5 now skips an added or moved text when an added or moved text to that person for that booking was recorded at or after the job's changedAt, and 8c.3's Done when has the two cases (moved away and straight back texts "new booking" once; a moved text a late "new booking" already covered sends nothing). Stays open until 8c.3 builds and tests it.
