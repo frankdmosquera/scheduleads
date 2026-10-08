@@ -90,7 +90,7 @@ and share it across people, or work out each date's offset once and only fall
 back to `localTimeToMoment` on clock-change days.
 **Resolution:** Confirmed (unverified to open) by independent review of step 5c.4 (2026-10-02). The cost is real and is synchronous work, so reading people side by side (Promise.all) shortens the database and Google waits but not this: each person's applyFreeTimesRules still runs one after another on the event loop. Measured in a scratch copy, the rules alone for 7 people over 31 dates (30 minutes, 15 after, one room): weekdays 9 to 17 every 15 minutes, about 73 ms; every day all day every 15 minutes, about 416 ms; every day all day every 5 minutes, about 1.15 s. The build log's 75 ms for the dev clinic matches the first case, so that request is almost all this work, not the reads. Fine for the four tenants' daytime hours; it grows with long windows and a small step (the database allows any step above 0), on a public route with no rate limit yet. Stays a P3, for feature 9 (first public traffic) or feature 12 (where an owner sets the step): work out each date's offset once per request and share it across people, or put a floor on the step.
 
-### F-94 [P3] open - chooseAnyAvailable has no caller outside its own test, while the spec still says the booking's order comes from it
+### F-94 [P3] fixed - chooseAnyAvailable has no caller outside its own test, while the spec still says the booking's order comes from it
 
 **File:** backend/lib/scheduling/choose-any-available.ts:11 (spec: blueprint/context/current-feature.md:255 and :434)
 **Found:** 2026-10-02 by the second final independent review of feature 5d (scope: 12a21d6..3cec4ae; lenses: quality, security, performance, tests)
@@ -105,8 +105,7 @@ drift.
 **Suggested fix:** Either delete choose-any-available.ts and move its useful
 cases into order-any-available.test.ts, or keep it and say why; and change the
 two spec lines to name `orderAnyAvailable`.
-**Resolution:**
-
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: choose-any-available.ts deleted; its nine tests moved, under the same names, into order-any-available.test.ts, which checks the first choice through a local firstChoice helper (orderAnyAvailable(...)[0] ?? null). 11/11 pass. The 05d archive keeps its lines as written; it already records F-94.
 ### F-95 [P3] fixed - When the no-wait test fails, its cleanup hangs on the held Google answer and leaves its business in the dev database
 
 **File:** backend/lib/calendar/write-booking-event.test.ts:191-219 (cleanup: :166-170)
