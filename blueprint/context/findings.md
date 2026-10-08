@@ -488,3 +488,29 @@ the imported name carry the full meaning. The rule it encodes also exists as
 keep the pointer comment to `textable-phone-number.ts`. A rename only: the
 SQL in the migrations is unchanged, so no new migration.
 **Resolution:** Fixed 2026-10-07 with Frank's yes: renamed to `STORED_TEXTABLE_PHONE_PATTERN` in `packages/shared/db/text-tables/stored-textable-phone-pattern.ts`, keeping the pointer to `textable-phone-number.ts`; both tables import it. A rename only: `db:generate` reports "No schema changes", backend build clean, shared 154 and backend 747 tests passed (3 runs). Re-review of 8c.1's fixes (2026-10-07): closed. The diff is a pure rename (value unchanged) that keeps the pointer comment; `git grep` finds no `NORTH_AMERICAN_NUMBER` or `north-american-number` outside this ledger entry, and both `text-settings-table.ts` and `worker-text-settings-table.ts` import the new name. `db:generate` reports "No schema changes, nothing to migrate" and wrote no file; backend build, `format:check`, shared 154/154 and backend 747/747 (three runs) pass. Only a stale, gitignored `packages/shared/dist/db/text-tables/north-american-number.*` from an earlier build remains on this machine; `./db` does not export it and nothing imports it. Nothing new introduced.
+
+### F-242 [P3] open - The added rule cannot tell a superseded added job, so a booking moved away and straight back will text its person the same "new booking" twice once 8c.3 adds jobs on moves
+
+**File:** backend/lib/text/send-worker-text.ts:40-44; backend/lib/jobs/worker-text-job.ts:20-22
+**Found:** 2026-10-07 by independent step review (scope: 8c.2, b3b655c..7b24848; lenses: quality, security, performance, tests)
+**Why it matters:** Not a fault in 8c.2 as built (today only `book-time.ts`
+adds a worker job, so each booking has one added job). It is a trap for
+8c.3. The added job sends whenever the booking is confirmed, not started and
+still this person's (decision 5 as written); the payload's `sequence` is
+written but dropped by `worker-text-job.ts`, and nothing looks at the
+person's earlier `worker_added` entries. 8c.3 adds an added job on a move
+onto a person, and its own Done when names the case "a booking moved away and
+back". Marco -> Pedro -> Marco before the jobs run leaves two added jobs for
+Marco (the booking's, sequence 0, and the move back's, sequence 2). Both pass
+every check at run time, both render the same words, and both are first
+tries, so `findSentText` never runs: Marco gets "Summit Painting: new booking
+Mon Oct 5, 9:00am. Jane Doe, ..." twice, against "never sent twice" in the
+spec's scope. (Decision 5 tolerates an added and a moved text repeating one
+time, which reads differently; two identical texts are not that case.)
+**Suggested fix:** Decide it in 8c.3's plan, before `move-booking.ts` adds
+its jobs: for example, added skips when a `worker_added` or `worker_moved`
+entry for this person and booking was recorded at or after this job's
+`changedAt` (the same entries decision 5's "knew of it" reads), with a test
+of the same name as the Simulate case. Or state in decision 5 that the
+duplicate is tolerated, so it is a choice and not a surprise.
+**Resolution:**
