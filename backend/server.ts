@@ -1,6 +1,8 @@
 // Backend entry point: starts the API. The routes live in app.ts, so importing their type
 // never starts a server.
 
+import type { Server } from "node:http";
+
 import { serve } from "@hono/node-server";
 
 import { readTokenKey } from "@scheduleads-app/shared/crypto";
@@ -32,10 +34,11 @@ readEmailSettings();
 const runner = await startJobRunner();
 console.log(runner ? "[jobs] runner working" : "[jobs] no jobs defined yet: runner not started");
 
+// Node's own HTTP server: serve makes an HTTP/2 or HTTPS one only when asked to.
 const server = serve({ fetch: app.fetch, port }, (info) => {
   console.log(`[api] listening on http://localhost:${info.port}`);
   console.log(`[api] dashboard origin allowed with credentials: ${appOrigin}`);
-});
+}) as Server;
 
 // A deploy stops the old API with SIGTERM: no new requests, the requests and jobs in hand finish,
 // then exit, within 25 seconds, under the 30 Railway is set to allow before it kills the API.

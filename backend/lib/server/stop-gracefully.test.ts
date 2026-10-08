@@ -1,6 +1,6 @@
 // A real HTTP server on a free port, with a request held open the way a booking's save is.
 
-import { createServer, type Server } from "node:http";
+import { Agent, createServer, request, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 
 import { afterEach, describe, expect, test } from "vitest";
@@ -47,7 +47,7 @@ describe("stopping the API", () => {
     expect(await stopping).toBe("finished");
   });
 
-  test("a new request is refused once stopping has begun", async () => {
+  test("a new connection is refused once stopping has begun", async () => {
     const { answer, port } = await serverWithARequestInFlight();
     const stopping = stopGracefully(server!, null, "SIGTERM", 5_000);
 
@@ -55,6 +55,38 @@ describe("stopping the API", () => {
     finishRequest();
     await answer;
     expect(await stopping).toBe("finished");
+  });
+
+  test("a connection kept open is closed after its answer, so nothing more comes in on it", async () => {
+    let finishFirst = () => {};
+    server = createServer((incoming, response) => {
+      if (incoming.url === "/first") finishFirst = () => response.end("booked");
+      else response.end("too late");
+    });
+    await new Promise<void>((listening) => server!.listen(0, "127.0.0.1", listening));
+    const { port } = server!.address() as AddressInfo;
+    const agent = new Agent({ keepAlive: true, maxSockets: 1 }); // one connection, reused
+    const send = (path: string) =>
+      new Promise<string>((answered, failed) => {
+        const call = request({ host: "127.0.0.1", port, path, agent }, (response) => {
+          let body = "";
+          response.on("data", (chunk) => (body += chunk));
+          response.on("end", () => answered(body));
+        });
+        call.on("error", failed);
+        call.end();
+      });
+    const first = send("/first");
+    await new Promise((wait) => setTimeout(wait, 100));
+    const stopping = stopGracefully(server!, null, "SIGTERM", 5_000);
+    finishFirst();
+
+    expect(await first).toBe("booked");
+    const startedWaiting = Date.now();
+    expect(await stopping).toBe("finished");
+    expect(Date.now() - startedWaiting).toBeLessThan(1_000); // not the connection's idle timeout
+    await expect(send("/second")).rejects.toThrow();
+    agent.destroy();
   });
 
   test("the jobs in hand are stopped with the same signal, and waited for", async () => {
