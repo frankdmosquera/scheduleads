@@ -147,7 +147,7 @@ address, and record in the log whether the event disappears. If the
 sender-change case matters, store the organizer used on the request.
 **Resolution:**
 
-### F-134 [P3] open - The cancel test that checks log lines for the customer's details reads them before any are written
+### F-134 [P3] fixed - The cancel test that checks log lines for the customer's details reads them before any are written
 
 **File:** backend/lib/booking/cancel-booking.test.ts:299-311
 **Found:** 2026-10-03 by /audit independent (scope: current, 32114fc..14772a1; lens: tests)
@@ -166,8 +166,7 @@ more than it proves.
 `bookingCancellationEmails.settled()` before reading `lines`, or drop
 "a log line" from the test's name and leave the log checks to the two
 files that already make them.
-**Resolution:**
-
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: since 8a the cancel's emails and event removal run as jobs, so the test now works the due jobs before reading the lines and asserts some were written. Proved: without the workDueJobs line the test fails (no lines read).
 ### F-137 [P3] open - The reserved slug is refused only when a business is made; an owner can still take it through Better Auth's organization update
 
 **File:** packages/shared/zod-validation/organization-validation-schemas/business-name-validation-schema.ts:14-19 (update rights: backend/lib/auth/auth-server.ts:65,71)
