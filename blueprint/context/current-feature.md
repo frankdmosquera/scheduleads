@@ -171,7 +171,7 @@ fakes Twilio.
   refused; the database refuses a phone not in the `+1` shape and a row
   pointing at another business's person; the backend tests still pass.
 
-- [ ] **8c.2 The text when a booking lands on a worker's day.** The added
+- [x] **8c.2 The text when a booking lands on a worker's day.** The added
   text's wording (`renderWorkerText`, decision 4) and the one function that
   sends any worker text (`sendWorkerText`, decisions 5 to 8), the
   `worker_text` job, and `book-time.ts` adding it in the booking's own

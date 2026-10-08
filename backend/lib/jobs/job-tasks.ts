@@ -9,6 +9,7 @@ import { bookingEventWriteJob } from "./booking-event-write-job.js";
 import { bookingTextJob } from "./booking-text-job.js";
 import { jobNames } from "./job-names.js";
 import { textReplyJob } from "./text-reply-job.js";
+import { workerTextJob } from "./worker-text-job.js";
 
 export const jobTasks: TaskList = {
   [jobNames.bookingEmail]: bookingEmailJob,
@@ -17,4 +18,5 @@ export const jobTasks: TaskList = {
   [jobNames.bookingEventRemove]: bookingEventRemovalJob,
   [jobNames.bookingText]: bookingTextJob,
   [jobNames.textReply]: textReplyJob,
+  [jobNames.workerText]: workerTextJob,
 };

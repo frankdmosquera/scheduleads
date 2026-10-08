@@ -1,0 +1,508 @@
+// The booked worker's text when a booking lands on their day (feature 8c), as a job, against the
+// local database with Twilio faked: no test ever sends a real text. Every business here is a
+// throwaway carrying this run's tag, removed after.
+
+import { randomInt, randomUUID } from "node:crypto";
+
+import { and, eq, like, sql } from "drizzle-orm";
+import { afterAll, afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+
+import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
+
+try {
+  process.loadEnvFile(new URL("../../../.env", import.meta.url)); // the root .env, before the code reads it
+} catch {
+  // No .env: the environment must already carry DATABASE_URL and the link key.
+}
+
+assertLocalDevDatabase(process.env.DATABASE_URL, "run the worker text job tests");
+
+// Imported after the env is loaded: they read it the moment they load.
+const { app } = await import("../../app.js");
+const { db } = await import("../../database.js");
+const {
+  activity,
+  availabilityRule,
+  bookingLink,
+  bookingLinkResource,
+  member,
+  organization,
+  pipelineStage,
+  resource,
+  textSettings,
+  user,
+  workerTextSettings,
+} = await import("@scheduleads-app/shared/db");
+const { bookTime } = await import("../booking/book-time.js");
+const { cancelBooking } = await import("../booking/cancel-booking.js");
+const { moveBooking } = await import("../booking/move-booking.js");
+const { addDays } = await import("../local-time/add-days.js");
+const { localDate } = await import("../local-time/local-date.js");
+const { jobClock } = await import("./job-clock.js");
+const { jobSchema } = await import("./job-schema.js");
+const { workDueJobs } = await import("./work-due-jobs.js");
+
+const tag = randomUUID().slice(0, 8);
+const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
+const TEN = new Date("2026-10-05T16:00:00Z");
+const NOW = new Date("2026-10-02T14:00:00Z"); // the Friday before, as vitest.setup.ts pins it
+const MESSAGES_URL = "https://api.twilio.com/2010-04-01/Accounts/AC123/Messages.json";
+const MARCOS_PHONE = "+14035550161";
+const jane = { name: "Jane Doe", email: `jane-${tag}@example.com`, phone: "403 555 0148" };
+const schema = sql.identifier(jobSchema);
+
+// Twilio's side, faked: every request, and the answers each test sets.
+type TwilioCallType = { method: string; form: Record<string, string> };
+let calls: TwilioCallType[];
+let sendAnswer: (form: Record<string, string>) => Response;
+let listAnswer: () => Response;
+const sent = (sid: string) => Response.json({ sid, status: "queued" }, { status: 201 });
+
+const freshNumber = () =>
+  `+1587${randomInt(200, 1000)}${String(randomInt(0, 10_000)).padStart(4, "0")}`;
+
+// A painting business of its own, open every day 9 to 12: Marco and Pedro do interior estimates.
+// It texts from a made-up number with the customer's texts off, so the only texts are the
+// worker's; Marco gets them unless a test changes his settings.
+async function makeBusiness(
+  name: string,
+  {
+    texts = {},
+    marcosTexts = {},
+  }: {
+    texts?: Record<string, unknown> | null;
+    marcosTexts?: Record<string, unknown> | null;
+  } = {}
+) {
+  const id = () => randomUUID();
+  const business = id();
+  const slug = `test-workertext-${name}-${tag}-dev`;
+  await db.insert(organization).values({ id: business, name: "Summit Painting", slug });
+  const morning = [{ startMinute: 540, endMinute: 720 }];
+  await db.insert(availabilityRule).values({
+    id: id(),
+    organizationId: business,
+    resourceId: null,
+    weeklyHours: {
+      mon: morning,
+      tue: morning,
+      wed: morning,
+      thu: morning,
+      fri: morning,
+      sat: morning,
+      sun: morning,
+    },
+    timezone: "America/Edmonton",
+    minimumNoticeMinutes: 0,
+    horizonDays: 60,
+    closedDates: [],
+  });
+  await db
+    .insert(pipelineStage)
+    .values({ id: id(), organizationId: business, name: "New", position: 0 });
+  const [marco, pedro, estimate] = [id(), id(), id()];
+  await db.insert(resource).values([
+    { id: marco, organizationId: business, name: "Marco", kind: "person" },
+    { id: pedro, organizationId: business, name: "Pedro", kind: "person" },
+  ]);
+  await db.insert(bookingLink).values({
+    id: estimate,
+    organizationId: business,
+    name: "Interior estimate",
+    slug: "interior-estimate",
+    durationMinutes: 60,
+  });
+  await db.insert(bookingLinkResource).values([
+    { organizationId: business, bookingLinkId: estimate, resourceId: marco },
+    { organizationId: business, bookingLinkId: estimate, resourceId: pedro },
+  ]);
+  const fromNumber = freshNumber();
+  if (texts !== null) {
+    await db.insert(textSettings).values({
+      organizationId: business,
+      fromNumber,
+      confirmationOn: false,
+      reminderMinutesBefore: [],
+      replyPhone: "+14035550100",
+      replyEmail: null,
+      ...texts,
+    });
+  }
+  if (marcosTexts !== null) {
+    await db.insert(workerTextSettings).values({
+      personId: marco,
+      organizationId: business,
+      phone: MARCOS_PHONE,
+      addedOn: true,
+      movedOn: true,
+      removedOn: true,
+      ...marcosTexts,
+    });
+  }
+  return { business, slug, marco, pedro, estimate, fromNumber };
+}
+
+type BusinessType = Awaited<ReturnType<typeof makeBusiness>>;
+
+// Booked with Marco at nine on the Monday; his text stays a job until a test works it.
+async function book(business: BusinessType, requestKey: string = randomUUID()) {
+  const result = await bookTime({
+    organizationId: business.business,
+    bookingLinkId: business.estimate,
+    personId: business.marco,
+    startsAt: NINE,
+    requestKey,
+    customer: jane,
+    location: "12 Main Street, Calgary",
+    details: "",
+    source: "widget",
+    actorUserId: null,
+    now: NOW,
+  });
+  if (!result.booked) throw new Error(`expected a booking, got ${result.reason}`);
+  return result.booking.id;
+}
+
+const workerTextEntriesOf = async (business: BusinessType) =>
+  (
+    await db
+      .select({ payload: activity.payload })
+      .from(activity)
+      .where(and(eq(activity.organizationId, business.business), eq(activity.type, "sms_sent")))
+  )
+    .map((row) => row.payload as Record<string, unknown>)
+    .filter((payload) => String(payload.kind).startsWith("worker_"));
+
+const workerJobsOf = async (bookingId: string) =>
+  (await db.execute(
+    sql`select attempts, payload from ${schema}._private_jobs jobs
+        join ${schema}._private_tasks tasks on tasks.id = jobs.task_id
+        where tasks.identifier = 'worker_text' and jobs.payload->>'bookingId' = ${bookingId}`
+  )) as unknown as { attempts: number; payload: Record<string, unknown> }[];
+
+// A failed job waits seconds for its next try; the tests do not wait for it.
+const makeDue = (bookingId: string) =>
+  db.execute(
+    sql`update ${schema}._private_jobs set run_at = now() where payload->>'bookingId' = ${bookingId}`
+  );
+
+const posts = () => calls.filter((call) => call.method === "POST");
+
+let log: ReturnType<typeof vi.spyOn>;
+beforeEach(() => {
+  calls = [];
+  let next = 0;
+  sendAnswer = () => sent(`SM${++next}`);
+  listAnswer = () => Response.json({ messages: [] });
+  vi.stubEnv("TWILIO_ACCOUNT_SID", "AC123");
+  vi.stubEnv("TWILIO_AUTH_TOKEN", "test-token");
+  vi.stubGlobal("fetch", async (input: RequestInfo | URL, init: RequestInit = {}) => {
+    const url = new URL(String(input instanceof Request ? input.url : input));
+    if (url.origin + url.pathname !== MESSAGES_URL) {
+      throw new Error(`A test tried to reach ${url.origin}.`); // emails and Google stay unsent
+    }
+    const method = init.method ?? "GET";
+    const form = Object.fromEntries(
+      method === "POST" ? new URLSearchParams(String(init.body)) : url.searchParams
+    );
+    calls.push({ method, form });
+    return method === "POST" ? sendAnswer(form) : listAnswer();
+  });
+  log = vi.spyOn(console, "log").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  vi.spyOn(console, "error").mockImplementation(() => {});
+});
+
+afterEach(async () => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  jobClock.now = () => NOW;
+  await db.execute(sql`delete from ${schema}._private_jobs`);
+});
+
+afterAll(async () => {
+  await db.delete(organization).where(like(organization.slug, `test-workertext-%-${tag}-dev`));
+  await db.delete(user).where(like(user.email, `owner-workertext-${tag}@example.com`));
+  await db.$client.end();
+});
+
+const loggedNotSent = (reason: string) =>
+  log.mock.calls.some(
+    ([line]) => typeof line === "string" && line.includes("worker_added not sent, " + reason)
+  );
+
+describe("the worker's text when a booking lands on their day", () => {
+  test("a booking from the form texts its person from the business's number", async () => {
+    const business = await makeBusiness("route");
+    // A day a week from today, so the route's own notice and horizon allow it.
+    const day = addDays(localDate(new Date(), "America/Edmonton"), 7);
+    const times = await (
+      await app.request(
+        `/public/${business.slug}/booking-links/${business.estimate}/times?from=${day}&to=${day}&person=${business.marco}`
+      )
+    ).json();
+    const response = await app.request(`/public/${business.slug}/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bookingLinkId: business.estimate,
+        startsAt: times.startTimes[0],
+        personId: business.marco,
+        requestKey: randomUUID(),
+        customer: jane,
+        location: "12 Main Street, Calgary",
+        details: "",
+      }),
+    });
+    expect(response.status).toBe(201);
+    const { booking } = await response.json();
+
+    await workDueJobs();
+
+    expect(posts()).toHaveLength(1);
+    const [{ form }] = posts();
+    expect(form.From).toBe(business.fromNumber);
+    expect(form.To).toBe(MARCOS_PHONE);
+    expect(form.Body).toMatch(
+      /^Summit Painting: new booking \w{3} \w{3} \d{1,2}, 9:00am\. Jane Doe, Interior estimate, 12 Main Street, Calgary$/
+    );
+    // Never the customer's phone or her private link.
+    expect(form.Body.replace(/\D/g, "")).not.toContain("4035550148");
+    expect(form.Body).not.toContain("http");
+    expect(await workerTextEntriesOf(business)).toEqual([
+      { bookingId: booking.id, kind: "worker_added", personId: business.marco, twilioSid: "SM1" },
+    ]);
+    expect(await workerJobsOf(booking.id)).toEqual([]); // done and gone
+  });
+
+  test("an owner's booking texts its person too", async () => {
+    const business = await makeBusiness("owner");
+    const ownerId = randomUUID();
+    await db
+      .insert(user)
+      .values({ id: ownerId, name: "Primo", email: `owner-workertext-${tag}@example.com` });
+    await db.insert(member).values({
+      id: randomUUID(),
+      organizationId: business.business,
+      userId: ownerId,
+      role: "owner",
+    });
+    const result = await bookTime({
+      organizationId: business.business,
+      bookingLinkId: business.estimate,
+      personId: business.marco,
+      startsAt: NINE,
+      requestKey: null,
+      customer: jane,
+      location: "12 Main Street, Calgary",
+      details: "",
+      source: "manual",
+      actorUserId: ownerId,
+      now: NOW,
+    });
+    expect(result.booked).toBe(true);
+
+    await workDueJobs();
+
+    expect(posts().map((call) => call.form.To)).toEqual([MARCOS_PHONE]);
+    expect(posts()[0].form.Body).toBe(
+      "Summit Painting: new booking Mon Oct 5, 9:00am. Jane Doe, Interior estimate, 12 Main Street, Calgary"
+    );
+  });
+
+  test.each([
+    [
+      "a person with no row gets nothing and one log line",
+      "the person has no worker text settings",
+      { marcosTexts: null },
+    ],
+    [
+      "a person with the added switch off gets nothing and one log line",
+      "the person has that text off",
+      { marcosTexts: { addedOn: false } },
+    ],
+    [
+      "a business without text settings sends nothing and one log line",
+      "the business has no text settings",
+      { texts: null },
+    ],
+  ])("%s", async (_, reason, options) => {
+    const business = await makeBusiness(reason.replace(/\W+/g, "-"), options);
+    await book(business);
+
+    await workDueJobs();
+
+    expect(calls).toEqual([]);
+    expect(await workerTextEntriesOf(business)).toEqual([]);
+    expect(loggedNotSent(reason)).toBe(true);
+  });
+
+  test("an inactive person gets nothing and one log line", async () => {
+    const business = await makeBusiness("inactive");
+    await book(business);
+    await db.update(resource).set({ active: false }).where(eq(resource.id, business.marco));
+
+    await workDueJobs();
+
+    expect(calls).toEqual([]);
+    expect(loggedNotSent("the person is inactive")).toBe(true);
+  });
+
+  test("a business with no time zone: nothing is sent", async () => {
+    const business = await makeBusiness("no-zone");
+    await book(business);
+    await db.delete(availabilityRule).where(eq(availabilityRule.organizationId, business.business));
+
+    await workDueJobs();
+
+    expect(calls).toEqual([]);
+    expect(loggedNotSent("the business has no time zone")).toBe(true);
+  });
+
+  test("a person whose phone is a texting number gets nothing and one log line", async () => {
+    const other = await makeBusiness("other-number");
+    const business = await makeBusiness("texting-number", {
+      marcosTexts: { phone: other.fromNumber },
+    });
+    await book(business);
+
+    await workDueJobs();
+
+    expect(calls).toEqual([]);
+    expect(await workerTextEntriesOf(business)).toEqual([]);
+    expect(loggedNotSent("the person's phone is a texting number")).toBe(true);
+  });
+
+  test("a booking cancelled before the text went: nothing is sent", async () => {
+    const business = await makeBusiness("cancelled");
+    const id = await book(business);
+    expect(await cancelBooking(id, NOW)).toEqual({ cancelled: true, alreadyCancelled: false });
+
+    await workDueJobs();
+
+    expect(posts()).toEqual([]);
+    expect(loggedNotSent("the booking was cancelled")).toBe(true);
+  });
+
+  test("a booking started before the job ran sends nothing", async () => {
+    const business = await makeBusiness("started");
+    await book(business);
+    jobClock.now = () => new Date(NINE.getTime() + 60_000);
+
+    await workDueJobs();
+
+    expect(calls).toEqual([]);
+    expect(loggedNotSent("the appointment has started")).toBe(true);
+  });
+
+  test("a booking moved to another person before the text went: nothing is sent", async () => {
+    const business = await makeBusiness("other-person");
+    const id = await book(business);
+    expect(
+      await moveBooking({ bookingId: id, startsAt: NINE, personId: business.pedro, now: NOW })
+    ).toEqual(expect.objectContaining({ moved: true }));
+
+    await workDueJobs();
+
+    expect(posts()).toEqual([]);
+    expect(loggedNotSent("the booking is another person's now")).toBe(true);
+  });
+
+  test("a booking moved to another time before the job ran says the new time", async () => {
+    const business = await makeBusiness("other-time");
+    const id = await book(business);
+    expect(await moveBooking({ bookingId: id, startsAt: TEN, personId: null, now: NOW })).toEqual(
+      expect.objectContaining({ moved: true })
+    );
+
+    await workDueJobs();
+
+    expect(posts().map((call) => call.form.Body.split(". Jane")[0])).toEqual([
+      "Summit Painting: new booking Mon Oct 5, 10:00am",
+    ]);
+  });
+
+  test("a resent form adds no second job", async () => {
+    const business = await makeBusiness("resent");
+    const requestKey = randomUUID();
+    const id = await book(business, requestKey);
+    expect(await book(business, requestKey)).toBe(id);
+
+    expect(await workerJobsOf(id)).toEqual([
+      {
+        attempts: 0,
+        payload: {
+          organizationId: business.business,
+          bookingId: id,
+          personId: business.marco,
+          sequence: 0,
+          changedAt: NOW.toISOString(),
+          kind: "added",
+          startsAt: null,
+        },
+      },
+    ]);
+  });
+
+  // The change was saved at NOW, so the check's "since" is pinned there (decision 7).
+  test.each([
+    ["a minute after the booking was saved", 60_000, ["POST", "GET"], "SM7"],
+    ["a minute before the booking was saved", -60_000, ["POST", "GET", "POST"], "SM1"],
+  ])(
+    "a retry after a send whose answer was lost, with the same words sent %s",
+    async (_, offset, methods, recorded) => {
+      const business = await makeBusiness(`lost-${offset}`);
+      const id = await book(business);
+      let body = "";
+      let lost = true;
+      sendAnswer = (form) => {
+        body = form.Body;
+        if (!lost) return sent("SM1");
+        lost = false;
+        return new Response("<html>gateway</html>", { status: 201 }); // taken, the answer lost
+      };
+      listAnswer = () =>
+        Response.json({
+          messages: [
+            {
+              sid: "SM7",
+              body,
+              direction: "outbound-api",
+              status: "sent",
+              date_created: new Date(NOW.getTime() + offset).toUTCString(),
+            },
+          ],
+        });
+
+      await workDueJobs();
+      await makeDue(id);
+      await workDueJobs();
+
+      // Found since the booking was saved: nothing sent again, the text Twilio has recorded. From
+      // before it: another text, so this one is sent.
+      expect(calls.map((call) => call.method)).toEqual(methods);
+      expect(calls[1].form).toEqual({
+        From: business.fromNumber,
+        To: MARCOS_PHONE,
+        PageSize: "20",
+      });
+      expect(await workerTextEntriesOf(business)).toEqual([
+        { bookingId: id, kind: "worker_added", personId: business.marco, twilioSid: recorded },
+      ]);
+    }
+  );
+
+  test("a refusal no retry can change is not retried: one try, one log line, no entry", async () => {
+    const business = await makeBusiness("stop");
+    const id = await book(business);
+    sendAnswer = () => Response.json({ code: 21610, status: 400 }, { status: 400 });
+
+    await workDueJobs();
+
+    expect(posts()).toHaveLength(1);
+    expect(await workerJobsOf(id)).toEqual([]); // finished, not waiting to try again
+    expect(await workerTextEntriesOf(business)).toEqual([]);
+    expect(loggedNotSent("Twilio 21610")).toBe(true);
+  });
+});
