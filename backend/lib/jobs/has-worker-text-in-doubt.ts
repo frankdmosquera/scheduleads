@@ -1,7 +1,8 @@
 // Backend: whether a "new booking" or "moved" text to this person for this booking was tried and
-// still waits for another try, so it may have reached them (feature 8c, decision 5): a send whose
-// answer was lost throws to be retried, and its retry waits behind later jobs of the lane. Read
-// from the runner's own table: the waiting job is the only record of that try.
+// never known to have gone or failed, so it may have reached them (feature 8c, decision 5): a send
+// whose answer was lost throws to be retried, and its retry waits behind later jobs of the lane,
+// or it gave up after its last try. Read from the runner's own table, where both stay: the job is
+// the only record of that try. When unsure, the person is told.
 
 import { sql } from "drizzle-orm";
 

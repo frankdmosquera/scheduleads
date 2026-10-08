@@ -122,9 +122,11 @@ settings gets no texts.
      they believe it is on their day: their latest text about it was an
      added or moved one, newer than any taken off they got (F-243: no second
      "off your day" for a booking they already think is gone), or an added
-     or moved text to them was tried and still waits for a retry, so it may
-     have reached them (F-245: a lost answer never leaves them driving to
-     an empty house; read from the runner's waiting job). Accepted as is: a
+     or moved text to them was tried and never known to have gone or failed
+     (waiting for a retry, or given up after its last), so it may have
+     reached them (F-245: a lost answer never leaves them driving to an
+     empty house; read from the runner's job, which stays for both). A try
+     that never reached Twilio counts too: when unsure, they are told. Accepted as is: a
      taken off says the time they had when it came off, which a skipped
      moved text may never have told them; the customer's name still tells
      them which booking it is.
@@ -294,7 +296,9 @@ works five jobs at once). A failed try waits behind later jobs of its lane.
 
 **Timeline:** `sms_sent`, payload
 `{ bookingId, kind, personId, sequence, twilioSid }`, `sequence` the
-booking's move number the text described (added in 8c.3, for decision 5),
+booking's move number the text described (added in 8c.3, for decision 5):
+the booking as it is for a text sent now, the change it was sent for when
+a retry finds it already went at its first try,
 `kind` one of `worker_added`, `worker_moved`, `worker_removed`. No number, no
 words.
 

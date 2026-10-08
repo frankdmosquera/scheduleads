@@ -121,23 +121,19 @@ export async function sendWorkerText(
     to: worker.phone,
     body: renderWorkerText(text.kind, { ...context, startsAt, timezone: context.timezone }),
   };
-  const record = (twilioSid: string | null) =>
+  // `sequence`: the booking's move number the text described. Sent now, the booking as it is;
+  // found on a retry, it went at its first try, so only the change it was sent for.
+  const record = (twilioSid: string | null, sequence: number) =>
     recordActivity(organizationId, {
       contactId,
       type: "sms_sent",
-      payload: {
-        bookingId,
-        kind,
-        personId: text.personId,
-        sequence: context.sequence, // the booking as this text described it
-        twilioSid,
-      },
+      payload: { bookingId, kind, personId: text.personId, sequence, twilioSid },
     });
 
   if (attempt > 1) {
     const sent = await findSentText({ ...message, since: text.changedAt });
     if (sent) {
-      await record(sent);
+      await record(sent, text.sequence);
       return;
     }
   }
@@ -149,5 +145,5 @@ export async function sendWorkerText(
     if (error instanceof SendTextError && !error.retry) return notSent(`Twilio ${error.code}`);
     throw error;
   }
-  await record(twilioSid);
+  await record(twilioSid, context.sequence);
 }

@@ -186,6 +186,21 @@ const makeDue = (bookingId: string) =>
     sql`update ${schema}._private_jobs set run_at = now() where payload->>'bookingId' = ${bookingId}`
   );
 
+// A failed try's retry comes seconds later; held back here so it runs only when a test says.
+const holdRetries = (bookingId: string) =>
+  db.execute(
+    sql`update ${schema}._private_jobs set run_at = now() + interval '1 hour'
+        where attempts > 0 and payload->>'bookingId' = ${bookingId}`
+  );
+
+// Releases held retries ahead of every other due job: the runner breaks no tie between jobs due
+// at the same moment, so the order a test means to prove is set here.
+const releaseRetries = (bookingId: string) =>
+  db.execute(
+    sql`update ${schema}._private_jobs set run_at = now() - interval '1 hour'
+        where attempts > 0 and payload->>'bookingId' = ${bookingId}`
+  );
+
 const posts = () => calls.filter((call) => call.method === "POST");
 
 let log: ReturnType<typeof vi.spyOn>;
@@ -809,6 +824,7 @@ describe("the worker's texts when a booking moves or comes off their day", () =>
     expect((await workerJobsOf(id)).map((job) => [job.payload.kind, job.attempts])).toEqual([
       ["added", 1],
     ]);
+    await holdRetries(id);
     sendAnswer = () => sent("SM9");
     await cancelBooking(id, NOW);
 
@@ -844,5 +860,72 @@ describe("the worker's texts when a booking moves or comes off their day", () =>
     expect(
       loggedWorkerNotSent("worker_removed", "the person was already told it is off their day")
     ).toBe(true);
+  });
+
+  // A text Twilio took whose answer was lost: its words are kept so its retry finds it there.
+  const loseFirst = (startsWith: string) => {
+    let lostBody = "";
+    let next = 0;
+    sendAnswer = (form) => {
+      if (!lostBody && form.Body.startsWith(startsWith)) {
+        lostBody = form.Body;
+        return new Response("<html>gateway</html>", { status: 201 });
+      }
+      return sent(`SM${++next}`);
+    };
+    listAnswer = () =>
+      Response.json({
+        messages: lostBody
+          ? [
+              {
+                sid: "SM99",
+                body: lostBody,
+                direction: "outbound-api",
+                status: "sent",
+                date_created: new Date(NOW.getTime() + 60_000).toUTCString(),
+              },
+            ]
+          : [],
+      });
+  };
+
+  test("a lost off your day found on its retry does not stop a later one after a new booking", async () => {
+    const business = await makeBusiness("lost-off");
+    const id = await book(business);
+    await workDueJobs(); // Marco: "new booking"
+    loseFirst("Summit Painting: off your day");
+    await move(id, NINE, business.pedro);
+    await workDueJobs(); // Marco's "off your day" went, its answer lost: it waits to retry
+    await holdRetries(id);
+    await move(id, NINE, business.marco);
+    await workDueJobs(); // Marco: "new booking" again
+    await move(id, NINE, business.pedro);
+
+    await releaseRetries(id); // the lost try's retry runs first, finds its text, then the change's
+    await workDueJobs();
+
+    const texts = textsTo(MARCOS_PHONE);
+    expect(calls.filter((call) => call.method === "GET")).toHaveLength(1);
+    expect(texts).toHaveLength(4);
+    expect(texts.at(-1)).toBe(`Summit Painting: off your day, Mon Oct 5, 9:00am. ${JANE}`);
+  });
+
+  test("a lost new booking found on its retry does not stop a later one after an off your day", async () => {
+    const business = await makeBusiness("lost-new");
+    loseFirst("Summit Painting: new booking");
+    const id = await book(business);
+    await workDueJobs(); // Marco's "new booking" went, its answer lost: it waits to retry
+    await holdRetries(id);
+    await move(id, NINE, business.pedro);
+    await workDueJobs(); // Marco: "off your day", since the new booking may have reached him
+    await move(id, NINE, business.marco);
+
+    await releaseRetries(id); // the lost try's retry runs first, finds its text, then the move back's
+    await workDueJobs();
+
+    const texts = textsTo(MARCOS_PHONE);
+    expect(calls.filter((call) => call.method === "GET")).toHaveLength(1);
+    expect(texts).toHaveLength(3);
+    expect(texts.at(-1)).toBe(`Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`);
   });
 });
