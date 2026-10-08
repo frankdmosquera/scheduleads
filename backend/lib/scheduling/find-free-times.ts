@@ -5,7 +5,9 @@
 
 import { and, asc, eq, inArray } from "drizzle-orm";
 
+import { addDays } from "@scheduleads-app/shared/add-days";
 import { bookingLink, resource } from "@scheduleads-app/shared/db";
+import { localDate } from "@scheduleads-app/shared/local-date";
 
 import { db } from "../../database.js";
 import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
@@ -13,8 +15,6 @@ import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error
 import type { BusyBlockType } from "../calendar/calendar-provider.js";
 import { getBusyTimes } from "../calendar/get-busy-times.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
-import { addDays } from "../local-time/add-days.js";
-import { localDate } from "../local-time/local-date.js";
 import { applyFreeTimesRules } from "./apply-free-times-rules.js";
 import { crossOffSpan } from "./cross-off-span.js";
 import { findCommitments } from "./find-commitments.js";

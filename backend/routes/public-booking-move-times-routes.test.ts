@@ -34,8 +34,8 @@ const { bookTime } = await import("../lib/booking/book-time.js");
 const { workDueJobs } = await import("../lib/jobs/work-due-jobs.js");
 const { makeBookingPageToken } = await import("../lib/booking/booking-page-token.js");
 const { saveCalendarConnection } = await import("../lib/calendar/save-calendar-connection.js");
-const { addDays } = await import("../lib/local-time/add-days.js");
-const { localDate } = await import("../lib/local-time/local-date.js");
+const { addDays } = await import("@scheduleads-app/shared/add-days");
+const { localDate } = await import("@scheduleads-app/shared/local-date");
 const { localTimeToMoment } = await import("../lib/local-time/local-time-to-moment.js");
 
 const tag = randomUUID().slice(0, 8);
@@ -335,9 +335,11 @@ describe("free times for moving a booking", () => {
   });
 
   test("nothing in the answer carries the customer's details", async () => {
+    fakeGoogleBusy([]); // earlier tests leave people connected: their calendars must answer
     const response = await timesFor(clinic.janesBooking);
     const text = await response.text();
 
+    expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     for (const detail of [jane.name, jane.email, jane.phone, jane.location, jane.details]) {
       expect(text).not.toContain(detail);

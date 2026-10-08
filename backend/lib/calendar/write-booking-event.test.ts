@@ -45,6 +45,7 @@ const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
 type AnswerType = (init?: RequestInit) => Response | Promise<Response>;
 let tokenAnswer: AnswerType;
 let eventAnswer: AnswerType;
+let answerGoogle = () => {}; // a held answer, let go after every test so a failure still cleans up
 const calls: { url: string; authorization: string | null; body: string }[] = [];
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -166,6 +167,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  answerGoogle();
   vi.unstubAllGlobals();
 });
 
@@ -196,7 +198,6 @@ describe("the booking's event in Google", () => {
   test("the customer's answer does not wait for Google", async () => {
     const clinic = await makeClinic("no-wait");
     await connect(clinic);
-    let answerGoogle = () => {};
     const googleAnswered = new Promise<void>((resolve) => (answerGoogle = resolve));
     eventAnswer = async () => {
       await googleAnswered; // Google is slow: it answers only when the test lets it

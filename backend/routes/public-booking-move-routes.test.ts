@@ -35,8 +35,8 @@ const {
 const { bookTime } = await import("../lib/booking/book-time.js");
 const { workDueJobs } = await import("../lib/jobs/work-due-jobs.js");
 const { makeBookingPageToken } = await import("../lib/booking/booking-page-token.js");
-const { addDays } = await import("../lib/local-time/add-days.js");
-const { localDate } = await import("../lib/local-time/local-date.js");
+const { addDays } = await import("@scheduleads-app/shared/add-days");
+const { localDate } = await import("@scheduleads-app/shared/local-date");
 const { localTimeToMoment } = await import("../lib/local-time/local-time-to-moment.js");
 
 const tag = randomUUID().slice(0, 8);
@@ -415,6 +415,9 @@ describe("moving a booking", () => {
     warn.mockClear();
     const response = await move(clinic.janesBooking, at(11), clinic.ana);
     const refused = await move(clinic.janesBooking, at(11), clinic.mei); // a refusal says nothing either
+    await workDueJobs(); // the move's emails and event follow as jobs, which write the lines
+
+    expect(log.mock.calls.length + warn.mock.calls.length).toBeGreaterThan(0);
     const said = [
       await response.text(),
       JSON.stringify(await movedEntries(clinic)),

@@ -33,9 +33,9 @@ const {
   pipelineStage,
   resource,
 } = await import("@scheduleads-app/shared/db");
-const { localDate } = await import("../lib/local-time/local-date.js");
+const { localDate } = await import("@scheduleads-app/shared/local-date");
 const { workDueJobs } = await import("../lib/jobs/work-due-jobs.js");
-const { addDays } = await import("../lib/local-time/add-days.js");
+const { addDays } = await import("@scheduleads-app/shared/add-days");
 
 const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3400";
 const tag = randomUUID().slice(0, 8);

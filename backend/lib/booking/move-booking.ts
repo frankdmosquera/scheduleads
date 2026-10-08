@@ -10,11 +10,11 @@
 import { and, eq } from "drizzle-orm";
 
 import { booking, bookingLink, commitment, lead } from "@scheduleads-app/shared/db";
+import { localDate } from "@scheduleads-app/shared/local-date";
 
 import { db } from "../../database.js";
 import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
 import { calendarEventIdOf } from "../calendar/calendar-event-id-of.js";
-import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error.js";
 import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
@@ -22,17 +22,10 @@ import { enqueueBookingEventJob } from "../jobs/enqueue-booking-event-job.js";
 import { enqueueBookingTexts } from "../jobs/enqueue-booking-texts.js";
 import { enqueueWorkerText } from "../jobs/enqueue-worker-text.js";
 import { jobNames } from "../jobs/job-names.js";
-import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
-import { countBookingsThatDay } from "../scheduling/count-bookings-that-day.js";
-import { findCommitments } from "../scheduling/find-commitments.js";
-import { findResourceNames } from "../scheduling/find-resource-names.js";
-import { findFreeTimes } from "../scheduling/find-free-times.js";
 import { findServiceResources } from "../scheduling/find-service-resources.js";
-import { findStandbyDates } from "../scheduling/find-standby-dates.js";
-import { isRoomFree } from "../scheduling/is-room-free.js";
-import { orderAnyAvailable } from "../scheduling/order-any-available.js";
 import { releaseTime } from "../scheduling/release-time.js";
+import { findBookingChoices } from "./find-booking-choices.js";
 import { holdFirstFreeChoice } from "./hold-first-free-choice.js";
 
 export type MoveBookingResultType =
@@ -42,7 +35,6 @@ export type MoveBookingResultType =
       reason: "not_found" | "already_cancelled" | "already_started" | "time_taken" | "unavailable";
     };
 
-const DAY_MS = 86_400_000;
 const MINUTE_MS = 60_000;
 
 // Thrown inside the transaction when every choice was taken meanwhile, so all of it is undone.
@@ -114,74 +106,22 @@ export async function moveBooking(input: {
     endsAt: current.endsAt,
   };
 
-  // Checked again: the start must still be one of this booking's free times for each candidate.
-  const isFree = async (id: string): Promise<"free" | "busy" | "unreadable"> => {
-    try {
-      const answer = await findFreeTimes({
-        organizationId,
-        bookingLinkId,
-        personId: id,
-        fromDate: date,
-        toDate: date,
-        now,
-        ignoreBooking,
-      });
-      return answer?.startTimes.includes(startsAt.toISOString()) ? "free" : "busy";
-    } catch (error) {
-      if (error instanceof CalendarUnavailableError) return "unreadable"; // logged there
-      throw error;
-    }
-  };
-  const candidates = personId === null ? offered.peopleIds : [personId];
-  const states = await Promise.all(candidates.map(isFree));
-  if (personId !== null && states[0] === "unreadable")
-    return { moved: false, reason: "unavailable" };
-  const freePeople = candidates.filter((_, i) => states[i] === "free");
-  if (freePeople.length === 0) {
-    return { moved: false, reason: states.includes("unreadable") ? "unavailable" : "time_taken" };
-  }
-
-  // The rooms, the booking's own held rows left out.
-  let freeRooms: { resourceId: string; name: string }[] | null = null;
-  if (offered.placeIds !== null) {
-    const [taken, standby, rooms] = await Promise.all([
-      findCommitments(organizationId, offered.placeIds, span.startsAt, span.endsAt),
-      findStandbyDates(organizationId, offered.placeIds, date, date),
-      findResourceNames(organizationId, offered.placeIds),
-    ]);
-    freeRooms = rooms.filter((room) =>
-      isRoomFree(
-        {
-          busy: taken
-            .filter((row) => row.resourceId === room.resourceId && row.bookingId !== bookingId)
-            .map((row) => ({ start: row.startsAt, end: row.endsAt })),
-          standbyDates: standby
-            .filter((row) => row.resourceId === room.resourceId)
-            .map((row) => row.date),
-        },
-        date,
-        spanStart,
-        spanEnd
-      )
-    );
-    if (freeRooms.length === 0) return { moved: false, reason: "time_taken" };
-  }
-
-  // Any available's own order (fewest bookings that day first), this booking not counted.
-  const dayRows = (
-    await findCommitments(
-      organizationId,
-      freePeople,
-      new Date(startsAt.getTime() - DAY_MS),
-      new Date(startsAt.getTime() + DAY_MS)
-    )
-  ).filter((row) => row.bookingId !== bookingId);
-  const counts = countBookingsThatDay(dayRows, date, timezone);
-  const people = (await findResourceNames(organizationId, freePeople)).map((person) => ({
-    ...person,
-    bookingsThatDay: counts.get(person.resourceId) ?? 0,
-  }));
-  const choices = orderAnyAvailable(people, freeRooms);
+  // Checked again, as a new booking is, the booking's own time never in its way.
+  const checked = await findBookingChoices({
+    organizationId,
+    bookingLinkId,
+    offered,
+    personId,
+    startsAt,
+    date,
+    timezone,
+    span: { spanStart, spanEnd },
+    now,
+    byOwner: false,
+    movingBooking: ignoreBooking,
+  });
+  if (!checked.found) return { moved: false, reason: checked.reason };
+  const { choices } = checked;
 
   let result: MoveBookingResultType;
   try {

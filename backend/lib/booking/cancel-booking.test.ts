@@ -297,7 +297,9 @@ describe("cancelling a booking", () => {
     vi.spyOn(console, "warn").mockImplementation(keep);
     const made = await makeBooking("private");
     await cancelBooking(made.bookingId, NOW);
+    await workDueJobs(); // the cancel's emails and event removal write their lines as jobs
 
+    expect(lines.length).toBeGreaterThan(0);
     const everything = `${lines.join("\n")}\n${JSON.stringify((await rowsOf(made)).cancelledEntries)}`;
     for (const detail of ["Jane", jane.email, jane.phone, jane.location, jane.details]) {
       expect(everything).not.toContain(detail);

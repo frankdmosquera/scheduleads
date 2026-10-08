@@ -36,8 +36,8 @@ const {
 const { bookTime } = await import("../booking/book-time.js");
 const { cancelBooking } = await import("../booking/cancel-booking.js");
 const { moveBooking } = await import("../booking/move-booking.js");
-const { addDays } = await import("../local-time/add-days.js");
-const { localDate } = await import("../local-time/local-date.js");
+const { addDays } = await import("@scheduleads-app/shared/add-days");
+const { localDate } = await import("@scheduleads-app/shared/local-date");
 const { jobClock } = await import("./job-clock.js");
 const { jobSchema } = await import("./job-schema.js");
 const { workDueJobs } = await import("./work-due-jobs.js");

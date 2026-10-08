@@ -28,8 +28,8 @@ const {
   organization,
   resource,
 } = await import("@scheduleads-app/shared/db");
-const { localDate } = await import("../lib/local-time/local-date.js");
-const { addDays } = await import("../lib/local-time/add-days.js");
+const { localDate } = await import("@scheduleads-app/shared/local-date");
+const { addDays } = await import("@scheduleads-app/shared/add-days");
 
 const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3400";
 

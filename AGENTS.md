@@ -225,7 +225,8 @@ not to read. That is how this repo went a week with no GitHub remote at all.
   any machine, pull before starting. A missing remote or unpushed commits get
   said out loud at the start of a session.
 - **One branch per feature**, off `main`, named for the feature so the branch
-  alone says which one is open: `feature/booking-links-resources-and-availability-rules`.
+  alone says which one is open: `feature/08c-the-worker-s-text`, its build-plan
+  number first.
   Steps are commits on it, never branches. Small chores go on whichever
   feature branch is open.
 - **One commit per step, pushed straight after.** The step number goes in the
