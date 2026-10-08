@@ -415,6 +415,9 @@ describe("moving a booking", () => {
     warn.mockClear();
     const response = await move(clinic.janesBooking, at(11), clinic.ana);
     const refused = await move(clinic.janesBooking, at(11), clinic.mei); // a refusal says nothing either
+    await workDueJobs(); // the move's emails and event follow as jobs, which write the lines
+
+    expect(log.mock.calls.length + warn.mock.calls.length).toBeGreaterThan(0);
     const said = [
       await response.text(),
       JSON.stringify(await movedEntries(clinic)),
