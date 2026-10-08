@@ -17,8 +17,6 @@ import {
 
 import { db } from "../../database.js";
 import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
-import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error.js";
-import { getBusyTimes } from "../calendar/get-busy-times.js";
 import { findFirstPipelineStage } from "../crm/find-first-pipeline-stage.js";
 import { findOrCreateContact } from "../crm/find-or-create-contact.js";
 import { recordActivity } from "../crm/record-activity.js";
@@ -29,15 +27,8 @@ import { enqueueBookingTexts } from "../jobs/enqueue-booking-texts.js";
 import { enqueueWorkerText } from "../jobs/enqueue-worker-text.js";
 import { jobNames } from "../jobs/job-names.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
-import { countBookingsThatDay } from "../scheduling/count-bookings-that-day.js";
-import { findCommitments } from "../scheduling/find-commitments.js";
-import { findResourceNames } from "../scheduling/find-resource-names.js";
-import { findFreeTimes } from "../scheduling/find-free-times.js";
 import { findServiceResources } from "../scheduling/find-service-resources.js";
-import { findStandbyDates } from "../scheduling/find-standby-dates.js";
-import { isRoomFree } from "../scheduling/is-room-free.js";
-import { orderAnyAvailable } from "../scheduling/order-any-available.js";
-import { overlapsAny } from "../scheduling/overlaps-any.js";
+import { findBookingChoices } from "./find-booking-choices.js";
 import { holdFirstFreeChoice } from "./hold-first-free-choice.js";
 
 export type BookTimeInputType = {
@@ -73,7 +64,6 @@ export type BookTimeResultType =
       reason: "not_found" | "time_taken" | "unavailable" | "request_key_used" | "in_the_past";
     };
 
-const DAY_MS = 86_400_000;
 const MINUTE_MS = 60_000;
 const NOT_FOUND = { booked: false, reason: "not_found" } as const;
 const TIME_TAKEN = { booked: false, reason: "time_taken" } as const;
@@ -185,90 +175,23 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
   const span = { startsAt: new Date(spanStart), endsAt: new Date(spanEnd) };
   const endsAt = new Date(startsAt.getTime() + service.durationMinutes * MINUTE_MS);
 
-  // Check again. A customer: the start must still be one of the free times. The owner: only real
-  // busy time counts, bookings, time off and the person's own Google (Google wins).
-  const isFree = async (id: string): Promise<"free" | "busy" | "unreadable"> => {
-    if (source !== "manual") {
-      try {
-        const answer = await findFreeTimes({
-          organizationId,
-          bookingLinkId,
-          personId: id,
-          fromDate: date,
-          toDate: date,
-          now,
-        });
-        return answer?.startTimes.includes(startsAt.toISOString()) ? "free" : "busy";
-      } catch (error) {
-        if (error instanceof CalendarUnavailableError) return "unreadable"; // the reason is logged there
-        throw error;
-      }
-    }
-    if ((await findCommitments(organizationId, [id], span.startsAt, span.endsAt)).length > 0) {
-      return "busy";
-    }
-    try {
-      const google = await getBusyTimes({
-        organizationId,
-        resourceId: id,
-        from: span.startsAt,
-        to: span.endsAt,
-      });
-      return overlapsAny(google, spanStart, spanEnd) ? "busy" : "free";
-    } catch (error) {
-      console.warn(`[booking] cannot read the calendar of ${id}: ${safeErrorReason(error)}`);
-      return "unreadable";
-    }
-  };
-  const candidates = personId === null ? offered.peopleIds : [personId];
-  const states = await Promise.all(candidates.map(isFree)); // side by side, as the free times read them
-  if (personId !== null && states[0] === "unreadable") return refuseUnlessBooked(UNAVAILABLE);
-  const freePeople = candidates.filter((_, i) => states[i] === "free");
-  // Nobody free: "try again" if a calendar could not be read (one of them may be free), else taken.
-  if (freePeople.length === 0) {
-    return refuseUnlessBooked(states.includes("unreadable") ? UNAVAILABLE : TIME_TAKEN);
-  }
-
-  // The rooms: the one room rule over the whole span; the owner may use a room on standby.
-  let freeRooms: { resourceId: string; name: string }[] | null = null;
-  if (offered.placeIds !== null) {
-    const [taken, standby, rooms] = await Promise.all([
-      findCommitments(organizationId, offered.placeIds, span.startsAt, span.endsAt),
-      source === "manual" ? [] : findStandbyDates(organizationId, offered.placeIds, date, date),
-      findResourceNames(organizationId, offered.placeIds),
-    ]);
-    freeRooms = rooms.filter((room) =>
-      isRoomFree(
-        {
-          busy: taken
-            .filter((row) => row.resourceId === room.resourceId)
-            .map((row) => ({ start: row.startsAt, end: row.endsAt })),
-          standbyDates: standby
-            .filter((row) => row.resourceId === room.resourceId)
-            .map((row) => row.date),
-        },
-        date,
-        spanStart,
-        spanEnd
-      )
-    );
-    if (freeRooms.length === 0) return refuseUnlessBooked(TIME_TAKEN);
-  }
-
-  // The order to try: decision 2's (fewest bookings that day, then name, then id), each person
-  // with the free rooms by name.
-  const dayRows = await findCommitments(
+  // Checked again: who and which room can take it, in the order to try them.
+  const checked = await findBookingChoices({
     organizationId,
-    freePeople,
-    new Date(startsAt.getTime() - DAY_MS),
-    new Date(startsAt.getTime() + DAY_MS)
-  );
-  const counts = countBookingsThatDay(dayRows, date, timezone);
-  const people = (await findResourceNames(organizationId, freePeople)).map((person) => ({
-    ...person,
-    bookingsThatDay: counts.get(person.resourceId) ?? 0,
-  }));
-  const choices = orderAnyAvailable(people, freeRooms);
+    bookingLinkId,
+    offered,
+    personId,
+    startsAt,
+    date,
+    timezone,
+    span: { spanStart, spanEnd },
+    now,
+    byOwner: source === "manual",
+  });
+  if (!checked.found) {
+    return refuseUnlessBooked(checked.reason === "unavailable" ? UNAVAILABLE : TIME_TAKEN);
+  }
+  const { choices } = checked;
 
   const stage = await findFirstPipelineStage(organizationId);
   if (!stage) throw new Error("Booking failed: the business has no pipeline stage.");

@@ -186,7 +186,7 @@ to-slug.ts), or drop `organization: ["update"]` from the roles until a
 settings screen needs it.
 **Resolution:** Deferred by Frank, 2026-10-03: left for Settings (feature 12), where editing a business's details is designed; no screen reaches the route today. Stays open, carried forward.
 
-### F-145 [P3] open - The move's check is a copy of bookTime's: the free check, the room rule, the day's counts and `namesOf`
+### F-145 [P3] fixed - The move's check is a copy of bookTime's: the free check, the room rule, the day's counts and `namesOf`
 
 **File:** backend/lib/booking/move-booking.ts:109-176,252-259 (original: backend/lib/booking/book-time.ts:119-126,196-277)
 **Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
@@ -201,8 +201,7 @@ service, the start and an optional booking to leave out, answers the
 ordered choices or the refusal; bookTime's customer path and moveBooking
 both call it. Can wait for the owner's move (features 11 and 12b), which
 will be a third caller.
-**Resolution:** Partly fixed 2026-10-03: the name lookup is one shared helper (find-resource-names.ts) used by bookTime and moveBooking. The free check's copy stays, carried for when the owner's move (features 11 and 12b) gives a third caller; noted in the spec.
-
+**Resolution:** Partly fixed 2026-10-03: the name lookup is one shared helper (find-resource-names.ts) used by bookTime and moveBooking. The free check's copy stays, carried for when the owner's move (features 11 and 12b) gives a third caller; noted in the spec. Fixed 2026-10-08 on chore/cleanup-before-9: the rest of the copy is now one function, backend/lib/booking/find-booking-choices.ts (findBookingChoices): the free check per candidate (the free times for a customer, real busy time and Google for the owner), the room rule over the span, and the order to try, answering the choices or "time_taken"/"unavailable". bookTime calls it with byOwner for a manual booking; moveBooking with movingBooking, whose own held rows and day count it leaves out. Both files lost their copies (about 150 lines). Typecheck, both builds, format check, and backend 789 three runs in a row pass. The owner's move (features 11 and 12b) is the third caller it was waiting for.
 ### F-146 [P3] fixed - Two move tests promise more than they check: "the log" spies only console.log, and "another business's booking" only sends a foreign person id
 
 **File:** backend/routes/public-booking-move-routes.test.ts:306-330
