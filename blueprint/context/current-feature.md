@@ -118,9 +118,11 @@ settings gets no texts.
      before its added text went sends no taken off either (found while
      building the Simulate page). A booking moved away and back to them
      sends no taken off; the move back sends added.
-   - Every kind needs: the person active, their row with that switch on, a
-     textable phone, the business's text settings (its number) and its time
-     zone. Anything missing is one log line, nothing sent.
+   - Every kind needs: the person active, their row with that switch on, the
+     business's text settings (its number) and its time zone. Anything
+     missing is one log line, nothing sent. (A phone a text cannot reach
+     cannot be stored: 8c.1's database check refuses it, so 8c.2 has no such
+     case.)
    Tolerated, and true: an added text that runs after a quick move already
    says the new time, and the move's own text repeats it.
 6. **From the business's own texting number, and never to a texting
@@ -179,8 +181,8 @@ fakes Twilio.
   **Done when:** the shared and backend tests pass, including: a booking from
   the form texts its person from the business's number, and an owner's
   booking does too; the text fits one piece and is cut in decision 4's order,
-  the time and the name never; a person with no row, the switch off, no
-  textable phone, inactive, or a phone that is a texting number gets nothing
+  the time and the name never; a person with no row, the switch off,
+  inactive, or a phone that is a texting number gets nothing
   and one log line; so does a business without text settings or a time zone;
   a booking cancelled, started, or moved to another person before the job
   ran sends nothing; one moved to another time before it ran says the new
