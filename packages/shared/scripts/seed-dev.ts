@@ -5,7 +5,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -553,6 +553,18 @@ try {
 
       let servicesMade = 0;
       let choicesSet = 0;
+      // Who picks the person, also on a database seeded before the setting existed, so no machine
+      // needs a rebuild. Decided for the whole business, like the stages: only while every service
+      // it has still holds the business_assigns migration 0022 gave them, so a choice made by
+      // hand on any one keeps them all as they are.
+      const choices = await tx
+        .select({ personChoice: bookingLink.personChoice })
+        .from(bookingLink)
+        .where(eq(bookingLink.organizationId, organizationId));
+      const bringChoicesUp =
+        business.personChoice !== "business_assigns" &&
+        choices.length > 0 &&
+        choices.every((row) => row.personChoice === "business_assigns");
       let ticksMade = 0;
       for (const { ticked = [], ...service } of business.services as readonly ServiceSeedType[]) {
         const slug = toSlug(service.name);
@@ -573,22 +585,12 @@ try {
             ...service,
           });
           servicesMade++;
-        } else {
-          // Who picks the person, also on a database seeded before the setting existed, so no
-          // machine needs a rebuild. Only the business_assigns migration 0022 left behind: a
-          // choice made by hand survives a reseed.
-          const switched = await tx
+        } else if (bringChoicesUp) {
+          await tx
             .update(bookingLink)
             .set({ personChoice: business.personChoice })
-            .where(
-              and(
-                eq(bookingLink.id, bookingLinkId),
-                eq(bookingLink.personChoice, "business_assigns"),
-                ne(bookingLink.personChoice, business.personChoice)
-              )
-            )
-            .returning({ id: bookingLink.id });
-          choicesSet += switched.length;
+            .where(eq(bookingLink.id, bookingLinkId));
+          choicesSet++;
         }
 
         if (!ticked.length) continue;

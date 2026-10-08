@@ -603,6 +603,7 @@ reseed from scratch on other machines). A rerun then leaves clinic-dev
 `customer_picks`.
 **Resolution:** Fixed 2026-10-08 in 9.1's review fixes, as suggested: after finding an existing seeded service, the seed brings its personChoice to its business's value where it differs (seed-dev.ts, the else branch beside the insert), reported as "who picks set on N services". Proved on the local scheduleads_dev: clinic-dev's ten services set to business_assigns, `db:seed` run, all ten back to customer_picks. Nothing sets the column by hand until feature 12, so no owner's choice is overwritten.
 Re-reviewed 2026-10-08 by re-review of 9.1's fixes (b2926cf..5725ad2; lenses: quality, security, performance, tests); stays fixed, for F-260 and F-261. What holds: the update runs on `tx` inside the seed's one db.transaction (seed-dev.ts:340), and its bookingLinkId comes from the select scoped to the business and the seeded slug, so it touches only that business's own seeded services. Shown again on the local scheduleads_dev: clinic-dev's ten services set to business_assigns, `db:seed` run, all ten back to customer_picks, painting-dev's three untouched. What does not hold: the repair brings any differing value back, not only the migration's backfill, so a hand-set choice is reverted (F-260), and its report line reads "(created who picks set on 10 services)" (F-261).
+Re-reviewed 2026-10-08 by re-review of 9.1's second fixes (5725ad2..84198ad; lenses: quality, security, performance, tests); stays fixed, for F-260. What holds: F-257's own case. On the local scheduleads_dev, clinic-dev's ten services set to business_assigns (what 0022 leaves) and `db:seed` run: all ten back to customer_picks, printed as "who picks the person set on 10 existing services". F-261 is closed. What does not hold: F-260, the repair still reverts a choice made by hand in one direction (see there).
 
 ### F-258 [P3] closed - The new person-choice check runs before bookTime's request-key lookup, so a retried booking form whose service changed in between gets a 404 or 400 instead of its booking
 
@@ -669,8 +670,10 @@ backfill) to the update's where, beside the `ne`, so only a service still as
 painting service set to customer_picks by hand stays. Adjust the comment to
 say so.
 **Resolution:** Fixed 2026-10-08 in 9.1's second review fixes, as suggested: the update also requires the value still to be `business_assigns`, the migration's leftover, so a choice made by hand survives. Proved on the local scheduleads_dev: clinic-dev's ten services set to business_assigns and painting-dev's three to customer_picks, `db:seed` run: the clinic's ten came back to customer_picks, painting's three stayed customer_picks; painting restored to business_assigns by hand after.
+Reopened 2026-10-08 by re-review of 9.1's second fixes (5725ad2..84198ad; lenses: quality, security, performance, tests): the painting case holds, the clinic case does not. A row-level `eq(personChoice, "business_assigns")` cannot tell 0022's backfill from a business_assigns chosen by hand, so on a customer_picks business a service set to business_assigns by hand is still reverted, and the new comment ("a choice made by hand survives a reseed", seed-dev.ts:577-579) says the opposite. Shown on the local scheduleads_dev: the probe above repeated (clinic ten business_assigns, painting three customer_picks, `db:seed`: clinic ten customer_picks, painting three customer_picks, so that half holds); then painting restored to business_assigns and only clinic-dev's laser-hair-removal set to business_assigns (as when trying the assigned path on the clinic in 9.5/9.6, or from feature 12 on its Settings screen), `db:seed` run: it came back to customer_picks, printed "who picks the person set on 1 existing services". So this finding's "Why it matters" still holds for the clinic. Data left as found: clinic-dev's ten customer_picks, painting-dev's three business_assigns. The suggested row check was this finding's own and was applied faithfully; it was not enough. Further suggested fix: decide per business, the way the stages are ("only when there are none"): bring a business's existing seeded services up only when every one of them is still business_assigns and the business is customer_picks, the state 0022 leaves and no hand edit of one service produces; or, if the row rule is kept, reword the comment to name the one case it cannot tell apart. Either way the `ne` beside the new `eq` is now redundant (on a business_assigns business the where can never match), and "1 existing services" reads oddly, like the file's other counts.
+Fixed again 2026-10-08 after the re-review, its new suggested fix: the seed decides per business, like the stages. A business's existing services are brought to its seeded choice only while every one of them still holds business_assigns, so one choice made by hand on any service keeps them all; the redundant `ne` is gone and the comment says so. Proved on the local scheduleads_dev: (a) clinic-dev all business_assigns, painting-dev all customer_picks: reseed brings the clinic's ten to customer_picks, painting stays customer_picks; (b) one clinic service set back to business_assigns by hand among nine customer_picks: reseed leaves it. Data restored after (clinic 10 customer_picks, painting 3 business_assigns).
 
-### F-261 [P3] fixed - The seed's report line reads "(created who picks set on N services)"
+### F-261 [P3] closed - The seed's report line reads "(created who picks set on N services)"
 
 **File:** packages/shared/scripts/seed-dev.ts:622 (the sentence it lands in: :629)
 **Found:** 2026-10-08 by re-review of 9.1's fixes (scope: b2926cf..5725ad2; lenses: quality, security, performance, tests)
@@ -685,3 +688,24 @@ upgrades apart from creations, e.g. "(created ...; brought up: who picks on 10
 services)". The existing upgrade entries ("first person's login link",
 "holiday picks") read as nouns, so a noun phrase also fits.
 **Resolution:** Fixed 2026-10-08 in 9.1's second review fixes: the count is no longer in the "(created ...)" list; it prints on its own line, "who picks the person set on N existing services", seen in the probe's output.
+Closed 2026-10-08 by re-review of 9.1's second fixes: `choicesSet` is gone from `made` (seed-dev.ts:610-626) and prints on its own indented line after the owner's line, only when non-zero (:631). On the local scheduleads_dev after setting clinic-dev to business_assigns and reseeding, the report read `owner@example.com    ordinary owner, owns "Riverbend Clinic (dev)"  (already there)` then `  who picks the person set on 10 existing services`; painting-dev printed no extra line. "1 existing services" for a count of one is the file's own habit ("N services"), noted under F-260, not a reason to keep this open.
+
+### F-262 [P3] fixed - "the move's answer does not wait for Google" gives Google's PATCH only vi.waitFor's default second, so a slow full run fails it
+
+**File:** backend/lib/calendar/move-booking-event.test.ts:489 (the same wait at :737; remove-booking-event.test.ts:267, write-booking-event.test.ts:226)
+**Found:** 2026-10-08 by re-review of 9.1's second fixes (scope: 5725ad2..84198ad; lenses: quality, security, performance, tests; seen in the gate run, not in the delta)
+**Why it matters:** The test holds Google's answer, works the event jobs, and
+waits for the PATCH with `vi.waitFor` and no options, so 1000 ms. Before the
+PATCH the job is claimed and its rows are read, all
+against the shared local Postgres while 70 other files run beside it. In this
+pass's full backend run (89 s, the file alone 70.6 s) it failed after 2189 ms:
+`expected false to be true` at :489, 1 failed, 810 passed. The next full run
+(56.5 s) passed 811. Nothing in the delta reaches it (the seed is not run by
+the tests; the test makes its own clinic). A gate that fails on load alone
+teaches the next reader to rerun rather than read, which is how a real failure
+gets waved through. The test dates from 7b.3, reworked in 8a.3 (40f598e).
+**Suggested fix:** Give the four `vi.waitFor` calls that wait on a job's
+Google call a timeout sized for a loaded run, e.g. `{ timeout: 10_000 }`; the
+claim each test makes (the answer came before Google) is unchanged, since that
+is asserted before the wait.
+**Resolution:** Fixed 2026-10-08 in 9.1's third review fixes, as suggested: the four `vi.waitFor` calls (move-booking-event.test.ts two, remove-booking-event.test.ts, write-booking-event.test.ts) wait up to 10 seconds; each test's claim, that the answer came before Google, is asserted before the wait and unchanged. Shown by reading: the 1-second default failed once in a slow full run, and is not reproducible on demand.

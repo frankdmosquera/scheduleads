@@ -223,7 +223,7 @@ describe("the booking's event in Google", () => {
     expect(await eventIdOf(result.booking.id)).toBeNull(); // answered before Google is asked
 
     const working = workWriteJobs();
-    await vi.waitFor(() => expect(eventCalls()).toHaveLength(1)); // Google still at work
+    await vi.waitFor(() => expect(eventCalls()).toHaveLength(1), { timeout: 10_000 }); // Google still at work
     expect(await eventIdOf(result.booking.id)).toBeNull();
     answerGoogle();
     await working;

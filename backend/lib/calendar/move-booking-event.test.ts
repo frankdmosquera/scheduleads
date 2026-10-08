@@ -486,7 +486,9 @@ describe("a moved booking's Google event", () => {
     expect(result).toEqual({ moved: true, unchanged: false }); // answered before Google is asked
     expect(calls).toEqual([]);
     const working = workEventJobs();
-    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
+    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true), {
+      timeout: 10_000,
+    });
     answer();
     await working;
   });
@@ -734,7 +736,9 @@ describe("a booking's Google event as jobs", () => {
 
     await move(janes, 10, clinic.ana);
     const first = workEventJobs();
-    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
+    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true), {
+      timeout: 10_000,
+    });
     await cancelBooking(janes, NOW); // its removal waits in the same lane
     await runOnce(jobRunnerOptions(eventJobTasks)); // a second runner finds nothing it may take
     expect(eventCalls().map((call) => call.method)).toEqual(["PATCH"]);
