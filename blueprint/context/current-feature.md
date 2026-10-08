@@ -177,6 +177,10 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   person the same way, after its own "pressed twice answers the same" check
   so a repeat still answers as before. A service the customer picks for is
   unchanged (decision 14: the panel opens on her own person).
+  Amended after the step's review (Frank, 2026-10-08, F-263 option A): a
+  move with nobody picked, under either setting, keeps the booking's own
+  person while they are free; someone else only when they are busy, and
+  "try again" when their calendar cannot be read (F-265).
   Frontend: `change-time-panel.tsx` shows no person choice for a service
   the business assigns, asks the times with nobody picked (any available),
   and its last question names the time only. The booked person's name on

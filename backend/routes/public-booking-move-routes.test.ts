@@ -277,8 +277,8 @@ describe("moving a booking", () => {
 
   test("any available does not count the booking being moved", async () => {
     const clinic = await makeClinic("own-count");
-    // Ana has only Jane's own booking that day, Mei none. Counted, Jane would go to Mei; left out,
-    // both have none and the tie goes by name, so she stays with Ana.
+    // Ana has only Jane's own booking that day, Mei none. Jane stays with Ana: a move with nobody
+    // picked keeps its own person while free (F-263), so the count never decides this.
     const response = await move(clinic.janesBooking, at(14));
 
     expect(response.status).toBe(200);
@@ -348,7 +348,7 @@ describe("moving a booking", () => {
     "a move with nobody picked keeps her own person when free (%s)",
     async (personChoice) => {
       const clinic = await makeClinic(`keep-own-${personChoice}`);
-      await book(clinic, clinic.ana, 15); // Ana now has two bookings that day, Mei one
+      await book(clinic, clinic.ana, 15); // Ana now has two bookings that day, Mei none
       await db.update(bookingLink).set({ personChoice }).where(eq(bookingLink.id, clinic.facial));
       const response = await move(clinic.janesBooking, at(11));
 
@@ -359,6 +359,19 @@ describe("moving a booking", () => {
       });
     }
   );
+
+  test("a move with nobody picked answers try again when her own person's calendar cannot be read", async () => {
+    const clinic = await makeClinic("own-unreadable");
+    await unreadableCalendars(clinic, [clinic.ana]);
+    const response = await move(clinic.janesBooking, at(11));
+
+    expect(response.status).toBe(503);
+    expect(await bookingRow(clinic.janesBooking)).toMatchObject({
+      startsAt: new Date(at(9)),
+      personId: clinic.ana,
+      sequence: 0,
+    });
+  });
 
   test("a move with nobody picked goes to someone else only when her own person is busy", async () => {
     const clinic = await makeClinic("own-busy");

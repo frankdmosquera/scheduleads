@@ -552,7 +552,7 @@ before and after), passed on the code as it is, failed with one sweep
 beside it that the timing is the proof.
 **Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the test (renamed "a connection kept open is closed once its answer goes out, however long that takes") waits 250 ms after the stop begins before the answer goes out, so it is past the first sweeps; the /second request is gone and a comment names the timing as the proof. Proved: one sweep (setTimeout) and a sweep that does nothing each fail it (5.1 s); file restored, cmp identical. 5/5 pass. Closed 2026-10-08 by independent review of chore/cleanup-before-9 (c5cf49b..d6e8bd1; lenses: quality, security, performance, tests): the test now holds its answer 250 ms after the stop begins, so the connection is still busy through the sweeps at 100 and 200 ms and is closed only by a later one. Each probe restored stop-gracefully.ts byte for byte (sha256 22436fdf8c9c8d6f... before and after): one sweep (setTimeout at IDLE_SWEEP_MS) fails it (5.1 s, the server's keep-alive timeout); a sweep that does nothing fails it (5.1 s); closeAllConnections now fails it too (the held answer is cut), with tests 1 and 5. On the real code it passed 10 file runs in a row (1.4 to 2.0 s each) and the whole backend suite (794). The /second request is gone and the comment names the one second bound as the proof, which is what it measures. What it cannot catch, like any fixed hold: a single sweep timed after 250 ms (a probe at 400 ms passed all five, restored after); that needs a changed constant, not a slip of setInterval, so not recorded. The test still waits a fixed 100 ms for its request to arrive rather than the arrival signal the helper uses; a late arrival makes it fail or time out, never pass falsely, so not recorded. Test file sha256 c71154f29ab7da45... unchanged by this review.
 
-### F-256 [P2] fixed - The customer's own booking page still lists the people and takes a pick for a service the business assigns, so decision 3's "the server refuses" has a second public way round it
+### F-256 [P2] closed - The customer's own booking page still lists the people and takes a pick for a service the business assigns, so decision 3's "the server refuses" has a second public way round it
 
 **File:** backend/routes/public-booking-page-routes.ts:52-80,88-115 (the picker it feeds: frontend/components/booking-page/change-time-panel.tsx:254-264; the stated rule: blueprint/project-plan.md decision 32, backend/lib/errors/person-not-taken.ts:1-2)
 **Found:** 2026-10-08 by independent step review of 9.1 (scope: ece1aa2..b2926cf; lenses: quality, security, performance, tests)
@@ -578,6 +578,7 @@ with route tests like 9.1's), or narrow decision 32 and the person-not-taken
 header to say the move page keeps its picker on purpose.
 **Resolution:** Frank decided 2026-10-08: extend the rule to the 7b page, built as step 9.1b (added to the spec). Fixed 2026-10-08 in step 9.1b: the booking page's answer carries personChoice; findBookingMoveTimes answers `people: []` for a service the business assigns and refuses a person asked for (state person_not_taken); moveBooking refuses a person the same way after its "already there" check; both routes answer the same 400 as 9.1. change-time-panel.tsx shows no Who for such a service and asks the time only. Tests in public-booking-move-times-routes.test.ts and public-booking-move-routes.test.ts; proved: removing the refusals and the empty list fails three of them. Hand check on the running dev servers: painting-dev's page has no Who, clinic-dev's keeps Any available, Ana, Mei, Sofia.
 Re-reviewed 2026-10-08 by independent review of 9.1b (scope: bd63ab6..d21a3e9; lenses: quality, security, performance, tests); stays fixed, for F-263. What holds: the way round decision 3 is gone on every public path that takes a person. The four are the form's times (public-booking-links-routes.ts:127-129) and booking (book-time.ts:177, after the replay), both from 9.1, and the 7b times and move (find-booking-move-times.ts:53-62, move-booking.ts:101-105), each reading the booking's own service without `active`, so a switched-off service (7b decision 13) holds too: a probe on a switched-off business_assigns service answered the pick 400, the times 200 with `people: []` and times, a move with nobody 200, and the page `personChoice: "business_assigns"`, `canMove: true`. Each guard bites: removing moveBooking's refusal, findBookingMoveTimes' refusal, or the emptied list each fails exactly its own test (every file restored by git checkout, sha256 identical). The 400 is reached only through a verified link, after the same 404/409s as before, so the identical-404 rule is untouched, and the page's new field says only what its panel already shows. What does not hold: the repair's default for a service the business assigns is any available with a confirm that names nobody, which brings back 7b/F-168's silent hand-over to another person (F-263). Two of the step's claims are pinned by no test (F-264). This entry can close with F-263.
+Closed 2026-10-08 by re-review of 9.1b's fixes (scope: d21a3e9..0ec47db): the only things holding it were F-263 and F-264, both closed below on this pass's evidence. The delta touches none of the four refusals or the emptied list (git diff d21a3e9 0ec47db changes only find-booking-choices.ts among product files), and the move route's refusal now also has its order pinned (F-264). Backend 821 passed three times.
 
 ### F-257 [P3] closed - The seed sets who picks only on services it creates, so a database seeded before 0022 keeps the clinic as `business_assigns` and two new route tests fail on it
 
@@ -714,7 +715,7 @@ is asserted before the wait.
 **Resolution:** Fixed 2026-10-08 in 9.1's third review fixes, as suggested: the four `vi.waitFor` calls (move-booking-event.test.ts two, remove-booking-event.test.ts, write-booking-event.test.ts) wait up to 10 seconds; each test's claim, that the answer came before Google, is asserted before the wait and unchanged. Shown by reading: the 1-second default failed once in a slow full run, and is not reproducible on demand.
 Closed 2026-10-08 by independent review of 9.1b (scope: bd63ab6..d21a3e9): all four waits on a job's Google call now pass `{ timeout: 10_000 }` (move-booking-event.test.ts:489-491 and :739-741, remove-booking-event.test.ts:267, write-booking-event.test.ts:226), and they are the only `vi.waitFor` calls in the backend's tests. The three "does not wait for Google" tests still assert "answered before Google is asked" before their wait (the fourth, "two of one booking's jobs never run at the same time", only waits for the PATCH to begin) (move-booking-event.test.ts:486-487, remove-booking-event.test.ts:264, write-booking-event.test.ts:223), so the claim is unchanged; the 10 seconds sit inside the backend's own `testTimeout: 30_000` (vitest.config.ts), so the wait, not the test, is what gives up. Three full backend runs in this review passed 816 each (31 to 32 s); a timing flake cannot be shown fixed by passing runs, only by the wider bound, which is in place.
 
-### F-263 [P2] fixed - On a service the business assigns, "Change the time" always moves with any available, so the customer's booked person can be swapped for another while free, and the confirm names nobody
+### F-263 [P2] closed - On a service the business assigns, "Change the time" always moves with any available, so the customer's booked person can be swapped for another while free, and the confirm names nobody
 
 **File:** frontend/components/booking-page/change-time-panel.tsx:80,175-181 (the order it inherits: backend/lib/booking/find-booking-choices.ts:120-135, backend/lib/scheduling/order-any-available.ts; the rule it re-opens: blueprint/history/features/07b-reschedule.md decision 14, 7b/F-168)
 **Found:** 2026-10-08 by independent review of 9.1b (scope: bd63ab6..d21a3e9; lenses: quality, security, performance, tests)
@@ -742,8 +743,9 @@ when free (findBookingChoices, a `preferPersonId` for `movingBooking`), so
 test like the probe above. Or keep the swap and say so in the confirm and the
 spec ("the business may send someone else").
 **Resolution:** Frank decided 2026-10-08: keep her person first (option A). Fixed 2026-10-08: findBookingChoices puts the moving booking's own person first when a move names nobody, so a time-only move keeps who comes while they are free, for both settings (7b decision 14 holds again); someone else only when they are busy. Tests in public-booking-move-routes.test.ts: "a move with nobody picked keeps her own person when free" (business_assigns and customer_picks, Ana with more bookings than Mei still kept) and "a move with nobody picked goes to someone else only when her own person is busy"; proved: dropping the preference fails both cases of the first.
+Closed 2026-10-08 by re-review of 9.1b's fixes (scope: d21a3e9..0ec47db): the swap while free is gone. find-booking-choices.ts:137-146 puts every choice of `movingBooking.personId` (with each free room, in room order) before the others, only when the move names nobody; the owner's path cannot reach it (`movingBooking?: never` on `byOwner: true`, :37) and bookTime never passes one (book-time.ts:191-202), so a new booking keeps the fewest-bookings order. Proved: forcing the early return (`if (!ownPerson || true)`) fails both cases of "a move with nobody picked keeps her own person when free" (public-booking-move-routes.test.ts:347), the review's own probe in route form (Ana with more bookings than Mei, Ana free at 11:00, kept); file restored, sha256 identical. Scratch probes in the move route tests (removed after): with Room 3 and Ana busier, the move kept Ana and held Ana plus Room 3; with Ana no longer offering the facial, it went to Mei, as decision 14's fallback says; with Ana busy at 11:00 it went to Mei (the saved test at :363). When the person is kept, moveBooking's later steps take the same-person path already used by a picked move: `personChanged` false (move-booking.ts:187), so one "moved" text to her person, the event moved in place, no remove unless no event id was saved. The confirm still names nobody on a business_assigns service, which option A accepts: whoever is free, keeping hers if she can, and the page names who comes after. For customer_picks the explicit "Any available" now also keeps her person when free (the resolution's "for both settings"); no 7b test or decision is broken by it, but it leaves two loose ends recorded as F-266 and F-267. Her own person's calendar unreadable is a separate case, F-265.
 
-### F-264 [P3] fixed - Two of 9.1b's claims are pinned by no test: the page answering business_assigns, and the refusal sitting after "already there"
+### F-264 [P3] closed - Two of 9.1b's claims are pinned by no test: the page answering business_assigns, and the refusal sitting after "already there"
 
 **File:** backend/routes/public-booking-page-routes.test.ts:172 (the field: backend/lib/booking/find-booking-page.ts:100; the order: backend/lib/booking/move-booking.ts:76-79,101-105)
 **Found:** 2026-10-08 by independent review of 9.1b (scope: bd63ab6..d21a3e9; lenses: quality, security, performance, tests)
@@ -764,3 +766,77 @@ tests, move with a person on a customer_picks service, switch it to
 business_assigns, send the same move again, expect 200 and one booking_moved
 entry.
 **Resolution:** Fixed 2026-10-08 after 9.1b's review: public-booking-page-routes.test.ts "the page says who picks: a service the business assigns says business_assigns" and public-booking-move-routes.test.ts "a picked person on a service the business assigns, already there, answers the same". Proved: the review's two mutations (findBookingPage hardcoded to customer_picks; "already there" moved below the refusal) each fail their test; files restored.
+Closed 2026-10-08 by re-review of 9.1b's fixes (scope: d21a3e9..0ec47db): both claims are now pinned. findBookingPage answering `"customer_picks" as const` for every booking fails "the page says who picks: a service the business assigns says business_assigns" (public-booking-page-routes.test.ts:156, 1 failed of 11); the test works on its own business (made customer_picks, restored to customer_picks in `finally`), never the seeded painting-dev. Moving `if (alreadyThere(current))` below the person_not_taken refusal in move-booking.ts fails "a picked person on a service the business assigns, already there, answers the same" (public-booking-move-routes.test.ts:333, 1 failed of 24). That test repeats with her own person at her own time instead of the suggested move-then-switch, which pins the same order (200, sequence 0, no booking_moved entry). Both files restored by git checkout, sha256 identical.
+
+### F-265 [P3] fixed - A move with nobody picked hands the booking to someone else when her own person's calendar cannot be read
+
+**File:** backend/lib/booking/find-booking-choices.ts:84-92,137-146 (the move: backend/lib/booking/move-booking.ts:122-135,187,238-250)
+**Found:** 2026-10-08 by re-review of 9.1b's fixes (scope: d21a3e9..0ec47db; lenses: quality, security, performance, tests)
+**Why it matters:** F-263's repair keeps her person first only when the
+free check answers "free". When her person's Google cannot be read, the
+check answers "unreadable", she is left out of the free people as any
+available always leaves people out, and the move goes to whoever else is
+free with no word to the customer. Shown with a scratch test in the move
+routes (removed after): Jane's facial with Ana at 9:00, the service set to
+business_assigns, Ana's connection `needs_reconnect`, a move to 11:00 with
+nobody picked: 200, the booking went to Mei, one booking_moved entry. Before
+9.1b the panel asked with her own person and the same move answered 503
+"try again" (7b's "a picked person whose calendar cannot be read answers 503
+and nothing changes"). A `needs_reconnect` connection lasts until the
+person reconnects, so for Primo, where every service is business_assigns,
+every time-only move of that estimator's bookings in that window can change
+the estimator, with "off your day" and "added" texts to two painters and the
+event moved between calendars, which is the hand-over decision 14 and F-263
+rule out while the person may well be free. The customer_picks "Any
+available" case does the same, but there it is her explicit pick (unchanged
+since 7b).
+**Suggested fix:** Frank's call, one of: on a move with nobody picked, when
+her own person still offers the service and their calendar is unreadable,
+answer `unavailable` (503, "try again", as a picked person does) instead of
+handing over; or accept the hand-over as any available's rule and say so in
+the spec. Either way a route test like the probe above.
+**Resolution:** Fixed 2026-10-08 under Frank's F-263 decision ("someone else only if her person is busy"; an unreadable calendar is not busy): findBookingChoices answers `unavailable` (the move's 503, "try again") when a move names nobody and its own person's calendar cannot be read, before any other person is tried. Test: public-booking-move-routes.test.ts "a move with nobody picked answers try again when her own person's calendar cannot be read" (503, the booking unchanged); proved: removing the check fails it.
+
+### F-266 [P3] fixed - The day's counts no longer need to leave out the moving booking, so 7b/F-142's guard and its test pin nothing
+
+**File:** backend/lib/booking/find-booking-choices.ts:120-131 (the test: backend/routes/public-booking-move-routes.test.ts:278-286; the comment: :351)
+**Found:** 2026-10-08 by re-review of 9.1b's fixes (scope: d21a3e9..0ec47db; lenses: quality, security, performance, tests)
+**Why it matters:** The moving booking's rows belong to her own person,
+and her own person now goes first whenever free, whatever the counts; a
+picked move has one candidate, so its order never matters. So
+`.filter(notTheMovingBooking)` on the day's rows, and "(the moving booking
+not counted)" in the comment above it, can no longer change any outcome.
+Shown: removing that filter passes the full backend suite (821); at
+d21a3e9 the same removal failed "any available does not count the booking
+being moved". That saved test now passes because of the preference, not the
+count it names, so 7b/F-142's coverage is gone without a word. Smaller, in
+the new test: "Ana now has two bookings that day, Mei one" (:351); Mei has
+none (makeClinic books only Ana), and with Jane's own left out Ana has one.
+The test still bites (Ana counts higher either way).
+**Suggested fix:** Drop the day-row filter and the comment's parenthesis,
+and retitle or fold "any available does not count the booking being moved"
+into the keep-own tests (what it now shows is that she stays with Ana); or
+keep the filter as a guard for a future caller and say in the comment that
+no current caller depends on it. Correct the test comment to "Ana now has
+two bookings that day, Mei none".
+**Resolution:** Fixed 2026-10-08: the day counts no longer leave out the moving booking (find-booking-choices.ts, the comment says why: it is its own person's, first when free and not counted when busy); the room check keeps its filter. The 7b test "any available does not count the booking being moved" keeps its name and its outcome, its comment now says the own-person rule decides it; the new test's comment says "Mei none".
+
+### F-267 [P3] fixed - The spec still says a customer_picks move is unchanged and a business_assigns move is plain any available; Frank's F-263 decision is in no plan file
+
+**File:** blueprint/context/current-feature.md:169-189 (step 9.1b)
+**Found:** 2026-10-08 by re-review of 9.1b's fixes (scope: d21a3e9..0ec47db; lenses: quality, security, performance, tests)
+**Why it matters:** The delta changes what "any available" means on every
+move, for both settings: her own person first while free. The spec's 9.1b
+still says "A service the customer picks for is unchanged" and "asks the
+times with nobody picked (any available)", and Frank's decision (option A,
+2026-10-08) lives only in this ledger and a commit message. /complete
+archives the spec as the feature's history; without a line there, the
+permanent record says the opposite of the code, and 7b's archive still says
+the backend's any-available order is unchanged (7b/F-168's closing note),
+so the next reader of either file is told the old rule. AGENTS.md asks for
+the spec to be amended when a review shows it wrong.
+**Suggested fix:** Add to step 9.1b (or the feature's decisions) one line:
+a move with nobody picked keeps her own person first while free, for both
+settings, someone else only when that person is busy (Frank, 2026-10-08,
+F-263), plus whatever F-265 settles for an unreadable calendar.
+**Resolution:** Fixed 2026-10-08: step 9.1b in current-feature.md records Frank's F-263 decision and F-265 (a move with nobody picked keeps its own person while free under either setting; someone else only when busy; try again when their calendar cannot be read). The 7b archive is history and stays as written.
