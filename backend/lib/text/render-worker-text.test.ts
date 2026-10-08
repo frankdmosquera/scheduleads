@@ -117,3 +117,17 @@ describe("renderWorkerText, a booking added to the worker's day", () => {
     expect(textPieceLength(text)).toBeGreaterThan(ONE_PIECE);
   });
 });
+
+describe("renderWorkerText, a booking moved or taken off the worker's day", () => {
+  test("a move says the new time, with where to go", () => {
+    expect(renderWorkerText("moved", pedrosEstimate)).toBe(
+      "Summit Painting: moved to Tue Oct 13, 7:30am. Jane Doe, Interior estimate, 1234 Long St NW Calgary"
+    );
+  });
+
+  test("off their day says the time they had, with no room or address: they no longer go", () => {
+    expect(
+      renderWorkerText("removed", { ...pedrosEstimate, placeName: "Room 3 (massage, facials)" })
+    ).toBe("Summit Painting: off your day, Tue Oct 13, 7:30am. Jane Doe, Interior estimate");
+  });
+});

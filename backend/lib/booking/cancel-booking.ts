@@ -15,6 +15,7 @@ import { recordActivity } from "../crm/record-activity.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
 import { enqueueBookingEventJob } from "../jobs/enqueue-booking-event-job.js";
+import { enqueueWorkerText } from "../jobs/enqueue-worker-text.js";
 import { jobNames } from "../jobs/job-names.js";
 import { releaseTime } from "../scheduling/release-time.js";
 
@@ -111,6 +112,17 @@ export async function cancelBooking(
           personId: row.personId,
           eventId: row.calendarEventId ?? calendarEventIdOf(bookingId, row.sequence),
         },
+      });
+      // The booked person hears it is off their day (feature 8c), only from a cancel that changed
+      // something, so a second press never adds it.
+      await enqueueWorkerText(tx, {
+        organizationId,
+        bookingId,
+        personId: row.personId,
+        sequence: row.sequence,
+        changedAt: now.toISOString(),
+        kind: "removed",
+        startsAt: row.startsAt.toISOString(),
       });
       return { cancelled: true, alreadyCancelled: false } as const;
     });

@@ -271,7 +271,13 @@ describe("the worker's text when a booking lands on their day", () => {
     expect(form.Body.replace(/\D/g, "")).not.toContain("4035550148");
     expect(form.Body).not.toContain("http");
     expect(await workerTextEntriesOf(business)).toEqual([
-      { bookingId: booking.id, kind: "worker_added", personId: business.marco, twilioSid: "SM1" },
+      {
+        bookingId: booking.id,
+        kind: "worker_added",
+        personId: business.marco,
+        sequence: 0,
+        twilioSid: "SM1",
+      },
     ]);
     expect(await workerJobsOf(booking.id)).toEqual([]); // done and gone
   });
@@ -488,7 +494,13 @@ describe("the worker's text when a booking lands on their day", () => {
         PageSize: "20",
       });
       expect(await workerTextEntriesOf(business)).toEqual([
-        { bookingId: id, kind: "worker_added", personId: business.marco, twilioSid: recorded },
+        {
+          bookingId: id,
+          kind: "worker_added",
+          personId: business.marco,
+          sequence: 0,
+          twilioSid: recorded,
+        },
       ]);
     }
   );
@@ -504,5 +516,272 @@ describe("the worker's text when a booking lands on their day", () => {
     expect(await workerJobsOf(id)).toEqual([]); // finished, not waiting to try again
     expect(await workerTextEntriesOf(business)).toEqual([]);
     expect(loggedNotSent("Twilio 21610")).toBe(true);
+  });
+});
+
+const ELEVEN = new Date("2026-10-05T17:00:00Z");
+const PEDROS_PHONE = "+14035550162";
+
+// Pedro's own worker-text settings, every switch on unless a test changes them.
+const givePedroTexts = (business: BusinessType, changes: Record<string, unknown> = {}) =>
+  db.insert(workerTextSettings).values({
+    personId: business.pedro,
+    organizationId: business.business,
+    phone: PEDROS_PHONE,
+    addedOn: true,
+    movedOn: true,
+    removedOn: true,
+    ...changes,
+  });
+
+const move = async (bookingId: string, startsAt: Date, personId: string) =>
+  expect(await moveBooking({ bookingId, startsAt, personId, now: NOW })).toEqual(
+    expect.objectContaining({ moved: true })
+  );
+
+// The texts each phone got, in the order they went.
+const textsTo = (phone: string) =>
+  posts()
+    .filter((call) => call.form.To === phone)
+    .map((call) => call.form.Body);
+
+const loggedWorkerNotSent = (kind: string, reason: string) =>
+  log.mock.calls.some(
+    ([line]) => typeof line === "string" && line.includes(`${kind} not sent, ${reason}`)
+  );
+
+const JANE = "Jane Doe, Interior estimate";
+const AT_JANES = `${JANE}, 12 Main Street, Calgary`;
+
+describe("the worker's texts when a booking moves or comes off their day", () => {
+  test("a move that keeps the person texts them the new time", async () => {
+    const business = await makeBusiness("moved");
+    const id = await book(business);
+    await workDueJobs();
+    await move(id, TEN, business.marco);
+
+    await workDueJobs();
+
+    expect(textsTo(MARCOS_PHONE)).toEqual([
+      `Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`,
+      `Summit Painting: moved to Mon Oct 5, 10:00am. ${AT_JANES}`,
+    ]);
+    const entries = await workerTextEntriesOf(business);
+    expect(entries.sort((a, b) => Number(a.sequence) - Number(b.sequence))).toEqual([
+      {
+        bookingId: id,
+        kind: "worker_added",
+        personId: business.marco,
+        sequence: 0,
+        twilioSid: "SM1",
+      },
+      {
+        bookingId: id,
+        kind: "worker_moved",
+        personId: business.marco,
+        sequence: 1,
+        twilioSid: "SM2",
+      },
+    ]);
+  });
+
+  test("a move to another person texts the first off your day with the time they had and the second new booking", async () => {
+    const business = await makeBusiness("to-pedro");
+    await givePedroTexts(business);
+    const id = await book(business);
+    await workDueJobs();
+    await move(id, TEN, business.pedro);
+
+    await workDueJobs();
+
+    expect(textsTo(MARCOS_PHONE)).toEqual([
+      `Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`,
+      `Summit Painting: off your day, Mon Oct 5, 9:00am. ${JANE}`,
+    ]);
+    expect(textsTo(PEDROS_PHONE)).toEqual([
+      `Summit Painting: new booking Mon Oct 5, 10:00am. ${AT_JANES}`,
+    ]);
+    const kinds = (await workerTextEntriesOf(business)).map((entry) => [
+      entry.kind,
+      entry.personId,
+    ]);
+    expect(kinds).toHaveLength(3);
+    expect(kinds).toEqual(
+      expect.arrayContaining([
+        ["worker_added", business.marco],
+        ["worker_removed", business.marco],
+        ["worker_added", business.pedro],
+      ])
+    );
+  });
+
+  test('a booking moved away and back sends the first no taken off, and one moved away and straight back before the jobs ran texts the first "new booking" once, not twice', async () => {
+    // Told first, then away and back: no "off your day", and the move back is news.
+    const told = await makeBusiness("back-told");
+    const toldId = await book(told);
+    await workDueJobs();
+    await move(toldId, NINE, told.pedro);
+    await move(toldId, NINE, told.marco);
+    await workDueJobs();
+    expect(textsTo(MARCOS_PHONE)).toEqual([
+      `Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`,
+      `Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`,
+    ]);
+    expect(loggedWorkerNotSent("worker_removed", "the booking is this person's again")).toBe(true);
+
+    // Away and straight back before any job ran: one "new booking", not two.
+    calls = [];
+    const quick = await makeBusiness("back-quick");
+    const quickId = await book(quick);
+    await move(quickId, NINE, quick.pedro);
+    await move(quickId, NINE, quick.marco);
+    await workDueJobs();
+    expect(textsTo(MARCOS_PHONE)).toEqual([
+      `Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`,
+    ]);
+    expect(
+      loggedWorkerNotSent("worker_added", "the person was already told after this change")
+    ).toBe(true);
+  });
+
+  test("one moved to a second person and straight back before the jobs ran texts the second nothing", async () => {
+    const business = await makeBusiness("pedro-quick");
+    await givePedroTexts(business);
+    const id = await book(business);
+    await move(id, NINE, business.pedro);
+    await move(id, NINE, business.marco);
+
+    await workDueJobs();
+
+    expect(textsTo(PEDROS_PHONE)).toEqual([]);
+    expect(loggedWorkerNotSent("worker_added", "the booking is another person's now")).toBe(true);
+    expect(loggedWorkerNotSent("worker_removed", "the person never knew of this booking")).toBe(
+      true
+    );
+  });
+
+  test("a cancel texts the person off your day", async () => {
+    const business = await makeBusiness("cancel");
+    const id = await book(business);
+    await workDueJobs();
+    expect(await cancelBooking(id, NOW)).toEqual({ cancelled: true, alreadyCancelled: false });
+
+    await workDueJobs();
+
+    expect(textsTo(MARCOS_PHONE)).toEqual([
+      `Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`,
+      `Summit Painting: off your day, Mon Oct 5, 9:00am. ${JANE}`,
+    ]);
+    expect((await workerTextEntriesOf(business)).map((entry) => entry.kind)).toEqual([
+      "worker_added",
+      "worker_removed",
+    ]);
+  });
+
+  test("a second cancel press adds nothing", async () => {
+    const business = await makeBusiness("cancel-twice");
+    const id = await book(business);
+    await workDueJobs();
+    await cancelBooking(id, NOW);
+    expect(await cancelBooking(id, NOW)).toEqual({ cancelled: true, alreadyCancelled: true });
+
+    expect((await workerJobsOf(id)).map((job) => job.payload.kind)).toEqual(["removed"]);
+  });
+
+  test("a later move replaces an earlier moved text, which then sends nothing", async () => {
+    const business = await makeBusiness("moved-twice");
+    const id = await book(business);
+    await workDueJobs();
+    await move(id, TEN, business.marco);
+    await move(id, ELEVEN, business.marco);
+
+    await workDueJobs();
+
+    expect(textsTo(MARCOS_PHONE)).toEqual([
+      `Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`,
+      `Summit Painting: moved to Mon Oct 5, 11:00am. ${AT_JANES}`,
+    ]);
+    expect(loggedWorkerNotSent("worker_moved", "a later move replaced it")).toBe(true);
+  });
+
+  test("a booking cancelled before its added text went sends no taken off, unless the person's added switch is off", async () => {
+    const never = await makeBusiness("cancel-untold");
+    await cancelBooking(await book(never), NOW);
+    await workDueJobs();
+    expect(textsTo(MARCOS_PHONE)).toEqual([]);
+    expect(loggedWorkerNotSent("worker_removed", "the person never knew of this booking")).toBe(
+      true
+    );
+
+    // With the added switch off he learns of bookings elsewhere, so he is told it is off.
+    const elsewhere = await makeBusiness("cancel-elsewhere", { marcosTexts: { addedOn: false } });
+    await cancelBooking(await book(elsewhere), NOW);
+    await workDueJobs();
+    expect(textsTo(MARCOS_PHONE)).toEqual([
+      `Summit Painting: off your day, Mon Oct 5, 9:00am. ${JANE}`,
+    ]);
+  });
+
+  test("taken off for a start already passed sends nothing", async () => {
+    const business = await makeBusiness("too-late");
+    const id = await book(business);
+    await workDueJobs();
+    await cancelBooking(id, NOW);
+    jobClock.now = () => new Date(NINE.getTime() + 60_000);
+
+    await workDueJobs();
+
+    expect(textsTo(MARCOS_PHONE)).toHaveLength(1); // only the "new booking"
+    expect(loggedWorkerNotSent("worker_removed", "the time they had has passed")).toBe(true);
+  });
+
+  test("each switch off stops only its own text", async () => {
+    const business = await makeBusiness("one-off", { marcosTexts: { movedOn: false } });
+    const id = await book(business);
+    await workDueJobs();
+    await move(id, TEN, business.marco);
+    await workDueJobs();
+    await cancelBooking(id, NOW);
+    await workDueJobs();
+
+    expect(textsTo(MARCOS_PHONE)).toEqual([
+      `Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`,
+      `Summit Painting: off your day, Mon Oct 5, 10:00am. ${JANE}`,
+    ]);
+    expect(loggedWorkerNotSent("worker_moved", "the person has that text off")).toBe(true);
+  });
+
+  test('a moved text that a late "new booking" already covered sends nothing', async () => {
+    const business = await makeBusiness("covered");
+    const id = await book(business);
+    await move(id, TEN, business.marco);
+
+    await workDueJobs();
+
+    expect(textsTo(MARCOS_PHONE)).toEqual([
+      `Summit Painting: new booking Mon Oct 5, 10:00am. ${AT_JANES}`,
+    ]);
+    expect(
+      loggedWorkerNotSent("worker_moved", "the person was already told after this change")
+    ).toBe(true);
+  });
+
+  test("a booking's worker texts wait in one lane, in the order they were added", async () => {
+    const business = await makeBusiness("lane");
+    const id = await book(business);
+    await move(id, TEN, business.pedro);
+    await cancelBooking(id, NOW);
+
+    const jobs = (await db.execute(
+      sql`select queues.queue_name, jobs.payload->>'kind' as kind from ${schema}._private_jobs jobs
+          join ${schema}._private_tasks tasks on tasks.id = jobs.task_id
+          join ${schema}._private_job_queues queues on queues.id = jobs.job_queue_id
+          where tasks.identifier = 'worker_text' and jobs.payload->>'bookingId' = ${id}
+          order by jobs.id`
+    )) as unknown as { queue_name: string; kind: string }[];
+    expect(jobs.map((job) => job.kind)).toEqual(["added", "removed", "added", "removed"]);
+    expect(new Set(jobs.map((job) => job.queue_name))).toEqual(
+      new Set([`worker-text-${id.slice(-2).toLowerCase()}`])
+    );
   });
 });

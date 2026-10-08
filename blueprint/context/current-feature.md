@@ -124,9 +124,11 @@ settings gets no texts.
      cannot be stored: 8c.1's database check refuses it, so 8c.2 has no such
      case.)
    - added and moved are both skipped when the person was already told
-     after this change: an added or moved text to them for this booking was
-     recorded at or after the job's `changedAt` (the same entries "knew of
-     it" reads). So Marco to Pedro and straight back before the jobs run
+     after this change: an added or moved text to them for this booking
+     described the booking at or past this change's move number (the same
+     entries "knew of it" reads; each records the move number its text
+     described, built in 8c.3 instead of comparing times, which would rest
+     on the database's clock and the change's agreeing). So Marco to Pedro and straight back before the jobs run
      texts Marco "new booking" once, not twice, and a moved text never
      repeats an added text that ran late and already said the new time
      (F-242, Frank, 2026-10-07; this replaces the repeat this decision first
@@ -197,7 +199,7 @@ fakes Twilio.
   each text that went is one `sms_sent` entry with `worker_added` and no
   number or words.
 
-- [ ] **8c.3 Moved, and taken off the worker's day.** The two other
+- [x] **8c.3 Moved, and taken off the worker's day.** The two other
   wordings, and `move-booking.ts` and `cancel-booking.ts` adding the jobs in
   their own transactions: a move that keeps the person adds moved; a move to
   another person adds taken off for the first and added for the second; a
@@ -274,9 +276,15 @@ type WorkerTextJobPayloadType = {
 
 No job key: each change adds its own jobs; a resent form and a second cancel
 press change nothing, so they add none. Unknown kinds throw, as in
-`booking-text-job.ts`.
+`booking-text-job.ts`. Each booking's worker texts run in one lane,
+`worker-text-` and the last two characters of its id, as its calendar jobs
+do (8a, decision 5): one at a time, in the order added, so decision 5's
+rules read every text an earlier change sent (added in 8c.3: the runner
+works five jobs at once). A failed try waits behind later jobs of its lane.
 
-**Timeline:** `sms_sent`, payload `{ bookingId, kind, personId, twilioSid }`,
+**Timeline:** `sms_sent`, payload
+`{ bookingId, kind, personId, sequence, twilioSid }`, `sequence` the
+booking's move number the text described (added in 8c.3, for decision 5),
 `kind` one of `worker_added`, `worker_moved`, `worker_removed`. No number, no
 words.
 
