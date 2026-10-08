@@ -7,9 +7,7 @@ import { sql } from "drizzle-orm";
 import { boolean, check, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { organization } from "../auth-tables/organization-table.js";
-
-// "+1" and ten digits, the area code and exchange starting 2 to 9 (textable-phone-number.ts).
-const NORTH_AMERICAN_NUMBER = "^[+]1[2-9][0-9]{2}[2-9][0-9]{6}$";
+import { NORTH_AMERICAN_NUMBER } from "./north-american-number.js";
 
 export const textSettings = pgTable(
   "text_settings",

@@ -305,6 +305,10 @@ without Frank touching the database.
     number of minutes before, and where a customer's reply is passed on (a
     phone, an email, or both). Nothing on by default. Saving refuses a reply
     phone that is any business's texting number (8b, F-199).
+  - Each person's worker texts (8c, Oct 7): their phone, and whether they
+    hear when a booking is added to their day, moved, or taken off it.
+    Nothing on by default. Saving refuses a phone that is any business's
+    texting number (8c, decision 6).
   - Changing a service's length or someone's hours keeps existing bookings
     and warns the owner which ones now fall outside.
   - Opening hours for the public (the website, the Google profile) are a
