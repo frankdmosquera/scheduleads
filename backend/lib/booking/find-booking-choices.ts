@@ -1,8 +1,8 @@
 // Backend: who and which room can take a start, checked again just before a booking is saved or
 // moved, in the order to try them. The one check a new booking and a move share (decision 10 of
 // the move: changing the time is booking again). A customer gets only the free times they are
-// offered; the owner any time nobody is busy (decision 11). A booking being moved never stands in
-// its own way.
+// offered; the owner any time nobody is busy (decision 11). A booking a customer moves never stands
+// in its own way; the owner's check does not take one yet (the owner's move, features 11 and 12b).
 
 import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error.js";
 import { getBusyTimes } from "../calendar/get-busy-times.js";
@@ -33,9 +33,10 @@ export type BookingChoicesInputType = {
   timezone: string;
   span: AppointmentSpanType; // the start with its buffers
   now: Date;
-  byOwner: boolean; // the owner books any time nobody is busy, rooms on standby included
-  movingBooking?: FindFreeTimesInputType["ignoreBooking"]; // its own held time is not busy
-};
+} & (
+  | { byOwner: true; movingBooking?: never } // any time nobody is busy, rooms on standby included
+  | { byOwner: false; movingBooking?: FindFreeTimesInputType["ignoreBooking"] } // its own time is not busy
+);
 
 export type BookingChoicesType =
   | { found: true; choices: AnyAvailableChoiceType[] }

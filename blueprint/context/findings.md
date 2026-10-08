@@ -472,7 +472,7 @@ enough, since an added job can try after an off recorded at a higher number).
 Add a test of the same name if it is fixed.
 **Resolution:**
 
-### F-253 [P3] open - findBookingChoices takes a moving booking on the owner path, but never leaves it out of the person's busy time or Google there
+### F-253 [P3] fixed - findBookingChoices takes a moving booking on the owner path, but never leaves it out of the person's busy time or Google there
 
 **File:** backend/lib/booking/find-booking-choices.ts:74-77 (its promise: :4-5; the customer path's handling: backend/lib/scheduling/find-free-times.ts:117,138-143)
 **Found:** 2026-10-08 by independent review of chore/cleanup-before-9 (scope: 392cc7d..394cca2; lenses: quality, security, performance, tests)
@@ -493,4 +493,4 @@ commitments with notTheMovingBooking and cross the moving booking's own time
 off that person's Google busy, as findFreeTimes does, with a test of the owner
 moving into a time overlapping the old one; or until then, type the input so
 movingBooking only goes with byOwner false.
-**Resolution:**
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9 (the second suggestion, until the owner's move): the input type is a union, so movingBooking goes only with byOwner false; the header says the owner's check does not take a moving booking yet (features 11 and 12b). Proved: a temporary call with byOwner true and movingBooking fails tsc (TS2345), removed after. Typecheck, build, format and backend 789 three runs pass.
