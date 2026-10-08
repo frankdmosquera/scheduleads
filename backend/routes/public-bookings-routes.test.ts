@@ -42,12 +42,14 @@ const tag = randomUUID().slice(0, 8);
 const id = () => randomUUID();
 
 // A clinic of its own, bookable every day 9:00 to 17:00: Ana and Mei do facials (60 minutes), Luis
-// does none, and Kim's calendar needs reconnecting. A second facial is switched off.
+// does none, and Kim's calendar needs reconnecting. A second facial is switched off. An estimate is
+// one the business assigns (feature 9, decision 3): Ana does it, never picked by the customer.
 const clinic = {
   id: id(),
   slug: `test-bookings-${tag}-dev`,
   facial: id(),
   switchedOff: id(),
+  estimate: id(),
   ana: id(),
   mei: id(),
   luis: id(),
@@ -136,6 +138,8 @@ beforeAll(async () => {
       name: "Facial",
       slug: "facial",
       durationMinutes: 60,
+      layout: "month",
+      personChoice: "customer_picks",
     },
     {
       id: clinic.switchedOff,
@@ -143,7 +147,18 @@ beforeAll(async () => {
       name: "Old facial",
       slug: "old-facial",
       durationMinutes: 60,
+      layout: "month",
+      personChoice: "customer_picks",
       active: false,
+    },
+    {
+      id: clinic.estimate,
+      organizationId: clinic.id,
+      name: "Estimate",
+      slug: "estimate",
+      durationMinutes: 60,
+      layout: "month",
+      personChoice: "business_assigns",
     },
   ]);
   await db.insert(bookingLinkResource).values(
@@ -153,6 +168,11 @@ beforeAll(async () => {
       resourceId,
     }))
   );
+  await db.insert(bookingLinkResource).values({
+    organizationId: clinic.id,
+    bookingLinkId: clinic.estimate,
+    resourceId: clinic.ana,
+  });
 
   const clinicDev = await (await app.request("/public/clinic-dev/booking-links")).json();
   if (!clinicDev.bookingLinks) throw new Error("clinic-dev is missing: run npm run db:seed first.");
@@ -202,6 +222,18 @@ describe("a booking is made", () => {
       .where(and(eq(booking.organizationId, clinic.id), eq(booking.id, body.booking.id)));
     expect(saved?.source).toBe("widget");
     expect(await freeTimes(clinic.ana)).not.toContain(startsAt); // the time is held
+  });
+
+  test("a service the business assigns books with nobody picked, and the business's person does it", async () => {
+    const response = await app.request(
+      `/public/${clinic.slug}/booking-links/${clinic.estimate}/times?from=${day}&to=${day}`
+    );
+    const [startsAt] = (await response.json()).startTimes;
+    const { personId: _picked, ...unpicked } = form(startsAt, { bookingLinkId: clinic.estimate });
+    const answer = await post(bookingsPath, unpicked);
+
+    expect(answer.status).toBe(201);
+    expect((await answer.json()).booking.person.name).toBe("Ana");
   });
 
   test("a phone alone is enough (decision 16)", async () => {
@@ -308,6 +340,22 @@ describe("a booking is refused", () => {
     expect(response.status).toBe(400);
     expect(answer.error.code).toBe("bad_request");
     expect(typeof answer.error.message).toBe("string");
+  });
+
+  test("a person sent for a service the business assigns is a 400 and books nothing", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const body = form(startsAt, { bookingLinkId: clinic.estimate, personId: clinic.ana });
+    const response = await post(bookingsPath, body);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: { code: "bad_request", message: "This service does not take a pick of person." },
+    });
+    const made = await db
+      .select({ id: booking.id })
+      .from(booking)
+      .where(eq(booking.requestKey, body.requestKey));
+    expect(made).toEqual([]);
   });
 
   test("a request over 16 KB is a 413 and books nothing", async () => {

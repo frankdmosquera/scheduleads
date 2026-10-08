@@ -103,6 +103,8 @@ beforeAll(async () => {
       name: "Test",
       slug: "test",
       durationMinutes: 30,
+      layout: "month",
+      personChoice: "customer_picks",
     },
     {
       id: noBooking.linkId,
@@ -110,6 +112,8 @@ beforeAll(async () => {
       name: "Test",
       slug: "test",
       durationMinutes: 30,
+      layout: "month",
+      personChoice: "customer_picks",
     },
     {
       id: unreadable.linkId,
@@ -117,6 +121,8 @@ beforeAll(async () => {
       name: "Facial",
       slug: "facial",
       durationMinutes: 60,
+      layout: "month",
+      personChoice: "customer_picks",
     },
     {
       id: switchedOffLinkId,
@@ -124,6 +130,8 @@ beforeAll(async () => {
       name: `Switched off ${tag}`,
       slug: `switched-off-${tag}`,
       durationMinutes: 30,
+      layout: "month",
+      personChoice: "customer_picks",
       active: false,
     },
   ]);
@@ -144,12 +152,18 @@ afterAll(async () => {
 });
 
 describe("the documented shape", () => {
-  test("the list gives a business's active services, by name, and nothing else", async () => {
+  test("the list gives the business's face and its active services, by name, and nothing else", async () => {
     const response = await get("/public/painting-dev/booking-links");
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(Object.keys(body)).toEqual(["bookingLinks"]);
+    expect(Object.keys(body).sort()).toEqual(["bookingLinks", "business"]);
+    // What its own site shows anyway: the name, the logo (none in the seed) and the phone.
+    expect(body.business).toEqual({
+      name: "Summit Painting (dev)",
+      logo: null,
+      phone: "403 555 0100",
+    });
     expect(body.bookingLinks.map((link: { name: string }) => link.name)).toEqual([
       "Colour consultation",
       "Exterior estimate",
@@ -170,13 +184,28 @@ describe("the documented shape", () => {
     }
   });
 
-  test("one service comes with the business's bookable hours", async () => {
+  test("one service comes with its layout, who picks the person, and the business's bookable hours", async () => {
     const response = await get(`/public/painting-dev/booking-links/${paintingLinkId}`);
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(Object.keys(body).sort()).toEqual(["availability", "bookingLink"]);
     expect(body.bookingLink.id).toBe(paintingLinkId);
+    expect(Object.keys(body.bookingLink).sort()).toEqual(
+      [
+        "bufferAfterMinutes",
+        "bufferBeforeMinutes",
+        "description",
+        "durationMinutes",
+        "id",
+        "layout",
+        "name",
+        "personChoice",
+        "slug",
+      ].sort()
+    );
+    expect(body.bookingLink.layout).toBe("month");
+    expect(body.bookingLink.personChoice).toBe("business_assigns");
     expect(Object.keys(body.availability).sort()).toEqual(
       [
         "closedDates",
@@ -434,5 +463,131 @@ describe("the login cookie is never allowed", () => {
     const response = await get("/public/painting-dev/booking-links", "https://not-listed.example");
 
     expect(response.headers.get("Access-Control-Allow-Origin")).toBeNull();
+  });
+});
+
+describe("who picks the person (feature 9, decision 3)", () => {
+  // A week starting a week from today on the businesses' clock: inside both horizons.
+  const today = localDate(new Date(), "America/Edmonton");
+  const week = `from=${addDays(today, 7)}&to=${addDays(today, 13)}`;
+  // A clinic of its own where the customer picks: Ana and Bea do facials but Bea has left
+  // (inactive); Cy does what nobody is ticked for, as everyone active does.
+  const picks = {
+    id: randomUUID(),
+    slug: `test-picks-${tag}-dev`,
+    facial: randomUUID(),
+    massage: randomUUID(),
+    ana: randomUUID(),
+    bea: randomUUID(),
+    cy: randomUUID(),
+  };
+  const peopleOf = async (path: string) =>
+    ((await (await get(path)).json()).people as { name: string }[]).map((person) => person.name);
+
+  beforeAll(async () => {
+    vi.stubGlobal("fetch", async () => {
+      throw new Error("These tests never call Google.");
+    });
+    await db.insert(organization).values({ id: picks.id, name: "Test, picks", slug: picks.slug });
+    await db.insert(availabilityRule).values({
+      id: randomUUID(),
+      organizationId: picks.id,
+      weeklyHours: { mon: [{ startMinute: 540, endMinute: 1020 }] },
+      timezone: "America/Edmonton",
+      minimumNoticeMinutes: 0,
+      horizonDays: 30,
+      closedDates: [],
+    });
+    await db.insert(resource).values([
+      { id: picks.ana, organizationId: picks.id, name: "Ana", kind: "person" },
+      { id: picks.bea, organizationId: picks.id, name: "Bea", kind: "person", active: false },
+      { id: picks.cy, organizationId: picks.id, name: "Cy", kind: "person" },
+    ]);
+    await db.insert(bookingLink).values(
+      [
+        { id: picks.facial, name: "Facial", slug: "facial" },
+        { id: picks.massage, name: "Massage", slug: "massage" },
+      ].map((service) => ({
+        ...service,
+        organizationId: picks.id,
+        durationMinutes: 60,
+        layout: "month" as const,
+        personChoice: "customer_picks" as const,
+      }))
+    );
+    await db.insert(bookingLinkResource).values(
+      [picks.ana, picks.bea].map((resourceId) => ({
+        organizationId: picks.id,
+        bookingLinkId: picks.facial,
+        resourceId,
+      }))
+    );
+  });
+
+  afterAll(async () => {
+    vi.unstubAllGlobals();
+    await db.delete(organization).where(eq(organization.id, picks.id)); // its rows go with it
+  });
+
+  test("a service the customer picks for says so", async () => {
+    const clinicList = await (await get("/public/clinic-dev/booking-links")).json();
+    const laser = clinicList.bookingLinks.find(
+      (link: { name: string }) => link.name === "Laser Hair Removal"
+    );
+    const body = await (await get(`/public/clinic-dev/booking-links/${laser.id}`)).json();
+
+    expect(body.bookingLink.personChoice).toBe("customer_picks");
+    expect(body.bookingLink.layout).toBe("month");
+  });
+
+  test("the customer may pick only who does the service: Mei alone does laser", async () => {
+    const clinicList = await (await get("/public/clinic-dev/booking-links")).json();
+    const laser = clinicList.bookingLinks.find(
+      (link: { name: string }) => link.name === "Laser Hair Removal"
+    );
+
+    expect(await peopleOf(`/public/clinic-dev/booking-links/${laser.id}/times?${week}`)).toEqual([
+      "Mei",
+    ]);
+  });
+
+  test("someone who has left is never offered, even when ticked", async () => {
+    expect(
+      await peopleOf(`/public/${picks.slug}/booking-links/${picks.facial}/times?${week}`)
+    ).toEqual(["Ana"]);
+  });
+
+  test("nobody ticked means everyone active", async () => {
+    expect(
+      await peopleOf(`/public/${picks.slug}/booking-links/${picks.massage}/times?${week}`)
+    ).toEqual(["Ana", "Cy"]);
+  });
+
+  test("a service the business assigns lists nobody, and still has times", async () => {
+    const response = await get(
+      `/public/painting-dev/booking-links/${paintingLinkId}/times?${week}`
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.people).toEqual([]);
+    expect(body.startTimes.length).toBeGreaterThan(0);
+  });
+
+  test("a person asked for on a service the business assigns is a 400", async () => {
+    const [paintingPerson] = await db
+      .select({ id: resource.id })
+      .from(resource)
+      .innerJoin(organization, eq(organization.id, resource.organizationId))
+      .where(and(eq(organization.slug, "painting-dev"), eq(resource.kind, "person")))
+      .limit(1);
+    const response = await get(
+      `/public/painting-dev/booking-links/${paintingLinkId}/times?${week}&person=${paintingPerson!.id}`
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: { code: "bad_request", message: "This service does not take a pick of person." },
+    });
   });
 });

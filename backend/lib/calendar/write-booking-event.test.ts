@@ -78,6 +78,8 @@ async function makeClinic(name: string) {
     name: "Interior estimate",
     slug: "interior-estimate",
     durationMinutes: 60,
+    layout: "month",
+    personChoice: "customer_picks",
     bufferAfterMinutes: 15,
   });
   await db

@@ -115,6 +115,8 @@ const ACCOUNTS = [
     business: {
       name: "Summit Painting (dev)",
       slug: "painting-dev",
+      // Who does the job (feature 9): Primo sends whoever is free, so the customer never picks.
+      personChoice: "business_assigns",
       // What its emails need (feature 6). No Resend key: dev sends nothing real.
       emailDetails: {
         senderEmail: "bookings@example.com",
@@ -190,6 +192,8 @@ const ACCOUNTS = [
     business: {
       name: "Riverbend Clinic (dev)",
       slug: "clinic-dev",
+      // Who does the job (feature 9): a clinic's customer picks a practitioner, or any available.
+      personChoice: "customer_picks",
       emailDetails: {
         senderEmail: "hello@example.com",
         notifyEmail: "owner@example.com",
@@ -559,9 +563,14 @@ try {
 
         const bookingLinkId = existingLink?.id ?? randomUUID();
         if (!existingLink) {
-          await tx
-            .insert(bookingLink)
-            .values({ id: bookingLinkId, organizationId, slug, ...service });
+          await tx.insert(bookingLink).values({
+            id: bookingLinkId,
+            organizationId,
+            slug,
+            layout: "month", // the only layout built (feature 9)
+            personChoice: business.personChoice,
+            ...service,
+          });
           servicesMade++;
         }
 

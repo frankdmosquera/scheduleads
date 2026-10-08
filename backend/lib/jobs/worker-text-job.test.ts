@@ -111,6 +111,8 @@ async function makeBusiness(
     name: "Interior estimate",
     slug: "interior-estimate",
     durationMinutes: 60,
+    layout: "month",
+    personChoice: "customer_picks",
   });
   await db.insert(bookingLinkResource).values([
     { organizationId: business, bookingLinkId: estimate, resourceId: marco },

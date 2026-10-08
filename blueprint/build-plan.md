@@ -228,9 +228,10 @@ rented" rents nothing.
   provider per host wrapping children, the face-and-body contract. The
   layout is a stored value on the booking link, not a hardcoded shape, so
   the week strip in `prototypes/modal-primo.html` can return later without
-  a rewrite. Only the Calendly-shaped month flow gets built now. Open until
-  this item's spec: whether each service lets the customer pick the person
-  (a salon) or the business assigns one (Primo's estimates). The Book
+  a rewrite. Only the Calendly-shaped month flow gets built now. Who does the
+  job is each service's own setting, decided at this item's spec (Oct 8,
+  decision 32): the customer picks the person (a salon) or the business
+  assigns one (Primo's estimates). The Book
   button locks after one press, and the form sends the one-time key it
   made when it opened (decided in 5d, Oct 2: one booking per form).
   Screen two asks the standard questions (name, email, phone, address,

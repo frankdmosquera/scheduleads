@@ -155,6 +155,13 @@
       "when": 1791418045094,
       "tag": "0021_worker_text_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791494400809,
+      "tag": "0022_booking_link_layout_and_person_choice",
+      "breakpoints": true
     }
   ]
 }

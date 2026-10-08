@@ -91,6 +91,8 @@ async function makeClinic(name: string, { withRoom = false } = {}) {
     name: "Facial",
     slug: "facial",
     durationMinutes: 60,
+    layout: "month",
+    personChoice: "customer_picks",
     slotIntervalMinutes: 30,
   });
   await db

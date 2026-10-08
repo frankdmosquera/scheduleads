@@ -30,6 +30,8 @@ const peel = (slotIntervalMinutes: number | undefined) => ({
   name: "Chemical Peel",
   slug: `chemical-peel-${randomUUID().slice(0, 8)}`,
   durationMinutes: 30,
+  layout: "month" as const,
+  personChoice: "business_assigns" as const,
   ...(slotIntervalMinutes === undefined ? {} : { slotIntervalMinutes }),
 });
 

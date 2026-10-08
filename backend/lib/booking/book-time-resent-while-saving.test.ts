@@ -97,6 +97,8 @@ describe("booking a time", () => {
       name: "Estimate",
       slug: "estimate",
       durationMinutes: 60,
+      layout: "month",
+      personChoice: "customer_picks",
     });
     await db
       .insert(bookingLinkResource)

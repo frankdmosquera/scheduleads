@@ -93,6 +93,8 @@ async function makeClinic(name: string) {
     name: "Facial",
     slug: "facial",
     durationMinutes: 60,
+    layout: "month",
+    personChoice: "customer_picks",
     slotIntervalMinutes: 30,
   });
   await db.insert(bookingLinkResource).values([

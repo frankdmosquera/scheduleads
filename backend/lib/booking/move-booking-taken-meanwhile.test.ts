@@ -78,6 +78,8 @@ describe("moving a booking", () => {
       name: "Facial",
       slug: "facial",
       durationMinutes: 60,
+      layout: "month",
+      personChoice: "customer_picks",
     });
     await db
       .insert(bookingLinkResource)

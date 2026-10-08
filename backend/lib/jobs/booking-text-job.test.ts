@@ -100,6 +100,8 @@ async function makeBusiness(name: string, settings: Record<string, unknown> = {}
     name: "Interior estimate",
     slug: "interior-estimate",
     durationMinutes: 60,
+    layout: "month",
+    personChoice: "customer_picks",
   });
   await db
     .insert(bookingLinkResource)
