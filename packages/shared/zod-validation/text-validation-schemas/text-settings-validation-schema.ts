@@ -3,24 +3,12 @@
 
 import { z } from "zod";
 
-import { textablePhoneNumber } from "../../helpers/textable-phone-number.js";
 import { emailAddressValidationSchema } from "../auth-validation-schemas/email-address-validation-schema.js";
-
-const textableNumber = z.string().transform((typed, context) => {
-  const number = textablePhoneNumber(typed);
-  if (!number) {
-    context.addIssue({
-      code: "custom",
-      message: "Use a Canadian or US number, like 403 555 0148.",
-    });
-    return z.NEVER;
-  }
-  return number;
-});
+import { textableNumberValidationSchema } from "./textable-number-validation-schema.js";
 
 export const textSettingsValidationSchema = z
   .object({
-    fromNumber: textableNumber,
+    fromNumber: textableNumberValidationSchema,
     confirmationOn: z.boolean(),
     reminderMinutesBefore: z
       .array(
@@ -32,7 +20,7 @@ export const textSettingsValidationSchema = z
         (minutes) => new Set(minutes).size === minutes.length,
         "That reminder is there twice."
       ),
-    replyPhone: textableNumber.nullable(),
+    replyPhone: textableNumberValidationSchema.nullable(),
     replyEmail: emailAddressValidationSchema.nullable(),
   })
   .refine((settings) => settings.replyPhone !== null || settings.replyEmail !== null, {

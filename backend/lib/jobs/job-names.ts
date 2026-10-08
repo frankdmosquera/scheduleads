@@ -8,4 +8,5 @@ export const jobNames = {
   bookingEventRemove: "booking_event_remove",
   bookingText: "booking_text",
   textReply: "text_reply",
+  workerText: "worker_text",
 } as const;

@@ -20,6 +20,7 @@ import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
 import { enqueueBookingEventJob } from "../jobs/enqueue-booking-event-job.js";
 import { enqueueBookingTexts } from "../jobs/enqueue-booking-texts.js";
+import { enqueueWorkerText } from "../jobs/enqueue-worker-text.js";
 import { jobNames } from "../jobs/job-names.js";
 import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
@@ -279,6 +280,30 @@ export async function moveBooking(input: {
         now,
         confirmation: false,
       });
+      // The booked people's own texts (feature 8c): the same person hears it moved; for another
+      // person, the first hears it is off their day, at the time they had, and the second gets it.
+      const change = { organizationId, bookingId, sequence, changedAt: now.toISOString() };
+      if (personChanged) {
+        await enqueueWorkerText(tx, {
+          ...change,
+          personId: row.personId,
+          kind: "removed",
+          startsAt: row.startsAt.toISOString(),
+        });
+        await enqueueWorkerText(tx, {
+          ...change,
+          personId: chosen.personId,
+          kind: "added",
+          startsAt: null,
+        });
+      } else {
+        await enqueueWorkerText(tx, {
+          ...change,
+          personId: chosen.personId,
+          kind: "moved",
+          startsAt: null,
+        });
+      }
       // The event follows as jobs (decisions 5 and 6): the saved event is updated in place for
       // the same person. For another person, or with no id saved yet, the old event is taken out
       // and the new one written, each on its own. With none saved, the event can only be under

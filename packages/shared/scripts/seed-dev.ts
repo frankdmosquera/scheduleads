@@ -22,13 +22,16 @@ import {
   standbyDate,
   textSettings,
   user,
+  workerTextSettings,
 } from "@scheduleads-app/shared/db";
 import {
   businessAvailabilityRuleValidationSchema,
   personAvailabilityRuleValidationSchema,
   textSettingsValidationSchema,
+  workerTextSettingsValidationSchema,
   type DateHoursType,
   type WeeklyHoursType,
+  type WorkerTextSettingsInputType,
 } from "@scheduleads-app/shared/zod-validation";
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
 import { toSlug } from "@scheduleads-app/shared/helpers";
@@ -58,6 +61,7 @@ export type ResourceSeedType = {
   weeklyHours?: WeeklyHoursType | null; // missing = no row, follows the business's week
   dateHours?: DateHoursType;
   standbyDates?: string[]; // at work, hidden from customers on these dates
+  workerTexts?: WorkerTextSettingsInputType; // a person only; missing = no row, no texts (8c)
 };
 
 export type ServiceSeedType = {
@@ -158,7 +162,13 @@ const ACCOUNTS = [
         { name: "Diego (painter)", kind: "person" },
         { name: "Jorge (painter)", kind: "person" },
         { name: "Mateo (painter)", kind: "person" },
-        { name: "Pedro (painter)", kind: "person" },
+        {
+          name: "Pedro (painter)",
+          kind: "person",
+          // The worker's texts (feature 8c): a made-up 555 phone, every switch on. Nobody else
+          // here or at Riverbend has a row, so they show a person who gets no texts.
+          workerTexts: { phone: "403 555 0161", addedOn: true, movedOn: true, removedOn: true },
+        },
         { name: "Tomas (painter)", kind: "person" },
       ] satisfies ResourceSeedType[],
       services: [
@@ -474,6 +484,7 @@ try {
       let peopleMade = 0;
       let hoursMade = 0;
       let standbyMade = 0;
+      let workerTextsMade = 0;
       const resourceIdsByName = new Map<string, string>([[business.name, firstPerson.id]]);
       for (const person of business.people as readonly ResourceSeedType[]) {
         const { id: resourceId, made } = await ensureResource(
@@ -493,6 +504,23 @@ try {
             .onConflictDoNothing()
             .returning({ date: standbyDate.date });
           standbyMade += madeDates.length;
+        }
+
+        // Their worker-text settings, only while they have none, so settings changed by hand
+        // survive a reseed.
+        if (person.workerTexts) {
+          if (person.kind !== "person")
+            throw new Error(`${person.name} is a place: only people get texts.`);
+          const madeSettings = await tx
+            .insert(workerTextSettings)
+            .values({
+              personId: resourceId,
+              organizationId,
+              ...workerTextSettingsValidationSchema.parse(person.workerTexts),
+            })
+            .onConflictDoNothing({ target: workerTextSettings.personId })
+            .returning({ id: workerTextSettings.personId });
+          workerTextsMade += madeSettings.length;
         }
 
         // No row only when there is nothing to store: no week and no extra dates.
@@ -568,6 +596,7 @@ try {
         servicesMade && `${servicesMade} services`,
         ticksMade && `${ticksMade} who-does-what ticks`,
         textSettingsMade && "text settings",
+        workerTextsMade && `${workerTextsMade} worker text settings`,
       ].filter(Boolean);
       console.log(
         `${account.email.padEnd(20)} ${account.role === "admin" ? "platform admin" : "ordinary owner"}, ` +

@@ -453,3 +453,32 @@ recorded is never taken for it" in the spec, say in the table comment that the
 text is claimed and the email keyed, and rename the test to "counts from the
 reply's record". No code change.
 **Resolution:**
+
+### F-252 [P3] open - A "new booking" or "moved" still in doubt keeps counting after the person was told the booking is off, so a booking back and away again before its texts run sends a second "off your day"
+
+**File:** backend/lib/text/send-worker-text.ts:159-164; backend/lib/jobs/has-worker-text-in-doubt.ts:13-25
+**Found:** 2026-10-08 by independent review (scope: current, ddca0e1..2ad0463; lenses: quality, security, performance, tests)
+**Why it matters:** F-243's repair says nobody gets a second "off your day"
+for a booking they already think is gone: `believes` needs an added or moved
+entry newer than the latest off entry. But the in-doubt branch is ORed in with
+no such comparison, and hasWorkerTextInDoubt counts any try of an added or
+moved job for that booking and person, including one that gave up long ago
+(F-248, accepted, so it stays in the runner's table for good). Path, read from
+the code: Pedro's "new booking" gives up after its tenth try (for example a
+day with the production keys missing, which send-text.ts retries); later the
+booking moves to Maria and Pedro's "off your day" goes (in doubt, so he
+believes), recorded; then it moves back to Pedro and away again before those
+jobs run. The move back's added finds the booking another person's and sends
+nothing; the second taken off finds no newer added entry but the same given-up
+job, so `believes` is true and Pedro gets a second "off your day". The same
+happens inside the seconds a lost answer waits for its retry. The code matches
+decision 5's amendment as written (an OR of the two conditions); it is the
+amendment's F-243 promise that does not hold. Rare and harmless in effect (a
+repeated "it is off", never a missed one), so P3.
+**Suggested fix:** Decide it in decision 5. Either list it under "Accepted as
+is", or let a doubtful try count only when it came after the person's latest
+"off your day" entry (compare the job's last try time, `_private_jobs`
+`updated_at`, with that entry's `occurredAt`; comparing move numbers is not
+enough, since an added job can try after an off recorded at a higher number).
+Add a test of the same name if it is fixed.
+**Resolution:**

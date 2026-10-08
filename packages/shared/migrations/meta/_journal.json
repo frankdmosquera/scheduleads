@@ -148,6 +148,13 @@
       "when": 1791411289119,
       "tag": "0020_text_reply",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791418045094,
+      "tag": "0021_worker_text_settings",
+      "breakpoints": true
     }
   ]
 }

@@ -193,7 +193,7 @@ and a second resource can hold the same time as the first.
     service, never refused because of the booking's own old time (neither
     its held time nor its own event in Google), and the same booking moved,
     its Google event and the customer's invite moved with it, both told
-- [ ] 8. **Scheduled messages** - the background job runner, then the
+- [x] 8. **Scheduled messages** - the background job runner, then the
   confirmation text when a booking is made and the reminder text the
   evening before. Primo already sends both through Calendly, a
   confirmation immediately and a reminder 20 hours ahead, so shipping
@@ -215,7 +215,7 @@ and a second resource can hold the same time as the first.
   - [x] 8b. **The customer's texts** - one place in the code sends every
     text, through Twilio; the confirmation text when a booking is made and
     the reminder before the appointment, moved or dropped with the booking
-  - [ ] 8c. **The worker's text** - when a business runs on one email, the
+  - [x] 8c. **The worker's text** - when a business runs on one email, the
     booked worker gets a text with the booking
 
 ## Phase 3. The widget in the agency's own site
@@ -305,6 +305,10 @@ without Frank touching the database.
     number of minutes before, and where a customer's reply is passed on (a
     phone, an email, or both). Nothing on by default. Saving refuses a reply
     phone that is any business's texting number (8b, F-199).
+  - Each person's worker texts (8c, Oct 7): their phone, and whether they
+    hear when a booking is added to their day, moved, or taken off it.
+    Nothing on by default. Saving refuses a phone that is any business's
+    texting number (8c, decision 6).
   - Changing a service's length or someone's hours keeps existing bookings
     and warns the owner which ones now fall outside.
   - Opening hours for the public (the website, the Google profile) are a

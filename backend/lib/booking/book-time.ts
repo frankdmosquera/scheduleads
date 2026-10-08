@@ -25,6 +25,7 @@ import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { enqueueBookingEmails } from "../jobs/enqueue-booking-emails.js";
 import { enqueueBookingEventJob } from "../jobs/enqueue-booking-event-job.js";
 import { enqueueBookingTexts } from "../jobs/enqueue-booking-texts.js";
+import { enqueueWorkerText } from "../jobs/enqueue-worker-text.js";
 import { jobNames } from "../jobs/job-names.js";
 import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
@@ -339,6 +340,16 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         startsAt,
         now,
         confirmation: true,
+      });
+      // The booked person's own text (feature 8c), from the form or the owner alike (decision 3).
+      await enqueueWorkerText(tx, {
+        organizationId,
+        bookingId,
+        personId: held.personId,
+        sequence: 0,
+        changedAt: now.toISOString(),
+        kind: "added",
+        startsAt: null,
       });
       return { contactId: contact.id, ...held };
     });
