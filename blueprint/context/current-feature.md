@@ -131,7 +131,11 @@ settings gets no texts.
      that never reached Twilio counts too: when unsure, they are told. Accepted as is: a
      taken off says the time they had when it came off, which a skipped
      moved text may never have told them; the customer's name still tells
-     them which booking it is.
+     them which booking it is. Also accepted (Frank, 2026-10-08, F-251,
+     about 1 in 100 million texts): a lost answer, then the booking's
+     time moved and cancelled in the seconds before the retry; the retry
+     looks for the words with the new time, finds none, and no taken off
+     goes.
    - Every kind needs: the person active, their row with that switch on, the
      business's text settings (its number) and its time zone. Anything
      missing is one log line, nothing sent. (A phone a text cannot reach
