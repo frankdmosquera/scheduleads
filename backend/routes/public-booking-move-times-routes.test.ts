@@ -335,9 +335,11 @@ describe("free times for moving a booking", () => {
   });
 
   test("nothing in the answer carries the customer's details", async () => {
+    fakeGoogleBusy([]); // earlier tests leave people connected: their calendars must answer
     const response = await timesFor(clinic.janesBooking);
     const text = await response.text();
 
+    expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     for (const detail of [jane.name, jane.email, jane.phone, jane.location, jane.details]) {
       expect(text).not.toContain(detail);
