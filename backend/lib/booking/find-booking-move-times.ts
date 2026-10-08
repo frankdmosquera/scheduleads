@@ -5,12 +5,12 @@
 
 import { eq } from "drizzle-orm";
 
+import { addDays } from "@scheduleads-app/shared/add-days";
 import { booking } from "@scheduleads-app/shared/db";
+import { localDate } from "@scheduleads-app/shared/local-date";
 
 import { db } from "../../database.js";
 import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
-import { addDays } from "../local-time/add-days.js";
-import { localDate } from "../local-time/local-date.js";
 import { findFreeTimes, type FreeTimesType } from "../scheduling/find-free-times.js";
 
 // The booking form's answer, plus the last date the business takes bookings, so the page stops

@@ -10,6 +10,7 @@
 import { and, eq } from "drizzle-orm";
 
 import { booking, bookingLink, commitment, lead } from "@scheduleads-app/shared/db";
+import { localDate } from "@scheduleads-app/shared/local-date";
 
 import { db } from "../../database.js";
 import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
@@ -22,7 +23,6 @@ import { enqueueBookingEventJob } from "../jobs/enqueue-booking-event-job.js";
 import { enqueueBookingTexts } from "../jobs/enqueue-booking-texts.js";
 import { enqueueWorkerText } from "../jobs/enqueue-worker-text.js";
 import { jobNames } from "../jobs/job-names.js";
-import { localDate } from "../local-time/local-date.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
 import { countBookingsThatDay } from "../scheduling/count-bookings-that-day.js";
 import { findCommitments } from "../scheduling/find-commitments.js";

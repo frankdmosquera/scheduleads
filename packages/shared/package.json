@@ -24,6 +24,14 @@
       "types": "./dist/helpers/format-booking-time.d.ts",
       "default": "./dist/helpers/format-booking-time.js"
     },
+    "./local-date": {
+      "types": "./dist/helpers/local-date.d.ts",
+      "default": "./dist/helpers/local-date.js"
+    },
+    "./add-days": {
+      "types": "./dist/helpers/add-days.d.ts",
+      "default": "./dist/helpers/add-days.js"
+    },
     "./text-color-on": {
       "types": "./dist/helpers/text-color-on.d.ts",
       "default": "./dist/helpers/text-color-on.js"

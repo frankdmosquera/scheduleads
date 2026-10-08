@@ -1,10 +1,10 @@
 // Backend: the rules that turn a business's row and one person's row into the hours a
 // customer can book. No database, so every rule is tested; resolve-bookable-hours.ts reads the rows.
 
+import { addDays } from "@scheduleads-app/shared/add-days";
+import { localDate } from "@scheduleads-app/shared/local-date";
 import type { DateHoursType, WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
 
-import { addDays } from "../local-time/add-days.js";
-import { localDate } from "../local-time/local-date.js";
 import { closedHolidayDates } from "./closed-holidays.js";
 
 // The business's row, with the settings the database guarantees are set on it.

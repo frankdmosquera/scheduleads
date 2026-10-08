@@ -1,7 +1,8 @@
 // Backend: how many bookings each person has on one of the business's own dates, which decides who
 // gets an "any available" booking. Time off is not a booking, so it never counts. No database.
 
-import { localDate } from "../local-time/local-date.js";
+import { localDate } from "@scheduleads-app/shared/local-date";
+
 import type { CommitmentType } from "./find-commitments.js";
 
 export function countBookingsThatDay(

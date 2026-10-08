@@ -284,7 +284,7 @@ shapes for the same name.
 **Suggested fix:** Change the example to the numbered form, for example
 `feature/07b-reschedule`.
 **Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the example is now `feature/08c-the-worker-s-text`, with "its build-plan number first".
-### F-172 [P3] open - The change-time panel keeps its own untested copies of the backend's date helpers
+### F-172 [P3] fixed - The change-time panel keeps its own untested copies of the backend's date helpers
 
 **File:** frontend/components/booking-page/change-time-panel.tsx:26-38 (backend/lib/local-time/local-date.ts:6, backend/lib/local-time/add-days.ts:3)
 **Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..851fadb; lenses: quality, security, performance, tests)
@@ -302,8 +302,7 @@ today (both work in UTC on YYYY-MM-DD); nothing keeps them agreeing.
 `formatToParts` into `packages/shared/helpers/` with one test each, and
 import them in both the backend and the panel; or leave it for the dashboard
 (features 11 and 12b), which will need the same dates, and note it there.
-**Resolution:**
-
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: localDate and addDays now live once in packages/shared/helpers (exported as @scheduleads-app/shared/local-date and /add-days), each with its tests (localDate: late evening, a month and year turning at midnight, the two 1:30s of a clock change; addDays: months, a year back, a leap day). The backend's copies in lib/local-time are deleted and its 15 files import the shared ones; the change-time panel drops dateIn and its addDays for the same imports. localDate is now built from the date's parts (en-CA formatToParts, one formatter per zone) instead of clockAsUtc, which stays in the backend for localTimeToMoment. Shared 159, backend 789 three runs in a row (two tests moved to shared), both builds and the format check pass. Not checked in a browser.
 ### F-176 [P2] open - A deploy's clean stop depends on Railway's grace period, which nothing has confirmed
 
 **File:** backend/server.ts:39-49 (spec: decision 9, "a job left mid-run by a crash (not a deploy, which stops cleanly)")

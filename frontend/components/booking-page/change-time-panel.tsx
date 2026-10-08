@@ -9,7 +9,9 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { addDays } from "@scheduleads-app/shared/add-days";
 import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
+import { localDate } from "@scheduleads-app/shared/local-date";
 import { telHref } from "@scheduleads-app/shared/tel-href";
 
 import {
@@ -18,24 +20,6 @@ import {
   type BookingMoveTimesResultType,
   type BookingPageType,
 } from "@/lib/api-client";
-
-const DAY_MS = 86_400_000;
-
-// A moment's calendar date in a zone, as YYYY-MM-DD, built from its parts so no locale's own
-// date order can change it.
-function dateIn(moment: Date, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(moment);
-  const part = (type: string) => parts.find((each) => each.type === type)?.value;
-  return `${part("year")}-${part("month")}-${part("day")}`;
-}
-
-const addDays = (date: string, days: number) =>
-  new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 
 // "Tuesday, October 13" for a calendar date; noon UTC names the same day everywhere.
 const dayName = (date: string) =>
@@ -63,7 +47,7 @@ const timeOfDay = (moment: Date, timeZone: string) =>
 function byDay(startTimes: string[], timeZone: string): { date: string; times: string[] }[] {
   const days = new Map<string, string[]>();
   for (const startsAt of startTimes) {
-    const date = dateIn(new Date(startsAt), timeZone);
+    const date = localDate(new Date(startsAt), timeZone);
     days.set(date, [...(days.get(date) ?? []), startsAt]);
   }
   return [...days].map(([date, times]) => ({ date, times }));
@@ -107,7 +91,7 @@ export function ChangeTimePanel({
   const earlierRef = useRef<HTMLButtonElement>(null);
 
   // Today in the business's zone, read once: the week never starts before it.
-  const [today] = useState(() => dateIn(new Date(), timezone));
+  const [today] = useState(() => localDate(new Date(), timezone));
   const from = addDays(today, weekOffset * 7);
   const to = addDays(from, 6);
 
