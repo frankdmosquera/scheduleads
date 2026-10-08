@@ -12,6 +12,7 @@ import { googleOauthClient } from "./lib/calendar/google-oauth-client.js";
 import { readEmailSettings } from "./lib/email/read-email-settings.js";
 import { exitWhenRunnerStops } from "./lib/jobs/exit-when-runner-stops.js";
 import { startJobRunner } from "./lib/jobs/start-job-runner.js";
+import { stopGracefully } from "./lib/server/stop-gracefully.js";
 
 const port = Number(process.env.PORT ?? 3401); // 3400 is the frontend's
 
@@ -36,15 +37,16 @@ const server = serve({ fetch: app.fetch, port }, (info) => {
   console.log(`[api] dashboard origin allowed with credentials: ${appOrigin}`);
 });
 
-// A deploy stops the old API with SIGTERM: no new requests, the jobs in hand finish, then exit.
-// What is still waiting stays in the database for the next API's runner.
+// A deploy stops the old API with SIGTERM: no new requests, the requests and jobs in hand finish,
+// then exit, within 25 seconds, under the 30 Railway is set to allow before it kills the API.
+const STOP_LIMIT_MS = 25_000;
 let stopping = false;
 async function stop(signal: string): Promise<void> {
   if (stopping) return;
   stopping = true;
   console.log(`[api] ${signal}: stopping`);
-  server.close();
-  await runner?.stop(signal);
+  const how = await stopGracefully(server, runner, signal, STOP_LIMIT_MS);
+  if (how === "timed_out") console.warn("[api] still busy after 25 seconds: exiting anyway");
   process.exit(0);
 }
 process.on("SIGTERM", () => void stop("SIGTERM"));

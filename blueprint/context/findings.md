@@ -342,7 +342,7 @@ come fast, have the API retry the runner's first start for a bounded time
 (say a minute) before giving up, or raise the service's restart limit.
 **Resolution:**
 
-### F-193 [P3] open - A deploy's stop exits without waiting for the requests in flight, so a booking being made at that moment is cut
+### F-193 [P3] fixed - A deploy's stop exits without waiting for the requests in flight, so a booking being made at that moment is cut
 
 **File:** backend/server.ts:39-48
 **Found:** 2026-10-05 by /audit independent current (scope: 779512a..dd65fe3; lenses: quality, security, performance, tests)
@@ -361,8 +361,7 @@ it is the requests already accepted that nothing waits for.
 `await Promise.all([new Promise((resolve) => server.close(resolve)), runner?.stop(signal)])`,
 optionally bounded a little under the draining time so the API exits itself
 before Railway's SIGKILL.
-**Resolution:**
-
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the stop is now backend/lib/server/stop-gracefully.ts (stopGracefully), which waits for both server.close (refuses new connections, calls back once the open requests end) and runner.stop, bounded; server.ts calls it with a 25 second limit, under the 30 seconds F-176 asks Railway to allow, logs when the limit is hit, then exits 0. Tests (lib/server/stop-gracefully.test.ts, a real HTTP server with a held request): a request in flight finishes before the stop resolves; a new request is refused once stopping; the runner gets the signal and is waited for; a request that never ends lets it stop at the limit. Proved: not waiting for server.close fails two of them (file restored, cmp identical). The built API starts and answers /health 200. Not exercised: a real SIGTERM, which Windows cannot send; Railway's draining is still F-176.
 ### F-194 [P3] closed - installJobTables ships in the API but only one test calls it, and its comment says the tests use it before their first job, which they do not
 
 **File:** backend/lib/jobs/install-job-tables.ts:1-12 (its one caller: backend/lib/jobs/job-runner.test.ts:55; the setup's own copy: backend/vitest.setup.ts:49-52)
