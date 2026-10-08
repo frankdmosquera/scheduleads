@@ -928,4 +928,48 @@ describe("the worker's texts when a booking moves or comes off their day", () =>
     expect(texts).toHaveLength(3);
     expect(texts.at(-1)).toBe(`Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`);
   });
+
+  test("a lost new booking found on its retry after a cancel still texts the person off your day", async () => {
+    const business = await makeBusiness("lost-then-cancel");
+    loseFirst("Summit Painting: new booking");
+    const id = await book(business);
+    await workDueJobs(); // Marco's "new booking" went, its answer lost: it waits to retry
+    await holdRetries(id);
+    await cancelBooking(id, NOW);
+
+    await releaseRetries(id); // the retry runs first: the booking is cancelled, its job ends
+    await workDueJobs();
+
+    expect(calls.filter((call) => call.method === "GET")).toHaveLength(1);
+    expect(textsTo(MARCOS_PHONE)).toEqual([
+      `Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`,
+      `Summit Painting: off your day, Mon Oct 5, 9:00am. ${JANE}`,
+    ]);
+    expect((await workerTextEntriesOf(business)).map((entry) => entry.kind)).toEqual([
+      "worker_added",
+      "worker_removed",
+    ]);
+    expect(await workerJobsOf(id)).toEqual([]);
+  });
+
+  test("a new booking its retry finds never went sends no off your day after a cancel", async () => {
+    const business = await makeBusiness("never-then-cancel");
+    sendAnswer = () => new Response("<html>gateway</html>", { status: 502 });
+    const id = await book(business);
+    await workDueJobs(); // Marco's "new booking" failed: it waits to retry
+    await holdRetries(id);
+    sendAnswer = () => sent("SM9");
+    await cancelBooking(id, NOW);
+
+    await releaseRetries(id); // the retry runs first, asks Twilio, finds nothing
+    await workDueJobs();
+
+    expect(calls.filter((call) => call.method === "GET")).toHaveLength(1);
+    expect(textsTo(MARCOS_PHONE)).toHaveLength(1);
+    expect(loggedWorkerNotSent("worker_added", "the booking was cancelled")).toBe(true);
+    expect(loggedWorkerNotSent("worker_removed", "the person never knew of this booking")).toBe(
+      true
+    );
+    expect(await workerJobsOf(id)).toEqual([]);
+  });
 });

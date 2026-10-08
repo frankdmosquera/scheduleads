@@ -19,7 +19,7 @@ import {
 import { logTextNotSent } from "./log-text-not-sent.js";
 import { renderWorkerText } from "./render-worker-text.js";
 import { SendTextError } from "./send-text-error.js";
-import { sendText } from "./send-text.js";
+import { sendText, type SendTextInputType } from "./send-text.js";
 
 type WorkerTextChangeType = {
   personId: string; // who is told
@@ -72,6 +72,27 @@ function whyNotNews(
     : null;
 }
 
+// Whether the booking left the person a "new booking" or "moved" text was for, so an "off your
+// day" may follow it.
+const leftThePerson = (text: WorkerTextType, context: WorkerTextContextType) =>
+  text.kind !== "removed" && (context.status !== "confirmed" || context.personId !== text.personId);
+
+// The text as it goes to the person, from the business's number.
+function workerMessage(
+  text: WorkerTextType,
+  context: WorkerTextContextType & { timezone: string },
+  from: string,
+  to: string
+): SendTextInputType {
+  const startsAt = text.kind === "removed" ? text.startsAt : context.startsAt;
+  return {
+    kind: `worker_${text.kind}`,
+    from,
+    to,
+    body: renderWorkerText(text.kind, { ...context, startsAt, timezone: context.timezone }),
+  };
+}
+
 // `attempt` is the runner's try number: 1 the first time.
 export async function sendWorkerText(
   organizationId: string,
@@ -83,8 +104,44 @@ export async function sendWorkerText(
   const context = await findWorkerTextContext(organizationId, bookingId);
   if (!context) return; // the booking, or its business, was removed: no one to tell
   const notSent = (reason: string) => logTextNotSent(bookingId, kind, reason);
+  // `sequence`: the least the text told them. Sent now, the booking as it is; found on a retry,
+  // the change it was sent for: it went at some earlier try, about this change or a later one.
+  const record = (twilioSid: string | null, sequence: number) =>
+    recordActivity(organizationId, {
+      contactId: context.contactId,
+      type: "sms_sent",
+      payload: { bookingId, kind, personId: text.personId, sequence, twilioSid },
+    });
+  // On a retry, whether an earlier try already went; recorded when it did.
+  const foundEarlier = async (message: SendTextInputType) => {
+    if (attempt === 1) return false;
+    const sent = await findSentText({ ...message, since: text.changedAt });
+    if (sent) await record(sent, text.sequence);
+    return sent !== null;
+  };
+
   const notDue = whyNotDue(text, context, jobClock.now());
-  if (notDue) return notSent(notDue);
+  if (notDue) {
+    // An earlier try that went is recorded even so: the "off your day" after it reads the entry,
+    // since this job, the only other sign it may have reached them, ends here.
+    if (attempt > 1 && leftThePerson(text, context)) {
+      const [worker, settings] = await Promise.all([
+        findWorkerTextSettings(organizationId, text.personId),
+        findTextSettings(organizationId),
+      ]);
+      const { timezone } = context;
+      if (worker && settings && timezone) {
+        const message = workerMessage(
+          text,
+          { ...context, timezone },
+          settings.fromNumber,
+          worker.phone
+        );
+        if (await foundEarlier(message)) return;
+      }
+    }
+    return notSent(notDue);
+  }
 
   const worker = await findWorkerTextSettings(organizationId, text.personId);
   if (!worker) return notSent("the person has no worker text settings");
@@ -114,29 +171,13 @@ export async function sendWorkerText(
     return notSent("the person's phone is a texting number");
   }
 
-  const startsAt = text.kind === "removed" ? text.startsAt : context.startsAt;
-  const message = {
-    kind,
-    from: settings.fromNumber,
-    to: worker.phone,
-    body: renderWorkerText(text.kind, { ...context, startsAt, timezone: context.timezone }),
-  };
-  // `sequence`: the booking's move number the text described. Sent now, the booking as it is;
-  // found on a retry, it went at its first try, so only the change it was sent for.
-  const record = (twilioSid: string | null, sequence: number) =>
-    recordActivity(organizationId, {
-      contactId,
-      type: "sms_sent",
-      payload: { bookingId, kind, personId: text.personId, sequence, twilioSid },
-    });
-
-  if (attempt > 1) {
-    const sent = await findSentText({ ...message, since: text.changedAt });
-    if (sent) {
-      await record(sent, text.sequence);
-      return;
-    }
-  }
+  const message = workerMessage(
+    text,
+    { ...context, timezone: context.timezone },
+    settings.fromNumber,
+    worker.phone
+  );
+  if (await foundEarlier(message)) return;
 
   let twilioSid: string | null;
   try {

@@ -125,7 +125,9 @@ settings gets no texts.
      or moved text to them was tried and never known to have gone or failed
      (waiting for a retry, or given up after its last), so it may have
      reached them (F-245: a lost answer never leaves them driving to an
-     empty house; read from the runner's job, which stays for both). A try
+     empty house; read from the runner's job, which stays for both; a
+     retry that finds the booking no longer theirs still asks Twilio and
+     records the text if it went, since its job ends there, F-249). A try
      that never reached Twilio counts too: when unsure, they are told. Accepted as is: a
      taken off says the time they had when it came off, which a skipped
      moved text may never have told them; the customer's name still tells
@@ -296,9 +298,11 @@ works five jobs at once). A failed try waits behind later jobs of its lane.
 
 **Timeline:** `sms_sent`, payload
 `{ bookingId, kind, personId, sequence, twilioSid }`, `sequence` the
-booking's move number the text described (added in 8c.3, for decision 5):
-the booking as it is for a text sent now, the change it was sent for when
-a retry finds it already went at its first try,
+least the text told them, as the booking's move number (added in 8c.3, for
+decision 5): the booking as it is for a text sent now; for one a retry finds
+already went, the change it was sent for, since it went at some earlier try
+and may describe a later move (F-250: a lower number at worst lets a later
+"new booking" or "moved" repeat),
 `kind` one of `worker_added`, `worker_moved`, `worker_removed`. No number, no
 words.
 
