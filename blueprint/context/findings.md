@@ -539,7 +539,7 @@ taken off go only when this person's newest added or moved entry is newer than
 their newest removed one; optionally also only when that entry described the
 time being taken off. Or state in decision 5 that these cases are tolerated,
 so it is a choice and not a surprise.
-**Resolution:**
+**Resolution:** Independent review of 8c.3 (2026-10-07): agree, P3. Traced both paths at 44d36f0: whyNotNews (send-worker-text.ts:71-73) passes "off your day" on `told.length > 0`, and findWorkerNewsTold (find-worker-news-told.ts:30) never reads `worker_removed`, so path (1) sends a second "off your day" and path (2) names a time that was never texted. The same root cause, the ledger not modelling what the person last heard, also makes the told case of "moved away and back" send an identical "new booking" twice (the 8c.3 test at worker-text-job.test.ts:618-630 asserts exactly that, same words, same 9:00am); decision 5 chooses that ("the move back sends added"), so it is not filed separately, but one ordered read of added, moved and removed entries would settle both.
 
 ### F-244 [P3] open - The sender's file comment grew into a 15-line block restating the rules below it, and names a finding number
 
@@ -556,4 +556,20 @@ goes through it so the rules cannot drift; never to a texting number; the
 retry check; the timeline entry). Move the "new booking"/"moved" and "off your
 day" rules into a line or two above `whyNotDue` and `whyNotNews`, and drop
 "F-242" (the build log carries it).
+**Resolution:** Independent review of 8c.3 (2026-10-07): agree, P3. send-worker-text.ts:1-15 restates the rules of whyNotDue (48-63) and whyNotNews (65-77) line by line far from them, which coding-standards.md "Comments" names as unwanted ("a long block at the top that explains lines far below it"), and line 6 carries "F-242", the only finding number in backend/lib (`grep -rn "F-[0-9]{3}" backend/lib`).
+
+### F-245 [P2] open - A taken-off text runs ahead of a retrying "new booking" that may already have reached the person, finds no timeline entry, and is dropped for good
+
+**File:** backend/lib/text/send-worker-text.ts:71-73, 90-91, 133-139; backend/lib/jobs/worker-text-lane-of.ts:1-4
+**Found:** 2026-10-07 by independent step review (scope: 8c.3, c630b85..44d36f0; lenses: quality, security, performance, tests)
+**Why it matters:** "Knew of it" reads only recorded `sms_sent` entries, but decision 7 exists because a text can reach the person without being recorded: sendText throws a retryable SendTextError on a timeout or lost answer (send-text.ts:55-70) after Twilio may have taken it. The lane does not hold the order across a failure (enqueue-job.ts:15 and the spec's Data / contracts: "A failed try waits behind later jobs of its lane"). Path: Pedro's "new booking" goes out at Twilio, the answer is lost, the job is rescheduled; if its retry's findSentText also fails (Twilio degraded), the waits grow toward hours. Jane cancels meanwhile. The cancel's taken-off job runs first in the lane, `told` is empty and Pedro's added switch is on, so it logs "the person never knew of this booking" and completes. The "new booking" retry then stops at whyNotDue ("the booking was cancelled", line 90-91) before the findSentText check at 133-139, so nothing records that he was told. Pedro has "new booking Tue 7:30" and never "off your day": the empty-house case the Goal names. worker-text-lane-of.ts:2-4 claims the lane makes the rules "read every text an earlier change sent", which is untrue while an earlier job is retrying. No test covers a retrying added text followed by a cancel.
+**Suggested fix:** Decide in the spec, then: when a taken-off text finds `told` empty, look for an unfinished worker_text job for the same booking and person added before it (the runner's jobs table, as the lane test already queries) and, if one is still waiting, throw so the taken-off retries behind it; or, on attempt > 1 of an added or moved text that is no longer due, still run findSentText and record the text when it went, so a taken-off job retried after it sees the entry. Add a test of the same name: a "new booking" whose first try times out after Twilio took it, then a cancel, texts the person "off your day".
+**Resolution:**
+
+### F-246 [P3] open - "Each switch off stops only its own text" never turns the taken-off switch off: ignoring removedOn passes every test
+
+**File:** backend/lib/text/send-worker-text.ts:42-46; backend/lib/jobs/worker-text-job.test.ts:738-753
+**Found:** 2026-10-07 by independent step review (scope: 8c.3, c630b85..44d36f0; lenses: quality, security, performance, tests)
+**Why it matters:** 8c.3's Done when lists "each switch off stops only its own text". The tests turn addedOn off (8c.2, and the cancel-elsewhere case) and movedOn off ("each switch off stops only its own text"), but no test sets removedOn to false. Proved: changing `removed: "removedOn"` to `removed: "active"` in SWITCH_OF leaves all 137 tests under lib/jobs/worker-text-job.test.ts and lib/text passing, so a business that turns a person's "off your day" texts off could keep sending them and nothing would catch it. The code is correct today; the Done when claim is unproved for one of its three switches.
+**Suggested fix:** Extend "each switch off stops only its own text" with a removedOn-off case (a cancel logs "the person has that text off" for worker_removed and sends nothing, while the added and moved texts still go).
 **Resolution:**
