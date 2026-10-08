@@ -749,6 +749,21 @@ describe("the worker's texts when a booking moves or comes off their day", () =>
       `Summit Painting: off your day, Mon Oct 5, 10:00am. ${JANE}`,
     ]);
     expect(loggedWorkerNotSent("worker_moved", "the person has that text off")).toBe(true);
+
+    // The "off your day" switch alone: told of the booking and its move, not of its cancel.
+    calls = [];
+    const noOff = await makeBusiness("off-off", { marcosTexts: { removedOn: false } });
+    const noOffId = await book(noOff);
+    await workDueJobs();
+    await move(noOffId, TEN, noOff.marco);
+    await workDueJobs();
+    await cancelBooking(noOffId, NOW);
+    await workDueJobs();
+    expect(textsTo(MARCOS_PHONE)).toEqual([
+      `Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`,
+      `Summit Painting: moved to Mon Oct 5, 10:00am. ${AT_JANES}`,
+    ]);
+    expect(loggedWorkerNotSent("worker_removed", "the person has that text off")).toBe(true);
   });
 
   test('a moved text that a late "new booking" already covered sends nothing', async () => {
@@ -783,5 +798,51 @@ describe("the worker's texts when a booking moves or comes off their day", () =>
     expect(new Set(jobs.map((job) => job.queue_name))).toEqual(
       new Set([`worker-text-${id.slice(-2).toLowerCase()}`])
     );
+  });
+
+  test("an off your day still goes when the new booking may have reached them and waits to retry", async () => {
+    const business = await makeBusiness("in-doubt");
+    const id = await book(business);
+    // Twilio took the "new booking", but its answer was lost: the job waits to try again.
+    sendAnswer = () => new Response("<html>gateway</html>", { status: 201 });
+    await workDueJobs();
+    expect((await workerJobsOf(id)).map((job) => [job.payload.kind, job.attempts])).toEqual([
+      ["added", 1],
+    ]);
+    sendAnswer = () => sent("SM9");
+    await cancelBooking(id, NOW);
+
+    await workDueJobs(); // only the cancel's text is due: the retry waits behind it
+
+    expect(textsTo(MARCOS_PHONE)).toEqual([
+      `Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`,
+      `Summit Painting: off your day, Mon Oct 5, 9:00am. ${JANE}`,
+    ]);
+    // The retry then finds the booking cancelled and sends nothing more.
+    await makeDue(id);
+    await workDueJobs();
+    expect(textsTo(MARCOS_PHONE)).toHaveLength(2);
+    expect(await workerJobsOf(id)).toEqual([]);
+  });
+
+  test("a person already told a booking is off their day gets no second off your day", async () => {
+    const business = await makeBusiness("off-twice");
+    const id = await book(business);
+    await workDueJobs();
+    await move(id, NINE, business.pedro);
+    await workDueJobs(); // Marco: "off your day"
+    // Back to Marco and cancelled before either text went: he still thinks it is off.
+    await move(id, NINE, business.marco);
+    await cancelBooking(id, NOW);
+
+    await workDueJobs();
+
+    expect(textsTo(MARCOS_PHONE)).toEqual([
+      `Summit Painting: new booking Mon Oct 5, 9:00am. ${AT_JANES}`,
+      `Summit Painting: off your day, Mon Oct 5, 9:00am. ${JANE}`,
+    ]);
+    expect(
+      loggedWorkerNotSent("worker_removed", "the person was already told it is off their day")
+    ).toBe(true);
   });
 });

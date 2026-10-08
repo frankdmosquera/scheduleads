@@ -118,6 +118,16 @@ settings gets no texts.
      before its added text went sends no taken off either (found while
      building the Simulate page). A booking moved away and back to them
      sends no taken off; the move back sends added.
+     Amended after 8c.3's review (Frank, 2026-10-07): "knew of it" means
+     they believe it is on their day: their latest text about it was an
+     added or moved one, newer than any taken off they got (F-243: no second
+     "off your day" for a booking they already think is gone), or an added
+     or moved text to them was tried and still waits for a retry, so it may
+     have reached them (F-245: a lost answer never leaves them driving to
+     an empty house; read from the runner's waiting job). Accepted as is: a
+     taken off says the time they had when it came off, which a skipped
+     moved text may never have told them; the customer's name still tells
+     them which booking it is.
    - Every kind needs: the person active, their row with that switch on, the
      business's text settings (its number) and its time zone. Anything
      missing is one log line, nothing sent. (A phone a text cannot reach

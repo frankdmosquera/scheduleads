@@ -1,25 +1,16 @@
 // Backend: sends one of the texts that keep a booked worker in the loop (feature 8c), from the
 // business's own number; every worker text goes through here, so their rules cannot drift apart.
-// It does what is still true when it runs (decision 5):
-// - "new booking" and "moved" go while the booking is confirmed, not started and still theirs,
-//   a "moved" only if no later move replaced it, and neither when they already heard of this
-//   change (a text about the booking at or past this change's move number reached them, F-242).
-// - "off your day" goes while they are off the booking and the time they had has not passed, and
-//   only if they knew of it: a "new booking" or "moved" text reached them, or their "new booking"
-//   switch is off and they learn of bookings elsewhere.
-// A person without the settings, inactive or with that text off, or a business without texts or a
-// time zone sends nothing, in one log line. A phone that is any business's texting number is
-// never texted (decision 6): it would arrive there as a customer's reply. On a retry it first asks
-// Twilio whether the text already went since the change was saved (decision 7). Each text that
-// went is an sms_sent entry on the customer's timeline, with the person and the booking's move
-// number it described, and no phone number or words (decision 8).
+// It sends only what is still true and still news when it runs (decision 5), never to a texting
+// number (decision 6), asks Twilio before a retry sends (decision 7), and records each text that
+// went on the customer's timeline, with no phone number or words (decision 8).
 
 import { recordActivity } from "../crm/record-activity.js";
+import { hasWorkerTextInDoubt } from "../jobs/has-worker-text-in-doubt.js";
 import { jobClock } from "../jobs/job-clock.js";
 import { findSentText } from "./find-sent-text.js";
 import { findTextSettings } from "./find-text-settings.js";
 import { findTextingBusiness } from "./find-texting-business.js";
-import { findWorkerNewsTold } from "./find-worker-news-told.js";
+import { findWorkerTextsTold, type WorkerTextsToldType } from "./find-worker-texts-told.js";
 import { findWorkerTextContext, type WorkerTextContextType } from "./find-worker-text-context.js";
 import {
   findWorkerTextSettings,
@@ -62,16 +53,21 @@ function whyNotDue(text: WorkerTextType, context: WorkerTextContextType, now: Da
   return null;
 }
 
-// Why what the person already heard makes this text wrong, or null when it is due.
+// Why what the person already heard makes this text wrong, or null when it is due. "New booking"
+// and "moved" are not repeated once a text told them of this change or a later one; "off your day"
+// goes only to someone who believes the booking is on their day.
 function whyNotNews(
   text: WorkerTextType,
-  worker: WorkerTextSettingsRowType,
-  told: number[]
+  told: WorkerTextsToldType,
+  believes: boolean
 ): string | null {
   if (text.kind === "removed") {
-    return told.length > 0 || !worker.addedOn ? null : "the person never knew of this booking";
+    if (believes) return null;
+    return told.onTheirDay.length > 0
+      ? "the person was already told it is off their day"
+      : "the person never knew of this booking";
   }
-  return told.some((sequence) => sequence >= text.sequence)
+  return told.onTheirDay.some((sequence) => sequence >= text.sequence)
     ? "the person was already told after this change"
     : null;
 }
@@ -95,13 +91,21 @@ export async function sendWorkerText(
   if (!worker.active) return notSent("the person is inactive");
   if (!worker[SWITCH_OF[text.kind]]) return notSent("the person has that text off");
   const { contactId } = context;
-  const told = await findWorkerNewsTold({
+  const told = await findWorkerTextsTold({
     organizationId,
     contactId,
     bookingId,
     personId: text.personId,
   });
-  const notNews = whyNotNews(text, worker, told);
+  // Believes it is on their day: their latest text about it said so (newer than any "off your
+  // day"), one tried may have reached them, or with "new booking" texts off they learn elsewhere.
+  const latestOff = Math.max(-1, ...told.offTheirDay);
+  const believes =
+    text.kind === "removed" &&
+    (told.onTheirDay.some((sequence) => sequence > latestOff) ||
+      !worker.addedOn ||
+      (await hasWorkerTextInDoubt(bookingId, text.personId)));
+  const notNews = whyNotNews(text, told, believes);
   if (notNews) return notSent(notNews);
   const settings = await findTextSettings(organizationId);
   if (!settings) return notSent("the business has no text settings");
