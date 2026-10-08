@@ -51,7 +51,7 @@ confirm the production `invitation` table holds no pending row.
 **Resolution:**
 Carried on Frank's call, 2026-09-30: checked on the live database before the first client-facing deploy (the `invitation` table must be empty, or its rows cancelled). Nothing in code to change.
 
-### F-58 [P3] fixed - The seed never gives an existing Chemical Peel its 15-minute step, so a migrated (not rebuilt) dev database keeps it empty
+### F-58 [P3] closed - The seed never gives an existing Chemical Peel its 15-minute step, so a migrated (not rebuilt) dev database keeps it empty
 
 **File:** packages/shared/scripts/seed-dev.ts:485
 **Found:** 2026-10-02 by independent review of step 5c.1 (scope: bf53ee6..d5a5878; lenses: all)
@@ -69,7 +69,7 @@ and `db:seed`.
 `scheduleads_dev` (drop, migrate, seed), and have the 5c.4/5c.5 tests that
 need a step set it on a service they create themselves rather than read the
 seed's value.
-**Resolution:** Settled 2026-10-08 on chore/cleanup-before-9 with no code change, as the suggested fix asked: the local scheduleads_dev has been rebuilt since (chemical-peel reads slotIntervalMinutes 15), and every test that needs a step sets it on a service it makes itself (find-free-times.test.ts:86, booking-link-slot-interval-rules.test.ts:27-33, apply-free-times-rules.test.ts:63 and 302, the two move route tests); git grep finds no test reading the seeded peel. The seed keeps making rows only while none exist, on purpose, so settings changed by hand survive a reseed; a migrated-only database still needs the documented rebuild (drop, migrate, seed).
+**Resolution:** Settled 2026-10-08 on chore/cleanup-before-9 with no code change, as the suggested fix asked: the local scheduleads_dev has been rebuilt since (chemical-peel reads slotIntervalMinutes 15), and every test that needs a step sets it on a service it makes itself (find-free-times.test.ts:86, booking-link-slot-interval-rules.test.ts:27-33, apply-free-times-rules.test.ts:63 and 302, the two move route tests); git grep finds no test reading the seeded peel. The seed keeps making rows only while none exist, on purpose, so settings changed by hand survive a reseed; a migrated-only database still needs the documented rebuild (drop, migrate, seed). Closed 2026-10-08 by independent review of chore/cleanup-before-9 (392cc7d..394cca2; lenses: quality, security, performance, tests): rechecked read-only, clinic-dev's chemical-peel reads slotIntervalMinutes 15 and every other clinic service null. git grep finds no test naming the seeded peel: the only "Chemical Peel" in a test is booking-link-slot-interval-rules.test.ts:30, a service that test makes under its own slug, and every slotIntervalMinutes in a test is on a service or object the test builds itself. The risk it named (a test leaning on the seeded 15) does not exist, so the suggested fix is met; the seed keeping hand-made settings is its intended behaviour.
 ### F-62 [P3] open - Each start costs four Intl calls, repeated for every person, which grows "any available" on a public route
 
 **File:** backend/lib/scheduling/apply-free-times-rules.ts:71
@@ -89,7 +89,7 @@ and share it across people, or work out each date's offset once and only fall
 back to `localTimeToMoment` on clock-change days.
 **Resolution:** Confirmed (unverified to open) by independent review of step 5c.4 (2026-10-02). The cost is real and is synchronous work, so reading people side by side (Promise.all) shortens the database and Google waits but not this: each person's applyFreeTimesRules still runs one after another on the event loop. Measured in a scratch copy, the rules alone for 7 people over 31 dates (30 minutes, 15 after, one room): weekdays 9 to 17 every 15 minutes, about 73 ms; every day all day every 15 minutes, about 416 ms; every day all day every 5 minutes, about 1.15 s. The build log's 75 ms for the dev clinic matches the first case, so that request is almost all this work, not the reads. Fine for the four tenants' daytime hours; it grows with long windows and a small step (the database allows any step above 0), on a public route with no rate limit yet. Stays a P3, for feature 9 (first public traffic) or feature 12 (where an owner sets the step): work out each date's offset once per request and share it across people, or put a floor on the step.
 
-### F-94 [P3] fixed - chooseAnyAvailable has no caller outside its own test, while the spec still says the booking's order comes from it
+### F-94 [P3] closed - chooseAnyAvailable has no caller outside its own test, while the spec still says the booking's order comes from it
 
 **File:** backend/lib/scheduling/choose-any-available.ts:11 (spec: blueprint/context/current-feature.md:255 and :434)
 **Found:** 2026-10-02 by the second final independent review of feature 5d (scope: 12a21d6..3cec4ae; lenses: quality, security, performance, tests)
@@ -104,8 +104,8 @@ drift.
 **Suggested fix:** Either delete choose-any-available.ts and move its useful
 cases into order-any-available.test.ts, or keep it and say why; and change the
 two spec lines to name `orderAnyAvailable`.
-**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: choose-any-available.ts deleted; its nine tests moved, under the same names, into order-any-available.test.ts, which checks the first choice through a local firstChoice helper (orderAnyAvailable(...)[0] ?? null). 11/11 pass. The 05d archive keeps its lines as written; it already records F-94.
-### F-95 [P3] fixed - When the no-wait test fails, its cleanup hangs on the held Google answer and leaves its business in the dev database
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: choose-any-available.ts deleted; its nine tests moved, under the same names, into order-any-available.test.ts, which checks the first choice through a local firstChoice helper (orderAnyAvailable(...)[0] ?? null). 11/11 pass. The 05d archive keeps its lines as written; it already records F-94. Closed 2026-10-08 by independent review of chore/cleanup-before-9 (392cc7d..394cca2; lenses: quality, security, performance, tests): choose-any-available.ts and its test are gone and git grep finds no chooseAnyAvailable outside the ledger and the archives; the nine cases sit under the same names in order-any-available.test.ts through firstChoice, which is the deleted function's whole body (orderAnyAvailable(...)[0] ?? null), and current-feature.md holds no spec naming it. order-any-available.test.ts 11/11 in all four backend runs.
+### F-95 [P3] closed - When the no-wait test fails, its cleanup hangs on the held Google answer and leaves its business in the dev database
 
 **File:** backend/lib/calendar/write-booking-event.test.ts:191-219 (cleanup: :166-170)
 **Found:** 2026-10-02 by the second final independent review of feature 5d (scope: 12a21d6..3cec4ae; lenses: quality, security, performance, tests)
@@ -120,7 +120,7 @@ booking. The file's header promises every business is removed after, and the
 seed and the other files rely on that.
 **Suggested fix:** Release Google in a `finally` around the test body (or in
 `afterEach`), so a failure still lets the write settle and the cleanup run.
-**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the held Google answer is file-level and every afterEach lets it go, so a test that fails or times out while Google is held (including inside bookTime, the regression it guards) still lets the write end. Note: since 8a the write is a job and afterAll no longer waits on it; a probe failing the test before Google answered left no business behind with or without the change, so the hang described is no longer reachable that way; the release keeps a failed test from leaving a pending Google answer.
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the held Google answer is file-level and every afterEach lets it go, so a test that fails or times out while Google is held (including inside bookTime, the regression it guards) still lets the write end. Note: since 8a the write is a job and afterAll no longer waits on it; a probe failing the test before Google answered left no business behind with or without the change, so the hang described is no longer reachable that way; the release keeps a failed test from leaving a pending Google answer. Closed 2026-10-08 by independent review of chore/cleanup-before-9 (392cc7d..394cca2; lenses: quality, security, performance, tests): answerGoogle is file level and afterEach calls it before unstubbing. Probe: the no-wait test made to fail after Google was asked and before it answered (its second toBeNull changed to expect "PROBE-FAIL"), once with the fix and once with the afterEach release removed; both runs reported only that failure and ended in about 10 s, and a read-only query afterwards found no test-event-% business in scheduleads_dev. So the hang is no longer reachable (since 8a afterAll waits on no write), as the Resolution says, and the release keeps the held write from dangling. File restored, sha256 64e0c61c... unchanged. Closed rather than invalid: the finding was right when raised and was reproduced then.
 ### F-128 [P3] unverified - No real calendar has been shown to remove the event from the cancelling invite
 
 **File:** backend/lib/email/booking-ics.ts:28-43, backend/lib/email/send-cancellation-emails.ts:62-79
@@ -144,7 +144,7 @@ address, and record in the log whether the event disappears. If the
 sender-change case matters, store the organizer used on the request.
 **Resolution:**
 
-### F-134 [P3] fixed - The cancel test that checks log lines for the customer's details reads them before any are written
+### F-134 [P3] closed - The cancel test that checks log lines for the customer's details reads them before any are written
 
 **File:** backend/lib/booking/cancel-booking.test.ts:299-311
 **Found:** 2026-10-03 by /audit independent (scope: current, 32114fc..14772a1; lens: tests)
@@ -163,7 +163,7 @@ more than it proves.
 `bookingCancellationEmails.settled()` before reading `lines`, or drop
 "a log line" from the test's name and leave the log checks to the two
 files that already make them.
-**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: since 8a the cancel's emails and event removal run as jobs, so the test now works the due jobs before reading the lines and asserts some were written. Proved: without the workDueJobs line the test fails (no lines read).
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: since 8a the cancel's emails and event removal run as jobs, so the test now works the due jobs before reading the lines and asserts some were written. Proved: without the workDueJobs line the test fails (no lines read). Closed 2026-10-08 by independent review of chore/cleanup-before-9 (392cc7d..394cca2; lenses: quality, security, performance, tests): the test works the due jobs before reading. Probe: printing what it reads shows five lines, all written by the jobs (two "[text] ... not sent, the booking was cancelled", two "[email] ... nothing sent", one "[text] ... worker_removed not sent"), none with Jane's details; with the workDueJobs line removed it fails on expect(lines.length).toBeGreaterThan(0) (expected 0 to be greater than 0). File restored, sha256 14c75e71... unchanged. The cancellation email's and event removal's failure lines stay pinned in their own files, as the finding noted.
 ### F-137 [P3] open - The reserved slug is refused only when a business is made; an owner can still take it through Better Auth's organization update
 
 **File:** packages/shared/zod-validation/organization-validation-schemas/business-name-validation-schema.ts:14-19 (update rights: backend/lib/auth/auth-server.ts:65,71)
@@ -186,7 +186,7 @@ to-slug.ts), or drop `organization: ["update"]` from the roles until a
 settings screen needs it.
 **Resolution:** Deferred by Frank, 2026-10-03: left for Settings (feature 12), where editing a business's details is designed; no screen reaches the route today. Stays open, carried forward.
 
-### F-145 [P3] fixed - The move's check is a copy of bookTime's: the free check, the room rule, the day's counts and `namesOf`
+### F-145 [P3] closed - The move's check is a copy of bookTime's: the free check, the room rule, the day's counts and `namesOf`
 
 **File:** backend/lib/booking/move-booking.ts:109-176,252-259 (original: backend/lib/booking/book-time.ts:119-126,196-277)
 **Found:** 2026-10-03 by independent review of step 7b.2 (scope: 7059d79..1731845; lenses: quality, security, performance, tests)
@@ -201,7 +201,7 @@ service, the start and an optional booking to leave out, answers the
 ordered choices or the refusal; bookTime's customer path and moveBooking
 both call it. Can wait for the owner's move (features 11 and 12b), which
 will be a third caller.
-**Resolution:** Partly fixed 2026-10-03: the name lookup is one shared helper (find-resource-names.ts) used by bookTime and moveBooking. The free check's copy stays, carried for when the owner's move (features 11 and 12b) gives a third caller; noted in the spec. Fixed 2026-10-08 on chore/cleanup-before-9: the rest of the copy is now one function, backend/lib/booking/find-booking-choices.ts (findBookingChoices): the free check per candidate (the free times for a customer, real busy time and Google for the owner), the room rule over the span, and the order to try, answering the choices or "time_taken"/"unavailable". bookTime calls it with byOwner for a manual booking; moveBooking with movingBooking, whose own held rows and day count it leaves out. Both files lost their copies (about 150 lines). Typecheck, both builds, format check, and backend 789 three runs in a row pass. The owner's move (features 11 and 12b) is the third caller it was waiting for.
+**Resolution:** Partly fixed 2026-10-03: the name lookup is one shared helper (find-resource-names.ts) used by bookTime and moveBooking. The free check's copy stays, carried for when the owner's move (features 11 and 12b) gives a third caller; noted in the spec. Fixed 2026-10-08 on chore/cleanup-before-9: the rest of the copy is now one function, backend/lib/booking/find-booking-choices.ts (findBookingChoices): the free check per candidate (the free times for a customer, real busy time and Google for the owner), the room rule over the span, and the order to try, answering the choices or "time_taken"/"unavailable". bookTime calls it with byOwner for a manual booking; moveBooking with movingBooking, whose own held rows and day count it leaves out. Both files lost their copies (about 150 lines). Typecheck, both builds, format check, and backend 789 three runs in a row pass. The owner's move (features 11 and 12b) is the third caller it was waiting for. Closed 2026-10-08 by independent review of chore/cleanup-before-9 (392cc7d..394cca2; lenses: quality, security, performance, tests): find-booking-choices.ts is the one check. Read line by line against main's two copies, both callers pass what they used before: byOwner is source === "manual" for bookTime and false for the move; movingBooking is undefined for bookTime, so notTheMovingBooking keeps every row (a commitment's bookingId is string or null, never undefined); the move's ignoreBooking.id is its bookingId, which its old room and day-count filters used; the standby read, the side-by-side calendar reads and the refusal reasons are unchanged, and bookTime still maps "unavailable" and "time_taken" to the same refusals. Seven mutants of the new file, each restored byte for byte (sha256 61c5ffa1... after each), each failing named tests: the room's own-row filter dropped ("a move in a room takes the room again at the new time"); the day count's filter dropped ("any available does not count the booking being moved"); standby read for the owner too ("a room on standby that date is not chosen for a customer, but the owner may use it"); the owner path skipped (three owner-made booking tests); ignoreBooking not passed (four move tests); a picked unreadable calendar answered time_taken (three tests, in bookTime, the booking route and the move route); any available with every calendar unreadable answered time_taken (two). The owner path does not yet honour movingBooking, which no caller reaches today: F-253.
 ### F-146 [P3] fixed - Two move tests promise more than they check: "the log" spies only console.log, and "another business's booking" only sends a foreign person id
 
 **File:** backend/routes/public-booking-move-routes.test.ts:306-330
@@ -218,7 +218,7 @@ give.
 connected calendar that fails, so a warn line is actually written), and
 either rename the tenant test to what it checks or add a case that moves
 one business's booking and asserts the other business's rows unchanged.
-**Resolution:** Fixed 2026-10-03: the privacy test also reads console.warn and a refusal's body; the tenant test also makes a real move of ours to a time the other business has booked and checks their booking and rows are untouched. Not closed by independent review of step 7b.3 (2026-10-04): the tenant half holds; the log half still reads a `console.warn` that nothing writes (no calendar is connected in that test, and it reads before `bookingEventMoves.settled()`). A real follow failure's line is now checked for the name and address in move-booking-event.test.ts "a Google error keeps the move and logs one line". Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): the route test is unchanged and still reads `console.warn` and `console.log` before `bookingMoveEmails.settled()` (public-booking-move-routes.test.ts:369-388), so its log half checks only what happens to have run. The move's real log lines are now pinned elsewhere (move-booking-event.test.ts:365, send-move-emails.test.ts:328 and :355), so the remaining gap is the test's name, not the coverage. Not closed by independent review of feature 7b (scope: a55c8ee..6c1fa5d): public-booking-move-routes.test.ts:416-435 is unchanged since that pass. Not closed by independent review of feature 7b (scope: a55c8ee..851fadb): the test file is unchanged since 6c1fa5d.
+**Resolution:** Fixed 2026-10-03: the privacy test also reads console.warn and a refusal's body; the tenant test also makes a real move of ours to a time the other business has booked and checks their booking and rows are untouched. Not closed by independent review of step 7b.3 (2026-10-04): the tenant half holds; the log half still reads a `console.warn` that nothing writes (no calendar is connected in that test, and it reads before `bookingEventMoves.settled()`). A real follow failure's line is now checked for the name and address in move-booking-event.test.ts "a Google error keeps the move and logs one line". Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): the route test is unchanged and still reads `console.warn` and `console.log` before `bookingMoveEmails.settled()` (public-booking-move-routes.test.ts:369-388), so its log half checks only what happens to have run. The move's real log lines are now pinned elsewhere (move-booking-event.test.ts:365, send-move-emails.test.ts:328 and :355), so the remaining gap is the test's name, not the coverage. Not closed by independent review of feature 7b (scope: a55c8ee..6c1fa5d): public-booking-move-routes.test.ts:416-435 is unchanged since that pass. Not closed by independent review of feature 7b (scope: a55c8ee..851fadb): the test file is unchanged since 6c1fa5d. Not closed by independent review of chore/cleanup-before-9 (392cc7d..394cca2; lenses: quality, security, performance, tests): the file changed only in two imports. A probe printing what the privacy test reads found log.mock.calls and warn.mock.calls both empty ([[], []]): the move's emails and Google follow are jobs, and the test reads before any workDueJobs. File restored, sha256 e9d9ac19... unchanged. The same repair as F-134 (work the due jobs, then assert some lines were read) would close it.
 
 ### F-153 [P3] unverified - A PATCH of an event the person deleted by hand may answer 200, so the move reports "moved" and the event stays hidden
 
@@ -250,9 +250,9 @@ fits, which is the width the step was checked at; small phones still exist.
 **Suggested fix:** Let the range label wrap or shrink (`min-w-0`,
 `text-center`), or shorten the buttons to icons with `aria-label`s below a
 breakpoint.
-**Resolution:** Fixed 2026-10-04: the week reads "Oct 4 to 10" (both months only across two) with narrower buttons; at 320px Later ends at x=260 inside the card at 289. Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): this reviewer started no dev server and could not measure; the code matches the repair (weekName at change-time-panel.tsx:49-56, `px-2` buttons), but the measurement above was for a same-month week, and a week across two months ("Oct 25 to Nov 1") is about four characters wider. Look at one such week at 320px before closing. Not closed by independent review of feature 7b (scope: a55c8ee..6c1fa5d): no dev server was started, so still unmeasured. Estimated from the code only: the buttons went from `px-3` to `px-2` (16px narrower in all) and a cross-month label is about one character shorter than the "Oct 11 to Oct 17" first measured 12px past the card's border, so Later likely ends inside the border but in the card's padding. A measurement is still needed to close it. Not closed by independent review of feature 7b (scope: a55c8ee..851fadb): no dev server was started; the week bar's markup (change-time-panel.tsx:285-315) is unchanged by the last repair, so still unmeasured across two months at 320px.
+**Resolution:** Fixed 2026-10-04: the week reads "Oct 4 to 10" (both months only across two) with narrower buttons; at 320px Later ends at x=260 inside the card at 289. Not closed by independent review of feature 7b (scope: a55c8ee..5db122e): this reviewer started no dev server and could not measure; the code matches the repair (weekName at change-time-panel.tsx:49-56, `px-2` buttons), but the measurement above was for a same-month week, and a week across two months ("Oct 25 to Nov 1") is about four characters wider. Look at one such week at 320px before closing. Not closed by independent review of feature 7b (scope: a55c8ee..6c1fa5d): no dev server was started, so still unmeasured. Estimated from the code only: the buttons went from `px-3` to `px-2` (16px narrower in all) and a cross-month label is about one character shorter than the "Oct 11 to Oct 17" first measured 12px past the card's border, so Later likely ends inside the border but in the card's padding. A measurement is still needed to close it. Not closed by independent review of feature 7b (scope: a55c8ee..851fadb): no dev server was started; the week bar's markup (change-time-panel.tsx:285-315) is unchanged by the last repair, so still unmeasured across two months at 320px. Not closed by independent review of chore/cleanup-before-9 (392cc7d..394cca2; lenses: quality, security, performance, tests): no dev server was started (outside this review's limits). The panel changed only in its date helper imports; the week bar's markup is untouched, so a week across two months at 320px is still unmeasured.
 
-### F-170 [P3] fixed - The move-times privacy test reads a 503 refusal, not the times, when its file runs in order
+### F-170 [P3] closed - The move-times privacy test reads a 503 refusal, not the times, when its file runs in order
 
 **File:** backend/routes/public-booking-move-times-routes.test.ts:339-347 (connections saved at :244,253-254,264; fetch reset at :178-182)
 **Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..6c1fa5d; lenses: quality, security, performance, tests)
@@ -268,8 +268,8 @@ test runs alone. The same order dependence F-135 removed from the Google
 tests, in the one test that does not set Google up.
 **Suggested fix:** Call `fakeGoogleBusy([])` at the start of the test and
 assert `response.status` is 200 before reading the body.
-**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the test fakes Google with no busy times and asserts status 200 before reading the body. Proved: without fakeGoogleBusy([]) the file in order answers 503 and the test now fails.
-### F-171 [P3] fixed - AGENTS.md's branch example still has no build-plan number, which the skills now require
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the test fakes Google with no busy times and asserts status 200 before reading the body. Proved: without fakeGoogleBusy([]) the file in order answers 503 and the test now fails. Closed 2026-10-08 by independent review of chore/cleanup-before-9 (392cc7d..394cca2; lenses: quality, security, performance, tests): the test fakes Google with no busy times and asserts 200 before reading the body. Probe: with the fakeGoogleBusy([]) line removed, the file run in order fails that test with "expected 503 to be 200". File restored, sha256 df6284f6... unchanged.
+### F-171 [P3] closed - AGENTS.md's branch example still has no build-plan number, which the skills now require
 
 **File:** AGENTS.md:211-212 (skills: .claude/skills/feature/SKILL.md:141-147, .claude/skills/implement/SKILL.md:50-52)
 **Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..6c1fa5d; lenses: quality, security, performance, tests)
@@ -282,8 +282,8 @@ feature branch, so the project's two instruction sources now show different
 shapes for the same name.
 **Suggested fix:** Change the example to the numbered form, for example
 `feature/07b-reschedule`.
-**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the example is now `feature/08c-the-worker-s-text`, with "its build-plan number first".
-### F-172 [P3] fixed - The change-time panel keeps its own untested copies of the backend's date helpers
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the example is now `feature/08c-the-worker-s-text`, with "its build-plan number first". Closed 2026-10-08 by independent review of chore/cleanup-before-9 (392cc7d..394cca2; lenses: quality, security, performance, tests): AGENTS.md:228 gives `feature/08c-the-worker-s-text`, the numbered shape the skills require and the name of feature 8c's archive (blueprint/history/features/08c-the-worker-s-text.md); the one other branch name in AGENTS.md (:247) is feature 1's real, kept branch.
+### F-172 [P3] closed - The change-time panel keeps its own untested copies of the backend's date helpers
 
 **File:** frontend/components/booking-page/change-time-panel.tsx:26-38 (backend/lib/local-time/local-date.ts:6, backend/lib/local-time/add-days.ts:3)
 **Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..851fadb; lenses: quality, security, performance, tests)
@@ -301,7 +301,7 @@ today (both work in UTC on YYYY-MM-DD); nothing keeps them agreeing.
 `formatToParts` into `packages/shared/helpers/` with one test each, and
 import them in both the backend and the panel; or leave it for the dashboard
 (features 11 and 12b), which will need the same dates, and note it there.
-**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: localDate and addDays now live once in packages/shared/helpers (exported as @scheduleads-app/shared/local-date and /add-days), each with its tests (localDate: late evening, a month and year turning at midnight, the two 1:30s of a clock change; addDays: months, a year back, a leap day). The backend's copies in lib/local-time are deleted and its 15 files import the shared ones; the change-time panel drops dateIn and its addDays for the same imports. localDate is now built from the date's parts (en-CA formatToParts, one formatter per zone) instead of clockAsUtc, which stays in the backend for localTimeToMoment. Shared 159, backend 789 three runs in a row (two tests moved to shared), both builds and the format check pass. Not checked in a browser.
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: localDate and addDays now live once in packages/shared/helpers (exported as @scheduleads-app/shared/local-date and /add-days), each with its tests (localDate: late evening, a month and year turning at midnight, the two 1:30s of a clock change; addDays: months, a year back, a leap day). The backend's copies in lib/local-time are deleted and its 15 files import the shared ones; the change-time panel drops dateIn and its addDays for the same imports. localDate is now built from the date's parts (en-CA formatToParts, one formatter per zone) instead of clockAsUtc, which stays in the backend for localTimeToMoment. Shared 159, backend 789 three runs in a row (two tests moved to shared), both builds and the format check pass. Not checked in a browser. Closed 2026-10-08 by independent review of chore/cleanup-before-9 (392cc7d..394cca2; lenses: quality, security, performance, tests): packages/shared/helpers/local-date.ts and add-days.ts are exported as ./local-date and ./add-days; the backend's lib/local-time copies are gone (git grep finds no import of them) and the 15 backend files and the change-time panel import the shared ones. Equivalence probe against main's clockAsUtc localDate: every 15 minutes from 2025-01-01 to 2029-01-01 in all 418 zones Node 26.7.0 knows (ICU 78.3, tz 2026c), plus 1.4 million random moments in seven odd-offset zones (Chatham, Lord Howe, Kolkata, St Johns, Kiritimati, Edmonton, New York): 60,027,008 moments, no difference. addDays against both old versions (the backend's Date.UTC one and the panel's Date.parse one), every day 2024 to 2030 with eleven offsets from -400 to +366: no difference. The panel's old dateIn was the same formatToParts code, so the page's dates do not change. Mutants: localDate formatted in UTC fails two of its three tests; addDays a day off in February fails the leap day test. Both restored, sha256 unchanged.
 ### F-176 [P2] open - A deploy's clean stop depends on Railway's grace period, which nothing has confirmed
 
 **File:** backend/server.ts:39-49 (spec: decision 9, "a job left mid-run by a crash (not a deploy, which stops cleanly)")
@@ -363,7 +363,7 @@ optionally bounded a little under the draining time so the API exits itself
 before Railway's SIGKILL.
 **Resolution:**
 
-### F-194 [P3] fixed - installJobTables ships in the API but only one test calls it, and its comment says the tests use it before their first job, which they do not
+### F-194 [P3] closed - installJobTables ships in the API but only one test calls it, and its comment says the tests use it before their first job, which they do not
 
 **File:** backend/lib/jobs/install-job-tables.ts:1-12 (its one caller: backend/lib/jobs/job-runner.test.ts:55; the setup's own copy: backend/vitest.setup.ts:49-52)
 **Found:** 2026-10-05 by /audit independent current (scope: 779512a..dd65fe3; lenses: quality, security, performance, tests)
@@ -382,7 +382,7 @@ runner and by the test helper; both already do it through the library.
 job-runner.test.ts (the setup and the library already install the tables),
 and leave the setup's comment as the place that says the tests' schema is
 migrated there.
-**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: install-job-tables.ts deleted with its one call in job-runner.test.ts; vitest.setup.ts says beside its runMigrations that it builds each worker schema's runner tables, which db:migrate never does. job-runner.test.ts 8/8 and the backend build pass.
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: install-job-tables.ts deleted with its one call in job-runner.test.ts; vitest.setup.ts says beside its runMigrations that it builds each worker schema's runner tables, which db:migrate never does. job-runner.test.ts 8/8 and the backend build pass. Closed 2026-10-08 by independent review of chore/cleanup-before-9 (392cc7d..394cca2; lenses: quality, security, performance, tests): install-job-tables.ts and its call are gone and git grep finds no reference. vitest.setup.ts runs runMigrations on the worker's own schema (graphile_worker_test_<pool>, the one job-schema.ts reads through JOBS_SCHEMA) before every file, and the API's runner migrates through run() in start-job-runner.ts; job-runner.test.ts passes in all four backend runs.
 ### F-229 [P3] unverified - Nothing limits how many replies are passed on, so anyone with a business's number makes the agency pay for a text per text they send
 
 **File:** backend/routes/public-text-routes.ts:46-57; backend/lib/text/pass-on-reply.ts:48-69
@@ -421,7 +421,7 @@ them); treat a 5xx like a lost answer, so the next run asks Twilio first. One
 route test with a 503 on the first send and the text found on the retry.
 **Resolution:**
 
-### F-239 [P3] fixed - The record says identical replies are never taken for one and both ways are claimed, which the built check does not promise
+### F-239 [P3] closed - The record says identical replies are never taken for one and both ways are claimed, which the built check does not promise
 
 **File:** blueprint/context/current-feature.md:241-243; packages/shared/db/text-tables/text-reply-table.ts:2-4; backend/routes/public-text-routes.test.ts:359
 **Found:** 2026-10-07 by the independent review of feature 8b (scope: current, 3b47c1c..43d308e; lens: quality)
@@ -443,7 +443,7 @@ reply's record (F-237).
 recorded is never taken for it" in the spec, say in the table comment that the
 text is claimed and the email keyed, and rename the test to "counts from the
 reply's record". No code change.
-**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9 (wording only): text-reply-table.ts says the text is claimed and the email kept to one by Resend's idempotency key, and that a reply in the same words passed on before this one was recorded is never taken for it; the test is renamed "a retry counts from the reply's record: ..."; the 8b archive line now says the same, marked as corrected by F-239.
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9 (wording only): text-reply-table.ts says the text is claimed and the email kept to one by Resend's idempotency key, and that a reply in the same words passed on before this one was recorded is never taken for it; the test is renamed "a retry counts from the reply's record: ..."; the 8b archive line now says the same, marked as corrected by F-239. Closed 2026-10-08 by independent review of chore/cleanup-before-9 (392cc7d..394cca2; lenses: quality, security, performance, tests): the table comment says the text is claimed and the email kept to one by Resend's key, which pass-on-reply.ts does (claimText at :35 claims only the text; the email goes with idempotencyKey text-reply/<sid> at :107), and that only a same-words reply passed on before this one was recorded is never taken for it, which is what findSentText since record.createdAt (:147-149) gives. The test name and the 8b archive line say the same. Wording only, no behaviour changed.
 ### F-252 [P3] open - A "new booking" or "moved" still in doubt keeps counting after the person was told the booking is off, so a booking back and away again before its texts run sends a second "off your day"
 
 **File:** backend/lib/text/send-worker-text.ts:159-164; backend/lib/jobs/has-worker-text-in-doubt.ts:13-25
@@ -471,4 +471,27 @@ is", or let a doubtful try count only when it came after the person's latest
 `updated_at`, with that entry's `occurredAt`; comparing move numbers is not
 enough, since an added job can try after an off recorded at a higher number).
 Add a test of the same name if it is fixed.
+**Resolution:**
+
+### F-253 [P3] open - findBookingChoices takes a moving booking on the owner path, but never leaves it out of the person's busy time or Google there
+
+**File:** backend/lib/booking/find-booking-choices.ts:74-77 (its promise: :4-5; the customer path's handling: backend/lib/scheduling/find-free-times.ts:117,138-143)
+**Found:** 2026-10-08 by independent review of chore/cleanup-before-9 (scope: 392cc7d..394cca2; lenses: quality, security, performance, tests)
+**Why it matters:** The header promises "A booking being moved never stands in
+its own way", and the input type accepts `byOwner: true` with `movingBooking`,
+the combination F-145's Resolution names as the third caller (the owner's
+move, features 11 and 12b). The customer path honours it through findFreeTimes'
+ignoreBooking, and the rooms and the day count filter it. The owner path does
+not: it answers busy on `findCommitments(organizationId, [id], from, to)` and
+on the person's Google busy times with neither filter, so an owner moving
+Pedro's 9:00 to 9:30 with Pedro would find Pedro's own held rows (and his own
+Google event) in the span and be refused time_taken. No caller passes both
+today (bookTime: byOwner without movingBooking; moveBooking: movingBooking
+with byOwner false), so nothing behaves wrongly now; the risk is the next
+caller trusting the header.
+**Suggested fix:** When the owner's move is built, filter the owner path's
+commitments with notTheMovingBooking and cross the moving booking's own time
+off that person's Google busy, as findFreeTimes does, with a test of the owner
+moving into a time overlapping the old one; or until then, type the input so
+movingBooking only goes with byOwner false.
 **Resolution:**
