@@ -281,7 +281,7 @@ export function ChangeTimePanel({
         >
           ‹ Earlier
         </button>
-        <p className="whitespace-nowrap text-sm font-medium text-slate-900">{week}</p>
+        <p className="min-w-0 text-center text-sm font-medium text-slate-900">{week}</p>
         <button
           ref={laterRef}
           type="button"
