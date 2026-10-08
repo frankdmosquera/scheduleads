@@ -20,7 +20,6 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the job runner tests");
 const { db } = await import("../../database.js");
 const { enqueueJob } = await import("./enqueue-job.js");
 const { exitWhenRunnerStops } = await import("./exit-when-runner-stops.js");
-const { installJobTables } = await import("./install-job-tables.js");
 const { jobSchema } = await import("./job-schema.js");
 const { jobTask } = await import("./job-task.js");
 const { startJobRunner } = await import("./start-job-runner.js");
@@ -51,8 +50,6 @@ const makeDue = (name: string) =>
     sql`update ${schema}._private_jobs set run_at = now()
         where task_id in (select id from ${schema}._private_tasks where identifier = ${taskName(name)})`
   );
-
-await installJobTables();
 
 afterAll(async () => {
   vi.restoreAllMocks();

@@ -51,6 +51,7 @@ function databaseUrl(): string | undefined {
 
 const url = databaseUrl();
 assertLocalDevDatabase(url, "run the backend tests");
+// The runner's own tables for this worker's schema: db:migrate never builds them.
 await runMigrations({
   connectionString: url,
   schema,

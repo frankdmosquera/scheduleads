@@ -370,7 +370,7 @@ optionally bounded a little under the draining time so the API exits itself
 before Railway's SIGKILL.
 **Resolution:**
 
-### F-194 [P3] open - installJobTables ships in the API but only one test calls it, and its comment says the tests use it before their first job, which they do not
+### F-194 [P3] fixed - installJobTables ships in the API but only one test calls it, and its comment says the tests use it before their first job, which they do not
 
 **File:** backend/lib/jobs/install-job-tables.ts:1-12 (its one caller: backend/lib/jobs/job-runner.test.ts:55; the setup's own copy: backend/vitest.setup.ts:49-52)
 **Found:** 2026-10-05 by /audit independent current (scope: 779512a..dd65fe3; lenses: quality, security, performance, tests)
@@ -389,8 +389,7 @@ runner and by the test helper; both already do it through the library.
 job-runner.test.ts (the setup and the library already install the tables),
 and leave the setup's comment as the place that says the tests' schema is
 migrated there.
-**Resolution:**
-
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: install-job-tables.ts deleted with its one call in job-runner.test.ts; vitest.setup.ts says beside its runMigrations that it builds each worker schema's runner tables, which db:migrate never does. job-runner.test.ts 8/8 and the backend build pass.
 ### F-229 [P3] unverified - Nothing limits how many replies are passed on, so anyone with a business's number makes the agency pay for a text per text they send
 
 **File:** backend/routes/public-text-routes.ts:46-57; backend/lib/text/pass-on-reply.ts:48-69
