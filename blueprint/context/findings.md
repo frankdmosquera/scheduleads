@@ -107,7 +107,7 @@ cases into order-any-available.test.ts, or keep it and say why; and change the
 two spec lines to name `orderAnyAvailable`.
 **Resolution:**
 
-### F-95 [P3] open - When the no-wait test fails, its cleanup hangs on the held Google answer and leaves its business in the dev database
+### F-95 [P3] fixed - When the no-wait test fails, its cleanup hangs on the held Google answer and leaves its business in the dev database
 
 **File:** backend/lib/calendar/write-booking-event.test.ts:191-219 (cleanup: :166-170)
 **Found:** 2026-10-02 by the second final independent review of feature 5d (scope: 12a21d6..3cec4ae; lenses: quality, security, performance, tests)
@@ -122,8 +122,7 @@ booking. The file's header promises every business is removed after, and the
 seed and the other files rely on that.
 **Suggested fix:** Release Google in a `finally` around the test body (or in
 `afterEach`), so a failure still lets the write settle and the cleanup run.
-**Resolution:**
-
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the held Google answer is file-level and every afterEach lets it go, so a test that fails or times out while Google is held (including inside bookTime, the regression it guards) still lets the write end. Note: since 8a the write is a job and afterAll no longer waits on it; a probe failing the test before Google answered left no business behind with or without the change, so the hang described is no longer reachable that way; the release keeps a failed test from leaving a pending Google answer.
 ### F-128 [P3] unverified - No real calendar has been shown to remove the event from the cancelling invite
 
 **File:** backend/lib/email/booking-ics.ts:28-43, backend/lib/email/send-cancellation-emails.ts:62-79
