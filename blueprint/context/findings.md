@@ -444,7 +444,7 @@ recorded is never taken for it" in the spec, say in the table comment that the
 text is claimed and the email keyed, and rename the test to "counts from the
 reply's record". No code change.
 **Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9 (wording only): text-reply-table.ts says the text is claimed and the email kept to one by Resend's idempotency key, and that a reply in the same words passed on before this one was recorded is never taken for it; the test is renamed "a retry counts from the reply's record: ..."; the 8b archive line now says the same, marked as corrected by F-239. Closed 2026-10-08 by independent review of chore/cleanup-before-9 (392cc7d..394cca2; lenses: quality, security, performance, tests): the table comment says the text is claimed and the email kept to one by Resend's key, which pass-on-reply.ts does (claimText at :35 claims only the text; the email goes with idempotencyKey text-reply/<sid> at :107), and that only a same-words reply passed on before this one was recorded is never taken for it, which is what findSentText since record.createdAt (:147-149) gives. The test name and the 8b archive line say the same. Wording only, no behaviour changed.
-### F-252 [P3] open - A "new booking" or "moved" still in doubt keeps counting after the person was told the booking is off, so a booking back and away again before its texts run sends a second "off your day"
+### F-252 [P3] accepted - A "new booking" or "moved" still in doubt keeps counting after the person was told the booking is off, so a booking back and away again before its texts run sends a second "off your day"
 
 **File:** backend/lib/text/send-worker-text.ts:159-164; backend/lib/jobs/has-worker-text-in-doubt.ts:13-25
 **Found:** 2026-10-08 by independent review (scope: current, ddca0e1..2ad0463; lenses: quality, security, performance, tests)
@@ -471,7 +471,7 @@ is", or let a doubtful try count only when it came after the person's latest
 `updated_at`, with that entry's `occurredAt`; comparing move numbers is not
 enough, since an added job can try after an off recorded at a higher number).
 Add a test of the same name if it is fixed.
-**Resolution:**
+**Resolution:** Accepted by Frank 2026-10-08 as a known limit: it needs a lost Twilio answer (or a text that gave up) and the booking back on the person and off again before its texts run; the worst case is a repeated "off your day", never a missed one, which keeps his rule "when unsure, tell him". No code change.
 
 ### F-253 [P3] closed - findBookingChoices takes a moving booking on the owner path, but never leaves it out of the person's busy time or Google there
 
