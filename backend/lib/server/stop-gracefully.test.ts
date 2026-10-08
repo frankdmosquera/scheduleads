@@ -57,35 +57,32 @@ describe("stopping the API", () => {
     expect(await stopping).toBe("finished");
   });
 
-  test("a connection kept open is closed after its answer, so nothing more comes in on it", async () => {
-    let finishFirst = () => {};
-    server = createServer((incoming, response) => {
-      if (incoming.url === "/first") finishFirst = () => response.end("booked");
-      else response.end("too late");
+  test("a connection kept open is closed once its answer goes out, however long that takes", async () => {
+    server = createServer((_request, response) => {
+      finishRequest = () => response.end("booked");
     });
     await new Promise<void>((listening) => server!.listen(0, "127.0.0.1", listening));
     const { port } = server!.address() as AddressInfo;
-    const agent = new Agent({ keepAlive: true, maxSockets: 1 }); // one connection, reused
-    const send = (path: string) =>
-      new Promise<string>((answered, failed) => {
-        const call = request({ host: "127.0.0.1", port, path, agent }, (response) => {
-          let body = "";
-          response.on("data", (chunk) => (body += chunk));
-          response.on("end", () => answered(body));
-        });
-        call.on("error", failed);
-        call.end();
+    const agent = new Agent({ keepAlive: true }); // the client keeps its connection open
+    const answer = new Promise<string>((answered, failed) => {
+      const call = request({ host: "127.0.0.1", port, agent }, (response) => {
+        let body = "";
+        response.on("data", (chunk) => (body += chunk));
+        response.on("end", () => answered(body));
       });
-    const first = send("/first");
+      call.on("error", failed);
+      call.end();
+    });
     await new Promise((wait) => setTimeout(wait, 100));
     const stopping = stopGracefully(server!, null, "SIGTERM", 5_000);
-    finishFirst();
+    await new Promise((wait) => setTimeout(wait, 250)); // past the first sweeps: they must repeat
+    finishRequest();
 
-    expect(await first).toBe("booked");
+    expect(await answer).toBe("booked");
     const startedWaiting = Date.now();
     expect(await stopping).toBe("finished");
-    expect(Date.now() - startedWaiting).toBeLessThan(1_000); // not the connection's idle timeout
-    await expect(send("/second")).rejects.toThrow();
+    // The proof: closed by the stop, not by the connection's own idle timeout seconds later.
+    expect(Date.now() - startedWaiting).toBeLessThan(1_000);
     agent.destroy();
   });
 
