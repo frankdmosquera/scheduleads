@@ -61,7 +61,13 @@ export type BookTimeResultType =
   | { booked: true; booking: BookedType; alreadyBooked: boolean }
   | {
       booked: false;
-      reason: "not_found" | "time_taken" | "unavailable" | "request_key_used" | "in_the_past";
+      reason:
+        | "not_found"
+        | "time_taken"
+        | "unavailable"
+        | "request_key_used"
+        | "in_the_past"
+        | "person_not_taken";
     };
 
 const MINUTE_MS = 60_000;
@@ -70,6 +76,7 @@ const TIME_TAKEN = { booked: false, reason: "time_taken" } as const;
 const UNAVAILABLE = { booked: false, reason: "unavailable" } as const;
 const REQUEST_KEY_USED = { booked: false, reason: "request_key_used" } as const;
 const IN_THE_PAST = { booked: false, reason: "in_the_past" } as const;
+const PERSON_NOT_TAKEN = { booked: false, reason: "person_not_taken" } as const;
 
 // The same form: the same service and start, and the same person when one was picked.
 const isSameRequest = (existing: BookedType, input: BookTimeInputType) =>
@@ -153,6 +160,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
       durationMinutes: bookingLink.durationMinutes,
       bufferBeforeMinutes: bookingLink.bufferBeforeMinutes,
       bufferAfterMinutes: bookingLink.bufferAfterMinutes,
+      personChoice: bookingLink.personChoice,
     })
     .from(bookingLink)
     .where(
@@ -164,6 +172,10 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
     )
     .limit(1);
   if (!service) return NOT_FOUND;
+  // A customer never picks who does a service the business assigns (feature 9, decision 3); the
+  // owner may. Asked after the form's own booking, so a retry of a booked form still gets it.
+  if (source !== "manual" && service.personChoice === "business_assigns" && personId !== null)
+    return PERSON_NOT_TAKEN;
   const offered = await findServiceResources(organizationId, bookingLinkId);
   if (!offered) return NOT_FOUND;
   if (personId !== null && !offered.peopleIds.includes(personId)) return NOT_FOUND;

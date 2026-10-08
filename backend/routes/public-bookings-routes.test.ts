@@ -258,6 +258,36 @@ describe("a booking is made", () => {
   });
 });
 
+describe("a booked form sent again after its service changed", () => {
+  // Decision 7: a form that booked gets that booking back, whatever changed since (F-258).
+  test("still gets its booking, after the business assigns and after the service is switched off", async () => {
+    const [startsAt] = await freeTimes(clinic.mei);
+    const once = form(startsAt, { personId: clinic.mei });
+    const first = await post(bookingsPath, once);
+    try {
+      await db
+        .update(bookingLink)
+        .set({ personChoice: "business_assigns" })
+        .where(eq(bookingLink.id, clinic.facial));
+      const afterSwitch = await post(bookingsPath, once);
+      await db.update(bookingLink).set({ active: false }).where(eq(bookingLink.id, clinic.facial));
+      const afterOff = await post(bookingsPath, once);
+
+      expect(first.status).toBe(201);
+      const firstId = (await first.json()).booking.id;
+      expect(afterSwitch.status).toBe(201);
+      expect((await afterSwitch.json()).booking.id).toBe(firstId);
+      expect(afterOff.status).toBe(201);
+      expect((await afterOff.json()).booking.id).toBe(firstId);
+    } finally {
+      await db
+        .update(bookingLink)
+        .set({ personChoice: "customer_picks", active: true })
+        .where(eq(bookingLink.id, clinic.facial));
+    }
+  });
+});
+
 describe("a booking is refused", () => {
   test("a time taken while booking is a 409 with decision 12's message", async () => {
     const [startsAt] = await freeTimes(clinic.ana);

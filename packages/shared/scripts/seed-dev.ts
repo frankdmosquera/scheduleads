@@ -5,7 +5,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -552,6 +552,7 @@ try {
       }
 
       let servicesMade = 0;
+      let choicesSet = 0;
       let ticksMade = 0;
       for (const { ticked = [], ...service } of business.services as readonly ServiceSeedType[]) {
         const slug = toSlug(service.name);
@@ -572,6 +573,21 @@ try {
             ...service,
           });
           servicesMade++;
+        } else {
+          // Who picks the person, also on a database seeded before the setting existed, where
+          // migration 0022 left every service business_assigns, so no machine needs a rebuild.
+          // Nothing sets it by hand until feature 12.
+          const switched = await tx
+            .update(bookingLink)
+            .set({ personChoice: business.personChoice })
+            .where(
+              and(
+                eq(bookingLink.id, bookingLinkId),
+                ne(bookingLink.personChoice, business.personChoice)
+              )
+            )
+            .returning({ id: bookingLink.id });
+          choicesSet += switched.length;
         }
 
         if (!ticked.length) continue;
@@ -603,6 +619,7 @@ try {
         hoursMade && `${hoursMade} people's own hours`,
         standbyMade && `${standbyMade} standby dates`,
         servicesMade && `${servicesMade} services`,
+        choicesSet && `who picks set on ${choicesSet} services`,
         ticksMade && `${ticksMade} who-does-what ticks`,
         textSettingsMade && "text settings",
         workerTextsMade && `${workerTextsMade} worker text settings`,

@@ -16,7 +16,6 @@ import {
 import { db } from "../database.js";
 import { bookTime } from "../lib/booking/book-time.js";
 import { findBookableOrganizationId } from "../lib/booking/find-bookable-organization-id.js";
-import { findPersonChoice } from "../lib/booking/find-person-choice.js";
 import { notBookableHere } from "../lib/errors/not-bookable-here.js";
 import { personNotTaken } from "../lib/errors/person-not-taken.js";
 import { refuse } from "../lib/errors/refuse.js";
@@ -55,9 +54,6 @@ export const publicBookingsRoutes = new Hono()
 
       const organizationId = await findBookableOrganizationId(slug.data);
       if (!organizationId) return c.json(notBookableHere, 404);
-      const personChoice = await findPersonChoice(organizationId, body.bookingLinkId);
-      if (!personChoice) return c.json(notBookableHere, 404);
-      if (personChoice === "business_assigns" && body.personId) return c.json(personNotTaken, 400);
 
       const result = await bookTime({
         organizationId,
@@ -77,6 +73,8 @@ export const publicBookingsRoutes = new Hono()
         switch (result.reason) {
           case "not_found":
             return c.json(notBookableHere, 404);
+          case "person_not_taken":
+            return c.json(personNotTaken, 400);
           case "time_taken":
             return c.json(
               refuse(

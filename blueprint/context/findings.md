@@ -551,3 +551,92 @@ before and after), passed on the code as it is, failed with one sweep
 (5.1 s) and failed with closeAllConnections. Drop the /second line, or say
 beside it that the timing is the proof.
 **Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the test (renamed "a connection kept open is closed once its answer goes out, however long that takes") waits 250 ms after the stop begins before the answer goes out, so it is past the first sweeps; the /second request is gone and a comment names the timing as the proof. Proved: one sweep (setTimeout) and a sweep that does nothing each fail it (5.1 s); file restored, cmp identical. 5/5 pass. Closed 2026-10-08 by independent review of chore/cleanup-before-9 (c5cf49b..d6e8bd1; lenses: quality, security, performance, tests): the test now holds its answer 250 ms after the stop begins, so the connection is still busy through the sweeps at 100 and 200 ms and is closed only by a later one. Each probe restored stop-gracefully.ts byte for byte (sha256 22436fdf8c9c8d6f... before and after): one sweep (setTimeout at IDLE_SWEEP_MS) fails it (5.1 s, the server's keep-alive timeout); a sweep that does nothing fails it (5.1 s); closeAllConnections now fails it too (the held answer is cut), with tests 1 and 5. On the real code it passed 10 file runs in a row (1.4 to 2.0 s each) and the whole backend suite (794). The /second request is gone and the comment names the one second bound as the proof, which is what it measures. What it cannot catch, like any fixed hold: a single sweep timed after 250 ms (a probe at 400 ms passed all five, restored after); that needs a changed constant, not a slip of setInterval, so not recorded. The test still waits a fixed 100 ms for its request to arrive rather than the arrival signal the helper uses; a late arrival makes it fail or time out, never pass falsely, so not recorded. Test file sha256 c71154f29ab7da45... unchanged by this review.
+
+### F-256 [P2] open - The customer's own booking page still lists the people and takes a pick for a service the business assigns, so decision 3's "the server refuses" has a second public way round it
+
+**File:** backend/routes/public-booking-page-routes.ts:52-80,88-115 (the picker it feeds: frontend/components/booking-page/change-time-panel.tsx:254-264; the stated rule: blueprint/project-plan.md decision 32, backend/lib/errors/person-not-taken.ts:1-2)
+**Found:** 2026-10-08 by independent step review of 9.1 (scope: ece1aa2..b2926cf; lenses: quality, security, performance, tests)
+**Why it matters:** 9.1 enforces `business_assigns` on the times route and on
+`POST /public/:slug/bookings` only. The 7b routes on the customer's private
+link, `GET /public/bookings/:token/times` and `POST .../move`, call
+findBookingMoveTimes and moveBooking, which read no personChoice: the times
+answer carries findFreeTimes' `people` for every service
+(find-free-times.ts:78), and moveBooking accepts any person who offers the
+service (move-booking.ts:94). The shipped change-time panel renders that list
+as a picker. So a Primo customer (every real row was backfilled
+`business_assigns` by 0022) sees Primo's painters by name on their booking
+page and can move the estimate onto the one they choose, which is what
+decision 3 says no front end can do. Decision 32 in the project plan and the
+person-not-taken header state the refusal without limiting it to the
+component's routes. Not a regression (7b behaved this way before 9.1) and the
+spec's out-of-scope line keeps 7a/7b "as built", so this is a gap between the
+decision as written and the code, not a fault in 9.1's own routes.
+**Suggested fix:** Frank's call, before feature 9 closes. Either extend the
+rule to 7b (findBookingMoveTimes answers `people: []` and moveBooking refuses
+a person other than the booking's own when the service is `business_assigns`,
+with route tests like 9.1's), or narrow decision 32 and the person-not-taken
+header to say the move page keeps its picker on purpose.
+**Resolution:**
+
+### F-257 [P3] fixed - The seed sets who picks only on services it creates, so a database seeded before 0022 keeps the clinic as `business_assigns` and two new route tests fail on it
+
+**File:** packages/shared/scripts/seed-dev.ts:565-575 (the tests that read it: backend/routes/public-booking-links-routes.test.ts:532,543)
+**Found:** 2026-10-08 by independent step review of 9.1 (scope: ece1aa2..b2926cf; lenses: quality, security, performance, tests)
+**Why it matters:** 0022 backfills every existing service `business_assigns`.
+The seed writes `personChoice` only inside `if (!existingLink)`, so on any
+database seeded before this step (Frank's other machine after pull, migrate,
+seed) Riverbend Clinic (dev)'s ten services stay `business_assigns`. Shown on
+the local `scheduleads_dev`: set clinic-dev's services to `business_assigns`
+(what the migration leaves), ran `db:seed` (it reported everything "already
+there"), and all ten were still `business_assigns`; restored to
+`customer_picks` after, and the backend suite passed again (808). With that
+state "a service the customer picks for says so" and "Mei alone does laser"
+fail, and the try page in 9.5/9.6 would show the clinic with no people. The
+seed's own pattern elsewhere is to upgrade rows seeded before a column existed
+("so no machine needs a rebuild", seed-dev.ts:425-431, 473-485), and the
+spec's 9.1 line says "the seed states both on every service".
+**Suggested fix:** After the insert-or-find, bring an existing seeded service
+to its business's value, the way the holidays are brought up: update
+`personChoice` where it is still the migration's backfill and differs (or,
+since dev databases are disposable, say in the step report that 0022 needs a
+reseed from scratch on other machines). A rerun then leaves clinic-dev
+`customer_picks`.
+**Resolution:** Fixed 2026-10-08 in 9.1's review fixes, as suggested: after finding an existing seeded service, the seed brings its personChoice to its business's value where it differs (seed-dev.ts, the else branch beside the insert), reported as "who picks set on N services". Proved on the local scheduleads_dev: clinic-dev's ten services set to business_assigns, `db:seed` run, all ten back to customer_picks. Nothing sets the column by hand until feature 12, so no owner's choice is overwritten.
+
+### F-258 [P3] fixed - The new person-choice check runs before bookTime's request-key lookup, so a retried booking form whose service changed in between gets a 404 or 400 instead of its booking
+
+**File:** backend/routes/public-bookings-routes.ts:58-60 (the rule it overtakes: backend/lib/booking/book-time.ts:134-149)
+**Found:** 2026-10-08 by independent step review of 9.1 (scope: ece1aa2..b2926cf; lenses: quality, security, performance, tests)
+**Why it matters:** bookTime asks for a booking already made with the form's
+key first ("Asked first", decision 7/9: a retry after a lost answer gets the
+booking that won), before it reads the service, so before 9.1 a retry
+succeeded even if the service had been switched off meanwhile. The route now
+calls findPersonChoice before bookTime: a switched-off service answers 404,
+and a service switched from `customer_picks` to `business_assigns` answers
+400 to a retry that names its person, though the booking exists. The customer
+is told it failed and may book again. Narrow today: nothing but a hand edit at
+client setup changes either column until feature 12's settings screen, and
+the window is one lost answer long.
+**Suggested fix:** Keep the replay first: either move the two checks into
+bookTime after `earlier` (returning a new reason the route maps to the 400),
+or have the route skip them when the request key already has a booking. A
+route test: book, switch the service off (or to `business_assigns`), resend
+the same form, expect 200 with `alreadyBooked` and the same booking.
+**Resolution:** Fixed 2026-10-08 in 9.1's review fixes, the first suggested way: the route's pre-check is gone; bookTime refuses a customer's pick for a business_assigns service after the form's own booking is looked up, with a new reason `person_not_taken` the route maps to the same 400 (book-time.ts, after `if (!service)`). The owner's path may still pick. A switched-off service is again answered by the replay first. Tests: the route's "still gets its booking, after the business assigns and after the service is switched off" and bookTime's "a booked form sent again after its service changed still gets its booking" and "a customer's pick for a service the business assigns answers person_not_taken and writes nothing; the owner may pick"; proved: restoring the route pre-check and removing bookTime's check fail the route retry test and the bookTime refusal test.
+
+### F-259 [P3] fixed - workerTextEntriesOf reads the activity rows with no order, and its callers compare them as an ordered list
+
+**File:** backend/lib/jobs/worker-text-job.test.ts:168-176 (compared in order at :950-953 and elsewhere)
+**Found:** 2026-10-08 by independent step review of 9.1 (scope: ece1aa2..b2926cf; lenses: quality, security, performance, tests)
+**Why it matters:** The builder saw "a lost new booking found on its retry
+after a cancel still texts the person off your day" fail once with
+`[worker_removed, worker_added]`. The helper's select has no ORDER BY, so
+Postgres may return the two rows in either order (other test files insert
+and delete activity rows in parallel, so free space is reused), while the
+expectation is an ordered array. Pre-existing: the helper dates from 8c.2
+(6912cfa); 9.1 only added the two new columns to this file's service insert,
+which touches neither the jobs nor the activity table. Not reproduced in five
+full backend runs here (808 passed each time).
+**Suggested fix:** Order the helper's select by `activity.createdAt`, then
+`activity.id`, or compare the kinds as a set where order is not the claim.
+**Resolution:** Fixed 2026-10-08 in 9.1's review fixes: the helper orders by `activity.occurredAt`, then `activity.createdAt` (worker-text-job.test.ts:168-177). In the flaky test the retry records worker_added before the cancel's worker_removed runs, so that order is the claim. Not reproducible on demand (it failed once in this session), so the fix is shown by reading, not by a failing run; three full backend runs after it passed (811 each).
