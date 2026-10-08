@@ -577,8 +577,9 @@ a person other than the booking's own when the service is `business_assigns`,
 with route tests like 9.1's), or narrow decision 32 and the person-not-taken
 header to say the move page keeps its picker on purpose.
 **Resolution:** Frank decided 2026-10-08: extend the rule to the 7b page, built as step 9.1b (added to the spec). Fixed 2026-10-08 in step 9.1b: the booking page's answer carries personChoice; findBookingMoveTimes answers `people: []` for a service the business assigns and refuses a person asked for (state person_not_taken); moveBooking refuses a person the same way after its "already there" check; both routes answer the same 400 as 9.1. change-time-panel.tsx shows no Who for such a service and asks the time only. Tests in public-booking-move-times-routes.test.ts and public-booking-move-routes.test.ts; proved: removing the refusals and the empty list fails three of them. Hand check on the running dev servers: painting-dev's page has no Who, clinic-dev's keeps Any available, Ana, Mei, Sofia.
+Re-reviewed 2026-10-08 by independent review of 9.1b (scope: bd63ab6..d21a3e9; lenses: quality, security, performance, tests); stays fixed, for F-263. What holds: the way round decision 3 is gone on every public path that takes a person. The four are the form's times (public-booking-links-routes.ts:127-129) and booking (book-time.ts:177, after the replay), both from 9.1, and the 7b times and move (find-booking-move-times.ts:53-62, move-booking.ts:101-105), each reading the booking's own service without `active`, so a switched-off service (7b decision 13) holds too: a probe on a switched-off business_assigns service answered the pick 400, the times 200 with `people: []` and times, a move with nobody 200, and the page `personChoice: "business_assigns"`, `canMove: true`. Each guard bites: removing moveBooking's refusal, findBookingMoveTimes' refusal, or the emptied list each fails exactly its own test (every file restored by git checkout, sha256 identical). The 400 is reached only through a verified link, after the same 404/409s as before, so the identical-404 rule is untouched, and the page's new field says only what its panel already shows. What does not hold: the repair's default for a service the business assigns is any available with a confirm that names nobody, which brings back 7b/F-168's silent hand-over to another person (F-263). Two of the step's claims are pinned by no test (F-264). This entry can close with F-263.
 
-### F-257 [P3] fixed - The seed sets who picks only on services it creates, so a database seeded before 0022 keeps the clinic as `business_assigns` and two new route tests fail on it
+### F-257 [P3] closed - The seed sets who picks only on services it creates, so a database seeded before 0022 keeps the clinic as `business_assigns` and two new route tests fail on it
 
 **File:** packages/shared/scripts/seed-dev.ts:565-575 (the tests that read it: backend/routes/public-booking-links-routes.test.ts:532,543)
 **Found:** 2026-10-08 by independent step review of 9.1 (scope: ece1aa2..b2926cf; lenses: quality, security, performance, tests)
@@ -604,6 +605,7 @@ reseed from scratch on other machines). A rerun then leaves clinic-dev
 **Resolution:** Fixed 2026-10-08 in 9.1's review fixes, as suggested: after finding an existing seeded service, the seed brings its personChoice to its business's value where it differs (seed-dev.ts, the else branch beside the insert), reported as "who picks set on N services". Proved on the local scheduleads_dev: clinic-dev's ten services set to business_assigns, `db:seed` run, all ten back to customer_picks. Nothing sets the column by hand until feature 12, so no owner's choice is overwritten.
 Re-reviewed 2026-10-08 by re-review of 9.1's fixes (b2926cf..5725ad2; lenses: quality, security, performance, tests); stays fixed, for F-260 and F-261. What holds: the update runs on `tx` inside the seed's one db.transaction (seed-dev.ts:340), and its bookingLinkId comes from the select scoped to the business and the seeded slug, so it touches only that business's own seeded services. Shown again on the local scheduleads_dev: clinic-dev's ten services set to business_assigns, `db:seed` run, all ten back to customer_picks, painting-dev's three untouched. What does not hold: the repair brings any differing value back, not only the migration's backfill, so a hand-set choice is reverted (F-260), and its report line reads "(created who picks set on 10 services)" (F-261).
 Re-reviewed 2026-10-08 by re-review of 9.1's second fixes (5725ad2..84198ad; lenses: quality, security, performance, tests); stays fixed, for F-260. What holds: F-257's own case. On the local scheduleads_dev, clinic-dev's ten services set to business_assigns (what 0022 leaves) and `db:seed` run: all ten back to customer_picks, printed as "who picks the person set on 10 existing services". F-261 is closed. What does not hold: F-260, the repair still reverts a choice made by hand in one direction (see there).
+Closed 2026-10-08 by independent review of 9.1b (scope: bd63ab6..d21a3e9): re-read the per-business rule from bd63ab6 (seed-dev.ts:554-594): `bringChoicesUp` only when the business is seeded customer_picks and every one of its services still holds business_assigns, then each existing seeded service is updated on `tx` by an id from the business-scoped select. On the local scheduleads_dev, clinic-dev's ten set to business_assigns (what 0022 leaves) and painting-dev's three to customer_picks, `db:seed`: the clinic's ten back to customer_picks, printed "who picks the person set on 10 existing services", painting's three left customer_picks. F-260, the one thing keeping this open, is closed below. Data restored: clinic-dev 10 customer_picks, painting-dev 3 business_assigns.
 
 ### F-258 [P3] closed - The new person-choice check runs before bookTime's request-key lookup, so a retried booking form whose service changed in between gets a 404 or 400 instead of its booking
 
@@ -645,7 +647,7 @@ full backend runs here (808 passed each time).
 **Resolution:** Fixed 2026-10-08 in 9.1's review fixes: the helper orders by `activity.occurredAt`, then `activity.createdAt` (worker-text-job.test.ts:168-177). In the flaky test the retry records worker_added before the cancel's worker_removed runs, so that order is the claim. Not reproducible on demand (it failed once in this session), so the fix is shown by reading, not by a failing run; three full backend runs after it passed (811 each).
 Closed 2026-10-08 by re-review of 9.1's fixes: the order is the one the tests claim. Both worker texts of a booking run in one lane (enqueue-worker-text.ts:16, queueName per booking), so one after the other, and the retry's worker_added is recorded before the cancel's worker_removed job reads it; send-worker-text.ts records each through recordActivity with no transaction, so occurredAt is the JS clock at that moment (record-activity.ts:29) and createdAt is a separate statement's now(), microseconds apart, which settles a same-millisecond occurredAt; no practical tie is left (id, a random UUID, would not have ordered them). The helper does read in order: reversing it (both columns descending) fails "a cancel texts the person off your day" and "a lost new booking found on its retry after a cancel still texts the person off your day" (file restored by git checkout). Backend 811 passed three times; the once-seen flake did not recur.
 
-### F-260 [P3] fixed - The seed's new person-choice upgrade reverts any differing value, so a choice set by hand on a seeded service is undone by the next reseed
+### F-260 [P3] closed - The seed's new person-choice upgrade reverts any differing value, so a choice set by hand on a seeded service is undone by the next reseed
 
 **File:** packages/shared/scripts/seed-dev.ts:576-591
 **Found:** 2026-10-08 by re-review of 9.1's fixes (scope: b2926cf..5725ad2; lenses: quality, security, performance, tests)
@@ -672,6 +674,7 @@ say so.
 **Resolution:** Fixed 2026-10-08 in 9.1's second review fixes, as suggested: the update also requires the value still to be `business_assigns`, the migration's leftover, so a choice made by hand survives. Proved on the local scheduleads_dev: clinic-dev's ten services set to business_assigns and painting-dev's three to customer_picks, `db:seed` run: the clinic's ten came back to customer_picks, painting's three stayed customer_picks; painting restored to business_assigns by hand after.
 Reopened 2026-10-08 by re-review of 9.1's second fixes (5725ad2..84198ad; lenses: quality, security, performance, tests): the painting case holds, the clinic case does not. A row-level `eq(personChoice, "business_assigns")` cannot tell 0022's backfill from a business_assigns chosen by hand, so on a customer_picks business a service set to business_assigns by hand is still reverted, and the new comment ("a choice made by hand survives a reseed", seed-dev.ts:577-579) says the opposite. Shown on the local scheduleads_dev: the probe above repeated (clinic ten business_assigns, painting three customer_picks, `db:seed`: clinic ten customer_picks, painting three customer_picks, so that half holds); then painting restored to business_assigns and only clinic-dev's laser-hair-removal set to business_assigns (as when trying the assigned path on the clinic in 9.5/9.6, or from feature 12 on its Settings screen), `db:seed` run: it came back to customer_picks, printed "who picks the person set on 1 existing services". So this finding's "Why it matters" still holds for the clinic. Data left as found: clinic-dev's ten customer_picks, painting-dev's three business_assigns. The suggested row check was this finding's own and was applied faithfully; it was not enough. Further suggested fix: decide per business, the way the stages are ("only when there are none"): bring a business's existing seeded services up only when every one of them is still business_assigns and the business is customer_picks, the state 0022 leaves and no hand edit of one service produces; or, if the row rule is kept, reword the comment to name the one case it cannot tell apart. Either way the `ne` beside the new `eq` is now redundant (on a business_assigns business the where can never match), and "1 existing services" reads oddly, like the file's other counts.
 Fixed again 2026-10-08 after the re-review, its new suggested fix: the seed decides per business, like the stages. A business's existing services are brought to its seeded choice only while every one of them still holds business_assigns, so one choice made by hand on any service keeps them all; the redundant `ne` is gone and the comment says so. Proved on the local scheduleads_dev: (a) clinic-dev all business_assigns, painting-dev all customer_picks: reseed brings the clinic's ten to customer_picks, painting stays customer_picks; (b) one clinic service set back to business_assigns by hand among nine customer_picks: reseed leaves it. Data restored after (clinic 10 customer_picks, painting 3 business_assigns).
+Closed 2026-10-08 by independent review of 9.1b (scope: bd63ab6..d21a3e9): both of the reopening's cases now hold, shown on the local scheduleads_dev. (a) clinic-dev's ten set to business_assigns and painting-dev's three to customer_picks, `db:seed`: clinic ten customer_picks, painting three still customer_picks (a choice by hand on a business seeded business_assigns is never touched, since `bringChoicesUp` needs the business to be customer_picks). (b) painting back to business_assigns, only clinic-dev's laser-hair-removal set to business_assigns among nine customer_picks, `db:seed`: no "who picks" line printed, laser still business_assigns, the nine unchanged. The redundant `ne` is gone (the update's where is the id alone, seed-dev.ts:589-592), and the comment (:556-559) now says what the rule does. What it still cannot tell apart, by design and like the stages: every service of a customer_picks business set to business_assigns by hand reads as 0022's leftover and is brought back; the comment's "while every service it has still holds the business_assigns migration 0022 gave them" names that condition, so not recorded. Data restored: clinic-dev 10 customer_picks, painting-dev 3 business_assigns.
 
 ### F-261 [P3] closed - The seed's report line reads "(created who picks set on N services)"
 
@@ -690,7 +693,7 @@ services)". The existing upgrade entries ("first person's login link",
 **Resolution:** Fixed 2026-10-08 in 9.1's second review fixes: the count is no longer in the "(created ...)" list; it prints on its own line, "who picks the person set on N existing services", seen in the probe's output.
 Closed 2026-10-08 by re-review of 9.1's second fixes: `choicesSet` is gone from `made` (seed-dev.ts:610-626) and prints on its own indented line after the owner's line, only when non-zero (:631). On the local scheduleads_dev after setting clinic-dev to business_assigns and reseeding, the report read `owner@example.com    ordinary owner, owns "Riverbend Clinic (dev)"  (already there)` then `  who picks the person set on 10 existing services`; painting-dev printed no extra line. "1 existing services" for a count of one is the file's own habit ("N services"), noted under F-260, not a reason to keep this open.
 
-### F-262 [P3] fixed - "the move's answer does not wait for Google" gives Google's PATCH only vi.waitFor's default second, so a slow full run fails it
+### F-262 [P3] closed - "the move's answer does not wait for Google" gives Google's PATCH only vi.waitFor's default second, so a slow full run fails it
 
 **File:** backend/lib/calendar/move-booking-event.test.ts:489 (the same wait at :737; remove-booking-event.test.ts:267, write-booking-event.test.ts:226)
 **Found:** 2026-10-08 by re-review of 9.1's second fixes (scope: 5725ad2..84198ad; lenses: quality, security, performance, tests; seen in the gate run, not in the delta)
@@ -709,3 +712,55 @@ Google call a timeout sized for a loaded run, e.g. `{ timeout: 10_000 }`; the
 claim each test makes (the answer came before Google) is unchanged, since that
 is asserted before the wait.
 **Resolution:** Fixed 2026-10-08 in 9.1's third review fixes, as suggested: the four `vi.waitFor` calls (move-booking-event.test.ts two, remove-booking-event.test.ts, write-booking-event.test.ts) wait up to 10 seconds; each test's claim, that the answer came before Google, is asserted before the wait and unchanged. Shown by reading: the 1-second default failed once in a slow full run, and is not reproducible on demand.
+Closed 2026-10-08 by independent review of 9.1b (scope: bd63ab6..d21a3e9): all four waits on a job's Google call now pass `{ timeout: 10_000 }` (move-booking-event.test.ts:489-491 and :739-741, remove-booking-event.test.ts:267, write-booking-event.test.ts:226), and they are the only `vi.waitFor` calls in the backend's tests. The three "does not wait for Google" tests still assert "answered before Google is asked" before their wait (the fourth, "two of one booking's jobs never run at the same time", only waits for the PATCH to begin) (move-booking-event.test.ts:486-487, remove-booking-event.test.ts:264, write-booking-event.test.ts:223), so the claim is unchanged; the 10 seconds sit inside the backend's own `testTimeout: 30_000` (vitest.config.ts), so the wait, not the test, is what gives up. Three full backend runs in this review passed 816 each (31 to 32 s); a timing flake cannot be shown fixed by passing runs, only by the wider bound, which is in place.
+
+### F-263 [P2] open - On a service the business assigns, "Change the time" always moves with any available, so the customer's booked person can be swapped for another while free, and the confirm names nobody
+
+**File:** frontend/components/booking-page/change-time-panel.tsx:80,175-181 (the order it inherits: backend/lib/booking/find-booking-choices.ts:120-135, backend/lib/scheduling/order-any-available.ts; the rule it re-opens: blueprint/history/features/07b-reschedule.md decision 14, 7b/F-168)
+**Found:** 2026-10-08 by independent review of 9.1b (scope: bd63ab6..d21a3e9; lenses: quality, security, performance, tests)
+**Why it matters:** Before 9.1b every Primo booking's panel opened on her own
+person (7b decision 14), so keeping the default kept the painter. Now, for a
+business_assigns service, the panel can only ask with nobody picked, and a
+move with nobody picked orders the free people by fewest bookings that day,
+then name, with no preference for the person who holds the booking. Decision
+14 rejected exactly this: "opening on Any available, which could hand her to
+another person on a tie without saying so". Shown with a scratch test in the
+move routes (removed after): Jane's facial with Ana at 9:00, Ana also booked
+at 13:00, the service set to business_assigns, a move to 11:00 with nobody
+picked while Ana is free at 11:00: the booking went to Mei. The confirm reads
+"Move to <time>?" with no name, while the page still says who is coming (the
+spec keeps the name: "the customer is told who is coming"). For Primo, where
+every real service is business_assigns, each time-only move can quietly
+change the estimator, and with it send "off your day" and "added" texts to
+two painters and remove and rewrite the Google event. Not a broken line of
+9.1b's spec (it says "asks the times with nobody picked"), but a consequence
+the spec does not name and decision 14 had ruled out.
+**Suggested fix:** Frank's call. The smallest that keeps decision 3 (no pick
+offered): on a move with nobody picked, try the booking's own person first
+when free (findBookingChoices, a `preferPersonId` for `movingBooking`), so
+"any available" means "whoever is free, keeping yours if you can"; a route
+test like the probe above. Or keep the swap and say so in the confirm and the
+spec ("the business may send someone else").
+**Resolution:**
+
+### F-264 [P3] fixed - Two of 9.1b's claims are pinned by no test: the page answering business_assigns, and the refusal sitting after "already there"
+
+**File:** backend/routes/public-booking-page-routes.test.ts:172 (the field: backend/lib/booking/find-booking-page.ts:100; the order: backend/lib/booking/move-booking.ts:76-79,101-105)
+**Found:** 2026-10-08 by independent review of 9.1b (scope: bd63ab6..d21a3e9; lenses: quality, security, performance, tests)
+**Why it matters:** The whole frontend change switches on
+`booking.personChoice`, but the page test only expects `customer_picks`.
+Scratch mutation, restored after: findBookingPage answering `"customer_picks"`
+for every booking passed the full backend suite (816). On a business_assigns
+service that would bring back the Who list and ask the times with her own
+person, which the times route now refuses with a 400 the client maps to "The
+free times can't load right now", on every Primo page. Second, the code and
+the spec say the refusal comes after "already there" so a repeat answers as
+before; the only repeat test sends nobody, so the order is free. Scratch
+mutation, restored after: "already there" moved below the refusal passed all
+20 move route tests.
+**Suggested fix:** In the page route tests, one booking on a business_assigns
+service expecting `personChoice: "business_assigns"`. In the move route
+tests, move with a person on a customer_picks service, switch it to
+business_assigns, send the same move again, expect 200 and one booking_moved
+entry.
+**Resolution:** Fixed 2026-10-08 after 9.1b's review: public-booking-page-routes.test.ts "the page says who picks: a service the business assigns says business_assigns" and public-booking-move-routes.test.ts "a picked person on a service the business assigns, already there, answers the same". Proved: the review's two mutations (findBookingPage hardcoded to customer_picks; "already there" moved below the refusal) each fail their test; files restored.

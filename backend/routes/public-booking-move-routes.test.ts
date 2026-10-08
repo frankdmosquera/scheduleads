@@ -328,6 +328,21 @@ describe("moving a booking", () => {
     expect(await movedEntries(clinic)).toEqual([]);
   });
 
+  // "Already there" is asked before the refusal, so a repeat naming her own person still answers
+  // the same (F-264).
+  test("a picked person on a service the business assigns, already there, answers the same", async () => {
+    const clinic = await makeClinic("assigns-there");
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+    const response = await move(clinic.janesBooking, at(9), clinic.ana);
+
+    expect(response.status).toBe(200);
+    expect(await bookingRow(clinic.janesBooking)).toMatchObject({ sequence: 0 });
+    expect(await movedEntries(clinic)).toEqual([]);
+  });
+
   test("a service the business assigns moves with nobody picked, and a second press answers the same", async () => {
     const clinic = await makeClinic("assigns-move");
     await db

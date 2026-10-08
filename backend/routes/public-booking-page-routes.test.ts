@@ -152,6 +152,23 @@ afterAll(async () => {
 });
 
 describe("the customer's booking page", () => {
+  // The panel offers a pick only when this says so (feature 9, decision 3; F-264).
+  test("the page says who picks: a service the business assigns says business_assigns", async () => {
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, primo.estimate));
+    try {
+      const body = await (await pageOf(makeBookingPageToken(primo.bookingId))).json();
+      expect(body.booking.personChoice).toBe("business_assigns");
+    } finally {
+      await db
+        .update(bookingLink)
+        .set({ personChoice: "customer_picks" })
+        .where(eq(bookingLink.id, primo.estimate));
+    }
+  });
+
   test("the route answers the page's view for a real link and 404 for every bad one, with the same body", async () => {
     const token = makeBookingPageToken(primo.bookingId);
     const response = await pageOf(token);
