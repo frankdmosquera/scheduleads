@@ -275,7 +275,7 @@ tests, in the one test that does not set Google up.
 assert `response.status` is 200 before reading the body.
 **Resolution:**
 
-### F-171 [P3] open - AGENTS.md's branch example still has no build-plan number, which the skills now require
+### F-171 [P3] fixed - AGENTS.md's branch example still has no build-plan number, which the skills now require
 
 **File:** AGENTS.md:211-212 (skills: .claude/skills/feature/SKILL.md:141-147, .claude/skills/implement/SKILL.md:50-52)
 **Found:** 2026-10-04 by independent review of feature 7b (scope: a55c8ee..6c1fa5d; lenses: quality, security, performance, tests)
@@ -288,8 +288,7 @@ feature branch, so the project's two instruction sources now show different
 shapes for the same name.
 **Suggested fix:** Change the example to the numbered form, for example
 `feature/07b-reschedule`.
-**Resolution:**
-
+**Resolution:** Fixed 2026-10-08 on chore/cleanup-before-9: the example is now `feature/08c-the-worker-s-text`, with "its build-plan number first".
 ### F-172 [P3] open - The change-time panel keeps its own untested copies of the backend's date helpers
 
 **File:** frontend/components/booking-page/change-time-panel.tsx:26-38 (backend/lib/local-time/local-date.ts:6, backend/lib/local-time/add-days.ts:3)
