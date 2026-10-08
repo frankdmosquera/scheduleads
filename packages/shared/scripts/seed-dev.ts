@@ -574,15 +574,16 @@ try {
           });
           servicesMade++;
         } else {
-          // Who picks the person, also on a database seeded before the setting existed, where
-          // migration 0022 left every service business_assigns, so no machine needs a rebuild.
-          // Nothing sets it by hand until feature 12.
+          // Who picks the person, also on a database seeded before the setting existed, so no
+          // machine needs a rebuild. Only the business_assigns migration 0022 left behind: a
+          // choice made by hand survives a reseed.
           const switched = await tx
             .update(bookingLink)
             .set({ personChoice: business.personChoice })
             .where(
               and(
                 eq(bookingLink.id, bookingLinkId),
+                eq(bookingLink.personChoice, "business_assigns"),
                 ne(bookingLink.personChoice, business.personChoice)
               )
             )
@@ -619,7 +620,6 @@ try {
         hoursMade && `${hoursMade} people's own hours`,
         standbyMade && `${standbyMade} standby dates`,
         servicesMade && `${servicesMade} services`,
-        choicesSet && `who picks set on ${choicesSet} services`,
         ticksMade && `${ticksMade} who-does-what ticks`,
         textSettingsMade && "text settings",
         workerTextsMade && `${workerTextsMade} worker text settings`,
@@ -628,6 +628,7 @@ try {
         `${account.email.padEnd(20)} ${account.role === "admin" ? "platform admin" : "ordinary owner"}, ` +
           `owns "${business.name}"  ${made.length ? "(created " + made.join(", ") + ")" : "(already there)"}`
       );
+      if (choicesSet) console.log(`  who picks the person set on ${choicesSet} existing services`);
     }
   });
 

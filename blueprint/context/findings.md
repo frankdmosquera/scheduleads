@@ -602,8 +602,9 @@ since dev databases are disposable, say in the step report that 0022 needs a
 reseed from scratch on other machines). A rerun then leaves clinic-dev
 `customer_picks`.
 **Resolution:** Fixed 2026-10-08 in 9.1's review fixes, as suggested: after finding an existing seeded service, the seed brings its personChoice to its business's value where it differs (seed-dev.ts, the else branch beside the insert), reported as "who picks set on N services". Proved on the local scheduleads_dev: clinic-dev's ten services set to business_assigns, `db:seed` run, all ten back to customer_picks. Nothing sets the column by hand until feature 12, so no owner's choice is overwritten.
+Re-reviewed 2026-10-08 by re-review of 9.1's fixes (b2926cf..5725ad2; lenses: quality, security, performance, tests); stays fixed, for F-260 and F-261. What holds: the update runs on `tx` inside the seed's one db.transaction (seed-dev.ts:340), and its bookingLinkId comes from the select scoped to the business and the seeded slug, so it touches only that business's own seeded services. Shown again on the local scheduleads_dev: clinic-dev's ten services set to business_assigns, `db:seed` run, all ten back to customer_picks, painting-dev's three untouched. What does not hold: the repair brings any differing value back, not only the migration's backfill, so a hand-set choice is reverted (F-260), and its report line reads "(created who picks set on 10 services)" (F-261).
 
-### F-258 [P3] fixed - The new person-choice check runs before bookTime's request-key lookup, so a retried booking form whose service changed in between gets a 404 or 400 instead of its booking
+### F-258 [P3] closed - The new person-choice check runs before bookTime's request-key lookup, so a retried booking form whose service changed in between gets a 404 or 400 instead of its booking
 
 **File:** backend/routes/public-bookings-routes.ts:58-60 (the rule it overtakes: backend/lib/booking/book-time.ts:134-149)
 **Found:** 2026-10-08 by independent step review of 9.1 (scope: ece1aa2..b2926cf; lenses: quality, security, performance, tests)
@@ -623,8 +624,9 @@ or have the route skip them when the request key already has a booking. A
 route test: book, switch the service off (or to `business_assigns`), resend
 the same form, expect 200 with `alreadyBooked` and the same booking.
 **Resolution:** Fixed 2026-10-08 in 9.1's review fixes, the first suggested way: the route's pre-check is gone; bookTime refuses a customer's pick for a business_assigns service after the form's own booking is looked up, with a new reason `person_not_taken` the route maps to the same 400 (book-time.ts, after `if (!service)`). The owner's path may still pick. A switched-off service is again answered by the replay first. Tests: the route's "still gets its booking, after the business assigns and after the service is switched off" and bookTime's "a booked form sent again after its service changed still gets its booking" and "a customer's pick for a service the business assigns answers person_not_taken and writes nothing; the owner may pick"; proved: restoring the route pre-check and removing bookTime's check fail the route retry test and the bookTime refusal test.
+Closed 2026-10-08 by re-review of 9.1's fixes: the route no longer reads the service before bookTime (findPersonChoice is now used only by the times route), and bookTime's check sits after `earlier` and after the service read (book-time.ts:155-178), so a resent form gets its booking whatever changed. `person_not_taken` has one production caller to map, the public bookings route, and its switch is exhaustive by type: removing the new case fails `tsc` (TS2339 on result.booking). Each test bites (every file restored by git checkout, status clean after): asking the replay after the service checks fails the route retry test and bookTime's retry test; dropping the refusal fails the route's 400 test and bookTime's refusal test; applying it to source manual too fails bookTime's "the owner may pick". Left as is: like NOT_FOUND before it, the new refusal is not re-asked through refuseUnlessBooked, so only a service switched to business_assigns inside one double-submit's own window could refuse the second copy; not worth an entry. One query fewer per booking. Backend 811 passed three times, build and format:check pass.
 
-### F-259 [P3] fixed - workerTextEntriesOf reads the activity rows with no order, and its callers compare them as an ordered list
+### F-259 [P3] closed - workerTextEntriesOf reads the activity rows with no order, and its callers compare them as an ordered list
 
 **File:** backend/lib/jobs/worker-text-job.test.ts:168-176 (compared in order at :950-953 and elsewhere)
 **Found:** 2026-10-08 by independent step review of 9.1 (scope: ece1aa2..b2926cf; lenses: quality, security, performance, tests)
@@ -640,3 +642,46 @@ full backend runs here (808 passed each time).
 **Suggested fix:** Order the helper's select by `activity.createdAt`, then
 `activity.id`, or compare the kinds as a set where order is not the claim.
 **Resolution:** Fixed 2026-10-08 in 9.1's review fixes: the helper orders by `activity.occurredAt`, then `activity.createdAt` (worker-text-job.test.ts:168-177). In the flaky test the retry records worker_added before the cancel's worker_removed runs, so that order is the claim. Not reproducible on demand (it failed once in this session), so the fix is shown by reading, not by a failing run; three full backend runs after it passed (811 each).
+Closed 2026-10-08 by re-review of 9.1's fixes: the order is the one the tests claim. Both worker texts of a booking run in one lane (enqueue-worker-text.ts:16, queueName per booking), so one after the other, and the retry's worker_added is recorded before the cancel's worker_removed job reads it; send-worker-text.ts records each through recordActivity with no transaction, so occurredAt is the JS clock at that moment (record-activity.ts:29) and createdAt is a separate statement's now(), microseconds apart, which settles a same-millisecond occurredAt; no practical tie is left (id, a random UUID, would not have ordered them). The helper does read in order: reversing it (both columns descending) fails "a cancel texts the person off your day" and "a lost new booking found on its retry after a cancel still texts the person off your day" (file restored by git checkout). Backend 811 passed three times; the once-seen flake did not recur.
+
+### F-260 [P3] fixed - The seed's new person-choice upgrade reverts any differing value, so a choice set by hand on a seeded service is undone by the next reseed
+
+**File:** packages/shared/scripts/seed-dev.ts:576-591
+**Found:** 2026-10-08 by re-review of 9.1's fixes (scope: b2926cf..5725ad2; lenses: quality, security, performance, tests)
+**Why it matters:** The seed's other upgrades touch only rows still in the
+state from before their column existed, so hand edits survive a reseed: the
+first person's login link only where userId is null (:430), the holidays only
+where none are picked, the stages only when there are none ("so stages renamed
+by hand survive a reseed", :434), ticks "added by hand stays" (:600). F-257's
+suggested fix asked for the same: update "where it is still the migration's
+backfill and differs". The repair's where is only `ne(personChoice,
+business.personChoice)`, so it reverts any value. Shown on the local
+scheduleads_dev: painting-dev's three services set to customer_picks (as when
+trying the picker on Summit's estimate in 9.5/9.6), `db:seed` run, all three
+back to business_assigns, reported "who picks set on 3 services". Harmless
+today (dev only, nothing but a hand edit sets the column), but from feature 12
+a choice made on the Settings screen in dev is silently undone by every
+reseed. F-257's Resolution says "no owner's choice is overwritten", which holds
+only until then.
+**Suggested fix:** Add `eq(bookingLink.personChoice, "business_assigns")` (the
+backfill) to the update's where, beside the `ne`, so only a service still as
+0022 left it is brought up; the clinic case F-257 needed still works, and a
+painting service set to customer_picks by hand stays. Adjust the comment to
+say so.
+**Resolution:** Fixed 2026-10-08 in 9.1's second review fixes, as suggested: the update also requires the value still to be `business_assigns`, the migration's leftover, so a choice made by hand survives. Proved on the local scheduleads_dev: clinic-dev's ten services set to business_assigns and painting-dev's three to customer_picks, `db:seed` run: the clinic's ten came back to customer_picks, painting's three stayed customer_picks; painting restored to business_assigns by hand after.
+
+### F-261 [P3] fixed - The seed's report line reads "(created who picks set on N services)"
+
+**File:** packages/shared/scripts/seed-dev.ts:622 (the sentence it lands in: :629)
+**Found:** 2026-10-08 by re-review of 9.1's fixes (scope: b2926cf..5725ad2; lenses: quality, security, performance, tests)
+**Why it matters:** Every entry of `made` is printed after "(created ", and
+the new one is not a thing created but a change. Shown on the local
+scheduleads_dev after setting clinic-dev to business_assigns and reseeding:
+`owner@example.com    ordinary owner, owns "Riverbend Clinic (dev)"  (created
+who picks set on 10 services)`. The seed's report is what tells Frank on a new
+machine what a reseed did, and this line reads as a typo.
+**Suggested fix:** Word the entry so it reads after "created", or print
+upgrades apart from creations, e.g. "(created ...; brought up: who picks on 10
+services)". The existing upgrade entries ("first person's login link",
+"holiday picks") read as nouns, so a noun phrase also fits.
+**Resolution:** Fixed 2026-10-08 in 9.1's second review fixes: the count is no longer in the "(created ...)" list; it prints on its own line, "who picks the person set on N existing services", seen in the probe's output.
