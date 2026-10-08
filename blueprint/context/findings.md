@@ -51,7 +51,7 @@ confirm the production `invitation` table holds no pending row.
 **Resolution:**
 Carried on Frank's call, 2026-09-30: checked on the live database before the first client-facing deploy (the `invitation` table must be empty, or its rows cancelled). Nothing in code to change.
 
-### F-58 [P3] open - The seed never gives an existing Chemical Peel its 15-minute step, so a migrated (not rebuilt) dev database keeps it empty
+### F-58 [P3] fixed - The seed never gives an existing Chemical Peel its 15-minute step, so a migrated (not rebuilt) dev database keeps it empty
 
 **File:** packages/shared/scripts/seed-dev.ts:485
 **Found:** 2026-10-02 by independent review of step 5c.1 (scope: bf53ee6..d5a5878; lenses: all)
@@ -69,8 +69,7 @@ and `db:seed`.
 `scheduleads_dev` (drop, migrate, seed), and have the 5c.4/5c.5 tests that
 need a step set it on a service they create themselves rather than read the
 seed's value.
-**Resolution:**
-
+**Resolution:** Settled 2026-10-08 on chore/cleanup-before-9 with no code change, as the suggested fix asked: the local scheduleads_dev has been rebuilt since (chemical-peel reads slotIntervalMinutes 15), and every test that needs a step sets it on a service it makes itself (find-free-times.test.ts:86, booking-link-slot-interval-rules.test.ts:27-33, apply-free-times-rules.test.ts:63 and 302, the two move route tests); git grep finds no test reading the seeded peel. The seed keeps making rows only while none exist, on purpose, so settings changed by hand survive a reseed; a migrated-only database still needs the documented rebuild (drop, migrate, seed).
 ### F-62 [P3] open - Each start costs four Intl calls, repeated for every person, which grows "any available" on a public route
 
 **File:** backend/lib/scheduling/apply-free-times-rules.ts:71
