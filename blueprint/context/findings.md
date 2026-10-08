@@ -489,7 +489,7 @@ keep the pointer comment to `textable-phone-number.ts`. A rename only: the
 SQL in the migrations is unchanged, so no new migration.
 **Resolution:** Fixed 2026-10-07 with Frank's yes: renamed to `STORED_TEXTABLE_PHONE_PATTERN` in `packages/shared/db/text-tables/stored-textable-phone-pattern.ts`, keeping the pointer to `textable-phone-number.ts`; both tables import it. A rename only: `db:generate` reports "No schema changes", backend build clean, shared 154 and backend 747 tests passed (3 runs). Re-review of 8c.1's fixes (2026-10-07): closed. The diff is a pure rename (value unchanged) that keeps the pointer comment; `git grep` finds no `NORTH_AMERICAN_NUMBER` or `north-american-number` outside this ledger entry, and both `text-settings-table.ts` and `worker-text-settings-table.ts` import the new name. `db:generate` reports "No schema changes, nothing to migrate" and wrote no file; backend build, `format:check`, shared 154/154 and backend 747/747 (three runs) pass. Only a stale, gitignored `packages/shared/dist/db/text-tables/north-american-number.*` from an earlier build remains on this machine; `./db` does not export it and nothing imports it. Nothing new introduced.
 
-### F-242 [P3] fixed - The added rule cannot tell a superseded added job, so a booking moved away and straight back will text its person the same "new booking" twice once 8c.3 adds jobs on moves
+### F-242 [P3] closed - The added rule cannot tell a superseded added job, so a booking moved away and straight back will text its person the same "new booking" twice once 8c.3 adds jobs on moves
 
 **File:** backend/lib/text/send-worker-text.ts:40-44; backend/lib/jobs/worker-text-job.ts:20-22
 **Found:** 2026-10-07 by independent step review (scope: 8c.2, b3b655c..7b24848; lenses: quality, security, performance, tests)
@@ -513,4 +513,47 @@ entry for this person and booking was recorded at or after this job's
 `changedAt` (the same entries decision 5's "knew of it" reads), with a test
 of the same name as the Simulate case. Or state in decision 5 that the
 duplicate is tolerated, so it is a choice and not a surprise.
-**Resolution:** Carried to 8c.3 with Frank's yes (2026-10-07): spec decision 5 now skips an added or moved text when an added or moved text to that person for that booking was recorded at or after the job's changedAt, and 8c.3's Done when has the two cases (moved away and straight back texts "new booking" once; a moved text a late "new booking" already covered sends nothing). Stays open until 8c.3 builds and tests it. Fixed 2026-10-07 in 8c.3: send-worker-text.ts skips an added or moved text when findWorkerNewsTold finds an added or moved entry for that person and booking at or past the job's move number (each sms_sent worker entry now records the move number its text described; a time comparison would rest on two clocks agreeing), and each booking's worker texts run in one lane (worker-text-lane-of.ts) so the rule reads every earlier text. Tests: "a booking moved away and back sends the first no taken off, and one moved away and straight back before the jobs ran texts the first \"new booking\" once, not twice" and "a moved text that a late \"new booking\" already covered sends nothing"; proved: removing the rule fails both.
+**Resolution:** Carried to 8c.3 with Frank's yes (2026-10-07): spec decision 5 now skips an added or moved text when an added or moved text to that person for that booking was recorded at or after the job's changedAt, and 8c.3's Done when has the two cases (moved away and straight back texts "new booking" once; a moved text a late "new booking" already covered sends nothing). Stays open until 8c.3 builds and tests it. Fixed 2026-10-07 in 8c.3: send-worker-text.ts skips an added or moved text when findWorkerNewsTold finds an added or moved entry for that person and booking at or past the job's move number (each sms_sent worker entry now records the move number its text described; a time comparison would rest on two clocks agreeing), and each booking's worker texts run in one lane (worker-text-lane-of.ts) so the rule reads every earlier text. Tests: "a booking moved away and back sends the first no taken off, and one moved away and straight back before the jobs ran texts the first \"new booking\" once, not twice" and "a moved text that a late \"new booking\" already covered sends nothing"; proved: removing the rule fails both. Audit of 8c.3 (2026-10-07): closed. Reviewed send-worker-text.ts, find-worker-news-told.ts, worker-text-job.ts, enqueue-worker-text.ts, worker-text-lane-of.ts, move-booking.ts and cancel-booking.ts at 44d36f0. Traced Marco -> Pedro -> Marco before the jobs run: the booking's added job (sequence 0) sends and records `sequence` 2 (the booking as the text described it), Pedro's added skips as another person's, Pedro's taken off skips as never told, and the move back's added (sequence 2) finds 2 >= 2 and skips, so one "new booking". The rule suppresses only when an added or moved text already described the booking at or past the job's move number, and every later change adds its own job at a higher number (a cancel cannot be undone), so no due text is wrongly skipped. Every enqueue (book-time, move, cancel) goes through enqueueWorkerText, so all of a booking's worker texts share one lane. Both named tests pass; backend 785/785 three runs. Nothing new from the repair's logic; the finding number it put in a code comment is recorded separately as F-244.
+
+### F-243 [P3] open - "Off your day" counts any earlier added or moved text as "knew of it", so a person whose last text already said it left, or who never heard the time that is going, is told it is off at a time they never had
+
+**File:** backend/lib/text/send-worker-text.ts:71-73; backend/lib/text/find-worker-news-told.ts:30
+**Found:** 2026-10-07 by /audit (scope: 8c.3, c630b85..44d36f0; lenses: quality, security, performance, tests)
+**Why it matters:** Decision 5's aim is that nobody is told a booking left
+their day that they never heard was on it. The taken-off rule reads only
+`worker_added` and `worker_moved` entries and passes when any exists
+(`told.length > 0`), whatever came after. Two paths, on the same "before the
+jobs run" premise as the spec's own Simulate cases: (1) Pedro booked at 9:00
+and told; moved to Maria and Pedro's "off your day, 9:00" goes; moved back to
+Pedro and cancelled before those jobs run. The move back's added skips (the
+booking is cancelled), then the cancel's taken off finds Pedro's sequence-0
+entry and sends "off your day" at the new time: a second "off your day" for a
+booking he was last told had left, at a time he never heard. (2) Pedro told
+9:00; moved to 10:00, then to Maria before the jobs run. The moved text skips
+(another person's), and the taken off sends "off your day, 10:00", a time he
+was never told. No one drives to an empty house (the text says it is off), so
+P3: a confusing text, not a missed one.
+**Suggested fix:** Decide it in the spec first. The smallest repair uses the
+move numbers 8c.3 already records: read `worker_removed` entries too, and let
+taken off go only when this person's newest added or moved entry is newer than
+their newest removed one; optionally also only when that entry described the
+time being taken off. Or state in decision 5 that these cases are tolerated,
+so it is a choice and not a surprise.
+**Resolution:**
+
+### F-244 [P3] open - The sender's file comment grew into a 15-line block restating the rules below it, and names a finding number
+
+**File:** backend/lib/text/send-worker-text.ts:1-15 (finding number at line 6)
+**Found:** 2026-10-07 by /audit (scope: 8c.3, c630b85..44d36f0; lenses: quality, security, performance, tests)
+**Why it matters:** coding-standards.md (Comments) asks for a short file-level
+comment, the reasoning beside the line it explains, and "No history in code
+comments (step numbers, finding numbers ...)". 8c.3 grew the header from 7 to
+15 lines; lines 3-9 restate, rule by rule, what `whyNotDue` (48-63) and
+`whyNotNews` (65-77) decide, far from those lines, and line 6 ends with
+"F-242".
+**Suggested fix:** Keep the header to why the module exists (every worker text
+goes through it so the rules cannot drift; never to a texting number; the
+retry check; the timeline entry). Move the "new booking"/"moved" and "off your
+day" rules into a line or two above `whyNotDue` and `whyNotNews`, and drop
+"F-242" (the build log carries it).
+**Resolution:**
