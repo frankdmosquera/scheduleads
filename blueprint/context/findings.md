@@ -454,7 +454,7 @@ text is claimed and the email keyed, and rename the test to "counts from the
 reply's record". No code change.
 **Resolution:**
 
-### F-240 [P3] fixed - The shared-phone test puts the two people in different businesses, so a one-phone-per-business rule would still pass it
+### F-240 [P3] closed - The shared-phone test puts the two people in different businesses, so a one-phone-per-business rule would still pass it
 
 **File:** backend/lib/text/worker-text-settings-rules.test.ts:86-91
 **Found:** 2026-10-07 by independent step review (scope: 8c.1, ddca0e1..e165362; lenses: quality, security, performance, tests)
@@ -469,9 +469,9 @@ test name promises more than it checks.
 **Suggested fix:** Give the second person to the same business (a second
 `resource` row in `first.organizationId`) and insert both rows with the same
 phone. Keep the cross-business case as a second line if wanted.
-**Resolution:** Fixed 2026-10-07 with Frank's yes: the test is now "two people of one business may share one phone" (Carlos added to Pedro's business, both rows the same phone). Proved: a temporary unique ("organizationId", phone) on the dev database failed it, and it passed again once dropped. The cross-business line was not kept: nothing promises it beyond the phone not being unique on its own, which the one-business case already covers.
+**Resolution:** Fixed 2026-10-07 with Frank's yes: the test is now "two people of one business may share one phone" (Carlos added to Pedro's business, both rows the same phone). Proved: a temporary unique ("organizationId", phone) on the dev database failed it, and it passed again once dropped. The cross-business line was not kept: nothing promises it beyond the phone not being unique on its own, which the one-business case already covers. Re-review of 8c.1's fixes (2026-10-07): closed. worker-text-settings-rules.test.ts:86-94 now makes Carlos a second `resource` in Pedro's own business (`pedro.organizationId`) and inserts both rows with the same phone, so a `unique(organizationId, phone)` would refuse the second insert; Carlos goes with the tagged business in afterAll (the organization delete cascades through resource). The dev database keeps no leftover from the temporary-unique proof: `worker_text_settings` has only its pkey, `person_fk`, `phone_check` and not-nulls. Backend tests 747/747 passed three runs in a row. Nothing new introduced.
 
-### F-241 [P3] fixed - NORTH_AMERICAN_NUMBER is a regex pattern, not a number, and the same rule now lives in two shapes
+### F-241 [P3] closed - NORTH_AMERICAN_NUMBER is a regex pattern, not a number, and the same rule now lives in two shapes
 
 **File:** packages/shared/db/text-tables/north-american-number.ts:4; packages/shared/helpers/textable-phone-number.ts:6
 **Found:** 2026-10-07 by independent step review (scope: 8c.1, ddca0e1..e165362; lenses: quality, security, performance, tests)
@@ -487,4 +487,4 @@ the imported name carry the full meaning. The rule it encodes also exists as
 `STORED_TEXTABLE_PHONE_PATTERN` in `stored-textable-phone-pattern.ts`, and
 keep the pointer comment to `textable-phone-number.ts`. A rename only: the
 SQL in the migrations is unchanged, so no new migration.
-**Resolution:** Fixed 2026-10-07 with Frank's yes: renamed to `STORED_TEXTABLE_PHONE_PATTERN` in `packages/shared/db/text-tables/stored-textable-phone-pattern.ts`, keeping the pointer to `textable-phone-number.ts`; both tables import it. A rename only: `db:generate` reports "No schema changes", backend build clean, shared 154 and backend 747 tests passed (3 runs).
+**Resolution:** Fixed 2026-10-07 with Frank's yes: renamed to `STORED_TEXTABLE_PHONE_PATTERN` in `packages/shared/db/text-tables/stored-textable-phone-pattern.ts`, keeping the pointer to `textable-phone-number.ts`; both tables import it. A rename only: `db:generate` reports "No schema changes", backend build clean, shared 154 and backend 747 tests passed (3 runs). Re-review of 8c.1's fixes (2026-10-07): closed. The diff is a pure rename (value unchanged) that keeps the pointer comment; `git grep` finds no `NORTH_AMERICAN_NUMBER` or `north-american-number` outside this ledger entry, and both `text-settings-table.ts` and `worker-text-settings-table.ts` import the new name. `db:generate` reports "No schema changes, nothing to migrate" and wrote no file; backend build, `format:check`, shared 154/154 and backend 747/747 (three runs) pass. Only a stale, gitignored `packages/shared/dist/db/text-tables/north-american-number.*` from an earlier build remains on this machine; `./db` does not export it and nothing imports it. Nothing new introduced.
