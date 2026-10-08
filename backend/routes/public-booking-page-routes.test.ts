@@ -169,6 +169,7 @@ describe("the customer's booking page", () => {
         timezone: "America/Edmonton",
         person: "Marco",
         personId: primo.marco,
+        personChoice: "customer_picks", // whether Change the time offers a pick (feature 9)
         business: {
           name: "Primo Painters",
           logo: "https://ik.imagekit.io/primo/logo.png",

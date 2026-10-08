@@ -280,6 +280,42 @@ describe("free times for moving a booking", () => {
     expect(await elsewhere.json()).toEqual(await stranger.json());
   });
 
+  // Feature 9, decision 3: the business sends whoever is free, so the customer's page lists nobody.
+  test("a service the business assigns lists nobody, and still has times", async () => {
+    const clinic = await makeClinic("assigns-times");
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+    const response = await timesFor(clinic.janesBooking);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.people).toEqual([]);
+    expect(body.startTimes.length).toBeGreaterThan(0);
+  });
+
+  test("a person asked for on a service the business assigns is a 400", async () => {
+    const clinic = await makeClinic("assigns-ask");
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+    const response = await timesFor(clinic.janesBooking, clinic.ana);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: { code: "bad_request", message: "This service does not take a pick of person." },
+    });
+  });
+
+  test("a service the customer picks for still lists who offers it", async () => {
+    const clinic = await makeClinic("picks-times");
+    const body = await (await timesFor(clinic.janesBooking)).json();
+
+    expect(body.people.map((person: { name: string }) => person.name)).toEqual(["Ana", "Mei"]);
+  });
+
   test("a bad link answers 404 with the same body", async () => {
     const token = makeBookingPageToken(clinic.janesBooking);
     const changed = `${token.slice(0, -1)}${token.endsWith("A") ? "B" : "A"}`;

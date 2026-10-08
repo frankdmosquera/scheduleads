@@ -19,6 +19,7 @@ import { findBookingPage } from "../lib/booking/find-booking-page.js";
 import { moveBooking } from "../lib/booking/move-booking.js";
 import { readBookingPageToken } from "../lib/booking/booking-page-token.js";
 import { CalendarUnavailableError } from "../lib/calendar/calendar-unavailable-error.js";
+import { personNotTaken } from "../lib/errors/person-not-taken.js";
 import { refuse } from "../lib/errors/refuse.js";
 
 const linkNotFound = refuse("not_found", "This link does not open a booking.");
@@ -76,6 +77,7 @@ export const publicBookingPageRoutes = new Hono()
         if (result.state === "already_started") return c.json(alreadyStarted, 409);
         if (result.state === "already_cancelled") return c.json(alreadyCancelled, 409);
         if (result.state === "not_found") return c.json(linkNotFound, 404);
+        if (result.state === "person_not_taken") return c.json(personNotTaken, 400);
         return c.json(result.times, 200);
       } catch (error) {
         if (!(error instanceof CalendarUnavailableError)) throw error;
@@ -116,6 +118,7 @@ export const publicBookingPageRoutes = new Hono()
         if (result.reason === "already_cancelled") return c.json(alreadyCancelled, 409);
         if (result.reason === "time_taken") return c.json(timeTaken, 409);
         if (result.reason === "unavailable") return c.json(timesUnreadable, 503);
+        if (result.reason === "person_not_taken") return c.json(personNotTaken, 400);
         return c.json(linkNotFound, 404);
       }
       const booking = await findBookingPage(bookingId, new Date());

@@ -26,6 +26,7 @@ export type BookingPageType = {
   timezone: string; // the business's IANA zone
   person: string; // the booked person's name
   personId: string; // so the page can tell her own time from another person's
+  personChoice: "customer_picks" | "business_assigns"; // whether "Change the time" offers a pick (feature 9)
   business: {
     name: string;
     logo: string | null; // an absolute https:// image URL
@@ -48,6 +49,7 @@ export async function findBookingPage(
       service: bookingLink.name,
       person: resource.name,
       personId: booking.personId,
+      personChoice: bookingLink.personChoice,
       timezone: availabilityRule.timezone,
       businessName: organization.name,
       logo: organization.logo,
@@ -95,6 +97,7 @@ export async function findBookingPage(
     timezone: row.timezone,
     person: row.person,
     personId: row.personId,
+    personChoice: row.personChoice,
     business: {
       name: row.businessName,
       logo: row.logo,

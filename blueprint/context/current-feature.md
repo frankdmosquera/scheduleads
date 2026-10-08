@@ -120,7 +120,9 @@ repo. Wiring it into the agency's own site is feature 10.
 - Question kinds other than text (decision 5).
 - The hosted page `/book/<slug>` (24), an embed script (named, not planned),
   deposits (open question 16).
-- The customer's own booking page (7a, 7b) stays as built.
+- The customer's own booking page (7a, 7b) stays as built, except that a
+  service the business assigns offers no pick of person there either (step
+  9.1b, from F-256, Frank 2026-10-08).
 
 ## Build loop
 
@@ -163,6 +165,28 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   only for `customer_picks` (inactive and unticked people excluded as the
   rules say), and both refusals; the seed runs; backend and shared suites
   pass.
+
+- [x] **9.1b The customer's own booking page follows who picks** (F-256,
+  Frank 2026-10-08). Decision 3 reaches the 7b page: for a service the
+  business assigns, "Change the time" lists no people and offers no pick.
+  Backend: the booking page's answer carries the service's `personChoice`.
+  The move times route (`GET /public/bookings/:token/times`) answers
+  `people: []` for a service the business assigns and refuses a person
+  asked for, 400 with the same "This service does not take a pick of
+  person."; the move (`POST /public/bookings/:token/move`) refuses a
+  person the same way, after its own "pressed twice answers the same" check
+  so a repeat still answers as before. A service the customer picks for is
+  unchanged (decision 14: the panel opens on her own person).
+  Frontend: `change-time-panel.tsx` shows no person choice for a service
+  the business assigns, asks the times with nobody picked (any available),
+  and its last question names the time only. The booked person's name on
+  the page stays: the customer is told who is coming.
+  **Done when:** route tests show the empty people list, both 400s with
+  nothing moved, a move with nobody picked moving, and the clinic's picker
+  answers unchanged; the frontend builds; with the two Scheduleads dev
+  servers running (3400, 3401), a painting-dev booking's page shows no
+  painter list and a clinic-dev booking's page still shows its picker,
+  screenshots taken; suites pass.
 
 - [ ] **9.2 The business's own questions, answered and saved on the lead.**
   Shared: `booking_question` (`id`, `organizationId`, `position` integer,

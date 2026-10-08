@@ -1,7 +1,8 @@
 // Frontend: "Change the time" on the customer's booking page (feature 7b). Who first, opening on her
 // own person (decision 14), any available or anyone else who offers the service (decision 10), then
 // the free times a week at a time in the business's zone, never before today, then one more question
-// naming the time and the person before the move. Every state has its own plain words: no times that
+// naming the time and the person before the move. A service the business assigns has no Who: any
+// available, and the question names the time only (feature 9, decision 3). Every state has its own plain words: no times that
 // week, a time just taken, times that cannot load, and a failure that keeps the choice usable. A
 // booking that can no longer move goes back to the page.
 
@@ -73,8 +74,10 @@ export function ChangeTimePanel({
   onClose: () => void;
 }) {
   const { timezone } = booking;
+  // The business sends whoever is free (feature 9, decision 3): no pick, any available.
+  const assigns = booking.personChoice === "business_assigns";
   // null = any available. Her own person first, so keeping the default never changes who she sees.
-  const [personId, setPersonId] = useState<string | null>(booking.personId);
+  const [personId, setPersonId] = useState<string | null>(assigns ? null : booking.personId);
   const [weekOffset, setWeekOffset] = useState(0); // 0 = the week starting today
   const [reloads, setReloads] = useState(0);
   const [result, setResult] = useState<BookingMoveTimesResultType | null>(null);
@@ -169,12 +172,13 @@ export function ChangeTimePanel({
     "rounded-lg border border-slate-300 px-4 py-3 text-sm font-medium text-slate-900 hover:bg-slate-50 disabled:opacity-60";
 
   if (chosen) {
-    const withWhom =
-      people.find((person) => person.id === personId)?.name ?? "any available person";
+    const withWhom = assigns
+      ? ""
+      : ` with ${people.find((person) => person.id === personId)?.name ?? "any available person"}`;
     return (
       <div role="group" aria-labelledby="confirm-move">
         <p id="confirm-move" role="status" className="text-sm font-medium text-slate-900">
-          {`Move to ${formatBookingTime(new Date(chosen), timezone)} with ${withWhom}?`}
+          {`Move to ${formatBookingTime(new Date(chosen), timezone)}${withWhom}?`}
         </p>
         <div className="mt-3 flex gap-3">
           <button
@@ -246,25 +250,32 @@ export function ChangeTimePanel({
         Pick a new time
       </h2>
 
-      <label className="mt-4 block text-xs uppercase tracking-wider text-slate-500" htmlFor="who">
-        Who
-      </label>
-      <select
-        id="who"
-        value={personId ?? ""}
-        onChange={(event) => {
-          askAgain();
-          setPersonId(event.target.value || null);
-        }}
-        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-      >
-        <option value="">Any available</option>
-        {people.map((person) => (
-          <option key={person.id} value={person.id}>
-            {person.name}
-          </option>
-        ))}
-      </select>
+      {assigns ? null : (
+        <>
+          <label
+            className="mt-4 block text-xs uppercase tracking-wider text-slate-500"
+            htmlFor="who"
+          >
+            Who
+          </label>
+          <select
+            id="who"
+            value={personId ?? ""}
+            onChange={(event) => {
+              askAgain();
+              setPersonId(event.target.value || null);
+            }}
+            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
+          >
+            <option value="">Any available</option>
+            {people.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.name}
+              </option>
+            ))}
+          </select>
+        </>
+      )}
 
       <div className="mt-4 flex items-center justify-between gap-2">
         <button

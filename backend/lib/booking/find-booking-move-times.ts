@@ -3,10 +3,10 @@
 // for a new booking, except that the booking's own held time and its own Google event never stand
 // in its way. It may move until the appointment starts (decision 12). Read inside its own business.
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { addDays } from "@scheduleads-app/shared/add-days";
-import { booking } from "@scheduleads-app/shared/db";
+import { booking, bookingLink } from "@scheduleads-app/shared/db";
 import { localDate } from "@scheduleads-app/shared/local-date";
 
 import { db } from "../../database.js";
@@ -21,7 +21,8 @@ export type BookingMoveTimesResultType =
   | { state: "ok"; times: BookingMoveTimesType }
   | { state: "not_found" } // no such booking, its service is gone, or the person does not offer it
   | { state: "already_cancelled" }
-  | { state: "already_started" };
+  | { state: "already_started" }
+  | { state: "person_not_taken" }; // a person asked for on a service the business assigns
 
 // Throws CalendarUnavailableError, as findFreeTimes does, when the times cannot be read.
 export async function findBookingMoveTimes(input: {
@@ -47,6 +48,19 @@ export async function findBookingMoveTimes(input: {
   if (row.status === "cancelled") return { state: "already_cancelled" };
   if (row.startsAt.getTime() <= input.now.getTime()) return { state: "already_started" };
 
+  // Who picks the person (feature 9, decision 3): for a service the business assigns, nobody is
+  // offered and nobody may be asked for. Its own service, switched off or not (decision 13).
+  const [service] = await db
+    .select({ personChoice: bookingLink.personChoice })
+    .from(bookingLink)
+    .where(
+      and(eq(bookingLink.organizationId, row.organizationId), eq(bookingLink.id, row.bookingLinkId))
+    )
+    .limit(1);
+  if (!service) return { state: "not_found" };
+  const assigns = service.personChoice === "business_assigns";
+  if (assigns && input.personId !== null) return { state: "person_not_taken" };
+
   const times = await findFreeTimes({
     organizationId: row.organizationId, // the booking's own business, from the booking row
     bookingLinkId: row.bookingLinkId,
@@ -65,5 +79,5 @@ export async function findBookingMoveTimes(input: {
   if (!times || !hours) return { state: "not_found" };
   // The same horizon findFreeTimes stops at: today in the business's zone plus its days ahead.
   const lastDate = addDays(localDate(input.now, hours.timezone), hours.horizonDays);
-  return { state: "ok", times: { ...times, lastDate } };
+  return { state: "ok", times: { ...times, people: assigns ? [] : times.people, lastDate } };
 }

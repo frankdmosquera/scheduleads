@@ -32,7 +32,13 @@ export type MoveBookingResultType =
   | { moved: true; unchanged: boolean } // unchanged: it was already there (decision 4)
   | {
       moved: false;
-      reason: "not_found" | "already_cancelled" | "already_started" | "time_taken" | "unavailable";
+      reason:
+        | "not_found"
+        | "already_cancelled"
+        | "already_started"
+        | "time_taken"
+        | "unavailable"
+        | "person_not_taken";
     };
 
 const MINUTE_MS = 60_000;
@@ -83,6 +89,7 @@ export async function moveBooking(input: {
       durationMinutes: bookingLink.durationMinutes,
       bufferBeforeMinutes: bookingLink.bufferBeforeMinutes,
       bufferAfterMinutes: bookingLink.bufferAfterMinutes,
+      personChoice: bookingLink.personChoice,
     })
     .from(bookingLink)
     .where(and(eq(bookingLink.organizationId, organizationId), eq(bookingLink.id, bookingLinkId)))
@@ -91,6 +98,11 @@ export async function moveBooking(input: {
     serviceMayBeOff: true,
   });
   if (!service || !offered) return { moved: false, reason: "not_found" };
+  // A customer never picks who does a service the business assigns (feature 9, decision 3). After
+  // "already there", so the same move pressed twice still answers the same.
+  if (service.personChoice === "business_assigns" && personId !== null) {
+    return { moved: false, reason: "person_not_taken" };
+  }
   if (personId !== null && !offered.peopleIds.includes(personId)) {
     return { moved: false, reason: "not_found" };
   }

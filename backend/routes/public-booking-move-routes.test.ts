@@ -307,6 +307,42 @@ describe("moving a booking", () => {
     expect(await movedEntries(clinic)).toHaveLength(1);
   });
 
+  // Feature 9, decision 3: the business sends whoever is free, so the customer's page takes no pick.
+  test("a picked person on a service the business assigns is a 400 and nothing changes", async () => {
+    const clinic = await makeClinic("assigns-pick");
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+    const response = await move(clinic.janesBooking, at(11), clinic.mei);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: { code: "bad_request", message: "This service does not take a pick of person." },
+    });
+    expect(await bookingRow(clinic.janesBooking)).toMatchObject({
+      startsAt: new Date(at(9)),
+      personId: clinic.ana,
+      sequence: 0,
+    });
+    expect(await movedEntries(clinic)).toEqual([]);
+  });
+
+  test("a service the business assigns moves with nobody picked, and a second press answers the same", async () => {
+    const clinic = await makeClinic("assigns-move");
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+    const first = await move(clinic.janesBooking, at(11));
+    const again = await move(clinic.janesBooking, at(11));
+
+    expect(first.status).toBe(200);
+    expect(again.status).toBe(200);
+    expect(await bookingRow(clinic.janesBooking)).toMatchObject({ startsAt: new Date(at(11)) });
+    expect(await movedEntries(clinic)).toHaveLength(1);
+  });
+
   test("a time taken meanwhile is refused and nothing changes", async () => {
     const clinic = await makeClinic("taken");
     await book(clinic, clinic.ana, 13); // someone else takes Ana's 13:00
