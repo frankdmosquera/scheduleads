@@ -1,8 +1,8 @@
 // Shared: the text_reply table. One row per customer reply a business got, keyed by Twilio's id
-// for it, recording how far its passing on got (feature 8b, decision 9). A run claims each way
-// (the text, the email) before trying it, so two runs of one reply never both send, and two
-// replies with the same words are never taken for one. No number and no words: those stay with
-// Twilio.
+// for it, recording how far its passing on got (feature 8b, decision 9). A run claims the text
+// before trying it, so two runs of one reply never both send it; the email is kept to one by
+// Resend's idempotency key. A reply in the same words passed on before this one was recorded is
+// never taken for it. No number and no words: those stay with Twilio.
 
 import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 

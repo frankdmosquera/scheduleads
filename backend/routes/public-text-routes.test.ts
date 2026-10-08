@@ -356,7 +356,7 @@ describe("a customer's text reply", () => {
     expect(emailsSent()).toHaveLength(1); // the email went on the first run and is not sent again
   });
 
-  test("a retry counts only from its own claim: the same words passed on for an earlier reply are not this one", async () => {
+  test("a retry counts from the reply's record: the same words passed on for an earlier reply are not this one", async () => {
     const business = await makeBusiness("since");
     // An earlier reply's pass-on, in the same words, an hour ago.
     outbox.push({

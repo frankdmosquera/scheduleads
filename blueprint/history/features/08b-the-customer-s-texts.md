@@ -239,8 +239,9 @@ Frank's yes; every test fakes Twilio.
   message id recording how far it got: a run claims the text for a minute
   before sending, so two runs never both send; the claim is let go only when
   Twilio refused the send itself, and only a run that follows an unclear
-  answer asks Twilio first, counting from when the reply was recorded, so two
-  replies in the same words are never taken for one (F-217, F-231, F-236). Never from the reply
+  answer asks Twilio first, counting from when the reply was recorded, so an
+  identical reply passed on before this one was recorded is never taken for it
+  (F-217, F-231, F-236; corrected by F-239: one passed on after it can be). Never from the reply
   phone itself (decision 9), and never to a reply phone that is any
   business's texting number (F-199: a setup mistake would hand Jane's words
   to another business, or two businesses would drop each other's replies);
