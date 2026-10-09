@@ -1181,3 +1181,99 @@ browser's rules, so from Nov 1 a browser older than tz data 2026c offers
 way (local-start-times.ts), and the panel shows those.
 **Resolution:** Fixed 2026-10-09 (Frank: "keep going"). Wider than the panel: the customer's page itself wrote Jane's own time with the browser's rules (customer-booking-screen.tsx:124), and so did the panel's "Move to ...?" question. Now the API writes every one: `localStartTimes` gains `when` (the whole moment as the emails say it, formatBookingTime on the server), the move times route sends `localStartTimes` beside `startTimes`, and the booking page answer carries `when`. The panel groups by the sent date, shows the sent clock time and asks "Move to {when}?"; the page shows `booking.when`. Nothing on the customer's page formats a time any more; only `today` (which week the panel opens on) still reads the browser's date, at most an hour off around midnight. Tests: local-start-times.test.ts checks `when`; the booking page route test expects `when`; a new move-times route test checks every time comes back as localStartTimes writes it. Backend 880 of 880, package 41, frontend build and lint clean. Live, in the browser pane with the old rules (its own clock: "8:00 a.m. MST" for 2026-11-02T15:00Z): Riverbend's booking page reads "Friday, October 16 at 9:00 a.m. MDT", the panel's Monday, November 2 starts at "9:00 a.m.", and the question reads "Move to Monday, November 2 at 9:00 a.m. MDT with Ana?".
 Closed 2026-10-09 by re-review of 9.5's review fixes (scope: 3f204e0..cf87ebe): every route that feeds the page writes its times on the server. GET /public/bookings/:token, POST /public/bookings/:token/move and POST /public/bookings/:token/cancel all answer `{ booking }` from findBookingPage, which sets `when` with formatBookingTime after the move or cancel has been written, so the page that replaces itself after a move reads the new time's `when`; GET /public/bookings/:token/times adds `localStartTimes` from local-start-times.ts, and its new route test checks the answer equals localStartTimes(startTimes, timezone). In frontend/components/customer-booking/ the panel groups by the sent `date`, shows the sent `time` and asks "Move to {when}?", and the screen shows `booking.when` for both "When" and "It's now ..."; a grep of frontend/app, components and lib for Intl, toLocale, formatBookingTime and localDate finds on that page only `today` (a date) and day and week names formatted in UTC from date strings. The booking page route test expects `when` exactly. Backend 880 of 880, `npm run build --workspace=frontend` and the frontend lint pass. Left as a note only: the move answer's `when` following the new time is pinned by no test of its own, but it comes from the same findBookingPage the page route test pins.
+
+### F-282 [P2] open - After a lost answer the form stays live: Back and another time get "already used, reload and book again" while she is in fact booked, so following the words books her twice
+
+**File:** packages/booking-component/booking-window/screens/booking-form-view.tsx:103-104 (the no-answer case) and booking-window/booking-window.tsx:213-216 (Back keeps the form and its key); the words come from backend/routes/public-bookings-routes.ts:136-142
+**Found:** 2026-10-09 by /audit independent (scope: step 9.6, a946115..00bde08; lens: correctness)
+**Why it matters:** A lost answer means the booking may have been made, and
+decision 9's guard only holds if the next send is the same form. But after
+"We couldn't reach the booking just now" the window still offers Back to the
+times and every field stays editable, and the key is kept across Back. Shown
+live on the booking preview with clinic-dev's Chemical Peel: the first Book
+was let through to the API and its 201 dropped in the page (booking
+970826ae, Saturday, October 10 at 2:30 p.m., Ana, now in the dev database);
+the window showed the lost-answer words with Back, Try again and Book; Back,
+3:30 p.m., Next, Book answered 409 and the window showed "This booking form
+was already used. Please reload the page and book again." with no Try
+again. Nothing tells her she is booked at 2:30; doing what the words say
+(reload, or close and open again, which makes a new key) books a second
+time, and the contact limit lets up to four through. The same with curl:
+one key at 15:00 answers 201, again at 15:00 answers the same booking, the
+same key at 16:00 answers 409 request_key_used. A smaller form of the same
+gap: an email edited after a lost answer is sent with Try again, the API
+answers the earlier booking (the key matches on the time only), and the
+done screen says "A confirmation is on its way to" the new address while
+the confirmation went to the one first saved.
+**Suggested fix:** Treat a form whose last send got no answer as in doubt
+until a send gets one: while it is, offer only Try again (no Back, fields
+read only), or have the window resend the earlier choice before anything
+else. And make "already used" useful: the route's request_key_used answer
+carries the booking that form made (its `when`, service and person, never the
+customer's details), and the window shows it as "You're already booked"
+instead of telling her to book again. A test for each: a lost answer leaves
+no way to send a different time with the same key, and a request_key_used
+answer shows the booking made.
+**Resolution:**
+
+### F-283 [P3] open - The key's life in the window and the done screen's server-written time are pinned by no test
+
+**File:** packages/booking-component/booking-window/booking-window.tsx:41,210,221-225; booking-window/screens/month-layout/month-done-screen.tsx:45; booking-window/booking-form/read-booking-form.ts:73-86,100
+**Found:** 2026-10-09 by /audit independent (scope: step 9.6, a946115..00bde08; lens: tests)
+**Why it matters:** The spec's Testing names "the request key's lifetime" for
+the package, and the step's claims are one key per opening, kept across a
+taken time, and the done screen never formatting a time in the browser. The
+new tests pin the key only inside BookingFormView with its own holder, never
+the window that owns it. Each of these breaks left the package suite green,
+61 of 61 (files restored, sha256 identical): onTimeTaken also calling
+`setForm(newBookingForm())` (a new key after a taken time); passing
+`form={{ ...form, requestKey: crypto.randomUUID() }}` to DetailsScreen (a new
+key on every render, so a Try again after a lost answer could book twice);
+the done screen showing `new Date(booking.startsAt).toLocaleString()` instead
+of `booking.when`. In read-booking-form.ts, dropping the sort into form
+order, and mapping every answer error to the first answered question, also
+left it green: the focus goes to the first wrong field only because of that
+sort (a 501-character answer to question two with required question one
+empty is the case it decides).
+**Suggested fix:** A jsdom test of BookingWindow over the held-answers
+client: open, pick, Book answered time_taken, pick again, Book, and the two
+sends carry one key; close, open again, and the next send's key differs;
+the done screen shows the `when` it was sent. Two cases for readBookingForm:
+the order above, and a too-long answer to the second answered question tied
+to that question. Each shown able to fail.
+**Resolution:**
+
+### F-284 [P3] open - The browser check lets a form through when the schema fails on a part no field shows, such as more than 20 answers
+
+**File:** packages/booking-component/booking-window/booking-form/read-booking-form.ts:56-72
+**Found:** 2026-10-09 by /audit independent (scope: step 9.6, a946115..00bde08; lens: correctness)
+**Why it matters:** `readBookingForm` returns `ok` whenever no issue maps to
+a field, even when `createBookingValidationSchema.safeParse` failed. Probed
+with a temporary test (removed): a business with 21 optional questions, all
+answered, gives `state: "ok"`, and the route refuses it 400 "That is too many
+answers." with no Try again and nothing she can change on the form, since
+the box that caused it is not named. Nothing caps a business's questions
+(booking_question has no count rule, and feature 12 will let owners add
+them). The same path would send a bad `startsAt` or id, though those come
+from the API today.
+**Suggested fix:** When the parse fails and no field took the issue, do not
+send: show the issue's words in the form's problem line (with the phone).
+Separately, cap a business's questions at the schema's 20 where they are
+written, so the form can always be sent.
+**Resolution:**
+
+### F-285 [P3] open - Two new code comments carry finding numbers again
+
+**File:** backend/routes/public-bookings-routes.ts:185; packages/booking-component/api-client/send-booking.ts:34
+**Found:** 2026-10-09 by /audit independent (scope: step 9.6, a946115..00bde08; lens: quality)
+**Why it matters:** coding-standards.md, Comments: "No history in code
+comments (step numbers, finding numbers ...): that lives in the build log."
+F-274 removed them once; this step adds "(F-279)" and "(F-278)". The ledger
+is archived at /complete and the next one starts again from a low number, so
+the IDs go stale. The same pattern sits in six lines from 9.5's review fixes
+(find-booking-page.ts:26, local-start-times.ts:4,
+public-booking-links-routes.ts:112, change-time-panel.tsx:45,
+customer-booking-screen.tsx:123, and the three fetch-*.ts files of the
+package), outside this step's scope.
+**Suggested fix:** Drop the IDs and keep each sentence.
+**Resolution:**
