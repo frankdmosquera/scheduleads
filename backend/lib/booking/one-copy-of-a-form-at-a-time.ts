@@ -4,18 +4,25 @@
 
 const formsInHand = new Map<string, Promise<unknown>>();
 
-export async function oneCopyOfAFormAtATime<ResultType>(
-  formKey: string | null,
-  book: () => Promise<ResultType>
-): Promise<ResultType> {
-  if (!formKey) return book(); // the owner's bookings carry no form key
+export const oneCopyOfAFormAtATime = {
+  async book<ResultType>(
+    formKey: string | null,
+    book: () => Promise<ResultType>
+  ): Promise<ResultType> {
+    if (!formKey) return book(); // the owner's bookings carry no form key
 
-  const before = formsInHand.get(formKey) ?? Promise.resolve();
-  const turn = before.catch(() => {}).then(book); // the copy before may fail; this one still runs
-  formsInHand.set(formKey, turn);
-  try {
-    return await turn;
-  } finally {
-    if (formsInHand.get(formKey) === turn) formsInHand.delete(formKey); // the last copy clears it
-  }
-}
+    const before = formsInHand.get(formKey) ?? Promise.resolve();
+    const turn = before.catch(() => {}).then(book); // the copy before may fail; this one still runs
+    formsInHand.set(formKey, turn);
+    try {
+      return await turn;
+    } finally {
+      if (formsInHand.get(formKey) === turn) formsInHand.delete(formKey); // the last copy clears it
+    }
+  },
+
+  // How many forms are being booked right now, so a test can see each one cleared.
+  formsInHand(): number {
+    return formsInHand.size;
+  },
+};

@@ -80,26 +80,28 @@ export const publicBookingsRoutes = new Hono()
       // Copies of one form in turn: a copy sent while the first is still saving waits, then gets its
       // booking from the form's own look-up, before the limit is asked.
       const formKey = body.requestKey ? `${organizationId}:${body.requestKey}` : null;
-      const result = await oneCopyOfAFormAtATime(formKey, () =>
-        bookTime({
-          organizationId,
-          bookingLinkId: body.bookingLinkId,
-          personId: body.personId ?? null,
-          startsAt: new Date(body.startsAt),
-          requestKey: body.requestKey ?? null,
-          customer: body.customer,
-          location: body.location,
-          details: body.details || null, // an empty box is no words
-          answers: body.answers,
-          source: "widget",
-          actorUserId: null,
-          now: new Date(),
-          admitNewBooking,
-        })
-      ).catch((error: unknown) => {
-        handBack(); // a crash made no booking either
-        throw error;
-      });
+      const result = await oneCopyOfAFormAtATime
+        .book(formKey, () =>
+          bookTime({
+            organizationId,
+            bookingLinkId: body.bookingLinkId,
+            personId: body.personId ?? null,
+            startsAt: new Date(body.startsAt),
+            requestKey: body.requestKey ?? null,
+            customer: body.customer,
+            location: body.location,
+            details: body.details || null, // an empty box is no words
+            answers: body.answers,
+            source: "widget",
+            actorUserId: null,
+            now: new Date(),
+            admitNewBooking,
+          })
+        )
+        .catch((error: unknown) => {
+          handBack(); // a crash made no booking either
+          throw error;
+        });
 
       // Only a booking made counts: not a refusal, and not a form's booking answered again.
       if (!result.booked || result.alreadyBooked) handBack();
