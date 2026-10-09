@@ -9,7 +9,7 @@ import { SignOutLink } from "@/components/auth/sign-out-link";
 import { CalendarConnectionCard } from "@/components/calendar/calendar-connection-card";
 import { BusinessInitialMark } from "@/components/dashboard/business-initial-mark";
 import { EmailSendingCard } from "@/components/email-sending/email-sending-card";
-import { ServicesList } from "@/components/services/services-list";
+import { BookingLinksList } from "@/components/booking-links/booking-links-list";
 import type { MeType } from "@/lib/api-client/dashboard/fetch-me";
 import { authClient } from "@/lib/auth-client";
 import { isPlatformAdmin } from "@/lib/is-platform-admin";
@@ -48,7 +48,7 @@ export function DashboardHomeScreen({ me, onSignedOut }: { me: MeType; onSignedO
           </p>
         </div>
 
-        <ServicesList businessSlug={me.organization.slug} />
+        <BookingLinksList businessSlug={me.organization.slug} />
 
         <CalendarConnectionCard />
 

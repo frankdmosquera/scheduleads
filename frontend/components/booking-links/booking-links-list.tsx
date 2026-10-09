@@ -12,7 +12,7 @@ import {
   type BookingLinksResultType,
 } from "@/lib/api-client/booking-links/fetch-booking-links";
 
-export function ServicesList({ businessSlug }: { businessSlug: string }) {
+export function BookingLinksList({ businessSlug }: { businessSlug: string }) {
   const [result, setResult] = useState<BookingLinksResultType | null>(null);
 
   // Bump to ask again, on "Try again".
@@ -37,7 +37,7 @@ export function ServicesList({ businessSlug }: { businessSlug: string }) {
       <p className="mt-1 text-sm text-muted-foreground">What customers can book on your site.</p>
 
       <div className="mt-6">
-        <ServicesListBody
+        <BookingLinksListBody
           result={result}
           onRetry={() => {
             setResult(null); // back to loading while it asks again
@@ -49,7 +49,7 @@ export function ServicesList({ businessSlug }: { businessSlug: string }) {
   );
 }
 
-function ServicesListBody({
+function BookingLinksListBody({
   result,
   onRetry,
 }: {
