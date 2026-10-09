@@ -13,14 +13,22 @@ export async function fetchOneService(
   slug: string,
   bookingLinkId: string
 ): Promise<OneServiceResultType> {
+  // Hono's client drops an empty segment, so a blank id would ask for the whole list (F-278).
+  if (slug.trim() === "" || bookingLinkId.trim() === "") {
+    return { state: "problem", problem: "nothing-to-book" };
+  }
+
   try {
+    // Hono's client puts the values in the path as they are: a "/" or "?" would reach another route.
     const response = await apiClient.public[":slug"]["booking-links"][":bookingLinkId"].$get({
-      param: { slug, bookingLinkId },
+      param: { slug: encodeURIComponent(slug), bookingLinkId: encodeURIComponent(bookingLinkId) },
     });
     const status: number = response.status; // the rate limit's 429 is not in the route's type
     if (response.status !== 200) return { state: "problem", problem: problemFromApiAnswer(status) };
 
     const { bookingLink } = await response.json();
+    // Never trusted blindly: an answer with no service in it would crash the host's page.
+    if (!bookingLink) return { state: "problem", problem: problemFromApiAnswer(null) };
     return { state: "ok", service: bookingLink };
   } catch {
     return { state: "problem", problem: problemFromApiAnswer(null) };

@@ -1079,3 +1079,34 @@ copy that books, after one that throws, and after two copies of one form;
 shown to fail with the line at :19 removed.
 **Resolution:** Fixed 2026-10-08 in 9.3's fourth review fixes: one-copy-of-a-form-at-a-time.ts exports one object, `oneCopyOfAFormAtATime`, with `book` (the route calls `oneCopyOfAFormAtATime.book`) and `formsInHand()`, the count of forms in hand, as the limiter's `size()`. Test: "every form is cleared from memory once its copies end: booked, failed, or two at once" (0 after a copy that books, 0 after one that throws, 1 while two copies of one form run, 0 after); fails with the clearing line removed (restored after). Backend 77 files, 876 tests pass.
 Closed 2026-10-08 by re-review of 9.3's fourth fix (scope: 011c991..16a02b3): the finally at one-copy-of-a-form-at-a-time.ts:20 still clears a form once its last copy ends, and `formsInHand()` (:25-27) reads the module's map size, as the limiter's `size()` does. Deleting the clearing line fails "every form is cleared from memory once its copies end" at its first check (`formsInHand()` 1, expected 0; 1 failed of 4); file restored, sha256 identical. `git diff -w 011c991 16a02b3` on public-bookings-routes.ts shows only `oneCopyOfAFormAtATime(` becoming `oneCopyOfAFormAtATime.book(` and the `.catch` moved to its own line; the bookTime arguments and the hand-back are unchanged, and `git grep oneCopyOfAFormAtATime` finds no other caller. Names and the one-line comment on `formsInHand()` match coding-standards.md. Full backend suite 77 files, 876 passed; `npx tsc --noEmit -p backend` passes.
+
+### F-278 [P2] fixed - A Book now with an empty bookingId calls the service list's route, reads its answer as a service and crashes the host page
+
+**File:** packages/booking-component/api-client/fetch-booking-service.ts:17-24 (the call: booking-modal.tsx:103-104; the crash: booking-modal/service-screen.tsx:18; the cause: hono's client, node_modules/hono/dist/client/utils.js:12)
+**Found:** 2026-10-09 by /audit independent (scope: step 9.4, f341569..90a6a1e; lens: all)
+**Why it matters:** `BookNowTrigger` takes `bookingId?: string`, and the
+modal treats anything but `undefined` as a named service. Hono's client
+fills a path parameter without encoding it and drops the segment when the
+value is empty (`v ? "/" + v : ""`), so `bookingId=""` asks
+`/public/<slug>/booking-links`, the list route, which answers 200.
+`fetchBookingService` trusts every 200 as one service and returns
+`{ state: "ok", service: undefined }`. Shown with a scratch test in the
+package (removed after) against the running API: the URL built was
+`http://localhost:3401/public/clinic-dev/booking-links` and the result
+`{"state":"ok"}` with no service. The modal then renders the service screen,
+which reads `props.service.layout` on `undefined`, a TypeError during render;
+with no error boundary in the package that takes down the host's page, not
+only the window. A host passing a blank id from its own content (a
+`bookingId` field left empty instead of null, the shape face-and-body's
+`Service.bookingId: string | null` invites) is the realistic way in; an id
+holding a `/` or `?` likewise reaches another route, though those answer a
+refusal today. The spec says a service id that is not offered shows
+"Nothing can be booked online right now."
+**Suggested fix:** Treat a blank `bookingId` as "nothing to book" (or as no
+id, opening the list) before any call, encode the path parameters
+(`encodeURIComponent`) where the package calls the client, and have
+`fetchBookingService` return "cannot-load" when a 200 carries no
+`bookingLink`. A unit test of `fetchBookingService` through
+`hc<PublicAppType>` with a fake fetch: a blank id never reaches the list
+route, and a 200 without `bookingLink` is a problem, shown able to fail.
+**Resolution:** Fixed 2026-10-09 in 9.4's review fixes (Frank's yes): fetch-one-service.ts (fetch-booking-service.ts before the rename in 859b64d) answers "nothing to book" for a blank slug or id before any call, encodes both path values, and reads a 200 with no bookingLink as "cannot load"; fetch-service-list.ts does the same for a blank slug and a 200 without the business or its list. New tests through hc<PublicAppType> over a fake fetch (fetch-one-service.test.ts, fetch-service-list.test.ts): 5 of them fail on the code before the fix and pass after (restored, sha256 identical); 18 of 18 pass. Live on the booking preview, painting-dev: a blank id shows "Nothing can be booked online right now." with "Call 403 555 0100", and the page stays up.
