@@ -1409,3 +1409,30 @@ again after a first 429 is held. Then the comment's "never falls to the
 page" holds as written.
 **Resolution:** Fixed 2026-10-09: any send from Try again draws a waiting line in place of the Book button and moves the focus onto it until the answer ("Checking your booking…" while unsure, "Booking…" otherwise), so Try again removing itself never drops the focus to the page. The comment over `.sa-focus-place:focus` now says it holds the focus while Try again sends and on the words a send ends with. booking-form-view.test.ts checks that after a first Book answered 429, Try again shows "Booking…" as a status holding the focus, with no second "Booking…" button; with the old form view it fails there, no status on screen.
 Closed 2026-10-09 by the fifth re-review of 9.6's review fixes (scope: 9f82c69..bbb6880): in booking-form-view.tsx Try again calls `book(true)`, `send` sets `retrying` for that send only (cleared when the answer comes), and `waiting` (sending and unsure or retrying) draws the status line in place of Book and moves the focus onto it. Shown with temporary jsdom tests (removed), each pressing Try again with the focus on it: after a first Book answered 429, and after the route's 503 "unavailable", the focus is on the "Booking…" status while the resend is held, never BODY, with no Book or "Booking…" button beside it, and the same key sent; a second 503 puts the focus back on the words with Book drawn, and a third try books. Nothing else broke: a first Book, and a Book after a retried 429, still show the disabled "Booking…" button and no status (`retrying` does not stick); Try again after Address was emptied sends nothing and focuses Address, Book drawn; a retry from a 429 that loses its answer turns unsure, and the next Try again shows "Checking your booking…" (one status only), with a 400 refusal then focusing the words; a time taken after such a retry is handed on; in the whole window a booking or a taken time after Try again from a 429 sends the same key and moves the focus to the new screen's heading. Breaking it fails the suite (booking-form-view.tsx copied aside and restored, sha256 59bfe7d7... before and after): the 9f82c69 form view fails "keeps the focus in the form while Try again resends after a limit reached" (1 failed, 70 passed, no status on screen), and the focus move limited to unsure (`if (waiting && unsure)`) fails it at line 208. Package suite 71 of 71.
+
+### F-291 [P3] open - A tick from anyone who types her email moves her yes to their number
+**File:** backend/lib/booking/book-time.ts:300-306 (the contact's yes and number are set from this form's phone whatever was there) and backend/lib/crm/find-or-create-contact.ts:56-80 (a contact is matched by email alone)
+**Found:** 2026-10-09 by the review of step 9.7 (scope: cfc3dbc; lens: data integrity)
+**Why it matters:** The contact holds one yes and one number. A later
+booking with her email and a different phone, ticked, overwrites both, so
+her yes for her own number is gone from the contact. Since the public form
+has no login, anyone who types her email can do it. Shown with a temporary
+route test (removed) on a business that asks: Jane books with her email and
+(403) 555-0148, ticked, and the contact holds +14035550148; a second booking
+with the same email, name "Someone Else" and (587) 555-0177, ticked, leaves
+the contact with `laterTextsYesPhone` +15875550177 while its `phone` is
+still (403) 555-0148. Decision 13 says an unticked box never takes back an
+earlier yes; a tick for another number does, and the same happens to the
+real customer when she books once from a second phone. Nobody is texted
+without a yes (the new number was typed by whoever ticked), and the timeline
+still holds her first entry with its number, so nothing is lost for good,
+but whatever later reads the contact to choose who may get later texts
+(feature 12 onward) sees her as not having said yes for her own phone.
+**Suggested fix:** Keep the yes per number rather than one per contact (for
+example a small table of contact, number and date, one row per number, its
+date moved on each new tick), or, keeping the two columns, move them only
+when the ticked number is the contact's own phone or the contact has no yes
+yet, and otherwise record only the timeline entry. Add a route test: a
+second ticked booking with her email and another phone leaves her yes for
+her own number in place.
+**Resolution:**
