@@ -97,9 +97,17 @@ export function BookingFormView({
     const answer = await sendBooking(apiClient, slug, request);
     sendingNow.current = false;
     setSending(false);
-    const noAnswer = answer.state === "no-answer";
-    setUnsure(noAnswer);
-    onUnsureChange(noAnswer);
+    // The route's own answers about this form settle it: it looks the form's key up first. No
+    // answer, or one the route did not write (a server fault, a proxy), may hide a booking made;
+    // a "too many tries" may come before the look-up. Those freeze the form, or keep it frozen.
+    const settled =
+      answer.state === "booked" || answer.state === "time-taken" || answer.state === "refused";
+    const unclear =
+      answer.state === "no-answer" ||
+      (answer.state === "problem" && answer.problem === "cannot-load");
+    const nowUnsure = unsure ? !settled : unclear;
+    setUnsure(nowUnsure);
+    onUnsureChange(nowUnsure);
 
     switch (answer.state) {
       case "booked":
@@ -113,8 +121,8 @@ export function BookingFormView({
         return;
       case "problem":
         setProblem({
-          words: problemWords[answer.problem],
-          retry: answer.problem !== "nothing-to-book",
+          words: answer.problem === "cannot-load" ? noAnswerWords : problemWords[answer.problem],
+          retry: nowUnsure || answer.problem !== "nothing-to-book",
         });
         return;
       case "no-answer":
@@ -261,6 +269,11 @@ export function BookingFormView({
         <button type="submit" className="sa-submit" disabled={sending} aria-busy={sending}>
           {sending ? "Booking…" : "Book"}
         </button>
+      )}
+      {unsure && sending && (
+        <p className="sa-loading" role="status">
+          Checking your booking…
+        </p>
       )}
     </form>
   );

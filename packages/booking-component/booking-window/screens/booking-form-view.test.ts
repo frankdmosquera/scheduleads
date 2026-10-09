@@ -143,6 +143,45 @@ describe("screen two's form", () => {
     expect(unsure).toEqual([true, false]);
   });
 
+  it("stays frozen on an answer that does not settle the form, and says it is checking", async () => {
+    const { apiClient, sends } = clientWithHeldSends();
+    const { unsure } = renderForm(apiClient);
+    fillIn();
+    const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
+
+    // A server fault on the first try may hide a booking made: frozen, as a lost answer.
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+    await waitFor(() => expect(sends).toHaveLength(1));
+    await act(async () => sends[0]?.answer(json(500, { error: "x" })));
+    expect(screen.getByRole("alert").textContent).toContain("It never books twice");
+    expect(screen.getByLabelText("Email").matches(":disabled")).toBe(true);
+
+    // Try again says it is checking while it waits.
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(sends).toHaveLength(2));
+    expect(screen.getByRole("status").textContent).toBe("Checking your booking…");
+
+    // "Too many tries" may come before the form is looked up: still frozen, still Try again.
+    await act(async () =>
+      sends[1]?.answer(json(429, { error: { code: "too_many_tries", message: "Too many." } }))
+    );
+    expect(screen.getByLabelText("Email").matches(":disabled")).toBe(true);
+    expect(screen.queryByRole("button", { name: "Book" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeDefined();
+    expect(unsure).toEqual([true, true]);
+
+    // The route's own refusal settles it: she may change her details again.
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(sends).toHaveLength(3));
+    await act(async () =>
+      sends[2]?.answer(
+        json(400, { error: { code: "bad_request", message: "Answer: Which colour?" } })
+      )
+    );
+    expect(screen.getByLabelText("Email").matches(":disabled")).toBe(false);
+    expect(unsure).toEqual([true, true, false]);
+  });
+
   it("says a part of the form no field shows, and sends nothing", async () => {
     const { apiClient, sends } = clientWithHeldSends();
     const many = Array.from({ length: 21 }, (_, n) => ({

@@ -96,6 +96,19 @@ describe("readBookingForm", () => {
     });
   });
 
+  it("ties a too-long answer to its own question when every question is answered", () => {
+    const read = readBookingForm(
+      { ...filledForm, answers: { "q-colour": "Blue", "q-pets": "x".repeat(501) } },
+      questions,
+      choice
+    );
+
+    expect(read).toEqual({
+      state: "errors",
+      errors: [{ field: "answer:q-pets", message: "Keep each answer to 500 characters." }],
+    });
+  });
+
   it("says a part no field shows as the form's own error: more answers than the route takes", () => {
     const many = Array.from({ length: 21 }, (_, n) => ({
       id: `q-${n}`,

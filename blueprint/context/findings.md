@@ -1244,6 +1244,8 @@ the order above, and a too-long answer to the second answered question tied
 to that question. Each shown able to fail.
 **Resolution:** Fixed 2026-10-09: booking-window.test.ts (jsdom, with open and close standing in for <dialog>) drives the whole window: 10:00 picked, details typed, Book answered 409 time_taken, back on her day without 10:00, 11:00 picked, her name still there, Book answered 201; both sends carry the same key and the done screen shows the API's `when` text as sent. read-booking-form.test.ts adds "ties each answer's error to its own question, in the business's order". Proved able to fail: a new form on a taken time, the done screen formatting `startsAt` in the browser, the errors reversed, and an answer's error tied by index into all questions each failed a test; files restored, sha256 the same.
 Re-review 2026-10-09 of 9.6's review fixes (scope: 134b281..4664807), left open: most of it holds, one named break still passes. Holding, each break run with `npm run test --workspace=@scheduleads-app/booking-component` and each file restored from a copy with sha256 identical: onTimeTaken also calling `setForm(newBookingForm())`, `form={{ ...form, requestKey: crypto.randomUUID() }}` given to DetailsScreen, and the done screen showing `new Date(booking.startsAt).toLocaleString()` each fail "keeps the form and its key across a time taken" (booking-window.tsx 97ba7800..., month-done-screen.tsx 2affb87e...); dropping the sort into form order, and `fieldOf(issue.path, questions)` (an answer tied by index into all questions), each fail "ties each answer's error to its own question" (read-booking-form.ts 4aa84208...). Not holding: the finding's own named break, every answer error mapped to the first answered question (`answered[second]` changed to `answered[0]`, and also to the last answered), leaves the suite green, 65 of 65, because the new tie test answers only one question (q-colour is empty, so the too-long q-pets is both answered[0] and answered[second]). With two answers, "Blue" to question one and 501 characters to question two, the error would show under question one and focus would land there. Needed: a case with both questions answered and the second too long, its error under the second. Also not pinned, which the suggested fix asked for: a new key for each opening (useState(newBookingForm) changed to one form kept across openings leaves 65 of 65 green); the window is mounted only while open, so today it holds by structure.
+Second fix 2026-10-09: the re-review's gap is pinned. read-booking-form.test.ts "ties a too-long answer to its own question when every question is answered" fails with every answer error on `answered[0]`; booking-window.test.ts "gives each opening of the window its own form key" fails with one key shared by every opening (a module-level form). Files restored, sha256 the same.
+
 
 ### F-284 [P3] closed - The browser check lets a form through when the schema fails on a part no field shows, such as more than 20 answers
 
@@ -1308,6 +1310,8 @@ a 201, a 409, or a 400 or 503 the route wrote (its JSON `error.code`). A 429,
 a 5xx, or a body that is not the route's keeps it frozen with Try again and
 the phone, in words that say she may already be booked. A test for the 429
 and for a 502 after a lost answer.
+**Resolution:** Fixed 2026-10-09: only an answer that settles what became of this form unfreezes it: a booking, a taken time, or the route's own refusal (400, 409 request_key_used, the route's 503 "unavailable"). A server fault, a proxy's page, a 201 without its booking (all read as cannot-load), and "too many tries" freeze the form, or keep it frozen, with the lost-answer words and Try again. send-booking.ts reads a 503 as the route's only when it carries code "unavailable". Tests: booking-form-view.test.ts "stays frozen on an answer that does not settle the form" (a 500 freezes, a 429 keeps it frozen, the route's 400 frees it), booking-window.test.ts "hides Back to the times while a lost answer is unknown" (a 502 freezes, the route's 409 time_taken frees it), send-booking.test.ts "reads a 503 the route did not write as unclear". Breaking the rule, or the 503 check, fails them.
+
 
 ### F-287 [P3] open - While Try again resends after a lost answer, screen two shows nothing at all: no button, no words, no sign it is sending
 
@@ -1328,6 +1332,8 @@ was about.
 (for example "Checking your booking…" with `role="status"` or the problem
 area's own busy state) and keep the focus inside the form; a test that the
 held resend shows it.
+**Resolution:** Fixed 2026-10-09: while Try again resends, "Checking your booking…" shows as a status in place of the button. Pinned by booking-form-view.test.ts "stays frozen on an answer that does not settle the form, and says it is checking"; fails with the line removed.
+
 
 ### F-288 [P3] open - Screen two's hidden Back during a lost answer is pinned by no test
 
@@ -1342,3 +1348,5 @@ says logic a step adds gets its tests.
 **Suggested fix:** In booking-window.test.ts (which already drives the whole
 window), a Book answered with no answer, then no "Back to the times" button
 until Try again is answered; shown able to fail with the line above.
+**Resolution:** Fixed 2026-10-09: booking-window.test.ts "hides Back to the times while a lost answer is unknown, and shows it again once settled" checks the rail's Back is drawn, gone after a 502, and the window back on screen one once the route settles it; fails with Back always drawn in month-details-screen.tsx.
+

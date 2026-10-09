@@ -98,6 +98,15 @@ describe("sendBooking", () => {
     });
   });
 
+  it("reads a 503 the route did not write as unclear, never as the route's refusal", async () => {
+    const { apiClient } = clientAnswering(503, "<html>Service Unavailable</html>");
+
+    expect(await sendBooking(apiClient, "clinic-dev", request)).toEqual({
+      state: "problem",
+      problem: "cannot-load",
+    });
+  });
+
   it("tells a lost connection apart: the booking may or may not have been made", async () => {
     const { apiClient } = clientAnswering(0, "no answer");
 

@@ -83,6 +83,22 @@ function fakeApi(bookAnswers: Response[]) {
   return { apiClient, posted };
 }
 
+const openToScreenTwo = async (apiClient: ReturnType<typeof fakeApi>["apiClient"]) => {
+  render(
+    createElement(BookingWindow, {
+      apiClient,
+      slug: "clinic-dev",
+      bookingId: "facial",
+      onClosed() {},
+    })
+  );
+  fireEvent.click(await screen.findByRole("button", { name: "10:00 a.m." }));
+  fireEvent.click(screen.getByRole("button", { name: /^Next: / }));
+  type("Name", "Jane Doe");
+  type("Email", "jane@example.com");
+  type("Address", "12 Elm Street");
+};
+
 const type = (label: string, value: string) =>
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
 
@@ -144,5 +160,44 @@ describe("the booking window", () => {
       elevenOClock.startsAt,
     ]);
     expect(posted[1]?.requestKey).toBe(posted[0]?.requestKey);
+  });
+
+  it("hides Back to the times while a lost answer is unknown, and shows it again once settled", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-09T18:00:00.000Z"));
+    const words = "Sorry, that time was taken while you were booking. Please pick another one.";
+    const { apiClient } = fakeApi([
+      new Response("<html>Bad gateway</html>", { status: 502 }),
+      new Response(JSON.stringify({ error: { code: "time_taken", message: words } }), {
+        status: 409,
+      }),
+    ]);
+    await openToScreenTwo(apiClient);
+    expect(screen.getByRole("button", { name: "Back to the times" })).toBeDefined();
+
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Book" })));
+    expect(await screen.findByRole("button", { name: "Try again" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Back to the times" })).toBeNull();
+
+    // Settled: the time was taken, so this form booked nothing and screen one comes back.
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
+    expect((await screen.findByRole("alert")).textContent).toBe(words);
+  });
+
+  it("gives each opening of the window its own form key", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-09T18:00:00.000Z"));
+    const first = fakeApi([new Response("{}", { status: 500 })]);
+    await openToScreenTwo(first.apiClient);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Book" })));
+    cleanup(); // closed: the window is gone
+
+    const second = fakeApi([new Response("{}", { status: 500 })]);
+    await openToScreenTwo(second.apiClient);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Book" })));
+
+    await waitFor(() => expect(second.posted).toHaveLength(1));
+    expect(first.posted[0]?.requestKey).toBeDefined();
+    expect(second.posted[0]?.requestKey).not.toBe(first.posted[0]?.requestKey);
   });
 });

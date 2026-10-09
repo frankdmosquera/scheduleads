@@ -69,7 +69,8 @@ export async function sendBooking(
   if (response.status === 400) {
     return { state: "refused", message: message ?? fallbackWords.refused, canRetry: false };
   }
-  if (response.status === 503) {
+  // The route's own 503, after it looked the form up; a proxy's 503 is no answer about the form.
+  if (response.status === 503 && answer?.error?.code === "unavailable") {
     return { state: "refused", message: message ?? fallbackWords.unreadable, canRetry: true };
   }
   return { state: "problem", problem: problemFromApiAnswer(response.status) };
