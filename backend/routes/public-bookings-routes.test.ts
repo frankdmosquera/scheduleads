@@ -711,6 +711,22 @@ describe("a contact's limit: 4 bookings in 10 minutes (feature 9, decision 8)", 
     expect((await bookFor(jane, onDay)).status).toBe(429);
   });
 
+  test("a broken copy of a form never lets its valid copy book uncounted", async () => {
+    const onDay = addDays(day, 10);
+    const jane = { name: "Jane Doe", email: `broken-copy-${tag}@example.com` };
+    let made = 0;
+    for (let round = 0; round < 8; round++) {
+      const valid = form(await firstFreeTime(clinic.mei, onDay), {
+        personId: clinic.mei,
+        customer: jane,
+      });
+      const broken = { ...valid, bookingLinkId: id() }; // the same form key, a service that is not there
+      const answers = await Promise.all([post(bookingsPath, broken), post(bookingsPath, valid)]);
+      made += answers.filter((answer) => answer.status === 201).length;
+    }
+    expect(made).toBe(4);
+  });
+
   // The first free time at one of the two extra businesses, and a form for it.
   async function quoteForm(business: typeof shop, onDay: string, customer: Record<string, string>) {
     const response = await app.request(

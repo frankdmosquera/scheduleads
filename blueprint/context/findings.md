@@ -1029,3 +1029,32 @@ keys being booked (per business), and let a copy whose key is already in
 flight through without a take of its own, so it ends at the constraint or
 the replay as now and hands back nothing. A route test like the probe above.
 **Resolution:** Fixed 2026-10-08 in 9.3's second review fixes: the contact limiter remembers which forms (request keys) it counted in each window, and a copy of a form already counted for every key passes with no count of its own (`take(keys, formKey)`, create-rate-limiter.ts); the route passes the form's request key. Because copies now share one count, a copy answered the form's booking (`alreadyBooked`) no longer hands it back, or the losing copy would free the place the winning one used; only a refusal or a crash hands it back, and a form handed back is no longer remembered. This replaces the `alreadyBooked` hand-back of F-271's fix. Tests: "copies of one form at the contact's last place all get the booking" (three bookings, then one form sent twice at once: both 201, one booking, the next form 429) and the unit tests "count once, and a different form is still refused at the limit" and "a form handed back is no longer counted". Mutations: no form key fails both copies route tests; handing back on `alreadyBooked` fails them in 2 of 3 runs (which copy wins the race decides it); keeping a handed-back form fails its unit test. Spec decision 8 says so.
+Re-reviewed 2026-10-08 by re-review of 9.3's second fixes (scope: 8e8a864..f99ee0f), left `fixed`: the defect itself is gone. create-rate-limiter.ts:41-42 lets a copy of a form already counted in every one of the contact's windows pass with `taken: []`, and public-bookings-routes.ts:71 passes `body.requestKey`, so the copy at the last place no longer takes a place of its own. Dropping the form key at :71 fails both copies route tests 3 runs of 3; handing back on `alreadyBooked` at :101 fails one or both in 2 of 3 runs; deleting `window.formKeys.delete(formKey)` at create-rate-limiter.ts:65 fails "a form handed back is no longer counted" (1 failed of 9). Files restored, sha256 identical. Not closed because the repair opens a new way past the limit (F-276): it closes with F-276's repair. Fixed again 2026-10-08, after its re-review found F-276: the shared count is gone (create-rate-limiter.ts is back to its 8e8a864 form, no form keys). Instead the route books the copies of one form one after the other (one-copy-of-a-form-at-a-time.ts, keyed by business and request key, in memory like the counts): a copy sent while the first is still saving waits, then is answered that booking by bookTime's look-up before the limit is asked, and the `alreadyBooked` hand-back of F-271's fix is back. "copies of one form at the contact's last place all get the booking" fails 3 of 3 runs with the turn-taking bypassed.
+
+### F-276 [P2] fixed - A refused copy of a form hands back the one count its sibling copy books on, so the contact gets a fifth booking
+
+**File:** backend/routes/public-bookings-routes.ts:101 (with backend/lib/rate-limit/create-rate-limiter.ts:41-42,63-65; the rules: current-feature.md decision 8)
+**Found:** 2026-10-08 by /audit independent (scope: 9.3 second review fixes; lens: correctness, security)
+**Why it matters:** Copies of one form now share one count, held by
+whichever copy took it first. When that copy is refused (a booking link
+that does not exist, a missing answer, a taken time) it hands the count back
+at :101 and giveBack forgets the form (:65), while the other copy, which
+passed with `taken: []`, goes on to book. A booking is made and nothing is
+counted for it. The request key is the client's own, so two requests with
+one key and different contents do it on purpose. Shown with a scratch test
+in the bookings route tests (removed after, sha256 identical), 3 runs of 3:
+eight rounds, each a fresh key sent twice at once for one email, one copy
+with an unknown `bookingLinkId`, the other a valid form, answered
+`[404,201]` five times then `[429,429]`: five bookings in a window of four.
+With the valid copy sent 1ms later the same; 3ms later it is counted (four).
+Before f99ee0f each copy took its own place, so this could not happen;
+decision 8 says "many sent at once cannot all pass" and only bookings made
+count.
+**Suggested fix:** Hand back a shared count only when no copy of the form
+booked: when the counting copy is refused, look up the form's booking
+(`bookedByThisForm`, or a hand-back that bookTime makes after its own
+`refuseUnlessBooked`) and keep the count if it exists; or hold the form's
+count until every copy in flight has finished (a per-form in-flight tally in
+the limiter), handing back only when the last ends unbooked. A route test
+like the probe above, shown able to fail.
+**Resolution:** Fixed 2026-10-08 by replacing F-275's shared count: copies of one form no longer pass on another copy's count; they are booked one after the other, each taking its own count unless the form's booking already exists, so a refused copy hands back only its own. Test: "a broken copy of a form never lets its valid copy book uncounted" (the probe above: eight rounds of a broken and a valid copy of one form sent at once for one email; exactly four bookings made), 3 of 3 runs. Unit tests for one-copy-of-a-form-at-a-time.ts: copies wait for each other, different forms and the owner's bookings do not, a failed copy does not stop the next.

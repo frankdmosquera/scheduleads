@@ -84,10 +84,12 @@ repo. Wiring it into the agency's own site is feature 10.
    A booking is counted just before it is saved, after the form's own
    booking is looked up, so a form sent again after a lost answer gets its
    booking and never "too many tries", while many sent at once cannot all
-   pass. Copies of one form (its request key) share one count, also while
-   the first is still being saved. The count is handed back when the
-   booking is refused (a taken time, a missing answer) or crashes: only
-   bookings made count against the contact (9.3). A count handed back
+   pass. Copies of one form (its request key) are booked one after the
+   other, in the API's memory like the counts: a copy sent while the first
+   is still being saved waits, then gets that booking from the look-up.
+   The count is handed back when the booking is refused (a taken time, a
+   missing answer), crashes, or is the form's own booking answered again:
+   only bookings made count against the contact (9.3). A count handed back
    after its window ended frees nothing in the next one.
 9. **The Book button locks after one press and the form owns one key**
    (5d decision 7). The key is made when the details screen opens. A retry

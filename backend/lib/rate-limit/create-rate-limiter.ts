@@ -5,11 +5,10 @@
 
 import { rateLimitClock } from "./rate-limit-clock.js";
 
-// formKeys: the forms counted in this window, so copies of one form count once.
-export type RateLimitWindowType = { endsAt: number; count: number; formKeys: Set<string> };
+export type RateLimitWindowType = { endsAt: number; count: number };
 
 // Where each key's try was counted, so giveBack takes it off that window and no later one.
-export type RateLimitTakenType = { key: string; windowEndsAt: number; formKey?: string }[];
+export type RateLimitTakenType = { key: string; windowEndsAt: number }[];
 
 export type RateLimitResultType =
   { allowed: true; taken: RateLimitTakenType } | { allowed: false; retryAfterSeconds: number };
@@ -32,14 +31,11 @@ export function createRateLimiter({ most, windowMs }: { most: number; windowMs: 
   };
 
   return {
-    // Counts one try for every key, or for none when any of them is already at its limit. A copy of
-    // a form already counted for every key passes without a count of its own (formKey, optional).
-    take(keys: string[], formKey?: string): RateLimitResultType {
+    // Counts one try for every key, or for none when any of them is already at its limit.
+    take(keys: string[]): RateLimitResultType {
       const now = rateLimitClock.now();
       sweep(now);
       const open = keys.map((key) => openWindow(key, now));
-      const formCounted = open.every((window) => formKey && window?.formKeys.has(formKey));
-      if (formKey && keys.length > 0 && formCounted) return { allowed: true, taken: [] };
       const full = open.filter((window) => window !== undefined && window.count >= most);
       if (full.length > 0) {
         const freeAt = Math.max(...full.map((window) => window!.endsAt));
@@ -48,9 +44,8 @@ export function createRateLimiter({ most, windowMs }: { most: number; windowMs: 
       const taken = keys.map((key, index) => {
         let window = open[index];
         if (window) window.count += 1;
-        else windows.set(key, (window = { endsAt: now + windowMs, count: 1, formKeys: new Set() }));
-        if (formKey) window.formKeys.add(formKey);
-        return { key, windowEndsAt: window.endsAt, formKey };
+        else windows.set(key, (window = { endsAt: now + windowMs, count: 1 }));
+        return { key, windowEndsAt: window.endsAt };
       });
       return { allowed: true, taken };
     },
@@ -58,11 +53,9 @@ export function createRateLimiter({ most, windowMs }: { most: number; windowMs: 
     // Hands back tries that did not happen after all, such as a booking refused for a taken time.
     // A window that has ended since is left alone: the try was never counted in the next one.
     giveBack(taken: RateLimitTakenType): void {
-      for (const { key, windowEndsAt, formKey } of taken) {
+      for (const { key, windowEndsAt } of taken) {
         const window = windows.get(key);
-        if (!window || window.endsAt !== windowEndsAt || window.count === 0) continue;
-        window.count -= 1;
-        if (formKey) window.formKeys.delete(formKey);
+        if (window && window.endsAt === windowEndsAt && window.count > 0) window.count -= 1;
       }
     },
 

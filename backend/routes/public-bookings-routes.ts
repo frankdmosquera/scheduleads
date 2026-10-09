@@ -16,6 +16,7 @@ import {
 import { db } from "../database.js";
 import { bookTime } from "../lib/booking/book-time.js";
 import { findBookableOrganizationId } from "../lib/booking/find-bookable-organization-id.js";
+import { oneCopyOfAFormAtATime } from "../lib/booking/one-copy-of-a-form-at-a-time.js";
 import { notBookableHere } from "../lib/errors/not-bookable-here.js";
 import { personNotTaken } from "../lib/errors/person-not-taken.js";
 import { refuse } from "../lib/errors/refuse.js";
@@ -67,8 +68,7 @@ export const publicBookingsRoutes = new Hono()
       let taken: RateLimitTakenType | null = null;
       let retryAfterSeconds = 0;
       const admitNewBooking = () => {
-        // Copies of one form, sent while the first is still booking, share its count.
-        const counted = publicRateLimiters.bookingContacts.take(contactKeys, body.requestKey);
+        const counted = publicRateLimiters.bookingContacts.take(contactKeys);
         if (!counted.allowed) retryAfterSeconds = counted.retryAfterSeconds;
         else taken = counted.taken;
         return counted.allowed;
@@ -77,28 +77,32 @@ export const publicBookingsRoutes = new Hono()
         if (taken) publicRateLimiters.bookingContacts.giveBack(taken);
       };
 
-      const result = await bookTime({
-        organizationId,
-        bookingLinkId: body.bookingLinkId,
-        personId: body.personId ?? null,
-        startsAt: new Date(body.startsAt),
-        requestKey: body.requestKey ?? null,
-        customer: body.customer,
-        location: body.location,
-        details: body.details || null, // an empty box is no words
-        answers: body.answers,
-        source: "widget",
-        actorUserId: null,
-        now: new Date(),
-        admitNewBooking,
-      }).catch((error: unknown) => {
+      // Copies of one form in turn: a copy sent while the first is still saving waits, then gets its
+      // booking from the form's own look-up, before the limit is asked.
+      const formKey = body.requestKey ? `${organizationId}:${body.requestKey}` : null;
+      const result = await oneCopyOfAFormAtATime(formKey, () =>
+        bookTime({
+          organizationId,
+          bookingLinkId: body.bookingLinkId,
+          personId: body.personId ?? null,
+          startsAt: new Date(body.startsAt),
+          requestKey: body.requestKey ?? null,
+          customer: body.customer,
+          location: body.location,
+          details: body.details || null, // an empty box is no words
+          answers: body.answers,
+          source: "widget",
+          actorUserId: null,
+          now: new Date(),
+          admitNewBooking,
+        })
+      ).catch((error: unknown) => {
         handBack(); // a crash made no booking either
         throw error;
       });
 
-      // Only a booking made counts. A form's booking answered again keeps the one count its copies
-      // share; a refusal hands it back.
-      if (!result.booked) handBack();
+      // Only a booking made counts: not a refusal, and not a form's booking answered again.
+      if (!result.booked || result.alreadyBooked) handBack();
 
       if (!result.booked) {
         switch (result.reason) {
