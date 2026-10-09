@@ -4,7 +4,7 @@
 
 import type { LeadAnswerType } from "@scheduleads-app/shared/db";
 
-export type BookingQuestionType = { id: string; label: string; required: boolean };
+import type { BookingQuestionType } from "./find-booking-questions.js";
 
 export type CheckedAnswersType =
   | { ok: true; answers: LeadAnswerType[] | null } // null: the business asks nothing

@@ -25,6 +25,7 @@ const {
   availabilityRule,
   booking,
   bookingLink,
+  bookingQuestion,
   bookingLinkResource,
   calendarConnection,
   commitment,
@@ -561,6 +562,32 @@ describe("booking a time", () => {
     expect(afterSwitch.id).toBe(first.id);
     expect(afterOff.id).toBe(first.id);
     expect((await rowsOf(clinic.business)).bookings).toHaveLength(1);
+  });
+
+  // F-268: a customer answers the business's required questions; the owner, booking from a call,
+  // need not.
+  test("a customer must answer a required question; the owner need not", async () => {
+    const clinic = await makeClinic("questions");
+    const owner = await makeOwner(clinic, "questions");
+    await db.insert(bookingQuestion).values({
+      id: randomUUID(),
+      organizationId: clinic.business,
+      position: 1,
+      label: "Any allergies?",
+      required: true,
+    });
+
+    expect(await customerBooking(clinic)).toEqual({
+      booked: false,
+      reason: "answer_needed",
+      question: "Any allergies?",
+    });
+    const made = bookedOrThrow(await ownerBooking(clinic, owner));
+    const [saved] = await db
+      .select({ answers: lead.answers })
+      .from(lead)
+      .where(eq(lead.id, made.leadId));
+    expect(saved?.answers).toEqual([]); // asked, nothing answered
   });
 
   test("an owner-made booking outside bookable hours, on a standby date or within the notice is booked", async () => {

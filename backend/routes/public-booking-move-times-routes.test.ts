@@ -269,6 +269,32 @@ describe("free times for moving a booking", () => {
     expect(((await response.json()) as { error: { code: string } }).error.code).toBe("unavailable");
   });
 
+  // F-269: a move with nobody picked keeps her own person, so while their calendar cannot be read
+  // the times say "try again" rather than list times that would all fail.
+  test("with nobody picked, her own person's unreadable calendar answers 503, though another is free", async () => {
+    const own = await makeClinic("own-unreadable");
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, own.facial));
+    await saveCalendarConnection({
+      organizationId: own.business,
+      resourceId: own.ana,
+      accountEmail: `ana-own-${tag}@gmail.com`,
+      grantedScopes: ["openid", "email"],
+      credentials: {
+        refreshToken: "1//saved-refresh",
+        accessToken: "ya29.saved-access",
+        accessTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      },
+    });
+    vi.stubGlobal("fetch", async () => new Response("", { status: 500 })); // Google fails for Ana
+    const response = await timesFor(own.janesBooking);
+
+    expect(response.status).toBe(503);
+    expect(((await response.json()) as { error: { code: string } }).error.code).toBe("unavailable");
+  });
+
   test("a person who does not offer the service, or another business's, answers 404", async () => {
     const stranger = await app.request(
       `/public/bookings/${makeBookingPageToken(clinic.janesBooking)}/times?from=${day}&to=${day}&person=${clinic.room}`

@@ -796,6 +796,7 @@ answer `unavailable` (503, "try again", as a picked person does) instead of
 handing over; or accept the hand-over as any available's rule and say so in
 the spec. Either way a route test like the probe above.
 **Resolution:** Fixed 2026-10-08 under Frank's F-263 decision ("someone else only if her person is busy"; an unreadable calendar is not busy): findBookingChoices answers `unavailable` (the move's 503, "try again") when a move names nobody and its own person's calendar cannot be read, before any other person is tried. Test: public-booking-move-routes.test.ts "a move with nobody picked answers try again when her own person's calendar cannot be read" (503, the booking unchanged); proved: removing the check fails it.
+Re-reviewed 2026-10-08 by independent review of 9.2 (scope: ef70707..d1c13c6, with the repair in 0ec47db..ef70707); stays fixed, for F-269. What holds: the move itself no longer hands the booking over. find-booking-choices.ts:90-92 answers `unavailable` when a move names nobody and its own person is among the candidates with an unreadable calendar; a person who no longer offers the service gives `indexOf` -1, so the move goes on to whoever is free, as decision 14's fallback says; bookTime never passes `movingBooking`, so a new booking is untouched. Removing the two lines fails the new test (1 failed of 25; file restored, sha256 identical). What does not hold: the repair made the move refuse while the move page's times, asked with nobody picked, still list the other people's times, so every time offered then answers "try again" (F-269).
 
 ### F-266 [P3] fixed - The day's counts no longer need to leave out the moving booking, so 7b/F-142's guard and its test pin nothing
 
@@ -820,8 +821,10 @@ keep the filter as a guard for a future caller and say in the comment that
 no current caller depends on it. Correct the test comment to "Ana now has
 two bookings that day, Mei none".
 **Resolution:** Fixed 2026-10-08: the day counts no longer leave out the moving booking (find-booking-choices.ts, the comment says why: it is its own person's, first when free and not counted when busy); the room check keeps its filter. The 7b test "any available does not count the booking being moved" keeps its name and its outcome, its comment now says the own-person rule decides it; the new test's comment says "Mei none".
+Re-reviewed 2026-10-08 by independent review of 9.2 (scope: ef70707..d1c13c6, with the repair in 0ec47db..ef70707); stays fixed, for the test's title only. What holds: the day-row filter is gone (find-booking-choices.ts:128-133) and nothing depended on it: the day's counts read only `freePeople`, so the moving booking's rows count only for its own person, who goes first when free (:140-147) and is not in `freePeople` when busy; its room rows are never read there (the select is by person). `notTheMovingBooking` still guards the room check (:111). The comments at :125-127 and in both tests now say what decides. Backend 843 passed three times. What does not hold: the test is still titled "any available does not count the booking being moved" (public-booking-move-routes.test.ts:277), while the code now does count it; the title claims the guard this repair removed. Retitle it to what it shows (she stays with her own person while free), or fold it into the keep-own tests; then this closes.
+Fixed again 2026-10-08 after 9.2's review: the test is renamed "a move with nobody picked stays with her own person, though counting her own booking would favour another", which is what decides it now.
 
-### F-267 [P3] fixed - The spec still says a customer_picks move is unchanged and a business_assigns move is plain any available; Frank's F-263 decision is in no plan file
+### F-267 [P3] closed - The spec still says a customer_picks move is unchanged and a business_assigns move is plain any available; Frank's F-263 decision is in no plan file
 
 **File:** blueprint/context/current-feature.md:169-189 (step 9.1b)
 **Found:** 2026-10-08 by re-review of 9.1b's fixes (scope: d21a3e9..0ec47db; lenses: quality, security, performance, tests)
@@ -840,3 +843,71 @@ a move with nobody picked keeps her own person first while free, for both
 settings, someone else only when that person is busy (Frank, 2026-10-08,
 F-263), plus whatever F-265 settles for an unreadable calendar.
 **Resolution:** Fixed 2026-10-08: step 9.1b in current-feature.md records Frank's F-263 decision and F-265 (a move with nobody picked keeps its own person while free under either setting; someone else only when busy; try again when their calendar cannot be read). The 7b archive is history and stays as written.
+Closed 2026-10-08 by independent review of 9.2 (scope: ef70707..d1c13c6): current-feature.md:180-183, inside step 9.1b, now reads "Amended after the step's review (Frank, 2026-10-08, F-263 option A): a move with nobody picked, under either setting, keeps the booking's own person while they are free; someone else only when they are busy, and 'try again' when their calendar cannot be read (F-265)", which is what find-booking-choices.ts:88-92 and :140-147 do. The older sentences above it ("A service the customer picks for is unchanged", "asks the times with nobody picked") stay, but the amendment follows them in the same step and names the decision, so the archived spec no longer says the opposite of the code. Leaving 7b's archive as written is right: it records 7b.
+
+### F-268 [P3] fixed - Two of 9.2's rules are pinned by no test: the answers checked after the form's own booking, and the owner's booking needing none
+
+**File:** backend/lib/booking/book-time.ts:185-191 (the replay it must follow: :161-162)
+**Found:** 2026-10-08 by independent review of 9.2 (scope: ef70707..d1c13c6; lenses: quality, security, performance, tests)
+**Why it matters:** Both are deliberate choices of this step, named in the
+code's comments and the step report. The answer checks sit in bookTime after
+the request-key replay, so a retried form gets its booking whatever questions
+changed meanwhile (the F-258 lesson); and `requireAnswers: source !==
+"manual"` lets the owner book from a phone call without answering. Scratch
+mutations, each restored after (sha256 identical): moving the whole answer
+check above `const earlier = await bookedByThisForm()` passed the full
+backend suite (843); `requireAnswers: true` for every source passed it too
+(843). checkAnswers' own unit test covers the flag, not bookTime's wiring of
+it. So a later edit could put the F-258 bug back for questions (a form booked,
+its answer lost, a question made required or removed meanwhile: the retry is
+told "Answer: ..." or "not one of this business's questions" though it is
+booked, and may book again), or make feature 11's owner booking demand
+answers, and nothing would say so. The spec's Testing section asks that each
+new rule's test be shown able to fail.
+**Suggested fix:** A route test: book with answers, then make the optional
+question required (or delete one), resend the same form, expect 200 with
+`alreadyBooked` and the same booking id. A bookTime test: source `manual` in a
+business with a required question, no answers, expect booked and
+`lead.answers` `[]`. Show each fails under the mutation above.
+**Resolution:** Fixed 2026-10-08 after 9.2's review: public-bookings-routes.test.ts "a booked form sent again after a required question was added still gets its booking" and book-time.test.ts "a customer must answer a required question; the owner need not" (the owner's lead keeps []). Proved: moving the answer check above the replay fails the first only; requiring answers for every source fails the second only.
+
+### F-269 [P3] fixed - With her own person's calendar unreadable, the move page still lists other people's times, and every one of them answers "try again"
+
+**File:** backend/lib/booking/find-booking-move-times.ts:64-77 (the move's refusal: backend/lib/booking/find-booking-choices.ts:88-92; any available leaving an unreadable person out: backend/lib/scheduling/find-free-times.ts:145-155)
+**Found:** 2026-10-08 by independent review of 9.2 (scope: ef70707..d1c13c6, F-265's repair in it; lenses: quality, security, performance, tests)
+**Why it matters:** F-265's repair answers 503 to a move with nobody
+picked when the booking's own person's calendar cannot be read. The times the
+page offers for that same move are asked with nobody picked too, and any
+available simply leaves an unreadable person out, so the list shows everyone
+else's free times. Shown with a scratch test in the move routes (removed
+after, sha256 identical): Jane's facial with Ana, the service set to
+business_assigns, Ana's connection `needs_reconnect`: the move times route
+answered 200 with 11:00 offered (people `[]`), and the move to 11:00 answered
+503. For Primo, where every service is business_assigns, each customer of that
+estimator sees a full list in which every pick ends in "The move didn't go
+through. Please try again, or call the business.", for as long as the
+connection waits to be reconnected. Before 9.1b the panel asked with her own
+person, so the same case showed "can't load" at the times step, with the
+phone, before any pick. The customer_picks "Any available" choice does the
+same.
+**Suggested fix:** The same rule on the times: in findBookingMoveTimes, when
+nobody is picked and the booking's own person still offers the service, read
+that person's times first and let CalendarUnavailableError through (the route
+already maps it to 503, and the panel shows its "can't load" state with the
+phone). A route test like the probe above, expecting 503 from the times. This
+only makes Frank's F-263/F-265 decision hold on the page as well as on the
+move.
+**Resolution:** Fixed 2026-10-08 after 9.2's review, as suggested: findBookingMoveTimes, with nobody picked, also reads her own person's times beside the any-available ones, so an unreadable calendar throws as any unreadable read and the route answers 503 "try again", the same as the move. Test: public-booking-move-times-routes.test.ts "with nobody picked, her own person's unreadable calendar answers 503, though another is free"; proved: dropping the second read fails it only.
+
+### F-270 [P3] fixed - BookingQuestionType lives in check-answers.ts, not in find-booking-questions.ts which produces it
+
+**File:** backend/lib/booking/check-answers.ts:7 (its producer imports it back: backend/lib/booking/find-booking-questions.ts:9,11)
+**Found:** 2026-10-08 by independent review of 9.2 (scope: ef70707..d1c13c6; lenses: quality, security, performance, tests)
+**Why it matters:** coding-standards.md: "A type sits in the file of the
+function that produces it", because Frank navigates by file name.
+findBookingQuestions returns `BookingQuestionType[]` but has to import the
+type from the checker, so someone looking for the shape of a question opens
+find-booking-questions.ts and finds only an import.
+**Suggested fix:** Move `BookingQuestionType` into find-booking-questions.ts
+and import it in check-answers.ts (type-only, no cycle).
+**Resolution:** Fixed 2026-10-08 after 9.2's review: BookingQuestionType moved to find-booking-questions.ts, which returns it; check-answers.ts imports it.

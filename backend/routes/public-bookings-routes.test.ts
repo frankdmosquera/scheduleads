@@ -348,6 +348,30 @@ describe("the business's own questions (feature 9)", () => {
     expect((await refusal(response)).message).toBe("Each question takes one answer.");
   });
 
+  // F-268: the form's own booking is looked up before its answers are judged (the F-258 lesson).
+  test("a booked form sent again after a required question was added still gets its booking", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const once = form(startsAt, { answers: [answerFor(allergies, "None")] });
+    const first = await post(bookingsPath, once);
+    const added = id();
+    await db.insert(bookingQuestion).values({
+      id: added,
+      organizationId: clinic.id,
+      position: 3,
+      label: "Any pets at home?",
+      required: true,
+    });
+    try {
+      const again = await post(bookingsPath, once);
+
+      expect(first.status).toBe(201);
+      expect(again.status).toBe(201);
+      expect((await again.json()).booking.id).toBe((await first.json()).booking.id);
+    } finally {
+      await db.delete(bookingQuestion).where(eq(bookingQuestion.id, added));
+    }
+  });
+
   test("twenty full answers in three-byte letters are not too large", async () => {
     const [startsAt] = await freeTimes(clinic.ana);
     const answers = Array.from({ length: 20 }, () => answerFor(id(), "語".repeat(500)));

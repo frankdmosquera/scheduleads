@@ -6,7 +6,8 @@ import { asc, eq } from "drizzle-orm";
 import { bookingQuestion } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
-import type { BookingQuestionType } from "./check-answers.js";
+
+export type BookingQuestionType = { id: string; label: string; required: boolean };
 
 export async function findBookingQuestions(organizationId: string): Promise<BookingQuestionType[]> {
   return db

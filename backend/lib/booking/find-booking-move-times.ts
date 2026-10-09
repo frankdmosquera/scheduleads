@@ -61,20 +61,28 @@ export async function findBookingMoveTimes(input: {
   const assigns = service.personChoice === "business_assigns";
   if (assigns && input.personId !== null) return { state: "person_not_taken" };
 
-  const times = await findFreeTimes({
-    organizationId: row.organizationId, // the booking's own business, from the booking row
-    bookingLinkId: row.bookingLinkId,
-    personId: input.personId,
-    fromDate: input.fromDate,
-    toDate: input.toDate,
-    now: input.now,
-    ignoreBooking: {
-      id: input.bookingId,
-      personId: row.personId,
-      startsAt: row.startsAt,
-      endsAt: row.endsAt,
-    },
-  });
+  const ask = (personId: string | null) =>
+    findFreeTimes({
+      organizationId: row.organizationId, // the booking's own business, from the booking row
+      bookingLinkId: row.bookingLinkId,
+      personId,
+      fromDate: input.fromDate,
+      toDate: input.toDate,
+      now: input.now,
+      ignoreBooking: {
+        id: input.bookingId,
+        personId: row.personId,
+        startsAt: row.startsAt,
+        endsAt: row.endsAt,
+      },
+    });
+  // A move with nobody picked keeps her own person while free, and "try again" while their
+  // calendar cannot be read (F-263, F-265): so the times say "try again" too, rather than list
+  // times that would all fail (F-269). Thrown as CalendarUnavailableError, as any unreadable read.
+  const [times] = await Promise.all([
+    ask(input.personId),
+    input.personId === null ? ask(row.personId) : null,
+  ]);
   const hours = await resolveBookableHours(row.organizationId, null, input.now);
   if (!times || !hours) return { state: "not_found" };
   // The same horizon findFreeTimes stops at: today in the business's zone plus its days ahead.

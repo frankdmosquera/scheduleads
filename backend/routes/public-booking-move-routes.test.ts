@@ -275,7 +275,7 @@ describe("moving a booking", () => {
     });
   });
 
-  test("any available does not count the booking being moved", async () => {
+  test("a move with nobody picked stays with her own person, though counting her own booking would favour another", async () => {
     const clinic = await makeClinic("own-count");
     // Ana has only Jane's own booking that day, Mei none. Jane stays with Ana: a move with nobody
     // picked keeps its own person while free (F-263), so the count never decides this.
