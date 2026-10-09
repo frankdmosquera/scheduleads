@@ -1,7 +1,10 @@
 // Booking component: the business's services, for a Book now that names none (decision 6). Every
 // word from the business is rendered as text.
 
-import type { BookingBusinessType, BookingServiceType } from "../api-client/booking-api-types.js";
+import type {
+  BookingBusinessType,
+  BookingServiceType,
+} from "../../api-client/booking-api-types.js";
 
 export type ServiceListScreenPropsType = {
   business: BookingBusinessType;

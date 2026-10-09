@@ -2,7 +2,7 @@
 // "nothing to book" stays so whatever is pressed.
 
 import type { BookingBusinessType } from "../api-client/booking-api-types.js";
-import type { BookingProblemType } from "../api-client/booking-problem-for.js";
+import type { BookingProblemType } from "../api-client/problem-from-api-answer.js";
 import type { BookingScreenType } from "./booking-screen-type.js";
 
 export function bookingProblemScreen(

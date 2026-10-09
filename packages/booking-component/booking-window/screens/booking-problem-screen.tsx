@@ -3,8 +3,8 @@
 
 import { telHref } from "@scheduleads-app/shared/tel-href";
 
-import type { BookingBusinessType } from "../api-client/booking-api-types.js";
-import type { BookingProblemType } from "../api-client/booking-problem-for.js";
+import type { BookingBusinessType } from "../../api-client/booking-api-types.js";
+import type { BookingProblemType } from "../../api-client/problem-from-api-answer.js";
 
 // The words Frank agreed at step 9.4's plan (2026-10-09).
 const problemWords: Record<BookingProblemType, string> = {

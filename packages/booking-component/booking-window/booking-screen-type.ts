@@ -5,7 +5,7 @@ import type {
   BookingServiceDetailsType,
   BookingServiceType,
 } from "../api-client/booking-api-types.js";
-import type { BookingProblemType } from "../api-client/booking-problem-for.js";
+import type { BookingProblemType } from "../api-client/problem-from-api-answer.js";
 
 export type BookingScreenType =
   | { screen: "loading" }

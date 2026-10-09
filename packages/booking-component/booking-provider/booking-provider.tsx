@@ -7,7 +7,7 @@
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 
 import { createBookingApiClient } from "../api-client/create-booking-api-client.js";
-import { BookingModal } from "../booking-modal/booking-modal.js";
+import { BookingWindow } from "../booking-window/booking-window.js";
 import { BookingContext, type BookingContextType } from "./booking-context.js";
 
 export type BookingProviderPropsType = {
@@ -38,7 +38,7 @@ export function BookingProvider({ apiUrl, slug, children }: BookingProviderProps
       {children}
       {/* Mounted only while open: closing and opening again always starts fresh. */}
       {openWindow && (
-        <BookingModal
+        <BookingWindow
           apiClient={apiClient}
           slug={slug}
           bookingId={openWindow.bookingId}

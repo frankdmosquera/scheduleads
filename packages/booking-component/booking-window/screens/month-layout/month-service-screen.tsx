@@ -4,7 +4,7 @@
 import type {
   BookingBusinessType,
   BookingServiceDetailsType,
-} from "../../api-client/booking-api-types.js";
+} from "../../../api-client/booking-api-types.js";
 
 export type MonthServiceScreenPropsType = {
   business: BookingBusinessType;

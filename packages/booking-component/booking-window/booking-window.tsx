@@ -10,24 +10,24 @@ import type {
   BookingBusinessType,
   BookingServiceType,
 } from "../api-client/booking-api-types.js";
-import { fetchBookingService } from "../api-client/fetch-booking-service.js";
-import { fetchBookingServices } from "../api-client/fetch-booking-services.js";
-import { BookingProblemScreen } from "./booking-problem-screen.js";
+import { fetchOneService } from "../api-client/fetch-one-service.js";
+import { fetchServiceList } from "../api-client/fetch-service-list.js";
+import { BookingProblemScreen } from "./screens/booking-problem-screen.js";
 import { bookingProblemScreen } from "./booking-problem-screen-state.js";
 import type { BookingScreenType } from "./booking-screen-type.js";
-import { LoadingScreen } from "./loading-screen.js";
-import { ServiceListScreen } from "./service-list-screen.js";
-import { ServiceScreen } from "./service-screen.js";
+import { LoadingScreen } from "./screens/loading-screen.js";
+import { ServiceListScreen } from "./screens/service-list-screen.js";
+import { ServiceScreen } from "./screens/service-screen.js";
 import { worstBookingProblem } from "./worst-booking-problem.js";
 
-export type BookingModalPropsType = {
+export type BookingWindowPropsType = {
   apiClient: BookingApiClientType;
   slug: string;
   bookingId: string | undefined;
   onClosed(): void;
 };
 
-export function BookingModal({ apiClient, slug, bookingId, onClosed }: BookingModalPropsType) {
+export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingWindowPropsType) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const [screen, setScreen] = useState<BookingScreenType>({ screen: "loading" });
@@ -37,7 +37,7 @@ export function BookingModal({ apiClient, slug, bookingId, onClosed }: BookingMo
   const loadServices = useCallback(async () => {
     const load = ++latestLoad.current;
     setScreen({ screen: "loading" });
-    const list = await fetchBookingServices(apiClient, slug);
+    const list = await fetchServiceList(apiClient, slug);
     if (load !== latestLoad.current) return;
 
     if (list.state === "problem") {
@@ -55,8 +55,8 @@ export function BookingModal({ apiClient, slug, bookingId, onClosed }: BookingMo
       const load = ++latestLoad.current;
       setScreen({ screen: "loading" });
       const [list, one] = await Promise.all([
-        fetchBookingServices(apiClient, slug),
-        fetchBookingService(apiClient, slug, bookingLinkId),
+        fetchServiceList(apiClient, slug),
+        fetchOneService(apiClient, slug, bookingLinkId),
       ]);
       if (load !== latestLoad.current) return;
 
@@ -84,7 +84,7 @@ export function BookingModal({ apiClient, slug, bookingId, onClosed }: BookingMo
     ) => {
       const load = ++latestLoad.current;
       setScreen({ screen: "loading" });
-      const one = await fetchBookingService(apiClient, slug, bookingLinkId);
+      const one = await fetchOneService(apiClient, slug, bookingLinkId);
       if (load !== latestLoad.current) return;
 
       if (one.state === "problem") {
