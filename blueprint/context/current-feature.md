@@ -125,6 +125,15 @@ repo. Wiring it into the agency's own site is feature 10.
     Frank asked to decide 3 to 8 without asking (Oct 9). The look itself gets
     a design review on the live preview page before `/complete`, with the
     `emil-design-eng` skill read from the blueprint for the polish.
+13. **The customer's yes to text messages is a yes to later texts only**
+    (Frank, Oct 9, answering the open question before step 9.6). Texts
+    about the booking she made (8b's confirmation and reminder) go as now,
+    ticked or not: she asked for that booking. The box is her yes to later
+    texts (offers, "time to book again"), saved on her contact with its
+    date; an unticked box never takes back an earlier yes. Whether screen
+    two asks at all, and what a business later sends with the yes, are the
+    business's settings (decision 30). Check the consent rules with someone
+    who knows them before a real client relies on it.
 
 ## In scope
 
@@ -370,9 +379,19 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   second tab) shows the taken message with fresh times; each field error
   shows and clears; suites pass.
 
-- [ ] **9.7 The yes to text messages.** Waiting on the open question below;
-  its plan is written once it is answered, before step 9.6 if the answer
-  changes screen two.
+- [ ] **9.7 The yes to later texts** (decision 13; plan drafted Oct 9, gone
+  through with Frank just before it is built). Screen two gains one
+  optional box, never ticked at first, worded with the business's name,
+  only for a business whose setting says to ask (set per business at client
+  setup until feature 12; off until set). A tick saves the date on the
+  contact (a new nullable column, its migration generated from the schema)
+  and one timeline entry with the booking; an unticked box changes nothing.
+  The booking route takes the answer through the shared create-booking
+  schema. 8b's booking texts are untouched.
+  **Done when:** a booking with the box ticked stamps the contact and its
+  timeline, one without it leaves an earlier yes in place, a business that
+  does not ask shows no box, and the booking texts go the same either way;
+  suites pass.
 
 ## Files / areas
 
@@ -472,7 +491,7 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
 
 ## Open questions
 
-1. **What does the customer's "yes to text messages" do?** The build plan
+1. **Answered Oct 9, decision 13: a yes to later texts only.** **What does the customer's "yes to text messages" do?** The build plan
    (Oct 2) puts an optional yes on screen two. Feature 8b (Oct 7) since
    sends the confirmation and reminder texts to any textable phone a
    booking carries, as messages about a booking the customer asked for.
