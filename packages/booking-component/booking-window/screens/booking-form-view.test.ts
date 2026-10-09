@@ -156,10 +156,11 @@ describe("screen two's form", () => {
     expect(screen.getByRole("alert").textContent).toContain("It never books twice");
     expect(screen.getByLabelText("Email").matches(":disabled")).toBe(true);
 
-    // Try again says it is checking while it waits.
+    // Try again says it is checking while it waits, and focus waits there, not on the page.
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(sends).toHaveLength(2));
     expect(screen.getByRole("status").textContent).toBe("Checking your booking…");
+    expect(document.activeElement).toBe(screen.getByRole("status"));
 
     // "Too many tries" may come before the form is looked up: still frozen, still Try again.
     await act(async () =>
@@ -167,6 +168,11 @@ describe("screen two's form", () => {
     );
     expect(screen.getByLabelText("Email").matches(":disabled")).toBe(true);
     expect(screen.queryByRole("button", { name: "Book" })).toBeNull();
+    expect(screen.getByRole("alert").textContent).toContain("whether your booking went through");
+    expect(
+      screen.getByRole("alert").contains(document.activeElement) ||
+        document.activeElement?.contains(screen.getByRole("alert"))
+    ).toBe(true);
     expect(screen.getByRole("button", { name: "Try again" })).toBeDefined();
     expect(unsure).toEqual([true, true]);
 

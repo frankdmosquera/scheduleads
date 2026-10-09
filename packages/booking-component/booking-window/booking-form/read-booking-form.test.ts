@@ -107,6 +107,17 @@ describe("readBookingForm", () => {
       state: "errors",
       errors: [{ field: "answer:q-pets", message: "Keep each answer to 500 characters." }],
     });
+    // And the first of the two, so neither end of the list can stand in for the other.
+    expect(
+      readBookingForm(
+        { ...filledForm, answers: { "q-colour": "x".repeat(501), "q-pets": "Yes" } },
+        questions,
+        choice
+      )
+    ).toEqual({
+      state: "errors",
+      errors: [{ field: "answer:q-colour", message: "Keep each answer to 500 characters." }],
+    });
   });
 
   it("says a part no field shows as the form's own error: more answers than the route takes", () => {

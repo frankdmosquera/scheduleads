@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import type {
   BookingApiClientType,
@@ -40,6 +40,9 @@ type SendProblemType = { words: string; retry: boolean };
 
 const noAnswerWords =
   "We couldn't hear back about your booking. It may have gone through: press Try again to find out. It never books twice.";
+// While unsure, a limit reached still leaves her booking unknown, and says so.
+const tooManyWhileUnsureWords =
+  "Too many tries. Wait a few minutes, then press Try again to find out whether your booking went through. It never books twice.";
 
 export function BookingFormView({
   apiClient,
@@ -62,6 +65,14 @@ export function BookingFormView({
   // No answer came back: until one comes nothing can be changed, so Try again sends the same
   // booking with the same key, and a booking made unseen is answered again, never made twice.
   const [unsure, setUnsure] = useState(false);
+  // While unsure, focus stays in the form: on the checking line while it waits, then on the words.
+  const checkingRef = useRef<HTMLParagraphElement>(null);
+  const problemRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!unsure) return;
+    if (sending) checkingRef.current?.focus();
+    else problemRef.current?.focus();
+  }, [unsure, sending]);
 
   const errorOf = (field: BookingFormFieldType) =>
     errors.find((error) => error.field === field)?.message ?? null;
@@ -121,7 +132,11 @@ export function BookingFormView({
         return;
       case "problem":
         setProblem({
-          words: answer.problem === "cannot-load" ? noAnswerWords : problemWords[answer.problem],
+          words: !nowUnsure
+            ? problemWords[answer.problem]
+            : answer.problem === "too-many-tries"
+              ? tooManyWhileUnsureWords
+              : noAnswerWords,
           retry: nowUnsure || answer.problem !== "nothing-to-book",
         });
         return;
@@ -258,11 +273,13 @@ export function BookingFormView({
       </fieldset>
 
       {problem && (
-        <ProblemMessage
-          words={problem.words}
-          retry={problem.retry ? () => void book() : null}
-          phone={business.phone}
-        />
+        <div ref={problemRef} tabIndex={-1} className="sa-focus-place">
+          <ProblemMessage
+            words={problem.words}
+            retry={problem.retry ? () => void book() : null}
+            phone={business.phone}
+          />
+        </div>
       )}
 
       {!unsure && (
@@ -271,7 +288,7 @@ export function BookingFormView({
         </button>
       )}
       {unsure && sending && (
-        <p className="sa-loading" role="status">
+        <p ref={checkingRef} tabIndex={-1} className="sa-loading sa-focus-place" role="status">
           Checking your booking…
         </p>
       )}

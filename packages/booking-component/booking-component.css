@@ -821,6 +821,11 @@
   border-color: var(--sa-error, #b42318);
 }
 
+/* Where focus waits while a lost answer is unknown: read out, never outlined. */
+.sa-focus-place:focus {
+  outline: none;
+}
+
 /* Screen one, back from Book when the time was taken while she typed. */
 .sa-notice {
   margin: 0 0 14px;
