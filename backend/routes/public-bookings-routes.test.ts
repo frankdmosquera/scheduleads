@@ -32,6 +32,7 @@ const {
   bookingQuestion,
   calendarConnection,
   contact,
+  laterTextsYes,
   lead,
   organization,
   pipelineStage,
@@ -341,13 +342,20 @@ describe("the yes to later texts (feature 9, decision 13)", () => {
     location: "12 Elm Street",
     ...change,
   });
-  const contactOf = async (organizationId: string, email: string) =>
-    (
-      await db
-        .select({ yesAt: contact.laterTextsYesAt, yesPhone: contact.laterTextsYesPhone })
-        .from(contact)
-        .where(and(eq(contact.organizationId, organizationId), eq(contact.email, email)))
-    )[0];
+  // Her yeses, one per number, by the email she booked with.
+  const yesesOf = (organizationId: string, email: string) =>
+    db
+      .select({ phone: laterTextsYes.phone, yesAt: laterTextsYes.yesAt })
+      .from(laterTextsYes)
+      .innerJoin(
+        contact,
+        and(
+          eq(contact.organizationId, laterTextsYes.organizationId),
+          eq(contact.id, laterTextsYes.contactId)
+        )
+      )
+      .where(and(eq(laterTextsYes.organizationId, organizationId), eq(contact.email, email)))
+      .orderBy(laterTextsYes.phone);
   const yesEntriesOf = (organizationId: string) =>
     db
       .select({ payload: activity.payload })
@@ -371,7 +379,7 @@ describe("the yes to later texts (feature 9, decision 13)", () => {
     expect(notAsking.business.laterTextsYesWords).toBeNull();
   });
 
-  test("a tick saves the yes with its number on the contact, and the words she saw on her timeline", async () => {
+  test("a tick saves a yes for her number, and the words she saw on her timeline", async () => {
     const email = `yes-${tag}@example.com`;
     const response = await post(
       `/public/${painter.slug}/bookings`,
@@ -380,9 +388,9 @@ describe("the yes to later texts (feature 9, decision 13)", () => {
     expect(response.status).toBe(201);
     const { booking: made } = await response.json();
 
-    const saved = await contactOf(painter.id, email);
-    expect(saved?.yesAt).toBeInstanceOf(Date);
-    expect(saved?.yesPhone).toBe("+14035550148"); // as Twilio texts it
+    expect(await yesesOf(painter.id, email)).toEqual([
+      { phone: "+14035550148", yesAt: expect.any(Date) }, // as Twilio texts it
+    ]);
     expect((await yesEntriesOf(painter.id)).map((row) => row.payload)).toContainEqual({
       bookingId: made.id,
       phone: "+14035550148",
@@ -397,12 +405,13 @@ describe("the yes to later texts (feature 9, decision 13)", () => {
       painterForm(email, { laterTextsYes: true })
     );
     expect(first.status).toBe(201);
-    const before = await contactOf(painter.id, email);
+    const before = await yesesOf(painter.id, email);
+    expect(before).toHaveLength(1);
     const entries = (await yesEntriesOf(painter.id)).length;
 
     const second = await post(`/public/${painter.slug}/bookings`, painterForm(email));
     expect(second.status).toBe(201);
-    expect(await contactOf(painter.id, email)).toEqual(before);
+    expect(await yesesOf(painter.id, email)).toEqual(before);
     expect(await yesEntriesOf(painter.id)).toHaveLength(entries);
   });
 
@@ -418,7 +427,35 @@ describe("the yes to later texts (feature 9, decision 13)", () => {
       );
       expect(response.status).toBe(400);
     }
-    expect(await contactOf(painter.id, email)).toBeUndefined();
+    const saved = await db.select({ id: contact.id }).from(contact).where(eq(contact.email, email));
+    expect(saved).toEqual([]); // no contact, no booking, no yes
+  });
+
+  test("a tick with another number adds its own yes and never moves hers", async () => {
+    const email = `two-phones-${tag}@example.com`;
+    const jane = { name: "Jane Doe", email, phone: "(403) 555-0149" };
+    const other = { name: "Someone Else", email, phone: "(587) 555-0177" };
+
+    for (const customer of [jane, other]) {
+      const response = await post(
+        `/public/${painter.slug}/bookings`,
+        painterForm(email, { customer, laterTextsYes: true })
+      );
+      expect(response.status).toBe(201);
+    }
+    const both = await yesesOf(painter.id, email);
+    expect(both.map((yes) => yes.phone)).toEqual(["+14035550149", "+15875550177"]);
+
+    // Her number ticked again: still one yes for it, dated by the latest tick.
+    const again = await post(
+      `/public/${painter.slug}/bookings`,
+      painterForm(email, { customer: jane, laterTextsYes: true })
+    );
+    expect(again.status).toBe(201);
+    const after = await yesesOf(painter.id, email);
+    expect(after.map((yes) => yes.phone)).toEqual(["+14035550149", "+15875550177"]);
+    expect(after[0].yesAt.getTime()).toBeGreaterThanOrEqual(both[0].yesAt.getTime());
+    expect(after[1]).toEqual(both[1]); // the other number's yes untouched
   });
 
   test("a tick sent to a business that does not ask books, and saves no yes", async () => {
@@ -434,7 +471,7 @@ describe("the yes to later texts (feature 9, decision 13)", () => {
     );
 
     expect(response.status).toBe(201);
-    expect(await contactOf(clinic.id, email)).toEqual({ yesAt: null, yesPhone: null });
+    expect(await yesesOf(clinic.id, email)).toEqual([]);
     expect(await yesEntriesOf(clinic.id)).toEqual([]);
   });
 });

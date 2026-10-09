@@ -1435,4 +1435,4 @@ when the ticked number is the contact's own phone or the contact has no yes
 yet, and otherwise record only the timeline entry. Add a route test: a
 second ticked booking with her email and another phone leaves her yes for
 her own number in place.
-**Resolution:**
+**Resolution:** Fixed 2026-10-09, Frank chose one yes per number: the contact's two columns became the `later_texts_yes` table, one row per business, contact and number (as Twilio texts it), dated by the latest yes for that number, its contact kept by a foreign key to the same business. A tick upserts its own number's row and never touches another number's; no tick changes nothing. Migration 0024_later_texts_yes regenerated (never deployed). public-bookings-routes.test.ts checks that a tick with her email and another phone adds a second yes and leaves hers, and that her number ticked again stays one row with a later date; with the old move (a tick clearing her other yeses first) it fails.

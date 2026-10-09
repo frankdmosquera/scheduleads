@@ -407,10 +407,11 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   phone is refused under Phone, a business that does not ask shows no box
   and ignores a tick, and the booking texts go the same either way; suites
   pass; the box is seen on the painting-dev preview and absent on clinic-dev.
-  Built (Oct 9): the yes is saved with its number (`contact.laterTextsYesPhone`,
-  as Twilio texts it) beside its date, because a contact is matched by email
-  and its phone is never changed by a public form: a date alone would have let
-  a later text go to a number nobody said yes for. A tick needs a phone that
+  Built (Oct 9): each yes is saved with its number, one row per number in a
+  `later_texts_yes` table (F-291, Frank: one yes per number), because a
+  contact is matched by email and its phone is never changed by a public form:
+  a yes belongs to the number it was given for, and a tick with another number
+  adds a yes, never moves one. A tick needs a phone that
   can get texts ("Enter a phone that can get texts."), checked by the shared
   schema in the browser and the route alike. The migration is
   0024_later_texts_yes. Seen live: a ticked booking on painting-dev saved the

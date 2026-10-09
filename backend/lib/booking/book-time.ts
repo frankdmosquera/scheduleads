@@ -8,13 +8,7 @@ import { randomUUID } from "node:crypto";
 
 import { and, eq } from "drizzle-orm";
 
-import {
-  booking,
-  bookingLink,
-  contact as contactTable, // "contact" is the row the booking saves
-  lead,
-  member,
-} from "@scheduleads-app/shared/db";
+import { booking, bookingLink, laterTextsYes, lead, member } from "@scheduleads-app/shared/db";
 import { localDate } from "@scheduleads-app/shared/local-date";
 import { textablePhoneNumber } from "@scheduleads-app/shared/textable-phone-number";
 import {
@@ -295,15 +289,17 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         },
         tx
       );
-      // Her yes to later texts: the latest one and its number on the contact, and the words she
-      // saw on her timeline. No tick leaves an earlier yes as it was.
+      // Her yes to later texts: one row per number she said yes for, dated by her latest yes, and
+      // the words she saw on her timeline. A tick never moves a yes from another number, and no
+      // tick leaves every earlier yes as it was.
       if (laterTextsYesPhone && laterTextsYesWords) {
         await tx
-          .update(contactTable)
-          .set({ laterTextsYesAt: now, laterTextsYesPhone })
-          .where(
-            and(eq(contactTable.organizationId, organizationId), eq(contactTable.id, contact.id))
-          );
+          .insert(laterTextsYes)
+          .values({ organizationId, contactId: contact.id, phone: laterTextsYesPhone, yesAt: now })
+          .onConflictDoUpdate({
+            target: [laterTextsYes.organizationId, laterTextsYes.contactId, laterTextsYes.phone],
+            set: { yesAt: now },
+          });
         await recordActivity(
           organizationId,
           {

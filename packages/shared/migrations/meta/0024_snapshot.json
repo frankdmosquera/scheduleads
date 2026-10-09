@@ -1,5 +1,5 @@
 {
-  "id": "78a821b5-d167-4884-8229-9fe1c29e6ff0",
+  "id": "75857c75-3faa-4224-af2b-9e92e63547de",
   "prevId": "d7dba9de-4ed5-4a38-8ccb-0ed5477214f7",
   "version": "7",
   "dialect": "postgresql",
@@ -2024,18 +2024,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "laterTextsYesAt": {
-          "name": "laterTextsYesAt",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "laterTextsYesPhone": {
-          "name": "laterTextsYesPhone",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp with time zone",
@@ -2106,14 +2094,86 @@
         "contact_email_normalized_check": {
           "name": "contact_email_normalized_check",
           "value": "\"contact\".\"email\" = lower(btrim(\"contact\".\"email\"))"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.later_texts_yes": {
+      "name": "later_texts_yes",
+      "schema": "",
+      "columns": {
+        "organizationId": {
+          "name": "organizationId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         },
-        "contact_later_texts_yes_check": {
-          "name": "contact_later_texts_yes_check",
-          "value": "(\"contact\".\"laterTextsYesAt\" is null) = (\"contact\".\"laterTextsYesPhone\" is null)"
+        "contactId": {
+          "name": "contactId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         },
-        "contact_later_texts_yes_phone_check": {
-          "name": "contact_later_texts_yes_phone_check",
-          "value": "\"contact\".\"laterTextsYesPhone\" ~ '^[+]1[2-9][0-9]{2}[2-9][0-9]{6}$'"
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "yesAt": {
+          "name": "yesAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "later_texts_yes_organizationId_organization_id_fk": {
+          "name": "later_texts_yes_organizationId_organization_id_fk",
+          "tableFrom": "later_texts_yes",
+          "tableTo": "organization",
+          "columnsFrom": [
+            "organizationId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "later_texts_yes_contact_fk": {
+          "name": "later_texts_yes_contact_fk",
+          "tableFrom": "later_texts_yes",
+          "tableTo": "contact",
+          "columnsFrom": [
+            "organizationId",
+            "contactId"
+          ],
+          "columnsTo": [
+            "organizationId",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "later_texts_yes_organizationId_contactId_phone_pk": {
+          "name": "later_texts_yes_organizationId_contactId_phone_pk",
+          "columns": [
+            "organizationId",
+            "contactId",
+            "phone"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "later_texts_yes_phone_check": {
+          "name": "later_texts_yes_phone_check",
+          "value": "\"later_texts_yes\".\"phone\" ~ '^[+]1[2-9][0-9]{2}[2-9][0-9]{6}$'"
         }
       },
       "isRLSEnabled": false
