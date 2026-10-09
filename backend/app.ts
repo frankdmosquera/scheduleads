@@ -9,6 +9,7 @@ import { dashboardCorsMiddleware } from "./middleware/dashboard-middleware/dashb
 import { dashboardCsrfMiddleware } from "./middleware/dashboard-middleware/dashboard-csrf-middleware.js";
 import { dashboardNoStoreMiddleware } from "./middleware/dashboard-middleware/dashboard-no-store-middleware.js";
 import { publicCorsMiddleware } from "./middleware/public-middleware/public-cors-middleware.js";
+import { publicRateLimitMiddleware } from "./middleware/public-middleware/public-rate-limit-middleware.js";
 import { requireKnownSubscriptionMiddleware } from "./middleware/subscription-middleware/require-known-subscription-middleware.js";
 import { adminRoutes } from "./routes/admin-routes.js";
 import { calendarRoutes } from "./routes/calendar-routes.js";
@@ -30,8 +31,9 @@ export const app = new Hono()
     dashboardCsrfMiddleware,
     dashboardNoStoreMiddleware
   )
-  // Anyone may call these, never with the login cookie: a CORS rule of their own.
-  .use("/public/*", publicCorsMiddleware)
+  // Anyone may call these, never with the login cookie: a CORS rule of their own, and limits per
+  // visitor. Twilio's signed replies under /texts and the dashboard are not limited.
+  .use("/public/*", publicCorsMiddleware, publicRateLimitMiddleware)
 
   // Better Auth owns every route under this path.
   .on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw))

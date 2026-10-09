@@ -67,9 +67,10 @@ repo. Wiring it into the agency's own site is feature 10.
    Postgres counter table (a write on every public read and a cleanup job,
    for protection the one instance does not need yet) and
    `hono-rate-limiter` (a dependency for about forty lines). A second
-   instance would need a shared store: written in the code beside the
-   counter.
-8. **The limits** (proposed; Frank sees the numbers at step 9.3's yes):
+   instance moves the counts to Redis (Frank, Oct 8: memory now, Redis
+   then), written in the code beside the counter; routes reach the counter
+   through one function, so the store can change under them.
+8. **The limits** (agreed by Frank, Oct 8, at step 9.3's plan):
    - per visitor, every `/public/*` read: 60 a minute;
    - per visitor, every `/public/*` write (book, cancel, move): 10 in 10
      minutes;
@@ -80,6 +81,9 @@ repo. Wiring it into the agency's own site is feature 10.
 
    A refusal is `429` with `Retry-After` and the usual shape:
    `too_many_tries`, "Too many tries. Please wait a minute and try again."
+   A booking is counted before it is made, so many sent at once cannot all
+   pass, and handed back when it is refused (a taken time, a missing
+   answer): only bookings made count against the contact (9.3).
 9. **The Book button locks after one press and the form owns one key**
    (5d decision 7). The key is made when the details screen opens. A retry
    after a lost answer sends the same key, so the server answers with the
@@ -214,7 +218,7 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   each refusal, a business with no questions (answers absent, lead.answers
   null); the email test shows the answers escaped; suites pass.
 
-- [ ] **9.3 Rate limits on the public routes.**
+- [x] **9.3 Rate limits on the public routes.**
   Backend: one limiter (decision 7) in `backend/lib/rate-limit/`, a
   middleware on `/public/*` counting reads and writes per visitor, and the
   per-contact count inside the booking route after the body is valid
@@ -231,8 +235,10 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   **Done when:** tests show the 61st read in a minute refused with
   `Retry-After` and allowed again in the next window, the 11th write
   refused, the 5th booking for one email refused while a second email from
-  the same visitor still books, two businesses counted apart, and a parent
-  booking two children at the same time both booked; suites pass.
+  the same visitor still books, the 5th booking for one phone written
+  different ways (`+1 403...`, `403-...`) refused (added with Frank, Oct 8),
+  two businesses counted apart, and a parent booking two children at the
+  same time both booked; suites pass.
 
 - [ ] **9.4 The package, the provider and the service list.**
   Backend: `PublicAppType`, the type of a Hono app holding only the
@@ -377,6 +383,17 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
 - No `Verify` command exists; each step runs the shared and backend suites,
   the package's tests, and the frontend build.
 
+## Deploy notes
+
+- The per-visitor limits read the visitor's address from `X-Real-IP`, the
+  header Railway's proxy adds (Railway's networking docs, Specs & Limits),
+  only when `NODE_ENV=production`; the API must run with it set. Railway's
+  docs do not say whether the proxy replaces an `X-Real-IP` a visitor sends
+  themselves: check it at the first deploy (send one with curl and see
+  which address the API counts), with F-176 and F-179.
+- The counts live in the API's memory: one API copy (one replica). A second
+  copy moves them to Redis first (decision 7).
+
 ## Notes for the AI
 
 - Never the word scheduleads, or any name of this product, anywhere a
@@ -403,3 +420,8 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
    unticked box means no booking texts, and owner-made bookings need the
    same choice), or it is only saved on the contact for later messages and
    booking texts go as now. Decided before step 9.6.
+
+Note for later (Oct 8, not this feature): the limits stop a script from one
+address, not one that keeps changing addresses, emails and phones. The usual
+next layer is an invisible bot check on the Book button; no plan holds it.
+Added only if fake bookings show up.

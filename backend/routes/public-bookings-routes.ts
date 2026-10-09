@@ -19,6 +19,9 @@ import { findBookableOrganizationId } from "../lib/booking/find-bookable-organiz
 import { notBookableHere } from "../lib/errors/not-bookable-here.js";
 import { personNotTaken } from "../lib/errors/person-not-taken.js";
 import { refuse } from "../lib/errors/refuse.js";
+import { tooManyTries } from "../lib/errors/too-many-tries.js";
+import { bookingContactKeys } from "../lib/rate-limit/booking-contact-keys.js";
+import { publicRateLimiters } from "../lib/rate-limit/public-rate-limiters.js";
 
 // Decision 10: a form with every field full is far below this, 20 full answers in any script
 // included (feature 9).
@@ -57,6 +60,14 @@ export const publicBookingsRoutes = new Hono()
       const organizationId = await findBookableOrganizationId(slug.data);
       if (!organizationId) return c.json(notBookableHere, 404);
 
+      // Counted before booking, so thirty sent at once cannot all pass; handed back if none is made.
+      const contactKeys = bookingContactKeys(organizationId, body.customer);
+      const counted = publicRateLimiters.bookingContacts.take(contactKeys);
+      if (!counted.allowed) {
+        c.header("Retry-After", String(counted.retryAfterSeconds));
+        return c.json(tooManyTries, 429);
+      }
+
       const result = await bookTime({
         organizationId,
         bookingLinkId: body.bookingLinkId,
@@ -70,9 +81,13 @@ export const publicBookingsRoutes = new Hono()
         source: "widget",
         actorUserId: null,
         now: new Date(),
+      }).catch((error: unknown) => {
+        publicRateLimiters.bookingContacts.giveBack(contactKeys); // a crash made no booking either
+        throw error;
       });
 
       if (!result.booked) {
+        publicRateLimiters.bookingContacts.giveBack(contactKeys);
         switch (result.reason) {
           case "not_found":
             return c.json(notBookableHere, 404);

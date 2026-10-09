@@ -542,3 +542,82 @@ describe("the login cookie is never allowed", () => {
     expect(response.headers.get("Access-Control-Allow-Credentials")).toBeNull();
   });
 });
+
+describe("a contact's limit: 4 bookings in 10 minutes (feature 9, decision 8)", () => {
+  // A day of its own for each test, so the bookings here never take another test's times.
+  async function firstFreeTime(personId: string, onDay: string): Promise<string> {
+    const response = await app.request(
+      `/public/${clinic.slug}/booking-links/${clinic.facial}/times?from=${onDay}&to=${onDay}&person=${personId}`
+    );
+    const [startsAt] = (await response.json()).startTimes;
+    if (!startsAt) throw new Error(`No free time left on ${onDay}.`);
+    return startsAt;
+  }
+  const bookFor = async (customer: Record<string, string>, onDay: string) =>
+    post(
+      bookingsPath,
+      form(await firstFreeTime(clinic.mei, onDay), { personId: clinic.mei, customer })
+    );
+
+  test("the 5th for one email is refused, while a second email from the same visitor still books", async () => {
+    const onDay = addDays(day, 1);
+    const jane = { name: "Jane Doe", email: `limit-${tag}@example.com` };
+    for (let count = 0; count < 4; count++) expect((await bookFor(jane, onDay)).status).toBe(201);
+
+    const refused = await bookFor({ ...jane, email: jane.email.toUpperCase() }, onDay);
+    expect(refused.status).toBe(429);
+    expect(Number(refused.headers.get("Retry-After"))).toBeGreaterThan(0);
+    expect((await refused.json()).error.code).toBe("too_many_tries");
+
+    const other = { name: "Sam Doe", email: `other-${tag}@example.com` };
+    expect((await bookFor(other, onDay)).status).toBe(201);
+  });
+
+  test("the 5th for one phone is refused, however it is written", async () => {
+    const onDay = addDays(day, 2);
+    const ways = [
+      "+1 403 555 0177",
+      "403-555-0177",
+      "(403) 555 0177",
+      "4035550177",
+      "1 403 555 0177",
+    ];
+    for (const phone of ways.slice(0, 4))
+      expect((await bookFor({ name: "Jane Doe", phone }, onDay)).status).toBe(201);
+
+    expect((await bookFor({ name: "Jane Doe", phone: ways[4] }, onDay)).status).toBe(429);
+  });
+
+  test("a parent booking two children at the same time gets both", async () => {
+    const onDay = addDays(day, 3);
+    const startsAt = await firstFreeTime(clinic.ana, onDay);
+    expect(await firstFreeTime(clinic.mei, onDay)).toBe(startsAt); // both free at the same time
+    const parent = { name: "Pat Doe", email: `parent-${tag}@example.com`, phone: "403 555 0188" };
+
+    const first = await post(
+      bookingsPath,
+      form(startsAt, { personId: clinic.ana, customer: parent })
+    );
+    const second = await post(
+      bookingsPath,
+      form(startsAt, { personId: clinic.mei, customer: parent })
+    );
+    expect([first.status, second.status]).toEqual([201, 201]);
+  });
+
+  test("a booking refused for a taken time does not count", async () => {
+    const onDay = addDays(day, 4);
+    const startsAt = await firstFreeTime(clinic.mei, onDay);
+    const jane = { name: "Jane Doe", email: `taken-${tag}@example.com` };
+    expect((await post(bookingsPath, form(startsAt, { personId: clinic.mei }))).status).toBe(201);
+    for (let count = 0; count < 3; count++) {
+      const taken = await post(
+        bookingsPath,
+        form(startsAt, { personId: clinic.mei, customer: jane })
+      );
+      expect(taken.status).toBe(409);
+    }
+
+    for (let count = 0; count < 4; count++) expect((await bookFor(jane, onDay)).status).toBe(201);
+  });
+});
