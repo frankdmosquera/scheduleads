@@ -23,3 +23,15 @@ export type BookingServiceDetailsType = InferResponseType<
   ServicesRouteType[":bookingLinkId"]["$get"],
   200
 >["bookingLink"];
+
+// The business's bookable hours for that service: its zone and how many days ahead it books.
+export type BookingAvailabilityType = InferResponseType<
+  ServicesRouteType[":bookingLinkId"]["$get"],
+  200
+>["availability"];
+
+// The free start times for some dates, in the business's zone, with the people the customer may pick.
+export type BookingFreeTimesType = InferResponseType<
+  ServicesRouteType[":bookingLinkId"]["times"]["$get"],
+  200
+>;

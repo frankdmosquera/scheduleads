@@ -1,11 +1,15 @@
-// Booking component: one service, with its layout and who picks the person. A service the business
+// Booking component: one service, with its layout, who picks the person and its bookable hours. A service the business
 // does not offer (unknown, inactive or another business's) is "nothing to book".
 
-import type { BookingApiClientType, BookingServiceDetailsType } from "./booking-api-types.js";
+import type {
+  BookingApiClientType,
+  BookingAvailabilityType,
+  BookingServiceDetailsType,
+} from "./booking-api-types.js";
 import { problemFromApiAnswer, type BookingProblemType } from "./problem-from-api-answer.js";
 
 export type OneServiceResultType =
-  | { state: "ok"; service: BookingServiceDetailsType }
+  | { state: "ok"; service: BookingServiceDetailsType; availability: BookingAvailabilityType }
   | { state: "problem"; problem: BookingProblemType };
 
 export async function fetchOneService(
@@ -26,10 +30,11 @@ export async function fetchOneService(
     const status: number = response.status; // the rate limit's 429 is not in the route's type
     if (response.status !== 200) return { state: "problem", problem: problemFromApiAnswer(status) };
 
-    const { bookingLink } = await response.json();
+    const { bookingLink, availability } = await response.json();
     // Never trusted blindly: an answer with no service in it would crash the host's page.
-    if (!bookingLink) return { state: "problem", problem: problemFromApiAnswer(null) };
-    return { state: "ok", service: bookingLink };
+    if (!bookingLink || !availability)
+      return { state: "problem", problem: problemFromApiAnswer(null) };
+    return { state: "ok", service: bookingLink, availability };
   } catch {
     return { state: "problem", problem: problemFromApiAnswer(null) };
   }

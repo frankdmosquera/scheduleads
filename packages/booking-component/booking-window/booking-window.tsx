@@ -17,6 +17,7 @@ import { bookingProblemScreen } from "./booking-problem-screen-state.js";
 import type { BookingScreenType } from "./booking-screen-type.js";
 import { LoadingScreen } from "./screens/loading-screen.js";
 import { ServiceListScreen } from "./screens/service-list-screen.js";
+import { DetailsScreen } from "./screens/details-screen.js";
 import { ServiceScreen } from "./screens/service-screen.js";
 import { worstBookingProblem } from "./worst-booking-problem.js";
 
@@ -70,7 +71,14 @@ export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingW
         setScreen(bookingProblemScreen(problem ?? "cannot-load", business, retry));
         return;
       }
-      setScreen({ screen: "service", business, service: one.service, pickedFrom: null });
+      setScreen({
+        screen: "service",
+        business,
+        service: one.service,
+        availability: one.availability,
+        pickedFrom: null,
+        place: null,
+      });
     },
     [apiClient, slug]
   );
@@ -92,7 +100,14 @@ export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingW
         setScreen(bookingProblemScreen(one.problem, business, retry));
         return;
       }
-      setScreen({ screen: "service", business, service: one.service, pickedFrom: services });
+      setScreen({
+        screen: "service",
+        business,
+        service: one.service,
+        availability: one.availability,
+        pickedFrom: services,
+        place: null,
+      });
     },
     [apiClient, slug]
   );
@@ -128,7 +143,13 @@ export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingW
         onClosed();
       }}
     >
-      <div className={screen.screen === "service" ? "sa-modal sa-modal--book" : "sa-modal"}>
+      <div
+        className={
+          screen.screen === "service" || screen.screen === "details"
+            ? "sa-modal sa-modal--book"
+            : "sa-modal"
+        }
+      >
         <button
           type="button"
           className="sa-x sa-x--corner"
@@ -151,8 +172,12 @@ export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingW
           />
         ) : screen.screen === "service" ? (
           <ServiceScreen
+            apiClient={apiClient}
+            slug={slug}
             business={screen.business}
             service={screen.service}
+            availability={screen.availability}
+            place={screen.place}
             titleId={titleId}
             onBack={
               screen.pickedFrom
@@ -164,6 +189,19 @@ export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingW
                     })
                 : null
             }
+            onTimeChosen={(chosen) => setScreen({ ...screen, screen: "details", chosen })}
+          />
+        ) : screen.screen === "details" ? (
+          <DetailsScreen
+            business={screen.business}
+            service={screen.service}
+            availability={screen.availability}
+            chosen={screen.chosen}
+            titleId={titleId}
+            onBack={() => {
+              const { chosen, ...oneService } = screen;
+              setScreen({ ...oneService, screen: "service", place: chosen.place });
+            }}
           />
         ) : (
           <BookingProblemScreen

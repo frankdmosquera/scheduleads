@@ -52,11 +52,13 @@ describe("fetchOneService", () => {
 
   it("answers the service the route sends", async () => {
     const bookingLink = { id: "abc", name: "Chemical Peel", layout: "month" };
-    const { apiClient } = clientAnswering(200, { bookingLink, availability: {} });
+    const availability = { timezone: "America/Edmonton", horizonDays: 60 };
+    const { apiClient } = clientAnswering(200, { bookingLink, availability });
 
     expect(await fetchOneService(apiClient, "clinic-dev", "abc")).toEqual({
       state: "ok",
       service: bookingLink,
+      availability,
     });
   });
 });

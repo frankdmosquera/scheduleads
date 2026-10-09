@@ -722,7 +722,7 @@
   font-weight: 600;
   font-size: 14px;
   font-variant-numeric: tabular-nums;
-  font-family: var(--sa-font-mono, ui-monospace, monospace);
+  white-space: nowrap;
 }
 
 /* Next is the action token. On Primo that is amber with dark ink: the day
@@ -808,4 +808,71 @@
   .sa-t-split {
     grid-column: 1 / -1;
   }
+}
+
+/* ===========================================================================
+   SCREEN ONE ADDITIONS (step 9.5, decision 12)
+   =========================================================================== */
+
+/* "Who would you like?": a radio list in the rail, only when the customer
+   picks the person. Native radios, so the keyboard and screen readers work
+   as they do everywhere. */
+.sa-people {
+  border: none;
+  margin: 6px 0 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sa-people-h {
+  padding: 0;
+  margin-bottom: 4px;
+  font-family: var(--sa-font-mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--sa-muted, #52525b);
+}
+
+.sa-person {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  border-radius: var(--sa-radius, 8px);
+  border: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+  background: var(--sa-bg, #ffffff);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.sa-person:has(input:checked) {
+  border-color: var(--sa-identity, #18181b);
+  color: var(--sa-identity, #18181b);
+  font-weight: 600;
+}
+.sa-person:has(input:focus-visible) {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+.sa-person input {
+  margin: 0;
+  accent-color: var(--sa-identity, #18181b);
+}
+
+/* The month with no time left: the words, then Next month. */
+.sa-times-none {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--sa-muted, #52525b);
+  line-height: 1.45;
+}
+
+/* The zone line under the month is plain words, no switcher (decision 12). */
+.sa-tz {
+  margin: 16px 0 0;
 }

@@ -1,18 +1,10 @@
-// Booking component: one service's window, in the layout the service is set to (decision 4). Each
-// layout is one more branch here.
+// Booking component: one service's screen one, pick a time, in the layout the service is set to
+// (decision 4). Each layout is one more branch here.
 
-import type {
-  BookingBusinessType,
-  BookingServiceDetailsType,
-} from "../../api-client/booking-api-types.js";
+import type { MonthServiceScreenPropsType } from "./month-layout/month-service-screen.js";
 import { MonthServiceScreen } from "./month-layout/month-service-screen.js";
 
-export type ServiceScreenPropsType = {
-  business: BookingBusinessType;
-  service: BookingServiceDetailsType;
-  titleId: string;
-  onBack: (() => void) | null; // null when a button named the service: there is no list to go back to
-};
+export type ServiceScreenPropsType = MonthServiceScreenPropsType;
 
 export function ServiceScreen(props: ServiceScreenPropsType) {
   switch (props.service.layout) {

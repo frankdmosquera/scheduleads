@@ -1,17 +1,10 @@
-// Booking component: the window when it cannot go on. Never a dead end: Try again when trying
-// again can help, and the business's phone whenever it is known.
-
-import { telHref } from "@scheduleads-app/shared/tel-href";
+// Booking component: the whole window when it cannot go on, with the business's name when it is
+// known.
 
 import type { BookingBusinessType } from "../../api-client/booking-api-types.js";
 import type { BookingProblemType } from "../../api-client/problem-from-api-answer.js";
-
-// The words Frank agreed at step 9.4's plan (2026-10-09).
-const problemWords: Record<BookingProblemType, string> = {
-  "nothing-to-book": "Nothing can be booked online right now.",
-  "cannot-load": "Booking couldn't load right now.",
-  "too-many-tries": "Too many tries. Wait a few minutes.",
-};
+import { ProblemMessage } from "./problem-message.js";
+import { problemWords } from "./problem-words.js";
 
 export type BookingProblemScreenPropsType = {
   problem: BookingProblemType;
@@ -26,8 +19,6 @@ export function BookingProblemScreen({
   retry,
   titleId,
 }: BookingProblemScreenPropsType) {
-  const phone = business?.phone ?? null;
-
   return (
     <>
       <div className="sa-head">
@@ -36,25 +27,11 @@ export function BookingProblemScreen({
         </h2>
       </div>
       <div className="sa-body">
-        <div className="sa-problem">
-          <p className="sa-problem-words" role="alert">
-            {problemWords[problem]}
-          </p>
-          {(retry || phone) && (
-            <div className="sa-actions">
-              {retry && (
-                <button type="button" className="sa-go" onClick={retry}>
-                  Try again
-                </button>
-              )}
-              {phone && (
-                <a className="sa-call" href={telHref(phone)}>
-                  Call {phone}
-                </a>
-              )}
-            </div>
-          )}
-        </div>
+        <ProblemMessage
+          words={problemWords[problem]}
+          retry={retry}
+          phone={business?.phone ?? null}
+        />
       </div>
     </>
   );

@@ -101,6 +101,30 @@ repo. Wiring it into the agency's own site is feature 10.
     returns to the button that opened it.
 11. **Times show in the business's time zone, named on the screen**, the same
     rule as the customer's page in 7b.
+12. **The Sep 23 mock, checked against everything decided since** (Frank,
+    Oct 9, before step 9.5). The shape stands (`prototypes/modal-month.html`,
+    `modal-month-details.html`); eight details did not fit:
+    1. Who does the job: the rail gets "Who would you like?", "Any
+       available" first and chosen, then each person; only for
+       `customer_picks` (Frank's yes).
+    2. No time-zone switcher: every time in the business's zone, named under
+       the calendar (Frank's yes). Note for feature 10: the agency's video
+       calls may want the visitor's own clock, as a per-service setting.
+    3. No struck-through busy times: the times route sends free times only,
+       and showing busy ones would show the business's calendar.
+    4. No location or footer line in the rail ("At your home...", "No charge,
+       no obligation"): a service has no fields for them; the rail shows the
+       service's description. Fields for them, if a business wants them, are
+       feature 12's settings.
+    5. The service list, absent from the mock, is the one built in 9.4.
+    6. Screen two marks email and phone as "at least one is required", not
+       all three required (the rule until feature 12).
+    7. No "+ Add another contact": in no plan.
+    8. The screens for when something goes wrong are 9.4's three, plus 9.6's
+       "time taken".
+    Frank asked to decide 3 to 8 without asking (Oct 9). The look itself gets
+    a design review on the live preview page before `/complete`, with the
+    `emil-design-eng` skill read from the blueprint for the polish.
 
 ## In scope
 
@@ -292,24 +316,37 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   strip's classes in `widget.css` were not ported (decision 4 parks that
   layout).
 
-- [ ] **9.5 Screen one: pick a time.**
-  The left rail: the business's logo (or its name), the service and its
-  duration. When the service is `customer_picks`: "Any available" first,
-  then the people by name. A month calendar from today to the horizon,
+- [x] **9.5 Screen one: pick a time.**
+  The left rail: the business's logo (or its name), the service, its
+  duration and description. When the service is `customer_picks`: "Who
+  would you like?", "Any available" first and chosen, then the people by
+  name (decision 12). A month calendar from today to the horizon,
   times asked one month at a time (the route's 31-date limit), days with a
   time marked and pickable, the chosen day's times listed, the time zone
   named. Previous month stops at the current month, next stops at the
-  horizon. States: loading; no times this month (and Next month); cannot
-  read times (503: the route's message, Try again, the phone); too many
-  tries. Changing the person reloads the month. The day and time picks are
-  keyboard reachable buttons with clear names ("Thursday, October 15",
-  "9:30 AM").
+  horizon. The first day with a time is chosen when a month loads, so its
+  times show at once. A chosen time splits into the time and Next; Next
+  opens screen two, an empty shell until 9.6. States: loading; no times this
+  month ("No times left in {month}." and Next month while the horizon
+  allows); cannot read times (503: the route's own words, "Times cannot be
+  read right now. Try again shortly.", Try again, the phone); too many tries
+  (9.4's words). Changing the person reloads the month. The day and time
+  picks are keyboard reachable buttons with clear names ("Thursday,
+  October 15", "9:30 AM").
   Logic, in plain functions with tests: the month's grid, grouping times by
   day in the business's zone, the month bounds from today and the horizon.
   **Done when:** those tests pass, and on the booking preview page with clinic-dev
   (customer picks) and painting-dev (business assigns) a time can be picked,
   each state is shown by a real case where one exists (a closed day, a month
   past the horizon), and screenshots of both themes are taken.
+  Built (Oct 9): the window now keeps the one-service answer's
+  `availability` (the business's zone and horizon) for the calendar; screen two is an empty
+  shell whose rail keeps the picked time, the person and the zone, and Back
+  returns to the same month and person. The picked time is set in the
+  times' own font, not the mock's monospace, which wrapped "10:00 a.m.".
+  Not seen live, because the seed has no such case: a month with no times
+  left, and a calendar that cannot be read (503); both are covered by
+  tests of what the window is handed.
 
 - [ ] **9.6 Screen two, Book, and done.**
   The rail adds the chosen time. The standard questions: name, email,
