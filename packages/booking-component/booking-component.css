@@ -789,6 +789,42 @@
   outline-offset: 2px;
 }
 
+.sa-submit:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* A field's hint and its error sit under it and are read out with it (aria-describedby). */
+.sa-hint {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: var(--sa-muted, #52525b);
+}
+.sa-err {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sa-error, #b42318);
+}
+.sa-f[aria-invalid="true"] {
+  border-color: var(--sa-error, #b42318);
+}
+
+/* Screen one, back from Book when the time was taken while she typed. */
+.sa-notice {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: var(--sa-radius, 8px);
+  border: 1px solid var(--sa-error, #b42318);
+  color: var(--sa-text, #18181b);
+  font-size: 14px;
+}
+
+/* The last screen: what was booked, as the API wrote it. */
+.sa-done .sa-facts {
+  margin: 4px 0 14px;
+}
+
 @media (max-width: 760px) {
   .sa-book {
     grid-template-columns: minmax(0, 1fr);

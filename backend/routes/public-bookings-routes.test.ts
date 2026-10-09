@@ -9,6 +9,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
+import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 
 try {
   process.loadEnvFile(new URL("../../.env", import.meta.url)); // the root .env, before the app reads it
@@ -249,6 +250,7 @@ describe("a booking is made", () => {
         startsAt,
         endsAt: new Date(new Date(startsAt).getTime() + 60 * 60_000).toISOString(),
         timezone: "America/Edmonton",
+        when: formatBookingTime(new Date(startsAt), "America/Edmonton"),
         service: { id: clinic.facial, name: "Facial" },
         person: { id: clinic.ana, name: "Ana" },
       },

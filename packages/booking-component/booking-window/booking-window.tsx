@@ -12,12 +12,14 @@ import type {
 } from "../api-client/booking-api-types.js";
 import { fetchOneService } from "../api-client/fetch-one-service.js";
 import { fetchServiceList } from "../api-client/fetch-service-list.js";
+import { newBookingForm } from "./booking-form/new-booking-form.js";
 import { BookingProblemScreen } from "./screens/booking-problem-screen.js";
 import { bookingProblemScreen } from "./booking-problem-screen-state.js";
 import type { BookingScreenType } from "./booking-screen-type.js";
 import { LoadingScreen } from "./screens/loading-screen.js";
 import { ServiceListScreen } from "./screens/service-list-screen.js";
 import { DetailsScreen } from "./screens/details-screen.js";
+import { DoneScreen } from "./screens/done-screen.js";
 import { ServiceScreen } from "./screens/service-screen.js";
 import { worstBookingProblem } from "./worst-booking-problem.js";
 
@@ -34,6 +36,9 @@ export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingW
   const [screen, setScreen] = useState<BookingScreenType>({ screen: "loading" });
   // Every load takes a number; an answer to an older one (a retry, another pick, a close) is dropped.
   const latestLoad = useRef(0);
+  // What she typed on screen two, kept while the window is open (a taken time keeps her words) and
+  // new with each opening, so each opening is a new form with its own key.
+  const [form, setForm] = useState(newBookingForm);
 
   const loadServices = useCallback(async () => {
     const load = ++latestLoad.current;
@@ -78,6 +83,7 @@ export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingW
         availability: one.availability,
         pickedFrom: null,
         place: null,
+        notice: null,
       });
     },
     [apiClient, slug]
@@ -107,6 +113,7 @@ export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingW
         availability: one.availability,
         pickedFrom: services,
         place: null,
+        notice: null,
       });
     },
     [apiClient, slug]
@@ -145,7 +152,7 @@ export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingW
     >
       <div
         className={
-          screen.screen === "service" || screen.screen === "details"
+          screen.screen === "service" || screen.screen === "details" || screen.screen === "done"
             ? "sa-modal sa-modal--book"
             : "sa-modal"
         }
@@ -178,6 +185,7 @@ export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingW
             service={screen.service}
             availability={screen.availability}
             place={screen.place}
+            notice={screen.notice}
             titleId={titleId}
             onBack={
               screen.pickedFrom
@@ -193,15 +201,36 @@ export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingW
           />
         ) : screen.screen === "details" ? (
           <DetailsScreen
+            apiClient={apiClient}
+            slug={slug}
             business={screen.business}
             service={screen.service}
             availability={screen.availability}
             chosen={screen.chosen}
+            form={form}
             titleId={titleId}
+            onFormChange={setForm}
             onBack={() => {
               const { chosen, ...oneService } = screen;
-              setScreen({ ...oneService, screen: "service", place: chosen.place });
+              setScreen({ ...oneService, screen: "service", place: chosen.place, notice: null });
             }}
+            onBooked={(booking, email) => {
+              const { chosen: _chosen, ...oneService } = screen;
+              setScreen({ ...oneService, screen: "done", booking, email });
+            }}
+            onTimeTaken={(message) => {
+              // Back to the same month and person, whose times load again without the taken one.
+              const { chosen, ...oneService } = screen;
+              setScreen({ ...oneService, screen: "service", place: chosen.place, notice: message });
+            }}
+          />
+        ) : screen.screen === "done" ? (
+          <DoneScreen
+            business={screen.business}
+            service={screen.service}
+            booking={screen.booking}
+            email={screen.email}
+            titleId={titleId}
           />
         ) : (
           <BookingProblemScreen

@@ -35,6 +35,7 @@ export type MonthServiceScreenPropsType = {
   service: BookingServiceDetailsType;
   availability: BookingAvailabilityType;
   place: TimePickPlaceType | null; // where the customer was, coming back from screen two
+  notice: string | null; // the route's words when her time was taken while she typed
   titleId: string;
   onBack: (() => void) | null; // null when a button named the service: there is no list
   onTimeChosen(chosen: ChosenTimeType): void;
@@ -47,6 +48,7 @@ export function MonthServiceScreen({
   service,
   availability,
   place,
+  notice,
   titleId,
   onBack,
   onTimeChosen,
@@ -68,7 +70,7 @@ export function MonthServiceScreen({
   const [personId, setPersonId] = useState<string | null>(
     customerPicks ? (place?.personId ?? null) : null
   );
-  const [pickedDate, setPickedDate] = useState<string | null>(null);
+  const [pickedDate, setPickedDate] = useState<string | null>(place?.date ?? null);
   const [pickedTime, setPickedTime] = useState<string | null>(null);
 
   const { times, people, askAgain } = useMonthTimes({
@@ -120,6 +122,11 @@ export function MonthServiceScreen({
         <h2 className="sa-panel-h" id={titleId} tabIndex={-1}>
           Select a date &amp; time
         </h2>
+        {notice && (
+          <p className="sa-notice" role="alert">
+            {notice}
+          </p>
+        )}
 
         {panelProblem ? (
           <ProblemMessage
@@ -174,7 +181,7 @@ export function MonthServiceScreen({
                     ...shownTime,
                     personId,
                     personName: people.find((person) => person.id === personId)?.name ?? null,
-                    place: { month, personId },
+                    place: { month, personId, date: shownDate },
                   });
                 }}
               />

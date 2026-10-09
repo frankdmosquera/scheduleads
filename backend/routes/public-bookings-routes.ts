@@ -7,6 +7,7 @@ import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 
+import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 import { bookingLink, resource } from "@scheduleads-app/shared/db";
 import {
   createBookingValidationSchema,
@@ -181,6 +182,7 @@ export const publicBookingsRoutes = new Hono()
             startsAt: booking.startsAt.toISOString(),
             endsAt: booking.endsAt.toISOString(),
             timezone: booking.timezone,
+            when: formatBookingTime(booking.startsAt, booking.timezone), // never the browser's (F-279)
             service,
             person,
           },

@@ -88,36 +88,44 @@ describe("useMonthTimes", () => {
   });
 });
 
+const renderScreenOne = (
+  apiClient: ReturnType<typeof clientWithHeldAnswers>["apiClient"],
+  place: { month: string; personId: string | null; date: string } | null,
+  notice: string | null
+) =>
+  render(
+    createElement(MonthServiceScreen, {
+      apiClient,
+      slug: "clinic-dev",
+      business: {
+        name: "Riverbend Clinic",
+        logo: null,
+        phone: null,
+        questions: [],
+      } as BookingBusinessType,
+      service: {
+        id: "facial",
+        name: "Hydra Spa Facial",
+        description: null,
+        durationMinutes: 60,
+        personChoice: "business_assigns",
+      } as unknown as BookingServiceDetailsType,
+      availability: { timezone: "America/Edmonton", horizonDays: 120 } as BookingAvailabilityType,
+      place,
+      notice,
+      titleId: "title",
+      onBack: null,
+      onTimeChosen: () => {},
+    })
+  );
+
 describe("the month layout's screen one", () => {
   it("shows the first day with a time when a month loads, not today (F-280)", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-10-09T18:00:00.000Z")); // Friday, October 9 in Edmonton
     const { apiClient, answer } = clientWithHeldAnswers();
 
-    render(
-      createElement(MonthServiceScreen, {
-        apiClient,
-        slug: "clinic-dev",
-        business: {
-          name: "Riverbend Clinic",
-          logo: null,
-          phone: null,
-          questions: [],
-        } as BookingBusinessType,
-        service: {
-          id: "facial",
-          name: "Hydra Spa Facial",
-          description: null,
-          durationMinutes: 60,
-          personChoice: "business_assigns",
-        } as unknown as BookingServiceDetailsType,
-        availability: { timezone: "America/Edmonton", horizonDays: 120 } as BookingAvailabilityType,
-        place: null,
-        titleId: "title",
-        onBack: null,
-        onTimeChosen: () => {},
-      })
-    );
+    renderScreenOne(apiClient, null, null);
     await answer(
       "any",
       answerWith([
@@ -129,5 +137,25 @@ describe("the month layout's screen one", () => {
     expect(await screen.findByText("Wednesday, October 14")).toBeDefined();
     expect(screen.getByRole("button", { name: "10:00 a.m." })).toBeDefined();
     expect(screen.queryByRole("button", { name: "9:00 a.m." })).toBeNull();
+  });
+
+  it("comes back on her own day with the route's words when her time was taken", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-09T18:00:00.000Z"));
+    const { apiClient, answer } = clientWithHeldAnswers();
+    const words = "Sorry, that time was taken while you were booking. Please pick another one.";
+
+    renderScreenOne(apiClient, { month: "2026-10", personId: null, date: "2026-10-16" }, words);
+    await answer(
+      "any",
+      answerWith([
+        at("2026-10-14T16:00:00.000Z", "2026-10-14", "10:00 a.m."),
+        at("2026-10-16T15:00:00.000Z", "2026-10-16", "9:00 a.m."),
+      ])
+    );
+
+    expect(screen.getByRole("alert").textContent).toBe(words);
+    expect(await screen.findByText("Friday, October 16")).toBeDefined();
+    expect(screen.getByRole("button", { name: "9:00 a.m." })).toBeDefined();
   });
 });

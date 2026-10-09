@@ -1,6 +1,6 @@
 // Booking component: the shapes the public routes answer with, read from the routes' own types.
 
-import type { hc, InferResponseType } from "hono/client";
+import type { hc, InferRequestType, InferResponseType } from "hono/client";
 
 import type { PublicAppType } from "backend/app-type";
 
@@ -38,3 +38,11 @@ export type BookingFreeTimesType = InferResponseType<
 
 // One free start time with the business's date and clock time, as the API worked them out.
 export type BookingStartTimeType = BookingFreeTimesType["localStartTimes"][number];
+
+type BookingsRouteType = BookingApiClientType["public"][":slug"]["bookings"];
+
+// What Book sends: the time, the customer, her answers and the form's key.
+export type BookingRequestType = InferRequestType<BookingsRouteType["$post"]>["json"];
+
+// The booking made, as the route answers it: never the customer's own details.
+export type BookingMadeType = InferResponseType<BookingsRouteType["$post"], 201>["booking"];

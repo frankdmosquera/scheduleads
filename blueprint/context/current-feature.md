@@ -357,7 +357,7 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   left, and a calendar that cannot be read (503); both are covered by
   tests of what the window is handed.
 
-- [ ] **9.6 Screen two, Book, and done.**
+- [x] **9.6 Screen two, Book, and done.**
   The rail adds the chosen time. The standard questions: name, email,
   phone, address, what they want done; "At least one is required" under
   email and phone; then the business's own questions, required ones marked.
@@ -440,7 +440,9 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   the customer's page shows those as sent (F-281, 9.5 review).
 - `POST /public/:slug/bookings` body adds
   `answers?: [{ questionId, answer }]`. New refusals: 400 person not taken,
-  400 answers; 429 `too_many_tries` with `Retry-After` (seconds).
+  400 answers; 429 `too_many_tries` with `Retry-After` (seconds). The 201
+  answer's booking gains `when`, the moment as the emails say it, which the
+  done screen shows as sent (amended at 9.6, as F-279 did for the times).
 - Every public refusal keeps `{ error: { code, message } }`.
 - Theme tokens the host defines (from `prototypes/theme.css`):
   the `--sa-*` set used by `widget.css` (`--sa-bg`, `--sa-surface`,
