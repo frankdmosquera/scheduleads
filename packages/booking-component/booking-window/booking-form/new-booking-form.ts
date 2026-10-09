@@ -12,5 +12,6 @@ export function newBookingForm(): BookingFormValuesType {
     location: "",
     details: "",
     answers: {},
+    laterTextsYes: false, // never ticked at first
   };
 }

@@ -379,19 +379,43 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   second tab) shows the taken message with fresh times; each field error
   shows and clears; suites pass.
 
-- [ ] **9.7 The yes to later texts** (decision 13; plan drafted Oct 9, gone
-  through with Frank just before it is built). Screen two gains one
-  optional box, never ticked at first, worded with the business's name,
-  only for a business whose setting says to ask (set per business at client
-  setup until feature 12; off until set). A tick saves the date on the
-  contact (a new nullable column, its migration generated from the schema)
-  and one timeline entry with the booking; an unticked box changes nothing.
-  The booking route takes the answer through the shared create-booking
-  schema. 8b's booking texts are untouched.
+- [x] **9.7 The yes to later texts** (decision 13; plan gone through with
+  Frank and approved Oct 9). Screen two gains one optional box, never ticked
+  at first, only for a business whose setting says to ask (set per business
+  at client setup until feature 12; off until set). The booking texts (8b)
+  are untouched, ticked or not; owner-made bookings are untouched.
+  9.7.1 Data: `text_settings.askLaterTextsYes` (boolean, false until the
+  business sets it; a business with no text settings never asks);
+  `contact.laterTextsYesAt` (nullable, the date of her latest yes); a new
+  timeline type `later_texts_yes`; one migration generated from the schema.
+  The seed sets painting-dev to ask; clinic-dev has no text settings (it is
+  the seed's business that sends no texts), so it never asks, and the
+  preview shows both.
+  9.7.2 API: the public business route sends the box's sentence, written by
+  the API with the business's name, or nothing when it does not ask. The
+  shared create-booking schema takes an optional `laterTextsYes`. A tick
+  with no phone is refused under Phone ("Enter a phone for texts."), since a
+  yes with no number proves nothing; a tick sent to a business that does not
+  ask is ignored. A tick stamps the contact's date and adds one timeline entry
+  with the booking, holding the phone and the same sentence the API wrote, so
+  what was shown and what was saved cannot drift. An unticked box changes
+  nothing, so an earlier yes stays.
+  9.7.3 The box: under Phone, unticked, the API's sentence as its label, kept
+  with the form while she moves between screens and sent with Book.
   **Done when:** a booking with the box ticked stamps the contact and its
-  timeline, one without it leaves an earlier yes in place, a business that
-  does not ask shows no box, and the booking texts go the same either way;
-  suites pass.
+  timeline, one without it leaves an earlier yes in place, a tick with no
+  phone is refused under Phone, a business that does not ask shows no box
+  and ignores a tick, and the booking texts go the same either way; suites
+  pass; the box is seen on the painting-dev preview and absent on clinic-dev.
+  Built (Oct 9): the yes is saved with its number (`contact.laterTextsYesPhone`,
+  as Twilio texts it) beside its date, because a contact is matched by email
+  and its phone is never changed by a public form: a date alone would have let
+  a later text go to a number nobody said yes for. A tick needs a phone that
+  can get texts ("Enter a phone that can get texts."), checked by the shared
+  schema in the browser and the route alike. The migration is
+  0024_later_texts_yes. Seen live: a ticked booking on painting-dev saved the
+  date, +14035550148 and the sentence, with its confirmation text as usual;
+  clinic-dev's form has no box.
 
 ## Files / areas
 

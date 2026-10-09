@@ -22,6 +22,7 @@ export const textSettingsValidationSchema = z
       ),
     replyPhone: textableNumberValidationSchema.nullable(),
     replyEmail: emailAddressValidationSchema.nullable(),
+    askLaterTextsYes: z.boolean(), // the booking form's box (feature 9, decision 13)
   })
   .refine((settings) => settings.replyPhone !== null || settings.replyEmail !== null, {
     message: "Choose where replies go: a phone, an email, or both.",

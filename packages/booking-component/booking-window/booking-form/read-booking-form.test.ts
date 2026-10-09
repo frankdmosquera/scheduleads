@@ -134,6 +134,29 @@ describe("readBookingForm", () => {
     });
   });
 
+  it("sends a tick for later texts, and nothing at all without one (decision 13)", () => {
+    const ticked = readBookingForm({ ...filledForm, laterTextsYes: true }, questions, choice);
+    const unticked = readBookingForm(filledForm, questions, choice);
+
+    expect(ticked.state === "ok" && ticked.request.laterTextsYes).toBe(true);
+    expect(unticked.state === "ok" && "laterTextsYes" in unticked.request).toBe(false);
+  });
+
+  it("says under Phone when a tick has no phone that can get texts", () => {
+    for (const phone of ["", "555 0100"]) {
+      expect(
+        readBookingForm(
+          { ...filledForm, email: "jane@example.com", phone, laterTextsYes: true },
+          questions,
+          choice
+        )
+      ).toEqual({
+        state: "errors",
+        errors: [{ field: "phone", message: "Enter a phone that can get texts." }],
+      });
+    }
+  });
+
   it("gives each new form its own key, of the shape the route takes", () => {
     const first = newBookingForm().requestKey;
     const second = newBookingForm().requestKey;

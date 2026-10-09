@@ -8,8 +8,15 @@ import { randomUUID } from "node:crypto";
 
 import { and, eq } from "drizzle-orm";
 
-import { booking, bookingLink, lead, member } from "@scheduleads-app/shared/db";
+import {
+  booking,
+  bookingLink,
+  contact as contactTable, // "contact" is the row the booking saves
+  lead,
+  member,
+} from "@scheduleads-app/shared/db";
 import { localDate } from "@scheduleads-app/shared/local-date";
+import { textablePhoneNumber } from "@scheduleads-app/shared/textable-phone-number";
 import {
   contactValidationSchema,
   type ContactInputType,
@@ -31,6 +38,7 @@ import { findServiceResources } from "../scheduling/find-service-resources.js";
 import { checkAnswers } from "./check-answers.js";
 import { findBookingChoices } from "./find-booking-choices.js";
 import { findBookingQuestions } from "./find-booking-questions.js";
+import { findLaterTextsYesWords } from "./find-later-texts-yes-words.js";
 import { holdFirstFreeChoice } from "./hold-first-free-choice.js";
 
 export type BookTimeInputType = {
@@ -43,6 +51,8 @@ export type BookTimeInputType = {
   location: string; // the customer's address
   details: string | null; // what they wrote
   answers?: { questionId: string; answer: string }[]; // to the business's own questions (feature 9)
+  // The customer's tick for later texts (decision 13); the booking's own texts go either way.
+  laterTextsYes?: boolean;
   source: "widget" | "hosted" | "manual";
   actorUserId: string | null; // the owner's login when source is manual, checked here
   now: Date;
@@ -229,6 +239,12 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
   }
   const { choices } = checked;
 
+  // A tick counts only where the business asks, and only with a number that can get texts.
+  const laterTextsYesPhone = input.laterTextsYes ? textablePhoneNumber(input.customer.phone) : null;
+  const laterTextsYesWords = laterTextsYesPhone
+    ? await findLaterTextsYesWords(organizationId)
+    : null;
+
   const stage = await findFirstPipelineStage(organizationId);
   if (!stage) throw new Error("Booking failed: the business has no pipeline stage.");
 
@@ -279,6 +295,26 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         },
         tx
       );
+      // Her yes to later texts: the latest one and its number on the contact, and the words she
+      // saw on her timeline. No tick leaves an earlier yes as it was.
+      if (laterTextsYesPhone && laterTextsYesWords) {
+        await tx
+          .update(contactTable)
+          .set({ laterTextsYesAt: now, laterTextsYesPhone })
+          .where(
+            and(eq(contactTable.organizationId, organizationId), eq(contactTable.id, contact.id))
+          );
+        await recordActivity(
+          organizationId,
+          {
+            contactId: contact.id,
+            type: "later_texts_yes",
+            payload: { bookingId, phone: laterTextsYesPhone, words: laterTextsYesWords },
+            occurredAt: now,
+          },
+          tx
+        );
+      }
       // The two emails and the booked person's Google event, as jobs saved with the booking
       // (decision 1 of the background runner): the answer never waits for them.
       await enqueueBookingEmails(

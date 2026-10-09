@@ -168,6 +168,9 @@ describe("the documented shape", () => {
         { id: expect.any(String), label: "Interior or exterior?", required: true },
         { id: expect.any(String), label: "How many rooms?", required: false },
       ],
+      // It asks for a yes to later texts (decision 13): the box's sentence, written here.
+      laterTextsYesWords:
+        "Yes, Summit Painting (dev) may text me offers and reminders to book again.",
     });
     expect(body.bookingLinks.map((link: { name: string }) => link.name)).toEqual([
       "Colour consultation",

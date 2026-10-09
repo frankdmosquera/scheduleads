@@ -3,7 +3,7 @@
 // leaves bookings in the seeded clinic. Google is never called: fetch throws, a person with no
 // connection has no Google busy time, and the unreadable case is a connection needing reconnection.
 
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 
 import { and, eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
@@ -24,16 +24,19 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the public booking route t
 const { app } = await import("../app.js");
 const { db } = await import("../database.js");
 const {
+  activity,
   availabilityRule,
   booking,
   bookingLink,
   bookingLinkResource,
   bookingQuestion,
   calendarConnection,
+  contact,
   lead,
   organization,
   pipelineStage,
   resource,
+  textSettings,
 } = await import("@scheduleads-app/shared/db");
 const { localDate } = await import("@scheduleads-app/shared/local-date");
 const { workDueJobs } = await import("../lib/jobs/work-due-jobs.js");
@@ -61,6 +64,9 @@ const clinic = {
 // no pipeline stage, where every booking fails as it must without one.
 const shop = { id: id(), slug: `test-bookings-shop-${tag}-dev`, quote: id(), sam: id() };
 const bare = { id: id(), slug: `test-bookings-bare-${tag}-dev`, quote: id(), sam: id() };
+// And a painter whose form asks for a yes to later texts (decision 13); the clinic has no text
+// settings, so it never asks.
+const painter = { id: id(), slug: `test-bookings-painter-${tag}-dev`, quote: id(), sam: id() };
 const day = addDays(localDate(new Date(), "America/Edmonton"), 7); // inside the horizon, past notice
 const bookingsPath = `/public/${clinic.slug}/bookings`;
 let clinicDevFacialId = "";
@@ -180,7 +186,7 @@ beforeAll(async () => {
     resourceId: clinic.ana,
   });
 
-  for (const business of [shop, bare]) {
+  for (const business of [shop, bare, painter]) {
     await db
       .insert(organization)
       .values({ id: business.id, name: `Test ${business.slug}`, slug: business.slug });
@@ -220,9 +226,19 @@ beforeAll(async () => {
       resourceId: business.sam,
     });
   }
-  await db
-    .insert(pipelineStage)
-    .values({ id: id(), organizationId: shop.id, name: "New", position: 0 });
+  await db.insert(pipelineStage).values([
+    { id: id(), organizationId: shop.id, name: "New", position: 0 },
+    { id: id(), organizationId: painter.id, name: "New", position: 0 },
+  ]);
+  await db.insert(textSettings).values({
+    organizationId: painter.id,
+    fromNumber: `+1587${randomInt(200, 1000)}${String(randomInt(0, 10_000)).padStart(4, "0")}`,
+    confirmationOn: false,
+    reminderMinutesBefore: [],
+    replyPhone: null,
+    replyEmail: "office@example.com",
+    askLaterTextsYes: true,
+  });
 
   const clinicDev = await (await app.request("/public/clinic-dev/booking-links")).json();
   if (!clinicDev.bookingLinks) throw new Error("clinic-dev is missing: run npm run db:seed first.");
@@ -232,7 +248,9 @@ beforeAll(async () => {
 afterAll(async () => {
   await workDueJobs(); // no job outlives the database
   vi.unstubAllGlobals();
-  await db.delete(organization).where(inArray(organization.id, [clinic.id, shop.id, bare.id])); // its rows go with it
+  await db
+    .delete(organization)
+    .where(inArray(organization.id, [clinic.id, shop.id, bare.id, painter.id])); // its rows go with it
   await db.$client.end();
 });
 
@@ -307,6 +325,117 @@ describe("a booking is made", () => {
     expect(first.status).toBe(201);
     expect(second.status).toBe(201);
     expect((await second.json()).booking.id).toBe((await first.json()).booking.id);
+  });
+});
+
+describe("the yes to later texts (feature 9, decision 13)", () => {
+  const words = `Yes, Test ${painter.slug} may text me offers and reminders to book again.`;
+  // The painter's free start times on the test day, each booked once.
+  let painterTimes: string[] = [];
+  const painterForm = (email: string, change: Record<string, unknown> = {}) => ({
+    bookingLinkId: painter.quote,
+    startsAt: painterTimes.shift(),
+    personId: painter.sam,
+    requestKey: id(),
+    customer: { name: "Jane Doe", email, phone: "(403) 555-0148" },
+    location: "12 Elm Street",
+    ...change,
+  });
+  const contactOf = async (organizationId: string, email: string) =>
+    (
+      await db
+        .select({ yesAt: contact.laterTextsYesAt, yesPhone: contact.laterTextsYesPhone })
+        .from(contact)
+        .where(and(eq(contact.organizationId, organizationId), eq(contact.email, email)))
+    )[0];
+  const yesEntriesOf = (organizationId: string) =>
+    db
+      .select({ payload: activity.payload })
+      .from(activity)
+      .where(
+        and(eq(activity.organizationId, organizationId), eq(activity.type, "later_texts_yes"))
+      );
+
+  beforeAll(async () => {
+    const response = await app.request(
+      `/public/${painter.slug}/booking-links/${painter.quote}/times?from=${day}&to=${day}&person=${painter.sam}`
+    );
+    painterTimes = (await response.json()).startTimes;
+  });
+
+  test("the box's sentence comes only from a business that asks", async () => {
+    const asking = await (await app.request(`/public/${painter.slug}/booking-links`)).json();
+    const notAsking = await (await app.request(`/public/${clinic.slug}/booking-links`)).json();
+
+    expect(asking.business.laterTextsYesWords).toBe(words);
+    expect(notAsking.business.laterTextsYesWords).toBeNull();
+  });
+
+  test("a tick saves the yes with its number on the contact, and the words she saw on her timeline", async () => {
+    const email = `yes-${tag}@example.com`;
+    const response = await post(
+      `/public/${painter.slug}/bookings`,
+      painterForm(email, { laterTextsYes: true })
+    );
+    expect(response.status).toBe(201);
+    const { booking: made } = await response.json();
+
+    const saved = await contactOf(painter.id, email);
+    expect(saved?.yesAt).toBeInstanceOf(Date);
+    expect(saved?.yesPhone).toBe("+14035550148"); // as Twilio texts it
+    expect((await yesEntriesOf(painter.id)).map((row) => row.payload)).toContainEqual({
+      bookingId: made.id,
+      phone: "+14035550148",
+      words,
+    });
+  });
+
+  test("a booking without a tick leaves an earlier yes as it was", async () => {
+    const email = `kept-${tag}@example.com`;
+    const first = await post(
+      `/public/${painter.slug}/bookings`,
+      painterForm(email, { laterTextsYes: true })
+    );
+    expect(first.status).toBe(201);
+    const before = await contactOf(painter.id, email);
+    const entries = (await yesEntriesOf(painter.id)).length;
+
+    const second = await post(`/public/${painter.slug}/bookings`, painterForm(email));
+    expect(second.status).toBe(201);
+    expect(await contactOf(painter.id, email)).toEqual(before);
+    expect(await yesEntriesOf(painter.id)).toHaveLength(entries);
+  });
+
+  test("a tick without a phone that can get texts is a 400 and books nothing", async () => {
+    const email = `nophone-${tag}@example.com`;
+    for (const customer of [
+      { name: "Jane Doe", email },
+      { name: "Jane Doe", email, phone: "555 0100" },
+    ]) {
+      const response = await post(
+        `/public/${painter.slug}/bookings`,
+        painterForm(email, { customer, laterTextsYes: true })
+      );
+      expect(response.status).toBe(400);
+    }
+    expect(await contactOf(painter.id, email)).toBeUndefined();
+  });
+
+  test("a tick sent to a business that does not ask books, and saves no yes", async () => {
+    const [startsAt] = await freeTimes(clinic.mei);
+    const email = `ignored-${tag}@example.com`;
+    const response = await post(
+      bookingsPath,
+      form(startsAt, {
+        personId: clinic.mei,
+        customer: { name: "Jane Doe", email, phone: "(403) 555-0148" },
+        laterTextsYes: true,
+      })
+    );
+
+    expect(response.status).toBe(201);
+    expect(await contactOf(clinic.id, email)).toEqual({ yesAt: null, yesPhone: null });
+    expect(await yesEntriesOf(clinic.id)).toEqual([]);
   });
 });
 

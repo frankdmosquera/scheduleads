@@ -26,7 +26,9 @@ const business = {
   logo: null,
   phone: "403 555 0100",
   questions: [{ id: "q-colour", label: "Which colour?", required: true }],
+  laterTextsYesWords: null,
 } as BookingBusinessType;
+const yesWords = "Yes, Riverbend Clinic may text me offers and reminders to book again.";
 
 // The real typed client over a fake fetch: each send is recorded and held until the test answers it.
 function clientWithHeldSends() {
@@ -47,7 +49,10 @@ function clientWithHeldSends() {
   return { apiClient, sends };
 }
 
-function renderForm(apiClient: ReturnType<typeof clientWithHeldSends>["apiClient"]) {
+function renderForm(
+  apiClient: ReturnType<typeof clientWithHeldSends>["apiClient"],
+  shown: BookingBusinessType = business
+) {
   const booked: unknown[] = [];
   const taken: string[] = [];
   const unsure: boolean[] = [];
@@ -56,7 +61,7 @@ function renderForm(apiClient: ReturnType<typeof clientWithHeldSends>["apiClient
     return createElement(BookingFormView, {
       apiClient,
       slug: "clinic-dev",
-      business,
+      business: shown,
       choice: { bookingLinkId: "facial", startsAt: booking.startsAt, personId: null },
       form,
       onFormChange: setForm,
@@ -212,6 +217,45 @@ describe("screen two's form", () => {
       sends[1]?.answer(new Response(JSON.stringify({ booking }), { status: 201 }))
     );
     expect(booked).toEqual([{ made: booking, email: "jane@example.com" }]);
+  });
+
+  it("asks for a yes to later texts only where the business asks, never ticked at first", async () => {
+    const { apiClient, sends } = clientWithHeldSends();
+    renderForm(apiClient);
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    cleanup();
+
+    renderForm(apiClient, { ...business, laterTextsYesWords: yesWords });
+    const box = screen.getByRole("checkbox", { name: yesWords });
+    expect(box).toHaveProperty("checked", false);
+
+    fillIn();
+    type("Phone", "(403) 555-0148");
+    fireEvent.click(box);
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+    await waitFor(() => expect(sends).toHaveLength(1));
+    expect(sends[0]?.body).toMatchObject({ laterTextsYes: true });
+  });
+
+  it("a tick with no phone is said under Phone, sends nothing, and clears when she unticks", async () => {
+    const { apiClient, sends } = clientWithHeldSends();
+    renderForm(apiClient, { ...business, laterTextsYesWords: yesWords });
+    fillIn(); // an email, no phone
+
+    fireEvent.click(screen.getByRole("checkbox", { name: yesWords }));
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+
+    const phone = screen.getByLabelText("Phone");
+    expect(document.activeElement).toBe(phone);
+    expect(phone.getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByText("Enter a phone that can get texts.")).toBeDefined();
+    expect(sends).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole("checkbox", { name: yesWords }));
+    expect(screen.queryByText("Enter a phone that can get texts.")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+    await waitFor(() => expect(sends).toHaveLength(1));
+    expect(sends[0]?.body).not.toHaveProperty("laterTextsYes");
   });
 
   it("says a part of the form no field shows, and sends nothing", async () => {

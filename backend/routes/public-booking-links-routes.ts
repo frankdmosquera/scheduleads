@@ -16,6 +16,7 @@ import { db } from "../database.js";
 import { resolveBookableHours } from "../lib/bookable-hours/resolve-bookable-hours.js";
 import { findBookableOrganizationId } from "../lib/booking/find-bookable-organization-id.js";
 import { findBookingQuestions } from "../lib/booking/find-booking-questions.js";
+import { findLaterTextsYesWords } from "../lib/booking/find-later-texts-yes-words.js";
 import { findPersonChoice } from "../lib/booking/find-person-choice.js";
 import { CalendarUnavailableError } from "../lib/calendar/calendar-unavailable-error.js";
 import { notBookableHere } from "../lib/errors/not-bookable-here.js";
@@ -43,8 +44,8 @@ const publicBusinessColumns = {
 };
 
 export const publicBookingLinksRoutes = new Hono()
-  // The business's face and its own questions for the booking modal, and its active services, by
-  // name.
+  // The business's face, its own questions and the yes-to-later-texts box's sentence (null: no box)
+  // for the booking modal, and its active services, by name.
   .get("/:slug/booking-links", async (c) => {
     const slug = organizationSlugValidationSchema.safeParse(c.req.param("slug"));
     if (!slug.success) return c.json(refuse("bad_request", "That is not a business address."), 400);
@@ -52,13 +53,14 @@ export const publicBookingLinksRoutes = new Hono()
     const organizationId = await findBookableOrganizationId(slug.data);
     if (!organizationId) return c.json(notBookableHere, 404);
 
-    const [[business], questions, bookingLinks] = await Promise.all([
+    const [[business], questions, laterTextsYesWords, bookingLinks] = await Promise.all([
       db
         .select(publicBusinessColumns)
         .from(organization)
         .where(eq(organization.id, organizationId))
         .limit(1),
       findBookingQuestions(organizationId),
+      findLaterTextsYesWords(organizationId),
       db
         .select(publicBookingLinkColumns)
         .from(bookingLink)
@@ -67,7 +69,7 @@ export const publicBookingLinksRoutes = new Hono()
     ]);
     if (!business) return c.json(notBookableHere, 404); // the business went between the two reads
 
-    return c.json({ business: { ...business, questions }, bookingLinks }, 200);
+    return c.json({ business: { ...business, questions, laterTextsYesWords }, bookingLinks }, 200);
   })
   // One service, how its modal looks and who picks the person, and the business's bookable hours.
   // The people come with the times.

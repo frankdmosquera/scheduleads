@@ -169,6 +169,13 @@
       "when": 1791502403638,
       "tag": "0023_booking_question_and_lead_answers",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791581250276,
+      "tag": "0024_later_texts_yes",
+      "breakpoints": true
     }
   ]
 }

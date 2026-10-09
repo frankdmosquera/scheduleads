@@ -252,6 +252,56 @@ describe("a booking's confirmation text", () => {
     expect(await textJobsOf(booking.id)).toEqual([]); // done and gone
   });
 
+  test("a yes to later texts changes nothing about the booking's own texts (decision 13)", async () => {
+    // Two businesses that ask, one booking each through the public route: ticked, and not.
+    const sentFor = async (name: string, laterTextsYes: boolean) => {
+      const business = await makeBusiness(name, { askLaterTextsYes: true });
+      const day = addDays(localDate(new Date(), "America/Edmonton"), 7);
+      const times = await (
+        await app.request(
+          `/public/${business.slug}/booking-links/${business.estimate}/times?from=${day}&to=${day}&person=${business.marco}`
+        )
+      ).json();
+      const response = await app.request(`/public/${business.slug}/bookings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingLinkId: business.estimate,
+          startsAt: times.startTimes[0],
+          personId: business.marco,
+          requestKey: randomUUID(),
+          customer: jane,
+          location: "12 Main Street, Calgary",
+          laterTextsYes,
+        }),
+      });
+      expect(response.status).toBe(201);
+      calls = [];
+      await workDueJobs();
+      const yes = await db
+        .select({ id: activity.id })
+        .from(activity)
+        .where(
+          and(eq(activity.organizationId, business.business), eq(activity.type, "later_texts_yes"))
+        );
+      return {
+        texts: calls.map(({ form }) => ({ To: form.To, Body: form.Body.split(" Details")[0] })),
+        entries: await textEntriesOf(business),
+        yes: yes.length,
+      };
+    };
+
+    const ticked = await sentFor("yes", true);
+    const unticked = await sentFor("no", false);
+
+    expect([ticked.yes, unticked.yes]).toEqual([1, 0]); // the tick was saved
+    expect(ticked.texts).toHaveLength(1);
+    expect(ticked.texts).toEqual(unticked.texts); // the same confirmation, to the same phone
+    expect(ticked.entries.map((entry) => (entry as { kind: string }).kind)).toEqual(
+      unticked.entries.map((entry) => (entry as { kind: string }).kind)
+    );
+  });
+
   test("an owner-made booking gets its confirmation text too", async () => {
     const business = await makeBusiness("owner");
     const ownerId = randomUUID();

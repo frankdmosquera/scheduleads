@@ -133,13 +133,14 @@ const ACCOUNTS = [
       },
       // Its texts (feature 8b), Primo's shape: a made-up 555 number, so nothing could reach a
       // real phone, and without Twilio keys dev sends nothing anyway. Riverbend has none, so it
-      // shows a business that sends no texts.
+      // shows a business that sends no texts, and no box asking for a yes to later texts.
       textSettings: {
         fromNumber: "403 555 0199",
         confirmationOn: true,
         reminderMinutesBefore: [1200, 60],
         replyPhone: "403 555 0100",
         replyEmail: null,
+        askLaterTextsYes: true,
       },
       hours: {
         weeklyHours: {

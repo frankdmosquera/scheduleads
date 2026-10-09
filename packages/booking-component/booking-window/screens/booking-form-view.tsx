@@ -250,6 +250,18 @@ export function BookingFormView({
           ),
           "An email or a phone. At least one is required."
         )}
+        {business.laterTextsYesWords && (
+          <label className="sa-check">
+            <input
+              type="checkbox"
+              checked={form.laterTextsYes}
+              onChange={(event) =>
+                edit(["phone"], { ...form, laterTextsYes: event.target.checked })
+              }
+            />
+            {business.laterTextsYesWords}
+          </label>
+        )}
         {field("location", "Address", true, (props) => (
           <input
             {...props}

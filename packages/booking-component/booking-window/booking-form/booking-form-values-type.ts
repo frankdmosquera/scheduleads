@@ -9,6 +9,7 @@ export type BookingFormValuesType = {
   location: string;
   details: string;
   answers: Record<string, string>; // by the business's question id
+  laterTextsYes: boolean; // her tick for later texts, only where the business asks (decision 13)
 };
 
 // Where an error shows: a standard field, one of the business's questions, or the form as a whole

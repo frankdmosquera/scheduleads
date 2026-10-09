@@ -821,6 +821,22 @@
   border-color: var(--sa-error, #b42318);
 }
 
+/* The yes to later texts: a box and the business's own sentence, under Phone. */
+.sa-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--sa-text, #18181b);
+  cursor: pointer;
+}
+.sa-check input {
+  margin: 2px 0 0;
+  flex: none;
+  accent-color: var(--sa-identity, #18181b);
+}
+
 /* Where focus waits while Try again sends, and on the words a send ends with: read out, never outlined. */
 .sa-focus-place:focus {
   outline: none;

@@ -51,6 +51,7 @@ export function readBookingForm(
       questionId: question.id,
       answer: (values.answers[question.id] ?? "").trim(),
     })),
+    ...(values.laterTextsYes ? { laterTextsYes: true } : {}), // no tick: nothing sent
   };
 
   const found = new Map<BookingFormFieldType, string>();
