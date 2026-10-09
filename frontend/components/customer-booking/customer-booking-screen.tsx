@@ -8,7 +8,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 import { textColorOn } from "@scheduleads-app/shared/text-color-on";
 import { telHref } from "@scheduleads-app/shared/tel-href";
 
@@ -121,7 +120,7 @@ function CustomerBookingDetails({
   const cancelRef = useRef<HTMLButtonElement>(null);
   const changeRef = useRef<HTMLButtonElement>(null);
   const yesCancelRef = useRef<HTMLButtonElement>(null);
-  const when = formatBookingTime(new Date(booking.startsAt), booking.timezone);
+  const { when } = booking; // written by the API, never with the browser's time-zone rules (F-281)
 
   useEffect(() => {
     document.title = `Your booking with ${business.name}`;

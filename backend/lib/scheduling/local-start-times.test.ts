@@ -8,14 +8,29 @@ describe("localStartTimes", () => {
     expect(
       localStartTimes(["2026-10-14T15:30:00.000Z", "2026-10-15T02:00:00.000Z"], "America/Edmonton")
     ).toEqual([
-      { startsAt: "2026-10-14T15:30:00.000Z", date: "2026-10-14", time: "9:30 a.m." },
-      { startsAt: "2026-10-15T02:00:00.000Z", date: "2026-10-14", time: "8:00 p.m." },
+      {
+        startsAt: "2026-10-14T15:30:00.000Z",
+        date: "2026-10-14",
+        time: "9:30 a.m.",
+        when: "Wednesday, October 14 at 9:30 a.m. MDT",
+      },
+      {
+        startsAt: "2026-10-15T02:00:00.000Z",
+        date: "2026-10-14",
+        time: "8:00 p.m.",
+        when: "Wednesday, October 14 at 8:00 p.m. MDT",
+      },
     ]);
   });
 
   test("the same instant reads on another business's own clock", () => {
     expect(localStartTimes(["2026-10-14T15:30:00.000Z"], "America/Toronto")).toEqual([
-      { startsAt: "2026-10-14T15:30:00.000Z", date: "2026-10-14", time: "11:30 a.m." },
+      {
+        startsAt: "2026-10-14T15:30:00.000Z",
+        date: "2026-10-14",
+        time: "11:30 a.m.",
+        when: "Wednesday, October 14 at 11:30 a.m. EDT",
+      },
     ]);
   });
 

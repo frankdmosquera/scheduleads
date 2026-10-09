@@ -10,6 +10,9 @@ const bookingMoveTimesRoute = publicApiClient.public.bookings[":token"].times;
 
 export type BookingMoveTimesType = InferResponseType<typeof bookingMoveTimesRoute.$get, 200>;
 
+// One time it could move to, with its date, clock time and whole moment as the API wrote them.
+export type BookingMoveStartTimeType = BookingMoveTimesType["localStartTimes"][number];
+
 export type BookingMoveTimesResultType =
   | { state: "ok"; times: BookingMoveTimesType }
   | { state: "not-found" }

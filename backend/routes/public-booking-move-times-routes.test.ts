@@ -9,6 +9,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vite
 
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
 
+import { localStartTimes } from "../lib/scheduling/local-start-times.js";
+
 try {
   process.loadEnvFile(new URL("../../.env", import.meta.url)); // the root .env, before the app reads it
 } catch {
@@ -319,6 +321,16 @@ describe("free times for moving a booking", () => {
     expect(response.status).toBe(200);
     expect(body.people).toEqual([]);
     expect(body.startTimes.length).toBeGreaterThan(0);
+  });
+
+  test("every time comes with its date, clock time and whole moment, written by the API (F-281)", async () => {
+    const clinic = await makeClinic("local-labels");
+    const response = await timesFor(clinic.janesBooking);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.startTimes.length).toBeGreaterThan(0);
+    expect(body.localStartTimes).toEqual(localStartTimes(body.startTimes, body.timezone));
   });
 
   test("a person asked for on a service the business assigns is a 400", async () => {

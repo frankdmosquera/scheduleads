@@ -8,6 +8,7 @@ import { eq, like } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
+import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 
 try {
   process.loadEnvFile(new URL("../../.env", import.meta.url)); // the root .env, before the app reads it
@@ -181,6 +182,7 @@ describe("the customer's booking page", () => {
         canMove: true,
         service: "Interior estimate",
         startsAt: primo.startsAt.toISOString(),
+        when: formatBookingTime(primo.startsAt, "America/Edmonton"), // written by the API (F-281)
         // The appointment itself, not its 15 after.
         endsAt: new Date(primo.startsAt.getTime() + 60 * 60_000).toISOString(),
         timezone: "America/Edmonton",

@@ -11,12 +11,12 @@
 import { useEffect, useRef, useState } from "react";
 
 import { addDays } from "@scheduleads-app/shared/add-days";
-import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 import { localDate } from "@scheduleads-app/shared/local-date";
 import { telHref } from "@scheduleads-app/shared/tel-href";
 
 import {
   fetchBookingMoveTimes,
+  type BookingMoveStartTimeType,
   type BookingMoveTimesResultType,
 } from "@/lib/api-client/customer-booking/fetch-booking-move-times";
 import { type BookingPageType } from "@/lib/api-client/customer-booking/fetch-booking-page";
@@ -41,18 +41,14 @@ function formatWeekName(from: string, to: string): string {
   return `${named(from, { month: "short", day: "numeric" })} to ${named(to, sameMonth ? { day: "numeric" } : { month: "short", day: "numeric" })}`;
 }
 
-const formatTimeOfDay = (moment: Date, timeZone: string) =>
-  new Intl.DateTimeFormat("en-CA", { timeZone, hour: "numeric", minute: "2-digit" }).format(moment);
-
-// The start times grouped by their day in the business's zone, in order.
+// The start times grouped by the business's date the API sent with each, in order. The API names
+// every date and time: the browser's own time-zone rules may be older than its (F-281).
 function groupTimesByDay(
-  startTimes: string[],
-  timeZone: string
-): { date: string; times: string[] }[] {
-  const days = new Map<string, string[]>();
-  for (const startsAt of startTimes) {
-    const date = localDate(new Date(startsAt), timeZone);
-    days.set(date, [...(days.get(date) ?? []), startsAt]);
+  startTimes: BookingMoveStartTimeType[]
+): { date: string; times: BookingMoveStartTimeType[] }[] {
+  const days = new Map<string, BookingMoveStartTimeType[]>();
+  for (const startTime of startTimes) {
+    days.set(startTime.date, [...(days.get(startTime.date) ?? []), startTime]);
   }
   return [...days].map(([date, times]) => ({ date, times }));
 }
@@ -87,7 +83,7 @@ export function ChangeTimePanel({
   // Her own person until the first answer lists everyone who offers the service.
   const [people, setPeople] = useState([{ id: booking.personId, name: booking.person }]);
   const [lastDate, setLastDate] = useState<string | null>(null); // the last date it takes bookings
-  const [chosen, setChosen] = useState<string | null>(null); // the start asked about once more
+  const [chosen, setChosen] = useState<BookingMoveStartTimeType | null>(null); // asked once more
   const [sending, setSending] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -143,7 +139,7 @@ export function ChangeTimePanel({
     if (!chosen) return;
     setSending(true);
     setProblem(null);
-    const answer = await moveBookingPage(token, { startsAt: chosen, personId });
+    const answer = await moveBookingPage(token, { startsAt: chosen.startsAt, personId });
     setSending(false);
     if (answer.state === "ok") {
       onMoved(answer.booking);
@@ -181,7 +177,7 @@ export function ChangeTimePanel({
     return (
       <div role="group" aria-labelledby="confirm-move">
         <p id="confirm-move" role="status" className="text-sm font-medium text-slate-900">
-          {`Move to ${formatBookingTime(new Date(chosen), timezone)}${withWhom}?`}
+          {`Move to ${chosen.when}${withWhom}?`}
         </p>
         <div className="mt-3 flex gap-3">
           <button
@@ -221,11 +217,11 @@ export function ChangeTimePanel({
   const keepsPerson = personId === null || personId === booking.personId;
   const startTimes =
     result?.state === "ok"
-      ? result.times.startTimes.filter(
-          (startsAt) => !(keepsPerson && Date.parse(startsAt) === Date.parse(booking.startsAt))
+      ? result.times.localStartTimes.filter(
+          ({ startsAt }) => !(keepsPerson && Date.parse(startsAt) === Date.parse(booking.startsAt))
         )
       : [];
-  const days = groupTimesByDay(startTimes, timezone);
+  const days = groupTimesByDay(startTimes);
   const count = startTimes.length;
   const week = formatWeekName(from, to);
   // The week holding the business's last bookable date: nothing later can be booked.
@@ -370,17 +366,17 @@ export function ChangeTimePanel({
                     {formatDayName(day.date)}
                   </h3>
                   <div className="mt-2 grid grid-cols-3 gap-2">
-                    {day.times.map((startsAt) => (
+                    {day.times.map((startTime) => (
                       <button
-                        key={startsAt}
+                        key={startTime.startsAt}
                         type="button"
                         onClick={() => {
                           setProblem(null);
-                          setChosen(startsAt);
+                          setChosen(startTime);
                         }}
                         className="rounded-lg border border-slate-300 px-2 py-2.5 text-sm text-slate-900 hover:bg-slate-50"
                       >
-                        {formatTimeOfDay(new Date(startsAt), timezone)}
+                        {startTime.time}
                       </button>
                     ))}
                   </div>

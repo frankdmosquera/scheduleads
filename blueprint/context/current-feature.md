@@ -414,7 +414,11 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   `{ timezone, people: [{ id, name }], startTimes }`, `people` empty when
   the business assigns (amended at 9.1), plus `localStartTimes:
   [{ startsAt, date, time }]`, each time's business date and clock label
-  worked out by the API, which the window shows as sent (F-279, 9.5 review).
+  worked out by the API, which the window shows as sent (F-279, 9.5 review);
+  each also carries `when`, the whole moment as the emails say it (F-281).
+- `GET /public/bookings/:token` 200: the booking gains `when`, and
+  `GET /public/bookings/:token/times` 200 gains the same `localStartTimes`;
+  the customer's page shows those as sent (F-281, 9.5 review).
 - `POST /public/:slug/bookings` body adds
   `answers?: [{ questionId, answer }]`. New refusals: 400 person not taken,
   400 answers; 429 `too_many_tries` with `Retry-After` (seconds).

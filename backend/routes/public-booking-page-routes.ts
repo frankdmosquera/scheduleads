@@ -21,6 +21,7 @@ import { readBookingPageToken } from "../lib/booking/booking-page-token.js";
 import { CalendarUnavailableError } from "../lib/calendar/calendar-unavailable-error.js";
 import { personNotTaken } from "../lib/errors/person-not-taken.js";
 import { refuse } from "../lib/errors/refuse.js";
+import { localStartTimes } from "../lib/scheduling/local-start-times.js";
 
 const linkNotFound = refuse("not_found", "This link does not open a booking.");
 const alreadyStarted = refuse(
@@ -78,7 +79,11 @@ export const publicBookingPageRoutes = new Hono()
         if (result.state === "already_cancelled") return c.json(alreadyCancelled, 409);
         if (result.state === "not_found") return c.json(linkNotFound, 404);
         if (result.state === "person_not_taken") return c.json(personNotTaken, 400);
-        return c.json(result.times, 200);
+        const { startTimes, timezone } = result.times;
+        return c.json(
+          { ...result.times, localStartTimes: localStartTimes(startTimes, timezone) },
+          200
+        );
       } catch (error) {
         if (!(error instanceof CalendarUnavailableError)) throw error;
         return c.json(timesUnreadable, 503);
