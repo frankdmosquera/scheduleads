@@ -755,6 +755,17 @@
   max-width: 420px;
 }
 
+/* The fields in one group, laid out as the form: disabled together while a lost answer is unknown. */
+.sa-fields {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
 .sa-req::after {
   content: " *";
   color: var(--sa-action, #18181b);

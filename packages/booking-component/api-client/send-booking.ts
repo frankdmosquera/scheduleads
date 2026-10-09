@@ -31,7 +31,7 @@ export async function sendBooking(
   slug: string,
   request: BookingRequestType
 ): Promise<SendBookingResultType> {
-  // Hono's client drops an empty segment, so a blank value would reach another route (F-278).
+  // Hono's client drops an empty segment, so a blank value would reach another route.
   if (slug.trim() === "") return { state: "problem", problem: "nothing-to-book" };
 
   let response: Response;

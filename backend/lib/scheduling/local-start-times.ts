@@ -1,7 +1,7 @@
 // Backend: each free start time with the business's date and clock time beside it, "2026-11-02" and
 // "9:00 a.m.", and the whole moment as the emails say it, worked out here with the API's own
 // time-zone rules. The booking window and the customer's page show these as sent, never
-// re-deriving them with the visitor's browser, whose rules may be older (F-279, F-281).
+// re-deriving them with the visitor's browser, whose rules may be older.
 
 import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 import { localDate } from "@scheduleads-app/shared/local-date";

@@ -42,7 +42,7 @@ function formatWeekName(from: string, to: string): string {
 }
 
 // The start times grouped by the business's date the API sent with each, in order. The API names
-// every date and time: the browser's own time-zone rules may be older than its (F-281).
+// every date and time: the browser's own time-zone rules may be older than its.
 function groupTimesByDay(
   startTimes: BookingMoveStartTimeType[]
 ): { date: string; times: BookingMoveStartTimeType[] }[] {

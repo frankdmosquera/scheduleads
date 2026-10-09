@@ -11,8 +11,9 @@ export type BookingFormValuesType = {
   answers: Record<string, string>; // by the business's question id
 };
 
-// Where an error shows: a standard field, or one of the business's questions.
+// Where an error shows: a standard field, one of the business's questions, or the form as a whole
+// for a part no field shows (too many answers).
 export type BookingFormFieldType =
-  "name" | "email" | "phone" | "location" | "details" | `answer:${string}`;
+  "name" | "email" | "phone" | "location" | "details" | `answer:${string}` | "form";
 
 export type BookingFormErrorType = { field: BookingFormFieldType; message: string };

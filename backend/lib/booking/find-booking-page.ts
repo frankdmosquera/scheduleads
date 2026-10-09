@@ -23,7 +23,7 @@ export type BookingPageType = {
   canMove: boolean; // the same as canCancel, a switched-off service included (feature 7b, decision 13)
   service: string;
   startsAt: string; // ISO 8601 in UTC
-  when: string; // "Monday, November 2 at 9:00 a.m. MDT", written here, never by the browser (F-281)
+  when: string; // "Monday, November 2 at 9:00 a.m. MDT", written here, never by the browser
   endsAt: string; // the appointment's own end, without the buffer after
   timezone: string; // the business's IANA zone
   person: string; // the booked person's name

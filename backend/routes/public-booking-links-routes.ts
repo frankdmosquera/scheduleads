@@ -109,7 +109,7 @@ export const publicBookingLinksRoutes = new Hono()
   // The start times a customer can book for a service, with one person or "any available". The
   // people to pick from only when the customer picks (decision 3). Each time also comes with its
   // date and clock time on the business's clock, so the booking window never works them out with
-  // the browser's own time-zone rules (F-279).
+  // the browser's own time-zone rules.
   .get(
     "/:slug/booking-links/:bookingLinkId/times",
     validator("query", (value, c) => {

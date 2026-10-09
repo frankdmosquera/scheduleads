@@ -17,7 +17,7 @@ export async function fetchOneService(
   slug: string,
   bookingLinkId: string
 ): Promise<OneServiceResultType> {
-  // Hono's client drops an empty segment, so a blank id would ask for the whole list (F-278).
+  // Hono's client drops an empty segment, so a blank id would ask for the whole list.
   if (slug.trim() === "" || bookingLinkId.trim() === "") {
     return { state: "problem", problem: "nothing-to-book" };
   }

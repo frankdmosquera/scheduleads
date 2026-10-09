@@ -1214,7 +1214,7 @@ customer's details), and the window shows it as "You're already booked"
 instead of telling her to book again. A test for each: a lost answer leaves
 no way to send a different time with the same key, and a request_key_used
 answer shows the booking made.
-**Resolution:**
+**Resolution:** Fixed 2026-10-09 in 9.6's review fixes, as the plan's "a lost connection (the choice kept, Try again with the same key)" means. After no answer the form freezes until an answer comes: the fields sit in one fieldset, disabled; Book is hidden; screen two hides its Back (month-details-screen.tsx holds `unsure` from the form's `onUnsureChange`); only Try again and the phone remain, and Try again sends the frozen form with its key, so a booking made unseen is answered with that booking. The words now say it: "We couldn't hear back about your booking. It may have gone through: press Try again to find out. It never books twice." The done screen names the address the sent booking carried. Test: booking-form-view.test.ts "after a lost answer changes nothing until one comes" (fields disabled, no Book, Back hidden, Try again sends an identical body, then the booking); fails with the fieldset left live. Live on the preview page: the first Book reached the API and its 201 was dropped in the page; the form froze with no Back and no Book; Try again showed "You're booked" for Wednesday, October 21 at 9:00 a.m. MDT, and the database holds one booking for that email. Closing the window still starts a new form, as the plan says.
 
 ### F-283 [P3] open - The key's life in the window and the done screen's server-written time are pinned by no test
 
@@ -1241,7 +1241,7 @@ sends carry one key; close, open again, and the next send's key differs;
 the done screen shows the `when` it was sent. Two cases for readBookingForm:
 the order above, and a too-long answer to the second answered question tied
 to that question. Each shown able to fail.
-**Resolution:**
+**Resolution:** Fixed 2026-10-09: booking-window.test.ts (jsdom, with open and close standing in for <dialog>) drives the whole window: 10:00 picked, details typed, Book answered 409 time_taken, back on her day without 10:00, 11:00 picked, her name still there, Book answered 201; both sends carry the same key and the done screen shows the API's `when` text as sent. read-booking-form.test.ts adds "ties each answer's error to its own question, in the business's order". Proved able to fail: a new form on a taken time, the done screen formatting `startsAt` in the browser, the errors reversed, and an answer's error tied by index into all questions each failed a test; files restored, sha256 the same.
 
 ### F-284 [P3] open - The browser check lets a form through when the schema fails on a part no field shows, such as more than 20 answers
 
@@ -1260,7 +1260,7 @@ from the API today.
 send: show the issue's words in the form's problem line (with the phone).
 Separately, cap a business's questions at the schema's 20 where they are
 written, so the form can always be sent.
-**Resolution:**
+**Resolution:** Fixed 2026-10-09: a schema issue no field shows is now the form's own error (`field: "form"`, last in the order), shown with the business's phone and no Try again, and nothing is sent. Tests: read-booking-form.test.ts (21 answered questions give "That is too many answers.") and booking-form-view.test.ts (the alert shows and no send happens); both fail when such an issue is dropped. How many questions a business may have is item 12's (the plan already says up to about 20).
 
 ### F-285 [P3] open - Two new code comments carry finding numbers again
 
@@ -1276,4 +1276,4 @@ public-booking-links-routes.ts:112, change-time-panel.tsx:45,
 customer-booking-screen.tsx:123, and the three fetch-*.ts files of the
 package), outside this step's scope.
 **Suggested fix:** Drop the IDs and keep each sentence.
-**Resolution:**
+**Resolution:** Fixed 2026-10-09: the finding numbers are gone from all ten comments the finding lists (the two new ones and the eight from 9.5's fixes); each sentence kept. `git grep` for an F-number in a code comment outside tests now finds nothing.

@@ -79,6 +79,37 @@ describe("readBookingForm", () => {
     });
   });
 
+  it("ties each answer's error to its own question, in the business's order", () => {
+    // The second question is answered too long, the first left empty: each error is its own.
+    const read = readBookingForm(
+      { ...filledForm, answers: { "q-colour": "", "q-pets": "x".repeat(501) } },
+      questions,
+      choice
+    );
+
+    expect(read).toEqual({
+      state: "errors",
+      errors: [
+        { field: "answer:q-colour", message: "Answer this question." },
+        { field: "answer:q-pets", message: "Keep each answer to 500 characters." },
+      ],
+    });
+  });
+
+  it("says a part no field shows as the form's own error: more answers than the route takes", () => {
+    const many = Array.from({ length: 21 }, (_, n) => ({
+      id: `q-${n}`,
+      label: "?",
+      required: false,
+    }));
+    const answers = Object.fromEntries(many.map((question) => [question.id, "Yes"]));
+
+    expect(readBookingForm({ ...filledForm, answers }, many, choice)).toEqual({
+      state: "errors",
+      errors: [{ field: "form", message: "That is too many answers." }],
+    });
+  });
+
   it("gives each new form its own key, of the shape the route takes", () => {
     const first = newBookingForm().requestKey;
     const second = newBookingForm().requestKey;

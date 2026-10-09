@@ -1,7 +1,8 @@
 // Booking component: screen two's form and Book, the same in every layout. Checked before sending;
 // each error under its field, focus on the first, cleared as that field is edited. Book locks after
 // one press and sends the form's key, so pressing again, or Try again after a lost connection,
-// never makes a second booking (decision 9). Everything typed is shown as text, never as markup.
+// never makes a second booking (decision 9). After a lost answer nothing can change until an answer
+// comes. Everything typed is shown as text, never as markup.
 
 "use client";
 
@@ -11,6 +12,7 @@ import type {
   BookingApiClientType,
   BookingBusinessType,
   BookingMadeType,
+  BookingRequestType,
 } from "../../api-client/booking-api-types.js";
 import { sendBooking } from "../../api-client/send-booking.js";
 import type {
@@ -31,12 +33,13 @@ export type BookingFormViewPropsType = {
   onFormChange(form: BookingFormValuesType): void;
   onBooked(booking: BookingMadeType, email: string | null): void;
   onTimeTaken(message: string): void;
+  onUnsureChange(unsure: boolean): void; // the screen hides its Back while a lost answer is unknown
 };
 
 type SendProblemType = { words: string; retry: boolean };
 
 const noAnswerWords =
-  "We couldn't reach the booking just now. Your choice is kept: try again, it never books twice.";
+  "We couldn't hear back about your booking. It may have gone through: press Try again to find out. It never books twice.";
 
 export function BookingFormView({
   apiClient,
@@ -47,6 +50,7 @@ export function BookingFormView({
   onFormChange,
   onBooked,
   onTimeTaken,
+  onUnsureChange,
 }: BookingFormViewPropsType) {
   const idPrefix = useId();
   const idOf = (field: BookingFormFieldType) => `${idPrefix}-${field.replace(":", "-")}`;
@@ -55,6 +59,9 @@ export function BookingFormView({
   const [problem, setProblem] = useState<SendProblemType | null>(null);
   // Locks at the press itself: a second click before the screen redraws must not send again.
   const sendingNow = useRef(false);
+  // No answer came back: until one comes nothing can be changed, so Try again sends the same
+  // booking with the same key, and a booking made unseen is answered again, never made twice.
+  const [unsure, setUnsure] = useState(false);
 
   const errorOf = (field: BookingFormFieldType) =>
     errors.find((error) => error.field === field)?.message ?? null;
@@ -70,23 +77,33 @@ export function BookingFormView({
     if (sendingNow.current) return;
     const read = readBookingForm(form, business.questions, choice);
     if (read.state === "errors") {
-      setErrors(read.errors);
-      setProblem(null);
-      const first = read.errors[0];
+      const fieldErrors = read.errors.filter((error) => error.field !== "form");
+      const formError = read.errors.find((error) => error.field === "form");
+      setErrors(fieldErrors);
+      // A part no field shows (too many answers): said with the phone, nothing is sent.
+      setProblem(formError ? { words: formError.message, retry: false } : null);
+      const first = fieldErrors[0];
       if (first) document.getElementById(idOf(first.field))?.focus();
       return;
     }
+    await send(read.request);
+  }
 
+  async function send(request: BookingRequestType) {
+    if (sendingNow.current) return;
     sendingNow.current = true;
     setSending(true);
     setProblem(null);
-    const answer = await sendBooking(apiClient, slug, read.request);
+    const answer = await sendBooking(apiClient, slug, request);
     sendingNow.current = false;
     setSending(false);
+    const noAnswer = answer.state === "no-answer";
+    setUnsure(noAnswer);
+    onUnsureChange(noAnswer);
 
     switch (answer.state) {
       case "booked":
-        onBooked(answer.booking, read.request.customer.email ?? null);
+        onBooked(answer.booking, request.customer.email ?? null); // where the confirmation went
         return;
       case "time-taken":
         onTimeTaken(answer.message);
@@ -158,77 +175,79 @@ export function BookingFormView({
         void book();
       }}
     >
-      {field("name", "Name", true, (props) => (
-        <input
-          {...props}
-          type="text"
-          autoComplete="name"
-          value={form.name}
-          onChange={(event) => edit(["name"], { ...form, name: event.target.value })}
-        />
-      ))}
-      {field(
-        "email",
-        "Email",
-        false,
-        (props) => (
-          <input
-            {...props}
-            type="email"
-            autoComplete="email"
-            value={form.email}
-            onChange={(event) => edit(["email", "phone"], { ...form, email: event.target.value })}
-          />
-        ),
-        "An email or a phone. At least one is required."
-      )}
-      {field(
-        "phone",
-        "Phone",
-        false,
-        (props) => (
-          <input
-            {...props}
-            type="tel"
-            autoComplete="tel"
-            value={form.phone}
-            onChange={(event) => edit(["email", "phone"], { ...form, phone: event.target.value })}
-          />
-        ),
-        "An email or a phone. At least one is required."
-      )}
-      {field("location", "Address", true, (props) => (
-        <input
-          {...props}
-          type="text"
-          autoComplete="street-address"
-          value={form.location}
-          onChange={(event) => edit(["location"], { ...form, location: event.target.value })}
-        />
-      ))}
-      {field("details", "What would you like done?", false, (props) => (
-        <textarea
-          {...props}
-          rows={3}
-          value={form.details}
-          onChange={(event) => edit(["details"], { ...form, details: event.target.value })}
-        />
-      ))}
-      {business.questions.map((question) =>
-        field(`answer:${question.id}`, question.label, question.required, (props) => (
+      <fieldset className="sa-fields" disabled={unsure}>
+        {field("name", "Name", true, (props) => (
           <input
             {...props}
             type="text"
-            value={form.answers[question.id] ?? ""}
-            onChange={(event) =>
-              edit([`answer:${question.id}`], {
-                ...form,
-                answers: { ...form.answers, [question.id]: event.target.value },
-              })
-            }
+            autoComplete="name"
+            value={form.name}
+            onChange={(event) => edit(["name"], { ...form, name: event.target.value })}
           />
-        ))
-      )}
+        ))}
+        {field(
+          "email",
+          "Email",
+          false,
+          (props) => (
+            <input
+              {...props}
+              type="email"
+              autoComplete="email"
+              value={form.email}
+              onChange={(event) => edit(["email", "phone"], { ...form, email: event.target.value })}
+            />
+          ),
+          "An email or a phone. At least one is required."
+        )}
+        {field(
+          "phone",
+          "Phone",
+          false,
+          (props) => (
+            <input
+              {...props}
+              type="tel"
+              autoComplete="tel"
+              value={form.phone}
+              onChange={(event) => edit(["email", "phone"], { ...form, phone: event.target.value })}
+            />
+          ),
+          "An email or a phone. At least one is required."
+        )}
+        {field("location", "Address", true, (props) => (
+          <input
+            {...props}
+            type="text"
+            autoComplete="street-address"
+            value={form.location}
+            onChange={(event) => edit(["location"], { ...form, location: event.target.value })}
+          />
+        ))}
+        {field("details", "What would you like done?", false, (props) => (
+          <textarea
+            {...props}
+            rows={3}
+            value={form.details}
+            onChange={(event) => edit(["details"], { ...form, details: event.target.value })}
+          />
+        ))}
+        {business.questions.map((question) =>
+          field(`answer:${question.id}`, question.label, question.required, (props) => (
+            <input
+              {...props}
+              type="text"
+              value={form.answers[question.id] ?? ""}
+              onChange={(event) =>
+                edit([`answer:${question.id}`], {
+                  ...form,
+                  answers: { ...form.answers, [question.id]: event.target.value },
+                })
+              }
+            />
+          ))
+        )}
+      </fieldset>
 
       {problem && (
         <ProblemMessage
@@ -238,9 +257,11 @@ export function BookingFormView({
         />
       )}
 
-      <button type="submit" className="sa-submit" disabled={sending} aria-busy={sending}>
-        {sending ? "Booking…" : "Book"}
-      </button>
+      {!unsure && (
+        <button type="submit" className="sa-submit" disabled={sending} aria-busy={sending}>
+          {sending ? "Booking…" : "Book"}
+        </button>
+      )}
     </form>
   );
 }

@@ -1,6 +1,10 @@
 // Booking component: the month layout's screen two. The rail keeps whose booking and what, and
 // gains the picked time, so it is never off screen; the panel holds the customer's details and Book.
 
+"use client";
+
+import { useState } from "react";
+
 import type {
   BookingApiClientType,
   BookingAvailabilityType,
@@ -45,13 +49,15 @@ export function MonthDetailsScreen({
   onTimeTaken,
 }: MonthDetailsScreenPropsType) {
   const day = formatDayName(chosen.date);
+  // No Back while a lost answer is unknown: another time with the same form could book her twice.
+  const [unsure, setUnsure] = useState(false);
 
   return (
     <div className="sa-book">
       <MonthRail
         business={business}
         service={service}
-        back={{ label: "Back to the times", onBack }}
+        back={unsure ? null : { label: "Back to the times", onBack }}
       >
         <div className="sa-facts">
           <div className="sa-fact sa-fact--picked">
@@ -92,6 +98,7 @@ export function MonthDetailsScreen({
           onFormChange={onFormChange}
           onBooked={onBooked}
           onTimeTaken={onTimeTaken}
+          onUnsureChange={setUnsure}
         />
       </div>
     </div>

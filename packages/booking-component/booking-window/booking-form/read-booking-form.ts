@@ -57,8 +57,8 @@ export function readBookingForm(
   const parsed = createBookingValidationSchema.safeParse(request);
   if (!parsed.success) {
     for (const issue of parsed.error.issues) {
-      const field = fieldOf(issue.path, answered);
-      if (field && !found.has(field)) found.set(field, issue.message);
+      const field = fieldOf(issue.path, answered) ?? "form";
+      if (!found.has(field)) found.set(field, issue.message);
     }
   }
   // The route asks for a required question's answer too; here it is said before sending.
@@ -77,6 +77,7 @@ export function readBookingForm(
     "location",
     "details",
     ...questions.map((question) => `answer:${question.id}` as const),
+    "form",
   ];
   return {
     state: "errors",
@@ -86,7 +87,8 @@ export function readBookingForm(
   };
 }
 
-// The field a schema issue is about; null for one no field shows (the time or the service).
+// The field a schema issue is about; null for a part no field shows (the time, the service, the
+// number of answers).
 function fieldOf(
   path: PropertyKey[],
   answered: BookingBusinessType["questions"]

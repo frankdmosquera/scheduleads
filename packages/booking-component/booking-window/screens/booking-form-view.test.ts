@@ -50,6 +50,7 @@ function clientWithHeldSends() {
 function renderForm(apiClient: ReturnType<typeof clientWithHeldSends>["apiClient"]) {
   const booked: unknown[] = [];
   const taken: string[] = [];
+  const unsure: boolean[] = [];
   function Holder() {
     const [form, setForm] = useState<BookingFormValuesType>(newBookingForm);
     return createElement(BookingFormView, {
@@ -61,10 +62,11 @@ function renderForm(apiClient: ReturnType<typeof clientWithHeldSends>["apiClient
       onFormChange: setForm,
       onBooked: (made, email) => booked.push({ made, email }),
       onTimeTaken: (message) => taken.push(message),
+      onUnsureChange: (now) => unsure.push(now),
     });
   }
   render(createElement(Holder));
-  return { booked, taken };
+  return { booked, taken, unsure };
 }
 
 const type = (label: string, value: string) =>
@@ -116,20 +118,62 @@ describe("screen two's form", () => {
     expect(booked).toEqual([{ made: booking, email: "jane@example.com" }]);
   });
 
-  it("keeps her choice after a lost connection, and Try again sends the same form key", async () => {
+  it("after a lost answer changes nothing until one comes: Try again sends the very same booking", async () => {
     const { apiClient, sends } = clientWithHeldSends();
-    renderForm(apiClient);
+    const { booked, unsure } = renderForm(apiClient);
     fillIn();
 
     fireEvent.click(screen.getByRole("button", { name: "Book" }));
     await waitFor(() => expect(sends).toHaveLength(1));
     await act(async () => sends[0]?.answer(null));
 
-    expect(screen.getByRole("alert").textContent).toContain("it never books twice");
+    expect(screen.getByRole("alert").textContent).toContain("It never books twice");
+    expect(unsure).toEqual([true]); // the screen hides its Back
     expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Jane Doe");
+    expect(screen.getByLabelText("Email").matches(":disabled")).toBe(true); // the whole group
+    expect(screen.queryByRole("button", { name: "Book" })).toBeNull();
+
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(sends).toHaveLength(2));
-    expect(sends[1]?.body.requestKey).toBe(sends[0]?.body.requestKey);
+    expect(sends[1]?.body).toEqual(sends[0]?.body);
+    await act(async () =>
+      sends[1]?.answer(new Response(JSON.stringify({ booking }), { status: 201 }))
+    );
+    expect(booked).toEqual([{ made: booking, email: "jane@example.com" }]);
+    expect(unsure).toEqual([true, false]);
+  });
+
+  it("says a part of the form no field shows, and sends nothing", async () => {
+    const { apiClient, sends } = clientWithHeldSends();
+    const many = Array.from({ length: 21 }, (_, n) => ({
+      id: `q-${n}`,
+      label: `Question ${n}`,
+      required: false,
+    }));
+    function Holder() {
+      const [form, setForm] = useState<BookingFormValuesType>(newBookingForm);
+      return createElement(BookingFormView, {
+        apiClient,
+        slug: "clinic-dev",
+        business: { ...business, questions: many },
+        choice: { bookingLinkId: "facial", startsAt: booking.startsAt, personId: null },
+        form,
+        onFormChange: setForm,
+        onBooked: () => {},
+        onTimeTaken: () => {},
+        onUnsureChange: () => {},
+      });
+    }
+    render(createElement(Holder));
+    type("Name", "Jane Doe");
+    type("Email", "jane@example.com");
+    type("Address", "12 Elm Street");
+    for (const question of many) type(question.label, "Yes");
+
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+
+    expect(screen.getByRole("alert").textContent).toBe("That is too many answers.");
+    expect(sends).toHaveLength(0);
   });
 
   it("hands a time taken while she typed back to the window, in the route's words", async () => {

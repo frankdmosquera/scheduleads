@@ -182,7 +182,7 @@ export const publicBookingsRoutes = new Hono()
             startsAt: booking.startsAt.toISOString(),
             endsAt: booking.endsAt.toISOString(),
             timezone: booking.timezone,
-            when: formatBookingTime(booking.startsAt, booking.timezone), // never the browser's (F-279)
+            when: formatBookingTime(booking.startsAt, booking.timezone), // never the browser's
             service,
             person,
           },

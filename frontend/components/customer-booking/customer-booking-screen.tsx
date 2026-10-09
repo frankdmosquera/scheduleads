@@ -120,7 +120,7 @@ function CustomerBookingDetails({
   const cancelRef = useRef<HTMLButtonElement>(null);
   const changeRef = useRef<HTMLButtonElement>(null);
   const yesCancelRef = useRef<HTMLButtonElement>(null);
-  const { when } = booking; // written by the API, never with the browser's time-zone rules (F-281)
+  const { when } = booking; // written by the API, never with the browser's time-zone rules
 
   useEffect(() => {
     document.title = `Your booking with ${business.name}`;

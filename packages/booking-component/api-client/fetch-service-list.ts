@@ -15,7 +15,7 @@ export async function fetchServiceList(
   apiClient: BookingApiClientType,
   slug: string
 ): Promise<ServiceListResultType> {
-  // Hono's client drops an empty segment, so a blank slug would ask another route (F-278).
+  // Hono's client drops an empty segment, so a blank slug would ask another route.
   if (slug.trim() === "") return { state: "problem", problem: "nothing-to-book" };
 
   try {

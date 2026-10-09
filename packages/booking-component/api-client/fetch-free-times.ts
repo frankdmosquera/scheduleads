@@ -24,7 +24,7 @@ export async function fetchFreeTimes(
   bookingLinkId: string,
   question: FreeTimesQuestionType
 ): Promise<FreeTimesResultType> {
-  // Hono's client drops an empty segment, so a blank value would ask another route (F-278).
+  // Hono's client drops an empty segment, so a blank value would ask another route.
   if (slug.trim() === "" || bookingLinkId.trim() === "") {
     return { state: "problem", problem: "nothing-to-book" };
   }
