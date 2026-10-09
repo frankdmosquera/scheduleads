@@ -1142,7 +1142,7 @@ details rail does the same with the chosen time. A unit test that a start
 whose label the API sent is shown with that label, not re-derived. The 7b
 change-time panel has the same pattern (only a note, it predates this
 feature).
-**Resolution:**
+**Resolution:** Fixed 2026-10-09 (Frank: "fix F-279 now"). The times route now names its own clock: beside `startTimes` (kept, every other caller reads it) it sends `localStartTimes: [{ startsAt, date, time }]`, worked out by backend/lib/scheduling/local-start-times.ts with the API's time-zone rules, the same Node the emails are written by. The component groups by the sent `date` and shows the sent `time` (group-times-by-day.ts, day-times-view.tsx), the chosen time carries both to screen two (ChosenTimeType, month-details-screen.tsx), and format-time-of-day.ts is gone, so nothing in the window re-derives a time with the browser's rules. fetch-free-times.ts reads an answer without `localStartTimes` as a problem. Tests: local-start-times.test.ts (3), the route test checks every time comes back with the business's date and a clock label, group-times-by-day.test.ts keeps a Nov 2 9:00 label as sent. Backend 879 of 879, package 41 of 41, frontend build passes. Live: the browser pane is itself Chrome 152 with the old rules (its own Intl says "8:00 a.m." for 2026-11-02T15:00Z in Edmonton); the booking preview for clinic-dev's Chemical Peel shows Monday, November 2 starting at "9:00 a.m.", and screen two reads "9:00 a.m., Monday, November 2". The 7b change-time panel is recorded on its own as F-281.
 
 ### F-280 [P3] open - The guard that drops a slow answer for a month or person no longer shown is pinned by no test
 
@@ -1165,4 +1165,16 @@ others in `month-calendar/` (which day is shown for a month's days and the
 picked date; whether an answer belongs to the question now asked, keyed by
 from, to and person), use them from the hook and the screen, and test them,
 each shown able to fail.
+**Resolution:**
+
+### F-281 [P1] open - The customer's change-time panel reads the move times with the visitor's own time-zone rules, so an older browser shows every Alberta time from Nov 1 an hour early
+
+**File:** frontend/components/customer-booking/change-time-panel.tsx:44-54 (the grouping and the labels; the route: GET /public/bookings/:token/times)
+**Found:** 2026-10-09 while fixing F-279 (the same pattern, noted in F-279's own text; feature 7b, not step 9.5)
+**Why it matters:** The same mismatch as F-279 on the customer's own
+booking page: the panel groups and labels the move times with the
+browser's rules, so from Nov 1 a browser older than tz data 2026c offers
+"8:00 a.m." for what the API, the dashboard and the emails call 9:00.
+**Suggested fix:** The move times route sends `localStartTimes` the same
+way (local-start-times.ts), and the panel shows those.
 **Resolution:**

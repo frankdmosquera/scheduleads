@@ -35,3 +35,6 @@ export type BookingFreeTimesType = InferResponseType<
   ServicesRouteType[":bookingLinkId"]["times"]["$get"],
   200
 >;
+
+// One free start time with the business's date and clock time, as the API worked them out.
+export type BookingStartTimeType = BookingFreeTimesType["localStartTimes"][number];

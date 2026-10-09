@@ -14,6 +14,8 @@ export type TimePickPlaceType = { month: string; personId: string | null };
 // The time picked on screen one, carried to screen two.
 export type ChosenTimeType = {
   startsAt: string; // ISO instant
+  date: string; // YYYY-MM-DD and "9:00 a.m." on the business's clock, as the API sent them
+  time: string;
   personId: string | null; // null = any available
   personName: string | null;
   place: TimePickPlaceType;

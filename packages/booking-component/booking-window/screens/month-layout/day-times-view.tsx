@@ -5,13 +5,12 @@
 
 import { useEffect, useRef } from "react";
 
+import type { BookingStartTimeType } from "../../../api-client/booking-api-types.js";
 import { formatDayName } from "../../month-calendar/format-day-name.js";
-import { formatTimeOfDay } from "../../month-calendar/format-time-of-day.js";
 
 export type DayTimesViewPropsType = {
   date: string;
-  times: string[]; // ISO instants, in order
-  timeZone: string;
+  times: BookingStartTimeType[]; // in order, each with its clock time as the API sent it
   pickedTime: string | null;
   onPickTime(startsAt: string): void;
   onNext(): void;
@@ -20,7 +19,6 @@ export type DayTimesViewPropsType = {
 export function DayTimesView({
   date,
   times,
-  timeZone,
   pickedTime,
   onPickTime,
   onNext,
@@ -36,8 +34,7 @@ export function DayTimesView({
     <div className="sa-times">
       <div className="sa-times-h">{dayName}</div>
       <div className="sa-times-list">
-        {times.map((startsAt) => {
-          const time = formatTimeOfDay(startsAt, timeZone);
+        {times.map(({ startsAt, time }) => {
           return startsAt === pickedTime ? (
             <div key={startsAt} className="sa-t-split">
               <div className="sa-t-chosen">{time}</div>

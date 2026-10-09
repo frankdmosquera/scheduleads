@@ -21,7 +21,12 @@ const october = { from: "2026-10-09", to: "2026-10-31" };
 
 describe("fetchFreeTimes", () => {
   it("asks for any available by sending no person", async () => {
-    const freeTimes = { timezone: "America/Edmonton", people: [], startTimes: [] };
+    const freeTimes = {
+      timezone: "America/Edmonton",
+      people: [],
+      startTimes: [],
+      localStartTimes: [],
+    };
     const { apiClient, asked } = clientAnswering(200, freeTimes);
 
     expect(
@@ -33,7 +38,11 @@ describe("fetchFreeTimes", () => {
   });
 
   it("asks for one person by their id", async () => {
-    const { apiClient, asked } = clientAnswering(200, { people: [], startTimes: [] });
+    const { apiClient, asked } = clientAnswering(200, {
+      people: [],
+      startTimes: [],
+      localStartTimes: [],
+    });
 
     await fetchFreeTimes(apiClient, "clinic-dev", "abc", { ...october, personId: "ana" });
 

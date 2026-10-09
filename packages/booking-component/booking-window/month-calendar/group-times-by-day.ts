@@ -1,13 +1,14 @@
-// Booking component: the free start times grouped by their date in the business's zone, in order.
-// A 7 a.m. start in Edmonton is already the next day in UTC; the business's date is the one shown.
+// Booking component: the free start times grouped by the business's date the API sent with each,
+// in order. Never re-derived in the browser, whose time-zone rules may be older than the API's.
 
-import { localDate } from "@scheduleads-app/shared/local-date";
+import type { BookingStartTimeType } from "../../api-client/booking-api-types.js";
 
-export function groupTimesByDay(startTimes: string[], timeZone: string): Map<string, string[]> {
-  const days = new Map<string, string[]>();
-  for (const startsAt of startTimes) {
-    const date = localDate(new Date(startsAt), timeZone);
-    days.set(date, [...(days.get(date) ?? []), startsAt]);
+export function groupTimesByDay(
+  startTimes: BookingStartTimeType[]
+): Map<string, BookingStartTimeType[]> {
+  const days = new Map<string, BookingStartTimeType[]>();
+  for (const startTime of startTimes) {
+    days.set(startTime.date, [...(days.get(startTime.date) ?? []), startTime]);
   }
   return days;
 }

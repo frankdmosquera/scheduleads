@@ -1,18 +1,21 @@
 // Booking component: one month's free times for the calendar, asked once per month and person,
-// grouped by day in the business's zone. An answer for a month or person no longer shown is dropped.
+// grouped by the business's date. An answer for a month or person no longer shown is dropped.
 
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
 
-import type { BookingApiClientType } from "../../../api-client/booking-api-types.js";
+import type {
+  BookingApiClientType,
+  BookingStartTimeType,
+} from "../../../api-client/booking-api-types.js";
 import { fetchFreeTimes } from "../../../api-client/fetch-free-times.js";
 import type { BookingProblemType } from "../../../api-client/problem-from-api-answer.js";
 import { groupTimesByDay } from "../../month-calendar/group-times-by-day.js";
 
 export type MonthTimesType =
   | { state: "loading" }
-  | { state: "ok"; days: Map<string, string[]> }
+  | { state: "ok"; days: Map<string, BookingStartTimeType[]> }
   | { state: "times-unreadable"; message: string }
   | { state: "problem"; problem: BookingProblemType };
 
@@ -20,13 +23,12 @@ export type MonthTimesQuestionType = {
   apiClient: BookingApiClientType;
   slug: string;
   bookingLinkId: string;
-  timeZone: string;
   dates: { from: string; to: string } | null; // null: nothing in this month can be booked
   personId: string | null;
 };
 
 export function useMonthTimes(question: MonthTimesQuestionType) {
-  const { apiClient, slug, bookingLinkId, timeZone, dates, personId } = question;
+  const { apiClient, slug, bookingLinkId, dates, personId } = question;
   const from = dates?.from ?? null;
   const to = dates?.to ?? null;
   const [times, setTimes] = useState<MonthTimesType>({ state: "loading" });
@@ -47,14 +49,14 @@ export function useMonthTimes(question: MonthTimesQuestionType) {
         setTimes(answer);
         return;
       }
-      const { startTimes, people: answeredPeople } = answer.freeTimes;
-      setTimes({ state: "ok", days: groupTimesByDay(startTimes, timeZone) });
+      const { localStartTimes, people: answeredPeople } = answer.freeTimes;
+      setTimes({ state: "ok", days: groupTimesByDay(localStartTimes) });
       setPeople(answeredPeople);
     });
     return () => {
       live = false;
     };
-  }, [apiClient, slug, bookingLinkId, timeZone, from, to, personId, asks]);
+  }, [apiClient, slug, bookingLinkId, from, to, personId, asks]);
 
   const askAgain = useCallback(() => setAsks((count) => count + 1), []);
   return { times, people, askAgain };

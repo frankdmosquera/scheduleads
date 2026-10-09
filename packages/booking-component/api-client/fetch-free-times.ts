@@ -47,7 +47,11 @@ export async function fetchFreeTimes(
 
     const freeTimes = await response.json();
     // Never trusted blindly: an answer without its times would crash the calendar.
-    if (!freeTimes || !Array.isArray(freeTimes.startTimes) || !Array.isArray(freeTimes.people)) {
+    if (
+      !freeTimes ||
+      !Array.isArray(freeTimes.localStartTimes) ||
+      !Array.isArray(freeTimes.people)
+    ) {
       return { state: "problem", problem: problemFromApiAnswer(null) };
     }
     return { state: "ok", freeTimes };

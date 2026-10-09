@@ -412,7 +412,9 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   `{ bookingLink: { ...as now, layout, personChoice }, availability }`.
 - `GET /public/:slug/booking-links/:id/times` 200: as since 5c,
   `{ timezone, people: [{ id, name }], startTimes }`, `people` empty when
-  the business assigns (amended at 9.1).
+  the business assigns (amended at 9.1), plus `localStartTimes:
+  [{ startsAt, date, time }]`, each time's business date and clock label
+  worked out by the API, which the window shows as sent (F-279, 9.5 review).
 - `POST /public/:slug/bookings` body adds
   `answers?: [{ questionId, answer }]`. New refusals: 400 person not taken,
   400 answers; 429 `too_many_tries` with `Retry-After` (seconds).

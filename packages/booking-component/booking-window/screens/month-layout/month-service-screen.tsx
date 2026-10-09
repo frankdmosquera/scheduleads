@@ -12,6 +12,7 @@ import type {
   BookingAvailabilityType,
   BookingBusinessType,
   BookingServiceDetailsType,
+  BookingStartTimeType,
 } from "../../../api-client/booking-api-types.js";
 import type { ChosenTimeType, TimePickPlaceType } from "../../booking-screen-type.js";
 import { bookableMonths } from "../../month-calendar/bookable-months.js";
@@ -74,16 +75,15 @@ export function MonthServiceScreen({
     apiClient,
     slug,
     bookingLinkId: service.id,
-    timeZone,
     dates: datesToAsk(month, bounds),
     personId,
   });
 
-  const days = times.state === "ok" ? times.days : new Map<string, string[]>();
+  const days = times.state === "ok" ? times.days : new Map<string, BookingStartTimeType[]>();
   // The picked day if this month has times on it, else its first day with a time.
   const shownDate = pickedDate && days.has(pickedDate) ? pickedDate : ([...days.keys()][0] ?? null);
   const shownTimes = shownDate ? (days.get(shownDate) ?? []) : [];
-  const shownTime = pickedTime && shownTimes.includes(pickedTime) ? pickedTime : null;
+  const shownTime = shownTimes.find((time) => time.startsAt === pickedTime) ?? null;
 
   const changeMonth = (by: -1 | 1) => {
     setMonth((current) => shiftMonth(current, by));
@@ -163,8 +163,7 @@ export function MonthServiceScreen({
               <DayTimesView
                 date={shownDate}
                 times={shownTimes}
-                timeZone={timeZone}
-                pickedTime={shownTime}
+                pickedTime={shownTime?.startsAt ?? null}
                 onPickTime={(startsAt) => {
                   setPickedDate(shownDate);
                   setPickedTime(startsAt);
@@ -172,7 +171,7 @@ export function MonthServiceScreen({
                 onNext={() => {
                   if (!shownTime) return;
                   onTimeChosen({
-                    startsAt: shownTime,
+                    ...shownTime,
                     personId,
                     personName: people.find((person) => person.id === personId)?.name ?? null,
                     place: { month, personId },

@@ -1,8 +1,6 @@
 // Booking component: the month layout's screen two. The rail keeps whose booking and what, and
 // gains the picked time, so it is never off screen; the panel's questions come in step 9.6.
 
-import { localDate } from "@scheduleads-app/shared/local-date";
-
 import type {
   BookingAvailabilityType,
   BookingBusinessType,
@@ -10,7 +8,6 @@ import type {
 } from "../../../api-client/booking-api-types.js";
 import type { ChosenTimeType } from "../../booking-screen-type.js";
 import { formatDayName } from "../../month-calendar/format-day-name.js";
-import { formatTimeOfDay } from "../../month-calendar/format-time-of-day.js";
 import { formatZoneName } from "../../month-calendar/format-zone-name.js";
 import { MonthRail } from "./month-rail.js";
 
@@ -32,7 +29,7 @@ export function MonthDetailsScreen({
   onBack,
 }: MonthDetailsScreenPropsType) {
   const timeZone = availability.timezone;
-  const day = formatDayName(localDate(new Date(chosen.startsAt), timeZone));
+  const day = formatDayName(chosen.date);
 
   return (
     <div className="sa-book">
@@ -47,7 +44,7 @@ export function MonthDetailsScreen({
               &#128197;
             </span>
             <span>
-              {formatTimeOfDay(chosen.startsAt, timeZone)}, {day}
+              {chosen.time}, {day}
               <br />
               {formatZoneName(timeZone)}
             </span>

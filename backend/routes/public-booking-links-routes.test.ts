@@ -293,6 +293,7 @@ describe("free times for a service", () => {
     timezone: string;
     people: { id: string; name: string }[];
     startTimes: string[];
+    localStartTimes: { startsAt: string; date: string; time: string }[];
   };
 
   beforeAll(async () => {
@@ -343,7 +344,12 @@ describe("free times for a service", () => {
     const body: FreeTimesBodyType = await response.json();
 
     expect(response.status).toBe(200);
-    expect(Object.keys(body).sort()).toEqual(["people", "startTimes", "timezone"]);
+    expect(Object.keys(body).sort()).toEqual([
+      "localStartTimes",
+      "people",
+      "startTimes",
+      "timezone",
+    ]);
     expect(body.timezone).toBe("America/Edmonton");
     expect(body.people.map((person) => person.name)).toEqual(["Ana", "Mei", "Sofia"]);
     for (const person of body.people) expect(Object.keys(person).sort()).toEqual(["id", "name"]);
@@ -354,6 +360,12 @@ describe("free times for a service", () => {
       expect(date >= from && date <= to).toBe(true);
     }
     expect([...body.startTimes].sort()).toEqual(body.startTimes);
+    // Every time again, with the date and clock time the API worked out for the business (F-279).
+    expect(body.localStartTimes.map((time) => time.startsAt)).toEqual(body.startTimes);
+    for (const time of body.localStartTimes) {
+      expect(time.date).toBe(localDate(new Date(time.startsAt), body.timezone));
+      expect(time.time).toMatch(/^\d{1,2}:\d{2}\s[ap]\.m\.$/); // "9:00 a.m."
+    }
   });
 
   test('"any available" when no person is asked for: everyone\'s times together', async () => {

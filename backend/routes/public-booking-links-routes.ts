@@ -22,6 +22,7 @@ import { notBookableHere } from "../lib/errors/not-bookable-here.js";
 import { personNotTaken } from "../lib/errors/person-not-taken.js";
 import { refuse } from "../lib/errors/refuse.js";
 import { findFreeTimes } from "../lib/scheduling/find-free-times.js";
+import { localStartTimes } from "../lib/scheduling/local-start-times.js";
 
 // What a stranger may see of a service. Never organizationId, never anything about people.
 const publicBookingLinkColumns = {
@@ -106,7 +107,9 @@ export const publicBookingLinksRoutes = new Hono()
     return c.json({ bookingLink: publicBookingLink, availability }, 200);
   })
   // The start times a customer can book for a service, with one person or "any available". The
-  // people to pick from only when the customer picks (decision 3).
+  // people to pick from only when the customer picks (decision 3). Each time also comes with its
+  // date and clock time on the business's clock, so the booking window never works them out with
+  // the browser's own time-zone rules (F-279).
   .get(
     "/:slug/booking-links/:bookingLinkId/times",
     validator("query", (value, c) => {
@@ -143,7 +146,8 @@ export const publicBookingLinksRoutes = new Hono()
         });
         if (!freeTimes) return c.json(notBookableHere, 404);
         const people = personChoice === "customer_picks" ? freeTimes.people : [];
-        return c.json({ ...freeTimes, people }, 200);
+        const local = localStartTimes(freeTimes.startTimes, freeTimes.timezone);
+        return c.json({ ...freeTimes, people, localStartTimes: local }, 200);
       } catch (error) {
         // Only unreadable calendars are expected (the picked person's, or everyone's with "any
         // available", decision 9); anything else is a real fault.
