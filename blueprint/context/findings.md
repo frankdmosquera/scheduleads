@@ -1182,7 +1182,7 @@ way (local-start-times.ts), and the panel shows those.
 **Resolution:** Fixed 2026-10-09 (Frank: "keep going"). Wider than the panel: the customer's page itself wrote Jane's own time with the browser's rules (customer-booking-screen.tsx:124), and so did the panel's "Move to ...?" question. Now the API writes every one: `localStartTimes` gains `when` (the whole moment as the emails say it, formatBookingTime on the server), the move times route sends `localStartTimes` beside `startTimes`, and the booking page answer carries `when`. The panel groups by the sent date, shows the sent clock time and asks "Move to {when}?"; the page shows `booking.when`. Nothing on the customer's page formats a time any more; only `today` (which week the panel opens on) still reads the browser's date, at most an hour off around midnight. Tests: local-start-times.test.ts checks `when`; the booking page route test expects `when`; a new move-times route test checks every time comes back as localStartTimes writes it. Backend 880 of 880, package 41, frontend build and lint clean. Live, in the browser pane with the old rules (its own clock: "8:00 a.m. MST" for 2026-11-02T15:00Z): Riverbend's booking page reads "Friday, October 16 at 9:00 a.m. MDT", the panel's Monday, November 2 starts at "9:00 a.m.", and the question reads "Move to Monday, November 2 at 9:00 a.m. MDT with Ana?".
 Closed 2026-10-09 by re-review of 9.5's review fixes (scope: 3f204e0..cf87ebe): every route that feeds the page writes its times on the server. GET /public/bookings/:token, POST /public/bookings/:token/move and POST /public/bookings/:token/cancel all answer `{ booking }` from findBookingPage, which sets `when` with formatBookingTime after the move or cancel has been written, so the page that replaces itself after a move reads the new time's `when`; GET /public/bookings/:token/times adds `localStartTimes` from local-start-times.ts, and its new route test checks the answer equals localStartTimes(startTimes, timezone). In frontend/components/customer-booking/ the panel groups by the sent `date`, shows the sent `time` and asks "Move to {when}?", and the screen shows `booking.when` for both "When" and "It's now ..."; a grep of frontend/app, components and lib for Intl, toLocale, formatBookingTime and localDate finds on that page only `today` (a date) and day and week names formatted in UTC from date strings. The booking page route test expects `when` exactly. Backend 880 of 880, `npm run build --workspace=frontend` and the frontend lint pass. Left as a note only: the move answer's `when` following the new time is pinned by no test of its own, but it comes from the same findBookingPage the page route test pins.
 
-### F-282 [P2] open - After a lost answer the form stays live: Back and another time get "already used, reload and book again" while she is in fact booked, so following the words books her twice
+### F-282 [P2] closed - After a lost answer the form stays live: Back and another time get "already used, reload and book again" while she is in fact booked, so following the words books her twice
 
 **File:** packages/booking-component/booking-window/screens/booking-form-view.tsx:103-104 (the no-answer case) and booking-window/booking-window.tsx:213-216 (Back keeps the form and its key); the words come from backend/routes/public-bookings-routes.ts:136-142
 **Found:** 2026-10-09 by /audit independent (scope: step 9.6, a946115..00bde08; lens: correctness)
@@ -1215,6 +1215,7 @@ instead of telling her to book again. A test for each: a lost answer leaves
 no way to send a different time with the same key, and a request_key_used
 answer shows the booking made.
 **Resolution:** Fixed 2026-10-09 in 9.6's review fixes, as the plan's "a lost connection (the choice kept, Try again with the same key)" means. After no answer the form freezes until an answer comes: the fields sit in one fieldset, disabled; Book is hidden; screen two hides its Back (month-details-screen.tsx holds `unsure` from the form's `onUnsureChange`); only Try again and the phone remain, and Try again sends the frozen form with its key, so a booking made unseen is answered with that booking. The words now say it: "We couldn't hear back about your booking. It may have gone through: press Try again to find out. It never books twice." The done screen names the address the sent booking carried. Test: booking-form-view.test.ts "after a lost answer changes nothing until one comes" (fields disabled, no Book, Back hidden, Try again sends an identical body, then the booking); fails with the fieldset left live. Live on the preview page: the first Book reached the API and its 201 was dropped in the page; the form froze with no Back and no Book; Try again showed "You're booked" for Wednesday, October 21 at 9:00 a.m. MDT, and the database holds one booking for that email. Closing the window still starts a new form, as the plan says.
+Closed 2026-10-09 by re-review of 9.6's review fixes (scope: 134b281..4664807): after a send with no answer, booking-form-view.tsx sets `unsure`, the fieldset is disabled (so no field takes Enter and no box can change), the Book button is not drawn (so the form has no submit path), MonthRail gets `back: null`, and the only control left is Try again (type="button"), which re-reads the unchanged form and sends the identical body with the same key. Every answer the route itself writes to that resend is right to unfreeze on, because book-time.ts looks the key up before any refusal: the same key and time answer the earlier booking (201, alreadyBooked); time_taken and the route's 503 go through refuseUnlessBooked, so they mean this key booked nothing; request_key_used cannot come back for the same time; the 400s and the contact limit's 429 come after the look-up; another lost answer keeps it frozen. Breaking it fails the suite: the fieldset left live, Book drawn while unsure, and `onUnsureChange(false)` each fail "after a lost answer changes nothing until one comes" (files restored, sha256 identical). Two gaps remain and are recorded as their own findings: answers not written by the route (the per-visitor 429, a gateway 5xx) also unfreeze it (F-286), and the screen shows nothing while the resend is on its way (F-287); the hidden Back itself is pinned by no test (F-288).
 
 ### F-283 [P3] open - The key's life in the window and the done screen's server-written time are pinned by no test
 
@@ -1242,8 +1243,9 @@ the done screen shows the `when` it was sent. Two cases for readBookingForm:
 the order above, and a too-long answer to the second answered question tied
 to that question. Each shown able to fail.
 **Resolution:** Fixed 2026-10-09: booking-window.test.ts (jsdom, with open and close standing in for <dialog>) drives the whole window: 10:00 picked, details typed, Book answered 409 time_taken, back on her day without 10:00, 11:00 picked, her name still there, Book answered 201; both sends carry the same key and the done screen shows the API's `when` text as sent. read-booking-form.test.ts adds "ties each answer's error to its own question, in the business's order". Proved able to fail: a new form on a taken time, the done screen formatting `startsAt` in the browser, the errors reversed, and an answer's error tied by index into all questions each failed a test; files restored, sha256 the same.
+Re-review 2026-10-09 of 9.6's review fixes (scope: 134b281..4664807), left open: most of it holds, one named break still passes. Holding, each break run with `npm run test --workspace=@scheduleads-app/booking-component` and each file restored from a copy with sha256 identical: onTimeTaken also calling `setForm(newBookingForm())`, `form={{ ...form, requestKey: crypto.randomUUID() }}` given to DetailsScreen, and the done screen showing `new Date(booking.startsAt).toLocaleString()` each fail "keeps the form and its key across a time taken" (booking-window.tsx 97ba7800..., month-done-screen.tsx 2affb87e...); dropping the sort into form order, and `fieldOf(issue.path, questions)` (an answer tied by index into all questions), each fail "ties each answer's error to its own question" (read-booking-form.ts 4aa84208...). Not holding: the finding's own named break, every answer error mapped to the first answered question (`answered[second]` changed to `answered[0]`, and also to the last answered), leaves the suite green, 65 of 65, because the new tie test answers only one question (q-colour is empty, so the too-long q-pets is both answered[0] and answered[second]). With two answers, "Blue" to question one and 501 characters to question two, the error would show under question one and focus would land there. Needed: a case with both questions answered and the second too long, its error under the second. Also not pinned, which the suggested fix asked for: a new key for each opening (useState(newBookingForm) changed to one form kept across openings leaves 65 of 65 green); the window is mounted only while open, so today it holds by structure.
 
-### F-284 [P3] open - The browser check lets a form through when the schema fails on a part no field shows, such as more than 20 answers
+### F-284 [P3] closed - The browser check lets a form through when the schema fails on a part no field shows, such as more than 20 answers
 
 **File:** packages/booking-component/booking-window/booking-form/read-booking-form.ts:56-72
 **Found:** 2026-10-09 by /audit independent (scope: step 9.6, a946115..00bde08; lens: correctness)
@@ -1261,8 +1263,9 @@ send: show the issue's words in the form's problem line (with the phone).
 Separately, cap a business's questions at the schema's 20 where they are
 written, so the form can always be sent.
 **Resolution:** Fixed 2026-10-09: a schema issue no field shows is now the form's own error (`field: "form"`, last in the order), shown with the business's phone and no Try again, and nothing is sent. Tests: read-booking-form.test.ts (21 answered questions give "That is too many answers.") and booking-form-view.test.ts (the alert shows and no send happens); both fail when such an issue is dropped. How many questions a business may have is item 12's (the plan already says up to about 20).
+Closed 2026-10-09 by re-review of 9.6's review fixes (scope: 134b281..4664807): read-booking-form.ts now maps every schema issue with no field to `"form"` (`fieldOf(...) ?? "form"`), last in the order, so `state: "ok"` is returned only when the shared schema passes; book() in booking-form-view.tsx returns before send() on any error and shows the form error through ProblemMessage with `retry: false`, which draws the business's phone when it has one. The customer's own schema refine (email or phone) carries `path: ["email"]`, so it still lands under Email and not on the form. Breaking it fails the suite: putting back `if (field && ...)` fails both new tests, and `setProblem(null)` in place of the form error fails the view test (files restored, sha256 identical).
 
-### F-285 [P3] open - Two new code comments carry finding numbers again
+### F-285 [P3] closed - Two new code comments carry finding numbers again
 
 **File:** backend/routes/public-bookings-routes.ts:185; packages/booking-component/api-client/send-booking.ts:34
 **Found:** 2026-10-09 by /audit independent (scope: step 9.6, a946115..00bde08; lens: quality)
@@ -1277,3 +1280,65 @@ customer-booking-screen.tsx:123, and the three fetch-*.ts files of the
 package), outside this step's scope.
 **Suggested fix:** Drop the IDs and keep each sentence.
 **Resolution:** Fixed 2026-10-09: the finding numbers are gone from all ten comments the finding lists (the two new ones and the eight from 9.5's fixes); each sentence kept. `git grep` for an F-number in a code comment outside tests now finds nothing.
+Closed 2026-10-09 by re-review of 9.6's review fixes (scope: 134b281..4664807): the commit's diff in backend, frontend and the package changes exactly ten comment lines (find-booking-page.ts, local-start-times.ts, public-booking-links-routes.ts, public-bookings-routes.ts, change-time-panel.tsx, customer-booking-screen.tsx, fetch-free-times.ts, fetch-one-service.ts, fetch-service-list.ts, send-booking.ts), each only losing its "(F-27x)" with the sentence kept. `git grep -n -E "\bF-[0-9]+"` over code files outside tests, blueprint and the skills finds nothing, and a looser case-blind grep for F followed by two or three digits in frontend, backend and packages (tests, JSON, SQL and Markdown left out) finds nothing either.
+
+### F-286 [P3] open - After a lost answer, a 429 from the visitor limit or a gateway's 5xx unfreezes the form, though neither says whether she is booked
+
+**File:** packages/booking-component/booking-window/screens/booking-form-view.tsx:100-102 (any answer but no-answer clears `unsure`); backend/middleware/public-middleware/public-rate-limit-middleware.ts:12-17 and backend/app.ts:35 (the visitor limit answers before the route); packages/booking-component/api-client/send-booking.ts:72-75
+**Found:** 2026-10-09 by re-review of 9.6's review fixes (scope: 134b281..4664807; lens: correctness)
+**Why it matters:** F-282's freeze ends on any HTTP answer. Every answer the
+route writes is safe to end it on, because book-time.ts asks the key first,
+but two kinds of answer never reach that look-up: the per-visitor write limit
+(10 in 10 minutes, a middleware mounted on /public/* before the routes, which
+counts every Try again that reached the server even when its answer was lost,
+and is shared by everyone behind one address), and a 500, 502 or 504 not
+written by the route. Shown with a temporary jsdom test of BookingFormView
+(removed): Book, no answer, Try again answered 429 gives `unsure` [true,
+false], the Email box enabled, Book drawn and "Too many tries. Wait a few
+minutes."; answered 502 or 504 gives the same with "Booking couldn't load
+right now.". The month screen then shows Back again, so Back, another time
+and Book gets 409 request_key_used, "This booking form was already used.
+Please reload the page and book again.", the exact path F-282 closed; and an
+email edited then sent with Try again gets the earlier booking with the done
+screen naming the new address. A 500 thrown after the booking was saved (the
+names look-up in public-bookings-routes.ts) never freezes the form at all.
+Rare: it needs a lost answer and then one of these.
+**Suggested fix:** Keep the form in doubt unless the answer settles the key:
+a 201, a 409, or a 400 or 503 the route wrote (its JSON `error.code`). A 429,
+a 5xx, or a body that is not the route's keeps it frozen with Try again and
+the phone, in words that say she may already be booked. A test for the 429
+and for a 502 after a lost answer.
+
+### F-287 [P3] open - While Try again resends after a lost answer, screen two shows nothing at all: no button, no words, no sign it is sending
+
+**File:** packages/booking-component/booking-window/screens/booking-form-view.tsx:96 (`setProblem(null)` at the start of each send) and :260 (Book drawn only when not `unsure`)
+**Found:** 2026-10-09 by re-review of 9.6's review fixes (scope: 134b281..4664807; lens: correctness)
+**Why it matters:** Pressing Try again clears the problem line, and Book,
+which carries "Booking…" and `aria-busy`, stays hidden because `unsure`
+changes only when the answer comes. Shown with a temporary jsdom test
+(removed): with the resend held, the form has no button, no alert and no
+`aria-busy` element, only the disabled fields; the month screen has no Back
+either. That can last until the 10-second time limit. The focus was on Try
+again, which is removed, so it falls out of the form, and a screen reader
+hears nothing. A customer who has just been told her booking may have gone
+through sees a frozen screen; the one thing left to press is Close, and
+opening the window again makes a new form and key, the second booking F-282
+was about.
+**Suggested fix:** While a resend is on its way, keep a line that says so
+(for example "Checking your booking…" with `role="status"` or the problem
+area's own busy state) and keep the focus inside the form; a test that the
+held resend shows it.
+
+### F-288 [P3] open - Screen two's hidden Back during a lost answer is pinned by no test
+
+**File:** packages/booking-component/booking-window/screens/month-layout/month-details-screen.tsx:53,60
+**Found:** 2026-10-09 by re-review of 9.6's review fixes (scope: 134b281..4664807; lens: tests)
+**Why it matters:** F-282's resolution says its test covers "Back hidden",
+but booking-form-view.test.ts only records the `onUnsureChange` calls. With
+the rail's `back` given in both cases (`unsure ? { label, onBack } : { label,
+onBack }`), the package suite stays green, 65 of 65 (file restored, sha256
+37a96fa4... identical). Back is the path F-282 closed; the project's test gate
+says logic a step adds gets its tests.
+**Suggested fix:** In booking-window.test.ts (which already drives the whole
+window), a Book answered with no answer, then no "Back to the times" button
+until Try again is answered; shown able to fail with the line above.
