@@ -169,10 +169,8 @@ describe("screen two's form", () => {
     expect(screen.getByLabelText("Email").matches(":disabled")).toBe(true);
     expect(screen.queryByRole("button", { name: "Book" })).toBeNull();
     expect(screen.getByRole("alert").textContent).toContain("whether your booking went through");
-    expect(
-      screen.getByRole("alert").contains(document.activeElement) ||
-        document.activeElement?.contains(screen.getByRole("alert"))
-    ).toBe(true);
+    // Focus is on the words' own place, never the page.
+    expect(document.activeElement).toBe(screen.getByRole("alert").closest(".sa-focus-place"));
     expect(screen.getByRole("button", { name: "Try again" })).toBeDefined();
     expect(unsure).toEqual([true, true]);
 
@@ -186,6 +184,9 @@ describe("screen two's form", () => {
     );
     expect(screen.getByLabelText("Email").matches(":disabled")).toBe(false);
     expect(unsure).toEqual([true, true, false]);
+    // The refusal's words take the focus from the checking line that held it.
+    expect(screen.getByRole("alert").textContent).toBe("Answer: Which colour?");
+    expect(document.activeElement).toBe(screen.getByRole("alert").closest(".sa-focus-place"));
   });
 
   it("says a part of the form no field shows, and sends nothing", async () => {

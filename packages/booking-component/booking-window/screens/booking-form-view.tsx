@@ -65,14 +65,21 @@ export function BookingFormView({
   // No answer came back: until one comes nothing can be changed, so Try again sends the same
   // booking with the same key, and a booking made unseen is answered again, never made twice.
   const [unsure, setUnsure] = useState(false);
-  // While unsure, focus stays in the form: on the checking line while it waits, then on the words.
+  // Focus never falls to the page: on the checking line while Try again waits, and on the words
+  // whenever a send ends with words on screen.
   const checkingRef = useRef<HTMLParagraphElement>(null);
   const problemRef = useRef<HTMLDivElement>(null);
+  const [wordsShown, setWordsShown] = useState(0);
   useEffect(() => {
-    if (!unsure) return;
-    if (sending) checkingRef.current?.focus();
-    else problemRef.current?.focus();
+    if (unsure && sending) checkingRef.current?.focus();
   }, [unsure, sending]);
+  useEffect(() => {
+    if (wordsShown > 0) problemRef.current?.focus();
+  }, [wordsShown]);
+  const showWords = (shown: SendProblemType) => {
+    setProblem(shown);
+    setWordsShown((count) => count + 1);
+  };
 
   const errorOf = (field: BookingFormFieldType) =>
     errors.find((error) => error.field === field)?.message ?? null;
@@ -128,10 +135,10 @@ export function BookingFormView({
         onTimeTaken(answer.message);
         return;
       case "refused":
-        setProblem({ words: answer.message, retry: answer.canRetry });
+        showWords({ words: answer.message, retry: answer.canRetry });
         return;
       case "problem":
-        setProblem({
+        showWords({
           words: !nowUnsure
             ? problemWords[answer.problem]
             : answer.problem === "too-many-tries"
@@ -141,7 +148,7 @@ export function BookingFormView({
         });
         return;
       case "no-answer":
-        setProblem({ words: noAnswerWords, retry: true });
+        showWords({ words: noAnswerWords, retry: true });
         return;
     }
   }
