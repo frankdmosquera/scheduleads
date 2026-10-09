@@ -17,13 +17,13 @@ import { telHref } from "@scheduleads-app/shared/tel-href";
 
 import {
   fetchBookingMoveTimes,
-  moveBookingPage,
   type BookingMoveTimesResultType,
-  type BookingPageType,
-} from "@/lib/api-client";
+} from "@/lib/api-client/customer-booking/fetch-booking-move-times";
+import { type BookingPageType } from "@/lib/api-client/customer-booking/fetch-booking-page";
+import { moveBookingPage } from "@/lib/api-client/customer-booking/move-booking-page";
 
 // "Tuesday, October 13" for a calendar date; noon UTC names the same day everywhere.
-const dayName = (date: string) =>
+const formatDayName = (date: string) =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "UTC",
     weekday: "long",
@@ -32,7 +32,7 @@ const dayName = (date: string) =>
   }).format(new Date(`${date}T12:00:00Z`));
 
 // "Oct 4 to 10", or "Sep 28 to Oct 4" across two months: short enough for a phone at 320px.
-function weekName(from: string, to: string): string {
+function formatWeekName(from: string, to: string): string {
   const named = (date: string, options: Intl.DateTimeFormatOptions) =>
     new Intl.DateTimeFormat("en-CA", { timeZone: "UTC", ...options }).format(
       new Date(`${date}T12:00:00Z`)
@@ -41,11 +41,14 @@ function weekName(from: string, to: string): string {
   return `${named(from, { month: "short", day: "numeric" })} to ${named(to, sameMonth ? { day: "numeric" } : { month: "short", day: "numeric" })}`;
 }
 
-const timeOfDay = (moment: Date, timeZone: string) =>
+const formatTimeOfDay = (moment: Date, timeZone: string) =>
   new Intl.DateTimeFormat("en-CA", { timeZone, hour: "numeric", minute: "2-digit" }).format(moment);
 
 // The start times grouped by their day in the business's zone, in order.
-function byDay(startTimes: string[], timeZone: string): { date: string; times: string[] }[] {
+function groupTimesByDay(
+  startTimes: string[],
+  timeZone: string
+): { date: string; times: string[] }[] {
   const days = new Map<string, string[]>();
   for (const startsAt of startTimes) {
     const date = localDate(new Date(startsAt), timeZone);
@@ -103,7 +106,7 @@ export function ChangeTimePanel({
   }, []);
 
   // The week and person asked about changed: "Finding free times…" until their answer lands.
-  const askAgain = () => {
+  const clearTimesForNewQuestion = () => {
     setResult(null);
     setProblem(null);
   };
@@ -136,7 +139,7 @@ export function ChangeTimePanel({
     };
   }, [token, from, to, personId, booking.personId, reloads, onCannotMove]);
 
-  async function move() {
+  async function moveToChosenTime() {
     if (!chosen) return;
     setSending(true);
     setProblem(null);
@@ -184,7 +187,7 @@ export function ChangeTimePanel({
           <button
             ref={yesRef}
             type="button"
-            onClick={move}
+            onClick={moveToChosenTime}
             disabled={sending}
             style={{ backgroundColor: brand, color: onBrand }}
             className="flex-1 rounded-lg px-4 py-3 text-sm font-semibold disabled:opacity-60"
@@ -222,13 +225,13 @@ export function ChangeTimePanel({
           (startsAt) => !(keepsPerson && Date.parse(startsAt) === Date.parse(booking.startsAt))
         )
       : [];
-  const days = byDay(startTimes, timezone);
+  const days = groupTimesByDay(startTimes, timezone);
   const count = startTimes.length;
-  const week = weekName(from, to);
+  const week = formatWeekName(from, to);
   // The week holding the business's last bookable date: nothing later can be booked.
   const isLastWeek = lastDate !== null && to >= lastDate;
   const booksUpTo = lastDate
-    ? `${booking.business.name} takes bookings up to ${dayName(lastDate)}.`
+    ? `${booking.business.name} takes bookings up to ${formatDayName(lastDate)}.`
     : "";
   // One live region, always there, so every new week or person is read out.
   const announcement = !result
@@ -262,7 +265,7 @@ export function ChangeTimePanel({
             id="who"
             value={personId ?? ""}
             onChange={(event) => {
-              askAgain();
+              clearTimesForNewQuestion();
               setPersonId(event.target.value || null);
             }}
             className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
@@ -282,7 +285,7 @@ export function ChangeTimePanel({
           ref={earlierRef}
           type="button"
           onClick={() => {
-            askAgain();
+            clearTimesForNewQuestion();
             setWeekOffset((n) => n - 1);
             // The first week turns this button off, so focus moves on to Later.
             if (weekOffset === 1) laterRef.current?.focus();
@@ -297,7 +300,7 @@ export function ChangeTimePanel({
           ref={laterRef}
           type="button"
           onClick={() => {
-            askAgain();
+            clearTimesForNewQuestion();
             setWeekOffset((n) => n + 1);
             // The last week turns this button off, so focus moves back to Earlier.
             if (lastDate !== null && addDays(to, 7) >= lastDate) earlierRef.current?.focus();
@@ -334,7 +337,7 @@ export function ChangeTimePanel({
             <button
               type="button"
               onClick={() => {
-                askAgain();
+                clearTimesForNewQuestion();
                 setReloads((n) => n + 1);
               }}
               className={`mt-3 w-full ${outlineButton}`}
@@ -349,7 +352,7 @@ export function ChangeTimePanel({
               <button
                 type="button"
                 onClick={() => {
-                  askAgain();
+                  clearTimesForNewQuestion();
                   setWeekOffset((n) => n + 1);
                 }}
                 className={`mt-3 w-full ${outlineButton}`}
@@ -364,7 +367,7 @@ export function ChangeTimePanel({
               {days.map((day) => (
                 <div key={day.date} role="group" aria-labelledby={`day-${day.date}`}>
                   <h3 id={`day-${day.date}`} className="text-sm font-medium text-slate-900">
-                    {dayName(day.date)}
+                    {formatDayName(day.date)}
                   </h3>
                   <div className="mt-2 grid grid-cols-3 gap-2">
                     {day.times.map((startsAt) => (
@@ -377,7 +380,7 @@ export function ChangeTimePanel({
                         }}
                         className="rounded-lg border border-slate-300 px-2 py-2.5 text-sm text-slate-900 hover:bg-slate-50"
                       >
-                        {timeOfDay(new Date(startsAt), timezone)}
+                        {formatTimeOfDay(new Date(startsAt), timezone)}
                       </button>
                     ))}
                   </div>

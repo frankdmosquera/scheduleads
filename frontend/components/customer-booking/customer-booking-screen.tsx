@@ -12,17 +12,17 @@ import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 import { textColorOn } from "@scheduleads-app/shared/text-color-on";
 import { telHref } from "@scheduleads-app/shared/tel-href";
 
+import { cancelBookingPage } from "@/lib/api-client/customer-booking/cancel-booking-page";
 import {
-  cancelBookingPage,
   fetchBookingPage,
   type BookingPageResultType,
   type BookingPageType,
-} from "@/lib/api-client";
+} from "@/lib/api-client/customer-booking/fetch-booking-page";
 
 import { ChangeTimePanel, type CannotMoveType } from "./change-time-panel";
 
 // What the Cancel area is doing: showing the button, asking once more, or sending.
-type CancelStepType = "button" | "confirm" | "sending";
+export type CancelButtonStepType = "button" | "confirm" | "sending";
 
 export function CustomerBookingScreen({ token }: { token: string }) {
   const [result, setResult] = useState<BookingPageResultType | null>(null);
@@ -46,16 +46,16 @@ export function CustomerBookingScreen({ token }: { token: string }) {
 
   if (!result) {
     return (
-      <PageFrame>
+      <CustomerBookingFrame>
         <p role="status" className="text-sm text-slate-500">
           One moment…
         </p>
-      </PageFrame>
+      </CustomerBookingFrame>
     );
   }
   if (result.state === "not-found") {
     return (
-      <PageFrame>
+      <CustomerBookingFrame>
         <h1
           ref={heading}
           tabIndex={-1}
@@ -66,12 +66,12 @@ export function CustomerBookingScreen({ token }: { token: string }) {
         <p className="mt-2 text-sm leading-6 text-slate-600">
           Please call the business that sent it.
         </p>
-      </PageFrame>
+      </CustomerBookingFrame>
     );
   }
   if (result.state === "unreachable") {
     return (
-      <PageFrame>
+      <CustomerBookingFrame>
         <h1
           ref={heading}
           tabIndex={-1}
@@ -91,13 +91,13 @@ export function CustomerBookingScreen({ token }: { token: string }) {
         >
           Try again
         </button>
-      </PageFrame>
+      </CustomerBookingFrame>
     );
   }
-  return <BookingDetails token={token} initial={result.booking} headingRef={heading} />;
+  return <CustomerBookingDetails token={token} initial={result.booking} headingRef={heading} />;
 }
 
-function BookingDetails({
+function CustomerBookingDetails({
   token,
   initial,
   headingRef,
@@ -107,7 +107,7 @@ function BookingDetails({
   headingRef: React.RefObject<HTMLHeadingElement | null>;
 }) {
   const [booking, setBooking] = useState(initial);
-  const [step, setStep] = useState<CancelStepType>("button");
+  const [step, setStep] = useState<CancelButtonStepType>("button");
   const [problem, setProblem] = useState<string | null>(null);
   const [changing, setChanging] = useState(false); // the "Change the time" panel is open
   const [moved, setMoved] = useState(false);
@@ -148,7 +148,7 @@ function BookingDetails({
     requestAnimationFrame(() => changeRef.current?.focus()); // back where they were
   }, []);
 
-  async function cancel() {
+  async function cancelCustomerBooking() {
     setStep("sending");
     setProblem(null);
     const answer = await cancelBookingPage(token);
@@ -177,7 +177,7 @@ function BookingDetails({
   const started = !cancelled && !booking.canCancel;
 
   return (
-    <PageFrame
+    <CustomerBookingFrame
       footer={
         business.website ? (
           <a href={business.website} className="text-slate-500 hover:text-slate-700">
@@ -222,9 +222,9 @@ function BookingDetails({
       </div>
 
       <dl className="mt-5 space-y-3">
-        <Detail label="What" value={booking.service} />
-        <Detail label={cancelled ? "When it was" : "When"} value={when} />
-        <Detail label="With" value={booking.person} />
+        <CustomerBookingDetailRow label="What" value={booking.service} />
+        <CustomerBookingDetailRow label={cancelled ? "When it was" : "When"} value={when} />
+        <CustomerBookingDetailRow label="With" value={booking.person} />
       </dl>
 
       {!cancelled && !started && changing ? (
@@ -278,7 +278,7 @@ function BookingDetails({
                 <button
                   ref={yesCancelRef}
                   type="button"
-                  onClick={cancel}
+                  onClick={cancelCustomerBooking}
                   disabled={step === "sending"}
                   style={{ backgroundColor: brand, color: onBrand }}
                   className="flex-1 rounded-lg px-4 py-3 text-sm font-semibold disabled:opacity-60"
@@ -318,11 +318,11 @@ function BookingDetails({
           {`Call ${business.name}`}
         </a>
       ) : null}
-    </PageFrame>
+    </CustomerBookingFrame>
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
+function CustomerBookingDetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-xs uppercase tracking-wider text-slate-500">{label}</dt>
@@ -333,7 +333,13 @@ function Detail({ label, value }: { label: string; value: string }) {
 
 // The page's one card, in plain colours of its own: the business's brand sits inside it, the
 // product's theme never does.
-function PageFrame({ children, footer }: { children: React.ReactNode; footer?: React.ReactNode }) {
+function CustomerBookingFrame({
+  children,
+  footer,
+}: {
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}) {
   return (
     <main className="flex flex-1 items-start justify-center bg-slate-50 px-4 py-12">
       <div className="w-full max-w-md">

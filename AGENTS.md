@@ -72,8 +72,9 @@ Hono. No extra dependency, no codegen. Wired in step 2.5 (2026-09-27) and
 `npm run build --workspace=frontend` fail with a type error, and it passed
 again once restored. The backend writes the routes' declarations
 (`build:types`, run by the frontend's `predev` and `prebuild`, because Vercel
-builds only the frontend), and `frontend/lib/api-client.ts` builds two clients
-from one `AppType`: one sends the login cookie, the public one never does. The
+builds only the frontend), and `frontend/lib/api-client/` builds two clients
+from one `AppType` (`dashboard-api-client.ts` sends the login cookie,
+`public-api-client.ts` never does), with one file per call beside them. The
 first repo declared `AppType` and never consumed it once; every new route is
 called through these clients, never a bare `fetch`.
 

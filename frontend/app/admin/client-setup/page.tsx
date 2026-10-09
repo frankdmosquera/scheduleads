@@ -1,4 +1,4 @@
-// Frontend page /admin/clients/new: the platform admin sets up a client. Anyone else sees a
+// Frontend page /admin/client-setup: the platform admin sets up a client. Anyone else sees a
 // card saying the page is for the agency; the API refuses them either way.
 
 "use client";
@@ -12,11 +12,11 @@ import { CentredCard } from "@/components/centred-card/centred-card";
 import { authClient } from "@/lib/auth-client";
 import { isPlatformAdmin } from "@/lib/is-platform-admin";
 
-type ViewerType = "checking" | "someone-else" | { hasBusiness: boolean };
+export type ClientSetupViewerType = "checking" | "someone-else" | { hasBusiness: boolean };
 
 export default function ClientSetupPage() {
   const router = useRouter();
-  const [viewer, setViewer] = useState<ViewerType>("checking");
+  const [viewer, setViewer] = useState<ClientSetupViewerType>("checking");
 
   useEffect(() => {
     // `live` stops a late answer from updating a page the user already left.

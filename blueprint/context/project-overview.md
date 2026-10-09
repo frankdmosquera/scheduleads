@@ -197,7 +197,7 @@ provider; Calendly shape, two screens. The login is the CRM, Pipedrive the
 reference feel; mockups in `prototypes/` off one `theme.css`.
 
 - `/sign-in` - email OTP, sign-in only
-- `/admin/clients/new` - the platform admin sets up a client (3b)
+- `/admin/client-setup` - the platform admin sets up a client (3b)
 - `/leads`, `/leads/[id]` (11); `/settings` (12); `/calendar` (12b);
   `/pipeline` (14); more of `/admin/*` (23); `/book/[slug]` (24)
 

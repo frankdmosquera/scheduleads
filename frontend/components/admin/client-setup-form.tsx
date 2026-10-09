@@ -18,7 +18,10 @@ import { CentredCardField } from "@/components/centred-card/centred-card-field";
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { SignOutLink } from "@/components/auth/sign-out-link";
 import { Button } from "@/components/ui/button";
-import { provisionClient, type ProvisionedClientType } from "@/lib/api-client";
+import {
+  provisionClient,
+  type ProvisionedClientType,
+} from "@/lib/api-client/admin/provision-client";
 
 const emptyForm: ProvisionClientInputType = {
   businessName: "",
@@ -32,7 +35,7 @@ const emptyForm: ProvisionClientInputType = {
   emailSendingKey: "",
 };
 
-const fields = [
+const clientDetailFields = [
   {
     name: "businessName",
     label: "Business name",
@@ -51,7 +54,7 @@ const fields = [
 
 // What the business's emails need (feature 6). All optional: no email goes until the two
 // addresses are set, and the key only when you set up the client's Resend yourself.
-const emailFields = [
+const clientEmailFields = [
   {
     name: "senderEmail",
     label: "Emails come from",
@@ -85,7 +88,7 @@ const emailFields = [
 ] as const;
 
 // Sign out always, and the way back when the platform admin has a dashboard to go back to.
-function AdminFooter({ hasBusiness }: { hasBusiness: boolean }) {
+function ClientSetupFooter({ hasBusiness }: { hasBusiness: boolean }) {
   return (
     <span className="flex justify-center gap-4">
       {hasBusiness ? (
@@ -107,7 +110,7 @@ export function ClientSetupForm({ hasBusiness }: { hasBusiness: boolean }) {
     defaultValues: emptyForm,
   });
 
-  async function submit(input: ProvisionClientInputType) {
+  async function submitClientSetup(input: ProvisionClientInputType) {
     setRefusal(null);
     const result = await provisionClient(input);
 
@@ -124,9 +127,9 @@ export function ClientSetupForm({ hasBusiness }: { hasBusiness: boolean }) {
 
   if (done) {
     return (
-      <SetUpCard
+      <ClientSetupDoneCard
         answer={done}
-        footer={<AdminFooter hasBusiness={hasBusiness} />}
+        footer={<ClientSetupFooter hasBusiness={hasBusiness} />}
         onAnother={() => {
           form.reset(emptyForm);
           setDone(null);
@@ -139,12 +142,16 @@ export function ClientSetupForm({ hasBusiness }: { hasBusiness: boolean }) {
     <CentredCard
       title="Set up a client"
       lede="Makes the client's login and their business together. The client is its owner; you are not a member."
-      footer={<AdminFooter hasBusiness={hasBusiness} />}
+      footer={<ClientSetupFooter hasBusiness={hasBusiness} />}
     >
-      <form onSubmit={form.handleSubmit(submit)} noValidate className="flex flex-col gap-4">
-        {[...fields, ...emailFields].map((field, index) => (
+      <form
+        onSubmit={form.handleSubmit(submitClientSetup)}
+        noValidate
+        className="flex flex-col gap-4"
+      >
+        {[...clientDetailFields, ...clientEmailFields].map((field, index) => (
           <Fragment key={field.name}>
-            {index === fields.length ? (
+            {index === clientDetailFields.length ? (
               <div className="mt-2 border-t pt-4">
                 <h2 className="text-sm font-medium">Their emails</h2>
                 <p className="text-xs text-muted-foreground">
@@ -179,7 +186,7 @@ export function ClientSetupForm({ hasBusiness }: { hasBusiness: boolean }) {
 }
 
 // What to tell the client. The welcome email is not sent yet, so the platform admin tells them.
-function SetUpCard({
+function ClientSetupDoneCard({
   answer,
   onAnother,
   footer,
