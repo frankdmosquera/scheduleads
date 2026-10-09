@@ -15,7 +15,7 @@ Book once, and see that they are booked. The booking, the contact and the lead
 land in that business through the public routes built in features 5 to 7, now
 rate limited. The modal never names its provider.
 
-This feature builds the component and proves it on a try page inside this
+This feature builds the component and proves it on a booking preview page inside this
 repo. Wiring it into the agency's own site is feature 10.
 
 ## Decisions
@@ -105,7 +105,7 @@ repo. Wiring it into the agency's own site is feature 10.
 - The package: `BookingProvider`, `useBooking()`, `BookNowTrigger`, the modal,
   its CSS on `--sa-*` tokens, the month layout's three screens and the done
   screen, with every state below.
-- A try page for the platform admin, `/admin/booking-preview/[businessSlug]`, hosting the
+- A booking preview page for the platform admin, `/admin/booking-preview/[businessSlug]`, hosting the
   component in the agency's and Primo's tokens from `prototypes/`.
 - The plans: open question 15 moved to decided, the build plan's "open until
   this item's spec" line answered.
