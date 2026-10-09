@@ -540,6 +540,10 @@ backend tests also need the local Postgres running with `db:migrate` and
 `scheduleads_dev`, add their own rows and remove them, and refuse any database
 that is not local and `*_dev`. With Postgres stopped they fail; they never skip.
 
+A booking component test that draws React (a hook or a screen) runs in jsdom: it
+starts with `// @vitest-environment jsdom` and uses `@testing-library/react`, both
+dev dependencies of the package since F-280. Every other test there stays in Node.
+
 The frontend has no test script yet; it gets one with its first test, so no
 workspace ever carries a test command that finds nothing to run.
 

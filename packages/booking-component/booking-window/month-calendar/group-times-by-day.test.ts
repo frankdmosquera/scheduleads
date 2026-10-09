@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { groupTimesByDay } from "./group-times-by-day.js";
 
-const at = (startsAt: string, date: string, time: string) => ({ startsAt, date, time });
+const at = (startsAt: string, date: string, time: string) => ({
+  startsAt,
+  date,
+  time,
+  when: `${date} at ${time}`,
+});
 
 describe("groupTimesByDay", () => {
   it("puts each time on the business's date the API sent, not its date in UTC", () => {

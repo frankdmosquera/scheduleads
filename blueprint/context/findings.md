@@ -1165,7 +1165,7 @@ others in `month-calendar/` (which day is shown for a month's days and the
 picked date; whether an answer belongs to the question now asked, keyed by
 from, to and person), use them from the hook and the screen, and test them,
 each shown able to fail.
-**Resolution:**
+**Resolution:** Fixed 2026-10-09 the standard way, on Frank's yes to the install: `@testing-library/react` and `jsdom` are dev dependencies of the booking component. use-month-times.test.ts (jsdom) runs the real hook over the typed client with held answers: Ana asked, Mei picked, Mei's answer lands, then Ana's late one, and the month still shows Mei's times; and it draws MonthServiceScreen on Oct 9 with times on Oct 14 and 16, and the shown day is Wednesday, October 14 with its 10:00 a.m., not Oct 16's 9:00 a.m. Proved able to fail: with `if (!live) return;` removed the first fails, with the first day changed to the last the second fails; files restored, sha256 the same. The code itself did not change. Package 43 of 43, tsc over the package and its tests clean.
 
 ### F-281 [P1] open - The customer's change-time panel reads the move times with the visitor's own time-zone rules, so an older browser shows every Alberta time from Nov 1 an hour early
 
