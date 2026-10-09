@@ -1111,3 +1111,58 @@ id, opening the list) before any call, encode the path parameters
 route, and a 200 without `bookingLink` is a problem, shown able to fail.
 **Resolution:** Fixed 2026-10-09 in 9.4's review fixes (Frank's yes): fetch-one-service.ts (fetch-booking-service.ts before the rename in 859b64d) answers "nothing to book" for a blank slug or id before any call, encodes both path values, and reads a 200 with no bookingLink as "cannot load"; fetch-service-list.ts does the same for a blank slug and a 200 without the business or its list. New tests through hc<PublicAppType> over a fake fetch (fetch-one-service.test.ts, fetch-service-list.test.ts): 5 of them fail on the code before the fix and pass after (restored, sha256 identical); 18 of 18 pass. Live on the booking preview, painting-dev: a blank id shows "Nothing can be booked online right now." with "Call 403 555 0100", and the page stays up.
 Closed 2026-10-09 by re-review of 9.4's review fixes (scope: 90a6a1e..bc34f31): with 859b64d's fetch-one-service.ts and fetch-service-list.ts put back under the new tests, 5 of 18 fail (blank id and blank slug ask nothing, a 200 without the expected shape is a problem, "a/b?c" stays one segment); with bc34f31's code 18 of 18 pass; files restored, sha256 identical. A scratch Hono app behind `hc<PublicAppType>` shows the server decodes each value once, so `c.req.param()` gets exactly what the host passed ("a/b?c", "50%", and a literal "a%2Fb" sent as `a%252Fb`), no double encoding; against the running API `clinic-dev` lists 10 services and a real uuid answers its service, while odd ids and slugs ("a/b?c", "..", "clinic-dev/booking-links/x", "clinic-dev?x=1") all come back "nothing to book". The rename leaves no old name anywhere in the repo outside history and findings (`git grep` for each old file and function name), the package's dist holds only the new paths, and `npm run build --workspace=frontend` passes.
+
+### F-279 [P1] open - The calendar reads the API's times with the visitor's own time-zone rules, so an older browser shows every Alberta time from Nov 1 an hour early
+
+**File:** packages/booking-component/booking-window/month-calendar/format-time-of-day.ts:4-7 (also group-times-by-day.ts:9; shown at screens/month-layout/day-times-view.tsx:40 and month-details-screen.tsx:35,50; the same pattern is older in frontend/components/customer-booking/change-time-panel.tsx:44-54)
+**Found:** 2026-10-09 by /audit independent (scope: step 9.5, c67bc85..2001dc7; lens: all)
+**Why it matters:** The API works out each free time with its own
+time-zone rules and sends only the instant (`2026-11-02T15:00:00.000Z`).
+The component turns that back into a day and a clock time with whatever
+rules the visitor's browser carries. The two disagree for America/Edmonton,
+the zone of every dev business and of the four tenants: the API's Node
+(tz data 2026c) keeps Edmonton on UTC-6 after Nov 1 2026, while Chromium
+150 (VS Code's Electron 43 on this laptop, tz data 2025c) falls back to
+UTC-7. Shown against the running API: clinic-dev's Chemical Peel on Monday
+Nov 2 (the clinic opens at 9:00) answers 39 times from 15:00Z to 00:30Z;
+formatted the component's way (`Intl.DateTimeFormat("en-CA", { timeZone,
+hour, minute })`) Node says "9:00 a.m." to "6:30 p.m." and Chromium 150
+says "8:00 a.m." to "5:30 p.m.". Oct 12 reads "9:00 a.m." in both. So from
+Nov 1, three weeks away, a visitor whose browser predates the change picks
+"8:00 a.m." and is booked at 9:00, which is what the API, the dashboard and
+the server-written emails say. The zone line reads "Mountain Time" either
+way, so nothing on screen shows the mismatch. Decision 11 asks for the
+business's clock, and the business's clock is the one the API computed with.
+**Suggested fix:** Let the API name its own clock: the times route sends,
+beside each instant, the business's date and time of day it computed it
+from (for example `{ startsAt, date: "2026-11-02", time: "9:00 a.m." }`, or
+the UTC offset at that instant), and the component groups by that date and
+shows that label instead of re-deriving both with the browser's rules; the
+details rail does the same with the chosen time. A unit test that a start
+whose label the API sent is shown with that label, not re-derived. The 7b
+change-time panel has the same pattern (only a note, it predates this
+feature).
+**Resolution:**
+
+### F-280 [P3] open - The guard that drops a slow answer for a month or person no longer shown is pinned by no test
+
+**File:** packages/booking-component/booking-window/screens/month-layout/use-month-times.ts:45 (and the first-day choice at month-service-screen.tsx:84-86)
+**Found:** 2026-10-09 by /audit independent (scope: step 9.5, c67bc85..2001dc7; lens: tests)
+**Why it matters:** `if (!live) return;` is the only thing that stops a
+late answer for the previous month or person landing on the calendar: a
+customer who switches from one person to another while the first answer is
+on its way would see the first person's times under the second one's name,
+and Next would carry the second person's id with a time they may not have
+free. The guard is right today, but deleting the line leaves the package's
+suite green (41 of 41; file restored, sha256 identical), because the hook
+and the screen's own choices (the first day with a time when a month loads,
+the picked time cleared on a change of month or person) have no test; the
+package has no DOM test environment. The project's test gate says a step
+that adds logic adds its tests, and the spec names stale answers among this
+step's rules ("Changing the person reloads the month").
+**Suggested fix:** Move the two choices into plain functions beside the
+others in `month-calendar/` (which day is shown for a month's days and the
+picked date; whether an answer belongs to the question now asked, keyed by
+from, to and person), use them from the hook and the screen, and test them,
+each shown able to fail.
+**Resolution:**
