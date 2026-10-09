@@ -472,6 +472,9 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   which address the API counts), with F-176 and F-179.
 - The counts live in the API's memory: one API copy (one replica). A second
   copy moves them to Redis first (decision 7).
+- The API goes out before the frontend (9.5 review): the window, the
+  customer's page and its panel read `localStartTimes` and `when`, which an
+  older API does not send; the frontend's two calls trust the answer's shape.
 
 ## Notes for the AI
 
