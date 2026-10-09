@@ -695,6 +695,22 @@ describe("a contact's limit: 4 bookings in 10 minutes (feature 9, decision 8)", 
     expect((await bookFor(jane, onDay)).status).toBe(429);
   });
 
+  test("copies of one form at the contact's last place all get the booking", async () => {
+    const onDay = addDays(day, 9);
+    const jane = { name: "Jane Doe", email: `last-place-${tag}@example.com` };
+    for (let count = 0; count < 3; count++) expect((await bookFor(jane, onDay)).status).toBe(201);
+
+    const last = form(await firstFreeTime(clinic.mei, onDay), {
+      personId: clinic.mei,
+      customer: jane,
+    });
+    const copies = await Promise.all([1, 2].map(() => post(bookingsPath, last)));
+    expect(copies.map((copy) => copy.status)).toEqual([201, 201]);
+    const [first, second] = await Promise.all(copies.map((copy) => copy.json()));
+    expect(second.booking.id).toBe(first.booking.id);
+    expect((await bookFor(jane, onDay)).status).toBe(429);
+  });
+
   // The first free time at one of the two extra businesses, and a form for it.
   async function quoteForm(business: typeof shop, onDay: string, customer: Record<string, string>) {
     const response = await app.request(

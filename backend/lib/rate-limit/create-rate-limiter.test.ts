@@ -77,6 +77,25 @@ describe("giving back", () => {
   });
 });
 
+describe("copies of one form", () => {
+  test("count once, and a different form is still refused at the limit", () => {
+    const limiter = createRateLimiter({ most: 1, windowMs: MINUTE });
+    expect(limiter.take(["email", "phone"], "form-1").allowed).toBe(true);
+    expect(limiter.take(["email", "phone"], "form-1")).toEqual({ allowed: true, taken: [] });
+    expect(limiter.take(["email", "phone"], "form-2").allowed).toBe(false);
+    expect(limiter.take(["email", "phone"]).allowed).toBe(false);
+  });
+
+  test("a form handed back is no longer counted", () => {
+    const limiter = createRateLimiter({ most: 1, windowMs: MINUTE });
+    const first = limiter.take(["email"], "form-1");
+    if (!first.allowed) throw new Error("The try was refused.");
+    limiter.giveBack(first.taken);
+    expect(limiter.take(["email"], "form-2").allowed).toBe(true);
+    expect(limiter.take(["email"], "form-1").allowed).toBe(false);
+  });
+});
+
 describe("memory", () => {
   test("windows that are over are dropped", () => {
     const limiter = createRateLimiter({ most: 5, windowMs: MINUTE });

@@ -67,7 +67,8 @@ export const publicBookingsRoutes = new Hono()
       let taken: RateLimitTakenType | null = null;
       let retryAfterSeconds = 0;
       const admitNewBooking = () => {
-        const counted = publicRateLimiters.bookingContacts.take(contactKeys);
+        // Copies of one form, sent while the first is still booking, share its count.
+        const counted = publicRateLimiters.bookingContacts.take(contactKeys, body.requestKey);
         if (!counted.allowed) retryAfterSeconds = counted.retryAfterSeconds;
         else taken = counted.taken;
         return counted.allowed;
@@ -95,8 +96,9 @@ export const publicBookingsRoutes = new Hono()
         throw error;
       });
 
-      // Only a booking made counts: not a refusal, and not a form's booking answered again.
-      if (!result.booked || result.alreadyBooked) handBack();
+      // Only a booking made counts. A form's booking answered again keeps the one count its copies
+      // share; a refusal hands it back.
+      if (!result.booked) handBack();
 
       if (!result.booked) {
         switch (result.reason) {

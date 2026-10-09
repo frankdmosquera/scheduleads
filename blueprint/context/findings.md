@@ -917,7 +917,7 @@ and import it in check-answers.ts (type-only, no cycle).
 **Resolution:** Fixed 2026-10-08 after 9.2's review: BookingQuestionType moved to find-booking-questions.ts, which returns it; check-answers.ts imports it.
 Closed 2026-10-08 by the review of step 9.3 (scope: 3de57a5..21b8d6d): `BookingQuestionType` is declared in find-booking-questions.ts:10 beside findBookingQuestions, which returns it, and check-answers.ts:7 imports it type-only; `git grep` finds no other declaration. Backend build passes.
 
-### F-271 [P2] fixed - A booked form sent again counts against its contact, and at the limit it is refused 429 instead of getting its booking
+### F-271 [P2] closed - A booked form sent again counts against its contact, and at the limit it is refused 429 instead of getting its booking
 
 **File:** backend/routes/public-bookings-routes.ts:63-69,89-90 (the replay it runs ahead of: backend/lib/booking/book-time.ts:151-162; the rules: current-feature.md decisions 8 and 9)
 **Found:** 2026-10-08 by /audit independent (scope: step 9.3; lens: correctness)
@@ -941,8 +941,9 @@ count refuses and the form carries a `requestKey`, look up its booking as
 bookTime's replay does, and answer it if it exists). Route tests like the two
 probes above, each shown able to fail.
 **Resolution:** Fixed 2026-10-08 in 9.3's review fixes: the contact is counted inside bookTime through `admitNewBooking`, asked just after the form's own booking is looked up (book-time.ts), so a form sent again is answered its booking before the limit is asked and is never counted; the route hands the count back when the booking is refused, crashes, or comes back `alreadyBooked` (copies of one form racing). Tests: "a form sent again gets its booking even at the limit, and resends never count" (fails with the limit asked before the look-up) and "copies of one form arriving together count as the one booking they make" (four at once, then three more book and the next is 429; fails 3 of 3 runs without the alreadyBooked hand-back, passes 3 of 3 with it). Spec decision 8 says so.
+Closed 2026-10-08 by re-review of 9.3's fixes (scope: 21b8d6d..8e8a864): book-time.ts:166-168 asks `admitNewBooking` once, just after the form's own booking is looked up, so a booked form sent again is answered before the limit and never counted. Every way out after it hands the count back once: a refusal (`!result.booked`) or the form's booking found later (`alreadyBooked`, from refuseUnlessBooked or the request-key constraint) at public-bookings-routes.ts:99, and a throw in the `.catch` at :94, which rethrows so :99 is not reached; a refusal or crash before it finds `taken` null and hands back nothing. Only the public route passes it (`git grep admitNewBooking`), so the owner's bookings through bookTime are not limited. Asking the limit before the look-up fails "a form sent again gets its booking even at the limit, and resends never count" (1 failed of 35); dropping `|| result.alreadyBooked` fails "copies of one form arriving together count as the one booking they make" 3 runs of 3. Files restored, sha256 identical. Copies of one form arriving together while the contact is at its last place are a narrower case the fix leaves: F-275.
 
-### F-272 [P3] fixed - giveBack takes from whatever window is open when it runs, so a try that straddles a window's end frees a place in the next one
+### F-272 [P3] closed - giveBack takes from whatever window is open when it runs, so a try that straddles a window's end frees a place in the next one
 
 **File:** backend/lib/rate-limit/create-rate-limiter.ts:51-57 (its caller: backend/routes/public-bookings-routes.ts:85,90)
 **Found:** 2026-10-08 by /audit independent (scope: step 9.3; lens: correctness)
@@ -962,8 +963,9 @@ all-or-none count lets a contact past 4.
 `endsAt`) and giveBack take off only a window with that same end; a unit
 test like the probe above.
 **Resolution:** Fixed 2026-10-08 in 9.3's review fixes: `take` answers where each key was counted (`taken`, its window's end) and `giveBack` takes off only a window with that same end. Test: "a try counted in a window that has ended frees nothing in the next one", the probe above; fails with the end check removed.
+Closed 2026-10-08 by re-review of 9.3's fixes (scope: 21b8d6d..8e8a864): create-rate-limiter.ts:44-49 returns each key's window end in `taken`, and giveBack at :55-59 takes off only a window whose `endsAt` is that end. A window opened after the old one ended starts at or after that end, so its own end is later and never equal. Removing `window.endsAt === windowEndsAt &&` fails "a try counted in a window that has ended frees nothing in the next one" (1 failed of 7); file restored, sha256 identical. The route keeps `taken` from its one take and hands back only that.
 
-### F-273 [P3] fixed - Two of 9.3's route rules are pinned by no test: each business counted apart, and the give-back on a crash
+### F-273 [P3] closed - Two of 9.3's route rules are pinned by no test: each business counted apart, and the give-back on a crash
 
 **File:** backend/routes/public-bookings-routes.ts:64,84-86 (the tests: backend/routes/public-bookings-routes.test.ts:546-623, backend/lib/rate-limit/booking-contact-keys.test.ts:24-30)
 **Found:** 2026-10-08 by /audit independent (scope: step 9.3; lens: tests)
@@ -981,8 +983,9 @@ where bookTime throws once (a spy on one of its reads) followed by four
 bookings for that contact that all pass. Show each fails under the mutations
 above.
 **Resolution:** Fixed 2026-10-08 in 9.3's review fixes: the bookings route tests make two more businesses, a shop and one with no pipeline stage. "two businesses count the same email apart" (four at the clinic, then 201 at the shop) fails with one key for every business; "a booking that crashes does not count" (five crashes at the stageless business, each 500, never 429) fails with the crash hand-back removed.
+Closed 2026-10-08 by re-review of 9.3's fixes (scope: 21b8d6d..8e8a864): `bookingContactKeys("one-for-all", body.customer)` in the route fails "two businesses count the same email apart" (1 failed of 35); deleting the `.catch`'s `handBack()` fails "a booking that crashes does not count" (1 failed of 35). The stageless business crashes at book-time.ts:233, after the count is taken, so the test reaches the hand-back. Both extra businesses go in afterAll with the clinic; after a full run no `test-bookings-%` business is left and no row in any table with an organization_id points at a missing business. File restored, sha256 identical.
 
-### F-274 [P3] fixed - Code comments carry finding numbers and who agreed when, which the standards keep in the build log
+### F-274 [P3] closed - Code comments carry finding numbers and who agreed when, which the standards keep in the build log
 
 **File:** backend/lib/booking/find-booking-choices.ts:88-89,127; backend/lib/booking/find-booking-move-times.ts:80-81; backend/lib/rate-limit/create-rate-limiter.ts:3,12; backend/lib/rate-limit/public-rate-limiters.ts:1 (and eight test comments: book-time.test.ts:567, public-booking-move-routes.test.ts:281,332,346, public-booking-move-times-routes.test.ts:272, public-booking-page-routes.test.ts:155, public-bookings-routes.test.ts:351,386)
 **Found:** 2026-10-08 by /audit independent (scope: step 9.3, with the repairs of F-265 to F-269 it re-checked; lens: quality)
@@ -1001,3 +1004,28 @@ only its declaration).
 sentence each one ends (the rule stands without its number); delete
 `RateLimiterType`, or use it where the limiters are typed.
 **Resolution:** Fixed 2026-10-08 in 9.3's review fixes: the finding numbers are gone from the five source and eight test comments, each sentence kept; the who and when are gone from create-rate-limiter.ts and public-rate-limiters.ts; `RateLimiterType` is deleted. `git grep -E "F-[0-9]{2,3}|Oct 8" -- backend` finds nothing outside dist. The migration's F-06 stays: migrations are not edited.
+Closed 2026-10-08 by re-review of 9.3's fixes (scope: 21b8d6d..8e8a864): `git grep -n -E "F-[0-9]{2,3}|Oct 8" 8e8a864 -- backend ':!backend/dist'` finds nothing, and `git grep RateLimiterType` finds nothing in backend, packages or frontend. Each edited comment in find-booking-choices.ts:88-89,127, find-booking-move-times.ts:79-81 and the eight tests keeps its sentence with only the IDs gone; the decision references stay. `npx tsc --noEmit -p backend` passes.
+
+### F-275 [P3] fixed - Two copies of one form at the contact's last place: one books, the other is refused 429 for that same booking
+
+**File:** backend/lib/booking/book-time.ts:166-168 (the hand-back: backend/routes/public-bookings-routes.ts:68-77,99; the rules: current-feature.md decisions 8 and 9)
+**Found:** 2026-10-08 by /audit independent (scope: 9.3 review fixes; lens: correctness)
+**Why it matters:** F-271's fix looks up the form's booking before the
+limit is asked, which answers a resend sent after the first copy finished.
+A copy that arrives while the first is still being saved finds no booking
+yet, so both copies take a place; at the contact's last place the second is
+refused. Shown with a scratch test in the bookings route tests (removed
+after, sha256 identical), three runs of three: three bookings for one email,
+then one form for a fourth sent twice at once answered `201` with the
+booking and `429 too_many_tries`; the same form sent once more afterwards
+answered `201`. Decision 8 says a form sent again after a lost answer "gets
+its booking and never too many tries", and decision 9 that a retry gets "the
+booking that won". A retry made while the first request is still running (a
+slow Google read in the free check) at a contact's fourth booking is told
+"Too many tries" for a booking that exists. Below the last place the copies
+are counted once, as "copies of one form arriving together" shows.
+**Suggested fix:** Count a form once while it is in flight: keep the request
+keys being booked (per business), and let a copy whose key is already in
+flight through without a take of its own, so it ends at the constraint or
+the replay as now and hands back nothing. A route test like the probe above.
+**Resolution:** Fixed 2026-10-08 in 9.3's second review fixes: the contact limiter remembers which forms (request keys) it counted in each window, and a copy of a form already counted for every key passes with no count of its own (`take(keys, formKey)`, create-rate-limiter.ts); the route passes the form's request key. Because copies now share one count, a copy answered the form's booking (`alreadyBooked`) no longer hands it back, or the losing copy would free the place the winning one used; only a refusal or a crash hands it back, and a form handed back is no longer remembered. This replaces the `alreadyBooked` hand-back of F-271's fix. Tests: "copies of one form at the contact's last place all get the booking" (three bookings, then one form sent twice at once: both 201, one booking, the next form 429) and the unit tests "count once, and a different form is still refused at the limit" and "a form handed back is no longer counted". Mutations: no form key fails both copies route tests; handing back on `alreadyBooked` fails them in 2 of 3 runs (which copy wins the race decides it); keeping a handed-back form fails its unit test. Spec decision 8 says so.
