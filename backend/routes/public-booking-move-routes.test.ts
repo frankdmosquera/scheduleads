@@ -278,7 +278,7 @@ describe("moving a booking", () => {
   test("a move with nobody picked stays with her own person, though counting her own booking would favour another", async () => {
     const clinic = await makeClinic("own-count");
     // Ana has only Jane's own booking that day, Mei none. Jane stays with Ana: a move with nobody
-    // picked keeps its own person while free (F-263), so the count never decides this.
+    // picked keeps its own person while free, so the count never decides this.
     const response = await move(clinic.janesBooking, at(14));
 
     expect(response.status).toBe(200);
@@ -329,7 +329,7 @@ describe("moving a booking", () => {
   });
 
   // "Already there" is asked before the refusal, so a repeat naming her own person still answers
-  // the same (F-264).
+  // the same.
   test("a picked person on a service the business assigns, already there, answers the same", async () => {
     const clinic = await makeClinic("assigns-there");
     await db
@@ -343,7 +343,7 @@ describe("moving a booking", () => {
     expect(await movedEntries(clinic)).toEqual([]);
   });
 
-  // F-263: a time-only move keeps the booked person while free, though another has fewer bookings.
+  // A time-only move keeps the booked person while free, though another has fewer bookings.
   test.each(["business_assigns", "customer_picks"] as const)(
     "a move with nobody picked keeps her own person when free (%s)",
     async (personChoice) => {

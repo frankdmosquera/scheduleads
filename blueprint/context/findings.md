@@ -768,7 +768,7 @@ entry.
 **Resolution:** Fixed 2026-10-08 after 9.1b's review: public-booking-page-routes.test.ts "the page says who picks: a service the business assigns says business_assigns" and public-booking-move-routes.test.ts "a picked person on a service the business assigns, already there, answers the same". Proved: the review's two mutations (findBookingPage hardcoded to customer_picks; "already there" moved below the refusal) each fail their test; files restored.
 Closed 2026-10-08 by re-review of 9.1b's fixes (scope: d21a3e9..0ec47db): both claims are now pinned. findBookingPage answering `"customer_picks" as const` for every booking fails "the page says who picks: a service the business assigns says business_assigns" (public-booking-page-routes.test.ts:156, 1 failed of 11); the test works on its own business (made customer_picks, restored to customer_picks in `finally`), never the seeded painting-dev. Moving `if (alreadyThere(current))` below the person_not_taken refusal in move-booking.ts fails "a picked person on a service the business assigns, already there, answers the same" (public-booking-move-routes.test.ts:333, 1 failed of 24). That test repeats with her own person at her own time instead of the suggested move-then-switch, which pins the same order (200, sequence 0, no booking_moved entry). Both files restored by git checkout, sha256 identical.
 
-### F-265 [P3] fixed - A move with nobody picked hands the booking to someone else when her own person's calendar cannot be read
+### F-265 [P3] closed - A move with nobody picked hands the booking to someone else when her own person's calendar cannot be read
 
 **File:** backend/lib/booking/find-booking-choices.ts:84-92,137-146 (the move: backend/lib/booking/move-booking.ts:122-135,187,238-250)
 **Found:** 2026-10-08 by re-review of 9.1b's fixes (scope: d21a3e9..0ec47db; lenses: quality, security, performance, tests)
@@ -797,8 +797,9 @@ handing over; or accept the hand-over as any available's rule and say so in
 the spec. Either way a route test like the probe above.
 **Resolution:** Fixed 2026-10-08 under Frank's F-263 decision ("someone else only if her person is busy"; an unreadable calendar is not busy): findBookingChoices answers `unavailable` (the move's 503, "try again") when a move names nobody and its own person's calendar cannot be read, before any other person is tried. Test: public-booking-move-routes.test.ts "a move with nobody picked answers try again when her own person's calendar cannot be read" (503, the booking unchanged); proved: removing the check fails it.
 Re-reviewed 2026-10-08 by independent review of 9.2 (scope: ef70707..d1c13c6, with the repair in 0ec47db..ef70707); stays fixed, for F-269. What holds: the move itself no longer hands the booking over. find-booking-choices.ts:90-92 answers `unavailable` when a move names nobody and its own person is among the candidates with an unreadable calendar; a person who no longer offers the service gives `indexOf` -1, so the move goes on to whoever is free, as decision 14's fallback says; bookTime never passes `movingBooking`, so a new booking is untouched. Removing the two lines fails the new test (1 failed of 25; file restored, sha256 identical). What does not hold: the repair made the move refuse while the move page's times, asked with nobody picked, still list the other people's times, so every time offered then answers "try again" (F-269).
+Closed 2026-10-08 by the review of step 9.3 (scope: 3de57a5..21b8d6d): the hand-over stays fixed. find-booking-choices.ts:90-91 answers `unavailable` before any other person is tried when a move names nobody and its own person's calendar cannot be read. Removing those two lines fails "a move with nobody picked answers try again when her own person's calendar cannot be read" (public-booking-move-routes.test.ts:363, 1 failed of 25); file restored, sha256 identical. The page side is F-269, closed in the same pass. The finding number the repair left in the comment at :89 is F-274.
 
-### F-266 [P3] fixed - The day's counts no longer need to leave out the moving booking, so 7b/F-142's guard and its test pin nothing
+### F-266 [P3] closed - The day's counts no longer need to leave out the moving booking, so 7b/F-142's guard and its test pin nothing
 
 **File:** backend/lib/booking/find-booking-choices.ts:120-131 (the test: backend/routes/public-booking-move-routes.test.ts:278-286; the comment: :351)
 **Found:** 2026-10-08 by re-review of 9.1b's fixes (scope: d21a3e9..0ec47db; lenses: quality, security, performance, tests)
@@ -823,6 +824,7 @@ two bookings that day, Mei none".
 **Resolution:** Fixed 2026-10-08: the day counts no longer leave out the moving booking (find-booking-choices.ts, the comment says why: it is its own person's, first when free and not counted when busy); the room check keeps its filter. The 7b test "any available does not count the booking being moved" keeps its name and its outcome, its comment now says the own-person rule decides it; the new test's comment says "Mei none".
 Re-reviewed 2026-10-08 by independent review of 9.2 (scope: ef70707..d1c13c6, with the repair in 0ec47db..ef70707); stays fixed, for the test's title only. What holds: the day-row filter is gone (find-booking-choices.ts:128-133) and nothing depended on it: the day's counts read only `freePeople`, so the moving booking's rows count only for its own person, who goes first when free (:140-147) and is not in `freePeople` when busy; its room rows are never read there (the select is by person). `notTheMovingBooking` still guards the room check (:111). The comments at :125-127 and in both tests now say what decides. Backend 843 passed three times. What does not hold: the test is still titled "any available does not count the booking being moved" (public-booking-move-routes.test.ts:277), while the code now does count it; the title claims the guard this repair removed. Retitle it to what it shows (she stays with her own person while free), or fold it into the keep-own tests; then this closes.
 Fixed again 2026-10-08 after 9.2's review: the test is renamed "a move with nobody picked stays with her own person, though counting her own booking would favour another", which is what decides it now.
+Closed 2026-10-08 by the review of step 9.3 (scope: 3de57a5..21b8d6d): the test is titled "a move with nobody picked stays with her own person, though counting her own booking would favour another" (public-booking-move-routes.test.ts:278), which is what decides it; the day-row filter stays gone (find-booking-choices.ts:128-133) and the room check keeps `notTheMovingBooking`. Full backend suite 865 passed. The "(F-266)" the repair put in the comment at :127 is F-274.
 
 ### F-267 [P3] closed - The spec still says a customer_picks move is unchanged and a business_assigns move is plain any available; Frank's F-263 decision is in no plan file
 
@@ -845,7 +847,7 @@ F-263), plus whatever F-265 settles for an unreadable calendar.
 **Resolution:** Fixed 2026-10-08: step 9.1b in current-feature.md records Frank's F-263 decision and F-265 (a move with nobody picked keeps its own person while free under either setting; someone else only when busy; try again when their calendar cannot be read). The 7b archive is history and stays as written.
 Closed 2026-10-08 by independent review of 9.2 (scope: ef70707..d1c13c6): current-feature.md:180-183, inside step 9.1b, now reads "Amended after the step's review (Frank, 2026-10-08, F-263 option A): a move with nobody picked, under either setting, keeps the booking's own person while they are free; someone else only when they are busy, and 'try again' when their calendar cannot be read (F-265)", which is what find-booking-choices.ts:88-92 and :140-147 do. The older sentences above it ("A service the customer picks for is unchanged", "asks the times with nobody picked") stay, but the amendment follows them in the same step and names the decision, so the archived spec no longer says the opposite of the code. Leaving 7b's archive as written is right: it records 7b.
 
-### F-268 [P3] fixed - Two of 9.2's rules are pinned by no test: the answers checked after the form's own booking, and the owner's booking needing none
+### F-268 [P3] closed - Two of 9.2's rules are pinned by no test: the answers checked after the form's own booking, and the owner's booking needing none
 
 **File:** backend/lib/booking/book-time.ts:185-191 (the replay it must follow: :161-162)
 **Found:** 2026-10-08 by independent review of 9.2 (scope: ef70707..d1c13c6; lenses: quality, security, performance, tests)
@@ -870,8 +872,9 @@ question required (or delete one), resend the same form, expect 200 with
 business with a required question, no answers, expect booked and
 `lead.answers` `[]`. Show each fails under the mutation above.
 **Resolution:** Fixed 2026-10-08 after 9.2's review: public-bookings-routes.test.ts "a booked form sent again after a required question was added still gets its booking" and book-time.test.ts "a customer must answer a required question; the owner need not" (the owner's lead keeps []). Proved: moving the answer check above the replay fails the first only; requiring answers for every source fails the second only.
+Closed 2026-10-08 by the review of step 9.3 (scope: 3de57a5..21b8d6d): both rules are pinned. A copy of the answer check inserted above `const earlier = await bookedByThisForm()` (book-time.ts:161) fails only "a booked form sent again after a required question was added still gets its booking" (public-bookings-routes.test.ts:352); `requireAnswers: true` for every source fails only "a customer must answer a required question; the owner need not" (book-time.test.ts); each run 1 failed of 54, file restored, sha256 identical.
 
-### F-269 [P3] fixed - With her own person's calendar unreadable, the move page still lists other people's times, and every one of them answers "try again"
+### F-269 [P3] closed - With her own person's calendar unreadable, the move page still lists other people's times, and every one of them answers "try again"
 
 **File:** backend/lib/booking/find-booking-move-times.ts:64-77 (the move's refusal: backend/lib/booking/find-booking-choices.ts:88-92; any available leaving an unreadable person out: backend/lib/scheduling/find-free-times.ts:145-155)
 **Found:** 2026-10-08 by independent review of 9.2 (scope: ef70707..d1c13c6, F-265's repair in it; lenses: quality, security, performance, tests)
@@ -898,8 +901,9 @@ phone). A route test like the probe above, expecting 503 from the times. This
 only makes Frank's F-263/F-265 decision hold on the page as well as on the
 move.
 **Resolution:** Fixed 2026-10-08 after 9.2's review, as suggested: findBookingMoveTimes, with nobody picked, also reads her own person's times beside the any-available ones, so an unreadable calendar throws as any unreadable read and the route answers 503 "try again", the same as the move. Test: public-booking-move-times-routes.test.ts "with nobody picked, her own person's unreadable calendar answers 503, though another is free"; proved: dropping the second read fails it only.
+Closed 2026-10-08 by the review of step 9.3 (scope: 3de57a5..21b8d6d): find-booking-move-times.ts:82-85 asks her own person's times beside the any-available ones when nobody is picked, so an unreadable calendar throws CalendarUnavailableError and the route answers 503, as the move does. A person who no longer offers the service makes findFreeTimes answer null (find-free-times.ts:76), which the destructuring ignores, so decision 14's fallback still lists the others. Replacing the second read with `null` fails "with nobody picked, her own person's unreadable calendar answers 503, though another is free" (public-booking-move-times-routes.test.ts:274, 1 failed of 17); file restored, sha256 identical.
 
-### F-270 [P3] fixed - BookingQuestionType lives in check-answers.ts, not in find-booking-questions.ts which produces it
+### F-270 [P3] closed - BookingQuestionType lives in check-answers.ts, not in find-booking-questions.ts which produces it
 
 **File:** backend/lib/booking/check-answers.ts:7 (its producer imports it back: backend/lib/booking/find-booking-questions.ts:9,11)
 **Found:** 2026-10-08 by independent review of 9.2 (scope: ef70707..d1c13c6; lenses: quality, security, performance, tests)
@@ -911,3 +915,89 @@ find-booking-questions.ts and finds only an import.
 **Suggested fix:** Move `BookingQuestionType` into find-booking-questions.ts
 and import it in check-answers.ts (type-only, no cycle).
 **Resolution:** Fixed 2026-10-08 after 9.2's review: BookingQuestionType moved to find-booking-questions.ts, which returns it; check-answers.ts imports it.
+Closed 2026-10-08 by the review of step 9.3 (scope: 3de57a5..21b8d6d): `BookingQuestionType` is declared in find-booking-questions.ts:10 beside findBookingQuestions, which returns it, and check-answers.ts:7 imports it type-only; `git grep` finds no other declaration. Backend build passes.
+
+### F-271 [P2] fixed - A booked form sent again counts against its contact, and at the limit it is refused 429 instead of getting its booking
+
+**File:** backend/routes/public-bookings-routes.ts:63-69,89-90 (the replay it runs ahead of: backend/lib/booking/book-time.ts:151-162; the rules: current-feature.md decisions 8 and 9)
+**Found:** 2026-10-08 by /audit independent (scope: step 9.3; lens: correctness)
+**Why it matters:** The contact is counted before bookTime and given back
+only when `booked` is false. A form already booked comes back from bookTime's
+replay as `booked: true, alreadyBooked: true`, so each resend is counted as a
+new booking, and once the contact is at 4 the resend never reaches the
+replay: the route answers 429. Decision 8, amended in this step, says "only
+bookings made count against the contact", and decision 9 says a retry after a
+lost answer gets the booking that won, the order F-258 settled for the person
+check and F-268 for the answers. Shown with scratch tests in the bookings
+route tests (removed after, sha256 identical): one form sent four times
+answered 201 each time (the one booking, as "the same form sent twice" shows),
+then a new booking for the same email answered 429 with one booking made; four
+bookings for one email, then the fourth's form sent again, answered 429
+`too_many_tries` though it is booked. A customer whose answer was lost is told
+"Too many tries" for a booking that exists, and may call or book again.
+**Suggested fix:** Give the count back when `result.alreadyBooked` is true;
+and let a form's own booking answer before the contact's refusal (when the
+count refuses and the form carries a `requestKey`, look up its booking as
+bookTime's replay does, and answer it if it exists). Route tests like the two
+probes above, each shown able to fail.
+**Resolution:** Fixed 2026-10-08 in 9.3's review fixes: the contact is counted inside bookTime through `admitNewBooking`, asked just after the form's own booking is looked up (book-time.ts), so a form sent again is answered its booking before the limit is asked and is never counted; the route hands the count back when the booking is refused, crashes, or comes back `alreadyBooked` (copies of one form racing). Tests: "a form sent again gets its booking even at the limit, and resends never count" (fails with the limit asked before the look-up) and "copies of one form arriving together count as the one booking they make" (four at once, then three more book and the next is 429; fails 3 of 3 runs without the alreadyBooked hand-back, passes 3 of 3 with it). Spec decision 8 says so.
+
+### F-272 [P3] fixed - giveBack takes from whatever window is open when it runs, so a try that straddles a window's end frees a place in the next one
+
+**File:** backend/lib/rate-limit/create-rate-limiter.ts:51-57 (its caller: backend/routes/public-bookings-routes.ts:85,90)
+**Found:** 2026-10-08 by /audit independent (scope: step 9.3; lens: correctness)
+**Why it matters:** take counts a try in the key's open window; giveBack
+takes one off whichever window is open when it runs. When a booking is
+counted near the end of a contact's 10 minute window and refused after it
+ends, while another booking for the same contact has opened a new window,
+the refusal hands back a place it never took there. Shown with a scratch
+unit test (removed after, restored byte for byte): `most: 1`, a take, the
+clock moved one window, a second take allowed (window 2, count 1), giveBack
+for the first, then a third take in window 2 answered `{ allowed: true }`:
+two tries made in a window of one. Each straddling refusal lets one more
+booking through, so it needs a slow bookTime (a Google read) across the
+boundary with a second booking racing it. Small, but it is the one way the
+all-or-none count lets a contact past 4.
+**Suggested fix:** Let take report the window it counted each key in (its
+`endsAt`) and giveBack take off only a window with that same end; a unit
+test like the probe above.
+**Resolution:** Fixed 2026-10-08 in 9.3's review fixes: `take` answers where each key was counted (`taken`, its window's end) and `giveBack` takes off only a window with that same end. Test: "a try counted in a window that has ended frees nothing in the next one", the probe above; fails with the end check removed.
+
+### F-273 [P3] fixed - Two of 9.3's route rules are pinned by no test: each business counted apart, and the give-back on a crash
+
+**File:** backend/routes/public-bookings-routes.ts:64,84-86 (the tests: backend/routes/public-bookings-routes.test.ts:546-623, backend/lib/rate-limit/booking-contact-keys.test.ts:24-30)
+**Found:** 2026-10-08 by /audit independent (scope: step 9.3; lens: tests)
+**Why it matters:** The Done when lists "two businesses counted apart". It is
+shown only by bookingContactKeys' unit test; the route's wiring is free.
+Scratch mutation, restored after (sha256 identical):
+`bookingContactKeys("one-for-all", body.customer)` in the route passed every
+route and rate-limit test (242). With it, a contact's four bookings at Primo
+would refuse her at Face and Body. Second, removing the `.catch` give-back
+("a crash made no booking either") passed every route test (231), so a later
+edit could drop it and a contact would lose a place for each 500.
+**Suggested fix:** A route test booking one email four times in this file's
+clinic and once more in a second business it makes, expecting 201; and one
+where bookTime throws once (a spy on one of its reads) followed by four
+bookings for that contact that all pass. Show each fails under the mutations
+above.
+**Resolution:** Fixed 2026-10-08 in 9.3's review fixes: the bookings route tests make two more businesses, a shop and one with no pipeline stage. "two businesses count the same email apart" (four at the clinic, then 201 at the shop) fails with one key for every business; "a booking that crashes does not count" (five crashes at the stageless business, each 500, never 429) fails with the crash hand-back removed.
+
+### F-274 [P3] fixed - Code comments carry finding numbers and who agreed when, which the standards keep in the build log
+
+**File:** backend/lib/booking/find-booking-choices.ts:88-89,127; backend/lib/booking/find-booking-move-times.ts:80-81; backend/lib/rate-limit/create-rate-limiter.ts:3,12; backend/lib/rate-limit/public-rate-limiters.ts:1 (and eight test comments: book-time.test.ts:567, public-booking-move-routes.test.ts:281,332,346, public-booking-move-times-routes.test.ts:272, public-booking-page-routes.test.ts:155, public-bookings-routes.test.ts:351,386)
+**Found:** 2026-10-08 by /audit independent (scope: step 9.3, with the repairs of F-265 to F-269 it re-checked; lens: quality)
+**Why it matters:** coding-standards.md, Comments: "No history in code
+comments (step numbers, finding numbers, ...): that lives in the build log."
+Feature 9's repairs put bare IDs (F-258, F-263 to F-269) into five source
+comment lines and eight test comments, and this step adds "(Frank, Oct 8)"
+and "agreed by Frank on Oct 8". The IDs also go stale: /complete archives
+this ledger as 9/F-265 and the next ledger starts again at F-01, so a later
+F-265 would be a different finding from the one the code names. The decision
+references beside them ("7b decision 14", "feature 9, decision 8") are spec
+links and fine. Smaller, same lens: `RateLimiterType`
+(create-rate-limiter.ts:12) is exported and used nowhere (`git grep` finds
+only its declaration).
+**Suggested fix:** Drop the finding IDs and the who and when, keeping the
+sentence each one ends (the rule stands without its number); delete
+`RateLimiterType`, or use it where the limiters are typed.
+**Resolution:** Fixed 2026-10-08 in 9.3's review fixes: the finding numbers are gone from the five source and eight test comments, each sentence kept; the who and when are gone from create-rate-limiter.ts and public-rate-limiters.ts; `RateLimiterType` is deleted. `git grep -E "F-[0-9]{2,3}|Oct 8" -- backend` finds nothing outside dist. The migration's F-06 stays: migrations are not edited.

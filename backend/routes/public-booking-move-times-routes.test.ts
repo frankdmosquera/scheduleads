@@ -269,7 +269,7 @@ describe("free times for moving a booking", () => {
     expect(((await response.json()) as { error: { code: string } }).error.code).toBe("unavailable");
   });
 
-  // F-269: a move with nobody picked keeps her own person, so while their calendar cannot be read
+  // A move with nobody picked keeps her own person, so while their calendar cannot be read
   // the times say "try again" rather than list times that would all fail.
   test("with nobody picked, her own person's unreadable calendar answers 503, though another is free", async () => {
     const own = await makeClinic("own-unreadable");

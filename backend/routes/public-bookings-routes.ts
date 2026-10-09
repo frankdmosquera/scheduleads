@@ -21,6 +21,7 @@ import { personNotTaken } from "../lib/errors/person-not-taken.js";
 import { refuse } from "../lib/errors/refuse.js";
 import { tooManyTries } from "../lib/errors/too-many-tries.js";
 import { bookingContactKeys } from "../lib/rate-limit/booking-contact-keys.js";
+import type { RateLimitTakenType } from "../lib/rate-limit/create-rate-limiter.js";
 import { publicRateLimiters } from "../lib/rate-limit/public-rate-limiters.js";
 
 // Decision 10: a form with every field full is far below this, 20 full answers in any script
@@ -60,13 +61,20 @@ export const publicBookingsRoutes = new Hono()
       const organizationId = await findBookableOrganizationId(slug.data);
       if (!organizationId) return c.json(notBookableHere, 404);
 
-      // Counted before booking, so thirty sent at once cannot all pass; handed back if none is made.
+      // The contact's limit, counted inside bookTime just before a new booking is saved, so thirty
+      // sent at once cannot all pass, and handed back below when none is made.
       const contactKeys = bookingContactKeys(organizationId, body.customer);
-      const counted = publicRateLimiters.bookingContacts.take(contactKeys);
-      if (!counted.allowed) {
-        c.header("Retry-After", String(counted.retryAfterSeconds));
-        return c.json(tooManyTries, 429);
-      }
+      let taken: RateLimitTakenType | null = null;
+      let retryAfterSeconds = 0;
+      const admitNewBooking = () => {
+        const counted = publicRateLimiters.bookingContacts.take(contactKeys);
+        if (!counted.allowed) retryAfterSeconds = counted.retryAfterSeconds;
+        else taken = counted.taken;
+        return counted.allowed;
+      };
+      const handBack = () => {
+        if (taken) publicRateLimiters.bookingContacts.giveBack(taken);
+      };
 
       const result = await bookTime({
         organizationId,
@@ -81,13 +89,16 @@ export const publicBookingsRoutes = new Hono()
         source: "widget",
         actorUserId: null,
         now: new Date(),
+        admitNewBooking,
       }).catch((error: unknown) => {
-        publicRateLimiters.bookingContacts.giveBack(contactKeys); // a crash made no booking either
+        handBack(); // a crash made no booking either
         throw error;
       });
 
+      // Only a booking made counts: not a refusal, and not a form's booking answered again.
+      if (!result.booked || result.alreadyBooked) handBack();
+
       if (!result.booked) {
-        publicRateLimiters.bookingContacts.giveBack(contactKeys);
         switch (result.reason) {
           case "not_found":
             return c.json(notBookableHere, 404);
@@ -100,6 +111,9 @@ export const publicBookingsRoutes = new Hono()
             );
           case "answered_twice":
             return c.json(refuse("bad_request", "Each question takes one answer."), 400);
+          case "too_many_tries":
+            c.header("Retry-After", String(retryAfterSeconds));
+            return c.json(tooManyTries, 429);
           case "answer_needed":
             return c.json(refuse("bad_request", `Answer: ${result.question}`), 400);
           case "time_taken":

@@ -1,15 +1,17 @@
 // Backend: a counter of tries per key, in fixed windows, kept in the API's memory (feature 9,
 // decision 7). One API copy only: a second copy would keep a tally of its own, so the counts then
-// move to Redis, shared by both (Frank, Oct 8). Routes reach it only through take and giveBack, so
-// the store can change under them.
+// move to Redis, shared by both. Routes reach it only through take and giveBack, so the store can
+// change under them.
 
 import { rateLimitClock } from "./rate-limit-clock.js";
 
-export type RateLimitResultType = { allowed: true } | { allowed: false; retryAfterSeconds: number };
-
 export type RateLimitWindowType = { endsAt: number; count: number };
 
-export type RateLimiterType = ReturnType<typeof createRateLimiter>;
+// Where each key's try was counted, so giveBack takes it off that window and no later one.
+export type RateLimitTakenType = { key: string; windowEndsAt: number }[];
+
+export type RateLimitResultType =
+  { allowed: true; taken: RateLimitTakenType } | { allowed: false; retryAfterSeconds: number };
 
 export function createRateLimiter({ most, windowMs }: { most: number; windowMs: number }) {
   // A key's window starts at its first try and lasts windowMs; the next try after it starts anew.
@@ -39,20 +41,21 @@ export function createRateLimiter({ most, windowMs }: { most: number; windowMs: 
         const freeAt = Math.max(...full.map((window) => window!.endsAt));
         return { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil((freeAt - now) / 1000)) };
       }
-      keys.forEach((key, index) => {
-        const window = open[index];
+      const taken = keys.map((key, index) => {
+        let window = open[index];
         if (window) window.count += 1;
-        else windows.set(key, { endsAt: now + windowMs, count: 1 });
+        else windows.set(key, (window = { endsAt: now + windowMs, count: 1 }));
+        return { key, windowEndsAt: window.endsAt };
       });
-      return { allowed: true };
+      return { allowed: true, taken };
     },
 
     // Hands back tries that did not happen after all, such as a booking refused for a taken time.
-    giveBack(keys: string[]): void {
-      const now = rateLimitClock.now();
-      for (const key of keys) {
-        const window = openWindow(key, now);
-        if (window && window.count > 0) window.count -= 1;
+    // A window that has ended since is left alone: the try was never counted in the next one.
+    giveBack(taken: RateLimitTakenType): void {
+      for (const { key, windowEndsAt } of taken) {
+        const window = windows.get(key);
+        if (window && window.endsAt === windowEndsAt && window.count > 0) window.count -= 1;
       }
     },
 

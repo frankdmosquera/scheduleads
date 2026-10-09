@@ -25,7 +25,7 @@ describe("a window", () => {
     expect(limiter.take(["a"])).toEqual({ allowed: false, retryAfterSeconds: 40 });
 
     now += 40_000; // the window's end
-    expect(limiter.take(["a"])).toEqual({ allowed: true });
+    expect(limiter.take(["a"]).allowed).toBe(true);
   });
 
   test("never answers less than one second", () => {
@@ -55,11 +55,25 @@ describe("several keys at once", () => {
 });
 
 describe("giving back", () => {
+  const taken = (result: ReturnType<ReturnType<typeof createRateLimiter>["take"]>) => {
+    if (!result.allowed) throw new Error("The try was refused.");
+    return result.taken;
+  };
+
   test("a try handed back frees its place in the window", () => {
     const limiter = createRateLimiter({ most: 1, windowMs: MINUTE });
-    limiter.take(["a"]);
-    limiter.giveBack(["a"]);
+    limiter.giveBack(taken(limiter.take(["a"])));
     expect(limiter.take(["a"]).allowed).toBe(true);
+  });
+
+  test("a try counted in a window that has ended frees nothing in the next one", () => {
+    const limiter = createRateLimiter({ most: 1, windowMs: MINUTE });
+    const first = taken(limiter.take(["a"]));
+    now += MINUTE;
+    expect(limiter.take(["a"]).allowed).toBe(true); // the next window's one try
+
+    limiter.giveBack(first);
+    expect(limiter.take(["a"]).allowed).toBe(false);
   });
 });
 

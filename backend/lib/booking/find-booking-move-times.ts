@@ -77,8 +77,8 @@ export async function findBookingMoveTimes(input: {
       },
     });
   // A move with nobody picked keeps her own person while free, and "try again" while their
-  // calendar cannot be read (F-263, F-265): so the times say "try again" too, rather than list
-  // times that would all fail (F-269). Thrown as CalendarUnavailableError, as any unreadable read.
+  // calendar cannot be read: so the times say "try again" too, rather than list times that would
+  // all fail. Thrown as CalendarUnavailableError, as any unreadable read.
   const [times] = await Promise.all([
     ask(input.personId),
     input.personId === null ? ask(row.personId) : null,

@@ -85,8 +85,8 @@ export async function findBookingChoices(
   const states = await Promise.all(candidates.map(isFree)); // side by side, as the free times read them
   if (personId !== null && states[0] === "unreadable")
     return { found: false, reason: "unavailable" };
-  // A move with nobody picked keeps its own person while free (7b decision 14, F-263). Their
-  // calendar unreadable is not busy: "try again", never someone else in their place (F-265).
+  // A move with nobody picked keeps its own person while free (7b decision 14). Their calendar
+  // unreadable is not busy: "try again", never someone else in their place.
   const ownPerson = personId === null ? input.movingBooking?.personId : undefined;
   if (ownPerson && states[candidates.indexOf(ownPerson)] === "unreadable")
     return { found: false, reason: "unavailable" };
@@ -124,7 +124,7 @@ export async function findBookingChoices(
 
   // The order to try: fewest bookings that day, then name, then id, each person with the free rooms
   // by name; a move's own person first. The moving booking needs no leaving out of the counts: it
-  // is its own person's, who is first when free and not counted when busy (F-266).
+  // is its own person's, who is first when free and not counted when busy.
   const dayRows = await findCommitments(
     organizationId,
     freePeople,

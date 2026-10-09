@@ -56,6 +56,10 @@ const clinic = {
   luis: id(),
   kim: id(),
 };
+// Two more businesses, for the contact limits: a shop, counted apart from the clinic, and one with
+// no pipeline stage, where every booking fails as it must without one.
+const shop = { id: id(), slug: `test-bookings-shop-${tag}-dev`, quote: id(), sam: id() };
+const bare = { id: id(), slug: `test-bookings-bare-${tag}-dev`, quote: id(), sam: id() };
 const day = addDays(localDate(new Date(), "America/Edmonton"), 7); // inside the horizon, past notice
 const bookingsPath = `/public/${clinic.slug}/bookings`;
 let clinicDevFacialId = "";
@@ -175,6 +179,50 @@ beforeAll(async () => {
     resourceId: clinic.ana,
   });
 
+  for (const business of [shop, bare]) {
+    await db
+      .insert(organization)
+      .values({ id: business.id, name: `Test ${business.slug}`, slug: business.slug });
+    await db.insert(availabilityRule).values({
+      id: id(),
+      organizationId: business.id,
+      resourceId: null,
+      weeklyHours: {
+        mon: everyDay,
+        tue: everyDay,
+        wed: everyDay,
+        thu: everyDay,
+        fri: everyDay,
+        sat: everyDay,
+        sun: everyDay,
+      },
+      timezone: "America/Edmonton",
+      minimumNoticeMinutes: 0,
+      horizonDays: 30,
+      closedDates: [],
+    });
+    await db
+      .insert(resource)
+      .values({ id: business.sam, organizationId: business.id, name: "Sam", kind: "person" });
+    await db.insert(bookingLink).values({
+      id: business.quote,
+      organizationId: business.id,
+      name: "Quote",
+      slug: "quote",
+      durationMinutes: 60,
+      layout: "month",
+      personChoice: "customer_picks",
+    });
+    await db.insert(bookingLinkResource).values({
+      organizationId: business.id,
+      bookingLinkId: business.quote,
+      resourceId: business.sam,
+    });
+  }
+  await db
+    .insert(pipelineStage)
+    .values({ id: id(), organizationId: shop.id, name: "New", position: 0 });
+
   const clinicDev = await (await app.request("/public/clinic-dev/booking-links")).json();
   if (!clinicDev.bookingLinks) throw new Error("clinic-dev is missing: run npm run db:seed first.");
   clinicDevFacialId = clinicDev.bookingLinks[0].id;
@@ -183,7 +231,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await workDueJobs(); // no job outlives the database
   vi.unstubAllGlobals();
-  await db.delete(organization).where(inArray(organization.id, [clinic.id])); // its rows go with it
+  await db.delete(organization).where(inArray(organization.id, [clinic.id, shop.id, bare.id])); // its rows go with it
   await db.$client.end();
 });
 
@@ -348,7 +396,7 @@ describe("the business's own questions (feature 9)", () => {
     expect((await refusal(response)).message).toBe("Each question takes one answer.");
   });
 
-  // F-268: the form's own booking is looked up before its answers are judged (the F-258 lesson).
+  // The form's own booking is looked up before its answers are judged.
   test("a booked form sent again after a required question was added still gets its booking", async () => {
     const [startsAt] = await freeTimes(clinic.ana);
     const once = form(startsAt, { answers: [answerFor(allergies, "None")] });
@@ -383,7 +431,7 @@ describe("the business's own questions (feature 9)", () => {
 });
 
 describe("a booked form sent again after its service changed", () => {
-  // Decision 7: a form that booked gets that booking back, whatever changed since (F-258).
+  // Decision 7: a form that booked gets that booking back, whatever changed since.
   test("still gets its booking, after the business assigns and after the service is switched off", async () => {
     const [startsAt] = await freeTimes(clinic.mei);
     const once = form(startsAt, { personId: clinic.mei });
@@ -603,6 +651,80 @@ describe("a contact's limit: 4 bookings in 10 minutes (feature 9, decision 8)", 
       form(startsAt, { personId: clinic.mei, customer: parent })
     );
     expect([first.status, second.status]).toEqual([201, 201]);
+  });
+
+  test("a form sent again gets its booking even at the limit, and resends never count", async () => {
+    const onDay = addDays(day, 5);
+    const jane = { name: "Jane Doe", email: `resend-${tag}@example.com` };
+    const first = form(await firstFreeTime(clinic.mei, onDay), {
+      personId: clinic.mei,
+      customer: jane,
+    });
+    const booked = await (await post(bookingsPath, first)).json();
+    for (let count = 0; count < 3; count++) {
+      const again = await post(bookingsPath, first);
+      expect(again.status).toBe(201);
+      expect((await again.json()).booking.id).toBe(booked.booking.id);
+    }
+
+    // One booking made so far: three more new ones fit, and the fourth's form, sent again at the
+    // limit, still answers its booking.
+    for (let count = 0; count < 2; count++) expect((await bookFor(jane, onDay)).status).toBe(201);
+    const fourth = form(await firstFreeTime(clinic.mei, onDay), {
+      personId: clinic.mei,
+      customer: jane,
+    });
+    const fourthBooked = await (await post(bookingsPath, fourth)).json();
+    const fourthAgain = await post(bookingsPath, fourth);
+    expect(fourthAgain.status).toBe(201);
+    expect((await fourthAgain.json()).booking.id).toBe(fourthBooked.booking.id);
+    expect((await bookFor(jane, onDay)).status).toBe(429);
+  });
+
+  test("copies of one form arriving together count as the one booking they make", async () => {
+    const onDay = addDays(day, 8);
+    const jane = { name: "Jane Doe", email: `copies-${tag}@example.com` };
+    const copies = form(await firstFreeTime(clinic.mei, onDay), {
+      personId: clinic.mei,
+      customer: jane,
+    });
+    const answers = await Promise.all([1, 2, 3, 4].map(() => post(bookingsPath, copies)));
+    expect(answers.map((answer) => answer.status)).toEqual([201, 201, 201, 201]);
+
+    for (let count = 0; count < 3; count++) expect((await bookFor(jane, onDay)).status).toBe(201);
+    expect((await bookFor(jane, onDay)).status).toBe(429);
+  });
+
+  // The first free time at one of the two extra businesses, and a form for it.
+  async function quoteForm(business: typeof shop, onDay: string, customer: Record<string, string>) {
+    const response = await app.request(
+      `/public/${business.slug}/booking-links/${business.quote}/times?from=${onDay}&to=${onDay}&person=${business.sam}`
+    );
+    const [startsAt] = (await response.json()).startTimes;
+    return {
+      ...form(startsAt, { personId: business.sam, customer }),
+      bookingLinkId: business.quote,
+    };
+  }
+
+  test("two businesses count the same email apart", async () => {
+    const onDay = addDays(day, 6);
+    const jane = { name: "Jane Doe", email: `two-places-${tag}@example.com` };
+    for (let count = 0; count < 4; count++) expect((await bookFor(jane, onDay)).status).toBe(201);
+
+    const atShop = await post(`/public/${shop.slug}/bookings`, await quoteForm(shop, onDay, jane));
+    expect(atShop.status).toBe(201);
+  });
+
+  test("a booking that crashes does not count", async () => {
+    const jane = { name: "Jane Doe", email: `crash-${tag}@example.com` };
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    // Five fails, none refused as too many: each crash handed its count back.
+    for (let count = 0; count < 5; count++) {
+      const crashed = await post(`/public/${bare.slug}/bookings`, await quoteForm(bare, day, jane));
+      expect(crashed.status).toBe(500);
+    }
+    quiet.mockRestore();
   });
 
   test("a booking refused for a taken time does not count", async () => {

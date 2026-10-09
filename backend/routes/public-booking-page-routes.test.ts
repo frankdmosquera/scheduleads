@@ -152,7 +152,7 @@ afterAll(async () => {
 });
 
 describe("the customer's booking page", () => {
-  // The panel offers a pick only when this says so (feature 9, decision 3; F-264).
+  // The panel offers a pick only when this says so (feature 9, decision 3).
   test("the page says who picks: a service the business assigns says business_assigns", async () => {
     await db
       .update(bookingLink)

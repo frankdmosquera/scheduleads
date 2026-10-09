@@ -46,6 +46,9 @@ export type BookTimeInputType = {
   source: "widget" | "hosted" | "manual";
   actorUserId: string | null; // the owner's login when source is manual, checked here
   now: Date;
+  // The public route's contact limit: asked once the form is known not to have booked already, so
+  // a form sent again after a lost answer still gets its booking. False refuses this booking.
+  admitNewBooking?: () => boolean;
 };
 
 export type BookedType = {
@@ -72,7 +75,8 @@ export type BookTimeResultType =
         | "in_the_past"
         | "person_not_taken"
         | "unknown_question"
-        | "answered_twice";
+        | "answered_twice"
+        | "too_many_tries";
     }
   | { booked: false; reason: "answer_needed"; question: string }; // the question's words
 
@@ -83,6 +87,7 @@ const UNAVAILABLE = { booked: false, reason: "unavailable" } as const;
 const REQUEST_KEY_USED = { booked: false, reason: "request_key_used" } as const;
 const IN_THE_PAST = { booked: false, reason: "in_the_past" } as const;
 const PERSON_NOT_TAKEN = { booked: false, reason: "person_not_taken" } as const;
+const TOO_MANY_TRIES = { booked: false, reason: "too_many_tries" } as const;
 
 // The same form: the same service and start, and the same person when one was picked.
 const isSameRequest = (existing: BookedType, input: BookTimeInputType) =>
@@ -160,6 +165,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
     (await bookedByThisForm()) ?? refusal;
   const earlier = await bookedByThisForm();
   if (earlier) return earlier;
+  if (input.admitNewBooking && !input.admitNewBooking()) return TOO_MANY_TRIES;
 
   const [service] = await db
     .select({

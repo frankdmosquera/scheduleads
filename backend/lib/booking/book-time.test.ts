@@ -564,8 +564,7 @@ describe("booking a time", () => {
     expect((await rowsOf(clinic.business)).bookings).toHaveLength(1);
   });
 
-  // F-268: a customer answers the business's required questions; the owner, booking from a call,
-  // need not.
+  // A customer answers the business's required questions; the owner, booking from a call, need not.
   test("a customer must answer a required question; the owner need not", async () => {
     const clinic = await makeClinic("questions");
     const owner = await makeOwner(clinic, "questions");

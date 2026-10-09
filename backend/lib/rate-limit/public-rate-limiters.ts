@@ -1,4 +1,4 @@
-// Backend: the three limits on the public routes (feature 9, decision 8, agreed by Frank on Oct 8).
+// Backend: the three limits on the public routes (feature 9, decision 8).
 // A real customer uses a small part of each; a script from one address, or one contact, does not.
 
 import { createRateLimiter } from "./create-rate-limiter.js";
