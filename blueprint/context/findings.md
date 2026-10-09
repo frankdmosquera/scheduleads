@@ -1317,7 +1317,7 @@ Second re-review 2026-10-09 of 9.6's review fixes (scope: 8f28143..379d886), lef
 Third fix 2026-10-09: while unsure every problem keeps the lost-answer words; "too many tries" says "Too many tries. Wait a few minutes, then press Try again to find out whether your booking went through. It never books twice." The test now checks those words after the 429; it fails with the plain limit words.
 Closed 2026-10-09 by the third re-review of 9.6's review fixes (scope: 0db1191..70097a3): in booking-form-view.tsx a problem shown while `nowUnsure` takes `tooManyWhileUnsureWords` for "too many tries" and the lost-answer words for the other two kinds ("cannot-load" and "nothing-to-book", the only three in problemWords), always with Try again and the phone; a problem shown when not unsure keeps its plain words. Shown with a temporary jsdom test (removed): Book, no answer, Try again answered 429 shows "...to find out whether your booking went through. It never books twice."; Try again answered 404 now shows "...It may have gone through: press Try again to find out. It never books twice." beside Try again, not "Nothing can be booked online right now."; a 429 on a first Book, not unsure, still shows "Too many tries. Wait a few minutes." Breaking it fails "stays frozen on an answer that does not settle the form, and says it is checking" (1 failed, 69 passed), file restored from a copy, sha256 f5180dd4... before and after: the old rule (`answer.problem === "cannot-load" ? noAnswerWords : problemWords[answer.problem]`) and `tooManyWhileUnsureWords` swapped for the plain limit words each fail it. Not pinned by a test, only noted: the 404 while unsure, which the code gives the lost-answer words.
 
-### F-287 [P3] open - While Try again resends after a lost answer, screen two shows nothing at all: no button, no words, no sign it is sending
+### F-287 [P3] closed - While Try again resends after a lost answer, screen two shows nothing at all: no button, no words, no sign it is sending
 
 **File:** packages/booking-component/booking-window/screens/booking-form-view.tsx:96 (`setProblem(null)` at the start of each send) and :260 (Book drawn only when not `unsure`)
 **Found:** 2026-10-09 by re-review of 9.6's review fixes (scope: 134b281..4664807; lens: correctness)
@@ -1341,6 +1341,7 @@ Second re-review 2026-10-09 of 9.6's review fixes (scope: 8f28143..379d886), lef
 Third fix 2026-10-09: focus stays in the form while unsure, on the checking line while Try again waits and on the words once an answer keeps it unsure (both focusable, never outlined). The test checks focus is on the status while resending and inside the alert after the 429; it fails with the focus moves removed.
 Third re-review 2026-10-09 of 9.6's review fixes (scope: 0db1191..70097a3), left open: the code holds, half of it is pinned by no test. Holding, shown with a temporary jsdom test (removed): after a lost answer the focus is on the `sa-focus-place` div around the words, while Try again resends it is on the "Checking your booking…" status, and after a 429 that keeps it unsure it is back on that div, never on BODY. Nothing steals the focus when the form is not unsure: a first Book answered with a refusal or a 429 leaves it on Book, and a field error still puts it on the first wrong field (the effect returns while not `unsure`). The new `.sa-focus-place:focus { outline: none; }` follows `.sa-title:focus`, and no wider focus rule in booking-component.css outlines it. The focus on the status is pinned: dropping `checkingRef.current?.focus()`, or the whole effect, fails "stays frozen on an answer that does not settle the form, and says it is checking". Not holding: dropping `problemRef.current?.focus()` (the move onto the words once an answer keeps it unsure) leaves the suite green, 70 of 70 (booking-form-view.tsx restored from a copy, sha256 f5180dd4... before and after). The test's check, `alert.contains(document.activeElement) || document.activeElement?.contains(alert)`, also passes with the focus on BODY, because the page's body contains the alert. Needed: a check that fails on BODY, for example that `document.activeElement` is the `.sa-focus-place` wrapping the alert (or is not `document.body`), after the 429.
 Fourth fix 2026-10-09: the focus test now asks for the words' own place (`.sa-focus-place` around the alert), which the page never is; it fails with the words' focus removed.
+Closed 2026-10-09 by the fourth re-review of 9.6's review fixes (scope: 27d2e69..a17840e): booking-form-view.test.ts now checks `document.activeElement` is the `.sa-focus-place` wrapping the alert after the 429 (line 173) and after the route's 400 (line 189), a strict identity check that BODY can never pass. Breaking it fails the suite (booking-form-view.tsx copied aside and restored, sha256 409bcd61... before and after every break): dropping `problemRef.current?.focus()` fails "stays frozen on an answer that does not settle the form, and says it is checking" at line 173, focus on BODY (1 failed, 69 passed); dropping `checkingRef.current?.focus()` fails it at line 163. Both halves of the suggested fix are now pinned: the status while Try again waits, and the words once an answer keeps the form unsure.
 
 
 ### F-288 [P3] closed - Screen two's hidden Back during a lost answer is pinned by no test
@@ -1359,7 +1360,7 @@ until Try again is answered; shown able to fail with the line above.
 **Resolution:** Fixed 2026-10-09: booking-window.test.ts "hides Back to the times while a lost answer is unknown, and shows it again once settled" checks the rail's Back is drawn, gone after a 502, and the window back on screen one once the route settles it; fails with Back always drawn in month-details-screen.tsx.
 Closed 2026-10-09 by the second re-review of 9.6's review fixes (scope: 8f28143..379d886): booking-window.test.ts "hides Back to the times while a lost answer is unknown, and shows it again once settled" drives the real window: Back drawn on screen two, gone after a 502, and the route's 409 time_taken brings screen one back. The finding's own break, the rail's `back` given in both cases in month-details-screen.tsx, fails it (1 failed, 69 passed; sha256 37a96fa4... before and after the restore, identical). details-screen.tsx only renders MonthDetailsScreen, so this is the one Back on screen two.
 
-### F-289 [P3] open - After a lost answer, a refusal that settles the form drops the focus to the page
+### F-289 [P3] closed - After a lost answer, a refusal that settles the form drops the focus to the page
 
 **File:** packages/booking-component/booking-window/screens/booking-form-view.tsx:71-75 (the focus moves run only while `unsure`) and :290-294 (the checking line that holds the focus goes when the answer comes)
 **Found:** 2026-10-09 by the third re-review of 9.6's review fixes (scope: 0db1191..70097a3; lens: correctness)
@@ -1381,4 +1382,29 @@ it on screen two with a problem, move the focus onto the problem's words (the
 same `sa-focus-place` wrapper), so it never lands on the page; a test that
 checks the focus after that refusal is not BODY.
 **Resolution:** Fixed 2026-10-09: focus goes to the words whenever a send ends with words on screen, a refusal that settles the form included (a counter bumped with each set of words drives it), and to the checking line while Try again waits. booking-form-view.test.ts checks, after a lost answer, Try again and the route's 400 "Answer: Which colour?", that the words hold the focus; with the old rule (focus only while unsure) it fails there, focus on the page.
+Closed 2026-10-09 by the fourth re-review of 9.6's review fixes (scope: 27d2e69..a17840e): in booking-form-view.tsx every send that ends with words goes through `showWords`, which bumps `wordsShown`, and that effect focuses the `sa-focus-place` div around the alert; the checking line's effect now runs only while unsure and sending. Shown with temporary jsdom tests (removed): Book, no answer, Try again answered 409 request_key_used leaves the focus on the words, not BODY; a first Book refused, or answered 429, moves the focus from Book onto the words; while Try again waits after a lost answer the focus is on "Checking your booking…". Nothing steals the focus wrongly: a field error still focuses the first wrong field (Name), also after earlier words had the focus, because it never bumps `wordsShown`; the "too many answers" form error, which sends nothing, shows its words as an alert and leaves the focus on Book, never the page; in the whole window a booking or a taken time after a lost answer moves the focus to the new screen's heading ("You're booked", "Select a date & time"). Breaking it fails the suite (booking-form-view.tsx copied aside and restored, sha256 409bcd61... before and after): the old single effect (`if (!unsure) return;` then the checking line or the words) fails "stays frozen on an answer that does not settle the form, and says it is checking" at line 189, focus on BODY; the refusal shown with `setProblem` in place of `showWords` fails it at line 189 too. Only a note: the comment over `.sa-focus-place:focus` in booking-component.css still says "while a lost answer is unknown", though the place now takes the focus for any words after a send. One gap left outside this finding is F-290.
 
+### F-290 [P3] open - Try again outside a lost answer drops the focus to the page while it sends
+
+**File:** packages/booking-component/booking-window/screens/booking-form-view.tsx:73-75 (the checking line, and its focus, only while `unsure`) and :114 (`setProblem(null)` removes Try again, which had the focus)
+**Found:** 2026-10-09 by the fourth re-review of 9.6's review fixes (scope: 27d2e69..a17840e; lens: correctness)
+**Why it matters:** The new comment says focus never falls to the page,
+but Try again is also shown when the form is not unsure: after a first Book
+answered "too many tries", or the route's 503 "unavailable" (`canRetry`
+true). Pressing it clears the problem, so Try again and its focus go, and
+the checking line is not drawn because `unsure` is false. Shown with a
+temporary jsdom test (removed): a first Book answered 429 puts the focus on
+the words; with focus on Try again, pressing it leaves `document.activeElement`
+on BODY while the resend is held, with only "Booking…" (disabled, not
+focused) on screen. The focus comes back once the answer arrives (the words,
+or the next screen's heading), so it is the same gap F-287 closed for a lost
+answer, for up to the 10-second time limit: a keyboard user's place is lost
+the moment she presses, and a screen reader hears nothing while it sends.
+Rare: it needs a limit reached or the route's 503 first.
+**Suggested fix:** Keep the focus in the form whenever Try again resends,
+not only while unsure: for example move it to the "Booking…" button, or show
+the checking line (or a plain "Booking…" status) and focus it while any
+resend from Try again waits; a test that the focus is not BODY while a Try
+again after a first 429 is held. Then the comment's "never falls to the
+page" holds as written.
+**Resolution:**
