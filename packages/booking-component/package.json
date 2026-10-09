@@ -1,0 +1,34 @@
+{
+  "name": "@scheduleads-app/booking-component",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./booking-component.css": "./booking-component.css"
+  },
+  "scripts": {
+    "prebuild": "tsc -p ../shared/tsconfig.build.json && npm run build:types --workspace=backend",
+    "build": "tsc -p tsconfig.build.json",
+    "pretest": "tsc -p ../shared/tsconfig.build.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "dependencies": {
+    "@scheduleads-app/shared": "*",
+    "hono": "^4.13.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "backend": "*",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
+  }
+}

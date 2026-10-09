@@ -515,7 +515,11 @@ build it first through their own `predev` and `prebuild` hooks, so neither
 consumes it as TypeScript source. The frontend's hooks also run
 `npm run build:types --workspace=backend`, which writes the API's route types
 for the typed client, so a type error anywhere `backend/app.ts` reaches stops
-`npm run dev --workspace=frontend` and the frontend build too.
+`npm run dev --workspace=frontend` and the frontend build too. Then they
+compile `packages/booking-component` (the booking window client sites
+embed, feature 9), which reads only the public routes' type, `PublicAppType`.
+
+- Booking component build: `npm run build --workspace=@scheduleads-app/booking-component`
 
 Unit tests run on Vitest, a dev dependency of the workspace that holds the
 code under test. Test files sit beside the code as `*.test.ts` and are
@@ -526,6 +530,7 @@ step that adds logic adds its tests, and every step reruns them.
 - Shared package tests, rerunning on save: `npm run test:watch --workspace=@scheduleads-app/shared`
 - Backend tests: `npm run test --workspace=backend`
 - Backend tests, rerunning on save: `npm run test:watch --workspace=backend`
+- Booking component tests: `npm run test --workspace=@scheduleads-app/booking-component`
 
 Both backend commands rebuild `packages/shared` first (their `pre` scripts),
 because the route tests load its code, not only its types. Since step 2.4 the

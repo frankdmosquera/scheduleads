@@ -247,7 +247,7 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   two businesses counted apart, and a parent booking two children at the
   same time both booked; suites pass.
 
-- [ ] **9.4 The package, the provider and the service list.**
+- [x] **9.4 The package, the provider and the service list.**
   Backend: `PublicAppType`, the type of a Hono app holding only the
   `/public` routes, exported beside `AppType` through `build:types`, so the
   package never sees admin or dashboard route shapes.
@@ -280,7 +280,17 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   on the booking preview page with clinic-dev, Book now opens the service list,
   Escape closes it and focus is back on the button; a service button opens
   that service; a slug with no services shows the empty words; nothing on
-  screen names the provider.
+  screen names the provider; the look switch moves the window between the
+  agency's look and Primo's (added with Frank at the plan, Oct 9).
+  Amended while building (Oct 9): the package also declares `typescript`,
+  `@types/react` and `backend` (for `PublicAppType`, build time only) as dev
+  dependencies, all already in the repo (Frank's yes, Oct 9). The phone shows
+  wherever the business was read; when even the business could not be read
+  (the first call failed) there is no phone to show. "Nothing to book" has no
+  Try again. The preview page's not-found is Next's own 404 page, reached
+  after the session check in the browser, so its HTTP status is 200. The week
+  strip's classes in `widget.css` were not ported (decision 4 parks that
+  layout).
 
 - [ ] **9.5 Screen one: pick a time.**
   The left rail: the business's logo (or its name), the service and its
