@@ -505,6 +505,10 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
    same choice), or it is only saved on the contact for later messages and
    booking texts go as now. Decided before step 9.6.
 
+Note for feature 12 (Frank, Oct 9, at step 9.6): whether the form asks for
+an address becomes the business's setting; until then every booking
+requires one, as the API has since 5d. Written into item 12 of the build plan.
+
 Note for later (Oct 8, not this feature): the limits stop a script from one
 address, not one that keeps changing addresses, emails and phones. The usual
 next layer is an invisible bot check on the Book button; no plan holds it.

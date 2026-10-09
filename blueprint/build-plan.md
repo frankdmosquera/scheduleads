@@ -289,6 +289,12 @@ without Frank touching the database.
     own questions (up to about 20) under the standard ones, starting from a
     ready-made set for the trade (painting, clinic), and picks whether the
     form requires an email, a phone, or either one.
+  - Whether the form asks for an address (9.6, Frank, Oct 9): asked and
+    required, asked and optional, or not asked, per business. Until then
+    every booking requires one, the API's rule since 5d, so a clinic's
+    customers are asked for an address it does not need.
+  - Whether screen two asks for the yes to later texts (9.7, decision 13),
+    and what the business later sends with it.
   - Each person's own work email (6, decision 8, Frank, Oct 2): optional, at
     the business's domain (pedro@primopainters.com). When set, the
     customer's confirmation lets them reply straight to the booked person,
