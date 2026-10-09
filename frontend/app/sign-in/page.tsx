@@ -14,7 +14,9 @@ import {
   signInEmailValidationSchema,
 } from "@scheduleads-app/shared/zod-validation";
 
-import { AuthCard, Field, Notice } from "@/components/auth-card";
+import { CentredCard } from "@/components/centred-card/centred-card";
+import { CentredCardField } from "@/components/centred-card/centred-card-field";
+import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
@@ -65,7 +67,7 @@ function EmailStep({
   }
 
   return (
-    <AuthCard
+    <CentredCard
       title="Sign in"
       lede="Enter your email and we will send you a code. No password to remember."
     >
@@ -74,7 +76,7 @@ function EmailStep({
           name="email"
           control={form.control}
           render={({ field, fieldState }) => (
-            <Field
+            <CentredCardField
               {...field}
               id="email"
               label="Email"
@@ -86,12 +88,12 @@ function EmailStep({
             />
           )}
         />
-        {refusal ? <Notice>{refusal}</Notice> : null}
+        {refusal ? <CentredCardNotice>{refusal}</CentredCardNotice> : null}
         <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? "Sending…" : "Send me a code"}
         </Button>
       </form>
-    </AuthCard>
+    </CentredCard>
   );
 }
 
@@ -119,7 +121,7 @@ function CodeStep({ email, onDifferentEmail }: { email: string; onDifferentEmail
   }
 
   return (
-    <AuthCard
+    <CentredCard
       title="Check your email"
       lede={
         <>
@@ -142,7 +144,7 @@ function CodeStep({ email, onDifferentEmail }: { email: string; onDifferentEmail
           name="code"
           control={form.control}
           render={({ field, fieldState }) => (
-            <Field
+            <CentredCardField
               {...field}
               id="code"
               label="Login code"
@@ -156,11 +158,11 @@ function CodeStep({ email, onDifferentEmail }: { email: string; onDifferentEmail
             />
           )}
         />
-        {refusal ? <Notice>{refusal}</Notice> : null}
+        {refusal ? <CentredCardNotice>{refusal}</CentredCardNotice> : null}
         <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? "Checking…" : "Sign in"}
         </Button>
       </form>
-    </AuthCard>
+    </CentredCard>
   );
 }

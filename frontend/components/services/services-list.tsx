@@ -5,11 +5,11 @@
 
 import { useEffect, useState } from "react";
 
-import { Notice } from "@/components/auth-card";
+import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { Button } from "@/components/ui/button";
 import { fetchBookingLinks, type BookingLinksResultType } from "@/lib/api-client";
 
-export function BookingLinksList({ slug }: { slug: string }) {
+export function ServicesList({ slug }: { slug: string }) {
   const [result, setResult] = useState<BookingLinksResultType | null>(null);
 
   // Bump to ask again, on "Try again".
@@ -60,7 +60,7 @@ function BookingLinksBody({
   if (result.state === "unreachable") {
     return (
       <>
-        <Notice>{result.message}</Notice>
+        <CentredCardNotice>{result.message}</CentredCardNotice>
         <Button className="mt-4" onClick={onRetry}>
           Try again
         </Button>

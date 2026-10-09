@@ -105,7 +105,7 @@ repo. Wiring it into the agency's own site is feature 10.
 - The package: `BookingProvider`, `useBooking()`, `BookNowTrigger`, the modal,
   its CSS on `--sa-*` tokens, the month layout's three screens and the done
   screen, with every state below.
-- A try page for the platform admin, `/admin/try-booking/[slug]`, hosting the
+- A try page for the platform admin, `/admin/booking-preview/[businessSlug]`, hosting the
   component in the agency's and Primo's tokens from `prototypes/`.
 - The plans: open question 15 moved to decided, the build plan's "open until
   this item's spec" line answered.
@@ -259,12 +259,12 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   and the business's phone as a call link when it has one); a service id
   that is not offered (the same words); cannot load or too many tries (the
   message, Try again, and the phone).
-  Frontend: the workspace dependency, and `/admin/try-booking/[slug]` for the
+  Frontend: the workspace dependency, and `/admin/booking-preview/[businessSlug]` for the
   platform admin only (anyone else gets the same not-found as a wrong
   address), a plain host page with a Book now button, one button per
   service, and a switch between the agency's and Primo's tokens.
   **Done when:** the package builds and its tests pass; the frontend builds;
-  on the try page with clinic-dev, Book now opens the service list,
+  on the booking preview page with clinic-dev, Book now opens the service list,
   Escape closes it and focus is back on the button; a service button opens
   that service; a slug with no services shows the empty words; nothing on
   screen names the provider.
@@ -283,7 +283,7 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   "9:30 AM").
   Logic, in plain functions with tests: the month's grid, grouping times by
   day in the business's zone, the month bounds from today and the horizon.
-  **Done when:** those tests pass, and on the try page with clinic-dev
+  **Done when:** those tests pass, and on the booking preview page with clinic-dev
   (customer picks) and painting-dev (business assigns) a time can be picked,
   each state is shown by a real case where one exists (a closed day, a month
   past the horizon), and screenshots of both themes are taken.
@@ -304,7 +304,7 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   when an email was given. Closing and opening again starts a new form.
   User text (the customer's own and the business's labels) is rendered as
   text only.
-  **Done when:** on the try page a real booking is made in clinic-dev with
+  **Done when:** on the booking preview page a real booking is made in clinic-dev with
   answers, and the lead, its answers and the booking are in the database;
   pressing Book twice quickly makes one booking; a taken time (booked from a
   second tab) shows the taken message with fresh times; each field error
@@ -330,7 +330,7 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
   `backend/tsconfig.types.json`, `backend/package.json` (the
   `PublicAppType` export).
 - New `packages/booking-component/`.
-- `frontend/package.json`, a new `frontend/app/admin/try-booking/[slug]/`.
+- `frontend/package.json`, a new `frontend/app/admin/booking-preview/[businessSlug]/`.
 - `blueprint/project-plan.md`, `blueprint/build-plan.md`,
   `blueprint/context/project-overview.md` (step 9.1's plan lines).
 
@@ -372,7 +372,7 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
 - Package (Vitest, new in 9.4): the month grid, grouping by day in a zone,
   month bounds, the request key's lifetime.
 - No browser test harness exists (`Browser tests` not declared), so the
-  screens are checked by hand on the try page with screenshots, named as
+  screens are checked by hand on the booking preview page with screenshots, named as
   such in each report, not claimed as automated.
 - No `Verify` command exists; each step runs the shared and backend suites,
   the package's tests, and the frontend build.
@@ -387,7 +387,7 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
 - The public routes stay one identical "not here" for an unknown business,
   service or inactive service; the new people list never reveals a person's
   login, email or phone.
-- The package does not import from `frontend/`; the try page imports the
+- The package does not import from `frontend/`; the booking preview page imports the
   package, never the other way.
 - 8b's texts, 6's emails and 7's links are unchanged by 9.1 to 9.6.
 - Only a note for feature 10: no `agents-web` folder exists on this laptop;

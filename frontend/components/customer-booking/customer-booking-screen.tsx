@@ -24,7 +24,7 @@ import { ChangeTimePanel, type CannotMoveType } from "./change-time-panel";
 // What the Cancel area is doing: showing the button, asking once more, or sending.
 type CancelStepType = "button" | "confirm" | "sending";
 
-export function BookingPage({ token }: { token: string }) {
+export function CustomerBookingScreen({ token }: { token: string }) {
   const [result, setResult] = useState<BookingPageResultType | null>(null);
   const [reloads, setReloads] = useState(0);
   const retried = useRef(false); // after "Try again", focus goes to the next screen's heading

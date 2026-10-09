@@ -7,11 +7,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { AuthCard, Notice } from "@/components/auth-card";
-import { BookingLinksList } from "@/components/booking-links/booking-links-list";
+import { CentredCard } from "@/components/centred-card/centred-card";
+import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
+import { ServicesList } from "@/components/services/services-list";
 import { CalendarConnectionCard } from "@/components/calendar/calendar-connection-card";
 import { EmailSendingCard } from "@/components/email-sending/email-sending-card";
-import { SignOutLink } from "@/components/sign-out-link";
+import { SignOutLink } from "@/components/auth/sign-out-link";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { fetchMe, type MeResultType } from "@/lib/api-client";
@@ -42,9 +43,9 @@ export default function DashboardPage() {
 
   if (!result) {
     return (
-      <AuthCard title="One moment">
+      <CentredCard title="One moment">
         <p className="text-sm text-muted-foreground">Loading your business…</p>
-      </AuthCard>
+      </CentredCard>
     );
   }
 
@@ -57,26 +58,26 @@ export default function DashboardPage() {
 
     case "plan-refused":
       return (
-        <AuthCard
+        <CentredCard
           title="This account needs attention"
           lede="Your business is on a plan this dashboard does not recognise, so there is nothing safe to show you."
           footer={<SignOutLink />}
         >
-          <Notice>{result.message}</Notice>
+          <CentredCardNotice>{result.message}</CentredCardNotice>
           <p className="mt-4 text-sm text-muted-foreground">
             Nothing is lost. Get in touch and we will put the account back on the right plan.
           </p>
-        </AuthCard>
+        </CentredCard>
       );
 
     case "unreachable":
       return (
-        <AuthCard title="Cannot reach the API">
-          <Notice>{result.message}</Notice>
+        <CentredCard title="Cannot reach the API">
+          <CentredCardNotice>{result.message}</CentredCardNotice>
           <Button className="mt-4 w-full" size="lg" onClick={reload}>
             Try again
           </Button>
-        </AuthCard>
+        </CentredCard>
       );
 
     case "ok":
@@ -93,9 +94,9 @@ function SignedOut() {
   }, [router]);
 
   return (
-    <AuthCard title="Taking you to sign in">
+    <CentredCard title="Taking you to sign in">
       <p className="text-sm text-muted-foreground">One moment…</p>
-    </AuthCard>
+    </CentredCard>
   );
 }
 
@@ -156,26 +157,26 @@ function PickOrganization({ onPicked }: { onPicked: () => void }) {
 
   if (!organizations) {
     return (
-      <AuthCard title="One moment">
+      <CentredCard title="One moment">
         <p className="text-sm text-muted-foreground">Looking up your businesses…</p>
-      </AuthCard>
+      </CentredCard>
     );
   }
 
   if (noBusiness) {
     return (
-      <AuthCard
+      <CentredCard
         title="Your login has no business yet"
         lede="The agency sets up your business for you. Get in touch with them and it will be here the next time you sign in."
         footer={<SignOutLink />}
       >
         <p className="text-sm text-muted-foreground">There is nothing to show until then.</p>
-      </AuthCard>
+      </CentredCard>
     );
   }
 
   return (
-    <AuthCard
+    <CentredCard
       title="Which business?"
       lede="You belong to more than one, so we will not guess. Pick the one you are working in."
       footer={<SignOutLink />}
@@ -200,9 +201,9 @@ function PickOrganization({ onPicked }: { onPicked: () => void }) {
             </span>
           </button>
         ))}
-        {refusal ? <Notice>{refusal}</Notice> : null}
+        {refusal ? <CentredCardNotice>{refusal}</CentredCardNotice> : null}
       </div>
-    </AuthCard>
+    </CentredCard>
   );
 }
 
@@ -247,7 +248,7 @@ function SignedIn({
           </p>
         </div>
 
-        <BookingLinksList slug={me.organization.slug} />
+        <ServicesList slug={me.organization.slug} />
 
         <CalendarConnectionCard />
 

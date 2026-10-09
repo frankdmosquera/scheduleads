@@ -10,7 +10,7 @@ import {
   type CalendarConnectOutcomeType,
 } from "@scheduleads-app/shared/calendar";
 
-import { Notice } from "@/components/auth-card";
+import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { Button } from "@/components/ui/button";
 import {
   disconnectCalendar,
@@ -141,7 +141,7 @@ export function CalendarConnectionCard() {
 
       {notice ? (
         <div className="mt-6">
-          <Notice tone={notice.tone}>{notice.text}</Notice>
+          <CentredCardNotice tone={notice.tone}>{notice.text}</CentredCardNotice>
         </div>
       ) : null}
 
@@ -155,7 +155,7 @@ export function CalendarConnectionCard() {
         />
         {refusal ? (
           <div className="mt-4">
-            <Notice>{refusal}</Notice>
+            <CentredCardNotice>{refusal}</CentredCardNotice>
           </div>
         ) : null}
       </div>
@@ -193,7 +193,7 @@ function CalendarConnectionBody({
   if (result.state === "unreachable") {
     return (
       <div className="flex items-center justify-between gap-4">
-        <Notice>{result.message}</Notice>
+        <CentredCardNotice>{result.message}</CentredCardNotice>
         <Button variant="outline" size="sm" onClick={onRetry}>
           Try again
         </Button>

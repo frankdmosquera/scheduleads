@@ -7,14 +7,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { NewClientForm } from "@/components/admin/new-client-form";
-import { AuthCard } from "@/components/auth-card";
+import { ClientSetupForm } from "@/components/admin/client-setup-form";
+import { CentredCard } from "@/components/centred-card/centred-card";
 import { authClient } from "@/lib/auth-client";
 import { isPlatformAdmin } from "@/lib/is-platform-admin";
 
 type ViewerType = "checking" | "someone-else" | { hasBusiness: boolean };
 
-export default function NewClientPage() {
+export default function ClientSetupPage() {
   const router = useRouter();
   const [viewer, setViewer] = useState<ViewerType>("checking");
 
@@ -45,15 +45,15 @@ export default function NewClientPage() {
 
   if (viewer === "checking") {
     return (
-      <AuthCard title="One moment">
+      <CentredCard title="One moment">
         <p className="text-sm text-muted-foreground">Checking your session…</p>
-      </AuthCard>
+      </CentredCard>
     );
   }
 
   if (viewer === "someone-else") {
     return (
-      <AuthCard
+      <CentredCard
         title="This page is for the agency"
         lede="Setting up a client's business is done by the agency."
         footer={
@@ -63,9 +63,9 @@ export default function NewClientPage() {
         }
       >
         <p className="text-sm text-muted-foreground">There is nothing to do here.</p>
-      </AuthCard>
+      </CentredCard>
     );
   }
 
-  return <NewClientForm hasBusiness={viewer.hasBusiness} />;
+  return <ClientSetupForm hasBusiness={viewer.hasBusiness} />;
 }

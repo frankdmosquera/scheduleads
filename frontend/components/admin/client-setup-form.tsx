@@ -13,8 +13,10 @@ import {
   type ProvisionClientInputType,
 } from "@scheduleads-app/shared/zod-validation";
 
-import { AuthCard, Field, Notice } from "@/components/auth-card";
-import { SignOutLink } from "@/components/sign-out-link";
+import { CentredCard } from "@/components/centred-card/centred-card";
+import { CentredCardField } from "@/components/centred-card/centred-card-field";
+import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
+import { SignOutLink } from "@/components/auth/sign-out-link";
 import { Button } from "@/components/ui/button";
 import { provisionClient, type ProvisionedClientType } from "@/lib/api-client";
 
@@ -96,7 +98,7 @@ function AdminFooter({ hasBusiness }: { hasBusiness: boolean }) {
   );
 }
 
-export function NewClientForm({ hasBusiness }: { hasBusiness: boolean }) {
+export function ClientSetupForm({ hasBusiness }: { hasBusiness: boolean }) {
   const [done, setDone] = useState<ProvisionedClientType | null>(null);
   const [refusal, setRefusal] = useState<string | null>(null);
 
@@ -134,7 +136,7 @@ export function NewClientForm({ hasBusiness }: { hasBusiness: boolean }) {
   }
 
   return (
-    <AuthCard
+    <CentredCard
       title="Set up a client"
       lede="Makes the client's login and their business together. The client is its owner; you are not a member."
       footer={<AdminFooter hasBusiness={hasBusiness} />}
@@ -154,7 +156,7 @@ export function NewClientForm({ hasBusiness }: { hasBusiness: boolean }) {
               name={field.name}
               control={form.control}
               render={({ field: input, fieldState }) => (
-                <Field
+                <CentredCardField
                   {...input}
                   id={field.name}
                   label={field.label}
@@ -167,12 +169,12 @@ export function NewClientForm({ hasBusiness }: { hasBusiness: boolean }) {
             />
           </Fragment>
         ))}
-        {refusal ? <Notice>{refusal}</Notice> : null}
+        {refusal ? <CentredCardNotice>{refusal}</CentredCardNotice> : null}
         <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? "Setting up…" : "Set up client"}
         </Button>
       </form>
-    </AuthCard>
+    </CentredCard>
   );
 }
 
@@ -189,20 +191,20 @@ function SetUpCard({
   const signInAddress = `${window.location.origin}/sign-in`;
 
   return (
-    <AuthCard
+    <CentredCard
       title={`${answer.organization.name} is set up`}
       lede={`${answer.client.email} owns it and can sign in now.`}
       footer={footer}
     >
       <div className="flex flex-col gap-4">
-        <Notice tone="info">
+        <CentredCardNotice tone="info">
           No email is sent yet: tell the client yourself. They sign in at {signInAddress} with a
           code sent to {answer.client.email}.
-        </Notice>
+        </CentredCardNotice>
         <Button type="button" size="lg" onClick={onAnother}>
           Set up another
         </Button>
       </div>
-    </AuthCard>
+    </CentredCard>
   );
 }

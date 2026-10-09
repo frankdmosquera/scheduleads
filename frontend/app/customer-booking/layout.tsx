@@ -11,6 +11,6 @@ export const metadata: Metadata = {
   referrer: "no-referrer",
 };
 
-export default function BookingPageLayout({ children }: LayoutProps<"/b">) {
+export default function CustomerBookingLayout({ children }: LayoutProps<"/customer-booking">) {
   return children;
 }

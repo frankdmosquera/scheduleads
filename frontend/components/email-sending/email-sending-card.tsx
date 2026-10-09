@@ -14,7 +14,8 @@ import {
   type EmailSendingInputType,
 } from "@scheduleads-app/shared/zod-validation";
 
-import { Field, Notice } from "@/components/auth-card";
+import { CentredCardField } from "@/components/centred-card/centred-card-field";
+import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { Button } from "@/components/ui/button";
 import {
   fetchEmailSending,
@@ -79,7 +80,7 @@ export function EmailSendingCard() {
         {!result ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : result.state === "unreachable" ? (
-          <Notice>{result.message}</Notice>
+          <CentredCardNotice>{result.message}</CentredCardNotice>
         ) : (
           <EmailSendingForm initial={result.answer} />
         )}
@@ -131,7 +132,7 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
           name={field.name}
           control={form.control}
           render={({ field: input, fieldState }) => (
-            <Field
+            <CentredCardField
               {...input}
               value={input.value ?? ""}
               id={`email-sending-${field.name}`}
@@ -144,7 +145,7 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
           )}
         />
       ))}
-      {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
+      {notice ? <CentredCardNotice tone={notice.tone}>{notice.text}</CentredCardNotice> : null}
       <div>
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? "Saving and testing…" : "Save"}
