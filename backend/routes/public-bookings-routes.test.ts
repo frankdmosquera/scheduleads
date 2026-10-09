@@ -454,7 +454,7 @@ describe("the yes to later texts (feature 9, decision 13)", () => {
     expect(again.status).toBe(201);
     const after = await yesesOf(painter.id, email);
     expect(after.map((yes) => yes.phone)).toEqual(["+14035550149", "+15875550177"]);
-    expect(after[0].yesAt.getTime()).toBeGreaterThanOrEqual(both[0].yesAt.getTime());
+    expect(after[0].yesAt.getTime()).toBeGreaterThan(both[0].yesAt.getTime());
     expect(after[1]).toEqual(both[1]); // the other number's yes untouched
   });
 

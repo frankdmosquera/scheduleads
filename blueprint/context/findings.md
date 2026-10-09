@@ -1455,4 +1455,4 @@ how recent the yes is (feature 12 onward) would read her first yes's date.
 row are milliseconds apart: with that one change the test passed three runs
 in a row on the fix, and failed on the `onConflictDoNothing` copy at line
 457 with the two dates equal.
-**Resolution:**
+**Resolution:** Fixed 2026-10-09: the re-tick check is `toBeGreaterThan`, so her number ticked again must carry a later date. It passed three runs on the fix, and with the upsert replaced by `onConflictDoNothing()` it fails.
