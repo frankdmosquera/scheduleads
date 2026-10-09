@@ -1407,4 +1407,4 @@ the checking line (or a plain "Booking…" status) and focus it while any
 resend from Try again waits; a test that the focus is not BODY while a Try
 again after a first 429 is held. Then the comment's "never falls to the
 page" holds as written.
-**Resolution:**
+**Resolution:** Fixed 2026-10-09: any send from Try again draws a waiting line in place of the Book button and moves the focus onto it until the answer ("Checking your booking…" while unsure, "Booking…" otherwise), so Try again removing itself never drops the focus to the page. The comment over `.sa-focus-place:focus` now says it holds the focus while Try again sends and on the words a send ends with. booking-form-view.test.ts checks that after a first Book answered 429, Try again shows "Booking…" as a status holding the focus, with no second "Booking…" button; with the old form view it fails there, no status on screen.

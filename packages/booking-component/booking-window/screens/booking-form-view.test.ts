@@ -189,6 +189,31 @@ describe("screen two's form", () => {
     expect(document.activeElement).toBe(screen.getByRole("alert").closest(".sa-focus-place"));
   });
 
+  it("keeps the focus in the form while Try again resends after a limit reached", async () => {
+    const { apiClient, sends } = clientWithHeldSends();
+    const { booked } = renderForm(apiClient);
+    fillIn();
+    const tooMany = { error: { code: "too_many_tries", message: "Too many." } };
+
+    // A first Book answered "too many tries" settles nothing but loses nothing: Try again, not frozen.
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+    await waitFor(() => expect(sends).toHaveLength(1));
+    await act(async () => sends[0]?.answer(new Response(JSON.stringify(tooMany), { status: 429 })));
+    expect(screen.getByLabelText("Email").matches(":disabled")).toBe(false);
+
+    // Try again goes as it sends: a line says it is booking and holds the focus until the answer.
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(sends).toHaveLength(2));
+    expect(screen.getByRole("status").textContent).toBe("Booking…");
+    expect(document.activeElement).toBe(screen.getByRole("status"));
+    expect(screen.queryByRole("button", { name: "Booking…" })).toBeNull(); // said once, not twice
+
+    await act(async () =>
+      sends[1]?.answer(new Response(JSON.stringify({ booking }), { status: 201 }))
+    );
+    expect(booked).toEqual([{ made: booking, email: "jane@example.com" }]);
+  });
+
   it("says a part of the form no field shows, and sends nothing", async () => {
     const { apiClient, sends } = clientWithHeldSends();
     const many = Array.from({ length: 21 }, (_, n) => ({

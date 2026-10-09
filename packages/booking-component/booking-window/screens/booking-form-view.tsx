@@ -65,14 +65,17 @@ export function BookingFormView({
   // No answer came back: until one comes nothing can be changed, so Try again sends the same
   // booking with the same key, and a booking made unseen is answered again, never made twice.
   const [unsure, setUnsure] = useState(false);
-  // Focus never falls to the page: on the checking line while Try again waits, and on the words
+  // Try again removes itself as it sends, so a line takes its place, and the focus, until the answer.
+  const [retrying, setRetrying] = useState(false);
+  const waiting = sending && (unsure || retrying);
+  // Focus never falls to the page: on the waiting line while Try again sends, and on the words
   // whenever a send ends with words on screen.
   const checkingRef = useRef<HTMLParagraphElement>(null);
   const problemRef = useRef<HTMLDivElement>(null);
   const [wordsShown, setWordsShown] = useState(0);
   useEffect(() => {
-    if (unsure && sending) checkingRef.current?.focus();
-  }, [unsure, sending]);
+    if (waiting) checkingRef.current?.focus();
+  }, [waiting]);
   useEffect(() => {
     if (wordsShown > 0) problemRef.current?.focus();
   }, [wordsShown]);
@@ -91,7 +94,7 @@ export function BookingFormView({
     }
   };
 
-  async function book() {
+  async function book(fromRetry = false) {
     if (sendingNow.current) return;
     const read = readBookingForm(form, business.questions, choice);
     if (read.state === "errors") {
@@ -104,17 +107,19 @@ export function BookingFormView({
       if (first) document.getElementById(idOf(first.field))?.focus();
       return;
     }
-    await send(read.request);
+    await send(read.request, fromRetry);
   }
 
-  async function send(request: BookingRequestType) {
+  async function send(request: BookingRequestType, fromRetry: boolean) {
     if (sendingNow.current) return;
     sendingNow.current = true;
     setSending(true);
+    setRetrying(fromRetry);
     setProblem(null);
     const answer = await sendBooking(apiClient, slug, request);
     sendingNow.current = false;
     setSending(false);
+    setRetrying(false);
     // The route's own answers about this form settle it: it looks the form's key up first. No
     // answer, or one the route did not write (a server fault, a proxy), may hide a booking made;
     // a "too many tries" may come before the look-up. Those freeze the form, or keep it frozen.
@@ -283,20 +288,20 @@ export function BookingFormView({
         <div ref={problemRef} tabIndex={-1} className="sa-focus-place">
           <ProblemMessage
             words={problem.words}
-            retry={problem.retry ? () => void book() : null}
+            retry={problem.retry ? () => void book(true) : null}
             phone={business.phone}
           />
         </div>
       )}
 
-      {!unsure && (
+      {!unsure && !waiting && (
         <button type="submit" className="sa-submit" disabled={sending} aria-busy={sending}>
           {sending ? "Booking…" : "Book"}
         </button>
       )}
-      {unsure && sending && (
+      {waiting && (
         <p ref={checkingRef} tabIndex={-1} className="sa-loading sa-focus-place" role="status">
-          Checking your booking…
+          {unsure ? "Checking your booking…" : "Booking…"}
         </p>
       )}
     </form>

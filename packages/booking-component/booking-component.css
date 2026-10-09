@@ -821,7 +821,7 @@
   border-color: var(--sa-error, #b42318);
 }
 
-/* Where focus waits while a lost answer is unknown: read out, never outlined. */
+/* Where focus waits while Try again sends, and on the words a send ends with: read out, never outlined. */
 .sa-focus-place:focus {
   outline: none;
 }
