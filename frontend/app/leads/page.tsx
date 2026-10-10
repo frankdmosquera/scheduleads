@@ -1,18 +1,17 @@
-// Frontend page / : Setup, the business's cards (its services, the calendar and email cards),
-// inside the signed-in frame.
+// Frontend page /leads: every lead of the business, inside the signed-in frame.
 
 "use client";
 
 import { DashboardGate } from "@/components/dashboard/dashboard-gate";
-import { DashboardHomeScreen } from "@/components/dashboard/dashboard-home-screen";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { LeadsListScreen } from "@/components/leads/leads-list-screen";
 
-export default function DashboardPage() {
+export default function LeadsPage() {
   return (
     <DashboardGate>
       {(me) => (
         <DashboardShell me={me}>
-          <DashboardHomeScreen me={me} />
+          <LeadsListScreen />
         </DashboardShell>
       )}
     </DashboardGate>
