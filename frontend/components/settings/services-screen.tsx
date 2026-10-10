@@ -44,11 +44,15 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
     setOpen(null);
   };
 
-  const saved = (service: ServiceSettingsType) => {
+  const saved = (service: ServiceSettingsType, ticksSaved = true) => {
     setServices((list) =>
       [...list.filter((existing) => existing.id !== service.id), service].sort(byName)
     );
     close(changeButtonId(service.id));
+    if (!ticksSaved) {
+      setNotice({ tone: "error", text: `Saved, but who does ${service.name} was not.` });
+      return;
+    }
     setNotice({
       tone: "info",
       text: service.active

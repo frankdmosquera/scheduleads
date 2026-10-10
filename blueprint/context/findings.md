@@ -385,13 +385,13 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Switch Colour consultation back on Settings (or drop, migrate and seed scheduleads_dev), rerun the backend suite, and do future hand checks on a service the suite does not read, or put the change back as part of the check.
 **Resolution:** Fixed 2026-10-10: Colour consultation switched back to "we send whoever is free" on Settings; backend 927 of 927 again. Dev data only, no code.
 
-### F-353 [P3] open - Cancel after the ticks failed to save announces "Saved. Customers can book it now."
+### F-353 [P3] fixed - Cancel after the ticks failed to save announces "Saved. Customers can book it now."
 
 **File:** frontend/components/settings/service-form.tsx:185-188, frontend/components/settings/services-screen.tsx:47-58
 **Found:** 2026-10-10 by the independent review of 12d.3 (scope: 7eb80af..7c8e9e3)
 **Why it matters:** When the service saves and its ticks then fail, the form says "X is saved, but who does it is not". If the owner presses Cancel, the form (since the F-351 repair, and for a new service since 7f38977) calls onSaved, and the list's saved() shows the same notice as a full save: "Saved. Customers can book X now." The owner who wanted only Marco reads that everything went through, while the service is live with the ticks as they were (for a new one, nobody ticked, so anyone is offered). Read from the code, not clicked.
 **Suggested fix:** Let Cancel hand the list the saved service without the success notice (a second callback, or a flag on onSaved), or have the list say that who does it was not changed.
-**Resolution:**
+**Resolution:** Fixed 2026-10-10 on Frank's yes: Cancel after a failed tick save tells the list so, and the list says "Saved, but who does <service> was not." instead of the full-save notice. Checked in the browser with the ticks call blocked on Cabinet consultation.
 
 ### F-354 [P3] open - The setup command and the seed put back ticks the owner removed on Settings
 

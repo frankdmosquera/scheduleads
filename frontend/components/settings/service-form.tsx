@@ -110,7 +110,7 @@ export function ServiceForm({
 }: {
   service: ServiceSettingsType | null; // null: a new one
   people: ServicesSettingsType["people"]; // every person and place, to tick
-  onSaved: (saved: ServiceSettingsType) => void;
+  onSaved: (saved: ServiceSettingsType, ticksSaved?: boolean) => void; // false: its ticks did not save
   onCancel: () => void;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -184,7 +184,7 @@ export function ServiceForm({
   // A service saved whose ticks then failed still reaches the list, as saved, when the form closes.
   const cancel = () =>
     savedService.current && savedService.current !== service
-      ? onSaved(savedService.current)
+      ? onSaved(savedService.current, false)
       : onCancel();
 
   const errors = form.formState.errors;
