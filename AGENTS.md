@@ -126,37 +126,52 @@ are not configurable.
 
 ## Workflow
 
-### A review after every step, not only at the end
+### Each feature is heavy or light
 
-**Decided by Frank, 2026-09-24.** This overrides the Blueprint default, where
-the audit and the independent review run once per work item at `/complete`.
+**Decided by Frank, 2026-10-10.** The size of the process follows the size of
+the feature, never one recipe for all. `/feature` decides it when it writes
+the spec, puts it on the spec's first lines as `**Size:** heavy` or
+`**Size:** light` with one line of why, and says it to Frank in one line; he
+can overrule it. A question from Frank is answered with a clearer picture and
+never changes the size or adds steps.
 
-After each build step (N.1, N.2, ...) passes its own `Done when`, and before
-the next step starts:
+| | Heavy | Light |
+|---|---|---|
+| What it is | several separate risks with real logic: rules, times, data, money, security (feature 9, the booking window) | settings, wiring, packaging, docs, or one small piece of logic (feature 10, the setup file) |
+| Steps | one per real risk, never one per topic | one, often the whole feature |
+| Plan yes | the whole feature once, then each step's plan | one yes on the one plan |
+| Proof | each step's tests, then `/audit` and an independent review before the next step | the one check that shows it works, plus tests for any logic it adds |
+| Review | per step; a second reviewer only for P0/P1 | once, at `/complete` |
+| Build log | the full step entry (pieces, Part 2) | five plain lines and the code (`buildlogs/logs/README.md`) |
 
-1. Run `/audit` scoped to that step's changes.
-2. Run the independent review on the same changes.
-3. Blocking findings (P0/P1) are fixed, or Frank explicitly accepts them with a
-   reason, before the next step begins. P2/P3 are counted, recorded and carried.
-4. If a review shows a spec or plan file is wrong, correct it now, before the
-   next step builds on it.
+Both keep, unchanged: Frank's yes before anything is built, one commit per
+step pushed straight after, the build log written before the step is
+reported, the final review at `/complete`, and merging as his call.
 
-`/complete` still runs its own final review, but over steps that were each
-already reviewed, so it is a short integration check rather than one review of
-a whole feature at once.
+In a heavy feature, after each step passes its `Done when` and before the next
+starts: `/audit` scoped to the step, then the independent review; blocking
+findings (P0/P1) are fixed or explicitly accepted by Frank with a reason;
+P2/P3 are recorded and carried; a spec or plan the review shows wrong is
+corrected before the next step builds on it. A step inside a heavy feature
+that has no logic (settings, wiring) is proved by its one check and gets no
+reviewer.
 
-Why: item 1 had six steps and one review at the end. Reviewing a feature that
-size in one go was slow and painful, and faults found late had been built on
-for several steps.
+`blueprint/config.json` keeps `workflow.stepReview: "every"` as the project
+default; the spec's `Size` line overrides it per feature: heavy is `every`,
+light is `feature`.
 
-This is `workflow.stepReview: "every"` in `blueprint/config.json`, and
-`/implement` carries it out. A small project sets `"feature"` instead and
-reviews once per feature.
+Why: feature 1 had six steps and one review at the end, and faults found late
+had been built on, so every step got a review (2026-09-24). That recipe then
+ran on every feature: feature 10, settings and packaging, was split into four
+steps, each with its own plan, suites, reviewer and long log entry, and took
+hours for work of minutes. Frank, 2026-10-09: "if a feature is complex i get
+it. but if not??? we make it complex??"
 
 ### A spec is approved one step at a time
 
 **Decided by Frank, 2026-09-25.** This overrides the Blueprint default, where
-the whole spec is approved once before any step is built.
+the whole spec is approved once before any step is built. A light feature has
+one step, so its whole-feature pass and its step's yes are one and the same.
 
 1. Before the first step, Frank sees the whole feature once, as one picture
    of what each step is for and how the steps feed each other. That is the
@@ -176,7 +191,9 @@ loses him. Every yes should be on something he has seen.
 plan (both parts) has his yes, the step runs straight through: build, tests
 and checks, tick the box, publish the page, commit and push to the feature
 branch, `/audit`, independent review. The one planned stop is after the
-review, where its findings are talked through.
+review, where its findings are talked through. In a light feature there is no
+step review, so the step runs through to its commit and the report, and the
+review comes at `/complete`.
 
 Only three things stop a step earlier:
 
@@ -479,6 +496,9 @@ ledger:
 - Apply pending migrations: `npm run db:migrate --workspace=@scheduleads-app/shared`
 - Seed the two development accounts: `npm run db:seed --workspace=@scheduleads-app/shared`
 - Browse the data: `npm run db:studio --workspace=@scheduleads-app/shared`
+- Set a business up from its setup file (made first on `/admin/client-setup`; a dry run
+  unless `--apply`; adds only what is missing; local `*_dev` only until item 10b):
+  `npm run client:setup --workspace=@scheduleads-app/shared -- client-setups/<file>.ts [--apply]`
 
 Development runs against a local PostgreSQL 18, the same major version as
 Railway, in a database named `scheduleads_dev` on 127.0.0.1:5432, and `.env`
@@ -517,10 +537,32 @@ consumes it as TypeScript source. The frontend's hooks also run
 `npm run build:types --workspace=backend`, which writes the API's route types
 for the typed client, so a type error anywhere `backend/app.ts` reaches stops
 `npm run dev --workspace=frontend` and the frontend build too. Then they
-compile `packages/booking-component` (the booking window client sites
-embed, feature 9), which reads only the public routes' type, `PublicAppType`.
+build `packages/booking-component`, published as
+`@frankdmosquera/booking-component` (the booking window every client site
+installs and builds into its own files, never an embed; features 9 and 10).
+Its build type-checks the package with its tests, bundles it with `tsdown`
+into `dist/` with this repo's shared helpers carried inside, and ends with
+`check-dist-imports.mjs`, which fails the build if `dist/` imports anything
+but `react`, `react-dom`, `hono` and `zod`: anything else would not install
+outside this repo. Its tests build it first.
 
-- Booking component build: `npm run build --workspace=@scheduleads-app/booking-component`
+- Booking component build: `npm run build --workspace=@frankdmosquera/booking-component`
+- Publish it (a new `version` in its `package.json` first; publishing is Frank's yes each time):
+  `NODE_AUTH_TOKEN=$(gh auth token) npm publish --workspace=@frankdmosquera/booking-component --userconfig packages/booking-component/publish.npmrc`
+  in Git Bash. `prepublishOnly` runs the whole build and its checks first. It goes to GitHub
+  Packages, private to the account and linked to this repo; `gh` needs the `write:packages`
+  scope (`gh auth refresh -h github.com -s write:packages`, once: press Enter in the terminal
+  before authorizing in the browser, or `gh` never hears the approval and the scope stays
+  missing; check with `gh auth status`). The token is never written to a file. Not
+  published yet: the first publish is when a site first needs it from GitHub (10.2's
+  amendment).
+- Install it in a site in another repo: an `.npmrc` beside the site's `package.json` with
+  `@frankdmosquera:registry=https://npm.pkg.github.com` and
+  `//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}` (no secret, so it is committed), the
+  token (a personal access token, classic, with `read:packages`: GitHub's npm registry takes
+  no other kind) in the shell and in the host's build settings, then
+  `npm install @frankdmosquera/booking-component`. The rest (the CSS, the `--sa-*` tokens,
+  wrapping the layout in `BookingProvider`) is in the package's `index.ts` header.
 
 Unit tests run on Vitest, a dev dependency of the workspace that holds the
 code under test. Test files sit beside the code as `*.test.ts` and are
@@ -531,7 +573,7 @@ step that adds logic adds its tests, and every step reruns them.
 - Shared package tests, rerunning on save: `npm run test:watch --workspace=@scheduleads-app/shared`
 - Backend tests: `npm run test --workspace=backend`
 - Backend tests, rerunning on save: `npm run test:watch --workspace=backend`
-- Booking component tests: `npm run test --workspace=@scheduleads-app/booking-component`
+- Booking component tests: `npm run test --workspace=@frankdmosquera/booking-component`
 
 Both backend commands rebuild `packages/shared` first (their `pre` scripts),
 because the route tests load its code, not only its types. Since step 2.4 the

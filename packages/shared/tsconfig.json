@@ -20,6 +20,8 @@
     "helpers",
     "subscriptions",
     "zod-validation",
+    "client-setup",
+    "client-setups",
     "scripts",
     "drizzle.config.ts"
   ]

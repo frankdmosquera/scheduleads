@@ -192,3 +192,27 @@ notification to the business's own phone is at stake, hence P3.
 them); treat a 5xx like a lost answer, so the next run asks Twilio first. One
 route test with a 503 on the first send and the text found on the retry.
 **Resolution:**
+
+### F-304 [P2] open - The setup command lists differences only for business hours, questions, services and a person's kind, so a hand edit to a person's own hours, worker texts or extra ticks is kept without a word
+
+**File:** packages/shared/client-setup/run-client-setup.ts:143-150 (and apply-business-shape.ts:98-131, 165-177)
+**Found:** 2026-10-10 by independent review of feature 10 (scope: current, c786f7e..d9e4709; lenses: quality, security, performance, tests)
+**Why it matters:** Step 10.3 says the command "lists every difference between the file and the database so a hand edit is seen, not overwritten". findDifferences compares the business hours row, the questions, each service's own fields and a person's kind, but for people it reads only `kind`. applyBusinessShape skips a person whose hours row exists (line 131), adds worker-text settings only while none exist (onConflictDoNothing) and adds missing ticks without reading extra ones. So when a person's week, date hours or worker-text settings in the file differ from the saved row, or a tick was added by hand, the command prints "nothing to add" and no "differs, kept" line: the file and the database disagree and the output says they agree. Not reachable with today's only setup file (agentsweb.ts has `people: []` and no ticks); it is reachable on the first setup file for a business with people, such as Primo Painters or Face and Body. Nothing is lost: every row is kept.
+**Suggested fix:** In findDifferences, for each listed person that exists, compare their own hours row (weeklyHours, dateHours) and their worker-text settings with the file, and for each service report ticks in the database that the file does not list; add one test case that changes a person's hours by hand and expects the difference.
+**Resolution:**
+
+### F-305 [P3] open - A setup file's hours are typed unknown, so `satisfies ClientSetupInputType` checks nothing inside them
+
+**File:** packages/shared/zod-validation/admin-validation-schemas/client-setup-validation-schema.ts:261-265 (seen in packages/shared/client-setups/agentsweb.ts:295 and run-client-setup.test.ts:102)
+**Found:** 2026-10-10 by independent review of feature 10 (scope: current, c786f7e..d9e4709; lenses: quality, security, performance, tests)
+**Why it matters:** `hours` is `z.preprocess(fn, businessAvailabilityRuleValidationSchema)`, and Zod 4 types a preprocess's input as `unknown` (`ZodPreprocess<U, B = unknown>`). A type probe compiled with the repo's tsc accepts `{ totally: "wrong", horizonDays: "x" }` as `ClientSetupInputType["hours"]`, while a wrong `personChoice` is refused (TS2322). So agentsweb.ts's `satisfies ClientSetupInputType`, and the seed's businesses typed through the same input type, get no editor check on the hours block: a misspelt field or a string horizon shows only when the command or the seed runs and the parse refuses it. It is also the cause of one of the test file's type errors (line 102, TS2698: spread of an unknown). The runtime parse is intact, so nothing wrong reaches the database.
+**Suggested fix:** Type the input explicitly, for example `z.preprocess<unknown, typeof schema, Omit<z.input<typeof businessAvailabilityRuleValidationSchema>, "resourceId">>(...)`, or drop the preprocess and use `businessAvailabilityRuleValidationSchema` with `resourceId` made optional-null for the file, so the setup files are checked as they are written.
+**Resolution:**
+
+### F-306 [P3] open - run-client-setup.test.ts has type errors the editor shows and no command catches
+
+**File:** packages/shared/client-setup/run-client-setup.test.ts:71-77, 102
+**Found:** 2026-10-10 by independent review of feature 10 (scope: current, c786f7e..d9e4709; lenses: quality, security, performance, tests)
+**Why it matters:** `tsc -p packages/shared/tsconfig.json` (the editor's view, which coding-standards.md says type-checks everything in the package) fails with six errors, all in this new file and none elsewhere in the package: five TS2345 because countRows' helper constrains its table to `{ organizationId: typeof organization.id }`, the organization table's own id column, which no other table's organizationId column matches; one TS2698 at line 102 from F-305. Vitest strips types and the build's tsconfig.build.json excludes tests, so the tests pass and the build is green while the file is red in the editor; a later wrong call in this test would not be caught by types either.
+**Suggested fix:** Constrain the helper to the column type it needs (for example `<T extends { organizationId: AnyPgColumn }>` from drizzle-orm/pg-core) or pass the column itself (`inBusiness(bookingQuestion.organizationId)`); line 102 is fixed with F-305. Then `tsc -p packages/shared/tsconfig.json` passes.
+**Resolution:**

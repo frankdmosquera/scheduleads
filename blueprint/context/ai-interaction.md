@@ -85,7 +85,9 @@ when you just want something done.
    light, nothing stops until the review" in `AGENTS.md`). Never ask to commit,
    push, test or review, and never ask for a yes on something not built yet.
    Stop earlier only for a plan that proves wrong, a line only Frank crosses, or
-   a blocking finding; name every small call in the step report.
+   a blocking finding; name every small call in the step report. A light
+   feature (`AGENTS.md`, "Each feature is heavy or light") is one step with
+   no step review: it runs from the yes to its commit and report.
 4. **Review** - By default, implement and verify each small step, then show one
    feature-level review packet with the complete diff and done-when evidence.
    Set `workflow.stepReview` to `every` when I should approve each step before

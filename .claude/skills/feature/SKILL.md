@@ -120,6 +120,15 @@ Then use these section headings:
 - Notes for the AI
 - Open questions, only when a product decision remains unresolved
 
+**Size first.** Before writing steps, decide whether the feature is heavy or
+light, as the project's `AGENTS.md` defines them ("Each feature is heavy or
+light"): count its separate risks with real logic. Write `**Size:** heavy` or
+`**Size:** light` with one line of why on the spec's first lines and say it to
+the user in one line. A light feature gets one step (more only when it holds a
+second real risk), one plan yes, and its review at `/complete`; its spec stays
+short. A heavy feature gets one step per real risk, never one per topic. A
+user's question is answered with a clearer picture and never adds steps.
+
 Build steps are ordered checklist items. Each step must leave the project
 working, stay small enough to review, and end with a concrete `Done when` that
 names observable behavior and the relevant check. Follow `workflow.stepReview`
