@@ -11,6 +11,7 @@ import {
   addResourceValidationSchema,
   personHoursValidationSchema,
   saveResourceValidationSchema,
+  saveServiceResourcesValidationSchema,
   serviceValidationSchema,
 } from "@scheduleads-app/shared/zod-validation";
 
@@ -29,6 +30,7 @@ import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
 import { savePersonHours } from "../lib/settings/save-person-hours.js";
 import { saveResource } from "../lib/settings/save-resource.js";
 import { saveService } from "../lib/settings/save-service.js";
+import { saveServiceResources } from "../lib/settings/save-service-resources.js";
 import { requireOrganizationMiddleware } from "../middleware/auth-middleware/require-organization-middleware.js";
 import { requirePermissionMiddleware } from "../middleware/auth-middleware/require-permission-middleware.js";
 import { requireKnownSubscriptionMiddleware } from "../middleware/subscription-middleware/require-known-subscription-middleware.js";
@@ -118,7 +120,8 @@ export const settingsRoutes = new Hono()
     }
   )
 
-  // The Services page: every service of the business, live or hidden.
+  // The Services page: every service of the business, live or hidden, with who is ticked on each,
+  // and every person and place to tick.
   .get(
     "/services",
     requireOrganizationMiddleware,
@@ -126,11 +129,11 @@ export const settingsRoutes = new Hono()
     requireModuleMiddleware("booking"),
     async (c) => {
       const { organizationId } = c.get("organization");
-      const [services, canEdit] = await Promise.all([
+      const [settings, canEdit] = await Promise.all([
         findServicesSettings(organizationId),
         hasBusinessPermission(c.req.raw.headers, organizationId, CHANGE_BUSINESS),
       ]);
-      return c.json({ canEdit, services }, 200);
+      return c.json({ canEdit, ...settings }, 200);
     }
   )
 
@@ -170,6 +173,32 @@ export const settingsRoutes = new Hono()
       if (!service) return c.json(refuse("not_found", "No service here."), 404);
       const outsideHours: ListedBookingType[] = []; // filled from step 12d.5
       return c.json({ service, outsideHours }, 200);
+    }
+  )
+
+  // Who does a service: the ticks replace the ones before. A person or place of another business, or
+  // one in the wrong list, is refused on its list and nothing changes.
+  .put(
+    "/services/:serviceId/resources",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = saveServiceResourcesValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const saved = await saveServiceResources(
+        c.get("organization").organizationId,
+        c.req.param("serviceId"),
+        c.req.valid("json")
+      );
+      if (!saved.ok && saved.reason === "not_found")
+        return c.json(refuse("not_found", "No service here."), 404);
+      if (!saved.ok)
+        return c.json({ ...refuse("bad_request", saved.message), field: saved.field }, 400);
+      return c.json(saved.ticks, 200);
     }
   )
 

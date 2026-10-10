@@ -7,6 +7,7 @@ import { bookingLink } from "@scheduleads-app/shared/db";
 import type { ServiceType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
+import { findServiceTicks } from "./find-service-ticks.js";
 import { serviceSettingsColumns, type ServiceSettingsType } from "./find-services-settings.js";
 
 // null: no such service in this business (another business's, or unknown).
@@ -20,5 +21,7 @@ export async function saveService(
     .set(service)
     .where(and(eq(bookingLink.organizationId, organizationId), eq(bookingLink.id, serviceId)))
     .returning(serviceSettingsColumns);
-  return saved ?? null;
+  if (!saved) return null;
+  const ticks = await findServiceTicks(db, organizationId, [saved.id]);
+  return { ...saved, ...ticks.get(saved.id)! };
 }

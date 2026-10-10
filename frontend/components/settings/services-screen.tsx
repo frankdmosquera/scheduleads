@@ -68,7 +68,12 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
           Your role cannot change the services. You can see them here.
         </CentredCardNotice>
       ) : open === "new" ? (
-        <ServiceForm service={null} onSaved={saved} onCancel={() => close(ADD_BUTTON_ID)} />
+        <ServiceForm
+          service={null}
+          people={settings.people}
+          onSaved={saved}
+          onCancel={() => close(ADD_BUTTON_ID)}
+        />
       ) : (
         <div>
           <Button id={ADD_BUTTON_ID} variant="outline" onClick={() => openForm("new")}>
@@ -87,6 +92,7 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
               <li key={service.id}>
                 <ServiceForm
                   service={service}
+                  people={settings.people}
                   onSaved={saved}
                   onCancel={() => close(changeButtonId(service.id))}
                 />

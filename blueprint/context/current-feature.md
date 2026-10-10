@@ -122,7 +122,7 @@ Blocking findings (P0/P1) are fixed by default; P2/P3 are recorded and carried.
   F-337. By hand, Summit's services all send whoever is free, so the booking preview never
   names a person: "not offered" is proved by the route test, not seen in the preview.
 
-- [ ] **12d.3 Who does what.** "On 'Colour consultation' I tick only Marco and Room 1, and the
+- [x] **12d.3 Who does what.** "On 'Colour consultation' I tick only Marco and Room 1, and the
   booking window offers only Marco."
   - Backend: `PUT /settings/services/:serviceId/resources` (`{ peopleIds, placeIds }`)
     replaces that service's ticks in one transaction. Every id must be a person (in
@@ -135,6 +135,13 @@ Blocking findings (P0/P1) are fixed by default; P2/P3 are recorded and carried.
     needed".
   **Done when:** the route tests below pass; and by hand, ticking only Marco on a service
   makes the booking preview offer only Marco for it, and clearing the ticks offers everyone.
+  *Built 2026-10-10.* Changed while building: the service form's one Save sends the service, then
+  its ticks when they changed, by their own call; a new service whose ticks fail to save is
+  changed, never added twice, on the next Save. A service's save and add answers carry its
+  `peopleIds` and `placeIds`. Added: when every one ticked is off, the hint turns red and says
+  nobody is offered (people) or it cannot be booked (places), since the booking side never
+  falls back to anyone then. By hand, Summit's Colour consultation was switched to "the
+  customer picks" so the preview names people.
 
 - [ ] **12d.4 A person's work email.** "I give Pedro pedro@summit-painting.test; a customer
   booking with Pedro can reply to him, and Pedro gets his own notification."

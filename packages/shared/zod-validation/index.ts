@@ -19,6 +19,7 @@ export * from "./booking-links-validation-schemas/free-times-query-validation-sc
 export * from "./booking-links-validation-schemas/create-booking-validation-schema.js";
 export * from "./booking-links-validation-schemas/move-booking-validation-schema.js";
 export * from "./booking-links-validation-schemas/service-validation-schema.js";
+export * from "./booking-links-validation-schemas/save-service-resources-validation-schema.js";
 export * from "./resource-validation-schemas/resource-validation-schema.js";
 export * from "./availability-validation-schemas/weekly-hours-validation-schema.js";
 export * from "./availability-validation-schemas/date-hours-validation-schema.js";

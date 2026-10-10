@@ -1,5 +1,6 @@
 // Frontend component: the form that adds or changes one service on the Services page (feature 12d).
-// Who picks the person and whether it asks the address start unpicked: the business chooses.
+// Who picks the person and whether it asks the address start unpicked: the business chooses. Who
+// does it (the ticks) is saved just after the service, by its own call.
 
 "use client";
 
@@ -15,11 +16,16 @@ import {
 
 import { ChoiceField } from "@/components/settings/choice-field";
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
+import { TicksField } from "@/components/settings/ticks-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { ServiceSettingsType } from "@/lib/api-client/settings/fetch-services-settings";
+import type {
+  ServiceSettingsType,
+  ServicesSettingsType,
+} from "@/lib/api-client/settings/fetch-services-settings";
 import { saveService } from "@/lib/api-client/settings/save-service";
+import { saveServiceResources } from "@/lib/api-client/settings/save-service-resources";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 const NEW_SERVICE: DefaultValues<ServiceInputType> = {
@@ -78,6 +84,10 @@ function MinutesField({
 }
 
 // Only what the form edits: the schema is strict, so the id and slug must not ride along.
+type TicksType = { peopleIds: string[]; placeIds: string[] };
+const sameIds = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((id) => b.includes(id));
+
 function formValuesOf(service: ServiceSettingsType): ServiceInputType {
   return {
     name: service.name,
@@ -94,10 +104,12 @@ function formValuesOf(service: ServiceSettingsType): ServiceInputType {
 
 export function ServiceForm({
   service,
+  people,
   onSaved,
   onCancel,
 }: {
   service: ServiceSettingsType | null; // null: a new one
+  people: ServicesSettingsType["people"]; // every person and place, to tick
   onSaved: (saved: ServiceSettingsType) => void;
   onCancel: () => void;
 }) {
@@ -110,6 +122,13 @@ export function ServiceForm({
     defaultValues: service ? formValuesOf(service) : NEW_SERVICE,
   });
   const idBase = `service-${service?.id ?? "new"}`;
+  const [ticks, setTicks] = useState<TicksType>({
+    peopleIds: service?.peopleIds ?? [],
+    placeIds: service?.placeIds ?? [],
+  });
+  const [ticksError, setTicksError] = useState<{ field: string; message: string } | null>(null);
+  // A new service whose ticks failed to save already exists: saving again changes it, never adds it twice.
+  const savedService = useRef<ServiceSettingsType | null>(service);
 
   useEffect(() => nameRef.current?.focus(), []); // the form opens where the owner will type
 
@@ -122,18 +141,49 @@ export function ServiceForm({
     };
 
   async function save(values: ServiceType) {
-    const saved = await saveService(service?.id ?? null, values);
-    if (saved.state === "ok") {
-      onSaved(saved.answer.service);
-      return;
-    }
+    const saved = await saveService(savedService.current?.id ?? null, values);
     if (saved.state === "field") {
       form.setError(saved.field as "name", { message: saved.message });
       focusFirstInvalid();
       return;
     }
-    setNotice({ tone: "error", text: saved.message });
+    if (saved.state !== "ok") {
+      setNotice({ tone: "error", text: saved.message });
+      return;
+    }
+    const savedNow = saved.answer.service;
+    savedService.current = savedNow;
+    if (
+      sameIds(savedNow.peopleIds, ticks.peopleIds) &&
+      sameIds(savedNow.placeIds, ticks.placeIds)
+    ) {
+      onSaved(savedNow);
+      return;
+    }
+
+    const ticked = await saveServiceResources(savedNow.id, ticks);
+    if (ticked.state === "ok") {
+      onSaved({ ...savedNow, ...ticked.answer });
+      return;
+    }
+    if (ticked.state === "field") {
+      setTicksError({ field: ticked.field, message: ticked.message });
+      focusFirstInvalid();
+    }
+    setNotice({
+      tone: "error",
+      text: `${savedNow.name} is saved, but who does it is not: ${ticked.message}`,
+    });
   }
+
+  const editTicks = (ticked: TicksType) => {
+    setNotice(null);
+    setTicksError(null);
+    setTicks(ticked);
+  };
+  // A new service saved without its ticks still joins the list when the form closes.
+  const cancel = () =>
+    !service && savedService.current ? onSaved(savedService.current) : onCancel();
 
   const errors = form.formState.errors;
   const { ref: nameFieldRef, ...nameField } = form.register("name", {
@@ -306,6 +356,28 @@ export function ServiceForm({
           />
         )}
       />
+      <TicksField
+        name={`${idBase}-people`}
+        legend="Who does it"
+        noneTicked="Nobody ticked: anyone can do it."
+        allTickedOff="Everyone ticked is off, so nobody is offered for it."
+        noneToTick="No people yet."
+        choices={people.filter((resource) => resource.kind === "person")}
+        value={ticks.peopleIds}
+        onChange={(peopleIds) => editTicks({ ...ticks, peopleIds })}
+        error={ticksError?.field === "peopleIds" ? ticksError.message : undefined}
+      />
+      <TicksField
+        name={`${idBase}-places`}
+        legend="Places it needs"
+        noneTicked="No place ticked: no room needed."
+        allTickedOff="Every place ticked is off, so it cannot be booked."
+        noneToTick="No places yet."
+        choices={people.filter((resource) => resource.kind === "place")}
+        value={ticks.placeIds}
+        onChange={(placeIds) => editTicks({ ...ticks, placeIds })}
+        error={ticksError?.field === "placeIds" ? ticksError.message : undefined}
+      />
       <Controller
         name="asksAddress"
         control={form.control}
@@ -344,7 +416,7 @@ export function ServiceForm({
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? "Saving…" : service ? "Save service" : "Add service"}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={cancel}>
           Cancel
         </Button>
       </div>

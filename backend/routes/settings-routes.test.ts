@@ -637,3 +637,92 @@ describe("the People settings", () => {
     expect(listed.map((row) => row.bookingId)).toEqual([rio.bookingId]);
   });
 });
+
+type TicksType = { peopleIds: string[]; placeIds: string[] };
+
+describe("who does what", () => {
+  // A new service on Summit, so these tests never depend on the ones above.
+  const addService = async (name: string) =>
+    (
+      (await (
+        await post("/settings/services", summit.email, { ...cabinet, name })
+      ).json()) as SavedServiceType
+    ).service.id;
+  const ticksOf = async (serviceId: string) => {
+    const read = (await (await get("/settings/services", summit.email)).json()) as {
+      services: ({ id: string } & TicksType)[];
+    };
+    const service = read.services.find((row) => row.id === serviceId)!;
+    return { peopleIds: service.peopleIds, placeIds: service.placeIds };
+  };
+
+  test("a save replaces the ticks, and the booking side offers only who is ticked", async () => {
+    const serviceId = await addService("Colour consultation");
+    const marco = (await (
+      await post("/settings/people", summit.email, { name: "Marco", kind: "person" })
+    ).json()) as SavedResourceType;
+    const marcoId = marco.resource.id;
+    const ticksPath = `/settings/services/${serviceId}/resources`;
+
+    // Only Marco and Room 1: only Marco is offered, and Room 1 is needed.
+    const first = await put(ticksPath, summit.email, {
+      peopleIds: [marcoId],
+      placeIds: [summitPlaceId],
+    });
+    expect(first.status).toBe(200);
+    expect(await first.json()).toEqual({ peopleIds: [marcoId], placeIds: [summitPlaceId] });
+    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [marcoId], placeIds: [summitPlaceId] });
+    expect(await findServiceResources(summit.organizationId, serviceId)).toEqual({
+      peopleIds: [marcoId],
+      placeIds: [summitPlaceId],
+    });
+
+    // The next save replaces them, it never adds to them.
+    await put(ticksPath, summit.email, { peopleIds: [summit.personId], placeIds: [] });
+    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [summit.personId], placeIds: [] });
+    expect(await findServiceResources(summit.organizationId, serviceId)).toEqual({
+      peopleIds: [summit.personId],
+      placeIds: null,
+    });
+
+    // Nobody ticked: anyone on is offered again.
+    await put(ticksPath, summit.email, { peopleIds: [], placeIds: [] });
+    const anyone = await findServiceResources(summit.organizationId, serviceId);
+    expect(anyone?.peopleIds).toEqual(expect.arrayContaining([summit.personId, marcoId]));
+    expect(anyone?.placeIds).toBeNull();
+  });
+
+  test("a place in the people, or another business's person, is refused and nothing changes", async () => {
+    const serviceId = await addService("Deck stain");
+    const ticksPath = `/settings/services/${serviceId}/resources`;
+    await put(ticksPath, summit.email, { peopleIds: [summit.personId], placeIds: [] });
+
+    const refusals = [
+      [{ peopleIds: [summitPlaceId], placeIds: [] }, "peopleIds"], // a place as a person
+      [{ peopleIds: [other.personId], placeIds: [] }, "peopleIds"], // another business's person
+      [{ peopleIds: [], placeIds: [summit.personId] }, "placeIds"], // a person as a place
+      [{ peopleIds: [randomUUID()], placeIds: [] }, "peopleIds"], // nobody at all
+      [{ peopleIds: [summit.personId, summit.personId], placeIds: [] }, "peopleIds"], // twice
+    ] as const;
+    for (const [body, field] of refusals) {
+      const refused = await put(ticksPath, summit.email, body);
+      expect(refused.status).toBe(400);
+      expect(await refused.json()).toMatchObject({ error: { code: "bad_request" }, field });
+    }
+    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [summit.personId], placeIds: [] });
+
+    // Another business's service: the 404; a member who may not change the business: the 403.
+    const theirs = (await (
+      await post("/settings/services", other.email, { ...cabinet, name: "Their service" })
+    ).json()) as SavedServiceType;
+    const empty = { peopleIds: [], placeIds: [] };
+    const foreign = await put(
+      `/settings/services/${theirs.service.id}/resources`,
+      summit.email,
+      empty
+    );
+    expect(foreign.status).toBe(404);
+    expect((await put(ticksPath, helper.email, empty)).status).toBe(403);
+    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [summit.personId], placeIds: [] });
+  });
+});
