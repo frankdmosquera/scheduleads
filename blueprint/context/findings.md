@@ -241,54 +241,6 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** The same form twice with a known email, expect joinedExistingContact true on both answers; with a new email, false on both.
 **Resolution:** Carried on purpose, for the same reason as F-318: only a notice on screen is at stake.
 
-### F-320 [P3] closed - A person's day switches keep the bare day name, so they read the same as the business's
-
-**File:** frontend/components/settings/week-editor.tsx:52-64
-**Found:** 2026-10-10 by /audit (scope: current, step 12a.1; lenses: all)
-**Why it matters:** The windows and Add buttons on a person's card carry their name ("Marco (estimator), Tuesday, window 1, from"), but the day's checkbox is labelled by its visible text alone, "Tuesday". A screen reader moving through the page hears the business's Tuesday switch and every person's as the same control.
-**Suggested fix:** Give the checkbox an aria-label with the same prefix as its windows when `labelPrefix` is set.
-**Resolution:** Fixed 2026-10-10: the day checkbox takes the same name as its windows when a prefix is set ("Marco (estimator), Tuesday"). Closed 2026-10-10 by the check of 12a.1's fixes (bbd7510..5fc529c): week-editor.tsx:62 names a person's day switch with their name; the business's keeps its visible label.
-
-### F-321 [P3] closed - "Pick a date." now answers every bad one-off date, including an impossible one in a setup file
-
-**File:** packages/shared/zod-validation/availability-validation-schemas/date-hours-validation-schema.ts:12
-**Found:** 2026-10-10 by /audit (scope: current, step 12a.1; lenses: all)
-**Why it matters:** The message was written for the empty date field on the Hours card, but `dateHoursValidationSchema` also checks the setup file (`client-setup-validation-schema.ts:31`), where 2026-02-30 now reports "Pick a date." instead of saying the date does not exist.
-**Suggested fix:** A message that fits both: "Use a real date, like 2026-11-02." (the card's empty field still shows it under the date).
-**Resolution:** Fixed 2026-10-10: the message is now "Use a real date, like 2026-11-02.", which reads right for the empty field on the card and for an impossible date in a setup file. Closed 2026-10-10 by the check of 12a.1's fixes: date-hours-validation-schema.ts:12 reads "Use a real date, like 2026-11-02."; the old text is gone and no test asserted it.
-
-### F-322 [P2] closed - An overlap, a repeated one-off date or a date with no windows gets no focus, no aria-invalid and no announcement
-
-**File:** frontend/components/settings/day-windows-editor.tsx:122; frontend/components/settings/one-off-dates-editor.tsx:89; frontend/lib/use-focus-first-invalid.ts:13
-**Found:** 2026-10-10 by independent review of step 12a.1 (scope: 86675f7..bbd7510; lenses: quality, security, performance, tests)
-**Why it matters:** These three errors sit on the whole list ("weeklyHours.mon", "dateHours", "dateHours.0.windows"), so the editors show them as a plain paragraph tied to no field. No input is marked invalid, so a refused save leaves focus on Save and a screen reader hears nothing; the spec asks for focus on the first bad field and each field tied to its error. An overlapping second window is the most common mistake on the card.
-**Suggested fix:** When a day or date carries a list error, mark its inputs invalid and describe them by the message; with no windows left, mark the Add button; for a repeated date, mark the date fields that repeat.
-**Resolution:** Fixed 2026-10-10: a day or date error marks every field of that day invalid and describes them by the message (with no windows left, the Add button); a repeated date marks the date fields that repeat. Checked by hand: two overlapping Monday windows on Save put focus on Monday window 1, described by "Two windows on the same day overlap." Closed 2026-10-10 by the check of 12a.1's fixes: day-windows-editor.tsx marks every field of a day with a day error and ties them to its message, the Add button when no windows are left; one-off-dates-editor.tsx marks only the repeating date fields; the new ids do not collide.
-
-### F-323 [P3] closed - An ended sign-in shows "unexpected status (401)" on Settings, and Try again cannot fix it
-
-**File:** frontend/lib/api-client/settings/fetch-hours-settings.ts:20-24; frontend/components/settings/settings-screen.tsx:47-53
-**Found:** 2026-10-10 by independent review of step 12a.1 (scope: 86675f7..bbd7510; lenses: quality, security, performance, tests)
-**Why it matters:** The spec says to follow the leads screens, which read 401 as "signed out" with a way back and 403 as a refusal (fetch-leads.ts:27-33). The dashboard reads /me only on mount, so a session that ends between screens lands here on a raw status and a Try again that keeps failing.
-**Suggested fix:** Map 401 and 403 as fetchLeads does and show the same notice.
-**Resolution:** Fixed 2026-10-10: fetchHoursSettings reads 401 as signed out and 403 as a refusal, as fetchLeads does, and the screen shows the leads screens' notice with the way back to sign in. Closed 2026-10-10 by the check of 12a.1's fixes: fetch-hours-settings.ts:28-35 maps 401 and 403; settings-screen.tsx:50-51 shows the sign-in notice; Try again is left for real failures.
-
-### F-324 [P3] closed - No test pins the 400's `field`, which the cards use to show an error in place
-
-**File:** backend/routes/settings-routes.test.ts:652-656
-**Found:** 2026-10-10 by independent review of step 12a.1 (scope: 86675f7..bbd7510; lenses: quality, security, performance, tests)
-**Why it matters:** The refused save only checks the status, so dropping `field` or joining its path differently would pass while every server-side error lost its place on the card.
-**Suggested fix:** In the same test, send an overlapping window and expect `field: "weeklyHours.mon"` with code bad_request.
-**Resolution:** Fixed 2026-10-10: the first-save test also sends an overlapping Monday and expects bad_request with field "weeklyHours.mon". Closed 2026-10-10 by the check of 12a.1's fixes: settings-routes.test.ts:269-278 asserts the whole 400 with field "weeklyHours.mon".
-
-### F-325 [P3] closed - The read-only notice names a role ("Only the owner") while the check asks about an action
-
-**File:** frontend/components/settings/settings-screen.tsx:73-75
-**Found:** 2026-10-10 by independent review of step 12a.1 (scope: 86675f7..bbd7510; lenses: quality, security, performance, tests)
-**Why it matters:** The business's admin role may change the business too (auth-server.ts:65-71), and custom roles later make the wording drift further from what is allowed.
-**Suggested fix:** "Your role cannot change the hours. You can see them here."
-**Resolution:** Fixed 2026-10-10: the notice reads "Your role cannot change the hours. You can see them here." Closed 2026-10-10 by the check of 12a.1's fixes: settings-screen.tsx:79 asks about what the role may do, not which role.
-
 ### F-326 [P3] unverified - A time field cleared mid-edit may snap back while the owner is still typing
 
 **File:** frontend/components/settings/day-windows-editor.tsx:43-48
@@ -296,38 +248,6 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** An unfinished time keeps the window's last whole time on purpose; in some browsers the controlled field may redraw the old value while a segment is being retyped. Not seen in a browser yet.
 **Missing validation:** Type over one segment of a time field by keyboard in Chrome and Edge.
 **Resolution:**
-
-### F-327 [P3] closed - Settings shows its refusal through LeadsRefusalNotice, a component named and commented for the leads screens
-
-**File:** frontend/components/settings/settings-screen.tsx:9,51; frontend/components/leads/leads-refusal-notice.tsx:1-2
-**Found:** 2026-10-10 by the check of 12a.1's fixes (scope: bbd7510..5fc529c)
-**Why it matters:** What it shows is generic, but its name and header say leads, so the naming misleads, and a change made for leads alone would change Settings unnoticed.
-**Suggested fix:** Move it to a shared place as `RefusalNotice` with a generic header, used by both screens.
-**Resolution:** Carried to step 12a.2, which changes the Settings screen anyway. Fixed 2026-10-10 in step 12a.2: the notice moved to frontend/components/centred-card/refusal-notice.tsx as RefusalNotice, with a generic header, used by the leads list, the lead page and Settings. Closed 2026-10-10 by /audit of 12a.2 (0f33b77..47dc46e): refusal-notice.tsx:1-2 has the generic header, all three screens import it, and no reference to the old name is left in frontend/.
-
-### F-328 [P2] closed - No saved test proves a save lists anything: the step's whole point is checked by hand only
-
-**File:** backend/routes/settings-routes.test.ts (no `outsideHours` assertion); backend/lib/settings/save-business-hours.ts:31-86; backend/lib/settings/save-person-hours.ts:33-94
-**Found:** 2026-10-10 by /audit (scope: current, step 12a.2; lenses: all)
-**Why it matters:** The Simulate cases test `applyOutsideHoursRules` alone, with rows built by hand. What feeds it is untested: the old row read before the upsert (moved after it, every list is empty), the person rows map, the joins in `findUpcomingBookings`, the person filter, and the person save's "no old row means follows the business". Any of these broken returns `outsideHours: []`, which the route tests accept, and the owner is silently told nothing moved.
-**Suggested fix:** Two route tests on the seeded business, as the step's Done when does by hand: a confirmed Tuesday 4:00 booking, Tuesday shortened to end at 3:00, the answer lists it (bookingId, leadId, names) and the booking row is unchanged; the same save again lists nothing. One more for a person switched to an own week that leaves their booking out.
-**Resolution:** Confirmed 2026-10-10 by independent review of 12a.2: `outsideHours` appears in no test file in backend/ (routes or lib/settings); only the pure rule is tested. Stays open. Fixed 2026-10-10: two route tests in settings-routes.test.ts on a business with bookings. "a save lists the upcoming bookings it leaves outside and changes none": Tuesday cut to end at 3:00 lists Maria's 4:00 with its booking, lead, customer, service and person, leaves the booking row identical, skips a cancelled one, one still inside and one of a person on her own week; the same save again lists nothing. "a person's first own week lists their bookings it leaves outside": a person with no row yet moved to an own week lists only the booking it pushes out. Closed 2026-10-10 by the check of 12a.2's fixes (ee7ca97..c689f9b): the first test fails if the old row were read after the upsert (nothing listed), if the person rows were dropped (Lee, on Ana's own 8:00-6:00, would be listed) or if a join lost a name; the second fails if "no row" stopped meaning "follows the business" (Kim would not have fitted before). The Tuesday is found from today in Edmonton, two or more days ahead, with bookings at 10:00 and 4:00, so neither the date nor a clock change can move them. The person filter cannot change a list (another person's before and after are the same rows), so it needs no test. The second test relies on the first's bookings, as its comment says. The new tests leave their business behind, recorded as F-335.
-
-### F-329 [P3] closed - Each save locks the row it writes but reads the other side unlocked, so two owners saving at once can get a wrong list
-
-**File:** backend/lib/settings/save-business-hours.ts:45-58; backend/lib/settings/save-person-hours.ts:49-58
-**Found:** 2026-10-10 by /audit (scope: current, step 12a.2; lenses: all)
-**Why it matters:** The business save reads every person's row with a plain select, and the person save reads the business's row the same way and uses it for both before and after. If a person's card and the business's card are saved at the same moment, each list is worked out against the other's old row: a booking can be listed for a person who just moved to an own week, or missed when the time zone changed underneath. Only the notice is wrong, no booking changes, and it needs two saves inside one transaction's time.
-**Suggested fix:** Lock the other side too, in the same order in both saves: the business save adds `.for("update")` to the person rows; the person save reads the business row `.for("share")` before locking its own.
-**Resolution:** Confirmed 2026-10-10 by independent review of 12a.2, with one addition: a person's own row is unlocked too on its first save, since `for update` on save-person-hours.ts:59-68 locks nothing when the row does not exist yet, so two first saves of the same person (two tabs) both compare against "no row". The suggested lock order holds without a deadlock. A customer booking racing a save is a different path, recorded as F-331. Stays open. Fixed 2026-10-10: the person save locks the person `for no key update` (two saves of one person wait for each other even before a row exists; a booking for them can still be made) and then the business row `for share`, which the business save holds `for update` before it reads anyone's rows, so a business save and a person save never interleave. No lock was added to the business save's person rows: the shared business row already serialises them. Closed 2026-10-10 by the check of 12a.2's fixes (ee7ca97..c689f9b): the person save takes the person, then the business row (share), then its own row; the business save takes only the business row, so neither ever holds what the other waits for: no deadlock. Whichever waits reads after the other commits (READ COMMITTED: a new snapshot per statement, and a waiting `for share` returns the updated row). Two saves of one person queue on the person, row or no row. A booking insert checks its person key `for key share`, which `for no key update` does not block; book-time.ts takes no row lock and touches neither row; move-booking and cancel-booking lock only `booking`. F-331 stays as it was.
-
-### F-330 [P3] closed - A booking in a window that ends inside the skipped spring hour is offered by the booking window but judged never to have fitted, so it is never listed
-
-**File:** backend/lib/bookable-hours/apply-outside-hours-rules.ts:47-63 (momentOf, fitsHours); backend/lib/scheduling/apply-free-times-rules.ts:58-71
-**Found:** 2026-10-10 by independent review of step 12a.2 (scope: 0f33b77..47dc46e; lenses: quality, security, performance, tests)
-**Why it matters:** The spec says fits is decided "the way free times does". Free times treats a window end that falls in the skipped hour as absent and lets the clock count decide; momentOf moves it to the first minute after the jump. Run with tsx in a scratch script: America/Denver, 2027-03-14, Sunday 1:00-2:30, a 60-minute service every 30 minutes. Free times offers 08:00Z and 08:30Z (1:00 and 1:30 a.m.); with Sunday then changed to 0:00-1:00 the rule lists only 08:00Z, because the 1:30 booking ends at 3:30 MDT, past the 3:00 moment momentOf gives the end. That booking sits outside the new hours unlisted. The named test "a booking across the spring clock change is judged on real time" cannot see this: neither of its bookings crosses the jump, and a plain local-clock comparison passes it as well. Rare (hours ending between 2:00 and 3:00 a.m.), but it is exactly the clock-change case the step promises.
-**Suggested fix:** Make fitsHours use free times' own end rule: when localTimeToMoment returns null for the window end, compare the booking's clock start plus its length against endMinute, as free times does. Add a test with a window ending in the skipped hour, built from what applyFreeTimesRules offers.
-**Resolution:** Fixed 2026-10-10: fitsHours now uses free times' own test: the booking's clock start and length inside the window, and its real end no later than the window's real end, with the clock count alone when that end is the skipped hour. New test "a window that ends in the hour skipped in spring is judged as the booking window offers it" takes its bookings from applyFreeTimesRules (Denver, 2027-03-14) and expects both listed; it fails on the old rule. The eight Simulate cases still pass. Closed 2026-10-10 by the check of 12a.2's fixes (ee7ca97..c689f9b): with ee7ca97's apply-outside-hours-rules.ts put back, the new test fails (1 failed, 8 passed), and passes again restored. A scratch script compared the two on 31,752 windows (every 30-minute window up to 1440, 30/60/90-minute services, spring and autumn days in Denver, London, Santiago, Havana and Lord Howe, plus an ordinary day): every start free times offers fits, and the only starts that fit without being offered are in the second pass of the repeated autumn hour, which free times never offers (localTimeToMoment takes the first) and the old rule also judged inside. Windows ending at 1440 and changes at midnight agree.
 
 ### F-331 [P3] unverified - A booking made while a save of hours is running can land outside the new hours and never be listed
 
@@ -345,14 +265,6 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** One exported helper in lib/bookable-hours/ (for example `windowsOnDate(weeklyHours, dateHours, date)`, with the merge in one place) used by both applyFreeTimesRules and applyOutsideHoursRules.
 **Resolution:**
 
-### F-333 [P3] closed - On the business card the list's h4 follows the "One-off dates" h3, so the heading outline files it under one-off dates
-
-**File:** frontend/components/settings/outside-hours-list.tsx:20; frontend/components/settings/business-hours-card.tsx:141
-**Found:** 2026-10-10 by independent review of step 12a.2 (scope: 0f33b77..47dc46e; lenses: quality, security, performance, tests)
-**Why it matters:** The business card is h2 "When you take bookings", then h3 "One-off dates", then the list's fixed h4. A screen reader user moving by headings hears the outside list as part of One-off dates. On a person's card (h3 name, h4 one-off dates, h4 list) the level is right.
-**Suggested fix:** Let the card pass the heading level (h3 on the business card, h4 on a person's), or render the title as a level the caller picks.
-**Resolution:** Fixed 2026-10-10: OutsideHoursList takes its heading level from the card, h3 on the business card and h4 on a person's. Closed 2026-10-10 by the check of 12a.2's fixes (ee7ca97..c689f9b): business-hours-card.tsx:235 passes h3, a sibling of "One-off dates" (h3) under the card's h2; person-hours-card.tsx:163 passes h4 under the name's h3; the prop allows only those two levels, and the frontend builds and lints clean.
-
 ### F-334 [P3] unverified - The list's times use the browser's time-zone rules, which the booking window deliberately avoids
 
 **File:** frontend/components/settings/outside-hours-list.tsx:37; backend/lib/scheduling/local-start-times.ts:1-4
@@ -361,10 +273,18 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Have outsideHoursOf add a `when` string per row with formatBookingTime on the API, as localStartTimes does, and show that.
 **Resolution:**
 
-### F-335 [P3] fixed - The settings route tests leave their booked business, with its bookings, in the dev database on every run
+### F-336 [P3] open - The Settings screen's heading levels put "Each person" and every person's card under the business card
 
-**File:** backend/routes/settings-routes.test.ts:225-230
-**Found:** 2026-10-10 by the check of 12a.2's fixes (scope: ee7ca97..c689f9b)
-**Why it matters:** The fix for F-328 added a fourth business, `booked`, with two people, a service, a stage and four customers' leads and bookings, but afterAll deletes only summit, other and fresh; booked's user goes, its business stays. Seen in `scheduleads_dev`: two `test-hours-b-*-dev` businesses were left from earlier runs before this check ran the tests, three after, each with 4 bookings and no members. Every run adds one more to the shared seeded database that other suites and the dev screens read.
-**Suggested fix:** Add `booked.organizationId` to the organization delete in afterAll (everything under it cascades), and remove the businesses already left: `delete from organization where slug like 'test-hours-b-%-dev'`.
-**Resolution:** Fixed 2026-10-10: afterAll deletes all four businesses, booked included. Checked: a run of the route tests left the count of `test-hours-*` businesses at 3, where each run had added one. The three already left from earlier runs stay in the local dev database until it is next rebuilt; nothing was deleted by hand.
+**File:** frontend/components/settings/business-hours-card.tsx:105; frontend/components/settings/settings-screen.tsx:44,84; frontend/components/settings/person-hours-card.tsx:89
+**Found:** 2026-10-10 by the final review of feature 12a (scope: main...76850fe; lenses: quality, security, performance, tests)
+**Why it matters:** Only visible with the three components together. The screen draws h1 Settings, h2 Hours, then the business card's own h2 "When you take bookings", which ends the Hours section in the outline; "Each person" (h3) follows it, so a screen reader moving by headings files it under the business's card; and each person's name is also h3, a sibling of "Each person" instead of under it. F-333 fixed the same kind of slip for the list alone.
+**Suggested fix:** One level down for the cards: the business card's title h3 (its "One-off dates" and list h4), "Each person" h3, each person's name h4 (their one-off dates and list h5), or make "Each person" visually a label and keep the names at h3 under an h2-level "When you take bookings".
+**Resolution:**
+
+### F-337 [P3] open - OutsideHoursBookingType still sits in a file of its own, though outsideHoursOf now produces it
+
+**File:** backend/lib/settings/outside-hours-booking-type.ts:1-11; backend/lib/settings/outside-hours-of.ts:15-24
+**Found:** 2026-10-10 by the final review of feature 12a (scope: main...76850fe; lenses: quality, security, performance, tests)
+**Why it matters:** The type-only file made sense in 12a.1, when `outsideHours` was always empty and nothing produced it. Since 12a.2 `outsideHoursOf` builds every row of it, and coding-standards.md says "A type sits in the file of the function that produces it". The file is used (outside-hours-of, both saves), so nothing breaks; it is the leftover the standard exists to stop, a file Frank opens to find only a shape whose maker lives elsewhere.
+**Suggested fix:** Move `OutsideHoursBookingType` into outside-hours-of.ts, point the two saves' imports there, and remove outside-hours-booking-type.ts.
+**Resolution:**

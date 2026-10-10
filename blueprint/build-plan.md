@@ -288,7 +288,7 @@ without Frank touching the database.
   hours for the public (the website, the Google profile) are a separate
   setting from bookable hours, often the same, never forced to be; not
   built in any of the six, nothing needs them yet:
-  - [ ] 12a. **Hours** - the `/settings` page, and when customers can book:
+  - [x] 12a. **Hours** - the `/settings` page, and when customers can book:
     bookable hours with several windows a day, for the business and for
     each person, and one-off dates. Notice, how far ahead and time zone,
     once for the business. How far ahead is at most a year (the database
