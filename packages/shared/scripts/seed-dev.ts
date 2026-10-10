@@ -9,33 +9,25 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
+import { applyBusinessShape, ensureResource } from "@scheduleads-app/shared/client-setup";
 import { DEFAULT_PIPELINE_STAGES } from "@scheduleads-app/shared/crm";
 import * as schema from "@scheduleads-app/shared/db";
 import {
   availabilityRule,
   bookingLink,
-  bookingLinkResource,
-  bookingQuestion,
   member,
   organization,
   pipelineStage,
   resource,
-  standbyDate,
   textSettings,
   user,
-  workerTextSettings,
 } from "@scheduleads-app/shared/db";
 import {
-  businessAvailabilityRuleValidationSchema,
-  personAvailabilityRuleValidationSchema,
+  clientSetupValidationSchema,
   textSettingsValidationSchema,
-  workerTextSettingsValidationSchema,
-  type DateHoursType,
-  type WeeklyHoursType,
-  type WorkerTextSettingsInputType,
+  type ClientSetupInputType,
 } from "@scheduleads-app/shared/zod-validation";
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
-import { toSlug } from "@scheduleads-app/shared/helpers";
 
 // Minutes from midnight, so 9:30 reads as at(9, 30) instead of 570.
 const at = (hour: number, minute = 0) => hour * 60 + minute;
@@ -56,23 +48,9 @@ function mondayAfterDays(days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-export type ResourceSeedType = {
-  name: string;
-  kind: "person" | "place";
-  weeklyHours?: WeeklyHoursType | null; // missing = no row, follows the business's week
-  dateHours?: DateHoursType;
-  standbyDates?: string[]; // at work, hidden from customers on these dates
-  workerTexts?: WorkerTextSettingsInputType; // a person only; missing = no row, no texts (8c)
-};
-
-export type ServiceSeedType = {
-  name: string;
-  durationMinutes: number;
-  bufferBeforeMinutes?: number;
-  bufferAfterMinutes?: number;
-  slotIntervalMinutes?: number; // minutes between start times; missing = every service length
-  ticked?: string[]; // who does what: the people who can do it and the rooms it is done in, by name
-};
+// The seed's businesses are described like any client's setup file (feature 10).
+type ResourceSeedType = ClientSetupInputType["people"][number];
+type ServiceSeedType = ClientSetupInputType["services"][number];
 
 // Alberta's nine main holidays, the picker's one-click set (feature 12).
 const albertaMainHolidays = [
@@ -320,29 +298,6 @@ const ACCOUNTS = [
   },
 ] as const;
 
-export type TransactionType = Parameters<
-  Parameters<ReturnType<typeof drizzle>["transaction"]>[0]
->[0];
-
-// Finds a resource by its name in this business, or makes it. Returns its id and whether it was made.
-async function ensureResource(
-  tx: TransactionType,
-  organizationId: string,
-  name: string,
-  kind: "person" | "place"
-): Promise<{ id: string; made: boolean }> {
-  const [existing] = await tx
-    .select({ id: resource.id })
-    .from(resource)
-    .where(and(eq(resource.organizationId, organizationId), eq(resource.name, name)))
-    .limit(1);
-  if (existing) return { id: existing.id, made: false };
-
-  const id = randomUUID();
-  await tx.insert(resource).values({ id, organizationId, name, kind });
-  return { id, made: true };
-}
-
 const database = assertLocalDevDatabase(process.env.DATABASE_URL, "seed");
 const client = postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () => {} });
 const db = drizzle(client, { schema });
@@ -487,25 +442,8 @@ try {
         );
       }
 
-      // Its own booking questions (feature 9). Only when it has none, so questions changed by hand
-      // survive a reseed.
-      const [anyQuestion] = await tx
-        .select({ id: bookingQuestion.id })
-        .from(bookingQuestion)
-        .where(eq(bookingQuestion.organizationId, organizationId))
-        .limit(1);
-      if (!anyQuestion) {
-        await tx.insert(bookingQuestion).values(
-          business.questions.map((question, index) => ({
-            id: randomUUID(),
-            organizationId,
-            position: index + 1,
-            ...question,
-          }))
-        );
-      }
-
-      // Parsed before writing: the jsonb columns would accept a bad week.
+      // Rows an older seed made, read before the shape is applied so they can be brought up to
+      // date below, and no machine needs a rebuild.
       const [existingBusinessHours] = await tx
         .select({
           id: availabilityRule.id,
@@ -520,100 +458,9 @@ try {
           )
         )
         .limit(1);
-      const hours = businessAvailabilityRuleValidationSchema.parse({
-        resourceId: null,
-        ...business.hours,
-      });
-      if (!existingBusinessHours) {
-        await tx.insert(availabilityRule).values({ id: randomUUID(), organizationId, ...hours });
-      }
-      // A row seeded before holidays existed gets the picks, so no machine needs a rebuild.
-      const holidaysAdded =
-        existingBusinessHours?.holidayCountry === null &&
-        existingBusinessHours.closedHolidays.length === 0;
-      if (holidaysAdded) {
-        await tx
-          .update(availabilityRule)
-          .set({
-            holidayCountry: hours.holidayCountry,
-            holidayRegion: hours.holidayRegion,
-            closedHolidays: hours.closedHolidays,
-          })
-          .where(eq(availabilityRule.id, existingBusinessHours.id));
-      }
-
-      let peopleMade = 0;
-      let hoursMade = 0;
-      let standbyMade = 0;
-      let workerTextsMade = 0;
-      const resourceIdsByName = new Map<string, string>([[business.name, firstPerson.id]]);
-      for (const person of business.people as readonly ResourceSeedType[]) {
-        const { id: resourceId, made } = await ensureResource(
-          tx,
-          organizationId,
-          person.name,
-          person.kind
-        );
-        resourceIdsByName.set(person.name, resourceId);
-        if (made) peopleMade++;
-
-        // A date already there stays; a rerun on a later day adds that day's Monday too.
-        if (person.standbyDates?.length) {
-          const madeDates = await tx
-            .insert(standbyDate)
-            .values(person.standbyDates.map((date) => ({ organizationId, resourceId, date })))
-            .onConflictDoNothing()
-            .returning({ date: standbyDate.date });
-          standbyMade += madeDates.length;
-        }
-
-        // Their worker-text settings, only while they have none, so settings changed by hand
-        // survive a reseed.
-        if (person.workerTexts) {
-          if (person.kind !== "person")
-            throw new Error(`${person.name} is a place: only people get texts.`);
-          const madeSettings = await tx
-            .insert(workerTextSettings)
-            .values({
-              personId: resourceId,
-              organizationId,
-              ...workerTextSettingsValidationSchema.parse(person.workerTexts),
-            })
-            .onConflictDoNothing({ target: workerTextSettings.personId })
-            .returning({ id: workerTextSettings.personId });
-          workerTextsMade += madeSettings.length;
-        }
-
-        // No row only when there is nothing to store: no week and no extra dates.
-        if (person.weeklyHours === undefined && !person.dateHours?.length) continue;
-
-        const [existingHours] = await tx
-          .select({ id: availabilityRule.id })
-          .from(availabilityRule)
-          .where(
-            and(
-              eq(availabilityRule.organizationId, organizationId),
-              eq(availabilityRule.resourceId, resourceId)
-            )
-          )
-          .limit(1);
-        if (existingHours) continue;
-
-        const hours = personAvailabilityRuleValidationSchema.parse({
-          resourceId,
-          weeklyHours: person.weeklyHours ?? null,
-          dateHours: person.dateHours ?? [],
-        });
-        await tx.insert(availabilityRule).values({ id: randomUUID(), organizationId, ...hours });
-        hoursMade++;
-      }
-
-      let servicesMade = 0;
-      let choicesSet = 0;
-      // Who picks the person, also on a database seeded before the setting existed, so no machine
-      // needs a rebuild. Decided for the whole business, like the stages: only while every service
-      // it has still holds the business_assigns migration 0022 gave them, so a choice made by
-      // hand on any one keeps them all as they are.
+      // Who picks the person, decided for the whole business, like the stages: only while every
+      // service it has still holds the business_assigns migration 0022 gave them, so a choice
+      // made by hand on any one keeps them all as they are.
       const choices = await tx
         .select({ personChoice: bookingLink.personChoice })
         .from(bookingLink)
@@ -622,48 +469,46 @@ try {
         business.personChoice !== "business_assigns" &&
         choices.length > 0 &&
         choices.every((row) => row.personChoice === "business_assigns");
-      let ticksMade = 0;
-      for (const { ticked = [], ...service } of business.services as readonly ServiceSeedType[]) {
-        const slug = toSlug(service.name);
-        const [existingLink] = await tx
-          .select({ id: bookingLink.id })
-          .from(bookingLink)
-          .where(and(eq(bookingLink.organizationId, organizationId), eq(bookingLink.slug, slug)))
-          .limit(1);
 
-        const bookingLinkId = existingLink?.id ?? randomUUID();
-        if (!existingLink) {
-          await tx.insert(bookingLink).values({
-            id: bookingLinkId,
-            organizationId,
-            slug,
-            layout: "month", // the only layout built (feature 9)
-            personChoice: business.personChoice,
-            ...service,
-          });
-          servicesMade++;
-        } else if (bringChoicesUp) {
-          await tx
-            .update(bookingLink)
-            .set({ personChoice: business.personChoice })
-            .where(eq(bookingLink.id, bookingLinkId));
-          choicesSet++;
-        }
+      // Its questions, hours, people and services: the same code a client's setup file runs.
+      // Parsed before writing: the jsonb columns would accept a bad week.
+      const shape = clientSetupValidationSchema.parse({
+        slug: business.slug,
+        personChoice: business.personChoice,
+        questions: business.questions,
+        hours: business.hours,
+        people: business.people,
+        services: business.services,
+      });
+      const madeByShape = await applyBusinessShape(
+        tx,
+        organizationId,
+        { id: firstPerson.id, name: business.name },
+        shape
+      );
 
-        if (!ticked.length) continue;
-        const ticks = ticked.map((name) => {
-          const resourceId = resourceIdsByName.get(name);
-          if (!resourceId)
-            throw new Error(`The seed ticks "${name}", who is not in ${business.name}.`);
-          return { organizationId, bookingLinkId, resourceId };
-        });
-        // Only missing ticks: one removed by hand comes back, any added by hand stays.
-        const madeTicks = await tx
-          .insert(bookingLinkResource)
-          .values(ticks)
-          .onConflictDoNothing()
-          .returning({ resourceId: bookingLinkResource.resourceId });
-        ticksMade += madeTicks.length;
+      // A row seeded before holidays existed gets the picks.
+      const holidaysAdded =
+        existingBusinessHours?.holidayCountry === null &&
+        existingBusinessHours.closedHolidays.length === 0;
+      if (holidaysAdded) {
+        await tx
+          .update(availabilityRule)
+          .set({
+            holidayCountry: shape.hours.holidayCountry,
+            holidayRegion: shape.hours.holidayRegion,
+            closedHolidays: shape.hours.closedHolidays,
+          })
+          .where(eq(availabilityRule.id, existingBusinessHours.id));
+      }
+
+      let choicesSet = 0;
+      if (bringChoicesUp) {
+        await tx
+          .update(bookingLink)
+          .set({ personChoice: business.personChoice })
+          .where(eq(bookingLink.organizationId, organizationId));
+        choicesSet = choices.length;
       }
 
       const made = [
@@ -671,18 +516,11 @@ try {
         !existingOrg && "business",
         !existingMember && "membership",
         !anyStage && "pipeline stages",
-        !anyQuestion && "booking questions",
         firstPerson.made && "first person",
         linked.length && "first person's login link",
-        !existingBusinessHours && "business hours",
         holidaysAdded && "holiday picks",
-        peopleMade && `${peopleMade} people and places`,
-        hoursMade && `${hoursMade} people's own hours`,
-        standbyMade && `${standbyMade} standby dates`,
-        servicesMade && `${servicesMade} services`,
-        ticksMade && `${ticksMade} who-does-what ticks`,
         textSettingsMade && "text settings",
-        workerTextsMade && `${workerTextsMade} worker text settings`,
+        ...madeByShape,
       ].filter(Boolean);
       console.log(
         `${account.email.padEnd(20)} ${account.role === "admin" ? "platform admin" : "ordinary owner"}, ` +

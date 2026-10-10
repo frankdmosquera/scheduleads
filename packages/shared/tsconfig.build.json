@@ -1,5 +1,5 @@
 {
-  // The build: only the seven folders the apps import, compiled to dist/ with their types.
+  // The build: the folders the apps and the scripts import, compiled to dist/ with their types.
   // No src/ folder, so the list is written out: the seed, the drizzle
   // config and the tests never reach dist/.
   "extends": "./tsconfig.json",
@@ -9,6 +9,6 @@
     "rootDir": ".",
     "outDir": "./dist"
   },
-  "include": ["db", "crypto", "calendar", "crm", "helpers", "subscriptions", "zod-validation"],
+  "include": ["db", "crypto", "calendar", "crm", "helpers", "subscriptions", "zod-validation", "client-setup"],
   "exclude": ["**/*.test.ts"] // tests run through Vitest, never shipped in dist/
 }

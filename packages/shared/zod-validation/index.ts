@@ -10,6 +10,7 @@ export * from "./organization-validation-schemas/business-email-details-validati
 export * from "./organization-validation-schemas/email-sending-key-validation-schema.js";
 export * from "./organization-validation-schemas/email-sending-validation-schema.js";
 export * from "./admin-validation-schemas/provision-client-validation-schema.js";
+export * from "./admin-validation-schemas/client-setup-validation-schema.js";
 export * from "./crm-validation-schemas/contact-validation-schema.js";
 export * from "./booking-links-validation-schemas/booking-link-id-validation-schema.js";
 export * from "./booking-links-validation-schemas/free-times-query-validation-schema.js";

@@ -4,7 +4,11 @@
 
 **Branch:** `feature/10-tenant-zero-ready-agentsweb`
 
-**Status:** spec written 2026-10-09; whole-feature pass agreed with Frank 2026-10-09; step 10.1 built and reviewed 2026-10-09; step 10.2 built 2026-10-09, without the publish (amended).
+**Size:** light, decided 2026-10-10: settings, packaging and one small command; the rest of
+the feature runs as one step, reviewed once at `/complete` (`AGENTS.md`, "Each feature is heavy
+or light").
+
+**Status:** step 10.3 built 2026-10-10 (spec steps 10.3 and 10.4 merged); spec written 2026-10-09; whole-feature pass agreed with Frank 2026-10-09; step 10.1 built and reviewed 2026-10-09; step 10.2 built 2026-10-09, without the publish (amended).
 
 ## Goal
 
@@ -180,7 +184,15 @@ named in the step.
   file, its strict typecheck and a Node import pass, with output recorded;
   `AGENTS.md` names the publish and install commands.
 
-- [ ] **10.3 The setup file and its command.**
+- [x] **10.3 The setup file and its command, AgentsWeb set up, and a real call booked.**
+  Amended 2026-10-10 (Frank, the feature is light): the spec's 10.3 and 10.4 are built as
+  this one step, reviewed at `/complete`. The shared function lives in
+  `packages/shared/client-setup/` (compiled, so the seed and the command import the same
+  code); a dry run runs the apply and rolls it back, so it reports exactly what an apply would
+  add. AgentsWeb asks no booking questions: the card asks only a name and an email or phone,
+  which the window asks itself. Its notice is 0 minutes (the card sets none).
+  Found while booking: the window always asks for an address and "What would you like done?",
+  which a call does not need (raised with Frank).
   Shared: a setup file's schema (Zod) in the seed's existing business shape:
   the business's slug, time zone, weekly hours, horizon, questions, people,
   services (name, duration, buffers, description, layout, who picks, step) and
@@ -204,7 +216,7 @@ named in the step.
   non-local database refused; the dev seed still builds both dev businesses;
   suites pass.
 
-- [ ] **10.4 AgentsWeb set up, and a real call booked.**
+- [x] **10.4 Merged into 10.3 (2026-10-10).**
   AgentsWeb made on the local database through the existing client setup
   screen (`/admin/client-setup`), its owner's login and email details as that
   screen asks. Its setup file in the repo, with every value read from the

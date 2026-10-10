@@ -496,6 +496,9 @@ ledger:
 - Apply pending migrations: `npm run db:migrate --workspace=@scheduleads-app/shared`
 - Seed the two development accounts: `npm run db:seed --workspace=@scheduleads-app/shared`
 - Browse the data: `npm run db:studio --workspace=@scheduleads-app/shared`
+- Set a business up from its setup file (made first on `/admin/client-setup`; a dry run
+  unless `--apply`; adds only what is missing; local `*_dev` only until item 10b):
+  `npm run client:setup --workspace=@scheduleads-app/shared -- client-setups/<file>.ts [--apply]`
 
 Development runs against a local PostgreSQL 18, the same major version as
 Railway, in a database named `scheduleads_dev` on 127.0.0.1:5432, and `.env`
