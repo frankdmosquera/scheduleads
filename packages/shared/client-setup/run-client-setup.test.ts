@@ -234,7 +234,7 @@ describe("runClientSetup", () => {
       '"Video call", asksAddress: saved true, file false',
       expect.stringMatching(/^"Ana", weeklyHours: saved {"tue"/),
       expect.stringMatching(/^"Ana", worker texts: saved {"addedOn":true,"movedOn":false/),
-      '"Video call", unticked by hand: Room A',
+      '"Video call", in the file, not ticked here: Room A',
       '"Phone call", ticked by hand: Ana',
     ]);
     const [kept] = await db.select().from(bookingLink).where(byHand);
@@ -242,6 +242,13 @@ describe("runClientSetup", () => {
     expect(
       await db.$count(bookingLinkResource, eq(bookingLinkResource.bookingLinkId, videoCall!.id))
     ).toBe(0);
+
+    // A tick naming nobody listed still stops the run, though the service already exists (F-355).
+    const misspelt = fileFor(business.slug);
+    misspelt.services[0].ticked = ["Room B"];
+    await expect(
+      runClientSetup(db, clientSetupValidationSchema.parse(misspelt), { apply: true })
+    ).rejects.toThrow('"Video call" ticks "Room B", who is not listed.');
   });
 
   it("finds a service renamed on Settings by its new name, never adding it twice", async () => {

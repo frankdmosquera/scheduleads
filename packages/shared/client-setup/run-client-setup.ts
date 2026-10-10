@@ -199,7 +199,8 @@ async function findDifferences(
     }
   }
 
-  // Who does what: kept as the owner left it; a tick added or removed by hand is named here.
+  // Who does what: kept as the owner left it; a tick added by hand, or one in the file but not
+  // here, is named.
   for (const service of setup.services) {
     // The one service the file means, so another of the same name never lends it its ticks.
     const [saved] = await tx
@@ -231,7 +232,9 @@ async function findDifferences(
       tickedHere.add(nameKeyOf(firstPerson.businessName));
     const removed = (service.ticked ?? []).filter((name) => !tickedHere.has(nameKeyOf(name)));
     if (removed.length)
-      differences.push(`"${service.name}", unticked by hand: ${removed.sort().join(", ")}`);
+      differences.push(
+        `"${service.name}", in the file, not ticked here: ${removed.sort().join(", ")}`
+      );
   }
 
   return differences;

@@ -369,34 +369,42 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Find the seed's first person by the owner's login first (`resource.userId = userId` in that business), falling back to ensureResource by name only when none is linked yet; pass that person's current name with the business's name to applyBusinessShape, as run-client-setup.ts now does.
 **Resolution:** Fixed 2026-10-10: the seed finds a business's first person by their owner's login once linked, and only falls back to the business's name to make one; a rename on Settings no longer makes it add a second. Ran npm run db:seed on scheduleads_dev: both businesses "already there".
 
-### F-351 [P3] fixed - Cancel after a service saved but its ticks failed leaves the list showing the service as it was
+### F-351 [P3] closed - Cancel after a service saved but its ticks failed leaves the list showing the service as it was
 
 **File:** frontend/components/settings/service-form.tsx:184-186
 **Found:** 2026-10-10 by /audit (scope: 12d.3, 7eb80af..7f38977; lenses: all)
 **Why it matters:** The form saves the service, then its ticks by a second call. When the second call fails, the form stays open with the service already changed on the server; Cancel on an existing service called onCancel, so the list kept the old name, length or Live state until a reload. (A new service was already handled.)
 **Suggested fix:** On Cancel, hand the list the service as last saved whenever a save landed in this form.
-**Resolution:** Fixed 2026-10-10: Cancel passes the last saved service to the list whenever one landed, new or existing.
+**Resolution:** Fixed 2026-10-10: Cancel passes the last saved service to the list whenever one landed, new or existing. Closed 2026-10-10 by the check of 12d.3's fixes (f38b317..397e536): savedService only moves off the opened service when the service saved and its ticks then failed (every other save closes the form), so Cancel hands the list exactly that case; a failed first save still cancels plainly.
 
-### F-352 [P2] fixed - The step's hand check left Summit's Colour consultation on "the customer picks", and three public route tests now fail
+### F-352 [P2] closed - The step's hand check left Summit's Colour consultation on "the customer picks", and three public route tests now fail
 
 **File:** backend/routes/public-booking-links-routes.test.ts:226, 605, 619
 **Found:** 2026-10-10 by the independent review of 12d.3 (scope: 7eb80af..7c8e9e3)
 **Why it matters:** These tests read painting-dev's seeded Colour consultation and expect "the business sends whoever is free". The step's hand check switched it to "the customer picks" in scheduleads_dev and left it there, so `npm run test --workspace=backend` now ends 3 failed, 924 passed ("expected 'customer_picks' to be 'business_assigns'", people listed where none are expected, 200 where 400 is expected). Every later step reruns this suite, so the gate is red for reasons that have nothing to do with the code. `npm run db:seed` does not put it back: applyBusinessShape only adds a missing service and never changes an existing one.
 **Suggested fix:** Switch Colour consultation back on Settings (or drop, migrate and seed scheduleads_dev), rerun the backend suite, and do future hand checks on a service the suite does not read, or put the change back as part of the check.
-**Resolution:** Fixed 2026-10-10: Colour consultation switched back to "we send whoever is free" on Settings; backend 927 of 927 again. Dev data only, no code.
+**Resolution:** Fixed 2026-10-10: Colour consultation switched back to "we send whoever is free" on Settings; backend 927 of 927 again. Dev data only, no code. Closed 2026-10-10 by the check of 12d.3's fixes (f38b317..397e536): `npm run test --workspace=backend` 927 passed, 0 failed.
 
-### F-353 [P3] fixed - Cancel after the ticks failed to save announces "Saved. Customers can book it now."
+### F-353 [P3] closed - Cancel after the ticks failed to save announces "Saved. Customers can book it now."
 
 **File:** frontend/components/settings/service-form.tsx:185-188, frontend/components/settings/services-screen.tsx:47-58
 **Found:** 2026-10-10 by the independent review of 12d.3 (scope: 7eb80af..7c8e9e3)
 **Why it matters:** When the service saves and its ticks then fail, the form says "X is saved, but who does it is not". If the owner presses Cancel, the form (since the F-351 repair, and for a new service since 7f38977) calls onSaved, and the list's saved() shows the same notice as a full save: "Saved. Customers can book X now." The owner who wanted only Marco reads that everything went through, while the service is live with the ticks as they were (for a new one, nobody ticked, so anyone is offered). Read from the code, not clicked.
 **Suggested fix:** Let Cancel hand the list the saved service without the success notice (a second callback, or a flag on onSaved), or have the list say that who does it was not changed.
-**Resolution:** Fixed 2026-10-10 on Frank's yes: Cancel after a failed tick save tells the list so, and the list says "Saved, but who does <service> was not." instead of the full-save notice. Checked in the browser with the ticks call blocked on Cabinet consultation.
+**Resolution:** Fixed 2026-10-10 on Frank's yes: Cancel after a failed tick save tells the list so, and the list says "Saved, but who does <service> was not." instead of the full-save notice. Checked in the browser with the ticks call blocked on Cabinet consultation. Closed 2026-10-10 by the check of 12d.3's fixes (f38b317..397e536): Cancel is the only caller passing `false`, every full save still passes nothing (true), and the list returns before the success notice; frontend build and lint clean.
 
-### F-354 [P3] fixed - The setup command and the seed put back ticks the owner removed on Settings
+### F-354 [P3] closed - The setup command and the seed put back ticks the owner removed on Settings
 
 **File:** packages/shared/client-setup/apply-business-shape.ts:194-199
 **Found:** 2026-10-10 by the independent review of 12d.3 (scope: 7eb80af..7c8e9e3)
 **Why it matters:** For a service that already exists, the setup still inserts every tick the file names (`onConflictDoNothing`, "one removed by hand comes back"). That rule dates from when "by hand" meant editing the table; since 12d.3 it is the owner's own choice on Settings. On Riverbend Clinic (dev), untick Mei from the laser service, then run `npm run db:seed` (or the setup with `--apply`): Mei is ticked and offered again; a service whose ticks were cleared to "anyone" goes back to only the file's people. The setup already leaves an existing service's other fields alone, so ticks are the odd one out. Read from the code, not run; the setup is local `*_dev` only until item 10b.
 **Suggested fix:** Add a service's ticks only when this run makes the service, and list the file's missing ticks on an existing service as a difference instead; Frank's call, since the current rule was written on purpose.
-**Resolution:** Fixed 2026-10-10 on Frank's yes: the setup and the seed tick only a service they make now; an existing service's ticks are left as the owner set them, and the report names a file tick missing there as "unticked by hand". The setup test unticks Room A and checks it stays off and is reported; it fails on the old code.
+**Resolution:** Fixed 2026-10-10 on Frank's yes: the setup and the seed tick only a service they make now; an existing service's ticks are left as the owner set them, and the report names a file tick missing there as "unticked by hand". The setup test unticks Room A and checks it stays off and is reported; it fails on the old code. Closed 2026-10-10 by the check of 12d.3's fixes (f38b317..397e536): a service made now still gets the file's ticks through the same name map (the first person by the business's name in both callers, and by their own name in the setup), an existing one is skipped before any insert, and the report names added and removed ticks, the first person included; shared 174 of 174. The skip also took the "who is not listed" guard with it for existing services, see F-355.
+
+### F-355 [P3] fixed - On a service that already exists, a tick naming nobody is no longer stopped, and is reported as "unticked by hand"
+
+**File:** packages/shared/client-setup/apply-business-shape.ts:189-192; packages/shared/client-setup/run-client-setup.ts:229-234
+**Found:** 2026-10-10 by the check of 12d.3's fixes (scope: f38b317..397e536)
+**Why it matters:** The F-354 skip (`if (existingLink || !ticked.length) continue`) sits before the map that throws `"X" ticks "Y", who is not listed.`, so that guard now runs only for a service made in this run. A setup file whose existing "Laser" ticks a misspelled "Mai" used to stop the run with that message; now the dry run and the apply both pass, and the report says `"Laser", unticked by hand: Mai`, which reads as the owner's own choice on Settings. The same line appears for a person the file adds in this very run and ticks on an existing service (made, never ticked, reported as removed by hand). Nothing wrong is written; only the check and the wording are lost. Read from the code, not run; local `*_dev` only until item 10b.
+**Suggested fix:** Resolve every service's tick names (the throw) before the `existingLink` skip, so a name nobody holds stops the run as before; and word the report line for a file tick missing on an existing service without claiming "by hand" (for example "in the file, not ticked"), or name a person made in this run apart.
+**Resolution:** Fixed 2026-10-10 (it only made F-354 hold): every tick name is checked before an existing service is skipped, and the report line reads "in the file, not ticked here". A test runs a misspelt tick on an existing service and expects the stop; it fails on 397e536.
