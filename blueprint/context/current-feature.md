@@ -4,7 +4,10 @@
 
 **Branch:** `feature/09-the-booking-component`
 
-**Status:** spec written 2026-10-08, waiting for the whole-feature pass, then step 9.1's yes.
+**Status:** verified. Steps 9.1 to 9.7 (and 9.1b) built, tested and reviewed step by step
+(audit, independent review, re-reviews), 2026-10-08 to 2026-10-09. Design review passed
+on the live preview (Frank, 2026-10-09). No P0 or P1 open or fixed. The checkpoint for
+the final review.
 
 ## Goal
 
