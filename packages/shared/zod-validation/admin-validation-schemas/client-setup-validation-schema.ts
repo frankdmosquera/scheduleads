@@ -11,6 +11,18 @@ import { workerTextSettingsValidationSchema } from "../text-validation-schemas/w
 
 const nameValidationSchema = z.string().trim().min(1).max(200);
 
+// The business's own hours row, without the resourceId only the database needs. A preprocess
+// types its input as unknown, so the input type is restated: a setup file's hours are then
+// checked in the editor, not only when the command parses them (F-305).
+type BusinessHoursType = typeof businessAvailabilityRuleValidationSchema;
+const setupHoursValidationSchema = z.preprocess(
+  (hours) => (hours !== null && typeof hours === "object" ? { resourceId: null, ...hours } : hours),
+  businessAvailabilityRuleValidationSchema
+) as unknown as z.ZodType<
+  z.output<BusinessHoursType>,
+  Omit<z.input<BusinessHoursType>, "resourceId">
+>;
+
 export const setupPersonValidationSchema = z
   .object({
     name: nameValidationSchema,
@@ -31,6 +43,7 @@ export const setupServiceValidationSchema = z
     name: nameValidationSchema,
     description: z.string().trim().min(1).max(500).optional(),
     durationMinutes: z.int().min(1),
+    asksAddress: z.boolean(), // whether the window asks the customer's address
     bufferBeforeMinutes: z.int().min(0).optional(),
     bufferAfterMinutes: z.int().min(0).optional(),
     slotIntervalMinutes: z.int().min(1).optional(), // minutes between start times; missing = every service length
@@ -43,12 +56,7 @@ export const clientSetupValidationSchema = z
     slug: z.string().min(1), // the business, already made by the client setup screen
     personChoice: z.enum(["customer_picks", "business_assigns"]),
     questions: z.array(z.object({ label: nameValidationSchema, required: z.boolean() }).strict()),
-    // The business's own hours row, without the resourceId only the database needs.
-    hours: z.preprocess(
-      (hours) =>
-        hours !== null && typeof hours === "object" ? { resourceId: null, ...hours } : hours,
-      businessAvailabilityRuleValidationSchema
-    ),
+    hours: setupHoursValidationSchema,
     people: z.array(setupPersonValidationSchema),
     services: z.array(setupServiceValidationSchema).min(1, "A business needs a service."),
   })

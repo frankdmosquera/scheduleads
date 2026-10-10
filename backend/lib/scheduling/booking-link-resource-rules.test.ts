@@ -37,6 +37,8 @@ async function makeBusiness(name: string) {
     slug: "deep-cleansing-facial",
     durationMinutes: 75,
     layout: "month",
+
+    asksAddress: true,
     personChoice: "customer_picks",
   });
   await db.insert(resource).values([

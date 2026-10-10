@@ -193,26 +193,34 @@ them); treat a 5xx like a lost answer, so the next run asks Twilio first. One
 route test with a 503 on the first send and the text found on the retry.
 **Resolution:**
 
-### F-304 [P2] open - The setup command lists differences only for business hours, questions, services and a person's kind, so a hand edit to a person's own hours, worker texts or extra ticks is kept without a word
+### F-307 [P3] open - The setup command still says nothing when a person the file gives no own hours or no worker texts has such a row by hand
 
-**File:** packages/shared/client-setup/run-client-setup.ts:143-150 (and apply-business-shape.ts:98-131, 165-177)
-**Found:** 2026-10-10 by independent review of feature 10 (scope: current, c786f7e..d9e4709; lenses: quality, security, performance, tests)
-**Why it matters:** Step 10.3 says the command "lists every difference between the file and the database so a hand edit is seen, not overwritten". findDifferences compares the business hours row, the questions, each service's own fields and a person's kind, but for people it reads only `kind`. applyBusinessShape skips a person whose hours row exists (line 131), adds worker-text settings only while none exist (onConflictDoNothing) and adds missing ticks without reading extra ones. So when a person's week, date hours or worker-text settings in the file differ from the saved row, or a tick was added by hand, the command prints "nothing to add" and no "differs, kept" line: the file and the database disagree and the output says they agree. Not reachable with today's only setup file (agentsweb.ts has `people: []` and no ticks); it is reachable on the first setup file for a business with people, such as Primo Painters or Face and Body. Nothing is lost: every row is kept.
-**Suggested fix:** In findDifferences, for each listed person that exists, compare their own hours row (weeklyHours, dateHours) and their worker-text settings with the file, and for each service report ticks in the database that the file does not list; add one test case that changes a person's hours by hand and expects the difference.
+**File:** packages/shared/client-setup/run-client-setup.ts:156, 177
+**Found:** 2026-10-10 by the independent review of the address fix (scope: current, 2428dbd..0e8fbb1; lenses: quality, security, performance, tests)
+**Why it matters:** F-304's repair compares a person's own hours only `if (person.weeklyHours !== undefined || person.dateHours?.length)` and their worker texts only `if (person.workerTexts)`. The setup file's own meaning of a missing week is "no row, the business's week" and of missing workerTexts "no texts" (client-setup-validation-schema.ts:29, 32). So a person listed without hours who was given their own week by hand, or one listed without texts who was given worker-text settings by hand, works or is texted differently from what the file says, and the command prints no "differs, kept" line. Same class as F-304, the case its repair did not reach. Not reachable with today's only setup file (agentsweb.ts has `people: []`); nothing is lost, every row is kept.
+**Suggested fix:** Drop the two `if` guards so the row is read for every listed person that exists, and report a saved row against the file's `null`/`[]` or missing texts; one more hand edit in the "keeps a row changed by hand" test (Room A or a person with no hours given a week).
 **Resolution:**
 
-### F-305 [P3] open - A setup file's hours are typed unknown, so `satisfies ClientSetupInputType` checks nothing inside them
+### F-308 [P3] open - The Google event without an address is not shown by any test, though the step's Done when names it
 
-**File:** packages/shared/zod-validation/admin-validation-schemas/client-setup-validation-schema.ts:261-265 (seen in packages/shared/client-setups/agentsweb.ts:295 and run-client-setup.test.ts:102)
-**Found:** 2026-10-10 by independent review of feature 10 (scope: current, c786f7e..d9e4709; lenses: quality, security, performance, tests)
-**Why it matters:** `hours` is `z.preprocess(fn, businessAvailabilityRuleValidationSchema)`, and Zod 4 types a preprocess's input as `unknown` (`ZodPreprocess<U, B = unknown>`). A type probe compiled with the repo's tsc accepts `{ totally: "wrong", horizonDays: "x" }` as `ClientSetupInputType["hours"]`, while a wrong `personChoice` is refused (TS2322). So agentsweb.ts's `satisfies ClientSetupInputType`, and the seed's businesses typed through the same input type, get no editor check on the hours block: a misspelt field or a string horizon shows only when the command or the seed runs and the parse refuses it. It is also the cause of one of the test file's type errors (line 102, TS2698: spread of an unknown). The runtime parse is intact, so nothing wrong reaches the database.
-**Suggested fix:** Type the input explicitly, for example `z.preprocess<unknown, typeof schema, Omit<z.input<typeof businessAvailabilityRuleValidationSchema>, "resourceId">>(...)`, or drop the preprocess and use `businessAvailabilityRuleValidationSchema` with `resourceId` made optional-null for the file, so the setup files are checked as they are written.
+**File:** backend/lib/calendar/google-calendar-provider.ts:72; backend/lib/calendar/write-booking-event.test.ts
+**Found:** 2026-10-10 by the independent review of the address fix (scope: current, 2428dbd..0e8fbb1; lenses: quality, security, performance, tests)
+**Why it matters:** The step's Done when reads "tests show ... every email, invite, event and worker text renders without one". The emails (booking-emails.test.ts), the invite (booking-ics.test.ts) and the worker text (render-worker-text.test.ts) each gained a no-address case; the event did not: write-booking-event.test.ts only writes bookings with "12 Main Street, Calgary", and google-calendar-provider.ts has no test file, so `location: event.location ?? undefined` (which relies on JSON.stringify dropping an undefined key) is checked by reading only. The code is correct as read; the gap is the missing proof the spec asks for.
+**Suggested fix:** One write-booking-event case for a booking saved with `location: null` asserting the event handed to the provider has `location: null`, and, if a provider test is ever added, that the body sent to Google has no `location` key.
 **Resolution:**
 
-### F-306 [P3] open - run-client-setup.test.ts has type errors the editor shows and no command catches
+### F-309 [P3] open - The setup file's hours get their input type through `as unknown as`, the repo's only double cast, where z.preprocess takes the input type as a generic
 
-**File:** packages/shared/client-setup/run-client-setup.test.ts:71-77, 102
-**Found:** 2026-10-10 by independent review of feature 10 (scope: current, c786f7e..d9e4709; lenses: quality, security, performance, tests)
-**Why it matters:** `tsc -p packages/shared/tsconfig.json` (the editor's view, which coding-standards.md says type-checks everything in the package) fails with six errors, all in this new file and none elsewhere in the package: five TS2345 because countRows' helper constrains its table to `{ organizationId: typeof organization.id }`, the organization table's own id column, which no other table's organizationId column matches; one TS2698 at line 102 from F-305. Vitest strips types and the build's tsconfig.build.json excludes tests, so the tests pass and the build is green while the file is red in the editor; a later wrong call in this test would not be caught by types either.
-**Suggested fix:** Constrain the helper to the column type it needs (for example `<T extends { organizationId: AnyPgColumn }>` from drizzle-orm/pg-core) or pass the column itself (`inBusiness(bookingQuestion.organizationId)`); line 102 is fixed with F-305. Then `tsc -p packages/shared/tsconfig.json` passes.
+**File:** packages/shared/zod-validation/admin-validation-schemas/client-setup-validation-schema.ts:14-24
+**Found:** 2026-10-10 by the independent review of the address fix (scope: current, 2428dbd..0e8fbb1; lenses: quality, security, performance, tests)
+**Why it matters:** F-305 is fixed by casting the preprocess to `z.ZodType<output, Omit<input, "resourceId">>` through `unknown`. A double cast tells the compiler to stop checking that the declared types match the schema; `git grep "as unknown as"` finds no other one in backend, frontend or packages. Zod 4's own signature (`preprocess<A, U extends core.SomeType, B = unknown>(fn: (arg: B, ...) => A, schema: U): ZodPreprocess<U, B>`, node_modules/zod/v4/classic/schemas.d.ts:816) sets the input type directly, which is what F-305's suggested fix named. Behaviour and the editor check are correct today.
+**Suggested fix:** `z.preprocess<unknown, BusinessHoursType, Omit<z.input<BusinessHoursType>, "resourceId">>(fn, businessAvailabilityRuleValidationSchema)` with no cast; the type probe from F-305 should still refuse a wrong field.
+**Resolution:**
+
+### F-310 [P3] open - 34 test fixtures gained a stray blank line before `asksAddress: true`
+
+**File:** backend/lib/booking/book-time.test.ts:90, 102 and 32 more lines across the backend test files and booking-window.test.ts:71
+**Found:** 2026-10-10 by the independent review of the address fix (scope: current, 2428dbd..0e8fbb1; lenses: quality, security, performance, tests)
+**Why it matters:** The column was added to every test's bookingLink rows by a mechanical edit that left an empty line inside each object literal (`git diff 2428dbd..0e8fbb1 -U1` shows 34 added empty lines directly above `asksAddress: true,`). Prettier keeps single blank lines, so format:check passes and nothing catches it; the fixtures now read as half-finished edits and the next mechanical change will copy the shape.
+**Suggested fix:** Remove the empty line above each `asksAddress: true,` in those fixtures (a test-only chore; no behaviour changes).
 **Resolution:**

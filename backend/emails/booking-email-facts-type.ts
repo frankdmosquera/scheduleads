@@ -13,7 +13,7 @@ export type BookingEmailFactsType = {
   service: string;
   startsAt: Date;
   personName: string; // who was booked
-  location: string; // the customer's address, as they typed it
+  location: string | null; // the customer's address, as they typed it; null when none was asked
   customer: {
     name: string;
     email: string | null; // a phone-only booking has none

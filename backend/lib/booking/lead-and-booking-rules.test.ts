@@ -41,6 +41,8 @@ async function makeBusiness(name: string) {
     slug: "facial",
     durationMinutes: 75,
     layout: "month",
+
+    asksAddress: true,
     personChoice: "customer_picks",
   });
   await db.insert(resource).values([

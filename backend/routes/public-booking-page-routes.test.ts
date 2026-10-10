@@ -90,6 +90,8 @@ async function makeBusiness(name: string, businessName: string, timezone = "Amer
     slug: "interior-estimate",
     durationMinutes: 60,
     layout: "month",
+
+    asksAddress: true,
     personChoice: "customer_picks",
     bufferAfterMinutes: 15,
   });

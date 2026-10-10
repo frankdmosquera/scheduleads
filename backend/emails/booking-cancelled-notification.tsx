@@ -85,7 +85,7 @@ function BookingCancelledNotificationEmail({
           </Link>
         </EmailField>
       ) : null}
-      <EmailField label="Address">{facts.location}</EmailField>
+      {facts.location ? <EmailField label="Address">{facts.location}</EmailField> : null}
 
       {customer.phone ? (
         <EmailButton href={telHref(customer.phone)} color={brand}>

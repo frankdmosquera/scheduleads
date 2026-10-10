@@ -101,6 +101,8 @@ async function makeBusiness(name: string, settings: Record<string, unknown> = {}
     slug: "interior-estimate",
     durationMinutes: 60,
     layout: "month",
+
+    asksAddress: true,
     personChoice: "customer_picks",
   });
   await db

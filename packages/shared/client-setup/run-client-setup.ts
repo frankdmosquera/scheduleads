@@ -7,9 +7,11 @@ import { and, eq, isNull } from "drizzle-orm";
 import {
   availabilityRule,
   bookingLink,
+  bookingLinkResource,
   bookingQuestion,
   organization,
   resource,
+  workerTextSettings,
 } from "../db/index.js";
 import { toSlug } from "../helpers/to-slug.js";
 import type { ClientSetupType } from "../zod-validation/admin-validation-schemas/client-setup-validation-schema.js";
@@ -107,7 +109,7 @@ async function findDifferences(
     .orderBy(bookingQuestion.position);
   if (questions.length) differs("questions", questions, setup.questions);
 
-  for (const { ticked: _ticked, ...service } of setup.services) {
+  for (const service of setup.services) {
     const [saved] = await tx
       .select()
       .from(bookingLink)
@@ -137,16 +139,73 @@ async function findDifferences(
       saved.slotIntervalMinutes,
       service.slotIntervalMinutes ?? null
     );
+    differs(`"${service.name}", asksAddress`, saved.asksAddress, service.asksAddress);
     differs(`"${service.name}", personChoice`, saved.personChoice, setup.personChoice);
   }
 
   for (const person of setup.people) {
     const [saved] = await tx
-      .select({ kind: resource.kind })
+      .select({ id: resource.id, kind: resource.kind })
       .from(resource)
       .where(and(eq(resource.organizationId, organizationId), eq(resource.name, person.name)))
       .limit(1);
-    if (saved) differs(`"${person.name}", kind`, saved.kind, person.kind);
+    if (!saved) continue;
+    differs(`"${person.name}", kind`, saved.kind, person.kind);
+
+    // Their own hours, when the file gives them some and a row is there (F-304).
+    if (person.weeklyHours !== undefined || person.dateHours?.length) {
+      const [hours] = await tx
+        .select({
+          weeklyHours: availabilityRule.weeklyHours,
+          dateHours: availabilityRule.dateHours,
+        })
+        .from(availabilityRule)
+        .where(
+          and(
+            eq(availabilityRule.organizationId, organizationId),
+            eq(availabilityRule.resourceId, saved.id)
+          )
+        )
+        .limit(1);
+      if (hours) {
+        differs(`"${person.name}", weeklyHours`, hours.weeklyHours, person.weeklyHours ?? null);
+        differs(`"${person.name}", dateHours`, hours.dateHours, person.dateHours ?? []);
+      }
+    }
+
+    // Their worker texts, when the file gives them and a row is there.
+    if (person.workerTexts) {
+      const [texts] = await tx
+        .select({
+          phone: workerTextSettings.phone,
+          addedOn: workerTextSettings.addedOn,
+          movedOn: workerTextSettings.movedOn,
+          removedOn: workerTextSettings.removedOn,
+        })
+        .from(workerTextSettings)
+        .where(eq(workerTextSettings.personId, saved.id))
+        .limit(1);
+      if (texts) differs(`"${person.name}", worker texts`, texts, person.workerTexts);
+    }
+  }
+
+  // Who does what: a tick added by hand stays, and is named here.
+  for (const service of setup.services) {
+    const ticked = await tx
+      .select({ name: resource.name })
+      .from(bookingLinkResource)
+      .innerJoin(bookingLink, eq(bookingLink.id, bookingLinkResource.bookingLinkId))
+      .innerJoin(resource, eq(resource.id, bookingLinkResource.resourceId))
+      .where(
+        and(
+          eq(bookingLinkResource.organizationId, organizationId),
+          eq(bookingLink.slug, toSlug(service.name))
+        )
+      );
+    const inFile = new Set(service.ticked ?? []);
+    const added = ticked.map((row) => row.name).filter((name) => !inFile.has(name));
+    if (added.length)
+      differences.push(`"${service.name}", ticked by hand: ${added.sort().join(", ")}`);
   }
 
   return differences;

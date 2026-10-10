@@ -106,6 +106,8 @@ async function makeBusiness(
     slug: "interior-estimate",
     durationMinutes: 60,
     layout: "month",
+
+    asksAddress: true,
     personChoice: "customer_picks",
   });
   await db

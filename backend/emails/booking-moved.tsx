@@ -82,7 +82,7 @@ function BookingMovedEmail({
       <EmailField label="New time">{when}</EmailField>
       <EmailField label="Moved from">{was}</EmailField>
       <EmailField label="With">{facts.personName}</EmailField>
-      <EmailField label="Where">{facts.location}</EmailField>
+      {facts.location ? <EmailField label="Where">{facts.location}</EmailField> : null}
 
       <Text
         style={{

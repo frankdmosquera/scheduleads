@@ -260,15 +260,16 @@ export function BookingFormView({
             {business.laterTextsYesWords}
           </label>
         )}
-        {field("location", "Address", true, (props) => (
-          <input
-            {...props}
-            type="text"
-            autoComplete="street-address"
-            value={form.location}
-            onChange={(event) => edit(["location"], { ...form, location: event.target.value })}
-          />
-        ))}
+        {choice.asksAddress &&
+          field("location", "Address", true, (props) => (
+            <input
+              {...props}
+              type="text"
+              autoComplete="street-address"
+              value={form.location}
+              onChange={(event) => edit(["location"], { ...form, location: event.target.value })}
+            />
+          ))}
         {field("details", "What would you like done?", false, (props) => (
           <textarea
             {...props}

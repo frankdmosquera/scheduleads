@@ -51,7 +51,8 @@ function clientWithHeldSends() {
 
 function renderForm(
   apiClient: ReturnType<typeof clientWithHeldSends>["apiClient"],
-  shown: BookingBusinessType = business
+  shown: BookingBusinessType = business,
+  asksAddress = true
 ) {
   const booked: unknown[] = [];
   const taken: string[] = [];
@@ -62,7 +63,7 @@ function renderForm(
       apiClient,
       slug: "clinic-dev",
       business: shown,
-      choice: { bookingLinkId: "facial", startsAt: booking.startsAt, personId: null },
+      choice: { bookingLinkId: "facial", startsAt: booking.startsAt, personId: null, asksAddress },
       form,
       onFormChange: setForm,
       onBooked: (made, email) => booked.push({ made, email }),
@@ -103,6 +104,19 @@ describe("screen two's form", () => {
     expect(screen.queryByText("Enter a name.")).toBeNull();
     expect(name.getAttribute("aria-invalid")).toBe("false");
     expect(screen.getByText("Answer this question.")).toBeDefined(); // only the edited field clears
+  });
+
+  it("shows no address box for a service that asks none, and sends no address (the address fix)", async () => {
+    const { apiClient, sends } = clientWithHeldSends();
+    renderForm(apiClient, business, false);
+    expect(screen.queryByLabelText("Address")).toBeNull();
+    type("Name", "Jane Doe");
+    type("Email", "jane@example.com");
+    type("Which colour?", "Blue");
+
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+    await waitFor(() => expect(sends).toHaveLength(1));
+    expect(sends[0]?.body).not.toHaveProperty("location");
   });
 
   it("sends once however fast Book is pressed, and hands on the booking with her email", async () => {
@@ -275,7 +289,12 @@ describe("screen two's form", () => {
         apiClient,
         slug: "clinic-dev",
         business: { ...business, questions: many },
-        choice: { bookingLinkId: "facial", startsAt: booking.startsAt, personId: null },
+        choice: {
+          bookingLinkId: "facial",
+          startsAt: booking.startsAt,
+          personId: null,
+          asksAddress: true,
+        },
         form,
         onFormChange: setForm,
         onBooked: () => {},

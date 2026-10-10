@@ -12,7 +12,7 @@ export type TimeRangeType = { from: Date; to: Date };
 export type CalendarEventType = {
   id: string; // ours, made from the booking: a second write can never make a second event
   title: string;
-  location: string;
+  location: string | null; // null when the service asks no address
   description: string;
   start: Date;
   end: Date;

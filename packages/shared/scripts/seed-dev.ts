@@ -159,14 +159,25 @@ const ACCOUNTS = [
         { name: "Tomas (painter)", kind: "person" },
       ] satisfies ResourceSeedType[],
       services: [
-        { name: "Interior estimate", durationMinutes: 60, bufferAfterMinutes: 15 },
+        {
+          name: "Interior estimate",
+          durationMinutes: 60,
+          asksAddress: true,
+          bufferAfterMinutes: 15,
+        },
         {
           name: "Exterior estimate",
           durationMinutes: 45,
+          asksAddress: true,
           bufferBeforeMinutes: 15,
           bufferAfterMinutes: 15,
         },
-        { name: "Colour consultation", durationMinutes: 30, bufferAfterMinutes: 10 },
+        {
+          name: "Colour consultation",
+          durationMinutes: 30,
+          asksAddress: true,
+          bufferAfterMinutes: 10,
+        },
       ] satisfies ServiceSeedType[],
     },
   },
@@ -249,47 +260,59 @@ const ACCOUNTS = [
         { name: "Room 4 (massage, body)", kind: "place" },
         { name: "Room 5 (laser)", kind: "place" },
       ] satisfies ResourceSeedType[],
+      // Riverbend keeps asking the address, as before the setting existed (the address fix).
       // Face and Body's own treatments and lengths (face-and-body/data/servicesData.ts).
       // Massages and the wrap leave 15 minutes after, to turn the room over. Ticked like Face and
       // Body; the peel ticks no one, so anyone can do it.
       services: [
-        { name: "Deep Cleansing Facial", durationMinutes: 75, ticked: FACIALS },
-        { name: "Dermaplaning Facial", durationMinutes: 60, ticked: FACIALS },
-        { name: "Hydra Spa Facial", durationMinutes: 70, ticked: FACIALS },
+        { name: "Deep Cleansing Facial", durationMinutes: 75, asksAddress: true, ticked: FACIALS },
+        { name: "Dermaplaning Facial", durationMinutes: 60, asksAddress: true, ticked: FACIALS },
+        { name: "Hydra Spa Facial", durationMinutes: 70, asksAddress: true, ticked: FACIALS },
         {
           name: "Chemical Peel",
           durationMinutes: 30,
+          asksAddress: true,
           slotIntervalMinutes: 15, // the one dev service whose start times repeat more often than its length
           ticked: ["Room 3 (massage, facials)"],
         },
         {
           name: "Relaxation Massage",
           durationMinutes: 60,
+          asksAddress: true,
           bufferAfterMinutes: 15,
           ticked: MASSAGES,
         },
         {
           name: "Relaxation Massage, 90 min",
           durationMinutes: 90,
+          asksAddress: true,
           bufferAfterMinutes: 15,
           ticked: MASSAGES,
         },
         {
           name: "Deep Tissue Massage",
           durationMinutes: 75,
+          asksAddress: true,
           bufferAfterMinutes: 15,
           ticked: MASSAGES,
         },
         {
           name: "Lymphatic Drainage Massage",
           durationMinutes: 60,
+          asksAddress: true,
           bufferAfterMinutes: 15,
           ticked: MASSAGES,
         },
-        { name: "Laser Hair Removal", durationMinutes: 10, ticked: ["Mei", "Room 5 (laser)"] },
+        {
+          name: "Laser Hair Removal",
+          durationMinutes: 10,
+          asksAddress: true,
+          ticked: ["Mei", "Room 5 (laser)"],
+        },
         {
           name: "Body Wrap",
           durationMinutes: 60,
+          asksAddress: true,
           bufferAfterMinutes: 15,
           ticked: ["Priya", "Room 4 (massage, body)"],
         },

@@ -93,6 +93,7 @@ export function MonthDetailsScreen({
             bookingLinkId: service.id,
             startsAt: chosen.startsAt,
             personId: chosen.personId,
+            asksAddress: service.asksAddress,
           }}
           form={form}
           onFormChange={onFormChange}

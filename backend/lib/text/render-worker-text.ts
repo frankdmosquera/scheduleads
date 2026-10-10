@@ -20,7 +20,7 @@ export type WorkerTextFactsType = {
   customerName: string; // as typed: made plain here
   serviceName: string;
   placeName: string | null; // the room, when the service needs one
-  location: string; // the customer's address, as typed
+  location: string | null; // the customer's address, as typed; null when none was asked
 };
 
 const ONE_PIECE = 160;
@@ -40,7 +40,7 @@ export function renderWorkerText(kind: WorkerTextKindType, facts: WorkerTextFact
   const goes = kind !== "removed";
   const place = goes && facts.placeName && plainText(facts.placeName).trim();
   let service = wordsOf(facts.serviceName);
-  let address = goes ? wordsOf(facts.location) : [];
+  let address = goes && facts.location ? wordsOf(facts.location) : [];
   const write = () =>
     fitBusinessName(facts.businessName, (name) => {
       const who = [customer, joinCutWords(service), place, joinCutWords(address)].filter(Boolean);

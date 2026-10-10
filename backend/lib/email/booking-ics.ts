@@ -8,7 +8,7 @@ export type BookingIcsInputType = {
   service: string;
   startsAt: Date;
   endsAt: Date;
-  location: string; // the customer's address, as they typed it
+  location: string | null; // the customer's address, as they typed it; null when none was asked
   businessName: string;
   senderEmail: string; // the address the business's emails come from
   customerName: string;
@@ -38,7 +38,7 @@ export function bookingIcs(input: BookingIcsInputType): string {
     `DTSTART:${utcStamp(input.startsAt)}`, // UTC: each calendar shows its reader's own zone
     `DTEND:${utcStamp(input.endsAt)}`,
     `SUMMARY:${escapeText(`${input.service} with ${input.businessName}`)}`,
-    `LOCATION:${escapeText(input.location)}`,
+    ...(input.location ? [`LOCATION:${escapeText(input.location)}`] : []),
     `ORGANIZER;CN=${quoteParameter(input.businessName)}:mailto:${input.senderEmail}`,
     // She booked it herself, so she is already in, and no reply is asked of her.
     `ATTENDEE;CN=${quoteParameter(input.customerName)};ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;RSVP=FALSE:mailto:${input.customerEmail}`,

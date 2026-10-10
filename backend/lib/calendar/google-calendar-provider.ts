@@ -69,7 +69,7 @@ export const googleCalendarProvider: CalendarProviderType = {
       body: JSON.stringify({
         id: event.id,
         summary: event.title,
-        location: event.location,
+        location: event.location ?? undefined, // left out when the booking has none
         description: event.description,
         start: { dateTime: event.start.toISOString(), timeZone: event.timezone },
         end: { dateTime: event.end.toISOString(), timeZone: event.timezone },

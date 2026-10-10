@@ -104,6 +104,8 @@ beforeAll(async () => {
       slug: "test",
       durationMinutes: 30,
       layout: "month",
+
+      asksAddress: true,
       personChoice: "customer_picks",
     },
     {
@@ -113,6 +115,8 @@ beforeAll(async () => {
       slug: "test",
       durationMinutes: 30,
       layout: "month",
+
+      asksAddress: true,
       personChoice: "customer_picks",
     },
     {
@@ -122,6 +126,8 @@ beforeAll(async () => {
       slug: "facial",
       durationMinutes: 60,
       layout: "month",
+
+      asksAddress: true,
       personChoice: "customer_picks",
     },
     {
@@ -131,6 +137,8 @@ beforeAll(async () => {
       slug: `switched-off-${tag}`,
       durationMinutes: 30,
       layout: "month",
+
+      asksAddress: true,
       personChoice: "customer_picks",
       active: false,
     },
@@ -180,6 +188,7 @@ describe("the documented shape", () => {
     for (const link of body.bookingLinks) {
       expect(Object.keys(link).sort()).toEqual(
         [
+          "asksAddress",
           "bufferAfterMinutes",
           "bufferBeforeMinutes",
           "description",
@@ -201,6 +210,7 @@ describe("the documented shape", () => {
     expect(body.bookingLink.id).toBe(paintingLinkId);
     expect(Object.keys(body.bookingLink).sort()).toEqual(
       [
+        "asksAddress",
         "bufferAfterMinutes",
         "bufferBeforeMinutes",
         "description",
@@ -533,6 +543,7 @@ describe("who picks the person (feature 9, decision 3)", () => {
         durationMinutes: 60,
         layout: "month" as const,
         personChoice: "customer_picks" as const,
+        asksAddress: true,
       }))
     );
     await db.insert(bookingLinkResource).values(

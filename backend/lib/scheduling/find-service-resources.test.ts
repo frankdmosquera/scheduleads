@@ -51,6 +51,8 @@ async function makeClinic(name: string) {
       slug,
       durationMinutes: 60,
       layout: "month",
+
+      asksAddress: true,
       personChoice: "customer_picks",
       active: slug !== "retired",
     }))

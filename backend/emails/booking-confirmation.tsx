@@ -77,7 +77,7 @@ function BookingConfirmationEmail({
       <EmailField label="What">{facts.service}</EmailField>
       <EmailField label="When">{when}</EmailField>
       <EmailField label="With">{facts.personName}</EmailField>
-      <EmailField label="Where">{facts.location}</EmailField>
+      {facts.location ? <EmailField label="Where">{facts.location}</EmailField> : null}
 
       <Text
         style={{

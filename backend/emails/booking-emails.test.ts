@@ -446,3 +446,23 @@ describe("both move emails", () => {
     }
   });
 });
+
+describe("a booking with no address (the address fix)", () => {
+  const noAddress: BookingEmailFactsType = { ...facts, location: null };
+
+  test("every booking email leaves the Where or Address line out, and says the rest", async () => {
+    const emails = [
+      await renderBookingConfirmation(noAddress, bookingPage),
+      await renderBookingNotification(noAddress),
+      await renderBookingCancelled(noAddress),
+      await renderBookingCancelledNotification(noAddress),
+      await renderBookingMoved(noAddress, movedFrom, bookingPage),
+      await renderBookingMovedNotification(noAddress, movedFrom),
+    ];
+    for (const { html, text } of emails) {
+      expect(html).not.toMatch(/>(Where|Address)</i);
+      expect(text).not.toMatch(/^(WHERE|ADDRESS)$/m);
+      expect(html).toContain("Exterior painting estimate");
+    }
+  });
+});

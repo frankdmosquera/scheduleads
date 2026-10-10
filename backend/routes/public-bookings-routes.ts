@@ -89,7 +89,7 @@ export const publicBookingsRoutes = new Hono()
             startsAt: new Date(body.startsAt),
             requestKey: body.requestKey ?? null,
             customer: body.customer,
-            location: body.location,
+            location: body.location ?? null,
             details: body.details || null, // an empty box is no words
             answers: body.answers,
             laterTextsYes: body.laterTextsYes === true,
@@ -120,6 +120,8 @@ export const publicBookingsRoutes = new Hono()
             );
           case "answered_twice":
             return c.json(refuse("bad_request", "Each question takes one answer."), 400);
+          case "address_needed":
+            return c.json(refuse("bad_request", "Enter the address."), 400);
           case "too_many_tries":
             c.header("Retry-After", String(retryAfterSeconds));
             return c.json(tooManyTries, 429);

@@ -52,9 +52,13 @@ describe("the booking form", () => {
     expect(message({ ...form, startsAt })).toBe("Pick one of the times offered.");
   });
 
+  // Whether the service needs one is the API's call (the address fix); the form only checks one sent.
+  test("no address is allowed by the form", () => {
+    expect(message({ ...form, location: undefined })).toBeUndefined();
+  });
+
   test.each([
     ["an empty address", { location: "   " }, "Enter the address."],
-    ["no address", { location: undefined }, "Enter the address."],
     ["an address over 300 characters", { location: "a".repeat(301) }, "That address is too long."],
     ["words over 2000 characters", { details: "a".repeat(2001) }, "Keep it to 2000 characters."],
     ["a person id with a quote", { personId: "abc'def" }, "That is not a person id."],

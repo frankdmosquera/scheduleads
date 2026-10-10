@@ -34,6 +34,7 @@ const publicBookingLinkColumns = {
   durationMinutes: bookingLink.durationMinutes,
   bufferBeforeMinutes: bookingLink.bufferBeforeMinutes,
   bufferAfterMinutes: bookingLink.bufferAfterMinutes,
+  asksAddress: bookingLink.asksAddress, // the window shows the address field only when true
 };
 
 // What a stranger may see of the business itself: what its own site shows anyway (feature 9).

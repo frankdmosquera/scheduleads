@@ -131,3 +131,11 @@ describe("renderWorkerText, a booking moved or taken off the worker's day", () =
     ).toBe("Summit Painting: off your day, Tue Oct 13, 7:30am. Jane Doe, Interior estimate");
   });
 });
+
+describe("renderWorkerText, a booking with no address (the address fix)", () => {
+  test("ends on the service, with nothing after it", () => {
+    expect(renderWorkerText("added", { ...pedrosEstimate, location: null })).toBe(
+      "Summit Painting: new booking Tue Oct 13, 7:30am. Jane Doe, Interior estimate"
+    );
+  });
+});

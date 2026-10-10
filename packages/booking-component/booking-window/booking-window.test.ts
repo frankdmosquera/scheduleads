@@ -68,6 +68,8 @@ function fakeApi(bookAnswers: (Response | Promise<Response>)[]) {
             durationMinutes: 60,
             bufferBeforeMinutes: 0,
             bufferAfterMinutes: 0,
+
+            asksAddress: true,
             layout: "month",
             personChoice: "business_assigns",
           },
