@@ -4,7 +4,7 @@
 
 **Branch:** `feature/10-tenant-zero-ready-agentsweb`
 
-**Status:** spec written 2026-10-09; whole-feature pass agreed with Frank 2026-10-09; step 10.1 built and reviewed 2026-10-09.
+**Status:** spec written 2026-10-09; whole-feature pass agreed with Frank 2026-10-09; step 10.1 built and reviewed 2026-10-09; step 10.2 built 2026-10-09, without the publish (amended).
 
 ## Goal
 
@@ -58,7 +58,13 @@ Settled with Frank on 2026-10-09, while planning this feature.
    private package from a monorepo. Rejected: a git dependency (npm cannot
    install one folder of a repo), a tarball copied into each site (the paste
    way again), and the public npm registry (private code). Each site installs
-   it with a read token in its `.npmrc`, never committed.
+   it with a read token from the environment; its `.npmrc` names the
+   variable, never the token. Amended 2026-10-09 at step 10.2 (Frank): the
+   first publish waits until a site needs to install from GitHub (the agency
+   site's item 12, or 10b at the latest). Granting `gh` the packages
+   permission through the device login failed twice, and the point of 10.2,
+   that the package installs with nothing from this repo, is proved by a
+   packed file instead.
 6. **The published package carries everything it needs.** Today it reads five
    small helpers and the booking schema from `@scheduleads-app/shared` and its
    route types from `backend/app-type`, neither of which leaves this repo. The
@@ -148,7 +154,7 @@ named in the step.
   and the booking preview page still opens the window on clinic-dev; suites
   pass.
 
-- [ ] **10.2 Published, and installed from outside this repo.**
+- [x] **10.2 Ready to publish, and installed from outside this repo.**
   `npm publish` of `0.1.0` to GitHub Packages, on Frank's yes at that moment
   (publishing; the `gh` token needs the `write:packages` scope, which Frank
   grants with `gh auth refresh -s write:packages` if it is missing). Then, in a
@@ -162,9 +168,17 @@ named in the step.
   `BookingProvider`) goes into the package's `index.ts` header and the
   Commands in `AGENTS.md`, beside the publish command, so the agency site's
   session finds it.
-  **Done when:** the package page on GitHub shows `0.1.0` as private; the
-  throwaway install and typecheck pass with output recorded; `AGENTS.md` names
-  the publish and install commands.
+  Amended at build (2026-10-09, Frank): no publish in this step. The
+  device login that grants `gh` the packages permission failed twice, so the
+  throwaway folder installs the package from a file made by `npm pack`, which
+  is exactly what a publish would send. The package is linked to the private
+  repo (`repository`), `publish.npmrc` and the publish command are ready, and
+  a dry run of the publish lists the four files it would send. The first real
+  publish is done when a site first needs it from GitHub.
+  **Done when:** the publish dry run lists only the CSS, `dist/index.js`,
+  `dist/index.d.ts` and `package.json`; the throwaway install from the packed
+  file, its strict typecheck and a Node import pass, with output recorded;
+  `AGENTS.md` names the publish and install commands.
 
 - [ ] **10.3 The setup file and its command.**
   Shared: a setup file's schema (Zod) in the seed's existing business shape:

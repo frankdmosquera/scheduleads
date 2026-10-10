@@ -527,6 +527,21 @@ but `react`, `react-dom`, `hono` and `zod`: anything else would not install
 outside this repo. Its tests build it first.
 
 - Booking component build: `npm run build --workspace=@frankdmosquera/booking-component`
+- Publish it (a new `version` in its `package.json` first; publishing is Frank's yes each time):
+  `NODE_AUTH_TOKEN=$(gh auth token) npm publish --workspace=@frankdmosquera/booking-component --userconfig packages/booking-component/publish.npmrc`
+  in Git Bash. `prepublishOnly` runs the whole build and its checks first. It goes to GitHub
+  Packages, private to the account and linked to this repo; `gh` needs the `write:packages`
+  scope (`gh auth refresh -h github.com -s write:packages`, once: press Enter in the terminal
+  before authorizing in the browser, or `gh` never hears the approval and the scope stays
+  missing; check with `gh auth status`). The token is never written to a file. Not
+  published yet: the first publish is when a site first needs it from GitHub (10.2's
+  amendment).
+- Install it in a site in another repo: an `.npmrc` beside the site's `package.json` with
+  `@frankdmosquera:registry=https://npm.pkg.github.com` and
+  `//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}` (no secret, so it is committed), the
+  token in the shell and in the host's build settings, then
+  `npm install @frankdmosquera/booking-component`. The rest (the CSS, the `--sa-*` tokens,
+  wrapping the layout in `BookingProvider`) is in the package's `index.ts` header.
 
 Unit tests run on Vitest, a dev dependency of the workspace that holds the
 code under test. Test files sit beside the code as `*.test.ts` and are

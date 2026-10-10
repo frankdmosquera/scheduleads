@@ -258,7 +258,9 @@ rented" rents nothing.
   Vercel for real use for the first time: the first-deploy checks (F-176,
   F-179, whether Railway's proxy replaces a visitor's own `X-Real-IP`,
   `NODE_ENV=production`), the setup command opened to the live database and
-  AgentsWeb's file applied there. Timed with the agency site's launch, which
+  AgentsWeb's file applied there, and the booking package published to
+  GitHub Packages if the agency site's item 12 has not needed it sooner
+  (moved here from 10.2 on 2026-10-09). Timed with the agency site's launch, which
   its own plan holds until texts and QuickBooks (decided 2026-10-09, split
   out of item 10)
 

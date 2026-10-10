@@ -1,6 +1,12 @@
 {
   "name": "@frankdmosquera/booking-component",
   "version": "0.1.0",
+  "description": "The booking window every client site installs and builds into its own files.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/frankdmosquera/scheduleads.git",
+    "directory": "packages/booking-component"
+  },
   "type": "module",
   "exports": {
     ".": {
