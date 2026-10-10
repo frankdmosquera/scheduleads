@@ -257,6 +257,16 @@ export const settingsRoutes = new Hono()
       if (!saved.ok && saved.reason === "not_found")
         return c.json(refuse("not_found", "No person or place here."), 404);
       if (!saved.ok && saved.reason === "name_taken") return c.json(NAME_TAKEN, 409);
+      if (!saved.ok && saved.reason === "bad_work_email")
+        return c.json({ ...refuse("bad_request", saved.message), field: "workEmail" }, 400);
+      if (!saved.ok && saved.reason === "no_sending_address")
+        return c.json(
+          {
+            ...refuse("no_sending_address", "Set the business's sending address first."),
+            field: "workEmail",
+          },
+          409
+        );
       if (!saved.ok)
         return c.json(
           refuse("last_person", "Someone has to stay on: turn another person on first."),

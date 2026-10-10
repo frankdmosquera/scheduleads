@@ -1,6 +1,6 @@
 // Backend: sends one saved booking's emails, from the business through its own Resend key: the
-// customer's confirmation with the invite attached and the link to the booking's own page, and the
-// business's notification. Each email that went gets an email_sent entry on the contact's timeline,
+// customer's confirmation with the invite attached and the link to the booking's own page, the
+// business's notification, and the booked person's own when they have a work email (12d.4). Each email that went gets an email_sent entry on the contact's timeline,
 // with no address and no content.
 // A business without its two addresses, its key or its time zone sends nothing (decision 4).
 
@@ -17,7 +17,7 @@ import {
   type BookingEmailToSendType,
 } from "./send-and-record-emails.js";
 
-// The kinds that went, in order: both, or only the one a job asks for. Throws when the booking or
+// The kinds that went, in order: all, or only the one a job asks for. Throws when the booking or
 // the business cannot be read, or a send fails.
 export async function sendBookingEmails(
   organizationId: string,
@@ -38,6 +38,7 @@ export async function sendBookingEmails(
     source: context.source,
     customerEmail: context.customerEmail,
     notifyEmail: setup.notifyEmail,
+    personWorkEmail: context.personWorkEmail,
   });
   const emails: BookingEmailToSendType[] = [];
   if (recipients.customer) {
@@ -50,6 +51,7 @@ export async function sendBookingEmails(
         kind: "booking_confirmation",
         from,
         to: [to],
+        replyTo: recipients.customerReplyTo ?? undefined, // Reply writes to the booked person
         attachments: [
           {
             filename: "invite.ics",
@@ -87,6 +89,21 @@ export async function sendBookingEmails(
         to: [to],
         replyTo: context.customerEmail ?? undefined, // pressing Reply writes to the customer
         idempotencyKey: `booking-notification/${bookingId}`,
+      }),
+    });
+  }
+  if (recipients.person) {
+    const to = recipients.person;
+    emails.push({
+      kind: "booking_person_notification",
+      build: async () => ({
+        ...(await renderBookingNotification(facts)),
+        apiKey,
+        kind: "booking_person_notification",
+        from,
+        to: [to],
+        replyTo: context.customerEmail ?? undefined,
+        idempotencyKey: `booking-person-notification/${bookingId}`,
       }),
     });
   }

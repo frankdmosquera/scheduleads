@@ -16,10 +16,22 @@ export const addResourceValidationSchema = z
   })
   .strict();
 
+// A person's work email: empty or null clears it. Its domain is checked against the business's
+// sending address on the server, which knows it.
+const workEmailValidationSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(254, "That address is too long.")
+  .nullable()
+  .transform((email) => email || null)
+  .pipe(z.email({ error: "Enter an email address, like pedro@example.com." }).nullable());
+
 export const saveResourceValidationSchema = z
   .object({
     name: resourceNameValidationSchema,
     active: z.boolean(), // false: off, no longer offered; their bookings stay
+    workEmail: workEmailValidationSchema.optional(), // left out: unchanged; a place sends none
   })
   .strict();
 

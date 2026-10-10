@@ -143,7 +143,7 @@ Blocking findings (P0/P1) are fixed by default; P2/P3 are recorded and carried.
   falls back to anyone then. By hand, Summit's Colour consultation was switched to "the
   customer picks" so the preview names people.
 
-- [ ] **12d.4 A person's work email.** "I give Pedro pedro@summit-painting.test; a customer
+- [x] **12d.4 A person's work email.** "I give Pedro pedro@summit-painting.test; a customer
   booking with Pedro can reply to him, and Pedro gets his own notification."
   - Migration: `resource.workEmail` (text, null), a person's only (check), stored trimmed
     and lowercased.
@@ -160,6 +160,13 @@ Blocking findings (P0/P1) are fixed by default; P2/P3 are recorded and carried.
   dev business's Resend test key (or the console sender if none), a booking with a person
   who has a work email sends the person's notification and sets the confirmation's reply-to,
   and one with a person without sends exactly what it sent before.
+  *Built 2026-10-10.* Changed while building: the person's email job is queued only when the
+  booked person has a work email at booking time (and reads it again when it runs), so a booking
+  without one queues exactly the two jobs it did; the person is also told of a booking the owner
+  made; a work email that is the business's notification address gets one email, not two; null
+  or an empty field clears it; a place sent one is refused (400). By hand on Summit (sending
+  address at example.com), Pedro got pedro@example.com; two "Hand check" bookings of Exterior
+  estimate stay in scheduleads_dev, and Exterior estimate is back to nobody ticked.
 
 - [ ] **12d.5 A service's new length lists the bookings that no longer fit.** "I make the
   estimate 90 minutes instead of 60, and I am told Maria's Tuesday 4:00 would now run past

@@ -106,6 +106,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
             <li key={resource.id}>
               <ChangeResourceForm
                 resource={resource}
+                senderDomain={settings.senderDomain}
                 onSaved={(answer) => saved(answer.resource, answer.upcomingBookings)}
                 onCancel={() => close(changeButtonId(resource.id))}
               />

@@ -23,7 +23,8 @@ export type RefusalCodeType =
   | "email_test_failed" // email: the test email could not go (a limit, Resend trouble); nothing was kept
   | "no_business_hours" // settings: a person's hours saved before the business has any
   | "last_person" // settings: turning off the only person still on
-  | "name_taken"; // settings: another person or place of the business has that name
+  | "name_taken" // settings: another person or place of the business has that name
+  | "no_sending_address"; // settings: a work email saved before the business has a sending address
 
 export type RefusalType = {
   error: {

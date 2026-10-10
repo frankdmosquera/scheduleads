@@ -7,6 +7,7 @@ import { formatLeadTime } from "@/lib/format-lead-time";
 const EMAIL_LINES: Record<string, string> = {
   booking_confirmation: "Sent the booking confirmation by email",
   booking_notification: "Told the business about the booking by email",
+  booking_person_notification: "Told the booked person about the booking by email",
   booking_cancellation: "Sent the cancellation by email",
   booking_cancellation_notification: "Told the business about the cancellation by email",
   booking_move: "Sent the new time by email",

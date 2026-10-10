@@ -32,6 +32,7 @@ export type BookingEmailContextType = {
   source: string; // the lead's: "widget", "hosted" or "manual"
   customerName: string;
   customerEmail: string | null;
+  personWorkEmail: string | null; // the booked person's, read when the email goes (12d.4)
   setup: BookingEmailSetupType;
 };
 
@@ -50,6 +51,7 @@ export async function findBookingEmailContext(
       location: booking.location,
       service: bookingLink.name,
       personName: resource.name,
+      personWorkEmail: resource.workEmail,
       contactId: contact.id,
       customerName: contact.name,
       customerEmail: contact.email,
@@ -95,6 +97,7 @@ export async function findBookingEmailContext(
     source: row.source,
     customerName: row.customerName,
     customerEmail: row.customerEmail,
+    personWorkEmail: row.personWorkEmail,
   };
   const { senderEmail, notifyEmail, apiKey, timezone } = business;
   if (!senderEmail || !notifyEmail || !apiKey || !timezone) {

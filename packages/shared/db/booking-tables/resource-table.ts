@@ -21,6 +21,9 @@ export const resource = pgTable(
     // The login this person is, so the app knows whose calendar "you" connect. Set by
     // migration 0004, the create hook and the seed; never from a request.
     userId: text("userId").references(() => user.id, { onDelete: "set null" }),
+    // A person's address at the business's sending domain, trimmed and lowercased (feature 12d):
+    // the customer's replies go to it and it gets its own new-booking email. Null: none.
+    workEmail: text("workEmail"),
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })
       .notNull()
@@ -35,6 +38,11 @@ export const resource = pgTable(
     uniqueIndex("resource_organization_user_unique")
       .on(table.organizationId, table.userId)
       .where(sql`${table.userId} is not null`),
+    // A place has no work email.
+    check(
+      "resource_work_email_is_person_check",
+      sql`${table.workEmail} is null or ${table.kind} = 'person'`
+    ),
     // A place never logs in.
     check(
       "resource_user_is_person_check",

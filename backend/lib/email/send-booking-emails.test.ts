@@ -259,6 +259,38 @@ describe("a booking's emails", () => {
 ${notification.body.text}`).not.toContain("/b/");
   });
 
+  test("a person with a work email gets their own notification, and the confirmation replies to them", async () => {
+    const business = await makeBusiness("work-email");
+    await db
+      .update(resource)
+      .set({ workEmail: "marco@primopainters.com" })
+      .where(eq(resource.id, business.marco));
+    const bookingId = await book(business);
+
+    expect(calls).toHaveLength(3);
+    const [confirmation, notification, personal] = calls;
+    expect(confirmation.body).toMatchObject({
+      to: [jane.email],
+      reply_to: "marco@primopainters.com", // pressing Reply writes to Marco
+    });
+    expect(notification.body).toMatchObject({ to: ["office@primopainters.com"] });
+    expect(personal.headers.get("Idempotency-Key")).toBe(
+      `booking-person-notification/${bookingId}`
+    );
+    expect(personal.body).toMatchObject({
+      from: '"Primo Painters" <bookings@primopainters.com>',
+      to: ["marco@primopainters.com"],
+      reply_to: jane.email,
+      subject: "New booking: Interior estimate, Monday, October 5 at 9:00 a.m. MDT",
+    });
+    // Recorded like the others, with no address.
+    expect((await timelineOf(business)).map((entry) => entry.payload)).toContainEqual({
+      bookingId,
+      kind: "booking_person_notification",
+      resendId: "email-3",
+    });
+  });
+
   test("a phone-only booking sends only the business's", async () => {
     const business = await makeBusiness("phone-only");
     const bookingId = await book(business, { customer: { name: jane.name, phone: jane.phone } });

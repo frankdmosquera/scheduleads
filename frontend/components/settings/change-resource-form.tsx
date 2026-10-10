@@ -1,5 +1,6 @@
 // Frontend component: the form that renames a person or place, or turns one off or on, on the People
-// page (feature 12d). Off never touches a booking; the page lists the ones they still hold.
+// page (feature 12d). Off never touches a booking; the page lists the ones they still hold. A person
+// also has an optional work email at the business's own domain (12d.4).
 
 "use client";
 
@@ -23,10 +24,12 @@ import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 export function ChangeResourceForm({
   resource,
+  senderDomain,
   onSaved,
   onCancel,
 }: {
   resource: ResourceSettingsType;
+  senderDomain: string | null; // the domain a work email must be at; null: none can be set yet
   onSaved: (answer: SavedResourceType) => void;
   onCancel: () => void;
 }) {
@@ -36,7 +39,11 @@ export function ChangeResourceForm({
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   const form = useForm<SaveResourceInputType, unknown, SaveResourceType>({
     resolver: zodResolver(saveResourceValidationSchema),
-    defaultValues: { name: resource.name, active: resource.active },
+    // A place sends no work email at all, so saving one never touches the column.
+    defaultValues:
+      resource.kind === "person"
+        ? { name: resource.name, active: resource.active, workEmail: resource.workEmail ?? "" }
+        : { name: resource.name, active: resource.active },
   });
   const idBase = `resource-${resource.id}`;
 
@@ -49,7 +56,7 @@ export function ChangeResourceForm({
       return;
     }
     if (saved.state === "field") {
-      form.setError(saved.field as "name", { message: saved.message });
+      form.setError(saved.field as "name" | "workEmail", { message: saved.message });
       focusFirstInvalid();
       return;
     }
@@ -57,6 +64,7 @@ export function ChangeResourceForm({
   }
 
   const nameError = form.formState.errors.name?.message;
+  const workEmailError = form.formState.errors.workEmail?.message;
   const { ref: nameFieldRef, ...nameField } = form.register("name", {
     onChange: () => setNotice(null),
   });
@@ -92,6 +100,33 @@ export function ChangeResourceForm({
           </p>
         ) : null}
       </div>
+      {resource.kind === "person" ? (
+        <div className="flex flex-col gap-1.5 sm:max-w-sm">
+          <Label htmlFor={`${idBase}-work-email`}>Work email (optional)</Label>
+          <Input
+            id={`${idBase}-work-email`}
+            type="email"
+            disabled={!senderDomain}
+            {...form.register("workEmail", { onChange: () => setNotice(null) })}
+            aria-invalid={workEmailError ? true : undefined}
+            aria-describedby={
+              workEmailError ? `${idBase}-work-email-error` : `${idBase}-work-email-hint`
+            }
+            className="h-10 bg-muted px-3"
+          />
+          {workEmailError ? (
+            <p id={`${idBase}-work-email-error`} className="text-xs text-destructive">
+              {workEmailError}
+            </p>
+          ) : (
+            <p id={`${idBase}-work-email-hint`} className="text-xs text-muted-foreground">
+              {senderDomain
+                ? `At ${senderDomain}. Customers' replies reach them, and they get their own email for each new booking.`
+                : "The business has no sending address yet, so no work email can be saved."}
+            </p>
+          )}
+        </div>
+      ) : null}
       <Controller
         name="active"
         control={form.control}

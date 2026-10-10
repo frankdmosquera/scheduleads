@@ -726,3 +726,67 @@ describe("who does what", () => {
     expect(await ticksOf(serviceId)).toEqual({ peopleIds: [summit.personId], placeIds: [] });
   });
 });
+
+describe("a person's work email", () => {
+  const juan = (workEmail: unknown) => ({ name: "Juan", active: true, workEmail });
+  const workEmailOf = async (resourceId: string) =>
+    (await db.select().from(resource).where(eq(resource.id, resourceId)))[0].workEmail;
+
+  test("a work email at another domain is refused, and one at the business's is kept", async () => {
+    await db
+      .update(organization)
+      .set({ senderEmail: "Bookings@Summit-Painting.test" })
+      .where(eq(organization.id, summit.organizationId));
+    const read = (await (await get("/settings/people", summit.email)).json()) as {
+      senderDomain: string | null;
+    };
+    expect(read.senderDomain).toBe("summit-painting.test");
+
+    const elsewhere = await put(
+      `/settings/people/${summit.personId}`,
+      summit.email,
+      juan("juan@gmail.com")
+    );
+    expect(elsewhere.status).toBe(400);
+    expect(await elsewhere.json()).toMatchObject({ field: "workEmail" });
+    expect(await workEmailOf(summit.personId)).toBeNull();
+
+    // Trimmed and lowercased; a save that leaves it out keeps it; null clears it.
+    const kept = await put(
+      `/settings/people/${summit.personId}`,
+      summit.email,
+      juan(" Juan@SUMMIT-painting.test ")
+    );
+    expect(kept.status).toBe(200);
+    expect(((await kept.json()) as { resource: { workEmail: string } }).resource.workEmail).toBe(
+      "juan@summit-painting.test"
+    );
+    await put(`/settings/people/${summit.personId}`, summit.email, { name: "Juan", active: true });
+    expect(await workEmailOf(summit.personId)).toBe("juan@summit-painting.test");
+    await put(`/settings/people/${summit.personId}`, summit.email, juan(null));
+    expect(await workEmailOf(summit.personId)).toBeNull();
+
+    // A place has none.
+    const place = await put(`/settings/people/${summitPlaceId}`, summit.email, {
+      name: "Room 1",
+      active: true,
+      workEmail: "room@summit-painting.test",
+    });
+    expect(place.status).toBe(400);
+    expect(await workEmailOf(summitPlaceId)).toBeNull();
+  });
+
+  test("no work email can be set without a sending address", async () => {
+    const refused = await put(
+      `/settings/people/${fresh.personId}`,
+      fresh.email,
+      juan("juan@example.com")
+    );
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({
+      error: { code: "no_sending_address" },
+      field: "workEmail",
+    });
+    expect(await workEmailOf(fresh.personId)).toBeNull();
+  });
+});
