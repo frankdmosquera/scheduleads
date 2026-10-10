@@ -225,55 +225,18 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Remove the empty line above each `asksAddress: true,` in those fixtures (a test-only chore; no behaviour changes).
 **Resolution:**
 
-### F-311 [P2] fixed - every text on the timeline read "Sent a text"
+### F-318 [P3] open - the due-time zone choice has no saved test
 
-**File:** frontend/components/leads/timeline-entry-line.tsx:18-23
-**Found:** 2026-10-10 by the independent review of step 11.1 (b680844)
-**Why it matters:** The screen keyed texts on `confirmation`, `reminder`, `added`, `moved`, `removed`; the backend saves `booking_confirmation`, `booking_reminder` and `worker_added|moved|removed` (send-booking-text.ts:55, send-worker-text.ts:89), so no text ever got its own line.
-**Suggested fix:** Key the lines on the saved kinds.
-**Resolution:** fixed in e11c7d0.
+**File:** backend/routes/leads-routes.test.ts:213-236; backend/lib/crm/add-next-step.ts:40-44
+**Found:** 2026-10-10 by the final independent review of feature 11 (main...648ba0c)
+**Why it matters:** F-314 added logic (the business's zone, else the browser's; a skipped spring hour and an impossible date refused) that no test pins, so a regression to the browser's zone would pass the suite.
+**Suggested fix:** One test that checks the saved dueAt for a business with a zone; one for a spring-forward time (400, field dueLocal) and for 2026-02-30T09:00.
+**Resolution:** Carried on purpose: under the workspace rule of 2026-10-10 (tests only where a mistake would really hurt), an hour off on a note to self did not earn a test yet.
 
-### F-312 [P3] fixed - the whole frame reloaded on every move between screens
+### F-319 [P3] open - the repeat-save "already a contact" flag has no saved test
 
-**File:** frontend/app/page.tsx, frontend/app/leads/page.tsx, frontend/app/leads/[leadId]/page.tsx
-**Found:** 2026-10-10 by the independent review of step 11.1 (b680844)
-**Why it matters:** Each page mounted its own sign-in check and sidebar, so every click asked /me again and flashed "Loading your business…".
-**Suggested fix:** One shared layout for the signed-in pages.
-**Resolution:** fixed in 8202904 and e11c7d0: the pages moved into `app/(dashboard)/` under one layout; pages read the business with `useMe()`. URLs unchanged.
-
-### F-313 [P3] fixed - an ended sign-in showed as "unexpected status (401)"
-
-**File:** frontend/lib/api-client/leads/fetch-leads.ts, fetch-lead.ts
-**Found:** 2026-10-10 by the independent review of step 11.1 (b680844)
-**Why it matters:** The spec asks for a refused state on every screen; a 401 or 403 fell into "API down" with a Try again that could not work.
-**Suggested fix:** Map 401 to a sign-in-again notice and 403 to its message.
-**Resolution:** fixed in e11c7d0.
-
-### F-314 [P2] fixed - a next step's due time was read in the browser's zone, shown in the business's
-
-**File:** frontend/components/leads/next-steps-section.tsx:39
-**Found:** 2026-10-10 by the independent review of step 11.2 (b7bc788)
-**Why it matters:** An owner whose browser is in another zone typed 9:00 and saw "due 10:00".
-**Suggested fix:** Read the typed time in the business's zone.
-**Resolution:** fixed: the form sends the clock time it was given and the browser's zone; the API reads it in the business's zone (the browser's when the business has none, as the page shows it) with the tested `localTimeToMoment`; a skipped spring hour and an impossible date are refused.
-
-### F-315 [P3] fixed - next-step database errors were not wrapped
-
-**File:** backend/lib/crm/add-next-step.ts, finish-next-step.ts
-**Found:** 2026-10-10 by the independent review of step 11.2 (b7bc788)
-**Why it matters:** Hono logs an unwrapped database error whole, query and owner's words included.
-**Resolution:** fixed: both go through `safeErrorReason`.
-
-### F-316 [P3] fixed - a repeated save always said the person was new
-
-**File:** backend/lib/crm/add-lead-by-hand.ts
-**Found:** 2026-10-10 by the independent review of step 11.2 (b7bc788)
-**Why it matters:** A retry after a lost answer dropped the "Already a contact" notice.
-**Resolution:** fixed: a repeat compares the contact's and the lead's creation times (a contact made with the lead shares its transaction's timestamp).
-
-### F-317 [P3] fixed - the spec's cross-site test was missing
-
-**File:** backend/routes/leads-routes.test.ts
-**Found:** 2026-10-10 by the independent review of step 11.2 (b7bc788)
-**Why it matters:** Nothing was exposed (the check is mounted); only the proof the spec asked for was absent.
-**Resolution:** fixed: "a cross-site post to /leads is refused".
+**File:** backend/routes/leads-routes.test.ts:181-198; backend/lib/crm/add-lead-by-hand.ts:89-106
+**Found:** 2026-10-10 by the final independent review of feature 11 (main...648ba0c)
+**Why it matters:** F-316's timestamp comparison is untested; reversed, a retry would show "Already a contact" for someone new.
+**Suggested fix:** The same form twice with a known email, expect joinedExistingContact true on both answers; with a new email, false on both.
+**Resolution:** Carried on purpose, for the same reason as F-318: only a notice on screen is at stake.
