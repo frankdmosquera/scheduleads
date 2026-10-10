@@ -61,7 +61,10 @@ export async function runClientSetup(
   let differences: string[] = [];
   try {
     await db.transaction(async (tx) => {
-      differences = await findDifferences(tx, business.id, setup);
+      differences = await findDifferences(tx, business.id, setup, {
+        id: firstPerson.id,
+        businessName: business.name,
+      });
       made = await applyBusinessShape(
         tx,
         business.id,
@@ -81,7 +84,8 @@ export async function runClientSetup(
 async function findDifferences(
   tx: SetupTransactionType,
   organizationId: string,
-  setup: ClientSetupType
+  setup: ClientSetupType,
+  firstPerson: { id: string; businessName: string } // a file may tick them by the business's name
 ): Promise<string[]> {
   const differences: string[] = [];
   const differs = (what: string, saved: unknown, file: unknown) => {
@@ -206,7 +210,7 @@ async function findDifferences(
       .limit(1);
     if (!saved) continue;
     const ticked = await tx
-      .select({ name: resource.name })
+      .select({ id: resource.id, name: resource.name })
       .from(bookingLinkResource)
       .innerJoin(resource, eq(resource.id, bookingLinkResource.resourceId))
       .where(
@@ -216,7 +220,10 @@ async function findDifferences(
         )
       );
     const inFile = new Set((service.ticked ?? []).map(nameKeyOf));
-    const added = ticked.map((row) => row.name).filter((name) => !inFile.has(nameKeyOf(name)));
+    const tickedInFile = (row: { id: string; name: string }) =>
+      inFile.has(nameKeyOf(row.name)) ||
+      (row.id === firstPerson.id && inFile.has(nameKeyOf(firstPerson.businessName)));
+    const added = ticked.filter((row) => !tickedInFile(row)).map((row) => row.name);
     if (added.length)
       differences.push(`"${service.name}", ticked by hand: ${added.sort().join(", ")}`);
   }
