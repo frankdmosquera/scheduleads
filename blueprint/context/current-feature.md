@@ -5,7 +5,7 @@
 **Size:** light: one setting and the places that read the address; one step, reviewed at
 `/complete` (`AGENTS.md`, "Each feature is heavy or light").
 
-**Status:** built 2026-10-10, review at `/complete`
+**Status:** verified 2026-10-10: backend 894, shared 172 and booking component 79 tests pass, the frontend builds, and the preview pages were checked in the browser.
 
 **Branch:** `fix/address-per-service`
 
