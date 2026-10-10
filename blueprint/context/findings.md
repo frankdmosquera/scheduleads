@@ -311,7 +311,7 @@ route test with a 503 on the first send and the text found on the retry.
 **Found:** 2026-10-10 by /audit (scope: current, step 12a.2; lenses: all)
 **Why it matters:** The Simulate cases test `applyOutsideHoursRules` alone, with rows built by hand. What feeds it is untested: the old row read before the upsert (moved after it, every list is empty), the person rows map, the joins in `findUpcomingBookings`, the person filter, and the person save's "no old row means follows the business". Any of these broken returns `outsideHours: []`, which the route tests accept, and the owner is silently told nothing moved.
 **Suggested fix:** Two route tests on the seeded business, as the step's Done when does by hand: a confirmed Tuesday 4:00 booking, Tuesday shortened to end at 3:00, the answer lists it (bookingId, leadId, names) and the booking row is unchanged; the same save again lists nothing. One more for a person switched to an own week that leaves their booking out.
-**Resolution:**
+**Resolution:** Confirmed 2026-10-10 by independent review of 12a.2: `outsideHours` appears in no test file in backend/ (routes or lib/settings); only the pure rule is tested. Stays open.
 
 ### F-329 [P3] open - Each save locks the row it writes but reads the other side unlocked, so two owners saving at once can get a wrong list
 
@@ -319,4 +319,44 @@ route test with a 503 on the first send and the text found on the retry.
 **Found:** 2026-10-10 by /audit (scope: current, step 12a.2; lenses: all)
 **Why it matters:** The business save reads every person's row with a plain select, and the person save reads the business's row the same way and uses it for both before and after. If a person's card and the business's card are saved at the same moment, each list is worked out against the other's old row: a booking can be listed for a person who just moved to an own week, or missed when the time zone changed underneath. Only the notice is wrong, no booking changes, and it needs two saves inside one transaction's time.
 **Suggested fix:** Lock the other side too, in the same order in both saves: the business save adds `.for("update")` to the person rows; the person save reads the business row `.for("share")` before locking its own.
+**Resolution:** Confirmed 2026-10-10 by independent review of 12a.2, with one addition: a person's own row is unlocked too on its first save, since `for update` on save-person-hours.ts:59-68 locks nothing when the row does not exist yet, so two first saves of the same person (two tabs) both compare against "no row". The suggested lock order holds without a deadlock. A customer booking racing a save is a different path, recorded as F-331. Stays open.
+
+### F-330 [P3] open - A booking in a window that ends inside the skipped spring hour is offered by the booking window but judged never to have fitted, so it is never listed
+
+**File:** backend/lib/bookable-hours/apply-outside-hours-rules.ts:47-63 (momentOf, fitsHours); backend/lib/scheduling/apply-free-times-rules.ts:58-71
+**Found:** 2026-10-10 by independent review of step 12a.2 (scope: 0f33b77..47dc46e; lenses: quality, security, performance, tests)
+**Why it matters:** The spec says fits is decided "the way free times does". Free times treats a window end that falls in the skipped hour as absent and lets the clock count decide; momentOf moves it to the first minute after the jump. Run with tsx in a scratch script: America/Denver, 2027-03-14, Sunday 1:00-2:30, a 60-minute service every 30 minutes. Free times offers 08:00Z and 08:30Z (1:00 and 1:30 a.m.); with Sunday then changed to 0:00-1:00 the rule lists only 08:00Z, because the 1:30 booking ends at 3:30 MDT, past the 3:00 moment momentOf gives the end. That booking sits outside the new hours unlisted. The named test "a booking across the spring clock change is judged on real time" cannot see this: neither of its bookings crosses the jump, and a plain local-clock comparison passes it as well. Rare (hours ending between 2:00 and 3:00 a.m.), but it is exactly the clock-change case the step promises.
+**Suggested fix:** Make fitsHours use free times' own end rule: when localTimeToMoment returns null for the window end, compare the booking's clock start plus its length against endMinute, as free times does. Add a test with a window ending in the skipped hour, built from what applyFreeTimesRules offers.
+**Resolution:**
+
+### F-331 [P3] unverified - A booking made while a save of hours is running can land outside the new hours and never be listed
+
+**File:** backend/lib/booking/book-time.ts:155, 214-226, 254; backend/lib/settings/save-business-hours.ts:31-62
+**Found:** 2026-10-10 by independent review of step 12a.2 (scope: 0f33b77..47dc46e; lenses: quality, security, performance, tests)
+**Why it matters:** book-time reads the hours and checks the start (findBookingChoices, which may wait on Google) before its transaction, with no lock on the business's availability_rule row. If a save locks the row and reads the upcoming bookings in between, the new booking is not yet committed, so the save does not see it; it then commits against the old hours. The owner is told the list is complete and it is not. Unverified: needs the two to overlap within one booking's check time; no reproduction was run.
+**Suggested fix:** Inside the booking's transaction, read the business's availability_rule row `for share` (it waits while a save holds it `for update`) and refuse with the existing "unavailable" answer if the row changed since the hours were read; or record the gap as accepted.
+**Resolution:**
+
+### F-332 [P3] open - "Which windows apply on this date" now lives in three copies that the spec requires to agree
+
+**File:** backend/lib/bookable-hours/apply-outside-hours-rules.ts:25-43; backend/lib/scheduling/apply-free-times-rules.ts:34-39, 57-60; backend/lib/bookable-hours/apply-bookable-hours-rules.ts:48-54
+**Found:** 2026-10-10 by independent review of step 12a.2 (scope: 0f33b77..47dc46e; lenses: quality, security, performance, tests)
+**Why it matters:** windowsOn re-implements the person/business one-off date merge of applyBookableHoursRules and copies free times' WEEKDAYS, weekdayOf and "a one-off date replaces the week" lookup. The step is only correct while these agree, and nothing ties them: F-330 is one such drift already. Today the merge copy matches (checked case by case: own week takes only own dates; following takes the business's with own winning; an empty one-off list replaces the day in both).
+**Suggested fix:** One exported helper in lib/bookable-hours/ (for example `windowsOnDate(weeklyHours, dateHours, date)`, with the merge in one place) used by both applyFreeTimesRules and applyOutsideHoursRules.
+**Resolution:**
+
+### F-333 [P3] open - On the business card the list's h4 follows the "One-off dates" h3, so the heading outline files it under one-off dates
+
+**File:** frontend/components/settings/outside-hours-list.tsx:20; frontend/components/settings/business-hours-card.tsx:141
+**Found:** 2026-10-10 by independent review of step 12a.2 (scope: 0f33b77..47dc46e; lenses: quality, security, performance, tests)
+**Why it matters:** The business card is h2 "When you take bookings", then h3 "One-off dates", then the list's fixed h4. A screen reader user moving by headings hears the outside list as part of One-off dates. On a person's card (h3 name, h4 one-off dates, h4 list) the level is right.
+**Suggested fix:** Let the card pass the heading level (h3 on the business card, h4 on a person's), or render the title as a level the caller picks.
+**Resolution:**
+
+### F-334 [P3] unverified - The list's times use the browser's time-zone rules, which the booking window deliberately avoids
+
+**File:** frontend/components/settings/outside-hours-list.tsx:37; backend/lib/scheduling/local-start-times.ts:1-4
+**Found:** 2026-10-10 by independent review of step 12a.2 (scope: 0f33b77..47dc46e; lenses: quality, security, performance, tests)
+**Why it matters:** local-start-times.ts formats times on the API "never re-deriving them with the visitor's browser, whose rules may be older". The outside list formats in the browser. Node here carries tzdata 2026c, where America/Edmonton stays on MDT after November 2026; a browser with older rules would show an Alberta booking after November 1 an hour early and as MST, on the one list whose point is the time. The spec's contract chose browser formatting, so this is a question for the spec, not a build slip. Unverified: no browser with stale rules was tried.
+**Suggested fix:** Have outsideHoursOf add a `when` string per row with formatBookingTime on the API, as localStartTimes does, and show that.
 **Resolution:**
