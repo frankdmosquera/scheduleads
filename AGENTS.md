@@ -539,7 +539,8 @@ outside this repo. Its tests build it first.
 - Install it in a site in another repo: an `.npmrc` beside the site's `package.json` with
   `@frankdmosquera:registry=https://npm.pkg.github.com` and
   `//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}` (no secret, so it is committed), the
-  token in the shell and in the host's build settings, then
+  token (a personal access token, classic, with `read:packages`: GitHub's npm registry takes
+  no other kind) in the shell and in the host's build settings, then
   `npm install @frankdmosquera/booking-component`. The rest (the CSS, the `--sa-*` tokens,
   wrapping the layout in `BookingProvider`) is in the package's `index.ts` header.
 

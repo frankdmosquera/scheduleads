@@ -31,8 +31,8 @@
     "test:watch": "vitest"
   },
   "peerDependencies": {
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "dependencies": {
     "hono": "^4.13.8",

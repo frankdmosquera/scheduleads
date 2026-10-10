@@ -6,8 +6,9 @@
 //   @frankdmosquera:registry=https://npm.pkg.github.com
 //   //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 //
-// NODE_AUTH_TOKEN is a GitHub token that can read packages: set in the shell for an install, and in
-// the host's build settings (Vercel's environment variables), never in a file. Then
+// NODE_AUTH_TOKEN is a GitHub personal access token (classic) with read:packages, the only kind
+// GitHub's npm registry takes: set in the shell for an install, and in the host's build settings
+// (Vercel's environment variables), never in a file. Then
 // `npm install @frankdmosquera/booking-component`, which needs react and react-dom 19 in the site.
 //
 // Wrap the page (or the layout) once, with the API's address and the business's slug:
