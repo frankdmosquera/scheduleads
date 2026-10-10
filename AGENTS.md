@@ -153,6 +153,18 @@ This is `workflow.stepReview: "every"` in `blueprint/config.json`, and
 `/implement` carries it out. A small project sets `"feature"` instead and
 reviews once per feature.
 
+**Sized to the step (Frank, 2026-10-09, after step 10.2).** The review after
+every step above is for steps with logic. A step with no logic (settings,
+wiring, packaging, docs) is built and proved by the one check that shows it
+works: no independent reviewer, no re-review, no full suite reruns, a short
+build log entry. A step with logic gets its tests and its review; a second
+reviewer runs only for P0/P1 findings, and smaller fixes are closed by the
+next review. A simple feature gets few steps, often one, and a question from
+Frank is answered with a clearer picture, never with more steps. The final
+review at `/complete` is unchanged. Why: on feature 10, steps of settings and
+wiring went through the whole machine and spent far more time and tokens than
+the work needed.
+
 ### A spec is approved one step at a time
 
 **Decided by Frank, 2026-09-25.** This overrides the Blueprint default, where
