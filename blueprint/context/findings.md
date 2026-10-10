@@ -224,3 +224,27 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** The column was added to every test's bookingLink rows by a mechanical edit that left an empty line inside each object literal (`git diff 2428dbd..0e8fbb1 -U1` shows 34 added empty lines directly above `asksAddress: true,`). Prettier keeps single blank lines, so format:check passes and nothing catches it; the fixtures now read as half-finished edits and the next mechanical change will copy the shape.
 **Suggested fix:** Remove the empty line above each `asksAddress: true,` in those fixtures (a test-only chore; no behaviour changes).
 **Resolution:**
+
+### F-311 [P2] fixed - every text on the timeline read "Sent a text"
+
+**File:** frontend/components/leads/timeline-entry-line.tsx:18-23
+**Found:** 2026-10-10 by the independent review of step 11.1 (b680844)
+**Why it matters:** The screen keyed texts on `confirmation`, `reminder`, `added`, `moved`, `removed`; the backend saves `booking_confirmation`, `booking_reminder` and `worker_added|moved|removed` (send-booking-text.ts:55, send-worker-text.ts:89), so no text ever got its own line.
+**Suggested fix:** Key the lines on the saved kinds.
+**Resolution:** fixed in e11c7d0.
+
+### F-312 [P3] fixed - the whole frame reloaded on every move between screens
+
+**File:** frontend/app/page.tsx, frontend/app/leads/page.tsx, frontend/app/leads/[leadId]/page.tsx
+**Found:** 2026-10-10 by the independent review of step 11.1 (b680844)
+**Why it matters:** Each page mounted its own sign-in check and sidebar, so every click asked /me again and flashed "Loading your business…".
+**Suggested fix:** One shared layout for the signed-in pages.
+**Resolution:** fixed in 8202904 and e11c7d0: the pages moved into `app/(dashboard)/` under one layout; pages read the business with `useMe()`. URLs unchanged.
+
+### F-313 [P3] fixed - an ended sign-in showed as "unexpected status (401)"
+
+**File:** frontend/lib/api-client/leads/fetch-leads.ts, fetch-lead.ts
+**Found:** 2026-10-10 by the independent review of step 11.1 (b680844)
+**Why it matters:** The spec asks for a refused state on every screen; a 401 or 403 fell into "API down" with a Try again that could not work.
+**Suggested fix:** Map 401 to a sign-in-again notice and 403 to its message.
+**Resolution:** fixed in e11c7d0.
