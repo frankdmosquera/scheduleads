@@ -13,6 +13,7 @@ import { useMe } from "@/components/dashboard/dashboard-gate";
 
 const SCREENS = [
   { href: "/leads", label: "Leads" },
+  { href: "/settings", label: "Settings" },
   { href: "/", label: "Setup" },
 ];
 
