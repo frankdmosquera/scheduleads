@@ -368,3 +368,11 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** The seed still finds its first person by the business's name (ensureResource), the lookup F-345 replaced in the setup command. Rename "Summit Painting (dev)" on People (12d.2) and reseed: ensureResource finds nobody of that name and inserts a new person, then the link update sets the owner's userId on it (`isNull(userId)` holds for the new row), which the unique index on (organizationId, userId) refuses, since the renamed person already holds that login; the whole seed transaction rolls back. Read from the code, not run (the seed is outside this check's commands). The seed is re-runnable by design ("no machine needs a rebuild"); a dropped database is unaffected.
 **Suggested fix:** Find the seed's first person by the owner's login first (`resource.userId = userId` in that business), falling back to ensureResource by name only when none is linked yet; pass that person's current name with the business's name to applyBusinessShape, as run-client-setup.ts now does.
 **Resolution:** Fixed 2026-10-10: the seed finds a business's first person by their owner's login once linked, and only falls back to the business's name to make one; a rename on Settings no longer makes it add a second. Ran npm run db:seed on scheduleads_dev: both businesses "already there".
+
+### F-351 [P3] fixed - Cancel after a service saved but its ticks failed leaves the list showing the service as it was
+
+**File:** frontend/components/settings/service-form.tsx:184-186
+**Found:** 2026-10-10 by /audit (scope: 12d.3, 7eb80af..7f38977; lenses: all)
+**Why it matters:** The form saves the service, then its ticks by a second call. When the second call fails, the form stays open with the service already changed on the server; Cancel on an existing service called onCancel, so the list kept the old name, length or Live state until a reload. (A new service was already handled.)
+**Suggested fix:** On Cancel, hand the list the service as last saved whenever a save landed in this form.
+**Resolution:** Fixed 2026-10-10: Cancel passes the last saved service to the list whenever one landed, new or existing.

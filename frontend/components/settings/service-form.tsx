@@ -181,9 +181,11 @@ export function ServiceForm({
     setTicksError(null);
     setTicks(ticked);
   };
-  // A new service saved without its ticks still joins the list when the form closes.
+  // A service saved whose ticks then failed still reaches the list, as saved, when the form closes.
   const cancel = () =>
-    !service && savedService.current ? onSaved(savedService.current) : onCancel();
+    savedService.current && savedService.current !== service
+      ? onSaved(savedService.current)
+      : onCancel();
 
   const errors = form.formState.errors;
   const { ref: nameFieldRef, ...nameField } = form.register("name", {
