@@ -248,3 +248,32 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** The spec asks for a refused state on every screen; a 401 or 403 fell into "API down" with a Try again that could not work.
 **Suggested fix:** Map 401 to a sign-in-again notice and 403 to its message.
 **Resolution:** fixed in e11c7d0.
+
+### F-314 [P2] fixed - a next step's due time was read in the browser's zone, shown in the business's
+
+**File:** frontend/components/leads/next-steps-section.tsx:39
+**Found:** 2026-10-10 by the independent review of step 11.2 (b7bc788)
+**Why it matters:** An owner whose browser is in another zone typed 9:00 and saw "due 10:00".
+**Suggested fix:** Read the typed time in the business's zone.
+**Resolution:** fixed: the form sends the clock time it was given and the browser's zone; the API reads it in the business's zone (the browser's when the business has none, as the page shows it) with the tested `localTimeToMoment`; a skipped spring hour and an impossible date are refused.
+
+### F-315 [P3] fixed - next-step database errors were not wrapped
+
+**File:** backend/lib/crm/add-next-step.ts, finish-next-step.ts
+**Found:** 2026-10-10 by the independent review of step 11.2 (b7bc788)
+**Why it matters:** Hono logs an unwrapped database error whole, query and owner's words included.
+**Resolution:** fixed: both go through `safeErrorReason`.
+
+### F-316 [P3] fixed - a repeated save always said the person was new
+
+**File:** backend/lib/crm/add-lead-by-hand.ts
+**Found:** 2026-10-10 by the independent review of step 11.2 (b7bc788)
+**Why it matters:** A retry after a lost answer dropped the "Already a contact" notice.
+**Resolution:** fixed: a repeat compares the contact's and the lead's creation times (a contact made with the lead shares its transaction's timestamp).
+
+### F-317 [P3] fixed - the spec's cross-site test was missing
+
+**File:** backend/routes/leads-routes.test.ts
+**Found:** 2026-10-10 by the independent review of step 11.2 (b7bc788)
+**Why it matters:** Nothing was exposed (the check is mounted); only the proof the spec asked for was absent.
+**Resolution:** fixed: "a cross-site post to /leads is refused".

@@ -115,8 +115,12 @@ export const leadsRoutes = new Hono()
         c.get("user").id,
         c.req.valid("json")
       );
-      if (!added) return c.json(refuse("not_found", "No lead here."), 404);
-      return c.json(added, 201);
+      if (added.state === "not-found") return c.json(refuse("not_found", "No lead here."), 404);
+      if (added.state === "no-such-time") {
+        const message = "That time does not exist that day: the clocks skip it.";
+        return c.json({ ...refuse("bad_request", message), field: "dueLocal" }, 400);
+      }
+      return c.json({ id: added.id }, 201);
     }
   )
 

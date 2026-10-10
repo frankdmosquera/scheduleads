@@ -211,7 +211,11 @@ test("neither phone nor email is refused", async () => {
 });
 
 test("next steps stay inside the business", async () => {
-  const step = { what: "Call back about the quote", dueAt: "2026-10-15T15:00:00.000Z" };
+  const step = {
+    what: "Call back about the quote",
+    dueLocal: "2026-10-15T09:00",
+    browserTimeZone: "America/Edmonton",
+  };
 
   // Each business adds one to its own lead.
   expect((await post(`/leads/${clinic.leadId}/next-steps`, clinic.email, step)).status).toBe(201);
@@ -229,4 +233,17 @@ test("next steps stay inside the business", async () => {
 
   // Its own business ticks it.
   expect((await tick(painting.leadId, painting.email)).status).toBe(200);
+});
+
+test("a cross-site post to /leads is refused", async () => {
+  const response = await app.request("/leads", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Origin: "https://evil.example",
+      Cookie: cookies.get(clinic.email)!,
+    },
+    body: "name=Planted&phone=1",
+  });
+  expect(response.status).toBe(403);
 });

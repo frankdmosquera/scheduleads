@@ -6,6 +6,7 @@ import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { activity, lead } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
+import { safeErrorReason } from "../errors/safe-error-reason.js";
 
 export async function finishNextStep(
   organizationId: string,
@@ -31,6 +32,10 @@ export async function finishNextStep(
         isNull(activity.doneAt)
       )
     )
-    .returning({ id: activity.id });
+    .returning({ id: activity.id })
+    .catch((error: unknown) => {
+      // Never the database's own error: its message carries the query.
+      throw new Error(`Finishing a next step failed: ${safeErrorReason(error)}`);
+    });
   return done.length > 0;
 }

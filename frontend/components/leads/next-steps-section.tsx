@@ -28,7 +28,7 @@ export function NextStepsSection({
   onChanged: () => void;
 }) {
   const [what, setWhat] = useState("");
-  const [due, setDue] = useState(""); // the browser's own date and time, "2026-10-15T09:00"
+  const [due, setDue] = useState(""); // the owner's clock time, "2026-10-15T09:00"
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -36,7 +36,8 @@ export function NextStepsSection({
     event.preventDefault();
     const parsed = nextStepValidationSchema.safeParse({
       what,
-      dueAt: due ? new Date(due).toISOString() : "",
+      dueLocal: due,
+      browserTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
     if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? "Check the step.");
     setBusy(true);

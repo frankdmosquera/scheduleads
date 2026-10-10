@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 
 import { and, eq } from "drizzle-orm";
 
-import { lead } from "@scheduleads-app/shared/db";
+import { contact, lead } from "@scheduleads-app/shared/db";
 import {
   addLeadValidationSchema,
   type AddLeadInputType,
@@ -36,7 +36,7 @@ export async function addLeadByHand(
   const { requestKey, name, phone, email, details } = addLeadValidationSchema.parse(input);
 
   const first = await findLeadOfForm(organizationId, requestKey);
-  if (first) return { ...first, joinedExistingContact: false, repeated: true };
+  if (first) return { ...first, repeated: true };
 
   const stage = await findFirstPipelineStage(organizationId);
   if (!stage) throw new Error("Adding a lead failed: the business has no pipeline stage.");
@@ -75,7 +75,7 @@ export async function addLeadByHand(
   } catch (error) {
     if (error instanceof SameFormSavedError) {
       const winner = await findLeadOfForm(organizationId, requestKey);
-      if (winner) return { ...winner, joinedExistingContact: false, repeated: true };
+      if (winner) return { ...winner, repeated: true };
     }
     // Never the database's own error: its message carries the query, the customer's details in it.
     throw new Error(`Adding a lead failed: ${safeErrorReason(error)}`);
@@ -85,11 +85,23 @@ export async function addLeadByHand(
 async function findLeadOfForm(
   organizationId: string,
   requestKey: string
-): Promise<{ leadId: string; contactId: string } | null> {
+): Promise<{ leadId: string; contactId: string; joinedExistingContact: boolean } | null> {
   const [found] = await db
-    .select({ leadId: lead.id, contactId: lead.contactId })
+    .select({
+      leadId: lead.id,
+      contactId: lead.contactId,
+      leadCreatedAt: lead.createdAt,
+      contactCreatedAt: contact.createdAt,
+    })
     .from(lead)
+    .innerJoin(
+      contact,
+      and(eq(contact.organizationId, lead.organizationId), eq(contact.id, lead.contactId))
+    )
     .where(and(eq(lead.organizationId, organizationId), eq(lead.requestKey, requestKey)))
     .limit(1);
-  return found ?? null;
+  if (!found) return null;
+  const { leadId, contactId, leadCreatedAt, contactCreatedAt } = found;
+  // A contact made with the lead shares its transaction's timestamp; an older one was already there.
+  return { leadId, contactId, joinedExistingContact: contactCreatedAt < leadCreatedAt };
 }
