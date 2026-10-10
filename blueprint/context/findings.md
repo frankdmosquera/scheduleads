@@ -297,10 +297,26 @@ route test with a 503 on the first send and the text found on the retry.
 **Missing validation:** Type over one segment of a time field by keyboard in Chrome and Edge.
 **Resolution:**
 
-### F-327 [P3] fixed - Settings shows its refusal through LeadsRefusalNotice, a component named and commented for the leads screens
+### F-327 [P3] closed - Settings shows its refusal through LeadsRefusalNotice, a component named and commented for the leads screens
 
 **File:** frontend/components/settings/settings-screen.tsx:9,51; frontend/components/leads/leads-refusal-notice.tsx:1-2
 **Found:** 2026-10-10 by the check of 12a.1's fixes (scope: bbd7510..5fc529c)
 **Why it matters:** What it shows is generic, but its name and header say leads, so the naming misleads, and a change made for leads alone would change Settings unnoticed.
 **Suggested fix:** Move it to a shared place as `RefusalNotice` with a generic header, used by both screens.
-**Resolution:** Carried to step 12a.2, which changes the Settings screen anyway. Fixed 2026-10-10 in step 12a.2: the notice moved to frontend/components/centred-card/refusal-notice.tsx as RefusalNotice, with a generic header, used by the leads list, the lead page and Settings.
+**Resolution:** Carried to step 12a.2, which changes the Settings screen anyway. Fixed 2026-10-10 in step 12a.2: the notice moved to frontend/components/centred-card/refusal-notice.tsx as RefusalNotice, with a generic header, used by the leads list, the lead page and Settings. Closed 2026-10-10 by /audit of 12a.2 (0f33b77..47dc46e): refusal-notice.tsx:1-2 has the generic header, all three screens import it, and no reference to the old name is left in frontend/.
+
+### F-328 [P2] open - No saved test proves a save lists anything: the step's whole point is checked by hand only
+
+**File:** backend/routes/settings-routes.test.ts (no `outsideHours` assertion); backend/lib/settings/save-business-hours.ts:31-86; backend/lib/settings/save-person-hours.ts:33-94
+**Found:** 2026-10-10 by /audit (scope: current, step 12a.2; lenses: all)
+**Why it matters:** The Simulate cases test `applyOutsideHoursRules` alone, with rows built by hand. What feeds it is untested: the old row read before the upsert (moved after it, every list is empty), the person rows map, the joins in `findUpcomingBookings`, the person filter, and the person save's "no old row means follows the business". Any of these broken returns `outsideHours: []`, which the route tests accept, and the owner is silently told nothing moved.
+**Suggested fix:** Two route tests on the seeded business, as the step's Done when does by hand: a confirmed Tuesday 4:00 booking, Tuesday shortened to end at 3:00, the answer lists it (bookingId, leadId, names) and the booking row is unchanged; the same save again lists nothing. One more for a person switched to an own week that leaves their booking out.
+**Resolution:**
+
+### F-329 [P3] open - Each save locks the row it writes but reads the other side unlocked, so two owners saving at once can get a wrong list
+
+**File:** backend/lib/settings/save-business-hours.ts:45-58; backend/lib/settings/save-person-hours.ts:49-58
+**Found:** 2026-10-10 by /audit (scope: current, step 12a.2; lenses: all)
+**Why it matters:** The business save reads every person's row with a plain select, and the person save reads the business's row the same way and uses it for both before and after. If a person's card and the business's card are saved at the same moment, each list is worked out against the other's old row: a booking can be listed for a person who just moved to an own week, or missed when the time zone changed underneath. Only the notice is wrong, no booking changes, and it needs two saves inside one transaction's time.
+**Suggested fix:** Lock the other side too, in the same order in both saves: the business save adds `.for("update")` to the person rows; the person save reads the business row `.for("share")` before locking its own.
+**Resolution:**
