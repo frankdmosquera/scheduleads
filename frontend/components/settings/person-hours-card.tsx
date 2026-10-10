@@ -1,11 +1,11 @@
-// Frontend component: one person's card of hours on Settings: following the business's week or
-// keeping their own, and their own one-off dates, with one Save (feature 12a).
+// Frontend component: one person's row of hours on Settings, opened to edit: following the
+// business's week or keeping their own, and their own one-off dates, with one Save (feature 12a).
 
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRef, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import type { z } from "zod";
 
 import {
@@ -20,7 +20,7 @@ import {
   OutsideHoursList,
   type OutsideHoursListType,
 } from "@/components/settings/outside-hours-list";
-import { WeekEditor } from "@/components/settings/week-editor";
+import { WEEK_DAYS, WeekEditor } from "@/components/settings/week-editor";
 import { Button } from "@/components/ui/button";
 import type { HoursSettingsType } from "@/lib/api-client/settings/fetch-hours-settings";
 import { savePersonHours } from "@/lib/api-client/settings/save-person-hours";
@@ -37,6 +37,7 @@ export function PersonHoursCard({
   timezone: string; // the business's, for the times of the bookings listed after a save
   canEdit: boolean;
 }) {
+  const rowRef = useRef<HTMLDetailsElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<HoursNoticeType>(null);
@@ -73,6 +74,8 @@ export function PersonHoursCard({
       });
       return;
     }
+    // A refusal must be seen, even if another row was opened while the save ran.
+    if (rowRef.current) rowRef.current.open = true;
     if (saved.state === "field") {
       form.setError(saved.field as "weeklyHours", { message: saved.message });
       focusFirstInvalid();
@@ -83,15 +86,34 @@ export function PersonHoursCard({
 
   const errors = form.formState.errors;
   const idBase = `person-${person.id}`;
+  // The row reads what the card holds now, saved or not.
+  const [week, dates] = useWatch({ control: form.control, name: ["weeklyHours", "dateHours"] });
 
   return (
-    <section className="rounded-xl border border-border bg-card p-6">
-      <h3 className="text-base font-semibold tracking-tight text-foreground">{person.name}</h3>
+    // One person open at a time: every row shares the name. Closed, it keeps its edits.
+    <details ref={rowRef} name="people" className="group rounded-xl border border-border bg-card">
+      <summary className="flex cursor-pointer list-none flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl px-4 py-2.5 hover:bg-muted/50 md:px-6 [&::-webkit-details-marker]:hidden">
+        <span
+          aria-hidden
+          className="text-muted-foreground transition-transform group-open:rotate-90"
+        >
+          &#9656;
+        </span>
+        <h4 className="text-base font-semibold tracking-tight text-foreground">{person.name}</h4>
+        <span className="text-sm text-muted-foreground">
+          {rowState(week ?? null, dates ?? [], outside?.bookings.length ?? 0)}
+        </span>
+        {form.formState.isDirty ? (
+          <span className="rounded-md bg-[var(--wait-soft)] px-2 py-0.5 text-xs font-medium text-foreground">
+            Not saved
+          </span>
+        ) : null}
+      </summary>
       <form
         ref={formRef}
         noValidate
         onSubmit={(event) => form.handleSubmit(saveHours, () => focusFirstInvalid())(event)}
-        className="mt-3"
+        className="px-4 pb-4 md:px-6 md:pb-6"
       >
         <fieldset disabled={!canEdit} className="flex flex-col gap-4">
           <Controller
@@ -141,9 +163,9 @@ export function PersonHoursCard({
             }}
           />
           <div className="flex flex-col gap-2">
-            <h4 className="text-sm font-semibold text-foreground">
+            <h5 className="text-sm font-semibold text-foreground">
               {person.name}&apos;s one-off dates
-            </h4>
+            </h5>
             <Controller
               name="dateHours"
               control={form.control}
@@ -160,7 +182,7 @@ export function PersonHoursCard({
           </div>
         </fieldset>
         <HoursNotice notice={notice} />
-        <OutsideHoursList list={outside} Heading="h4" />
+        <OutsideHoursList list={outside} Heading="h5" />
         {canEdit ? (
           <div className="mt-4">
             <Button type="submit" disabled={form.formState.isSubmitting}>
@@ -169,6 +191,25 @@ export function PersonHoursCard({
           </div>
         ) : null}
       </form>
-    </section>
+    </details>
   );
+}
+
+// The row's line: "Follows the business's week", or "Own week · Mon, Tue", then any one-off
+// dates, and the bookings the last save left outside, so a closed row still says they are there.
+function rowState(week: WeeklyHoursType | null, dates: unknown[], outsideCount: number): string {
+  const weekText = week
+    ? `Own week · ${
+        WEEK_DAYS.filter(([day]) => week[day]?.length)
+          .map(([, name]) => name.slice(0, 3))
+          .join(", ") || "no days"
+      }`
+    : "Follows the business's week";
+  const parts = [weekText];
+  if (dates.length)
+    parts.push(dates.length === 1 ? "1 one-off date" : `${dates.length} one-off dates`);
+  if (outsideCount) {
+    parts.push(outsideCount === 1 ? "1 booking outside" : `${outsideCount} bookings outside`);
+  }
+  return parts.join(" · ");
 }

@@ -10,7 +10,8 @@ import {
   type DayWindowsErrorsType,
 } from "@/components/settings/day-windows-editor";
 
-const DAYS = [
+// The week in order, Monday first, with each day's key and name; the person rows read it too.
+export const WEEK_DAYS = [
   ["mon", "Monday"],
   ["tue", "Tuesday"],
   ["wed", "Wednesday"],
@@ -20,7 +21,7 @@ const DAYS = [
   ["sun", "Sunday"],
 ] as const;
 
-type DayKeyType = (typeof DAYS)[number][0];
+type DayKeyType = (typeof WEEK_DAYS)[number][0];
 
 export function WeekEditor({
   idBase,
@@ -45,15 +46,15 @@ export function WeekEditor({
 
   return (
     <div className="flex flex-col divide-y divide-border">
-      {DAYS.map(([day, name]) => {
+      {WEEK_DAYS.map(([day, name]) => {
         const windows = week[day] ?? [];
         const open = windows.length > 0;
         const switchId = `${idBase}-${day}`;
         return (
-          <div key={day} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:gap-4">
+          <div key={day} className="flex flex-col gap-2 py-2 sm:flex-row sm:items-start sm:gap-4">
             <label
               htmlFor={switchId}
-              className="flex w-36 flex-none items-center gap-2 pt-1.5 text-sm font-medium"
+              className="flex w-28 flex-none items-center gap-2 pt-1.5 text-sm font-medium"
             >
               <input
                 id={switchId}

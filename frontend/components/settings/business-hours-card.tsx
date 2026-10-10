@@ -100,11 +100,11 @@ export function BusinessHoursCard({
   const errors = form.formState.errors;
 
   return (
-    <section className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-md)]">
+    <section className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-md)] md:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-base font-semibold tracking-tight text-foreground">
+        <h3 className="text-base font-semibold tracking-tight text-foreground">
           When you take bookings
-        </h2>
+        </h3>
         {initial ? (
           <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
             {initial.timezone}
@@ -138,7 +138,7 @@ export function BusinessHoursCard({
           />
 
           <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold text-foreground">One-off dates</h3>
+            <h4 className="text-sm font-semibold text-foreground">One-off dates</h4>
             <Controller
               name="dateHours"
               control={form.control}
@@ -232,7 +232,7 @@ export function BusinessHoursCard({
         </fieldset>
 
         <HoursNotice notice={notice} />
-        <OutsideHoursList list={outside} Heading="h3" />
+        <OutsideHoursList list={outside} Heading="h4" />
         {canEdit ? (
           <div className="mt-4">
             <Button type="submit" disabled={form.formState.isSubmitting}>

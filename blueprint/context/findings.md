@@ -273,14 +273,6 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Have outsideHoursOf add a `when` string per row with formatBookingTime on the API, as localStartTimes does, and show that.
 **Resolution:**
 
-### F-336 [P3] open - The Settings screen's heading levels put "Each person" and every person's card under the business card
-
-**File:** frontend/components/settings/business-hours-card.tsx:105; frontend/components/settings/settings-screen.tsx:44,84; frontend/components/settings/person-hours-card.tsx:89
-**Found:** 2026-10-10 by the final review of feature 12a (scope: main...76850fe; lenses: quality, security, performance, tests)
-**Why it matters:** Only visible with the three components together. The screen draws h1 Settings, h2 Hours, then the business card's own h2 "When you take bookings", which ends the Hours section in the outline; "Each person" (h3) follows it, so a screen reader moving by headings files it under the business's card; and each person's name is also h3, a sibling of "Each person" instead of under it. F-333 fixed the same kind of slip for the list alone.
-**Suggested fix:** One level down for the cards: the business card's title h3 (its "One-off dates" and list h4), "Each person" h3, each person's name h4 (their one-off dates and list h5), or make "Each person" visually a label and keep the names at h3 under an h2-level "When you take bookings".
-**Resolution:**
-
 ### F-337 [P3] open - OutsideHoursBookingType still sits in a file of its own, though outsideHoursOf now produces it
 
 **File:** backend/lib/settings/outside-hours-booking-type.ts:1-11; backend/lib/settings/outside-hours-of.ts:15-24
