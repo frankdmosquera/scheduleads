@@ -4,7 +4,7 @@
 
 **Branch:** `feature/10-tenant-zero-ready-agentsweb`
 
-**Status:** spec written 2026-10-09; whole-feature pass agreed with Frank 2026-10-09; step 10.1's plan with him next.
+**Status:** spec written 2026-10-09; whole-feature pass agreed with Frank 2026-10-09; step 10.1 built and reviewed 2026-10-09.
 
 ## Goal
 
@@ -133,7 +133,17 @@ named in the step.
   database or Drizzle type dragged in by the route types fails it too. If the
   route types cannot be carried without such an import, the step stops and
   says so before going on.
-  **Done when:** the package builds; that test passes and is shown able to
+  Amended at build (2026-10-09): the allow-list check is the build's last
+  step, `check-dist-imports.mjs`, not a Vitest test. A Vitest test reading
+  files needs Node's type definitions, which this browser package does not
+  declare; as a build step a leak can never be built, and the tests build
+  first. It reads every built file at any depth, triple-slash references
+  included, and checks the "use client" first line. The build type-checks the
+  package with its tests first (the old `tsc` build was its only check), and
+  `prepublishOnly` rebuilds before any publish. Shared's files are marked
+  free of side effects for the bundle, so schemas the window never uses are
+  left out.
+  **Done when:** the package builds; that check passes and is shown able to
   fail (an import put back); the package's 76 tests pass; the frontend builds
   and the booking preview page still opens the window on clinic-dev; suites
   pass.
@@ -202,7 +212,7 @@ named in the step.
 
 - `blueprint/build-plan.md`, `blueprint/context/project-overview.md` (10.1).
 - `packages/booking-component/package.json`, a new `tsdown.config.ts`, its
-  `index.ts` header, a new test over `dist/`; `frontend/package.json` and the
+  `index.ts` header, a new `check-dist-imports.mjs`; `frontend/package.json` and the
   booking preview page's imports (the rename).
 - `packages/shared/scripts/seed-dev.ts`, a new shared function for applying a
   business's shape, a new `packages/shared/scripts/apply-client-setup.ts`, the
@@ -229,7 +239,7 @@ named in the step.
 
 ## Testing
 
-- Package (Vitest): the new `dist/` import allow-list test, plus feature 9's 76.
+- Package: the build's `dist/` import check (amended at 10.1), plus feature 9's 76 Vitest tests.
 - Shared (Vitest, local `scheduleads_dev`): the setup schema and the command's
   rules on throwaway businesses, removed after, refusing any non-local
   database.

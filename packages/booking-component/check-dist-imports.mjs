@@ -14,10 +14,14 @@ const importsIn = (code) =>
     ...code.matchAll(/\bimport\s*\(\s*["']([^"']+)["']\s*\)/g),
     ...code.matchAll(/\bimport\s*["']([^"']+)["']/g),
     ...code.matchAll(/\brequire\s*\(\s*["']([^"']+)["']\s*\)/g),
+    ...code.matchAll(/\/\/\/\s*<reference\s+(?:types|path)\s*=\s*["']([^"']+)["']/g),
   ].map((match) => match[1]);
 
 const problems = [];
-const files = readdirSync(distFolder).filter((file) => /\.(js|d\.ts)$/.test(file));
+// Every built file at any depth: a chunk in a subfolder or an .mjs ships just the same.
+const files = readdirSync(distFolder, { recursive: true })
+  .map(String)
+  .filter((file) => /\.[cm]?js$|\.d\.[cm]?ts$/.test(file));
 if (files.length === 0) problems.push("dist/ holds no built files");
 for (const file of files) {
   const code = readFileSync(join(distFolder, file), "utf8");
