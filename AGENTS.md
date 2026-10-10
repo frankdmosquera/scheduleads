@@ -126,49 +126,52 @@ are not configurable.
 
 ## Workflow
 
-### A review after every step, not only at the end
+### Each feature is heavy or light
 
-**Decided by Frank, 2026-09-24.** This overrides the Blueprint default, where
-the audit and the independent review run once per work item at `/complete`.
+**Decided by Frank, 2026-10-10.** The size of the process follows the size of
+the feature, never one recipe for all. `/feature` decides it when it writes
+the spec, puts it on the spec's first lines as `**Size:** heavy` or
+`**Size:** light` with one line of why, and says it to Frank in one line; he
+can overrule it. A question from Frank is answered with a clearer picture and
+never changes the size or adds steps.
 
-After each build step (N.1, N.2, ...) passes its own `Done when`, and before
-the next step starts:
+| | Heavy | Light |
+|---|---|---|
+| What it is | several separate risks with real logic: rules, times, data, money, security (feature 9, the booking window) | settings, wiring, packaging, docs, or one small piece of logic (feature 10, the setup file) |
+| Steps | one per real risk, never one per topic | one, often the whole feature |
+| Plan yes | the whole feature once, then each step's plan | one yes on the one plan |
+| Proof | each step's tests, then `/audit` and an independent review before the next step | the one check that shows it works, plus tests for any logic it adds |
+| Review | per step; a second reviewer only for P0/P1 | once, at `/complete` |
+| Build log | the full step entry (pieces, Part 2) | five plain lines and the code (`buildlogs/logs/README.md`) |
 
-1. Run `/audit` scoped to that step's changes.
-2. Run the independent review on the same changes.
-3. Blocking findings (P0/P1) are fixed, or Frank explicitly accepts them with a
-   reason, before the next step begins. P2/P3 are counted, recorded and carried.
-4. If a review shows a spec or plan file is wrong, correct it now, before the
-   next step builds on it.
+Both keep, unchanged: Frank's yes before anything is built, one commit per
+step pushed straight after, the build log written before the step is
+reported, the final review at `/complete`, and merging as his call.
 
-`/complete` still runs its own final review, but over steps that were each
-already reviewed, so it is a short integration check rather than one review of
-a whole feature at once.
+In a heavy feature, after each step passes its `Done when` and before the next
+starts: `/audit` scoped to the step, then the independent review; blocking
+findings (P0/P1) are fixed or explicitly accepted by Frank with a reason;
+P2/P3 are recorded and carried; a spec or plan the review shows wrong is
+corrected before the next step builds on it. A step inside a heavy feature
+that has no logic (settings, wiring) is proved by its one check and gets no
+reviewer.
 
-Why: item 1 had six steps and one review at the end. Reviewing a feature that
-size in one go was slow and painful, and faults found late had been built on
-for several steps.
+`blueprint/config.json` keeps `workflow.stepReview: "every"` as the project
+default; the spec's `Size` line overrides it per feature: heavy is `every`,
+light is `feature`.
 
-This is `workflow.stepReview: "every"` in `blueprint/config.json`, and
-`/implement` carries it out. A small project sets `"feature"` instead and
-reviews once per feature.
-
-**Sized to the step (Frank, 2026-10-09, after step 10.2).** The review after
-every step above is for steps with logic. A step with no logic (settings,
-wiring, packaging, docs) is built and proved by the one check that shows it
-works: no independent reviewer, no re-review, no full suite reruns, a short
-build log entry. A step with logic gets its tests and its review; a second
-reviewer runs only for P0/P1 findings, and smaller fixes are closed by the
-next review. A simple feature gets few steps, often one, and a question from
-Frank is answered with a clearer picture, never with more steps. The final
-review at `/complete` is unchanged. Why: on feature 10, steps of settings and
-wiring went through the whole machine and spent far more time and tokens than
-the work needed.
+Why: feature 1 had six steps and one review at the end, and faults found late
+had been built on, so every step got a review (2026-09-24). That recipe then
+ran on every feature: feature 10, settings and packaging, was split into four
+steps, each with its own plan, suites, reviewer and long log entry, and took
+hours for work of minutes. Frank, 2026-10-09: "if a feature is complex i get
+it. but if not??? we make it complex??"
 
 ### A spec is approved one step at a time
 
 **Decided by Frank, 2026-09-25.** This overrides the Blueprint default, where
-the whole spec is approved once before any step is built.
+the whole spec is approved once before any step is built. A light feature has
+one step, so its whole-feature pass and its step's yes are one and the same.
 
 1. Before the first step, Frank sees the whole feature once, as one picture
    of what each step is for and how the steps feed each other. That is the
@@ -188,7 +191,9 @@ loses him. Every yes should be on something he has seen.
 plan (both parts) has his yes, the step runs straight through: build, tests
 and checks, tick the box, publish the page, commit and push to the feature
 branch, `/audit`, independent review. The one planned stop is after the
-review, where its findings are talked through.
+review, where its findings are talked through. In a light feature there is no
+step review, so the step runs through to its commit and the report, and the
+review comes at `/complete`.
 
 Only three things stop a step earlier:
 

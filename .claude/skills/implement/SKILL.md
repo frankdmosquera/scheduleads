@@ -145,6 +145,13 @@ required`, a UI done-when cannot pass on build output alone. Capture the
 configured browser evidence, or stop and ask the user to start the required
 server when live evidence cannot run automatically.
 
+**The spec's `Size` line overrides `workflow.stepReview` for its feature:**
+heavy runs as `every`, light as `feature`. A light feature's step is proved by
+the one check that shows it works (plus tests for any logic it adds), gets no
+step review, and its log entry is the short shape in `buildlogs/logs/README.md`.
+Do not pause between steps or between pieces of a step to report or ask: after
+the plan's yes, build straight through to the step report.
+
 With `workflow.stepReview: feature`, continue through passing steps, committing
 and pushing each one, and present one final review packet. The audit and
 independent review run once, over the whole work item, before `/complete`. This

@@ -25,6 +25,10 @@ when the feature has no visual target.
 
 ## Build loop
 
+**Size:** heavy | light, and one line of why (`AGENTS.md`, "Each feature is
+heavy or light"). Light: one step, reviewed once at `/complete`. Heavy: one
+step per real risk, each reviewed before the next.
+
 Build one small step at a time. Follow `workflow.stepReview` in
 `blueprint/config.json`: `feature` produces one review packet after all steps,
 while `every` pauses for review after each step. Offer checkpoint commits only
