@@ -273,13 +273,13 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Have outsideHoursOf add a `when` string per row with formatBookingTime on the API, as localStartTimes does, and show that.
 **Resolution:**
 
-### F-336 [P3] fixed - The Settings screen's heading levels put "Each person" and every person's card under the business card
+### F-336 [P3] closed - The Settings screen's heading levels put "Each person" and every person's card under the business card
 
 **File:** frontend/components/settings/business-hours-card.tsx:105; frontend/components/settings/settings-screen.tsx:44,84; frontend/components/settings/person-hours-card.tsx:89
 **Found:** 2026-10-10 by the final review of feature 12a (scope: main...76850fe; lenses: quality, security, performance, tests)
 **Why it matters:** Only visible with the three components together. The screen draws h1 Settings, h2 Hours, then the business card's own h2 "When you take bookings", which ends the Hours section in the outline; "Each person" (h3) follows it, so a screen reader moving by headings files it under the business's card; and each person's name is also h3, a sibling of "Each person" instead of under it. F-333 fixed the same kind of slip for the list alone.
 **Suggested fix:** One level down for the cards: the business card's title h3 (its "One-off dates" and list h4), "Each person" h3, each person's name h4 (their one-off dates and list h5), or make "Each person" visually a label and keep the names at h3 under an h2-level "When you take bookings".
-**Resolution:** Fixed 2026-10-10 on fix/settings-layout: h1 Settings, h2 Hours (its section), h3 the business card and "Each person", h4 inside the business card and each person's name in their row, h5 inside a person; checked in the browser by reading the heading outline.
+**Resolution:** Fixed 2026-10-10 on fix/settings-layout: h1 Settings, h2 Hours (its section), h3 the business card and "Each person", h4 inside the business card and each person's name in their row, h5 inside a person; checked in the browser by reading the heading outline. Closed 2026-10-10 by the review of fix/settings-layout (main...9b6ec21): the code and the running page at /settings both read h1 Settings > h2 Hours > h3 "When you take bookings" (h4 One-off dates, h4 the outside list) and h3 "Each person" > h4 each person's name in their row's summary (h5 their one-off dates, h5 their outside list); OutsideHoursList takes "h4" | "h5" and both callers pass the right one; no new defect from the repair. A heading inside <summary> is exposed in Chrome; Safari with VoiceOver, which may flatten a summary's content, was not tried.
 
 ### F-337 [P3] open - OutsideHoursBookingType still sits in a file of its own, though outsideHoursOf now produces it
 
@@ -288,3 +288,19 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** The type-only file made sense in 12a.1, when `outsideHours` was always empty and nothing produced it. Since 12a.2 `outsideHoursOf` builds every row of it, and coding-standards.md says "A type sits in the file of the function that produces it". The file is used (outside-hours-of, both saves), so nothing breaks; it is the leftover the standard exists to stop, a file Frank opens to find only a shape whose maker lives elsewhere.
 **Suggested fix:** Move `OutsideHoursBookingType` into outside-hours-of.ts, point the two saves' imports there, and remove outside-hours-booking-type.ts.
 **Resolution:**
+
+### F-338 [P3] open - A person's row can close on its own save, hiding what the save answered
+
+**File:** frontend/components/settings/person-hours-card.tsx:76-81, 91, 179-180
+**Found:** 2026-10-10 by the review of fix/settings-layout (scope: main...9b6ec21; lenses: quality, security, performance, tests)
+**Why it matters:** The notice, the field error and the outside list all sit inside the person's `<details>`, and opening another person closes it (the shared `name`). Two paths: (1) the owner presses Save on Marco and opens Diego before the answer comes back; a refused save then calls setError and focusFirstInvalid, but focus() on a field inside a closed row does nothing (checked in the browser pane at /settings: the focus fails and the row stays closed), so the refused field is neither seen nor focused and the row only says "Not saved"; a failed save's message is hidden the same way. (2) More likely: a save lists bookings now outside Marco's hours, the owner opens the next person, and the list (kept "until the card is saved again or the page is left") disappears with nothing on Marco's row saying it exists. Before this fix every card stayed open, so the list stayed on the page; the spec puts "the list of bookings left outside" under Must not change.
+**Suggested fix:** Keep a ref on the `<details>` and set `open = true` before setError/focusFirstInvalid and before a failure notice; and add the count to the row's line while a list is held (for example "2 bookings outside"), so a closed row still says it.
+**Resolution:** Fixed 2026-10-10 on fix/settings-layout: a refused save (a field error or a failure notice) opens its row before showing the error or moving focus, and the row line counts the bookings the last save left outside ("1 booking outside"), so a closed row still says the list is there. Checked in the browser: Carlos saved back onto the business's week, then Diego opened; Carlos's closed row read "Follows the business's week · 1 booking outside".
+
+### F-339 [P3] open - The row's day names are a second copy of the week's day list
+
+**File:** frontend/components/settings/person-hours-card.tsx:193-201; frontend/components/settings/week-editor.tsx:13-21
+**Found:** 2026-10-10 by the review of fix/settings-layout (scope: main...9b6ec21; lenses: quality, security, performance, tests)
+**Why it matters:** WeekEditor already holds the seven day keys in order with their names (`as const`, which gives DayKeyType); the new DAYS in person-hours-card repeats the keys with short labels. The type checks each key, but nothing ties the two lists' order or completeness, the same kind of quiet copy F-332 records on the API side.
+**Suggested fix:** Export WeekEditor's DAYS and derive the short label in rowState (`name.slice(0, 3)`), or move the one list to a small module both import.
+**Resolution:** Fixed 2026-10-10 on fix/settings-layout: week-editor.tsx exports WEEK_DAYS and the person row reads it, taking each day's first three letters; the second list is gone.

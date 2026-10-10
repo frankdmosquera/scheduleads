@@ -20,7 +20,7 @@ import {
   OutsideHoursList,
   type OutsideHoursListType,
 } from "@/components/settings/outside-hours-list";
-import { WeekEditor } from "@/components/settings/week-editor";
+import { WEEK_DAYS, WeekEditor } from "@/components/settings/week-editor";
 import { Button } from "@/components/ui/button";
 import type { HoursSettingsType } from "@/lib/api-client/settings/fetch-hours-settings";
 import { savePersonHours } from "@/lib/api-client/settings/save-person-hours";
@@ -37,6 +37,7 @@ export function PersonHoursCard({
   timezone: string; // the business's, for the times of the bookings listed after a save
   canEdit: boolean;
 }) {
+  const rowRef = useRef<HTMLDetailsElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<HoursNoticeType>(null);
@@ -73,6 +74,8 @@ export function PersonHoursCard({
       });
       return;
     }
+    // A refusal must be seen, even if another row was opened while the save ran.
+    if (rowRef.current) rowRef.current.open = true;
     if (saved.state === "field") {
       form.setError(saved.field as "weeklyHours", { message: saved.message });
       focusFirstInvalid();
@@ -88,7 +91,7 @@ export function PersonHoursCard({
 
   return (
     // One person open at a time: every row shares the name. Closed, it keeps its edits.
-    <details name="people" className="group rounded-xl border border-border bg-card">
+    <details ref={rowRef} name="people" className="group rounded-xl border border-border bg-card">
       <summary className="flex cursor-pointer list-none flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl px-4 py-2.5 hover:bg-muted/50 md:px-6 [&::-webkit-details-marker]:hidden">
         <span
           aria-hidden
@@ -97,7 +100,9 @@ export function PersonHoursCard({
           &#9656;
         </span>
         <h4 className="text-base font-semibold tracking-tight text-foreground">{person.name}</h4>
-        <span className="text-sm text-muted-foreground">{rowState(week ?? null, dates ?? [])}</span>
+        <span className="text-sm text-muted-foreground">
+          {rowState(week ?? null, dates ?? [], outside?.bookings.length ?? 0)}
+        </span>
         {form.formState.isDirty ? (
           <span className="rounded-md bg-[var(--wait-soft)] px-2 py-0.5 text-xs font-medium text-foreground">
             Not saved
@@ -190,25 +195,21 @@ export function PersonHoursCard({
   );
 }
 
-const DAYS: [keyof WeeklyHoursType, string][] = [
-  ["mon", "Mon"],
-  ["tue", "Tue"],
-  ["wed", "Wed"],
-  ["thu", "Thu"],
-  ["fri", "Fri"],
-  ["sat", "Sat"],
-  ["sun", "Sun"],
-];
-
-// The row's line: "Follows the business's week", or "Own week · Mon, Tue", then any one-off dates.
-function rowState(week: WeeklyHoursType | null, dates: unknown[]): string {
+// The row's line: "Follows the business's week", or "Own week · Mon, Tue", then any one-off
+// dates, and the bookings the last save left outside, so a closed row still says they are there.
+function rowState(week: WeeklyHoursType | null, dates: unknown[], outsideCount: number): string {
   const weekText = week
     ? `Own week · ${
-        DAYS.filter(([day]) => week[day]?.length)
-          .map(([, label]) => label)
+        WEEK_DAYS.filter(([day]) => week[day]?.length)
+          .map(([, name]) => name.slice(0, 3))
           .join(", ") || "no days"
       }`
     : "Follows the business's week";
-  if (dates.length === 0) return weekText;
-  return `${weekText} · ${dates.length === 1 ? "1 one-off date" : `${dates.length} one-off dates`}`;
+  const parts = [weekText];
+  if (dates.length)
+    parts.push(dates.length === 1 ? "1 one-off date" : `${dates.length} one-off dates`);
+  if (outsideCount) {
+    parts.push(outsideCount === 1 ? "1 booking outside" : `${outsideCount} bookings outside`);
+  }
+  return parts.join(" · ");
 }
