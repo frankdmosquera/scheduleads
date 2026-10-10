@@ -6,6 +6,8 @@
 
 **Branch:** feature/12d-services-people-and-places
 
+**Status:** verified 2026-10-10: all five steps built and reviewed, then a final review of the whole feature; backend 942, shared 174 and booking component 79 tests pass, the frontend builds and lints.
+
 ## Goal
 
 The owner manages, on Settings, what customers can book and who does it: each service
