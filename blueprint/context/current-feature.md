@@ -206,7 +206,7 @@ for any member, writes need `requirePermissionMiddleware({ organization: ["updat
 The business always comes from the session; every query filters on it first; an id of
 another business, an unknown one, or the wrong kind is one `404 not_found`.
 
-**`GET /settings/services`** `200 { canEdit, services, people }`: `services` by name, each
+**`GET /settings/services`** `200 { canEdit, services, people, timezone }` (`timezone` from 12d.5, null before the business's hours): `services` by name, each
 `{ id, name, slug, description, durationMinutes, bufferBeforeMinutes, bufferAfterMinutes,
 slotIntervalMinutes, personChoice, asksAddress, active, peopleIds, placeIds }`; `people`
 every person and place `{ id, name, kind, active }` for the ticks (12d.3).

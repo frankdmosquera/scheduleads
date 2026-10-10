@@ -43,7 +43,8 @@ export async function saveService(
       return { service: answer, outsideHours: [] };
     }
 
-    // Read shared, so a save of hours running meanwhile finishes first and the list uses its hours.
+    // Locked, so a save of the business's or a person's hours running meanwhile finishes first and
+    // the list uses its hours; "no key update" still lets bookings be written meanwhile (F-360).
     const [businessRow] = await tx
       .select()
       .from(availabilityRule)
@@ -53,7 +54,7 @@ export async function saveService(
           isNull(availabilityRule.resourceId)
         )
       )
-      .for("share");
+      .for("no key update");
     if (!businessRow) return { service: answer, outsideHours: [] }; // no hours: nothing fitted
     const hours = {
       ...businessHoursOf(businessRow),

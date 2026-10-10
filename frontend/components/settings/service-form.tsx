@@ -159,7 +159,13 @@ export function ServiceForm({
     }
     const savedNow = saved.answer.service;
     savedService.current = savedNow;
-    outsideHours.current = saved.answer.outsideHours;
+    // Kept across saves while the form is open: a second save, after its ticks failed, finds the
+    // length unchanged and lists nothing, yet the first save's bookings still no longer fit (F-359).
+    const listed = new Set(outsideHours.current.map((row) => row.bookingId));
+    outsideHours.current = [
+      ...outsideHours.current,
+      ...saved.answer.outsideHours.filter((row) => !listed.has(row.bookingId)),
+    ];
     if (
       sameIds(savedNow.peopleIds, ticks.peopleIds) &&
       sameIds(savedNow.placeIds, ticks.placeIds)
