@@ -289,7 +289,7 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Move `OutsideHoursBookingType` into outside-hours-of.ts, point the two saves' imports there, and remove outside-hours-booking-type.ts.
 **Resolution:**
 
-### F-338 [P3] open - A person's row can close on its own save, hiding what the save answered
+### F-338 [P3] fixed - A person's row can close on its own save, hiding what the save answered
 
 **File:** frontend/components/settings/person-hours-card.tsx:76-81, 91, 179-180
 **Found:** 2026-10-10 by the review of fix/settings-layout (scope: main...9b6ec21; lenses: quality, security, performance, tests)
@@ -297,7 +297,7 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Keep a ref on the `<details>` and set `open = true` before setError/focusFirstInvalid and before a failure notice; and add the count to the row's line while a list is held (for example "2 bookings outside"), so a closed row still says it.
 **Resolution:** Fixed 2026-10-10 on fix/settings-layout: a refused save (a field error or a failure notice) opens its row before showing the error or moving focus, and the row line counts the bookings the last save left outside ("1 booking outside"), so a closed row still says the list is there. Checked in the browser: Carlos saved back onto the business's week, then Diego opened; Carlos's closed row read "Follows the business's week · 1 booking outside".
 
-### F-339 [P3] open - The row's day names are a second copy of the week's day list
+### F-339 [P3] fixed - The row's day names are a second copy of the week's day list
 
 **File:** frontend/components/settings/person-hours-card.tsx:193-201; frontend/components/settings/week-editor.tsx:13-21
 **Found:** 2026-10-10 by the review of fix/settings-layout (scope: main...9b6ec21; lenses: quality, security, performance, tests)
