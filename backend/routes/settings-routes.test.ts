@@ -70,7 +70,8 @@ async function makeBooking(
   customerName: string,
   personId: string,
   fromMinute: number,
-  status = "confirmed"
+  status = "confirmed",
+  placeId: string | null = null
 ) {
   const [contactId, leadId, bookingId] = [randomUUID(), randomUUID(), randomUUID()];
   const organizationId = booked.organizationId;
@@ -88,6 +89,7 @@ async function makeBooking(
     startsAt,
     endsAt,
     status,
+    placeId,
   });
   return { bookingId, leadId, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() };
 }
@@ -565,7 +567,7 @@ describe("the People settings", () => {
   test("a name another person or place already has is refused", async () => {
     const added = await post("/settings/people", summit.email, { name: " juan ", kind: "place" });
     expect(added.status).toBe(409);
-    expect(await added.json()).toMatchObject({ error: { code: "name_taken" } });
+    expect(await added.json()).toMatchObject({ error: { code: "name_taken" }, field: "name" });
     const renamed = await put(`/settings/people/${summitPlaceId}`, summit.email, {
       name: "JUAN",
       active: true,
@@ -618,5 +620,20 @@ describe("the People settings", () => {
       serviceMayBeOff: true,
     });
     expect(back?.peopleIds).toContain(bookedAnaId);
+  });
+
+  test("a place turned off lists the bookings that use it", async () => {
+    const bay = (await (
+      await post("/settings/people", booked.email, { name: "Bay 1", kind: "place" })
+    ).json()) as SavedResourceType;
+    const rio = await makeBooking("Rio", booked.personId, 690, "confirmed", bay.resource.id);
+    await makeBooking("Sol", booked.personId, 750); // no place: not listed
+    const off = await put(`/settings/people/${bay.resource.id}`, booked.email, {
+      name: "Bay 1",
+      active: false,
+    });
+    expect(off.status).toBe(200);
+    const listed = ((await off.json()) as SavedResourceType).upcomingBookings;
+    expect(listed.map((row) => row.bookingId)).toEqual([rio.bookingId]);
   });
 });

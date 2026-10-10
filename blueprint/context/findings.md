@@ -313,37 +313,37 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Find the service once per file entry (order by createdAt, then id) and use that row's id in the ticks query, instead of matching by name again.
 **Resolution:** Fixed 2026-10-10: the ticks report first resolves the one service the file means (by name, oldest first, then by id), then reads that service's ticks by its id, so another of the same name never lends it its ticks; every by-name lookup orders by createdAt then id (oldestServiceFirst in service-named.ts). No new test: only a report line is at stake; the setup tests still pass.
 
-### F-344 [P2] open - A person turned off is no longer texted about the bookings they still hold, so a move or cancellation of one never reaches them
+### F-344 [P2] fixed - A person turned off is no longer texted about the bookings they still hold, so a move or cancellation of one never reaches them
 
 **File:** backend/lib/text/send-worker-text.ts:148; backend/lib/settings/save-resource.ts:44-63
 **Found:** 2026-10-10 by independent review of step 12d.2 (scope: 2a517f5..f1f8427; lenses: quality, security, performance, tests)
 **Why it matters:** sendWorkerText returns "the person is inactive" before every kind, the "off your day" (`removed`) text included. Before 12d.2 nobody could turn a person off from the app; now the step's own story turns Tomas off and keeps his Friday booking. If that customer then cancels, or moves (the move goes to someone still on, since Tomas is no longer offered), Tomas's "off your day" text is skipped and he still believes he has Friday. The spec and the form's copy say off never touches a booking and the ones already made stay; the worker's loop on those bookings silently stops. worker-text-job.test.ts:367 tests the old rule ("an inactive person gets nothing"), written when inactive could only be set by hand.
 **Suggested fix:** Let `removed` (and arguably `moved`) texts through for an inactive person who still holds or held the booking, keeping `added` off; or tell the owner on the turned-off answer that the person will no longer get texts about the listed bookings. Frank's call which.
-**Resolution:**
+**Resolution:** Fixed 2026-10-10 on Frank's yes ("yeah"): a person turned off still gets worker texts about the bookings they hold, by their own text settings; off only stops new bookings. This reverses feature 8c's decision 1 (an inactive person gets no texts), made when only a hand edit could turn someone off. send-worker-text.ts no longer skips an inactive person; find-worker-text-settings.ts no longer reads active. The 8c test became "a person turned off still hears about a booking they hold".
 
-### F-345 [P2] open - The setup command finds people by exact name, so a rename on Settings breaks it: the first person renamed stops the command, others are added twice
+### F-345 [P2] fixed - The setup command finds people by exact name, so a rename on Settings breaks it: the first person renamed stops the command, others are added twice
 
 **File:** packages/shared/client-setup/run-client-setup.ts:47-55, 143-147; packages/shared/client-setup/apply-business-shape.ts:29-44
 **Found:** 2026-10-10 by independent review of step 12d.2 (scope: 2a517f5..f1f8427; lenses: quality, security, performance, tests)
 **Why it matters:** runClientSetup finds "the first person" by `resource.name = organization.name`; resource-table.ts:18 says the owner renames that person in feature 12, and 12d.2 is that rename. After it, every run of the command for that business answers `"<business>" has no first person named after it.` and stops. ensureResource matches the file's people with `eq(resource.name, name)`, case and spaces exact, while Settings now enforces decision 6 (case and outer spaces ignored): a person renamed "Diego (painter)" to "Diego" is inserted again under the old name by a file that still lists it, and a file listing "diego" next to a Settings "Diego" adds a second one the People page would have refused. Same class as F-340 for services. Local `*_dev` only until item 10b.
 **Suggested fix:** Find the first person by the business's owner login (`resource.userId` of the owner member) rather than by name, and match the file's people with the same lower(btrim(name)) rule as nameTaken (one shared helper, as service-named.ts does for services), in ensureResource and the differences report.
-**Resolution:**
+**Resolution:** Fixed 2026-10-10: the setup command finds the first person by their tie to a login (the person made with the business), not by the business's name, and ticks may name them by either; every person and place is matched by name ignoring case and spaces at the ends (client-setup/resource-named.ts, name-key-of.ts, shared with service-named.ts), in the apply, the differences report and the ticks report. The test fixture now gives the first person a login, as every real business has. New test "finds people renamed on Settings, the first one by its login, never adding them twice" fails on the old code. A dry run of client-setups/agentsweb.ts: nothing to add.
 
-### F-346 [P3] open - "That name is taken" shows as a form alert, not under the Name field
+### F-346 [P3] fixed - "That name is taken" shows as a form alert, not under the Name field
 
 **File:** frontend/lib/api-client/settings/read-save-refusal.ts:15; backend/routes/settings-routes.ts:200, 226
 **Found:** 2026-10-10 by independent review of step 12d.2 (scope: 2a517f5..f1f8427; lenses: quality, security, performance, tests)
 **Why it matters:** name_taken is a 409 with no `field`, and readSaveRefusal makes a field error only from a 400, so both People forms show it in the SaveNotice: the Name input is not marked aria-invalid, has no error under it, and does not take the focus, unlike every other field error in the 12a pattern the spec names ("each error under its field ... a refused save focuses the first bad field").
 **Suggested fix:** Return `field: "name"` with the 409 and let readSaveRefusal read a field from any refusal that carries one, or map `name_taken` to the name field in save-resource.ts on the frontend.
-**Resolution:**
+**Resolution:** Fixed 2026-10-10: the 409 name_taken answer carries field "name", and the frontend reads a field on any refusal, so the message shows under Name with focus there. Checked in the browser: adding "room 2" when Room 2 exists.
 
-### F-347 [P3] open - A place turned off listing the bookings that use it has no test
+### F-347 [P3] fixed - A place turned off listing the bookings that use it has no test
 
 **File:** backend/lib/settings/find-upcoming-bookings.ts:67; backend/lib/settings/save-resource.ts:70; backend/routes/settings-routes.test.ts:558-562
 **Found:** 2026-10-10 by independent review of step 12d.2 (scope: 2a517f5..f1f8427; lenses: quality, security, performance, tests)
 **Why it matters:** The Built note adds this rule ("a place turned off lists the bookings that use it") with its own query branch on booking.placeId; the only place test turns off a place with no bookings and checks the 200. A slip (person id passed, wrong column) would list nothing, and the owner would believe nobody needs a call.
 **Suggested fix:** In the turned-off test, give one booking a placeId, turn that place off, and expect that booking (and not a booking without the place) in `upcomingBookings`.
-**Resolution:**
+**Resolution:** Fixed 2026-10-10: new route test "a place turned off lists the bookings that use it": a booking in Bay 1 is listed, one without a place is not; it fails without the place branch in find-upcoming-bookings.ts.
 
 ### F-348 [P3] unverified - A booking made while a person is being turned off can land on them and never be listed
 

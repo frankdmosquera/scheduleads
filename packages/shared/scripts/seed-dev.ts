@@ -506,7 +506,7 @@ try {
       const madeByShape = await applyBusinessShape(
         tx,
         organizationId,
-        { id: firstPerson.id, name: business.name },
+        { id: firstPerson.id, names: [business.name] },
         shape
       );
 

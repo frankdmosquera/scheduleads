@@ -2,7 +2,7 @@
 // back, so a dry run reports exactly what an apply would add. Every difference between the file
 // and a row already there is listed, never overwritten: a hand edit is seen, not lost.
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 
 import {
   availabilityRule,
@@ -13,6 +13,8 @@ import {
   resource,
   workerTextSettings,
 } from "../db/index.js";
+import { nameKeyOf } from "./name-key-of.js";
+import { resourceNamed } from "./resource-named.js";
 import { oldestServiceFirst, serviceNamed } from "./service-named.js";
 import type { ClientSetupType } from "../zod-validation/admin-validation-schemas/client-setup-validation-schema.js";
 import {
@@ -44,21 +46,28 @@ export async function runClientSetup(
       reason: `No business "${setup.slug}". Make it first on /admin/client-setup.`,
     };
 
-  // Its first person, made with it and named after it.
+  // Its first person, made with it and tied to the owner's login: found by that tie, since
+  // Settings may rename them (12d).
   const [firstPerson] = await db
     .select({ id: resource.id, name: resource.name })
     .from(resource)
-    .where(and(eq(resource.organizationId, business.id), eq(resource.name, business.name)))
+    .where(and(eq(resource.organizationId, business.id), isNotNull(resource.userId)))
+    .orderBy(resource.createdAt, resource.id)
     .limit(1);
   if (!firstPerson)
-    return { ok: false, reason: `"${business.name}" has no first person named after it.` };
+    return { ok: false, reason: `"${business.name}" has no first person tied to a login.` };
 
   let made: string[] = [];
   let differences: string[] = [];
   try {
     await db.transaction(async (tx) => {
       differences = await findDifferences(tx, business.id, setup);
-      made = await applyBusinessShape(tx, business.id, firstPerson, setup);
+      made = await applyBusinessShape(
+        tx,
+        business.id,
+        { id: firstPerson.id, names: [business.name, firstPerson.name] },
+        setup
+      );
       if (!apply) throw new DryRunRollback();
     });
   } catch (error) {
@@ -143,7 +152,8 @@ async function findDifferences(
     const [saved] = await tx
       .select({ id: resource.id, kind: resource.kind })
       .from(resource)
-      .where(and(eq(resource.organizationId, organizationId), eq(resource.name, person.name)))
+      .where(resourceNamed(organizationId, person.name))
+      .orderBy(resource.createdAt, resource.id)
       .limit(1);
     if (!saved) continue;
     differs(`"${person.name}", kind`, saved.kind, person.kind);
@@ -205,8 +215,8 @@ async function findDifferences(
           eq(bookingLinkResource.bookingLinkId, saved.id)
         )
       );
-    const inFile = new Set(service.ticked ?? []);
-    const added = ticked.map((row) => row.name).filter((name) => !inFile.has(name));
+    const inFile = new Set((service.ticked ?? []).map(nameKeyOf));
+    const added = ticked.map((row) => row.name).filter((name) => !inFile.has(nameKeyOf(name)));
     if (added.length)
       differences.push(`"${service.name}", ticked by hand: ${added.sort().join(", ")}`);
   }

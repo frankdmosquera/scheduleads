@@ -16,6 +16,7 @@ import {
   bookingQuestion,
   organization,
   resource,
+  user,
   workerTextSettings,
 } from "../db/index.js";
 import { assertLocalDevDatabase } from "../helpers/assert-local-dev-database.js";
@@ -31,19 +32,31 @@ const client = postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () => {} 
 const db = drizzle(client, { schema });
 
 const madeBusinessIds: string[] = [];
+const madeUserIds: string[] = [];
 afterAll(async () => {
   for (const id of madeBusinessIds) await db.delete(organization).where(eq(organization.id, id));
+  for (const id of madeUserIds) await db.delete(user).where(eq(user.id, id));
   await client.end();
 });
 
-// A business as the client setup screen leaves it: the business and its first person.
+// A business as the client setup screen leaves it: the business and its first person, tied to the
+// owner's login.
 async function makeBusiness(): Promise<{ id: string; slug: string }> {
   const id = randomUUID();
   const slug = `setup-test-${id.slice(0, 8)}-dev`;
   await db.insert(organization).values({ id, name: `Setup Test ${slug}`, slug });
+  const userId = randomUUID();
   await db
-    .insert(resource)
-    .values({ id: randomUUID(), organizationId: id, name: `Setup Test ${slug}`, kind: "person" });
+    .insert(user)
+    .values({ id: userId, name: "", email: `${slug}@example.com`, emailVerified: true });
+  madeUserIds.push(userId);
+  await db.insert(resource).values({
+    id: randomUUID(),
+    organizationId: id,
+    name: `Setup Test ${slug}`,
+    kind: "person",
+    userId,
+  });
   madeBusinessIds.push(id);
   return { id, slug };
 }
@@ -251,5 +264,28 @@ describe("runClientSetup", () => {
       "video-call",
       "video-call-2",
     ]);
+  });
+
+  it("finds people renamed on Settings, the first one by its login, never adding them twice", async () => {
+    const business = await makeBusiness();
+    await runClientSetup(db, setupFor(business.slug), { apply: true });
+    // Settings renames the first person and changes the case of another (12d.2).
+    await db
+      .update(resource)
+      .set({ name: "Owner" })
+      .where(
+        and(
+          eq(resource.organizationId, business.id),
+          eq(resource.name, `Setup Test ${business.slug}`)
+        )
+      );
+    await db
+      .update(resource)
+      .set({ name: "ANA" })
+      .where(and(eq(resource.organizationId, business.id), eq(resource.name, "Ana")));
+
+    const again = await runClientSetup(db, setupFor(business.slug), { apply: true });
+    expect(again).toMatchObject({ ok: true, made: [] });
+    expect((await countRows(business.id)).resources).toBe(3);
   });
 });

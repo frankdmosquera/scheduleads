@@ -35,7 +35,11 @@ import { requireKnownSubscriptionMiddleware } from "../middleware/subscription-m
 import { requireModuleMiddleware } from "../middleware/subscription-middleware/require-module-middleware.js";
 
 const CHANGE_BUSINESS: PermissionsType = { organization: ["update"] };
-const NAME_TAKEN = refuse("name_taken", "Another person or place here already has that name.");
+// Says which field, so the form shows it under the name rather than as a general failure.
+const NAME_TAKEN = {
+  ...refuse("name_taken", "Another person or place here already has that name."),
+  field: "name",
+};
 
 // The first problem, with where it is ("weeklyHours.mon.1"), so the form can show it in place.
 const refuseFirstIssue = (c: Context, error: ZodError) => {

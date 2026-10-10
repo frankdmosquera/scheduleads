@@ -5,11 +5,12 @@
 import { and, asc, eq, sql, type SQL } from "drizzle-orm";
 
 import { bookingLink } from "../db/index.js";
+import { nameKeyOf } from "./name-key-of.js";
 
 export function serviceNamed(organizationId: string, name: string): SQL | undefined {
   return and(
     eq(bookingLink.organizationId, organizationId),
-    sql`lower(btrim(${bookingLink.name})) = ${name.trim().toLowerCase()}`
+    sql`lower(btrim(${bookingLink.name})) = ${nameKeyOf(name)}`
   );
 }
 

@@ -18,6 +18,8 @@ import {
   workerTextSettings,
 } from "../db/index.js";
 import { freeSlug, toSlug } from "../helpers/to-slug.js";
+import { nameKeyOf } from "./name-key-of.js";
+import { resourceNamed } from "./resource-named.js";
 import { oldestServiceFirst, serviceNamed } from "./service-named.js";
 import { personAvailabilityRuleValidationSchema } from "../zod-validation/availability-validation-schemas/availability-rule-validation-schema.js";
 import type { ClientSetupType } from "../zod-validation/admin-validation-schemas/client-setup-validation-schema.js";
@@ -25,7 +27,8 @@ import type { ClientSetupType } from "../zod-validation/admin-validation-schemas
 export type SetupDatabaseType = PostgresJsDatabase<typeof schema>;
 export type SetupTransactionType = Parameters<Parameters<SetupDatabaseType["transaction"]>[0]>[0];
 
-// Finds a resource by its name in this business, or makes it. Returns its id and whether it was made.
+// Finds a resource by its name in this business (any case, no spaces at the ends), or makes it.
+// Returns its id and whether it was made.
 export async function ensureResource(
   tx: SetupTransactionType,
   organizationId: string,
@@ -35,7 +38,8 @@ export async function ensureResource(
   const [existing] = await tx
     .select({ id: resource.id })
     .from(resource)
-    .where(and(eq(resource.organizationId, organizationId), eq(resource.name, name)))
+    .where(resourceNamed(organizationId, name))
+    .orderBy(resource.createdAt, resource.id)
     .limit(1);
   if (existing) return { id: existing.id, made: false };
 
@@ -44,12 +48,12 @@ export async function ensureResource(
   return { id, made: true };
 }
 
-// `firstPersonId` is the person every business is made with, named after it: a service may
-// tick them by the business's name. Returns what was made, as readable phrases.
+// `firstPerson` is the person every business is made with: a service may tick them by the
+// business's name or by their own, which Settings may have changed. Returns what was made.
 export async function applyBusinessShape(
   tx: SetupTransactionType,
   organizationId: string,
-  firstPerson: { id: string; name: string },
+  firstPerson: { id: string; names: string[] },
   shape: ClientSetupType
 ): Promise<string[]> {
   // Its booking questions, only when it has none, so questions changed by hand survive.
@@ -85,7 +89,10 @@ export async function applyBusinessShape(
   let hoursMade = 0;
   let standbyMade = 0;
   let workerTextsMade = 0;
-  const resourceIdsByName = new Map<string, string>([[firstPerson.name, firstPerson.id]]);
+  // Keyed by nameKeyOf, so a tick finds its person whatever the case.
+  const resourceIdsByName = new Map<string, string>(
+    firstPerson.names.map((name) => [nameKeyOf(name), firstPerson.id])
+  );
   for (const person of shape.people) {
     const { id: resourceId, made } = await ensureResource(
       tx,
@@ -93,7 +100,7 @@ export async function applyBusinessShape(
       person.name,
       person.kind
     );
-    resourceIdsByName.set(person.name, resourceId);
+    resourceIdsByName.set(nameKeyOf(person.name), resourceId);
     if (made) peopleMade++;
 
     // A date already there stays.
@@ -180,7 +187,7 @@ export async function applyBusinessShape(
 
     if (!ticked.length) continue;
     const ticks = ticked.map((name) => {
-      const resourceId = resourceIdsByName.get(name);
+      const resourceId = resourceIdsByName.get(nameKeyOf(name));
       if (!resourceId) throw new Error(`"${service.name}" ticks "${name}", who is not listed.`);
       return { organizationId, bookingLinkId, resourceId };
     });
