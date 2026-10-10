@@ -66,7 +66,8 @@ export function DayWindowsEditor({
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    // Side by side as chips, wrapping, so a day with two windows is still one line.
+    <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2">
       {windows.map((window, index) => {
         const error =
           errors?.[index]?.message ??
@@ -79,7 +80,7 @@ export function DayWindowsEditor({
           undefined;
         return (
           <div key={index} className="flex flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/60 p-0.5">
               <Input
                 type="time"
                 step={300}
@@ -88,9 +89,11 @@ export function DayWindowsEditor({
                 onChange={(event) => setTime(index, "startMinute", event.target.value)}
                 aria-invalid={invalid}
                 aria-describedby={describedBy}
-                className="h-9 w-32 bg-muted"
+                className="h-7 w-[7.75rem] border-0 md:w-[7.25rem] bg-transparent px-1.5 shadow-none"
               />
-              <span className="text-sm text-muted-foreground">to</span>
+              <span aria-hidden className="text-sm text-muted-foreground">
+                &ndash;
+              </span>
               <Input
                 type="time"
                 step={300}
@@ -99,16 +102,16 @@ export function DayWindowsEditor({
                 onChange={(event) => setTime(index, "endMinute", event.target.value)}
                 aria-invalid={invalid}
                 aria-describedby={describedBy}
-                className="h-9 w-32 bg-muted"
+                className="h-7 w-[7.75rem] border-0 md:w-[7.25rem] bg-transparent px-1.5 shadow-none"
               />
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
+                size="icon-xs"
                 aria-label={`Remove ${label}, window ${index + 1}`}
                 onClick={() => onChange(windows.filter((_, i) => i !== index))}
               >
-                Remove
+                &times;
               </Button>
             </div>
             {error ? (
@@ -119,25 +122,25 @@ export function DayWindowsEditor({
           </div>
         );
       })}
-      {dayError ? (
-        <p id={dayErrorId} className="text-xs text-destructive">
-          {dayError}
-        </p>
-      ) : null}
-      <div>
+      <div className="py-0.5">
         <Button
           type="button"
           variant="outline"
-          size="sm"
+          size="icon-sm"
           disabled={!added}
           aria-label={`Add a window to ${label}`}
           aria-invalid={dayError && windows.length === 0 ? true : undefined}
           aria-describedby={dayError && windows.length === 0 ? dayErrorId : undefined}
           onClick={() => added && onChange([...windows, added])}
         >
-          + Add
+          +
         </Button>
       </div>
+      {dayError ? (
+        <p id={dayErrorId} className="basis-full text-xs text-destructive">
+          {dayError}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -35,30 +35,51 @@ export function SettingsScreen() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl">
+    <div className="mx-auto w-full max-w-5xl">
       <h1 className="text-xl font-semibold tracking-tight text-foreground">Settings</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         What you change yourself. Nobody at the agency needs to touch anything for this.
       </p>
 
-      <h2 className="mt-8 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-        Hours
-      </h2>
-      <div className="mt-3">
-        {!result ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : result.state === "signed-out" || result.state === "refused" ? (
-          <RefusalNotice refusal={result} />
-        ) : result.state === "unreachable" ? (
-          <div className="flex flex-col items-start gap-3">
-            <CentredCardNotice>{result.message}</CentredCardNotice>
-            <Button variant="outline" onClick={tryAgain}>
-              Try again
-            </Button>
+      <div className="mt-8 grid items-start gap-6 md:grid-cols-[140px_minmax(0,1fr)]">
+        {/* Each later Settings feature (12d onward) adds its own section here. */}
+        <nav
+          aria-label="Settings sections"
+          className="flex flex-wrap gap-1 md:sticky md:top-6 md:flex-col"
+        >
+          <a
+            href="#hours"
+            aria-current="page"
+            className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground aria-[current=page]:bg-[var(--accent-soft)] aria-[current=page]:font-medium aria-[current=page]:text-primary"
+          >
+            Hours
+          </a>
+        </nav>
+
+        <section id="hours" aria-labelledby="hours-title" className="min-w-0">
+          <h2
+            id="hours-title"
+            className="text-sm font-semibold tracking-wide text-muted-foreground uppercase"
+          >
+            Hours
+          </h2>
+          <div className="mt-3">
+            {!result ? (
+              <p className="text-sm text-muted-foreground">Loading…</p>
+            ) : result.state === "signed-out" || result.state === "refused" ? (
+              <RefusalNotice refusal={result} />
+            ) : result.state === "unreachable" ? (
+              <div className="flex flex-col items-start gap-3">
+                <CentredCardNotice>{result.message}</CentredCardNotice>
+                <Button variant="outline" onClick={tryAgain}>
+                  Try again
+                </Button>
+              </div>
+            ) : (
+              <HoursSection settings={result.answer} />
+            )}
           </div>
-        ) : (
-          <HoursSection settings={result.answer} />
-        )}
+        </section>
       </div>
     </div>
   );
@@ -89,15 +110,17 @@ function HoursSection({
       ) : settings.people.length === 0 ? (
         <p className="text-sm text-muted-foreground">No people yet.</p>
       ) : (
-        settings.people.map((person) => (
-          <PersonHoursCard
-            key={person.id}
-            person={person}
-            businessWeek={business.weeklyHours}
-            timezone={business.timezone}
-            canEdit={settings.canEdit}
-          />
-        ))
+        <div className="flex flex-col gap-2">
+          {settings.people.map((person) => (
+            <PersonHoursCard
+              key={person.id}
+              person={person}
+              businessWeek={business.weeklyHours}
+              timezone={business.timezone}
+              canEdit={settings.canEdit}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

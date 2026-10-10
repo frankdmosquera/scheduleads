@@ -50,10 +50,10 @@ export function WeekEditor({
         const open = windows.length > 0;
         const switchId = `${idBase}-${day}`;
         return (
-          <div key={day} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:gap-4">
+          <div key={day} className="flex flex-col gap-2 py-2 sm:flex-row sm:items-start sm:gap-4">
             <label
               htmlFor={switchId}
-              className="flex w-36 flex-none items-center gap-2 pt-1.5 text-sm font-medium"
+              className="flex w-28 flex-none items-center gap-2 pt-1.5 text-sm font-medium"
             >
               <input
                 id={switchId}

@@ -17,7 +17,7 @@ export function OutsideHoursList({
   Heading, // one level under the card's own title
 }: {
   list: OutsideHoursListType | null;
-  Heading: "h3" | "h4";
+  Heading: "h4" | "h5";
 }) {
   if (!list || list.bookings.length === 0) return null;
 
