@@ -26,8 +26,7 @@ import { bookingContactKeys } from "../lib/rate-limit/booking-contact-keys.js";
 import type { RateLimitTakenType } from "../lib/rate-limit/create-rate-limiter.js";
 import { publicRateLimiters } from "../lib/rate-limit/public-rate-limiters.js";
 
-// Decision 10: a form with every field full is far below this, 20 full answers in any script
-// included (feature 9).
+// A form with every field full, 20 full answers in any script included, is far below this.
 const MOST_BYTES = 64 * 1024;
 
 const notValid = refuse("bad_request", "That is not a valid booking.");
