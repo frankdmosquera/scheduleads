@@ -425,10 +425,10 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Give the ticks their own columns (id, name, kind, active), or amend the contract to say the Services answer carries `workEmail` too.
 **Resolution:** Fixed 2026-10-10 without asking (it only makes the contract hold): the Services read selects its own four columns, so the ticks carry no work email; a route test checks it and fails on b170bbf.
 
-### F-358 [P3] open - A confirmation or person's email retried after the work email changed reuses its Resend key with a different email
+### F-358 [P3] accepted - A confirmation or person's email retried after the work email changed reuses its Resend key with a different email
 
 **File:** backend/lib/email/send-booking-emails.ts:54; backend/lib/email/send-booking-emails.ts:104; backend/lib/email/find-booking-email-context.ts:54
 **Found:** 2026-10-10 by the independent review of 12d.4 (scope: 0701f77..b170bbf)
 **Why it matters:** The confirmation's `reply_to` and the person's notification's `to` come from `resource.workEmail` read afresh on every attempt, while each keeps one idempotency key (`booking-confirmation/<id>`, `booking-person-notification/<id>`). The code already guards this invariant elsewhere ("Resend refuses a key it already used with a different email", the confirmation's `stampedAt`). If an attempt reaches Resend but the app sees a failure (the 10 second timeout in `send-email.ts`), and the owner changes or sets that person's work email before the retry, the retry is refused by Resend, so the job fails on every retry and no timeline entry is written, although the email went. Narrow: it needs a timed out send and an edit inside the retry window; no customer is harmed. Read from the code, not run.
 **Suggested fix:** Accept it as rare, or freeze the address for the booking: keep the address a booking's emails were first built with (for example on the booking at booking time) so every retry sends the very same email.
-**Resolution:**
+**Resolution:** Accepted 2026-10-10 by Frank: it needs Resend to send yet not answer within 10 seconds (about 1 send in 10,000) and the owner to change that person's work email in the ~3 seconds before the first retry (about 1 in 3 million), so about 1 booking in 30 billion; the email still reaches the person, only the log line and the timeline note are lost.
