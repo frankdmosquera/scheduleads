@@ -271,7 +271,7 @@ change hours, services, resources, closed days and the calendar
 connection, and put a phone estimate or time off on anyone's calendar,
 without Frank touching the database.
 
-- [ ] 11. **Leads list and contact page** - every lead with its stage, the
+- [x] 11. **Leads list and contact page** - every lead with its stage, the
   contact page with its timeline and its open next steps, and adding a lead
   by hand. A painter takes phone calls; with no way to type one in he keeps
   the notebook and the CRM sits half empty

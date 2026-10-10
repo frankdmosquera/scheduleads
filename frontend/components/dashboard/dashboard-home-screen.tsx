@@ -1,11 +1,10 @@
-// Frontend component: the dashboard once everything is resolved: the business, its plan, who you
-// are, its services, the calendar and email cards.
+// Frontend component: Setup, once everything is resolved: the business, its plan, who you are, its
+// services, the calendar and email cards.
 
 "use client";
 
 import Link from "next/link";
 
-import { SignOutLink } from "@/components/auth/sign-out-link";
 import { CalendarConnectionCard } from "@/components/calendar/calendar-connection-card";
 import { BusinessInitialMark } from "@/components/dashboard/business-initial-mark";
 import { EmailSendingCard } from "@/components/email-sending/email-sending-card";
@@ -14,11 +13,11 @@ import type { MeType } from "@/lib/api-client/dashboard/fetch-me";
 import { authClient } from "@/lib/auth-client";
 import { isPlatformAdmin } from "@/lib/is-platform-admin";
 
-export function DashboardHomeScreen({ me, onSignedOut }: { me: MeType; onSignedOut: () => void }) {
+export function DashboardHomeScreen({ me }: { me: MeType }) {
   const { data: session } = authClient.useSession();
 
   return (
-    <main className="flex flex-1 flex-col items-center px-6 py-16">
+    <div className="flex flex-col items-center">
       <div className="w-full max-w-2xl">
         <div className="rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-md)]">
           <div className="flex items-center gap-3">
@@ -44,7 +43,7 @@ export function DashboardHomeScreen({ me, onSignedOut }: { me: MeType; onSignedO
 
           <p className="mt-6 text-sm leading-6 text-muted-foreground">
             Every figure above came from one call to the API, scoped to this business by your
-            session. Leads, bookings and the calendar arrive with the next build-plan items.
+            session. Every lead is on the Leads screen.
           </p>
         </div>
 
@@ -54,19 +53,18 @@ export function DashboardHomeScreen({ me, onSignedOut }: { me: MeType; onSignedO
 
         <EmailSendingCard />
 
-        <div className="mt-4 flex justify-center gap-4 text-sm text-muted-foreground">
-          {isPlatformAdmin(session?.user) ? (
+        {isPlatformAdmin(session?.user) ? (
+          <div className="mt-4 flex justify-center text-sm text-muted-foreground">
             <Link
               href="/admin/client-setup"
               className="underline underline-offset-2 hover:text-foreground"
             >
               Set up a client
             </Link>
-          ) : null}
-          <SignOutLink onSignedOut={onSignedOut} />
-        </div>
+          </div>
+        ) : null}
       </div>
-    </main>
+    </div>
   );
 }
 

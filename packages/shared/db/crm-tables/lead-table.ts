@@ -11,6 +11,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 import { organization } from "../auth-tables/organization-table.js";
@@ -36,6 +37,7 @@ export const lead = pgTable(
     // The answers to the business's own questions, in its order; a blank optional one is left
     // out. Null when the business asked nothing. Shown as text, never HTML.
     answers: jsonb("answers").$type<LeadAnswerType[]>(),
+    requestKey: text("requestKey"), // one per "Add a lead" form; null for a booking's lead
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })
       .notNull()
@@ -59,6 +61,10 @@ export const lead = pgTable(
     }).onDelete("no action"),
     // The business's own site, the hosted page (/book/<slug>), or the owner.
     check("lead_source_check", sql`${table.source} in ('widget', 'hosted', 'manual')`),
+    // A retried "Add a lead" save finds the first lead instead of making a second.
+    uniqueIndex("lead_organization_request_key_unique")
+      .on(table.organizationId, table.requestKey)
+      .where(sql`${table.requestKey} is not null`),
     index("lead_stage_index").on(table.organizationId, table.stageId),
     index("lead_contact_index").on(table.organizationId, table.contactId),
   ]

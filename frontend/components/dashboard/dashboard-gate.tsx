@@ -1,22 +1,30 @@
-// Frontend page / : the signed-in dashboard. Reads GET /me once and shows one screen per
-// answer (loading, signed out, pick a business, plan refused, API down, or the dashboard).
+// Frontend component: every signed-in page's first check. Reads GET /me once and shows one screen
+// per answer (loading, signed out, pick a business, plan refused, API down); only a business that
+// is all set reaches the page itself, which reads it with useMe(). Mounted once, in the signed-in
+// layout, so moving between screens never asks again.
 
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { CentredCard } from "@/components/centred-card/centred-card";
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { SignOutLink } from "@/components/auth/sign-out-link";
 import { BusinessPickerScreen } from "@/components/dashboard/business-picker-screen";
-import { DashboardHomeScreen } from "@/components/dashboard/dashboard-home-screen";
 import { DashboardSignedOutScreen } from "@/components/dashboard/dashboard-signed-out-screen";
 import { Button } from "@/components/ui/button";
-import { fetchMe, type MeResultType } from "@/lib/api-client/dashboard/fetch-me";
+import { fetchMe, type MeResultType, type MeType } from "@/lib/api-client/dashboard/fetch-me";
 
-export default function DashboardPage() {
-  const router = useRouter();
+const MeContext = createContext<MeType | null>(null);
+
+// The signed-in business, for any page inside the gate.
+export function useMe(): MeType {
+  const me = useContext(MeContext);
+  if (!me) throw new Error("useMe ran outside DashboardGate.");
+  return me;
+}
+
+export function DashboardGate({ children }: { children: ReactNode }) {
   const [result, setResult] = useState<MeResultType | null>(null);
 
   // Bump to ask /me again: after picking a business, or on "Try again".
@@ -76,6 +84,6 @@ export default function DashboardPage() {
       );
 
     case "ok":
-      return <DashboardHomeScreen me={result.me} onSignedOut={() => router.push("/sign-in")} />;
+      return <MeContext.Provider value={result.me}>{children}</MeContext.Provider>;
   }
 }

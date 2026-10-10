@@ -15,6 +15,7 @@ import { requireKnownSubscriptionMiddleware } from "./middleware/subscription-mi
 import { adminRoutes } from "./routes/admin-routes.js";
 import { calendarRoutes } from "./routes/calendar-routes.js";
 import { emailSendingRoutes } from "./routes/email-sending-routes.js";
+import { leadsRoutes } from "./routes/leads-routes.js";
 import { publicRoutes } from "./routes/public-routes.js";
 import { publicTextRoutes } from "./routes/public-text-routes.js";
 
@@ -30,6 +31,8 @@ export const app = new Hono()
     dashboardCsrfMiddleware,
     dashboardNoStoreMiddleware
   )
+  .use("/leads", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
+  .use("/leads/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
   // Anyone may call these, never with the login cookie: a CORS rule of their own, and limits per
   // visitor. Twilio's signed replies under /texts and the dashboard are not limited.
   .use("/public/*", publicCorsMiddleware, publicRateLimitMiddleware)
@@ -62,6 +65,7 @@ export const app = new Hono()
   .route("/admin", adminRoutes)
   .route("/calendar", calendarRoutes)
   .route("/email-sending", emailSendingRoutes)
+  .route("/leads", leadsRoutes)
   .route("/", publicRoutes) // its routes carry /public themselves
   // Twilio posts customers' replies here, signed; no browser calls it, so no CORS.
   .route("/texts", publicTextRoutes)
