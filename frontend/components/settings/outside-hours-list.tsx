@@ -12,14 +12,20 @@ export type OutsideHoursListType = {
   timezone: string; // the business's, so times read as the customer was told them
 };
 
-export function OutsideHoursList({ list }: { list: OutsideHoursListType | null }) {
+export function OutsideHoursList({
+  list,
+  Heading, // one level under the card's own title
+}: {
+  list: OutsideHoursListType | null;
+  Heading: "h3" | "h4";
+}) {
   if (!list || list.bookings.length === 0) return null;
 
   return (
     <div className="mt-4 rounded-lg border border-[var(--wait)] bg-[var(--wait-soft)] p-4">
-      <h4 className="text-sm font-semibold text-foreground">
+      <Heading className="text-sm font-semibold text-foreground">
         These bookings now sit outside your hours
-      </h4>
+      </Heading>
       <p className="mt-1 text-sm text-muted-foreground">
         Still booked. Open a booking to call the customer.
       </p>

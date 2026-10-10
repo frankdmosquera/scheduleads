@@ -3,6 +3,7 @@
 
 import { describe, expect, test } from "vitest";
 
+import { applyFreeTimesRules } from "../scheduling/apply-free-times-rules.js";
 import { applyOutsideHoursRules, type HoursRowsType } from "./apply-outside-hours-rules.js";
 
 const nineToFive = { startMinute: 540, endMinute: 1020 };
@@ -124,6 +125,57 @@ describe("applyOutsideHoursRules", () => {
       new Date("2026-03-01T12:00:00Z")
     );
     expect(listed).toEqual([fourToFive]);
+  });
+
+  test("a window that ends in the hour skipped in spring is judged as the booking window offers it", () => {
+    // March 14, 2027 in Denver: 2:30 never happens, so the booking window lets the clock count
+    // decide. It offers 1:00 and 1:30 for an hour's service in 1:00-2:30; the 1:30 one really ends
+    // at 3:30. Cutting Sunday to 0:00-1:00 must list both.
+    const sunday = { sun: [{ startMinute: 60, endMinute: 150 }] };
+    const offered = applyFreeTimesRules({
+      hours: {
+        source: "organization",
+        timezone: "America/Denver",
+        weeklyHours: sunday,
+        dateHours: [],
+        minimumNoticeMinutes: 0,
+        horizonDays: 60,
+        closedDates: [],
+      },
+      service: {
+        durationMinutes: 60,
+        bufferBeforeMinutes: 0,
+        bufferAfterMinutes: 0,
+        slotIntervalMinutes: 30,
+      },
+      busy: [],
+      standbyDates: [],
+      rooms: null,
+      fromDate: "2027-03-14",
+      toDate: "2027-03-14",
+      now: new Date("2027-03-01T12:00:00Z"),
+    });
+    expect(offered.map((start) => start.toISOString())).toEqual([
+      "2027-03-14T08:00:00.000Z",
+      "2027-03-14T08:30:00.000Z",
+    ]);
+
+    const bookings = offered.map((startsAt) => ({
+      personId: "ana",
+      status: "confirmed",
+      startsAt,
+      endsAt: new Date(startsAt.getTime() + 3_600_000),
+    }));
+    const listed = applyOutsideHoursRules(
+      hours({ timezone: "America/Denver", weeklyHours: sunday }),
+      hours({
+        timezone: "America/Denver",
+        weeklyHours: { sun: [{ startMinute: 0, endMinute: 60 }] },
+      }),
+      bookings,
+      new Date("2027-03-01T12:00:00Z")
+    );
+    expect(listed).toEqual(bookings);
   });
 
   test("a cancelled or past booking is never listed", () => {

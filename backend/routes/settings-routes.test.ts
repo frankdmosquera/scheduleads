@@ -6,7 +6,11 @@ import { randomUUID } from "node:crypto";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 
+import { addDays } from "@scheduleads-app/shared/add-days";
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
+import { localDate } from "@scheduleads-app/shared/local-date";
+
+import { localTimeToMoment } from "../lib/local-time/local-time-to-moment.js";
 
 try {
   process.loadEnvFile(new URL("../../.env", import.meta.url)); // the root .env, before the app reads it
@@ -24,8 +28,18 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the settings route tests")
 const { app } = await import("../app.js");
 const { db } = await import("../database.js");
 const { appOrigin } = await import("../lib/auth/auth-server.js");
-const { availabilityRule, member, organization, resource, user } =
-  await import("@scheduleads-app/shared/db");
+const {
+  availabilityRule,
+  booking,
+  bookingLink,
+  contact,
+  lead,
+  member,
+  organization,
+  pipelineStage,
+  resource,
+  user,
+} = await import("@scheduleads-app/shared/db");
 
 const tag = randomUUID().slice(0, 8);
 const makeTenant = (letter: string) => ({
@@ -38,8 +52,44 @@ const makeTenant = (letter: string) => ({
 const summit = makeTenant("s"); // has hours, a person and a place
 const other = makeTenant("o"); // another business, with no hours yet
 const fresh = makeTenant("f"); // a business just made on the client setup screen: no hours
+const booked = makeTenant("b"); // has hours, bookings, Juan following its week and Ana on her own
 const helper = { userId: randomUUID(), email: `hours-m-${tag}@example.com` }; // a member of Summit
 const summitPlaceId = randomUUID();
+const bookedAnaId = randomUUID();
+const bookedStageId = randomUUID();
+const estimateId = randomUUID();
+
+// A Tuesday at least two days ahead in Edmonton, so its bookings are still to come.
+let tuesday = addDays(localDate(new Date(), "America/Edmonton"), 2);
+while (new Date(`${tuesday}T12:00:00Z`).getUTCDay() !== 2) tuesday = addDays(tuesday, 1);
+const onTuesday = (minute: number) => localTimeToMoment(tuesday, minute, "America/Edmonton")!;
+
+// One customer, their lead and a booking on that Tuesday with Booked's Estimate.
+async function makeBooking(
+  customerName: string,
+  personId: string,
+  fromMinute: number,
+  status = "confirmed"
+) {
+  const [contactId, leadId, bookingId] = [randomUUID(), randomUUID(), randomUUID()];
+  const organizationId = booked.organizationId;
+  await db.insert(contact).values({ id: contactId, organizationId, name: customerName });
+  await db
+    .insert(lead)
+    .values({ id: leadId, organizationId, contactId, stageId: bookedStageId, source: "widget" });
+  const [startsAt, endsAt] = [onTuesday(fromMinute), onTuesday(fromMinute + 60)];
+  await db.insert(booking).values({
+    id: bookingId,
+    organizationId,
+    leadId,
+    bookingLinkId: estimateId,
+    personId,
+    startsAt,
+    endsAt,
+    status,
+  });
+  return { bookingId, leadId, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() };
+}
 
 const nineToFive = { startMinute: 540, endMinute: 1020 };
 const summitHours = {
@@ -100,20 +150,22 @@ const businessRowOf = async (organizationId: string) =>
 
 beforeAll(async () => {
   await db.insert(user).values(
-    [summit, other, fresh, helper].map((t) => ({
+    [summit, other, fresh, booked, helper].map((t) => ({
       id: t.userId,
       name: "",
       email: t.email,
       emailVerified: true,
     }))
   );
-  await db
-    .insert(organization)
-    .values(
-      [summit, other, fresh].map((t) => ({ id: t.organizationId, name: t.slug, slug: t.slug }))
-    );
+  await db.insert(organization).values(
+    [summit, other, fresh, booked].map((t) => ({
+      id: t.organizationId,
+      name: t.slug,
+      slug: t.slug,
+    }))
+  );
   await db.insert(member).values([
-    ...[summit, other, fresh].map((t) => ({
+    ...[summit, other, fresh, booked].map((t) => ({
       id: randomUUID(),
       organizationId: t.organizationId,
       userId: t.userId,
@@ -127,22 +179,46 @@ beforeAll(async () => {
     },
   ]);
   await db.insert(resource).values([
-    ...[summit, other, fresh].map((t) => ({
+    ...[summit, other, fresh, booked].map((t) => ({
       id: t.personId,
       organizationId: t.organizationId,
       name: "Juan",
       kind: "person",
     })),
     { id: summitPlaceId, organizationId: summit.organizationId, name: "Room 1", kind: "place" },
+    { id: bookedAnaId, organizationId: booked.organizationId, name: "Ana", kind: "person" },
   ]);
-  await db.insert(availabilityRule).values({
-    id: randomUUID(),
-    organizationId: summit.organizationId,
-    resourceId: null,
-    ...summitHours,
-    closedDates: [],
+  await db.insert(availabilityRule).values([
+    ...[summit, booked].map((t) => ({
+      id: randomUUID(),
+      organizationId: t.organizationId,
+      resourceId: null,
+      ...summitHours,
+      closedDates: [],
+    })),
+    {
+      // Ana keeps her own Tuesday, 8:00 to 6:00.
+      id: randomUUID(),
+      organizationId: booked.organizationId,
+      resourceId: bookedAnaId,
+      weeklyHours: { tue: [{ startMinute: 480, endMinute: 1080 }] },
+      dateHours: [],
+    },
+  ]);
+  await db
+    .insert(pipelineStage)
+    .values({ id: bookedStageId, organizationId: booked.organizationId, name: "New", position: 0 });
+  await db.insert(bookingLink).values({
+    id: estimateId,
+    organizationId: booked.organizationId,
+    name: "Estimate",
+    slug: "estimate",
+    durationMinutes: 60,
+    layout: "month",
+    asksAddress: false,
+    personChoice: "customer_picks",
   });
-  for (const email of [summit.email, other.email, fresh.email, helper.email])
+  for (const email of [summit.email, other.email, fresh.email, booked.email, helper.email])
     cookies.set(email, await signIn(email));
 });
 
@@ -154,7 +230,9 @@ afterAll(async () => {
     );
   await db
     .delete(user)
-    .where(inArray(user.id, [summit.userId, other.userId, fresh.userId, helper.userId]));
+    .where(
+      inArray(user.id, [summit.userId, other.userId, fresh.userId, booked.userId, helper.userId])
+    );
   await db.$client.end();
 });
 
@@ -298,5 +376,43 @@ describe("the Hours settings", () => {
       weeklyHours: null,
       dateHours: oneOff,
     });
+  });
+
+  test("a save lists the upcoming bookings it leaves outside and changes none", async () => {
+    // Tuesday is 9:00 to 5:00. Juan follows the business; Ana keeps her own 8:00 to 6:00.
+    const maria = await makeBooking("Maria", booked.personId, 960); // 4:00
+    await makeBooking("Kim", booked.personId, 600); // 10:00, still inside
+    await makeBooking("Sam", booked.personId, 960, "cancelled");
+    await makeBooking("Lee", bookedAnaId, 960); // her own week does not move
+    const [before] = await db.select().from(booking).where(eq(booking.id, maria.bookingId));
+
+    const shortened = {
+      ...summitHours,
+      weeklyHours: { ...summitHours.weeklyHours, tue: [{ startMinute: 540, endMinute: 900 }] },
+    };
+    const saved = await put("/settings/hours/business", booked.email, shortened);
+    expect(saved.status).toBe(200);
+    expect(((await saved.json()) as { outsideHours: unknown }).outsideHours).toEqual([
+      { ...maria, customerName: "Maria", serviceName: "Estimate", personName: "Juan" },
+    ]);
+    const [after] = await db.select().from(booking).where(eq(booking.id, maria.bookingId));
+    expect(after).toEqual(before);
+
+    // The same hours again: it was already outside, so nothing is listed.
+    const again = await put("/settings/hours/business", booked.email, shortened);
+    expect(((await again.json()) as { outsideHours: unknown }).outsideHours).toEqual([]);
+  });
+
+  test("a person's first own week lists their bookings it leaves outside", async () => {
+    // After the save above, Tuesday is 9:00 to 3:00 and Juan, with no row yet, follows it. His own
+    // Tuesday from noon leaves Kim's 10:00 out; Maria's 4:00 was already outside, so is not listed.
+    const saved = await put(`/settings/hours/people/${booked.personId}`, booked.email, {
+      weeklyHours: { tue: [{ startMinute: 720, endMinute: 1020 }] },
+      dateHours: [],
+    });
+    expect(saved.status).toBe(200);
+    const listed = ((await saved.json()) as { outsideHours: { customerName: string }[] })
+      .outsideHours;
+    expect(listed.map((row) => row.customerName)).toEqual(["Kim"]);
   });
 });

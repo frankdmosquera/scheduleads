@@ -40,7 +40,8 @@ export async function saveBusinessHours(
       )
       .for("update");
 
-    // Everyone's own rows: a new time zone or one-off date can move anyone's bookings.
+    // Everyone's own rows: a new time zone or one-off date can move anyone's bookings. They cannot
+    // change meanwhile: a person's save reads the business's row shared first, so it waits on this one.
     const personRows = await tx
       .select({
         resourceId: availabilityRule.resourceId,

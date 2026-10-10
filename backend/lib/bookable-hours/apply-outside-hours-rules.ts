@@ -4,6 +4,7 @@
 import { localDate } from "@scheduleads-app/shared/local-date";
 import type { DateHoursType, WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
 
+import { clockAsUtc } from "../local-time/clock-as-utc.js";
 import { localTimeToMoment } from "../local-time/local-time-to-moment.js";
 
 // The rows a save replaces, or the ones it writes: the business's week and one-off dates, its time
@@ -22,6 +23,7 @@ export type CheckedBookingType = {
   status: string;
 };
 
+const MINUTE_MS = 60_000;
 const WEEKDAYS: (keyof WeeklyHoursType)[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 function weekdayOf(date: string): keyof WeeklyHoursType {
@@ -41,27 +43,26 @@ function windowsOn(date: string, personId: string, hours: HoursRowsType) {
   return oneOff?.windows ?? (ownWeek ?? hours.weeklyHours)[weekdayOf(date)] ?? [];
 }
 
-// A clock time as a real moment. A time in the hour skipped in spring is the moment the clocks
-// jump, the first minute after it that exists.
-function momentOf(date: string, minute: number, timezone: string): number {
-  for (let later = minute; later <= minute + 120; later += 1) {
-    const moment = localTimeToMoment(date, later, timezone);
-    if (moment) return moment.getTime();
-  }
-  throw new Error(`No moment near minute ${minute} of ${date} in ${timezone}.`);
-}
-
-// Fits: the appointment itself (never its buffers) lies inside one window on its own local date,
-// compared as real moments so a clock change cannot stretch or shrink a window.
+// Fits: the appointment itself (never its buffers) lies inside one window on its own local date, by
+// the booking window's own test: its clock start and length inside the window, and its real end no
+// later than the window's real end, so the spring change cannot stretch a window. When that end is
+// in the hour skipped in spring, the clock count alone decides, as it does in free times.
 function fitsHours(booking: CheckedBookingType, hours: HoursRowsType): boolean {
   const date = localDate(booking.startsAt, hours.timezone);
   const start = booking.startsAt.getTime();
   const end = booking.endsAt.getTime();
-  return windowsOn(date, booking.personId, hours).some(
-    (window) =>
-      momentOf(date, window.startMinute, hours.timezone) <= start &&
-      end <= momentOf(date, window.endMinute, hours.timezone)
-  );
+  const [year, month, day] = date.split("-").map(Number);
+  const clockStart =
+    (clockAsUtc(start, hours.timezone) - Date.UTC(year, month - 1, day)) / MINUTE_MS;
+  const length = (end - start) / MINUTE_MS;
+  return windowsOn(date, booking.personId, hours).some((window) => {
+    const windowEnd = localTimeToMoment(date, window.endMinute, hours.timezone)?.getTime();
+    return (
+      clockStart >= window.startMinute &&
+      clockStart + length <= window.endMinute &&
+      (windowEnd === undefined || end <= windowEnd)
+    );
+  });
 }
 
 // The confirmed bookings still to come that fitted the hours before the save and do not fit after,

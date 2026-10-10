@@ -232,7 +232,7 @@ export function BusinessHoursCard({
         </fieldset>
 
         <HoursNotice notice={notice} />
-        <OutsideHoursList list={outside} />
+        <OutsideHoursList list={outside} Heading="h3" />
         {canEdit ? (
           <div className="mt-4">
             <Button type="submit" disabled={form.formState.isSubmitting}>

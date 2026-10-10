@@ -21,8 +21,10 @@ export type SavePersonHoursResultType =
   | { ok: false; reason: "no_person" | "no_business_hours" };
 
 // Makes or updates the person's row; back on the business's week it keeps their one-off dates.
-// The row is never deleted here. The person's old row is read locked in the same transaction, so
-// the list compares against exactly what the save replaced.
+// The row is never deleted here. Everything the list compares against is read locked in the same
+// transaction, so it is exactly what the save replaced: the person (two saves of one person wait
+// for each other, even before they have a row), then the business's row, shared, which the
+// business's own save holds for update, so the two saves never interleave.
 export async function savePersonHours(
   organizationId: string,
   personId: string,
@@ -42,7 +44,8 @@ export async function savePersonHours(
           eq(resource.active, true)
         )
       )
-      .limit(1);
+      .limit(1)
+      .for("no key update"); // still lets a booking for them be made meanwhile
     if (!person) return { ok: false, reason: "no_person" } as const;
 
     // A person's hours mean nothing until the business has its own: its time zone and notice.
@@ -55,7 +58,8 @@ export async function savePersonHours(
           isNull(availabilityRule.resourceId)
         )
       )
-      .limit(1);
+      .limit(1)
+      .for("share");
     if (!businessRow) return { ok: false, reason: "no_business_hours" } as const;
 
     const [oldRow] = await tx
