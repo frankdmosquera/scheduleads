@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
+import { AddLeadForm } from "@/components/leads/add-lead-form";
 import { ContactInitials } from "@/components/leads/contact-initials";
 import { LeadsRefusalNotice } from "@/components/leads/leads-refusal-notice";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ export function LeadsListScreen() {
   const [list, setList] = useState<ListStateType>({ state: "loading" });
   const [moreError, setMoreError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   // Bump to ask again, on "Try again".
   const [reloads, setReloads] = useState(0);
@@ -62,10 +64,21 @@ export function LeadsListScreen() {
 
   return (
     <div className="mx-auto w-full max-w-5xl">
-      <h1 className="text-xl font-semibold tracking-tight text-foreground">Leads</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Everyone who asked for something, and where each one stands.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">Leads</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Everyone who asked for something, and where each one stands.
+          </p>
+        </div>
+        {adding ? null : <Button onClick={() => setAdding(true)}>+ Add a lead</Button>}
+      </div>
+
+      {adding ? (
+        <div className="mt-6">
+          <AddLeadForm onCancel={() => setAdding(false)} />
+        </div>
+      ) : null}
 
       <div className="mt-6">
         {list.state === "loading" ? (
@@ -87,7 +100,7 @@ export function LeadsListScreen() {
           </div>
         ) : list.leads.length === 0 ? (
           <p className="rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground">
-            No leads yet. They appear here when someone books on your site.
+            No leads yet. They appear here when someone books on your site, or when you add one.
           </p>
         ) : (
           <>

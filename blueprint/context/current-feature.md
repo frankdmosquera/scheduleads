@@ -58,7 +58,6 @@ call" and "Book a time" belong to later features (see Out of scope).
 - Quotes, money columns and the stats tiles (features 16, 20).
 - Search, filters and export (not planned yet; a note for later).
 - The owner booking a time for a lead (feature 12b puts things on calendars).
-- Writing next steps, unless the open question below adds it to 11.2.
 - TanStack Query: the build plan brings it at feature 14 with the board; these
   screens use the fetch-and-state pattern every dashboard screen uses today.
 
@@ -97,7 +96,7 @@ recorded and carried. `/complete` does the final pass and the merge on his yes.
     as the top row, and opening it shows the booking, the email and text
     entries and the "Booked" line on its timeline.
 
-- [ ] **11.2 Adding a lead by hand.** The form, `POST /leads`, the new timeline
+- [x] **11.2 Adding a lead by hand.** The form, `POST /leads`, the new timeline
   type.
   - 11.2.1 `lead_added` joins `ACTIVITY_TYPES`, and `lead` gets a nullable
     `requestKey`, unique per business; one migration for both.
@@ -105,6 +104,10 @@ recorded and carried. `/complete` does the final pass and the merge on his yes.
     existing rule, the lead in the first stage with source `manual`, and the
     `lead_added` entry with the login as its actor. The same `requestKey` sent
     twice gives back the first lead, never a second one.
+  - 11.2.4 Next steps (Frank, Oct 10, option A): on the lead page, add one (a few
+    words and when it is due) as a `task` activity on the contact, and tick it done.
+    `POST /leads/:leadId/next-steps`, `POST /leads/:leadId/next-steps/:nextStepId/done`,
+    both scoped through the lead to the session's business; another business's answers 404.
   - 11.2.3 The form on `/leads`: name, phone, email, what they want; saving
     opens the new lead's page, which says so when the person was already a
     contact.
@@ -264,7 +267,4 @@ removing its own rows.
 
 ## Open questions
 
-- **Writing next steps.** The page shows open next steps, but nothing writes
-  one yet, so the section will be empty for every lead. Should 11.2 also let
-  the owner add a next step ("call back Thursday", a date and a few words) and
-  tick it done? Decided before 11.2's plan; it does not affect 11.1.
+None. Writing next steps was answered on Oct 10: yes, in 11.2 (option A).

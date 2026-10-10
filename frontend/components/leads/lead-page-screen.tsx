@@ -4,6 +4,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { telHref } from "@scheduleads-app/shared/tel-href";
@@ -11,6 +12,7 @@ import { telHref } from "@scheduleads-app/shared/tel-href";
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { ContactInitials } from "@/components/leads/contact-initials";
 import { LeadsRefusalNotice } from "@/components/leads/leads-refusal-notice";
+import { NextStepsSection } from "@/components/leads/next-steps-section";
 import { TimelineEntryLine } from "@/components/leads/timeline-entry-line";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,8 +26,10 @@ const SOURCE_LABELS = { widget: "Website", hosted: "Booking page", manual: "Adde
 
 export function LeadPageScreen({ leadId }: { leadId: string }) {
   const [result, setResult] = useState<LeadResultType | null>(null);
+  // Set by "Add a lead" when the email was already a contact, so a different name is no surprise.
+  const joined = useSearchParams().get("joined") === "1";
 
-  // Bump to ask again, on "Try again".
+  // Bump to ask again: on "Try again", and after a next step is added or done.
   const [reloads, setReloads] = useState(0);
 
   useEffect(() => {
@@ -72,14 +76,26 @@ export function LeadPageScreen({ leadId }: { leadId: string }) {
             </Button>
           </div>
         ) : (
-          <LeadPageBody page={result.page} />
+          <LeadPageBody
+            page={result.page}
+            joined={joined}
+            onChanged={() => setReloads((n) => n + 1)}
+          />
         )}
       </div>
     </div>
   );
 }
 
-function LeadPageBody({ page }: { page: LeadPageType }) {
+function LeadPageBody({
+  page,
+  joined,
+  onChanged,
+}: {
+  page: LeadPageType;
+  joined: boolean;
+  onChanged: () => void;
+}) {
   const { lead, contact, timeZone } = page;
   const time = (iso: string) => formatLeadTime(iso, timeZone);
 
@@ -105,6 +121,14 @@ function LeadPageBody({ page }: { page: LeadPageType }) {
           </div>
         </div>
       </header>
+      {joined ? (
+        <div className="mt-3">
+          <CentredCardNotice>
+            Already a contact: this request was added to {contact.name}, whose details stay as first
+            given.
+          </CentredCardNotice>
+        </div>
+      ) : null}
       {timeZone ? null : (
         <p className="mt-2 text-xs text-muted-foreground">
           Times are in your browser&apos;s time zone: this business has no bookable hours yet.
@@ -178,20 +202,12 @@ function LeadPageBody({ page }: { page: LeadPageType }) {
 
         <div className="flex flex-col gap-4">
           <LeadSection title="Next steps">
-            {page.nextSteps.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nothing owed.</p>
-            ) : (
-              <ul className="flex flex-col gap-2 text-sm">
-                {page.nextSteps.map((step) => (
-                  <li key={step.id}>
-                    <div className="text-foreground">
-                      {step.what ?? step.type.replace(/_/g, " ")}
-                    </div>
-                    <div className="text-xs text-muted-foreground">due {time(step.dueAt)}</div>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <NextStepsSection
+              leadId={lead.id}
+              steps={page.nextSteps}
+              timeZone={timeZone}
+              onChanged={onChanged}
+            />
           </LeadSection>
 
           {page.otherLeads.length > 0 ? (
