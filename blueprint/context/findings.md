@@ -376,3 +376,27 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** The form saves the service, then its ticks by a second call. When the second call fails, the form stays open with the service already changed on the server; Cancel on an existing service called onCancel, so the list kept the old name, length or Live state until a reload. (A new service was already handled.)
 **Suggested fix:** On Cancel, hand the list the service as last saved whenever a save landed in this form.
 **Resolution:** Fixed 2026-10-10: Cancel passes the last saved service to the list whenever one landed, new or existing.
+
+### F-352 [P2] fixed - The step's hand check left Summit's Colour consultation on "the customer picks", and three public route tests now fail
+
+**File:** backend/routes/public-booking-links-routes.test.ts:226, 605, 619
+**Found:** 2026-10-10 by the independent review of 12d.3 (scope: 7eb80af..7c8e9e3)
+**Why it matters:** These tests read painting-dev's seeded Colour consultation and expect "the business sends whoever is free". The step's hand check switched it to "the customer picks" in scheduleads_dev and left it there, so `npm run test --workspace=backend` now ends 3 failed, 924 passed ("expected 'customer_picks' to be 'business_assigns'", people listed where none are expected, 200 where 400 is expected). Every later step reruns this suite, so the gate is red for reasons that have nothing to do with the code. `npm run db:seed` does not put it back: applyBusinessShape only adds a missing service and never changes an existing one.
+**Suggested fix:** Switch Colour consultation back on Settings (or drop, migrate and seed scheduleads_dev), rerun the backend suite, and do future hand checks on a service the suite does not read, or put the change back as part of the check.
+**Resolution:** Fixed 2026-10-10: Colour consultation switched back to "we send whoever is free" on Settings; backend 927 of 927 again. Dev data only, no code.
+
+### F-353 [P3] open - Cancel after the ticks failed to save announces "Saved. Customers can book it now."
+
+**File:** frontend/components/settings/service-form.tsx:185-188, frontend/components/settings/services-screen.tsx:47-58
+**Found:** 2026-10-10 by the independent review of 12d.3 (scope: 7eb80af..7c8e9e3)
+**Why it matters:** When the service saves and its ticks then fail, the form says "X is saved, but who does it is not". If the owner presses Cancel, the form (since the F-351 repair, and for a new service since 7f38977) calls onSaved, and the list's saved() shows the same notice as a full save: "Saved. Customers can book X now." The owner who wanted only Marco reads that everything went through, while the service is live with the ticks as they were (for a new one, nobody ticked, so anyone is offered). Read from the code, not clicked.
+**Suggested fix:** Let Cancel hand the list the saved service without the success notice (a second callback, or a flag on onSaved), or have the list say that who does it was not changed.
+**Resolution:**
+
+### F-354 [P3] open - The setup command and the seed put back ticks the owner removed on Settings
+
+**File:** packages/shared/client-setup/apply-business-shape.ts:194-199
+**Found:** 2026-10-10 by the independent review of 12d.3 (scope: 7eb80af..7c8e9e3)
+**Why it matters:** For a service that already exists, the setup still inserts every tick the file names (`onConflictDoNothing`, "one removed by hand comes back"). That rule dates from when "by hand" meant editing the table; since 12d.3 it is the owner's own choice on Settings. On Riverbend Clinic (dev), untick Mei from the laser service, then run `npm run db:seed` (or the setup with `--apply`): Mei is ticked and offered again; a service whose ticks were cleared to "anyone" goes back to only the file's people. The setup already leaves an existing service's other fields alone, so ticks are the odd one out. Read from the code, not run; the setup is local `*_dev` only until item 10b.
+**Suggested fix:** Add a service's ticks only when this run makes the service, and list the file's missing ticks on an existing service as a difference instead; Frank's call, since the current rule was written on purpose.
+**Resolution:**
