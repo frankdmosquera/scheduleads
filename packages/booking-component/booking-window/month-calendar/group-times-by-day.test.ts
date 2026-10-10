@@ -22,7 +22,7 @@ describe("groupTimesByDay", () => {
   });
 
   it("keeps the API's date and clock time as sent, never re-derived with the browser's rules", () => {
-    // F-279: the API keeps Edmonton on UTC-6 after Nov 1 2026, an older browser falls back to
+    // The API keeps Edmonton on UTC-6 after Nov 1 2026, an older browser falls back to
     // UTC-7 and would read 8:00 a.m. The label shown is the one sent.
     const nine = at("2026-11-02T15:00:00.000Z", "2026-11-02", "9:00 a.m.");
 

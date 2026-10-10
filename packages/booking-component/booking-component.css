@@ -800,11 +800,6 @@
   outline-offset: 2px;
 }
 
-.sa-submit:disabled {
-  cursor: default;
-  opacity: 0.7;
-}
-
 /* A field's hint and its error sit under it and are read out with it (aria-describedby). */
 .sa-hint {
   margin: 5px 0 0;
@@ -837,7 +832,7 @@
   accent-color: var(--sa-identity, #18181b);
 }
 
-/* Where focus waits while Try again sends, and on the words a send ends with: read out, never outlined. */
+/* Where focus waits while a booking sends, and on the words a send ends with: read out, never outlined. */
 .sa-focus-place:focus {
   outline: none;
 }

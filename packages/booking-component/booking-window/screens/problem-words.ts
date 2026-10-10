@@ -1,5 +1,4 @@
-// Booking component: what the window says for each problem. The words Frank agreed at step 9.4's
-// plan (2026-10-09).
+// Booking component: what the window says for each problem.
 
 import type { BookingProblemType } from "../../api-client/problem-from-api-answer.js";
 

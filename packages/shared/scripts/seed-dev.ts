@@ -416,18 +416,46 @@ try {
 
       // Its text settings, only while it has none, so settings changed by hand survive a reseed.
       // Parsed before writing: the schema refuses repeated reminders, which the table cannot.
+      const seededTexts =
+        "textSettings" in business
+          ? textSettingsValidationSchema.parse(business.textSettings)
+          : null;
       const textSettingsMade =
-        "textSettings" in business &&
+        seededTexts !== null &&
         (
           await tx
             .insert(textSettings)
-            .values({
-              organizationId,
-              ...textSettingsValidationSchema.parse(business.textSettings),
-            })
+            .values({ organizationId, ...seededTexts })
             .onConflictDoNothing({ target: textSettings.organizationId })
             .returning({ id: textSettings.organizationId })
         ).length > 0;
+
+      // Its yes to later texts, also on a database seeded before the setting existed (migration
+      // 0024 gave every row false), so no machine needs a rebuild. Only while the rest of the row
+      // is still the seed's, so settings changed by hand survive a reseed.
+      let laterTextsYesSet = false;
+      if (seededTexts?.askLaterTextsYes && !textSettingsMade) {
+        const [saved] = await tx
+          .select()
+          .from(textSettings)
+          .where(eq(textSettings.organizationId, organizationId))
+          .limit(1);
+        const untouched =
+          saved !== undefined &&
+          !saved.askLaterTextsYes &&
+          saved.fromNumber === seededTexts.fromNumber &&
+          saved.confirmationOn === seededTexts.confirmationOn &&
+          saved.reminderMinutesBefore.join() === seededTexts.reminderMinutesBefore.join() &&
+          saved.replyPhone === seededTexts.replyPhone &&
+          saved.replyEmail === seededTexts.replyEmail;
+        if (untouched) {
+          await tx
+            .update(textSettings)
+            .set({ askLaterTextsYes: true })
+            .where(eq(textSettings.organizationId, organizationId));
+          laterTextsYesSet = true;
+        }
+      }
 
       // The first person. Made here because inserting the business directly skips the
       // Better Auth hook that normally makes it.
@@ -661,6 +689,8 @@ try {
           `owns "${business.name}"  ${made.length ? "(created " + made.join(", ") + ")" : "(already there)"}`
       );
       if (choicesSet) console.log(`  who picks the person set on ${choicesSet} existing services`);
+      if (laterTextsYesSet)
+        console.log("  the yes to later texts asked on its existing text settings");
     }
   });
 

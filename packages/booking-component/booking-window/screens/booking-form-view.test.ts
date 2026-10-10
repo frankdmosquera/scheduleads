@@ -55,7 +55,7 @@ function renderForm(
 ) {
   const booked: unknown[] = [];
   const taken: string[] = [];
-  const unsure: boolean[] = [];
+  const frozen: boolean[] = [];
   function Holder() {
     const [form, setForm] = useState<BookingFormValuesType>(newBookingForm);
     return createElement(BookingFormView, {
@@ -67,11 +67,11 @@ function renderForm(
       onFormChange: setForm,
       onBooked: (made, email) => booked.push({ made, email }),
       onTimeTaken: (message) => taken.push(message),
-      onUnsureChange: (now) => unsure.push(now),
+      onFrozenChange: (now) => frozen.push(now),
     });
   }
   render(createElement(Holder));
-  return { booked, taken, unsure };
+  return { booked, taken, frozen };
 }
 
 const type = (label: string, value: string) =>
@@ -114,7 +114,11 @@ describe("screen two's form", () => {
     fireEvent.click(book);
     fireEvent.click(book);
     await waitFor(() => expect(sends).toHaveLength(1));
-    expect(screen.getByRole("button", { name: "Booking…" })).toHaveProperty("disabled", true);
+    // From the press: Book gives way to a line that holds the focus, and nothing can be edited.
+    expect(screen.queryByRole("button", { name: "Book" })).toBeNull();
+    expect(screen.getByRole("status").textContent).toBe("Booking…");
+    expect(document.activeElement).toBe(screen.getByRole("status"));
+    expect(screen.getByLabelText("Email").matches(":disabled")).toBe(true);
 
     await act(async () =>
       sends[0]?.answer(new Response(JSON.stringify({ booking }), { status: 201 }))
@@ -125,7 +129,7 @@ describe("screen two's form", () => {
 
   it("after a lost answer changes nothing until one comes: Try again sends the very same booking", async () => {
     const { apiClient, sends } = clientWithHeldSends();
-    const { booked, unsure } = renderForm(apiClient);
+    const { booked, frozen } = renderForm(apiClient);
     fillIn();
 
     fireEvent.click(screen.getByRole("button", { name: "Book" }));
@@ -133,7 +137,7 @@ describe("screen two's form", () => {
     await act(async () => sends[0]?.answer(null));
 
     expect(screen.getByRole("alert").textContent).toContain("It never books twice");
-    expect(unsure).toEqual([true]); // the screen hides its Back
+    expect(frozen).toEqual([true, true]); // the screen hides its Back from the press
     expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Jane Doe");
     expect(screen.getByLabelText("Email").matches(":disabled")).toBe(true); // the whole group
     expect(screen.queryByRole("button", { name: "Book" })).toBeNull();
@@ -145,12 +149,12 @@ describe("screen two's form", () => {
       sends[1]?.answer(new Response(JSON.stringify({ booking }), { status: 201 }))
     );
     expect(booked).toEqual([{ made: booking, email: "jane@example.com" }]);
-    expect(unsure).toEqual([true, false]);
+    expect(frozen).toEqual([true, true, true, false]);
   });
 
   it("stays frozen on an answer that does not settle the form, and says it is checking", async () => {
     const { apiClient, sends } = clientWithHeldSends();
-    const { unsure } = renderForm(apiClient);
+    const { frozen } = renderForm(apiClient);
     fillIn();
     const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
 
@@ -177,7 +181,7 @@ describe("screen two's form", () => {
     // Focus is on the words' own place, never the page.
     expect(document.activeElement).toBe(screen.getByRole("alert").closest(".sa-focus-place"));
     expect(screen.getByRole("button", { name: "Try again" })).toBeDefined();
-    expect(unsure).toEqual([true, true]);
+    expect(frozen).toEqual([true, true, true, true]);
 
     // The route's own refusal settles it: she may change her details again.
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
@@ -188,7 +192,7 @@ describe("screen two's form", () => {
       )
     );
     expect(screen.getByLabelText("Email").matches(":disabled")).toBe(false);
-    expect(unsure).toEqual([true, true, false]);
+    expect(frozen).toEqual([true, true, true, true, true, false]);
     // The refusal's words take the focus from the checking line that held it.
     expect(screen.getByRole("alert").textContent).toBe("Answer: Which colour?");
     expect(document.activeElement).toBe(screen.getByRole("alert").closest(".sa-focus-place"));
@@ -276,7 +280,7 @@ describe("screen two's form", () => {
         onFormChange: setForm,
         onBooked: () => {},
         onTimeTaken: () => {},
-        onUnsureChange: () => {},
+        onFrozenChange: () => {},
       });
     }
     render(createElement(Holder));

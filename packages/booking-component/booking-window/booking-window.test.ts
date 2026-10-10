@@ -37,7 +37,7 @@ const elevenOClock = at("2026-10-14T17:00:00.000Z", "2026-10-14", "11:00 a.m.");
 const madeWhen = "Wednesday, October 14 at 11:00 a.m. MDT (as the API wrote it)";
 
 // A fake API for one business with one service. Each Book answers with the next of `bookAnswers`.
-function fakeApi(bookAnswers: Response[]) {
+function fakeApi(bookAnswers: (Response | Promise<Response>)[]) {
   const posted: { requestKey: string; startsAt: string }[] = [];
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
   const apiClient = hc<PublicAppType>("https://api.example.com", {
@@ -182,6 +182,30 @@ describe("the booking window", () => {
     // Settled: the time was taken, so this form booked nothing and screen one comes back.
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
     expect((await screen.findByRole("alert")).textContent).toBe(words);
+  });
+
+  it("hides Back to the times and locks the fields from the press, so a lost answer stays frozen", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-09T18:00:00.000Z"));
+    let drop = () => {};
+    const held = new Promise<Response>((_resolve, reject) => {
+      drop = () => reject(new TypeError("Failed to fetch"));
+    });
+    const { apiClient, posted } = fakeApi([held]);
+    await openToScreenTwo(apiClient);
+
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+    await waitFor(() => expect(posted).toHaveLength(1));
+    // While the send is out: no Back to another time, nothing to edit.
+    expect(screen.queryByRole("button", { name: "Back to the times" })).toBeNull();
+    expect(screen.getByLabelText("Email").matches(":disabled")).toBe(true);
+    expect(screen.getByRole("status").textContent).toBe("Booking…");
+
+    // The answer is lost: still no Back, still frozen, Try again offered.
+    await act(async () => drop());
+    expect(await screen.findByRole("button", { name: "Try again" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Back to the times" })).toBeNull();
+    expect(screen.getByLabelText("Email").matches(":disabled")).toBe(true);
   });
 
   it("gives each opening of the window its own form key", async () => {

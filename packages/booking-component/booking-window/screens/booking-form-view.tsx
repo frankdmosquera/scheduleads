@@ -1,8 +1,8 @@
 // Booking component: screen two's form and Book, the same in every layout. Checked before sending;
 // each error under its field, focus on the first, cleared as that field is edited. Book locks after
 // one press and sends the form's key, so pressing again, or Try again after a lost connection,
-// never makes a second booking (decision 9). After a lost answer nothing can change until an answer
-// comes. Everything typed is shown as text, never as markup.
+// never makes a second booking (decision 9). From the press until an answer settles it nothing
+// can change. Everything typed is shown as text, never as markup.
 
 "use client";
 
@@ -33,7 +33,7 @@ export type BookingFormViewPropsType = {
   onFormChange(form: BookingFormValuesType): void;
   onBooked(booking: BookingMadeType, email: string | null): void;
   onTimeTaken(message: string): void;
-  onUnsureChange(unsure: boolean): void; // the screen hides its Back while a lost answer is unknown
+  onFrozenChange(frozen: boolean): void; // the screen hides its Back while a send is unknown
 };
 
 type SendProblemType = { words: string; retry: boolean };
@@ -53,7 +53,7 @@ export function BookingFormView({
   onFormChange,
   onBooked,
   onTimeTaken,
-  onUnsureChange,
+  onFrozenChange,
 }: BookingFormViewPropsType) {
   const idPrefix = useId();
   const idOf = (field: BookingFormFieldType) => `${idPrefix}-${field.replace(":", "-")}`;
@@ -65,17 +65,16 @@ export function BookingFormView({
   // No answer came back: until one comes nothing can be changed, so Try again sends the same
   // booking with the same key, and a booking made unseen is answered again, never made twice.
   const [unsure, setUnsure] = useState(false);
-  // Try again removes itself as it sends, so a line takes its place, and the focus, until the answer.
-  const [retrying, setRetrying] = useState(false);
-  const waiting = sending && (unsure || retrying);
-  // Focus never falls to the page: on the waiting line while Try again sends, and on the words
-  // whenever a send ends with words on screen.
+  // A send in flight may become a booking: the fields and Back wait for its answer too.
+  const frozen = sending || unsure;
+  // Focus never falls to the page: Book and the fields lock as they send, so a line takes their
+  // place, and the focus, until the answer; then the words whenever a send ends with words on screen.
   const checkingRef = useRef<HTMLParagraphElement>(null);
   const problemRef = useRef<HTMLDivElement>(null);
   const [wordsShown, setWordsShown] = useState(0);
   useEffect(() => {
-    if (waiting) checkingRef.current?.focus();
-  }, [waiting]);
+    if (sending) checkingRef.current?.focus();
+  }, [sending]);
   useEffect(() => {
     if (wordsShown > 0) problemRef.current?.focus();
   }, [wordsShown]);
@@ -94,7 +93,7 @@ export function BookingFormView({
     }
   };
 
-  async function book(fromRetry = false) {
+  async function book() {
     if (sendingNow.current) return;
     const read = readBookingForm(form, business.questions, choice);
     if (read.state === "errors") {
@@ -107,19 +106,18 @@ export function BookingFormView({
       if (first) document.getElementById(idOf(first.field))?.focus();
       return;
     }
-    await send(read.request, fromRetry);
+    await send(read.request);
   }
 
-  async function send(request: BookingRequestType, fromRetry: boolean) {
+  async function send(request: BookingRequestType) {
     if (sendingNow.current) return;
     sendingNow.current = true;
     setSending(true);
-    setRetrying(fromRetry);
+    onFrozenChange(true);
     setProblem(null);
     const answer = await sendBooking(apiClient, slug, request);
     sendingNow.current = false;
     setSending(false);
-    setRetrying(false);
     // The route's own answers about this form settle it: it looks the form's key up first. No
     // answer, or one the route did not write (a server fault, a proxy), may hide a booking made;
     // a "too many tries" may come before the look-up. Those freeze the form, or keep it frozen.
@@ -130,7 +128,7 @@ export function BookingFormView({
       (answer.state === "problem" && answer.problem === "cannot-load");
     const nowUnsure = unsure ? !settled : unclear;
     setUnsure(nowUnsure);
-    onUnsureChange(nowUnsure);
+    onFrozenChange(nowUnsure);
 
     switch (answer.state) {
       case "booked":
@@ -210,7 +208,7 @@ export function BookingFormView({
         void book();
       }}
     >
-      <fieldset className="sa-fields" disabled={unsure}>
+      <fieldset className="sa-fields" disabled={frozen}>
         {field("name", "Name", true, (props) => (
           <input
             {...props}
@@ -300,18 +298,18 @@ export function BookingFormView({
         <div ref={problemRef} tabIndex={-1} className="sa-focus-place">
           <ProblemMessage
             words={problem.words}
-            retry={problem.retry ? () => void book(true) : null}
+            retry={problem.retry ? () => void book() : null}
             phone={business.phone}
           />
         </div>
       )}
 
-      {!unsure && !waiting && (
-        <button type="submit" className="sa-submit" disabled={sending} aria-busy={sending}>
-          {sending ? "Booking…" : "Book"}
+      {!frozen && (
+        <button type="submit" className="sa-submit">
+          Book
         </button>
       )}
-      {waiting && (
+      {sending && (
         <p ref={checkingRef} tabIndex={-1} className="sa-loading sa-focus-place" role="status">
           {unsure ? "Checking your booking…" : "Booking…"}
         </p>

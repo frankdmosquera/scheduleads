@@ -20,7 +20,7 @@ function clientAnswering(status: number, body: unknown) {
 const theListsAnswer = { business: { name: "Clinic" }, bookingLinks: [] };
 
 describe("fetchOneService", () => {
-  it("never asks the API for a blank id: it would get the whole list instead (F-278)", async () => {
+  it("never asks the API for a blank id: it would get the whole list instead", async () => {
     const { apiClient, asked } = clientAnswering(200, theListsAnswer);
 
     expect(await fetchOneService(apiClient, "clinic-dev", "")).toEqual({
@@ -33,7 +33,7 @@ describe("fetchOneService", () => {
     expect(asked).toEqual([]);
   });
 
-  it("reads an answer with no service in it as a problem, never as a service (F-278)", async () => {
+  it("reads an answer with no service in it as a problem, never as a service", async () => {
     const { apiClient } = clientAnswering(200, theListsAnswer);
 
     expect(await fetchOneService(apiClient, "clinic-dev", "abc")).toEqual({

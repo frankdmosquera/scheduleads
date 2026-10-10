@@ -62,7 +62,7 @@ afterEach(() => {
 });
 
 describe("useMonthTimes", () => {
-  it("drops a late answer for a person no longer shown (F-280)", async () => {
+  it("drops a late answer for a person no longer shown", async () => {
     const { apiClient, answer } = clientWithHeldAnswers();
     const question = {
       apiClient,
@@ -120,7 +120,7 @@ const renderScreenOne = (
   );
 
 describe("the month layout's screen one", () => {
-  it("shows the first day with a time when a month loads, not today (F-280)", async () => {
+  it("shows the first day with a time when a month loads, not today", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-10-09T18:00:00.000Z")); // Friday, October 9 in Edmonton
     const { apiClient, answer } = clientWithHeldAnswers();

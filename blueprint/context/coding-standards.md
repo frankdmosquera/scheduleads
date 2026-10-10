@@ -226,9 +226,10 @@ own subpath export.
   query filters on that row's own business; every bad or unknown link answers
   the identical `404`; the answer never carries the customer's own details,
   is never cached, and the link itself is never logged or stored
-- Whether the booking widget calls the API from the browser or proxies through
-  the host site's Server Action is open until Phase 3 (`project-plan.md`,
-  open question 5)
+- The booking component calls the public routes straight from the visitor's
+  browser, never through a Server Action proxy on the host site
+  (`project-plan.md` decision 31): booking holds no secret, and the rate
+  limits must see each visitor
 
 ## Error Handling
 

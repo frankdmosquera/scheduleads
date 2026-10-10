@@ -363,7 +363,7 @@ describe("free times for a service", () => {
       expect(date >= from && date <= to).toBe(true);
     }
     expect([...body.startTimes].sort()).toEqual(body.startTimes);
-    // Every time again, with the date and clock time the API worked out for the business (F-279).
+    // Every time again, with the date and clock time the API worked out for the business.
     expect(body.localStartTimes.map((time) => time.startsAt)).toEqual(body.startTimes);
     for (const time of body.localStartTimes) {
       expect(time.date).toBe(localDate(new Date(time.startsAt), body.timezone));

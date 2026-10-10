@@ -323,7 +323,7 @@ describe("free times for moving a booking", () => {
     expect(body.startTimes.length).toBeGreaterThan(0);
   });
 
-  test("every time comes with its date, clock time and whole moment, written by the API (F-281)", async () => {
+  test("every time comes with its date, clock time and whole moment, written by the API", async () => {
     const clinic = await makeClinic("local-labels");
     const response = await timesFor(clinic.janesBooking);
     const body = await response.json();

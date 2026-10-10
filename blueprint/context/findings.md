@@ -1457,3 +1457,92 @@ in a row on the fix, and failed on the `onConflictDoNothing` copy at line
 457 with the two dates equal.
 **Resolution:** Fixed 2026-10-09: the re-tick check is `toBeGreaterThan`, so her number ticked again must carry a later date. It passed three runs on the fix, and with the upsert replaced by `onConflictDoNothing()` it fails.
 Closed 2026-10-09 by the re-review of 9.7's second fix (scope: 1cf4830..b89aaee): the one line changed is the re-tick check at public-bookings-routes.test.ts:457, now `toBeGreaterThan`, and it guards the date moving. Breaking it fails the file (book-time.ts copied aside and restored, sha256 c526ac0d... before and after): with `.onConflictDoNothing()` in place of the upsert, "a tick with another number adds its own yes and never moves hers" fails at line 457, "expected 1791586271749 to be greater than 1791586271749", 1 failed and 42 passed. Not flaky: the route takes `new Date()` per request and her two ticks have the other number's whole booking between them; measured in a temporary copy of the test (removed), the gap was 99 to 144 ms over 12 runs, and the file itself passed 8 runs of 8, 43 of 43 each. Nothing else in the scope changed. Suites: backend 887 of 887 (78 files).
+
+### F-293 [P2] fixed - Back to the times stays live while Book is sending, so a lost answer after Back loses the freeze and "already used" books her twice
+
+**File:** packages/booking-component/booking-window/screens/month-layout/month-details-screen.tsx:53,60 (Back is hidden only once `unsure` is set) and packages/booking-component/booking-window/screens/booking-form-view.tsx:115-133 (`onUnsureChange` is called only after the answer), :213 (the fieldset is disabled only while `unsure`); booking-window/booking-window.tsx:41,213-216 (the form and its key survive Back); the words come from backend/routes/public-bookings-routes.ts:137-142
+**Found:** 2026-10-09 by /audit independent (scope: current, ece1aa2..012c200; lens: quality, tests)
+**Why it matters:** F-282's fix freezes the form after a lost answer, but
+only from the moment the answer is known to be lost. While the first send is
+on its way (up to the 10-second limit in create-booking-api-client.ts:11),
+the rail still draws "Back to the times" and every field is editable. A
+customer who presses Back during "Booking…" unmounts the form, so when that
+send then ends with no answer, its `setUnsure(true)` and
+`onUnsureChange(true)` land on unmounted components and nothing is frozen.
+She is on screen one with the same form and key (kept by the window), picks
+another time, and Book sends that key with a different start. If the lost
+send was saved, book-time.ts finds the key's booking, `isSameRequest` fails
+on the start, and the route answers 409 request_key_used, "This booking form
+was already used. Please reload the page and book again.", which send-booking
+reads as a settled refusal. Doing what it says makes a second booking, the
+outcome F-282 (P2) was about, reached by pressing Back a few seconds
+earlier. The same live fieldset lets her edit the email during the send; if
+it is then lost, Try again sends the edited address, the API answers the
+first booking, and the done screen names an address the confirmation never
+went to (F-282's smaller case). Traced by reading; no test drives Back or an
+edit while a send is held (booking-window.test.ts:165 covers Back only after
+the answer is lost).
+**Suggested fix:** Treat the form as in doubt from the press, not from the
+lost answer: hide (or disable) Back and disable the fieldset while
+`sending` as well as while `unsure`, for example by calling
+`onUnsureChange(true)` as the send starts and settling it when the answer
+comes. A booking-window.test.ts case that holds the first send, checks Back
+is not drawn and the fields are disabled while it is held, then drops the
+answer and checks the form is frozen; shown able to fail with Back drawn
+during the send.
+**Resolution:** Fixed 2026-10-09 in the final review's fixes: booking-form-view.tsx freezes the form from the press, not only after a lost answer (`frozen = sending || unsure`): the fieldset is disabled and Book gives way to the role=status line, which takes the focus, for every send, and `onFrozenChange(true)` is called as the send starts, so month-details-screen.tsx hides Back to the times for the whole send (the prop and state renamed from unsure to frozen). The now unused `.sa-submit:disabled` rule and the `retrying` state are gone. booking-window.test.ts "hides Back to the times and locks the fields from the press, so a lost answer stays frozen" holds the first send, checks Back is not drawn, the email field is disabled and the line says Booking..., then drops the answer and checks it stays frozen with Try again; shown to fail on the old code (Back drawn). booking-form-view.test.ts's first-send case now checks the line, the focus and the disabled fields.
+
+### F-294 [P3] fixed - The coding standards still say browser or proxy is an open question, which decision 1 answered
+
+**File:** blueprint/context/coding-standards.md:229-231 ("Whether the booking widget calls the API from the browser or proxies through the host site's Server Action is open until Phase 3 (`project-plan.md`, open question 5)")
+**Found:** 2026-10-09 by /audit independent (scope: current, ece1aa2..012c200; lens: quality)
+**Why it matters:** This feature answered it: the spec's decision 1 and
+project-plan.md decision 31 (open question 15, "Answered 2026-10-08: browser
+to API"), and step 9.1's plan lines refreshed the project plan, build plan
+and overview but not this file. coding-standards.md is the file read before
+changing code, so feature 10, which wires the component into a host site,
+meets a rule saying the question is still open and pointing at a question
+number that no longer holds it. The workspace rule is that the levels never
+contradict each other.
+**Suggested fix:** Replace the line with the decision: the booking component
+calls the public routes from the visitor's browser (project-plan.md decision
+31), with no Server Action proxy, because booking holds no secret and the
+rate limits must see each visitor.
+**Resolution:** Fixed 2026-10-09: coding-standards.md's open question is replaced by the decision: the booking component calls the public routes straight from the visitor's browser, never through a Server Action proxy (project-plan.md decision 31), because booking holds no secret and the rate limits must see each visitor.
+
+### F-295 [P3] fixed - History is back in comments: who agreed the problem words and when, and finding numbers in eight test lines
+
+**File:** packages/booking-component/booking-window/screens/problem-words.ts:1-2; backend/routes/public-booking-links-routes.test.ts:366; backend/routes/public-booking-move-times-routes.test.ts:326; backend/routes/public-booking-page-routes.test.ts:185; packages/booking-component/api-client/fetch-one-service.test.ts:23,36; packages/booking-component/booking-window/month-calendar/group-times-by-day.test.ts:25; packages/booking-component/booking-window/screens/month-layout/use-month-times.test.ts:65,123
+**Found:** 2026-10-09 by /audit independent (scope: current, ece1aa2..012c200; lens: quality)
+**Why it matters:** coding-standards.md, Comments: "No history in code
+comments (step numbers, finding numbers ...): that lives in the build log."
+problem-words.ts, product code, opens with "The words Frank agreed at step
+9.4's plan (2026-10-09)", a step number and who agreed when, the pattern
+F-274 removed. F-285's repair cleared code outside tests only; eight test
+names and comments still carry F-278 to F-281. `/complete` archives this
+ledger as `9/F-...` and the next one restarts the numbering, so a bare
+F-279 in a test later points at an unrelated finding.
+**Suggested fix:** Keep each sentence and drop the history: "what the window
+says for each problem" in problem-words.ts, and the test names and comments
+without their "(F-27x)" or "F-279:" (the reason, such as an older browser's
+time-zone rules, already reads on its own).
+**Resolution:** Fixed 2026-10-09: problem-words.ts opens with "what the window says for each problem" only; the eight test names and comments lose their "(F-27x)" and "F-279:" with each sentence kept; AGENTS.md's "since F-280" reads "since feature 9". git grep finds no F-number left in backend, frontend or packages code.
+
+### F-296 [P3] fixed - The seed sets painting-dev to ask for a yes only when it first makes its text settings, so a database seeded before 0024 never shows the box
+
+**File:** packages/shared/scripts/seed-dev.ts:417-429 (text settings inserted with `onConflictDoNothing`, never updated) with packages/shared/migrations/0024_later_texts_yes.sql:11 (`askLaterTextsYes` added DEFAULT false)
+**Found:** 2026-10-09 by /audit independent (scope: current, ece1aa2..012c200; lens: quality)
+**Why it matters:** Step 9.7.1 says the seed sets painting-dev to ask, and
+its Done when has the box seen on the painting-dev preview. painting-dev has
+had a text_settings row since feature 8b, so on any dev database seeded
+before this step, `db:migrate` gives it `askLaterTextsYes = false` and
+`db:seed` leaves it there: the preview shows no box and nothing says why. The
+seed's own rule for the same situation in this feature (who picks the
+person, seed-dev.ts:584-623, from F-257) is to bring an earlier database up
+"so no machine needs a rebuild". No test depends on it (the route and job
+tests make their own settings), so only the dev preview is affected.
+**Suggested fix:** As with who picks: set `askLaterTextsYes` from the seed on
+an existing row while it still holds the migration's false and nothing else
+in the row was changed by hand, or note in the seed and AGENTS.md that a
+database seeded before 0024 is rebuilt.
+**Resolution:** Fixed 2026-10-09 the way F-257 was: seed-dev.ts parses the seeded text settings once, and on an existing row that still holds 0024's false while every other field is still the seed's, sets askLaterTextsYes and prints its own line. Shown on the local scheduleads_dev: painting-dev set to false, db:seed brought it up with the line; a second db:seed changed nothing; with confirmationOn also changed by hand, db:seed left the row as it was; the row was then restored.

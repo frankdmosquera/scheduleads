@@ -49,15 +49,15 @@ export function MonthDetailsScreen({
   onTimeTaken,
 }: MonthDetailsScreenPropsType) {
   const day = formatDayName(chosen.date);
-  // No Back while a lost answer is unknown: another time with the same form could book her twice.
-  const [unsure, setUnsure] = useState(false);
+  // No Back while a send is unknown: another time with the same form could book her twice.
+  const [frozen, setFrozen] = useState(false);
 
   return (
     <div className="sa-book">
       <MonthRail
         business={business}
         service={service}
-        back={unsure ? null : { label: "Back to the times", onBack }}
+        back={frozen ? null : { label: "Back to the times", onBack }}
       >
         <div className="sa-facts">
           <div className="sa-fact sa-fact--picked">
@@ -98,7 +98,7 @@ export function MonthDetailsScreen({
           onFormChange={onFormChange}
           onBooked={onBooked}
           onTimeTaken={onTimeTaken}
-          onUnsureChange={setUnsure}
+          onFrozenChange={setFrozen}
         />
       </div>
     </div>
