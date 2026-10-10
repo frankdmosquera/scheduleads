@@ -20,13 +20,10 @@ export const resourceSettingsColumns = {
 };
 
 // The database's check keeps kind to these two; anything else is a corrupt row, a real fault.
-export function resourceSettingsOf(row: {
-  id: string;
-  name: string;
-  kind: string;
-  active: boolean;
-  workEmail: string | null;
-}): ResourceSettingsType {
+// Takes any row with an id and a kind, so the Services page's shorter rows read the same way.
+export function resourceSettingsOf<Row extends { id: string; kind: string }>(
+  row: Row
+): Omit<Row, "kind"> & { kind: ResourceSettingsType["kind"] } {
   if (row.kind !== "person" && row.kind !== "place") {
     throw new Error(`resource ${row.id} has an unknown kind.`);
   }

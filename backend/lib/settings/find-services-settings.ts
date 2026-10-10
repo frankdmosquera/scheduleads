@@ -8,13 +8,17 @@ import type { ServiceType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
 import { findServiceTicks, type ServiceTicksType } from "./find-service-ticks.js";
-import {
-  resourceSettingsColumns,
-  resourceSettingsOf,
-  type ResourceSettingsType,
-} from "./resource-settings-of.js";
+import { resourceSettingsOf, type ResourceSettingsType } from "./resource-settings-of.js";
 
 export type ServiceSettingsType = { id: string; slug: string } & ServiceType & ServiceTicksType;
+
+// Who can be ticked: no work email, which only the People page shows.
+const tickableColumns = {
+  id: resource.id,
+  name: resource.name,
+  kind: resource.kind,
+  active: resource.active,
+};
 
 // The columns the page shows and saves, so a read and a save answer the same shape.
 export const serviceSettingsColumns = {
@@ -33,7 +37,7 @@ export const serviceSettingsColumns = {
 
 export async function findServicesSettings(organizationId: string): Promise<{
   services: ServiceSettingsType[];
-  people: ResourceSettingsType[];
+  people: Omit<ResourceSettingsType, "workEmail">[];
 }> {
   const [rows, people] = await Promise.all([
     db
@@ -42,7 +46,7 @@ export async function findServicesSettings(organizationId: string): Promise<{
       .where(eq(bookingLink.organizationId, organizationId))
       .orderBy(asc(bookingLink.name), asc(bookingLink.id)),
     db
-      .select(resourceSettingsColumns)
+      .select(tickableColumns)
       .from(resource)
       .where(eq(resource.organizationId, organizationId))
       .orderBy(asc(resource.name), asc(resource.id)),

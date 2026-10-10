@@ -763,6 +763,17 @@ describe("a person's work email", () => {
     );
     await put(`/settings/people/${summit.personId}`, summit.email, { name: "Juan", active: true });
     expect(await workEmailOf(summit.personId)).toBe("juan@summit-painting.test");
+    // Only People shows it: the Services page's ticks never carry it (F-357).
+    const services = (await (await get("/settings/services", summit.email)).json()) as {
+      people: Record<string, unknown>[];
+    };
+    expect(services.people.map((person) => Object.keys(person).sort())).toContainEqual([
+      "active",
+      "id",
+      "kind",
+      "name",
+    ]);
+    expect(services.people.every((person) => !("workEmail" in person))).toBe(true);
     await put(`/settings/people/${summit.personId}`, summit.email, juan(null));
     expect(await workEmailOf(summit.personId)).toBeNull();
 
