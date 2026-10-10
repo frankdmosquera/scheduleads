@@ -13,7 +13,7 @@ import {
   resource,
   workerTextSettings,
 } from "../db/index.js";
-import { toSlug } from "../helpers/to-slug.js";
+import { serviceNamed } from "./service-named.js";
 import type { ClientSetupType } from "../zod-validation/admin-validation-schemas/client-setup-validation-schema.js";
 import {
   applyBusinessShape,
@@ -113,12 +113,8 @@ async function findDifferences(
     const [saved] = await tx
       .select()
       .from(bookingLink)
-      .where(
-        and(
-          eq(bookingLink.organizationId, organizationId),
-          eq(bookingLink.slug, toSlug(service.name))
-        )
-      )
+      .where(serviceNamed(organizationId, service.name))
+      .orderBy(bookingLink.createdAt)
       .limit(1);
     if (!saved) continue;
     differs(`"${service.name}", name`, saved.name, service.name);
@@ -199,7 +195,7 @@ async function findDifferences(
       .where(
         and(
           eq(bookingLinkResource.organizationId, organizationId),
-          eq(bookingLink.slug, toSlug(service.name))
+          serviceNamed(organizationId, service.name)
         )
       );
     const inFile = new Set(service.ticked ?? []);

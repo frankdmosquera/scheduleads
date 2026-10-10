@@ -221,4 +221,35 @@ describe("runClientSetup", () => {
     const [kept] = await db.select().from(bookingLink).where(byHand);
     expect(kept?.durationMinutes).toBe(45);
   });
+
+  it("finds a service renamed on Settings by its new name, never adding it twice", async () => {
+    const business = await makeBusiness();
+    await runClientSetup(db, setupFor(business.slug), { apply: true });
+    // Settings renames a service and keeps its slug (12d.1).
+    await db
+      .update(bookingLink)
+      .set({ name: "Video consult" })
+      .where(and(eq(bookingLink.organizationId, business.id), eq(bookingLink.slug, "video-call")));
+
+    const file = fileFor(business.slug);
+    file.services[0].name = " video CONSULT "; // the same name, any case and spaces
+    const renamed = await runClientSetup(db, clientSetupValidationSchema.parse(file), {
+      apply: true,
+    });
+    expect(renamed.ok && renamed.made).toEqual([]);
+    expect((await countRows(business.id)).services).toBe(2);
+
+    // The old name is a service of its own now; its slug is taken, so it gets -2.
+    const old = await runClientSetup(db, setupFor(business.slug), { apply: true });
+    expect(old.ok && old.made).toContain("1 services");
+    const slugs = await db
+      .select({ slug: bookingLink.slug })
+      .from(bookingLink)
+      .where(eq(bookingLink.organizationId, business.id));
+    expect(slugs.map((row) => row.slug).sort()).toEqual([
+      "phone-call",
+      "video-call",
+      "video-call-2",
+    ]);
+  });
 });

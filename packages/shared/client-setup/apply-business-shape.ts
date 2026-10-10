@@ -4,7 +4,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, like, or } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import type * as schema from "../db/index.js";
@@ -17,7 +17,8 @@ import {
   standbyDate,
   workerTextSettings,
 } from "../db/index.js";
-import { toSlug } from "../helpers/to-slug.js";
+import { freeSlug, toSlug } from "../helpers/to-slug.js";
+import { serviceNamed } from "./service-named.js";
 import { personAvailabilityRuleValidationSchema } from "../zod-validation/availability-validation-schemas/availability-rule-validation-schema.js";
 import type { ClientSetupType } from "../zod-validation/admin-validation-schemas/client-setup-validation-schema.js";
 
@@ -142,15 +143,30 @@ export async function applyBusinessShape(
   let servicesMade = 0;
   let ticksMade = 0;
   for (const { ticked = [], ...service } of shape.services) {
-    const slug = toSlug(service.name);
     const [existingLink] = await tx
       .select({ id: bookingLink.id })
       .from(bookingLink)
-      .where(and(eq(bookingLink.organizationId, organizationId), eq(bookingLink.slug, slug)))
+      .where(serviceNamed(organizationId, service.name))
+      .orderBy(bookingLink.createdAt)
       .limit(1);
 
     const bookingLinkId = existingLink?.id ?? randomUUID();
     if (!existingLink) {
+      // A slug another service already holds (one renamed on Settings keeps its first) gets -2.
+      const base = toSlug(service.name) || "service";
+      const taken = await tx
+        .select({ slug: bookingLink.slug })
+        .from(bookingLink)
+        .where(
+          and(
+            eq(bookingLink.organizationId, organizationId),
+            or(eq(bookingLink.slug, base), like(bookingLink.slug, `${base}-%`))
+          )
+        );
+      const slug = freeSlug(
+        base,
+        taken.map((row) => row.slug)
+      );
       await tx.insert(bookingLink).values({
         id: bookingLinkId,
         organizationId,

@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { and, eq, like, or } from "drizzle-orm";
 
 import { bookingLink } from "@scheduleads-app/shared/db";
-import { toSlug } from "@scheduleads-app/shared/helpers";
+import { freeSlug, toSlug } from "@scheduleads-app/shared/helpers";
 import type { ServiceType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
@@ -30,9 +30,10 @@ export async function addService(
           or(eq(bookingLink.slug, base), like(bookingLink.slug, `${base}-%`))
         )
       );
-    const used = new Set(taken.map((row) => row.slug));
-    let slug = base;
-    for (let n = 2; used.has(slug); n += 1) slug = `${base}-${n}`;
+    const slug = freeSlug(
+      base,
+      taken.map((row) => row.slug)
+    );
 
     // The unique index settles two adds of the same name at once: the loser tries the next slug.
     const [added] = await db

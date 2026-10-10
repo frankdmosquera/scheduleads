@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
@@ -24,18 +24,31 @@ export function ServicesScreen() {
   );
 }
 
+const ADD_BUTTON_ID = "add-service";
+const changeButtonId = (serviceId: string) => `change-service-${serviceId}`;
 const byName = (a: ServiceSettingsType, b: ServiceSettingsType) => a.name.localeCompare(b.name);
 
 function ServicesList({ settings }: { settings: ServicesSettingsType }) {
   const [services, setServices] = useState(settings.services);
   const [open, setOpen] = useState<string | "new" | null>(null); // which form is open
   const [notice, setNotice] = useState<SaveNoticeType>(null);
+  // Where the keyboard goes once a form closes: back to the button that opened it, never the top.
+  const returnFocus = useRef<string | null>(null);
+  useEffect(() => {
+    if (open !== null || !returnFocus.current) return;
+    document.getElementById(returnFocus.current)?.focus();
+    returnFocus.current = null;
+  }, [open]);
+  const close = (focusId: string) => {
+    returnFocus.current = focusId;
+    setOpen(null);
+  };
 
   const saved = (service: ServiceSettingsType) => {
     setServices((list) =>
       [...list.filter((existing) => existing.id !== service.id), service].sort(byName)
     );
-    setOpen(null);
+    close(changeButtonId(service.id));
     setNotice({
       tone: "info",
       text: service.active
@@ -55,10 +68,10 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
           Your role cannot change the services. You can see them here.
         </CentredCardNotice>
       ) : open === "new" ? (
-        <ServiceForm service={null} onSaved={saved} onCancel={() => setOpen(null)} />
+        <ServiceForm service={null} onSaved={saved} onCancel={() => close(ADD_BUTTON_ID)} />
       ) : (
         <div>
-          <Button variant="outline" onClick={() => openForm("new")}>
+          <Button id={ADD_BUTTON_ID} variant="outline" onClick={() => openForm("new")}>
             + Add a service
           </Button>
         </div>
@@ -72,7 +85,11 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
           {services.map((service) =>
             open === service.id ? (
               <li key={service.id}>
-                <ServiceForm service={service} onSaved={saved} onCancel={() => setOpen(null)} />
+                <ServiceForm
+                  service={service}
+                  onSaved={saved}
+                  onCancel={() => close(changeButtonId(service.id))}
+                />
               </li>
             ) : (
               <li
@@ -92,6 +109,7 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
                 </span>
                 {settings.canEdit ? (
                   <Button
+                    id={changeButtonId(service.id)}
                     variant="ghost"
                     size="sm"
                     className="ml-auto"

@@ -301,21 +301,23 @@ export function ServiceForm({
                 />
                 One after another, every service length
               </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name={`${idBase}-starts`}
-                  checked={field.value !== null}
-                  onChange={() => edited(field.onChange)(field.value ?? 30)}
-                  className="accent-[var(--primary)]"
-                />
-                Every
+              <span className="flex items-center gap-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name={`${idBase}-starts`}
+                    checked={field.value !== null}
+                    onChange={() => edited(field.onChange)(field.value ?? Number.NaN)}
+                    className="accent-[var(--primary)]"
+                  />
+                  Every
+                </label>
+                {/* Its own field beside the choice; typing a number picks "Every". */}
                 <Input
                   type="number"
                   min={1}
                   max={1440}
                   aria-label="Start times every how many minutes"
-                  disabled={field.value === null}
                   value={field.value === null || Number.isNaN(field.value) ? "" : field.value}
                   onChange={(event) =>
                     edited(field.onChange)(
@@ -327,7 +329,7 @@ export function ServiceForm({
                   className="h-8 w-20 bg-muted px-2"
                 />
                 minutes
-              </label>
+              </span>
             </div>
             {fieldState.error ? (
               <p id={`${idBase}-starts-error`} className="text-xs text-destructive">
