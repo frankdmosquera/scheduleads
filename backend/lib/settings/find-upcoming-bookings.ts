@@ -1,5 +1,6 @@
 // Backend: a business's confirmed bookings still to come, with what the Hours card lists for each:
-// the customer, the service and the person. Only those one person or one place holds, when given.
+// the customer, the service and the person. Only those one person or one place holds, or those of
+// one service, when given.
 
 import { and, asc, eq, gt } from "drizzle-orm";
 
@@ -11,6 +12,7 @@ export type UpcomingBookingType = {
   bookingId: string;
   leadId: string;
   personId: string;
+  serviceId: string;
   startsAt: Date;
   endsAt: Date;
   status: string;
@@ -23,7 +25,7 @@ export async function findUpcomingBookings(
   executor: DatabaseExecutorType,
   organizationId: string,
   now: Date,
-  holder: { personId: string } | { placeId: string } | null // null = everyone's
+  holder: { personId: string } | { placeId: string } | { serviceId: string } | null // null = everyone's
 ): Promise<UpcomingBookingType[]> {
   // Every join stays inside the business, as the composite keys do.
   return executor
@@ -31,6 +33,7 @@ export async function findUpcomingBookings(
       bookingId: booking.id,
       leadId: booking.leadId,
       personId: booking.personId,
+      serviceId: booking.bookingLinkId,
       startsAt: booking.startsAt,
       endsAt: booking.endsAt,
       status: booking.status,
@@ -64,7 +67,8 @@ export async function findUpcomingBookings(
         eq(booking.status, "confirmed"),
         gt(booking.startsAt, now),
         holder && "personId" in holder ? eq(booking.personId, holder.personId) : undefined,
-        holder && "placeId" in holder ? eq(booking.placeId, holder.placeId) : undefined
+        holder && "placeId" in holder ? eq(booking.placeId, holder.placeId) : undefined,
+        holder && "serviceId" in holder ? eq(booking.bookingLinkId, holder.serviceId) : undefined
       )
     )
     .orderBy(asc(booking.startsAt), asc(booking.id));

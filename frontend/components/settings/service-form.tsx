@@ -24,7 +24,7 @@ import type {
   ServiceSettingsType,
   ServicesSettingsType,
 } from "@/lib/api-client/settings/fetch-services-settings";
-import { saveService } from "@/lib/api-client/settings/save-service";
+import { saveService, type SavedServiceType } from "@/lib/api-client/settings/save-service";
 import { saveServiceResources } from "@/lib/api-client/settings/save-service-resources";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
@@ -85,6 +85,11 @@ function MinutesField({
 
 // Only what the form edits: the schema is strict, so the id and slug must not ride along.
 type TicksType = { peopleIds: string[]; placeIds: string[] };
+// How a save ended: whether who does it saved too, and the bookings a new length no longer fits.
+export type ServiceSaveOutcomeType = {
+  ticksSaved: boolean;
+  outsideHours: SavedServiceType["outsideHours"];
+};
 const sameIds = (a: string[], b: string[]) =>
   a.length === b.length && a.every((id) => b.includes(id));
 
@@ -110,7 +115,7 @@ export function ServiceForm({
 }: {
   service: ServiceSettingsType | null; // null: a new one
   people: ServicesSettingsType["people"]; // every person and place, to tick
-  onSaved: (saved: ServiceSettingsType, ticksSaved?: boolean) => void; // false: its ticks did not save
+  onSaved: (saved: ServiceSettingsType, outcome: ServiceSaveOutcomeType) => void;
   onCancel: () => void;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -129,6 +134,7 @@ export function ServiceForm({
   const [ticksError, setTicksError] = useState<{ field: string; message: string } | null>(null);
   // A new service whose ticks failed to save already exists: saving again changes it, never adds it twice.
   const savedService = useRef<ServiceSettingsType | null>(service);
+  const outsideHours = useRef<ServiceSaveOutcomeType["outsideHours"]>([]); // from the last save
 
   useEffect(() => nameRef.current?.focus(), []); // the form opens where the owner will type
 
@@ -153,17 +159,21 @@ export function ServiceForm({
     }
     const savedNow = saved.answer.service;
     savedService.current = savedNow;
+    outsideHours.current = saved.answer.outsideHours;
     if (
       sameIds(savedNow.peopleIds, ticks.peopleIds) &&
       sameIds(savedNow.placeIds, ticks.placeIds)
     ) {
-      onSaved(savedNow);
+      onSaved(savedNow, { ticksSaved: true, outsideHours: outsideHours.current });
       return;
     }
 
     const ticked = await saveServiceResources(savedNow.id, ticks);
     if (ticked.state === "ok") {
-      onSaved({ ...savedNow, ...ticked.answer });
+      onSaved(
+        { ...savedNow, ...ticked.answer },
+        { ticksSaved: true, outsideHours: outsideHours.current }
+      );
       return;
     }
     if (ticked.state === "field") {
@@ -184,7 +194,7 @@ export function ServiceForm({
   // A service saved whose ticks then failed still reaches the list, as saved, when the form closes.
   const cancel = () =>
     savedService.current && savedService.current !== service
-      ? onSaved(savedService.current, false)
+      ? onSaved(savedService.current, { ticksSaved: false, outsideHours: outsideHours.current })
       : onCancel();
 
   const errors = form.formState.errors;

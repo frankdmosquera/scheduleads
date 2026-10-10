@@ -168,7 +168,7 @@ Blocking findings (P0/P1) are fixed by default; P2/P3 are recorded and carried.
   address at example.com), Pedro got pedro@example.com; two "Hand check" bookings of Exterior
   estimate stay in scheduleads_dev, and Exterior estimate is back to nobody ticked.
 
-- [ ] **12d.5 A service's new length lists the bookings that no longer fit.** "I make the
+- [x] **12d.5 A service's new length lists the bookings that no longer fit.** "I make the
   estimate 90 minutes instead of 60, and I am told Maria's Tuesday 4:00 would now run past
   5:00; it is still booked as it was."
   - `backend/lib/bookable-hours/apply-length-change-rules.ts`, no database: given the hours,
@@ -182,6 +182,12 @@ Blocking findings (P0/P1) are fixed by default; P2/P3 are recorded and carried.
   **Done when:** the Simulate page's cases pass as saved tests under the same names; and by
   hand, a Tuesday 4:00 booking of a 60-minute service with Tuesday ending at 5:00, then the
   service made 90 minutes, lists that booking, which is unchanged on its lead page.
+  *Built 2026-10-10.* Changed while building: the service save is one transaction that locks
+  the service's row and reads the business's hours shared; a business with no hours lists nothing.
+  `GET /settings/services` also answers the business's `timezone`, for the list's times. Each
+  person's own hours are read by `findPeopleHours`, now shared with the hours save. By hand on
+  Summit, Interior estimate made 90 minutes listed Marta's Wednesday 7:30 with Carlos, still 60
+  minutes on her lead; put back to 60, which listed nothing.
 
 ## Files / areas
 

@@ -25,7 +25,6 @@ import { addService } from "../lib/settings/add-service.js";
 import { findHoursSettings } from "../lib/settings/find-hours-settings.js";
 import { findPeopleSettings } from "../lib/settings/find-people-settings.js";
 import { findServicesSettings } from "../lib/settings/find-services-settings.js";
-import type { ListedBookingType } from "../lib/settings/listed-booking.js";
 import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
 import { savePersonHours } from "../lib/settings/save-person-hours.js";
 import { saveResource } from "../lib/settings/save-resource.js";
@@ -165,14 +164,15 @@ export const settingsRoutes = new Hono()
       return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
     }),
     async (c) => {
-      const service = await saveService(
+      // A new length lists the upcoming bookings that would no longer fit; none is changed.
+      const saved = await saveService(
         c.get("organization").organizationId,
         c.req.param("serviceId"),
-        c.req.valid("json")
+        c.req.valid("json"),
+        new Date()
       );
-      if (!service) return c.json(refuse("not_found", "No service here."), 404);
-      const outsideHours: ListedBookingType[] = []; // filled from step 12d.5
-      return c.json({ service, outsideHours }, 200);
+      if (!saved) return c.json(refuse("not_found", "No service here."), 404);
+      return c.json(saved, 200);
     }
   )
 

@@ -3,14 +3,14 @@
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 
 import { availabilityRule } from "@scheduleads-app/shared/db";
 import type { BusinessHoursType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
-import type { HoursRowsType } from "../bookable-hours/apply-outside-hours-rules.js";
 import { businessHoursOf } from "./business-hours-of.js";
+import { findPeopleHours } from "./find-people-hours.js";
 import { findUpcomingBookings } from "./find-upcoming-bookings.js";
 import { outsideHoursOf } from "./outside-hours-of.js";
 import type { ListedBookingType } from "./listed-booking.js";
@@ -42,25 +42,7 @@ export async function saveBusinessHours(
 
     // Everyone's own rows: a new time zone or one-off date can move anyone's bookings. They cannot
     // change meanwhile: a person's save reads the business's row shared first, so it waits on this one.
-    const personRows = await tx
-      .select({
-        resourceId: availabilityRule.resourceId,
-        weeklyHours: availabilityRule.weeklyHours,
-        dateHours: availabilityRule.dateHours,
-      })
-      .from(availabilityRule)
-      .where(
-        and(
-          eq(availabilityRule.organizationId, organizationId),
-          isNotNull(availabilityRule.resourceId)
-        )
-      );
-    const people: HoursRowsType["people"] = new Map(
-      personRows.map((row) => [
-        row.resourceId!,
-        { weeklyHours: row.weeklyHours, dateHours: row.dateHours },
-      ])
-    );
+    const people = await findPeopleHours(tx, organizationId);
     const upcoming = await findUpcomingBookings(tx, organizationId, now, null);
 
     await tx

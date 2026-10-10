@@ -1,9 +1,10 @@
 // Backend: what the owner's Services page shows: every service of the business, live or hidden,
-// with who is ticked on each, and every person and place to tick from.
+// with who is ticked on each, every person and place to tick from, and the business's time zone for
+// the bookings a new length lists.
 
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 
-import { bookingLink, resource } from "@scheduleads-app/shared/db";
+import { availabilityRule, bookingLink, resource } from "@scheduleads-app/shared/db";
 import type { ServiceType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
@@ -38,8 +39,9 @@ export const serviceSettingsColumns = {
 export async function findServicesSettings(organizationId: string): Promise<{
   services: ServiceSettingsType[];
   people: Omit<ResourceSettingsType, "workEmail">[];
+  timezone: string | null; // null until the business's hours are first saved
 }> {
-  const [rows, people] = await Promise.all([
+  const [rows, people, [hours]] = await Promise.all([
     db
       .select(serviceSettingsColumns)
       .from(bookingLink)
@@ -50,6 +52,16 @@ export async function findServicesSettings(organizationId: string): Promise<{
       .from(resource)
       .where(eq(resource.organizationId, organizationId))
       .orderBy(asc(resource.name), asc(resource.id)),
+    db
+      .select({ timezone: availabilityRule.timezone })
+      .from(availabilityRule)
+      .where(
+        and(
+          eq(availabilityRule.organizationId, organizationId),
+          isNull(availabilityRule.resourceId)
+        )
+      )
+      .limit(1),
   ]);
   const ticks = await findServiceTicks(
     db,
@@ -59,5 +71,6 @@ export async function findServicesSettings(organizationId: string): Promise<{
   return {
     services: rows.map((row) => ({ ...row, ...ticks.get(row.id)! })),
     people: people.map(resourceSettingsOf),
+    timezone: hours?.timezone ?? null,
   };
 }

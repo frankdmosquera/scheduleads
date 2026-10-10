@@ -822,3 +822,40 @@ describe("a person's work email", () => {
     expect(await workEmailOf(fresh.personId)).toBeNull();
   });
 });
+
+describe("a service's new length", () => {
+  const estimateAt = async (durationMinutes: number) => {
+    const [estimate] = await db.select().from(bookingLink).where(eq(bookingLink.id, estimateId));
+    return put(`/settings/services/${estimateId}`, booked.email, {
+      name: estimate.name,
+      description: estimate.description,
+      durationMinutes,
+      bufferBeforeMinutes: estimate.bufferBeforeMinutes,
+      bufferAfterMinutes: estimate.bufferAfterMinutes,
+      slotIntervalMinutes: estimate.slotIntervalMinutes,
+      personChoice: estimate.personChoice,
+      asksAddress: estimate.asksAddress,
+      active: estimate.active,
+    });
+  };
+  type SavedWithListType = { outsideHours: { bookingId: string }[] };
+
+  test("a new length lists the upcoming bookings that no longer fit, and changes none", async () => {
+    // Juan follows the business's Tuesday, 9:00 to 5:00; Maria is booked 4:00 to 5:00.
+    const maria = await makeBooking("Maria", booked.personId, 960);
+    const longer = await estimateAt(90);
+    expect(longer.status).toBe(200);
+    const listed = ((await longer.json()) as SavedWithListType).outsideHours;
+    expect(listed.map((row) => row.bookingId)).toContain(maria.bookingId);
+    const [still] = await db.select().from(booking).where(eq(booking.id, maria.bookingId));
+    expect([still.startsAt.toISOString(), still.endsAt.toISOString()]).toEqual([
+      maria.startsAt,
+      maria.endsAt,
+    ]);
+
+    // A save that keeps the length lists nothing.
+    const same = await estimateAt(90);
+    expect(((await same.json()) as SavedWithListType).outsideHours).toEqual([]);
+    await estimateAt(60);
+  });
+});
