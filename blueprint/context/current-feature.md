@@ -8,7 +8,7 @@
 the feature runs as one step, reviewed once at `/complete` (`AGENTS.md`, "Each feature is heavy
 or light").
 
-**Status:** step 10.3 built 2026-10-10 (spec steps 10.3 and 10.4 merged); spec written 2026-10-09; whole-feature pass agreed with Frank 2026-10-09; step 10.1 built and reviewed 2026-10-09; step 10.2 built 2026-10-09, without the publish (amended).
+**Status:** verified 2026-10-10: every step built (10.3 and 10.4 as one); backend 887, shared 172 and booking component 76 tests pass, the frontend builds.
 
 ## Goal
 
