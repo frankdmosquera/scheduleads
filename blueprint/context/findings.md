@@ -297,10 +297,10 @@ route test with a 503 on the first send and the text found on the retry.
 **Missing validation:** Type over one segment of a time field by keyboard in Chrome and Edge.
 **Resolution:**
 
-### F-327 [P3] open - Settings shows its refusal through LeadsRefusalNotice, a component named and commented for the leads screens
+### F-327 [P3] fixed - Settings shows its refusal through LeadsRefusalNotice, a component named and commented for the leads screens
 
 **File:** frontend/components/settings/settings-screen.tsx:9,51; frontend/components/leads/leads-refusal-notice.tsx:1-2
 **Found:** 2026-10-10 by the check of 12a.1's fixes (scope: bbd7510..5fc529c)
 **Why it matters:** What it shows is generic, but its name and header say leads, so the naming misleads, and a change made for leads alone would change Settings unnoticed.
 **Suggested fix:** Move it to a shared place as `RefusalNotice` with a generic header, used by both screens.
-**Resolution:** Carried to step 12a.2, which changes the Settings screen anyway.
+**Resolution:** Carried to step 12a.2, which changes the Settings screen anyway. Fixed 2026-10-10 in step 12a.2: the notice moved to frontend/components/centred-card/refusal-notice.tsx as RefusalNotice, with a generic header, used by the leads list, the lead page and Settings.

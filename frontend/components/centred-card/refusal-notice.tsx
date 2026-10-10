@@ -1,11 +1,11 @@
-// Frontend component: what a leads screen shows when the API says no: the sign-in has ended (with
-// the way back), or the business may not see leads.
+// Frontend component: what a dashboard screen shows when the API says no: the sign-in has ended
+// (with the way back), or the business may not do this.
 
 import Link from "next/link";
 
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 
-export function LeadsRefusalNotice({
+export function RefusalNotice({
   refusal,
 }: {
   refusal: { state: "signed-out" } | { state: "refused"; message: string };

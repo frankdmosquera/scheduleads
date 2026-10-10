@@ -110,7 +110,7 @@ merges on Frank's yes.
   without the permission, so the read-only screen and the 403 are proved by
   the route test's own member login, and the screen reads `canEdit` only.
 
-- [ ] **12a.2 Saving lists the bookings that now fall outside.** "I shorten
+- [x] **12a.2 Saving lists the bookings that now fall outside.** "I shorten
   Tuesday to end at 3:00, save, and I am told Maria's Tuesday 4:00 booking now
   sits outside the hours; it is still booked."
   - `backend/lib/bookable-hours/apply-outside-hours-rules.ts`, no database:

@@ -15,6 +15,10 @@ import {
 
 import { HoursNotice, type HoursNoticeType } from "@/components/settings/hours-notice";
 import { NoticeField } from "@/components/settings/notice-field";
+import {
+  OutsideHoursList,
+  type OutsideHoursListType,
+} from "@/components/settings/outside-hours-list";
 import { OneOffDatesEditor } from "@/components/settings/one-off-dates-editor";
 import { WeekEditor } from "@/components/settings/week-editor";
 import { Button } from "@/components/ui/button";
@@ -45,6 +49,8 @@ export function BusinessHoursCard({
   const formRef = useRef<HTMLFormElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<HoursNoticeType>(null);
+  // Stays until the card is saved again or the page is left.
+  const [outside, setOutside] = useState<OutsideHoursListType | null>(null);
   const form = useForm<z.input<typeof businessHoursValidationSchema>, unknown, BusinessHoursType>({
     resolver: zodResolver(businessHoursValidationSchema),
     defaultValues: initial ?? NO_HOURS_YET,
@@ -66,11 +72,21 @@ export function BusinessHoursCard({
   }, [savedZone]);
 
   async function saveHours(hours: BusinessHoursType) {
+    setOutside(null);
     const saved = await saveBusinessHours(hours);
     if (saved.state === "ok") {
+      const count = saved.answer.outsideHours.length;
       form.reset(saved.answer.business);
       onSaved(saved.answer.business);
-      setNotice({ tone: "info", text: "Saved. Customers can book these hours now." });
+      setOutside({ bookings: saved.answer.outsideHours, timezone: saved.answer.business.timezone });
+      setNotice({
+        tone: "info",
+        text: `Saved. Customers can book these hours now.${
+          count
+            ? ` ${count === 1 ? "One booking now sits" : `${count} bookings now sit`} outside them, listed below.`
+            : ""
+        }`,
+      });
       return;
     }
     if (saved.state === "field") {
@@ -216,6 +232,7 @@ export function BusinessHoursCard({
         </fieldset>
 
         <HoursNotice notice={notice} />
+        <OutsideHoursList list={outside} />
         {canEdit ? (
           <div className="mt-4">
             <Button type="submit" disabled={form.formState.isSubmitting}>

@@ -17,7 +17,6 @@ import {
 } from "../lib/auth/has-business-permission.js";
 import { refuse } from "../lib/errors/refuse.js";
 import { findHoursSettings } from "../lib/settings/find-hours-settings.js";
-import type { OutsideHoursBookingType } from "../lib/settings/outside-hours-booking-type.js";
 import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
 import { savePersonHours } from "../lib/settings/save-person-hours.js";
 import { requireOrganizationMiddleware } from "../middleware/auth-middleware/require-organization-middleware.js";
@@ -68,12 +67,13 @@ export const settingsRoutes = new Hono()
       return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
     }),
     async (c) => {
-      const business = await saveBusinessHours(
+      // The answer lists the upcoming bookings the new hours leave outside; none is changed.
+      const saved = await saveBusinessHours(
         c.get("organization").organizationId,
-        c.req.valid("json")
+        c.req.valid("json"),
+        new Date()
       );
-      const outsideHours: OutsideHoursBookingType[] = []; // filled from step 12a.2
-      return c.json({ business, outsideHours }, 200);
+      return c.json(saved, 200);
     }
   )
 
@@ -92,13 +92,13 @@ export const settingsRoutes = new Hono()
       const saved = await savePersonHours(
         c.get("organization").organizationId,
         c.req.param("personId"),
-        c.req.valid("json")
+        c.req.valid("json"),
+        new Date()
       );
       if (!saved.ok && saved.reason === "no_person")
         return c.json(refuse("not_found", "No person here."), 404);
       if (!saved.ok)
         return c.json(refuse("no_business_hours", "Set the business's hours first."), 409);
-      const outsideHours: OutsideHoursBookingType[] = []; // filled from step 12a.2
-      return c.json({ person: saved.person, outsideHours }, 200);
+      return c.json({ person: saved.person, outsideHours: saved.outsideHours }, 200);
     }
   );

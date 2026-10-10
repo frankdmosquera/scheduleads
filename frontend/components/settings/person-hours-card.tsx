@@ -16,6 +16,10 @@ import {
 
 import { HoursNotice, type HoursNoticeType } from "@/components/settings/hours-notice";
 import { OneOffDatesEditor } from "@/components/settings/one-off-dates-editor";
+import {
+  OutsideHoursList,
+  type OutsideHoursListType,
+} from "@/components/settings/outside-hours-list";
 import { WeekEditor } from "@/components/settings/week-editor";
 import { Button } from "@/components/ui/button";
 import type { HoursSettingsType } from "@/lib/api-client/settings/fetch-hours-settings";
@@ -25,15 +29,19 @@ import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 export function PersonHoursCard({
   person,
   businessWeek,
+  timezone,
   canEdit,
 }: {
   person: HoursSettingsType["people"][number];
   businessWeek: WeeklyHoursType; // copied in when the person starts their own week
+  timezone: string; // the business's, for the times of the bookings listed after a save
   canEdit: boolean;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<HoursNoticeType>(null);
+  // Stays until the card is saved again or the page is left.
+  const [outside, setOutside] = useState<OutsideHoursListType | null>(null);
   const form = useForm<z.input<typeof personHoursValidationSchema>, unknown, PersonHoursType>({
     resolver: zodResolver(personHoursValidationSchema),
     defaultValues: { weeklyHours: person.weeklyHours, dateHours: person.dateHours },
@@ -48,11 +56,21 @@ export function PersonHoursCard({
     };
 
   async function saveHours(hours: PersonHoursType) {
+    setOutside(null);
     const saved = await savePersonHours(person.id, hours);
     if (saved.state === "ok") {
+      const count = saved.answer.outsideHours.length;
       const { weeklyHours, dateHours } = saved.answer.person;
       form.reset({ weeklyHours, dateHours });
-      setNotice({ tone: "info", text: `Saved. ${person.name} can be booked on these hours now.` });
+      setOutside({ bookings: saved.answer.outsideHours, timezone });
+      setNotice({
+        tone: "info",
+        text: `Saved. ${person.name} can be booked on these hours now.${
+          count
+            ? ` ${count === 1 ? "One booking now sits" : `${count} bookings now sit`} outside them, listed below.`
+            : ""
+        }`,
+      });
       return;
     }
     if (saved.state === "field") {
@@ -142,6 +160,7 @@ export function PersonHoursCard({
           </div>
         </fieldset>
         <HoursNotice notice={notice} />
+        <OutsideHoursList list={outside} />
         {canEdit ? (
           <div className="mt-4">
             <Button type="submit" disabled={form.formState.isSubmitting}>
