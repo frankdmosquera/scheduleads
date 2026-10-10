@@ -223,11 +223,12 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await db
-    .delete(organization)
-    .where(
-      inArray(organization.id, [summit.organizationId, other.organizationId, fresh.organizationId])
-    );
+  await db.delete(organization).where(
+    inArray(
+      organization.id,
+      [summit, other, fresh, booked].map((t) => t.organizationId)
+    )
+  );
   await db
     .delete(user)
     .where(
