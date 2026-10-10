@@ -275,3 +275,18 @@ installed by every site.
 **Suggested fix:** Add `"prepublishOnly": "npm run build"`, so a publish always
 rebuilds from the checked-out source and runs `check-dist-imports.mjs` first.
 **Resolution:** Fixed 2026-10-09: the package's scripts gain `"prepublishOnly": "npm run build"`, so `npm publish` runs prebuild (shared, the backend's types), the type check, tsdown and the import check before anything is sent; a failing check stops the publish. Closed 2026-10-09 by re-review of 10.1's fixes (scope: e9e21d0..7cad72a): `npm run prepublishOnly`, both through --workspace from the root and from inside the package folder, ran prebuild (shared, the backend's build:types), the tsc type check, tsdown and check-dist-imports.mjs, exit 0; no .npmrc sets ignore-scripts.
+### F-302 [P2] fixed - The install note says React 19, but the package refuses any React below 19.2.8, which is what Primo Painters runs
+
+**File:** packages/booking-component/package.json:33-36 (and index.ts:11, AGENTS.md install line)
+**Found:** 2026-10-09 by independent review of step 10.2 (scope: 8db88e6..bd39c2c; lenses: quality, security, performance, tests)
+**Why it matters:** 10.2 documents the install as needing "react and react-dom 19", but the peer range is `^19.2.8`. The built `dist/index.js` imports only `createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState` and the JSX runtime, nothing newer than React 18. `primo-painters/package.json` pins `react` and `react-dom` to `19.0.0`; installing the packed `0.1.0` into a throwaway folder with those two versions fails with `npm error code ERESOLVE ... peer react@"^19.2.8" from @frankdmosquera/booking-component@0.1.0`. A tenant named in the plan cannot install it as documented without upgrading React or using `--legacy-peer-deps`. agency-site-app, face-and-body and the-latam-painters are on 19.2.8 and are unaffected.
+**Suggested fix:** Before the first publish, widen the peers to `^19.0.0` (what the code actually needs), or keep `^19.2.8` and make the index.ts header and AGENTS.md say React 19.2.8 or later.
+**Resolution:** Fixed 2026-10-09 in 10.2 review fixes: the peer range is react and react-dom ^19.0.0, so Primo Painters (react 19.0.0) can install it; the package 76 tests and the build check pass.
+
+### F-303 [P3] fixed - The install note says any GitHub token that can read packages, but GitHub Packages npm accepts only a classic token
+
+**File:** packages/booking-component/index.ts:9-10 (and AGENTS.md install line)
+**Found:** 2026-10-09 by independent review of step 10.2 (scope: 8db88e6..bd39c2c; lenses: quality, security, performance, tests)
+**Why it matters:** The header says NODE_AUTH_TOKEN is "a GitHub token that can read packages", set in the shell and in Vercel. GitHub's npm registry page states "GitHub Packages only supports authentication using a personal access token (classic)." A fine-grained token, the kind GitHub now offers first, would fail the site's install on Vercel with an auth error at the agency site's item 12, with nothing in the note pointing at the cause. Locally the `gh auth token` OAuth token works, so the gap only shows on the host.
+**Suggested fix:** Say "a classic personal access token with `read:packages`" for the host's build settings in both places.
+**Resolution:** Fixed 2026-10-09: the package index.ts header and AGENTS.md now say a personal access token (classic) with read:packages, the only kind the GitHub npm registry takes.
