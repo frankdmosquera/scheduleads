@@ -519,6 +519,10 @@ merge, a force push, deleting anything), or blocking findings left unfixed.
 - Only a note for feature 10: no `agents-web` folder exists on this laptop;
   tenant zero's site is probably `agency-site-app`.
 
+Design review (Frank, Oct 9, on the live preview, clinic-dev and painting-dev): the layout, the forms and
+the colours are approved as the start. Each business making its own services, questions and colours is
+Settings, feature 12; nothing changes in feature 9.
+
 ## Open questions
 
 1. **Answered Oct 9, decision 13: a yes to later texts only.** **What does the customer's "yes to text messages" do?** The build plan
