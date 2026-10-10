@@ -224,13 +224,14 @@ Exit: agents-web takes a real booking through this product, the lead lands
 in the agency's own organization, and the site that promises "nothing
 rented" rents nothing.
 
-- [ ] 9. **The booking component** - unstyled trigger, themed modal, one
+- [x] 9. **The booking component** - unstyled trigger, themed modal, one
   provider per host wrapping children, the face-and-body contract. The
   layout is a stored value on the booking link, not a hardcoded shape, so
   the week strip in `prototypes/modal-primo.html` can return later without
-  a rewrite. Only the Calendly-shaped month flow gets built now. Open until
-  this item's spec: whether each service lets the customer pick the person
-  (a salon) or the business assigns one (Primo's estimates). The Book
+  a rewrite. Only the Calendly-shaped month flow gets built now. Who does the
+  job is each service's own setting, decided at this item's spec (Oct 8,
+  decision 32): the customer picks the person (a salon) or the business
+  assigns one (Primo's estimates). The Book
   button locks after one press, and the form sends the one-time key it
   made when it opened (decided in 5d, Oct 2: one booking per form).
   Screen two asks the standard questions (name, email, phone, address,
@@ -288,6 +289,12 @@ without Frank touching the database.
     own questions (up to about 20) under the standard ones, starting from a
     ready-made set for the trade (painting, clinic), and picks whether the
     form requires an email, a phone, or either one.
+  - Whether the form asks for an address (9.6, Frank, Oct 9): asked and
+    required, asked and optional, or not asked, per business. Until then
+    every booking requires one, the API's rule since 5d, so a clinic's
+    customers are asked for an address it does not need.
+  - Whether screen two asks for the yes to later texts (9.7, decision 13),
+    and what the business later sends with it.
   - Each person's own work email (6, decision 8, Frank, Oct 2): optional, at
     the business's domain (pedro@primopainters.com). When set, the
     customer's confirmation lets them reply straight to the booked person,

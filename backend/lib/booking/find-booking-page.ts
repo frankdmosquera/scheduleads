@@ -11,6 +11,7 @@ import {
   organization,
   resource,
 } from "@scheduleads-app/shared/db";
+import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 
 import { db } from "../../database.js";
 
@@ -22,10 +23,12 @@ export type BookingPageType = {
   canMove: boolean; // the same as canCancel, a switched-off service included (feature 7b, decision 13)
   service: string;
   startsAt: string; // ISO 8601 in UTC
+  when: string; // "Monday, November 2 at 9:00 a.m. MDT", written here, never by the browser
   endsAt: string; // the appointment's own end, without the buffer after
   timezone: string; // the business's IANA zone
   person: string; // the booked person's name
   personId: string; // so the page can tell her own time from another person's
+  personChoice: "customer_picks" | "business_assigns"; // whether "Change the time" offers a pick (feature 9)
   business: {
     name: string;
     logo: string | null; // an absolute https:// image URL
@@ -48,6 +51,7 @@ export async function findBookingPage(
       service: bookingLink.name,
       person: resource.name,
       personId: booking.personId,
+      personChoice: bookingLink.personChoice,
       timezone: availabilityRule.timezone,
       businessName: organization.name,
       logo: organization.logo,
@@ -91,10 +95,12 @@ export async function findBookingPage(
     canMove: changeable,
     service: row.service,
     startsAt: row.startsAt.toISOString(),
+    when: formatBookingTime(row.startsAt, row.timezone),
     endsAt: row.endsAt.toISOString(),
     timezone: row.timezone,
     person: row.person,
     personId: row.personId,
+    personChoice: row.personChoice,
     business: {
       name: row.businessName,
       logo: row.logo,

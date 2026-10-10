@@ -22,6 +22,9 @@ export const textSettings = pgTable(
     reminderMinutesBefore: integer("reminderMinutesBefore").array().notNull(),
     replyPhone: text("replyPhone"), // a reply passed on as a text to this phone
     replyEmail: text("replyEmail"), // a reply passed on as an email to this address
+    // Whether the booking form asks for the customer's yes to later texts (feature 9, decision
+    // 13). Off for a business saved before it existed, until its setting is chosen.
+    askLaterTextsYes: boolean("askLaterTextsYes").notNull().default(false),
     updatedAt: timestamp("updatedAt", { withTimezone: true })
       .notNull()
       .defaultNow()

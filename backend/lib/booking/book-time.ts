@@ -8,8 +8,9 @@ import { randomUUID } from "node:crypto";
 
 import { and, eq } from "drizzle-orm";
 
-import { booking, bookingLink, lead, member } from "@scheduleads-app/shared/db";
+import { booking, bookingLink, laterTextsYes, lead, member } from "@scheduleads-app/shared/db";
 import { localDate } from "@scheduleads-app/shared/local-date";
+import { textablePhoneNumber } from "@scheduleads-app/shared/textable-phone-number";
 import {
   contactValidationSchema,
   type ContactInputType,
@@ -28,7 +29,10 @@ import { enqueueWorkerText } from "../jobs/enqueue-worker-text.js";
 import { jobNames } from "../jobs/job-names.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
 import { findServiceResources } from "../scheduling/find-service-resources.js";
+import { checkAnswers } from "./check-answers.js";
 import { findBookingChoices } from "./find-booking-choices.js";
+import { findBookingQuestions } from "./find-booking-questions.js";
+import { findLaterTextsYesWords } from "./find-later-texts-yes-words.js";
 import { holdFirstFreeChoice } from "./hold-first-free-choice.js";
 
 export type BookTimeInputType = {
@@ -40,9 +44,15 @@ export type BookTimeInputType = {
   customer: ContactInputType;
   location: string; // the customer's address
   details: string | null; // what they wrote
+  answers?: { questionId: string; answer: string }[]; // to the business's own questions (feature 9)
+  // The customer's tick for later texts (decision 13); the booking's own texts go either way.
+  laterTextsYes?: boolean;
   source: "widget" | "hosted" | "manual";
   actorUserId: string | null; // the owner's login when source is manual, checked here
   now: Date;
+  // The public route's contact limit: asked once the form is known not to have booked already, so
+  // a form sent again after a lost answer still gets its booking. False refuses this booking.
+  admitNewBooking?: () => boolean;
 };
 
 export type BookedType = {
@@ -61,8 +71,18 @@ export type BookTimeResultType =
   | { booked: true; booking: BookedType; alreadyBooked: boolean }
   | {
       booked: false;
-      reason: "not_found" | "time_taken" | "unavailable" | "request_key_used" | "in_the_past";
-    };
+      reason:
+        | "not_found"
+        | "time_taken"
+        | "unavailable"
+        | "request_key_used"
+        | "in_the_past"
+        | "person_not_taken"
+        | "unknown_question"
+        | "answered_twice"
+        | "too_many_tries";
+    }
+  | { booked: false; reason: "answer_needed"; question: string }; // the question's words
 
 const MINUTE_MS = 60_000;
 const NOT_FOUND = { booked: false, reason: "not_found" } as const;
@@ -70,6 +90,8 @@ const TIME_TAKEN = { booked: false, reason: "time_taken" } as const;
 const UNAVAILABLE = { booked: false, reason: "unavailable" } as const;
 const REQUEST_KEY_USED = { booked: false, reason: "request_key_used" } as const;
 const IN_THE_PAST = { booked: false, reason: "in_the_past" } as const;
+const PERSON_NOT_TAKEN = { booked: false, reason: "person_not_taken" } as const;
+const TOO_MANY_TRIES = { booked: false, reason: "too_many_tries" } as const;
 
 // The same form: the same service and start, and the same person when one was picked.
 const isSameRequest = (existing: BookedType, input: BookTimeInputType) =>
@@ -147,12 +169,14 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
     (await bookedByThisForm()) ?? refusal;
   const earlier = await bookedByThisForm();
   if (earlier) return earlier;
+  if (input.admitNewBooking && !input.admitNewBooking()) return TOO_MANY_TRIES;
 
   const [service] = await db
     .select({
       durationMinutes: bookingLink.durationMinutes,
       bufferBeforeMinutes: bookingLink.bufferBeforeMinutes,
       bufferAfterMinutes: bookingLink.bufferAfterMinutes,
+      personChoice: bookingLink.personChoice,
     })
     .from(bookingLink)
     .where(
@@ -164,6 +188,22 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
     )
     .limit(1);
   if (!service) return NOT_FOUND;
+  // A customer never picks who does a service the business assigns (feature 9, decision 3); the
+  // owner may. Asked after the form's own booking, so a retry of a booked form still gets it.
+  if (source !== "manual" && service.personChoice === "business_assigns" && personId !== null)
+    return PERSON_NOT_TAKEN;
+  // The business's own questions (feature 9, decision 5): a customer answers the required ones; the
+  // owner, booking from a phone call, need not.
+  const checkedAnswers = checkAnswers(
+    await findBookingQuestions(organizationId),
+    input.answers ?? [],
+    { requireAnswers: source !== "manual" }
+  );
+  if (!checkedAnswers.ok) {
+    return checkedAnswers.reason === "answer_needed"
+      ? { booked: false, reason: "answer_needed", question: checkedAnswers.question }
+      : { booked: false, reason: checkedAnswers.reason };
+  }
   const offered = await findServiceResources(organizationId, bookingLinkId);
   if (!offered) return NOT_FOUND;
   if (personId !== null && !offered.peopleIds.includes(personId)) return NOT_FOUND;
@@ -193,6 +233,12 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
   }
   const { choices } = checked;
 
+  // A tick counts only where the business asks, and only with a number that can get texts.
+  const laterTextsYesPhone = input.laterTextsYes ? textablePhoneNumber(input.customer.phone) : null;
+  const laterTextsYesWords = laterTextsYesPhone
+    ? await findLaterTextsYesWords(organizationId)
+    : null;
+
   const stage = await findFirstPipelineStage(organizationId);
   if (!stage) throw new Error("Booking failed: the business has no pipeline stage.");
 
@@ -208,6 +254,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         stageId: stage.id,
         source,
         details: input.details,
+        answers: checkedAnswers.answers,
         // The phone given with this request, kept with it for its event (decision 15).
         phone: contactValidationSchema.parse(input.customer).phone ?? null,
       });
@@ -242,6 +289,28 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         },
         tx
       );
+      // Her yes to later texts: one row per number she said yes for, dated by her latest yes, and
+      // the words she saw on her timeline. A tick never moves a yes from another number, and no
+      // tick leaves every earlier yes as it was.
+      if (laterTextsYesPhone && laterTextsYesWords) {
+        await tx
+          .insert(laterTextsYes)
+          .values({ organizationId, contactId: contact.id, phone: laterTextsYesPhone, yesAt: now })
+          .onConflictDoUpdate({
+            target: [laterTextsYes.organizationId, laterTextsYes.contactId, laterTextsYes.phone],
+            set: { yesAt: now },
+          });
+        await recordActivity(
+          organizationId,
+          {
+            contactId: contact.id,
+            type: "later_texts_yes",
+            payload: { bookingId, phone: laterTextsYesPhone, words: laterTextsYesWords },
+            occurredAt: now,
+          },
+          tx
+        );
+      }
       // The two emails and the booked person's Google event, as jobs saved with the booking
       // (decision 1 of the background runner): the answer never waits for them.
       await enqueueBookingEmails(

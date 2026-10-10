@@ -91,6 +91,8 @@ async function makeClinic(name: string, { withRoom = false } = {}) {
     name: "Facial",
     slug: "facial",
     durationMinutes: 60,
+    layout: "month",
+    personChoice: "customer_picks",
     slotIntervalMinutes: 30,
   });
   await db
@@ -273,10 +275,10 @@ describe("moving a booking", () => {
     });
   });
 
-  test("any available does not count the booking being moved", async () => {
+  test("a move with nobody picked stays with her own person, though counting her own booking would favour another", async () => {
     const clinic = await makeClinic("own-count");
-    // Ana has only Jane's own booking that day, Mei none. Counted, Jane would go to Mei; left out,
-    // both have none and the tie goes by name, so she stays with Ana.
+    // Ana has only Jane's own booking that day, Mei none. Jane stays with Ana: a move with nobody
+    // picked keeps its own person while free, so the count never decides this.
     const response = await move(clinic.janesBooking, at(14));
 
     expect(response.status).toBe(200);
@@ -302,6 +304,100 @@ describe("moving a booking", () => {
     expect(again.status).toBe(200);
     expect(anyone.status).toBe(200);
     expect((await bookingRow(clinic.janesBooking)).sequence).toBe(1);
+    expect(await movedEntries(clinic)).toHaveLength(1);
+  });
+
+  // Feature 9, decision 3: the business sends whoever is free, so the customer's page takes no pick.
+  test("a picked person on a service the business assigns is a 400 and nothing changes", async () => {
+    const clinic = await makeClinic("assigns-pick");
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+    const response = await move(clinic.janesBooking, at(11), clinic.mei);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: { code: "bad_request", message: "This service does not take a pick of person." },
+    });
+    expect(await bookingRow(clinic.janesBooking)).toMatchObject({
+      startsAt: new Date(at(9)),
+      personId: clinic.ana,
+      sequence: 0,
+    });
+    expect(await movedEntries(clinic)).toEqual([]);
+  });
+
+  // "Already there" is asked before the refusal, so a repeat naming her own person still answers
+  // the same.
+  test("a picked person on a service the business assigns, already there, answers the same", async () => {
+    const clinic = await makeClinic("assigns-there");
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+    const response = await move(clinic.janesBooking, at(9), clinic.ana);
+
+    expect(response.status).toBe(200);
+    expect(await bookingRow(clinic.janesBooking)).toMatchObject({ sequence: 0 });
+    expect(await movedEntries(clinic)).toEqual([]);
+  });
+
+  // A time-only move keeps the booked person while free, though another has fewer bookings.
+  test.each(["business_assigns", "customer_picks"] as const)(
+    "a move with nobody picked keeps her own person when free (%s)",
+    async (personChoice) => {
+      const clinic = await makeClinic(`keep-own-${personChoice}`);
+      await book(clinic, clinic.ana, 15); // Ana now has two bookings that day, Mei none
+      await db.update(bookingLink).set({ personChoice }).where(eq(bookingLink.id, clinic.facial));
+      const response = await move(clinic.janesBooking, at(11));
+
+      expect(response.status).toBe(200);
+      expect(await bookingRow(clinic.janesBooking)).toMatchObject({
+        startsAt: new Date(at(11)),
+        personId: clinic.ana,
+      });
+    }
+  );
+
+  test("a move with nobody picked answers try again when her own person's calendar cannot be read", async () => {
+    const clinic = await makeClinic("own-unreadable");
+    await unreadableCalendars(clinic, [clinic.ana]);
+    const response = await move(clinic.janesBooking, at(11));
+
+    expect(response.status).toBe(503);
+    expect(await bookingRow(clinic.janesBooking)).toMatchObject({
+      startsAt: new Date(at(9)),
+      personId: clinic.ana,
+      sequence: 0,
+    });
+  });
+
+  test("a move with nobody picked goes to someone else only when her own person is busy", async () => {
+    const clinic = await makeClinic("own-busy");
+    await book(clinic, clinic.ana, 11); // Ana is taken at 11:00
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+    const response = await move(clinic.janesBooking, at(11));
+
+    expect(response.status).toBe(200);
+    expect((await bookingRow(clinic.janesBooking)).personId).toBe(clinic.mei);
+  });
+
+  test("a service the business assigns moves with nobody picked, and a second press answers the same", async () => {
+    const clinic = await makeClinic("assigns-move");
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+    const first = await move(clinic.janesBooking, at(11));
+    const again = await move(clinic.janesBooking, at(11));
+
+    expect(first.status).toBe(200);
+    expect(again.status).toBe(200);
+    expect(await bookingRow(clinic.janesBooking)).toMatchObject({ startsAt: new Date(at(11)) });
     expect(await movedEntries(clinic)).toHaveLength(1);
   });
 

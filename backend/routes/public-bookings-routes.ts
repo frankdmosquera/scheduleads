@@ -7,6 +7,7 @@ import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 
+import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 import { bookingLink, resource } from "@scheduleads-app/shared/db";
 import {
   createBookingValidationSchema,
@@ -16,10 +17,17 @@ import {
 import { db } from "../database.js";
 import { bookTime } from "../lib/booking/book-time.js";
 import { findBookableOrganizationId } from "../lib/booking/find-bookable-organization-id.js";
+import { oneCopyOfAFormAtATime } from "../lib/booking/one-copy-of-a-form-at-a-time.js";
 import { notBookableHere } from "../lib/errors/not-bookable-here.js";
+import { personNotTaken } from "../lib/errors/person-not-taken.js";
 import { refuse } from "../lib/errors/refuse.js";
+import { tooManyTries } from "../lib/errors/too-many-tries.js";
+import { bookingContactKeys } from "../lib/rate-limit/booking-contact-keys.js";
+import type { RateLimitTakenType } from "../lib/rate-limit/create-rate-limiter.js";
+import { publicRateLimiters } from "../lib/rate-limit/public-rate-limiters.js";
 
-const MOST_BYTES = 16 * 1024; // decision 10: a form with every field full is far below this
+// A form with every field full, 20 full answers in any script included, is far below this.
+const MOST_BYTES = 64 * 1024;
 
 const notValid = refuse("bad_request", "That is not a valid booking.");
 
@@ -54,24 +62,69 @@ export const publicBookingsRoutes = new Hono()
       const organizationId = await findBookableOrganizationId(slug.data);
       if (!organizationId) return c.json(notBookableHere, 404);
 
-      const result = await bookTime({
-        organizationId,
-        bookingLinkId: body.bookingLinkId,
-        personId: body.personId ?? null,
-        startsAt: new Date(body.startsAt),
-        requestKey: body.requestKey ?? null,
-        customer: body.customer,
-        location: body.location,
-        details: body.details || null, // an empty box is no words
-        source: "widget",
-        actorUserId: null,
-        now: new Date(),
-      });
+      // The contact's limit, counted inside bookTime just before a new booking is saved, so thirty
+      // sent at once cannot all pass, and handed back below when none is made.
+      const contactKeys = bookingContactKeys(organizationId, body.customer);
+      let taken: RateLimitTakenType | null = null;
+      let retryAfterSeconds = 0;
+      const admitNewBooking = () => {
+        const counted = publicRateLimiters.bookingContacts.take(contactKeys);
+        if (!counted.allowed) retryAfterSeconds = counted.retryAfterSeconds;
+        else taken = counted.taken;
+        return counted.allowed;
+      };
+      const handBack = () => {
+        if (taken) publicRateLimiters.bookingContacts.giveBack(taken);
+      };
+
+      // Copies of one form in turn: a copy sent while the first is still saving waits, then gets its
+      // booking from the form's own look-up, before the limit is asked.
+      const formKey = body.requestKey ? `${organizationId}:${body.requestKey}` : null;
+      const result = await oneCopyOfAFormAtATime
+        .book(formKey, () =>
+          bookTime({
+            organizationId,
+            bookingLinkId: body.bookingLinkId,
+            personId: body.personId ?? null,
+            startsAt: new Date(body.startsAt),
+            requestKey: body.requestKey ?? null,
+            customer: body.customer,
+            location: body.location,
+            details: body.details || null, // an empty box is no words
+            answers: body.answers,
+            laterTextsYes: body.laterTextsYes === true,
+            source: "widget",
+            actorUserId: null,
+            now: new Date(),
+            admitNewBooking,
+          })
+        )
+        .catch((error: unknown) => {
+          handBack(); // a crash made no booking either
+          throw error;
+        });
+
+      // Only a booking made counts: not a refusal, and not a form's booking answered again.
+      if (!result.booked || result.alreadyBooked) handBack();
 
       if (!result.booked) {
         switch (result.reason) {
           case "not_found":
             return c.json(notBookableHere, 404);
+          case "person_not_taken":
+            return c.json(personNotTaken, 400);
+          case "unknown_question":
+            return c.json(
+              refuse("bad_request", "That is not one of this business's questions."),
+              400
+            );
+          case "answered_twice":
+            return c.json(refuse("bad_request", "Each question takes one answer."), 400);
+          case "too_many_tries":
+            c.header("Retry-After", String(retryAfterSeconds));
+            return c.json(tooManyTries, 429);
+          case "answer_needed":
+            return c.json(refuse("bad_request", `Answer: ${result.question}`), 400);
           case "time_taken":
             return c.json(
               refuse(
@@ -129,6 +182,7 @@ export const publicBookingsRoutes = new Hono()
             startsAt: booking.startsAt.toISOString(),
             endsAt: booking.endsAt.toISOString(),
             timezone: booking.timezone,
+            when: formatBookingTime(booking.startsAt, booking.timezone), // never the browser's
             service,
             person,
           },

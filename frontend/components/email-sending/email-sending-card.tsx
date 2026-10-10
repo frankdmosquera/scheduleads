@@ -14,16 +14,17 @@ import {
   type EmailSendingInputType,
 } from "@scheduleads-app/shared/zod-validation";
 
-import { Field, Notice } from "@/components/auth-card";
+import { CentredCardField } from "@/components/centred-card/centred-card-field";
+import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { Button } from "@/components/ui/button";
 import {
   fetchEmailSending,
-  saveEmailSending,
   type EmailSendingResultType,
   type EmailSendingStateType,
-} from "@/lib/api-client";
+} from "@/lib/api-client/email-sending/fetch-email-sending";
+import { saveEmailSending } from "@/lib/api-client/email-sending/save-email-sending";
 
-const fields = [
+const emailSendingFields = [
   {
     name: "senderEmail",
     label: "Emails come from",
@@ -45,13 +46,13 @@ const fields = [
 ] as const;
 
 // "Key saved Oct 2", in the reader's own words for the date.
-const savedOn = (iso: string) =>
+const formatSavedOn = (iso: string) =>
   new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(iso));
 
-function statusWords(state: EmailSendingStateType): string {
+function emailSendingStatusWords(state: EmailSendingStateType): string {
   if (!state.senderEmail) return "Not set up. Booking emails are not sent yet.";
   if (!state.keySavedAt) return `Sending from ${state.senderEmail} once a key is saved.`;
-  return `Sending from ${state.senderEmail}. Key saved ${savedOn(state.keySavedAt)}.`;
+  return `Sending from ${state.senderEmail}. Key saved ${formatSavedOn(state.keySavedAt)}.`;
 }
 
 export function EmailSendingCard() {
@@ -79,7 +80,7 @@ export function EmailSendingCard() {
         {!result ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : result.state === "unreachable" ? (
-          <Notice>{result.message}</Notice>
+          <CentredCardNotice>{result.message}</CentredCardNotice>
         ) : (
           <EmailSendingForm initial={result.answer} />
         )}
@@ -101,7 +102,7 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
     },
   });
 
-  async function submit(input: EmailSendingInputType) {
+  async function saveEmailSendingSettings(input: EmailSendingInputType) {
     setNotice(null);
     const saved = await saveEmailSending(input);
     if (saved.state === "ok") {
@@ -123,15 +124,19 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(submit)} noValidate className="flex flex-col gap-4">
-      <p className="text-sm text-foreground">{statusWords(state)}</p>
-      {fields.map((field) => (
+    <form
+      onSubmit={form.handleSubmit(saveEmailSendingSettings)}
+      noValidate
+      className="flex flex-col gap-4"
+    >
+      <p className="text-sm text-foreground">{emailSendingStatusWords(state)}</p>
+      {emailSendingFields.map((field) => (
         <Controller
           key={field.name}
           name={field.name}
           control={form.control}
           render={({ field: input, fieldState }) => (
-            <Field
+            <CentredCardField
               {...input}
               value={input.value ?? ""}
               id={`email-sending-${field.name}`}
@@ -144,7 +149,7 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
           )}
         />
       ))}
-      {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
+      {notice ? <CentredCardNotice tone={notice.tone}>{notice.text}</CentredCardNotice> : null}
       <div>
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? "Saving and testing…" : "Save"}

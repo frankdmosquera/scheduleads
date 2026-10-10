@@ -15,6 +15,7 @@ import {
   availabilityRule,
   bookingLink,
   bookingLinkResource,
+  bookingQuestion,
   member,
   organization,
   pipelineStage,
@@ -115,6 +116,13 @@ const ACCOUNTS = [
     business: {
       name: "Summit Painting (dev)",
       slug: "painting-dev",
+      // Who does the job (feature 9): Primo sends whoever is free, so the customer never picks.
+      personChoice: "business_assigns",
+      // Its own booking questions (feature 9), as Primo would ask them.
+      questions: [
+        { label: "Interior or exterior?", required: true },
+        { label: "How many rooms?", required: false },
+      ],
       // What its emails need (feature 6). No Resend key: dev sends nothing real.
       emailDetails: {
         senderEmail: "bookings@example.com",
@@ -125,13 +133,14 @@ const ACCOUNTS = [
       },
       // Its texts (feature 8b), Primo's shape: a made-up 555 number, so nothing could reach a
       // real phone, and without Twilio keys dev sends nothing anyway. Riverbend has none, so it
-      // shows a business that sends no texts.
+      // shows a business that sends no texts, and no box asking for a yes to later texts.
       textSettings: {
         fromNumber: "403 555 0199",
         confirmationOn: true,
         reminderMinutesBefore: [1200, 60],
         replyPhone: "403 555 0100",
         replyEmail: null,
+        askLaterTextsYes: true,
       },
       hours: {
         weeklyHours: {
@@ -190,6 +199,12 @@ const ACCOUNTS = [
     business: {
       name: "Riverbend Clinic (dev)",
       slug: "clinic-dev",
+      // Who does the job (feature 9): a clinic's customer picks a practitioner, or any available.
+      personChoice: "customer_picks",
+      questions: [
+        { label: "Any allergies or skin conditions?", required: true },
+        { label: "Is this your first visit?", required: false },
+      ],
       emailDetails: {
         senderEmail: "hello@example.com",
         notifyEmail: "owner@example.com",
@@ -401,18 +416,46 @@ try {
 
       // Its text settings, only while it has none, so settings changed by hand survive a reseed.
       // Parsed before writing: the schema refuses repeated reminders, which the table cannot.
+      const seededTexts =
+        "textSettings" in business
+          ? textSettingsValidationSchema.parse(business.textSettings)
+          : null;
       const textSettingsMade =
-        "textSettings" in business &&
+        seededTexts !== null &&
         (
           await tx
             .insert(textSettings)
-            .values({
-              organizationId,
-              ...textSettingsValidationSchema.parse(business.textSettings),
-            })
+            .values({ organizationId, ...seededTexts })
             .onConflictDoNothing({ target: textSettings.organizationId })
             .returning({ id: textSettings.organizationId })
         ).length > 0;
+
+      // Its yes to later texts, also on a database seeded before the setting existed (migration
+      // 0024 gave every row false), so no machine needs a rebuild. Only while the rest of the row
+      // is still the seed's, so settings changed by hand survive a reseed.
+      let laterTextsYesSet = false;
+      if (seededTexts?.askLaterTextsYes && !textSettingsMade) {
+        const [saved] = await tx
+          .select()
+          .from(textSettings)
+          .where(eq(textSettings.organizationId, organizationId))
+          .limit(1);
+        const untouched =
+          saved !== undefined &&
+          !saved.askLaterTextsYes &&
+          saved.fromNumber === seededTexts.fromNumber &&
+          saved.confirmationOn === seededTexts.confirmationOn &&
+          saved.reminderMinutesBefore.join() === seededTexts.reminderMinutesBefore.join() &&
+          saved.replyPhone === seededTexts.replyPhone &&
+          saved.replyEmail === seededTexts.replyEmail;
+        if (untouched) {
+          await tx
+            .update(textSettings)
+            .set({ askLaterTextsYes: true })
+            .where(eq(textSettings.organizationId, organizationId));
+          laterTextsYesSet = true;
+        }
+      }
 
       // The first person. Made here because inserting the business directly skips the
       // Better Auth hook that normally makes it.
@@ -440,6 +483,24 @@ try {
             organizationId,
             name,
             position: index + 1,
+          }))
+        );
+      }
+
+      // Its own booking questions (feature 9). Only when it has none, so questions changed by hand
+      // survive a reseed.
+      const [anyQuestion] = await tx
+        .select({ id: bookingQuestion.id })
+        .from(bookingQuestion)
+        .where(eq(bookingQuestion.organizationId, organizationId))
+        .limit(1);
+      if (!anyQuestion) {
+        await tx.insert(bookingQuestion).values(
+          business.questions.map((question, index) => ({
+            id: randomUUID(),
+            organizationId,
+            position: index + 1,
+            ...question,
           }))
         );
       }
@@ -548,6 +609,19 @@ try {
       }
 
       let servicesMade = 0;
+      let choicesSet = 0;
+      // Who picks the person, also on a database seeded before the setting existed, so no machine
+      // needs a rebuild. Decided for the whole business, like the stages: only while every service
+      // it has still holds the business_assigns migration 0022 gave them, so a choice made by
+      // hand on any one keeps them all as they are.
+      const choices = await tx
+        .select({ personChoice: bookingLink.personChoice })
+        .from(bookingLink)
+        .where(eq(bookingLink.organizationId, organizationId));
+      const bringChoicesUp =
+        business.personChoice !== "business_assigns" &&
+        choices.length > 0 &&
+        choices.every((row) => row.personChoice === "business_assigns");
       let ticksMade = 0;
       for (const { ticked = [], ...service } of business.services as readonly ServiceSeedType[]) {
         const slug = toSlug(service.name);
@@ -559,10 +633,21 @@ try {
 
         const bookingLinkId = existingLink?.id ?? randomUUID();
         if (!existingLink) {
-          await tx
-            .insert(bookingLink)
-            .values({ id: bookingLinkId, organizationId, slug, ...service });
+          await tx.insert(bookingLink).values({
+            id: bookingLinkId,
+            organizationId,
+            slug,
+            layout: "month", // the only layout built (feature 9)
+            personChoice: business.personChoice,
+            ...service,
+          });
           servicesMade++;
+        } else if (bringChoicesUp) {
+          await tx
+            .update(bookingLink)
+            .set({ personChoice: business.personChoice })
+            .where(eq(bookingLink.id, bookingLinkId));
+          choicesSet++;
         }
 
         if (!ticked.length) continue;
@@ -586,6 +671,7 @@ try {
         !existingOrg && "business",
         !existingMember && "membership",
         !anyStage && "pipeline stages",
+        !anyQuestion && "booking questions",
         firstPerson.made && "first person",
         linked.length && "first person's login link",
         !existingBusinessHours && "business hours",
@@ -602,6 +688,9 @@ try {
         `${account.email.padEnd(20)} ${account.role === "admin" ? "platform admin" : "ordinary owner"}, ` +
           `owns "${business.name}"  ${made.length ? "(created " + made.join(", ") + ")" : "(already there)"}`
       );
+      if (choicesSet) console.log(`  who picks the person set on ${choicesSet} existing services`);
+      if (laterTextsYesSet)
+        console.log("  the yes to later texts asked on its existing text settings");
     }
   });
 

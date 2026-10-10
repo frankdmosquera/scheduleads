@@ -1,0 +1,941 @@
+/* ===========================================================================
+   THE BOOKING WINDOW
+   ===========================================================================
+
+   Ported from prototypes/widget.css (the shell, the head, the form fields
+   and the buttons) and prototypes/month.css (the month layout). The week
+   strip's classes in widget.css stay behind with that layout (decision 4).
+
+   RULE: every colour, font and radius reads a --sa-* token that the host
+   site defines, each with a neutral fallback for a host that defines none.
+   Nothing here reads a token of the CRM or of any host, and every class is
+   sa- prefixed so it cannot collide with a host's own.
+
+   --sa-action-ink is never assumed white: Primo's amber needs dark ink.
+   =========================================================================== */
+
+/* ---------- the dialog ----------
+   A native <dialog> in the top layer. Reset here because a host's own
+   reset (Tailwind's preflight, a CSS framework) styles dialogs too. The
+   scrim is its ::backdrop. */
+
+.sa-dialog {
+  padding: 20px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  overflow: hidden;
+  color: var(--sa-text, #18181b);
+  font-family: var(--sa-font, ui-sans-serif, system-ui, sans-serif);
+}
+
+.sa-dialog[open] {
+  display: grid;
+  place-items: center;
+}
+.sa-dialog::backdrop {
+  background: var(--sa-scrim, rgb(9 9 11 / 55%));
+}
+.sa-dialog,
+.sa-dialog * {
+  box-sizing: border-box;
+}
+
+.sa-modal {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  background: var(--sa-bg, #ffffff);
+  color: var(--sa-text, #18181b);
+  font-family: var(--sa-font, ui-sans-serif, system-ui, sans-serif);
+  border-radius: var(--sa-radius, 8px);
+  border: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+  box-shadow: var(--sa-shadow, 0 24px 64px rgb(9 9 11 / 28%));
+  overflow: hidden;
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- header ----------
+   Names the business, never the product. A customer must not be able to
+   tell what is answering. */
+
+.sa-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 56px 14px 20px; /* room on the right for the corner Close */
+  border-bottom: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+}
+
+.sa-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.sa-sub {
+  font-size: 13.5px;
+  color: var(--sa-muted, #52525b);
+  margin: 3px 0 0;
+}
+
+/* A screen's heading takes focus when the screen changes, to announce it.
+   It is not a control, so it shows no ring. */
+.sa-title:focus,
+.sa-panel-h:focus {
+  outline: none;
+}
+
+.sa-x {
+  all: unset;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--sa-radius, 8px);
+  display: grid;
+  place-items: center;
+  color: var(--sa-muted, #52525b);
+  font-size: 17px;
+  flex: none;
+}
+
+.sa-x:hover {
+  background: var(--sa-surface-2, #f4f4f5);
+  color: var(--sa-text, #18181b);
+}
+.sa-x:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 1px;
+}
+
+/* One Close for every screen, in the window's corner. */
+.sa-x--corner {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1;
+}
+
+/* ---------- body ---------- */
+
+.sa-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+}
+.sa-block + .sa-block {
+  margin-top: 20px;
+}
+
+.sa-lab {
+  font-family: var(--sa-font-mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--sa-muted, #52525b);
+  margin: 0 0 9px;
+}
+
+.sa-loading {
+  margin: 0;
+  font-size: 14px;
+  color: var(--sa-muted, #52525b);
+}
+
+/* ---------- the service list ----------
+   New with the component: the prototypes open on a service already chosen.
+   Each service is one button, its card styled like widget.css's chosen
+   service. */
+
+.sa-services {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sa-service {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  padding: 13px 15px;
+  border-radius: var(--sa-radius, 8px);
+  border: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+  background: var(--sa-surface, #ffffff);
+}
+
+.sa-service:hover {
+  border-color: var(--sa-identity, #18181b);
+}
+.sa-service:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+
+.sa-service-name {
+  display: block;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--sa-text, #18181b);
+}
+
+.sa-service-meta {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--sa-font-mono, ui-monospace, monospace);
+  font-size: 12.5px;
+  color: var(--sa-muted, #52525b);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The business's own words, line breaks kept, never read as HTML. */
+.sa-service-desc {
+  display: block;
+  margin-top: 6px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--sa-muted, #52525b);
+  white-space: pre-line;
+}
+
+/* ---------- when it cannot go on ---------- */
+
+.sa-problem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+.sa-problem-words {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.sa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The phone, as a link that dials. Identity, not action: Try again is the
+   one action on this screen. */
+.sa-call {
+  display: inline-block;
+  padding: 9px 18px;
+  border-radius: var(--sa-radius, 8px);
+  border: 1px solid var(--sa-identity, #18181b);
+  color: var(--sa-identity, #18181b);
+  font-weight: 600;
+  font-size: 14.5px;
+  text-decoration: none;
+}
+
+.sa-call:hover {
+  background: var(--sa-surface-2, #f4f4f5);
+}
+.sa-call:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+
+/* ---------- form ---------- */
+
+.sa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.sa-grid .sa-wide {
+  grid-column: 1 / -1;
+}
+
+.sa-f {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--sa-radius, 8px);
+  border: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+  background: var(--sa-surface, #ffffff);
+  color: var(--sa-text, #18181b);
+  font-family: inherit;
+  font-size: 14.5px;
+}
+
+.sa-f::placeholder {
+  color: var(--sa-muted, #52525b);
+  opacity: 0.75;
+}
+.sa-f:focus {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 1px;
+  border-color: var(--sa-identity, #18181b);
+}
+
+.sa-flab {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: var(--sa-muted, #52525b);
+}
+
+/* ---------- buttons ---------- */
+
+/* THE button: --sa-action is kept for the one thing to press. Its ink
+   comes from the host, never assumed white. */
+.sa-go {
+  all: unset;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: var(--sa-radius, 8px);
+  background: var(--sa-action, #18181b);
+  color: var(--sa-action-ink, #ffffff);
+  font-weight: 700;
+  font-size: 14.5px;
+  text-align: center;
+}
+
+.sa-go:hover {
+  filter: brightness(0.94);
+}
+.sa-go:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+
+.sa-back {
+  all: unset;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--sa-muted, #52525b);
+  padding: 8px 4px;
+}
+
+.sa-back:hover {
+  color: var(--sa-text, #18181b);
+}
+
+@media (max-width: 520px) {
+  .sa-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===========================================================================
+   THE MONTH LAYOUT (month.css)
+
+   1. A persistent left rail: who, what, how long. It never moves between
+      screens, and on screen two it gains the chosen date and time.
+   2. Two screens, not one scroll. Pick the time, then answer questions.
+   3. The month shows the shape of availability: a tint says "there is room".
+   4. Choosing a time does not commit. The slot splits into the time and a
+      Next beside it, so the click that advances is deliberate.
+   =========================================================================== */
+
+/* The rail is close to half the window, because it carries the business's
+   logo at a size worth looking at. */
+.sa-modal--book {
+  max-width: 880px;
+  padding: 0;
+}
+
+.sa-book {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ---------- the rail ---------- */
+
+.sa-rail {
+  border-right: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+  display: flex;
+  flex-direction: column;
+  background: var(--sa-surface, #ffffff);
+}
+
+/* The logo band. A business with no logo gets its name in the same space,
+   so the band never collapses and the layout never shifts between
+   businesses. */
+.sa-rail-logo {
+  padding: 26px 24px 24px;
+  border-bottom: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+  display: grid;
+  place-items: center;
+  min-height: 132px;
+}
+
+.sa-rail-logo img {
+  max-width: 172px;
+  max-height: 96px;
+  display: block;
+}
+
+.sa-rail-logo .sa-rail-wordmark {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--sa-identity, #18181b);
+  text-align: center;
+}
+
+.sa-rail-body {
+  padding: 22px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  flex: 1;
+}
+
+.sa-rail-back {
+  all: unset;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--sa-muted, #52525b);
+  font-size: 15px;
+  border: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+  align-self: flex-start;
+}
+.sa-rail-back:hover {
+  border-color: var(--sa-identity, #18181b);
+  color: var(--sa-identity, #18181b);
+}
+.sa-rail-back:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+
+/* Person and business, not business alone. Somebody is coming to your
+   house; the window says who. */
+.sa-rail-host {
+  font-size: 14px;
+  color: var(--sa-identity, #18181b);
+  font-weight: 700;
+}
+
+.sa-rail-event {
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin-top: 2px;
+}
+
+.sa-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin-top: 6px;
+}
+
+.sa-fact {
+  display: grid;
+  grid-template-columns: 19px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  font-size: 14.5px;
+  color: var(--sa-text, #18181b);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.sa-fact-i {
+  text-align: center;
+  opacity: 0.6;
+}
+
+/* Plain copy under the facts: the service's own description. */
+.sa-rail-where {
+  font-size: 14.5px;
+  color: var(--sa-muted, #52525b);
+  margin: 2px 0 0;
+  white-space: pre-line;
+}
+
+/* The chosen slot, only on screen two. Identity coloured: a confirmation
+   of state, not a thing to click. */
+.sa-fact--picked {
+  color: var(--sa-identity, #18181b);
+  font-weight: 700;
+}
+
+.sa-rail-foot {
+  margin-top: auto;
+  padding-top: 18px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.sa-rail-foot a {
+  font-size: 13px;
+  color: var(--sa-identity, #18181b);
+  font-weight: 500;
+}
+.sa-rail-foot span {
+  font-size: 12px;
+  color: var(--sa-muted, #52525b);
+  opacity: 0.85;
+}
+
+/* ---------- the panel ---------- */
+
+.sa-panel {
+  padding: 20px 22px 22px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sa-panel-h {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 16px;
+  padding-right: 36px; /* clear of the corner Close */
+}
+
+.sa-pick {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 182px;
+  gap: 22px;
+}
+
+/* ---------- month ---------- */
+
+/* The month's name sits between the two arrows, so the three read as one
+   control. */
+.sa-mhead {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.sa-mtitle {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  min-width: 150px;
+  text-align: center;
+}
+
+.sa-mnav {
+  all: unset;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--sa-identity, #18181b);
+  font-size: 17px;
+  flex: none;
+}
+.sa-mnav:hover:not([disabled]) {
+  background: var(--sa-surface-2, #f4f4f5);
+}
+.sa-mnav[disabled] {
+  color: var(--sa-disabled, #a1a1aa);
+  cursor: not-allowed;
+}
+.sa-mnav:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 1px;
+}
+
+.sa-dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+.sa-dow span {
+  text-align: center;
+  font-family: var(--sa-font-mono, ui-monospace, monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--sa-muted, #52525b);
+  padding-bottom: 5px;
+}
+
+.sa-month {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.sa-dwrap {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  position: relative;
+}
+
+.sa-d {
+  all: unset;
+  cursor: default;
+  width: 82%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--sa-disabled, #a1a1aa);
+}
+
+/* A day with a time is a tinted disc with bold identity-coloured text: the
+   working week shows without reading a number. */
+.sa-d[data-free="yes"] {
+  cursor: pointer;
+  background: var(--sa-surface-2, #f4f4f5);
+  color: var(--sa-identity, #18181b);
+  font-weight: 700;
+}
+.sa-d[data-free="yes"]:hover {
+  filter: brightness(0.95);
+}
+.sa-d:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 1px;
+}
+
+.sa-d[aria-pressed="true"] {
+  background: var(--sa-identity, #18181b);
+  color: var(--sa-identity-ink, #ffffff);
+  font-weight: 700;
+}
+
+/* Today is a dot beneath, never a fill, so it cannot be mistaken for the
+   selection. */
+.sa-dwrap[data-today="yes"]::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--sa-identity, #18181b);
+}
+.sa-dwrap[data-today="yes"]:has(.sa-d[aria-pressed="true"])::after {
+  background: transparent;
+}
+
+.sa-d[data-out="yes"] {
+  opacity: 0.35;
+}
+
+.sa-tz {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--sa-muted, #52525b);
+}
+
+/* ---------- times ---------- */
+
+.sa-times {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sa-times-h {
+  font-size: 13.5px;
+  font-weight: 600;
+  padding-bottom: 10px;
+}
+
+.sa-times-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 296px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.sa-t {
+  all: unset;
+  cursor: pointer;
+  text-align: center;
+  padding: 11px 0;
+  border-radius: var(--sa-radius, 8px);
+  border: 1px solid var(--sa-identity, #18181b);
+  background: var(--sa-surface, #ffffff);
+  color: var(--sa-identity, #18181b);
+  font-weight: 600;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.sa-t:hover:not([disabled]) {
+  background: var(--sa-surface-2, #f4f4f5);
+}
+.sa-t:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+
+.sa-t[disabled] {
+  cursor: not-allowed;
+  color: var(--sa-disabled, #a1a1aa);
+  border-color: var(--sa-border, rgb(24 24 27 / 14%));
+  background: var(--sa-surface-2, #f4f4f5);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  font-weight: 500;
+}
+
+/* The chosen slot splits in two: what you picked, and the deliberate Next. */
+.sa-t-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.sa-t-chosen {
+  text-align: center;
+  padding: 11px 0;
+  border-radius: var(--sa-radius, 8px);
+  background: var(--sa-muted, #52525b);
+  color: var(--sa-bg, #ffffff);
+  font-weight: 600;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Next is the action token. On Primo that is amber with dark ink: the day
+   picker is blue, the thing that moves you forward is amber. */
+.sa-t-next {
+  all: unset;
+  cursor: pointer;
+  text-align: center;
+  padding: 11px 0;
+  border-radius: var(--sa-radius, 8px);
+  background: var(--sa-action, #18181b);
+  color: var(--sa-action-ink, #ffffff);
+  font-weight: 700;
+  font-size: 14px;
+}
+.sa-t-next:hover {
+  filter: brightness(0.94);
+}
+.sa-t-next:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+
+/* ---------- the questions screen ---------- */
+
+.sa-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-width: 420px;
+}
+
+/* The fields in one group, laid out as the form: disabled together while a lost answer is unknown. */
+.sa-fields {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.sa-req::after {
+  content: " *";
+  color: var(--sa-action, #18181b);
+}
+
+.sa-fine {
+  font-size: 12px;
+  color: var(--sa-muted, #52525b);
+  line-height: 1.5;
+  max-width: 420px;
+}
+.sa-fine a {
+  color: var(--sa-identity, #18181b);
+}
+
+.sa-submit {
+  all: unset;
+  cursor: pointer;
+  align-self: flex-start;
+  padding: 12px 26px;
+  border-radius: 999px;
+  background: var(--sa-action, #18181b);
+  color: var(--sa-action-ink, #ffffff);
+  font-weight: 700;
+  font-size: 15px;
+}
+.sa-submit:hover {
+  filter: brightness(0.94);
+}
+.sa-submit:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+
+/* A field's hint and its error sit under it and are read out with it (aria-describedby). */
+.sa-hint {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: var(--sa-muted, #52525b);
+}
+.sa-err {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sa-error, #b42318);
+}
+.sa-f[aria-invalid="true"] {
+  border-color: var(--sa-error, #b42318);
+}
+
+/* The yes to later texts: a box and the business's own sentence, under Phone. */
+.sa-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--sa-text, #18181b);
+  cursor: pointer;
+}
+.sa-check input {
+  margin: 2px 0 0;
+  flex: none;
+  accent-color: var(--sa-identity, #18181b);
+}
+
+/* Where focus waits while a booking sends, and on the words a send ends with: read out, never outlined. */
+.sa-focus-place:focus {
+  outline: none;
+}
+
+/* Screen one, back from Book when the time was taken while she typed. */
+.sa-notice {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: var(--sa-radius, 8px);
+  border: 1px solid var(--sa-error, #b42318);
+  color: var(--sa-text, #18181b);
+  font-size: 14px;
+}
+
+/* The last screen: what was booked, as the API wrote it. */
+.sa-done .sa-facts {
+  margin: 4px 0 14px;
+}
+
+@media (max-width: 760px) {
+  .sa-book {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sa-rail {
+    border-right: none;
+    border-bottom: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+  }
+  .sa-pick {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sa-times-list {
+    max-height: none;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .sa-t-split {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ===========================================================================
+   SCREEN ONE ADDITIONS (decision 12)
+   =========================================================================== */
+
+/* "Who would you like?": a radio list in the rail, only when the customer
+   picks the person. Native radios, so the keyboard and screen readers work
+   as they do everywhere. */
+.sa-people {
+  border: none;
+  margin: 6px 0 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sa-people-h {
+  padding: 0;
+  margin-bottom: 4px;
+  font-family: var(--sa-font-mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--sa-muted, #52525b);
+}
+
+.sa-person {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  border-radius: var(--sa-radius, 8px);
+  border: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+  background: var(--sa-bg, #ffffff);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.sa-person:has(input:checked) {
+  border-color: var(--sa-identity, #18181b);
+  color: var(--sa-identity, #18181b);
+  font-weight: 600;
+}
+.sa-person:has(input:focus-visible) {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+.sa-person input {
+  margin: 0;
+  accent-color: var(--sa-identity, #18181b);
+}
+
+/* The month with no time left: the words, then Next month. */
+.sa-times-none {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--sa-muted, #52525b);
+  line-height: 1.45;
+}
+
+/* The zone line under the month is plain words, no switcher (decision 12). */
+.sa-tz {
+  margin: 16px 0 0;
+}

@@ -72,8 +72,9 @@ Hono. No extra dependency, no codegen. Wired in step 2.5 (2026-09-27) and
 `npm run build --workspace=frontend` fail with a type error, and it passed
 again once restored. The backend writes the routes' declarations
 (`build:types`, run by the frontend's `predev` and `prebuild`, because Vercel
-builds only the frontend), and `frontend/lib/api-client.ts` builds two clients
-from one `AppType`: one sends the login cookie, the public one never does. The
+builds only the frontend), and `frontend/lib/api-client/` builds two clients
+from one `AppType` (`dashboard-api-client.ts` sends the login cookie,
+`public-api-client.ts` never does), with one file per call beside them. The
 first repo declared `AppType` and never consumed it once; every new route is
 called through these clients, never a bare `fetch`.
 
@@ -326,8 +327,9 @@ push, or publish unless the user gives a separate yes in the current chat.
 **It lives in the buildlogs app**, in `ai-web-agency/buildlogs`, folder
 `buildlogs/logs/scheduleads/`. Frank reads it at http://localhost:3100 on the
 laptop and online on his phone. How to write it, what a step looks like and
-when to save it are in `buildlogs/logs/README.md`: read that before writing
-any entry. Decided by Frank, 2026-09-29: the single-page `project-log.html`
+when to save it are in `buildlogs/logs/README.md`: read that before writing any entry. Every step uses its piece shape
+(since 2026-10-09): pieces N.M.k holding plan, what happened, findings and
+code together, then Part 2 Testing. Decided by Frank, 2026-09-29: the single-page `project-log.html`
 and its Artifact are retired, because publishing it meant reading the whole
 1.3 MB page first, about 400k tokens every session.
 
@@ -342,8 +344,8 @@ Order, every time:
 2. tick the box in `blueprint/context/current-feature.md`
 3. write the step's entry in `buildlogs/logs/scheduleads/` (its file, its state
    in `roadmap.json`, the feature's Log), then commit that folder to buildlogs'
-   `main`, as the guide says; it is pushed once per feature, at `/complete`
-   (Frank, 2026-10-02), or whenever he asks to see it online
+   `main`, as the guide says; it is pushed about once a day, never per step
+   (Frank, 2026-10-09), or whenever he asks to see it online
 4. commit the step here and push it (see Git above)
 5. only then report the step in chat
 
@@ -514,7 +516,11 @@ build it first through their own `predev` and `prebuild` hooks, so neither
 consumes it as TypeScript source. The frontend's hooks also run
 `npm run build:types --workspace=backend`, which writes the API's route types
 for the typed client, so a type error anywhere `backend/app.ts` reaches stops
-`npm run dev --workspace=frontend` and the frontend build too.
+`npm run dev --workspace=frontend` and the frontend build too. Then they
+compile `packages/booking-component` (the booking window client sites
+embed, feature 9), which reads only the public routes' type, `PublicAppType`.
+
+- Booking component build: `npm run build --workspace=@scheduleads-app/booking-component`
 
 Unit tests run on Vitest, a dev dependency of the workspace that holds the
 code under test. Test files sit beside the code as `*.test.ts` and are
@@ -525,6 +531,7 @@ step that adds logic adds its tests, and every step reruns them.
 - Shared package tests, rerunning on save: `npm run test:watch --workspace=@scheduleads-app/shared`
 - Backend tests: `npm run test --workspace=backend`
 - Backend tests, rerunning on save: `npm run test:watch --workspace=backend`
+- Booking component tests: `npm run test --workspace=@scheduleads-app/booking-component`
 
 Both backend commands rebuild `packages/shared` first (their `pre` scripts),
 because the route tests load its code, not only its types. Since step 2.4 the
@@ -532,6 +539,10 @@ backend tests also need the local Postgres running with `db:migrate` and
 `db:seed` done: the public route tests call the real app against the seeded
 `scheduleads_dev`, add their own rows and remove them, and refuse any database
 that is not local and `*_dev`. With Postgres stopped they fail; they never skip.
+
+A booking component test that draws React (a hook or a screen) runs in jsdom: it
+starts with `// @vitest-environment jsdom` and uses `@testing-library/react`, both
+dev dependencies of the package since feature 9. Every other test there stays in Node.
 
 The frontend has no test script yet; it gets one with its first test, so no
 workspace ever carries a test command that finds nothing to run.

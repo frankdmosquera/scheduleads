@@ -16,6 +16,7 @@ import { afterAll, afterEach } from "vitest";
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
 
 import { jobClock } from "./lib/jobs/job-clock.js";
+import { publicRateLimiters } from "./lib/rate-limit/public-rate-limiters.js";
 
 const schema = `graphile_worker_test_${process.env.VITEST_POOL_ID ?? "1"}`;
 process.env.JOBS_SCHEMA = schema; // read by lib/jobs/job-schema.ts when a test imports it
@@ -70,6 +71,8 @@ await clearJobs();
 
 afterEach(async () => {
   await clearJobs();
+  // Every test calls the app as the same visitor; each starts with none of the last one's tries.
+  for (const limiter of Object.values(publicRateLimiters)) limiter.clear();
 });
 
 afterAll(async () => {

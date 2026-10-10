@@ -1,0 +1,199 @@
+/* The booking preview's two host looks, from prototypes/modal-agency.html and modal-primo.html.
+   Each defines what a real client site's own stylesheet would: its colours for its own page, and
+   the --sa-* tokens the booking window reads. The window ships with none of it. */
+
+/* The agency's site: one teal does both jobs, identity and action. */
+.booking-preview--agency {
+  --host-ground: oklch(0.985 0.004 95);
+  --host-card: oklch(1 0 0);
+  --host-tint: oklch(0.95 0.006 95);
+  --host-text: oklch(0.21 0.01 80);
+  --host-muted: oklch(0.47 0.012 85);
+  --host-line: oklch(0.21 0.01 80 / 12%);
+  --host-brand: oklch(0.52 0.1 200);
+  --host-action: oklch(0.52 0.1 200);
+  --host-action-ink: oklch(0.985 0 0);
+
+  --sa-bg: var(--host-ground);
+  --sa-surface: var(--host-card);
+  --sa-surface-2: var(--host-tint);
+  --sa-text: var(--host-text);
+  --sa-muted: var(--host-muted);
+  --sa-border: var(--host-line);
+  --sa-identity: var(--host-brand);
+  --sa-identity-ink: oklch(0.985 0 0);
+  --sa-action: var(--host-action);
+  --sa-action-ink: var(--host-action-ink); /* white passes on this teal */
+  --sa-disabled: oklch(0.68 0.008 85);
+  --sa-radius: 0.625rem;
+  --sa-font: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --sa-font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Primo: a blue identity and an amber action. Amber fails as text, so it is only ever a surface
+   carrying dark ink, which is why the ink is its own token. */
+.booking-preview--primo {
+  --host-ground: #fbfaf7;
+  --host-card: #ffffff;
+  --host-tint: oklch(97% 0.008 262);
+  --host-text: oklch(0.22 0.008 262);
+  --host-muted: oklch(0.5 0.01 262);
+  --host-line: oklch(0.22 0.008 262 / 13%);
+  --host-brand: #0d378d;
+  --host-action: #e09a3c;
+  --host-action-ink: #17191f;
+
+  --sa-bg: var(--host-ground);
+  --sa-surface: var(--host-card);
+  --sa-surface-2: var(--host-tint);
+  --sa-text: var(--host-text);
+  --sa-muted: var(--host-muted);
+  --sa-border: var(--host-line);
+  --sa-identity: var(--host-brand);
+  --sa-identity-ink: #ffffff; /* 10.78:1 on this blue */
+  --sa-action: var(--host-action);
+  --sa-action-ink: var(--host-action-ink); /* 7.69:1. Not white. */
+  --sa-disabled: oklch(0.66 0.006 262);
+  --sa-radius: 8px;
+  --sa-font: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --sa-font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* --- the stand-in host page behind the window --- */
+
+.booking-preview {
+  min-height: 100vh;
+  background: var(--host-ground);
+  color: var(--host-text);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.booking-preview-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 40px;
+  border-bottom: 1px solid var(--host-line);
+  background: var(--host-tint);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--host-muted);
+}
+
+.booking-preview-note b {
+  color: var(--host-text);
+}
+
+.booking-preview-looks {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.booking-preview-looks label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--host-line);
+  cursor: pointer;
+}
+
+.booking-preview-looks label:has(input:checked) {
+  border-color: var(--host-brand);
+  color: var(--host-text);
+}
+
+.booking-preview-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 40px;
+  border-bottom: 1px solid var(--host-line);
+}
+
+.booking-preview-wordmark {
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  color: var(--host-brand);
+}
+
+.booking-preview-hero {
+  padding: 64px 40px 40px;
+  max-width: 760px;
+}
+
+.booking-preview-hero h1 {
+  font-size: 40px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin: 0 0 16px;
+  font-weight: 700;
+}
+
+.booking-preview-hero p {
+  font-size: 17px;
+  color: var(--host-muted);
+  margin: 0 0 28px;
+  max-width: 54ch;
+}
+
+.booking-preview-button {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: var(--sa-radius);
+  background: var(--host-action);
+  color: var(--host-action-ink);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.booking-preview-button:focus-visible {
+  outline: 2px solid var(--host-brand);
+  outline-offset: 2px;
+}
+
+.booking-preview-services {
+  padding: 8px 40px 64px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.booking-preview-service {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px;
+  border-radius: var(--sa-radius);
+  border: 1px solid var(--host-line);
+  background: var(--host-card);
+}
+
+.booking-preview-service h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.booking-preview-service p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--host-muted);
+}
+
+.booking-preview-service .booking-preview-button {
+  margin-top: auto;
+  align-self: flex-start;
+  padding: 9px 18px;
+  font-size: 14px;
+}
+
+.booking-preview-empty {
+  padding: 0 40px 64px;
+  color: var(--host-muted);
+}

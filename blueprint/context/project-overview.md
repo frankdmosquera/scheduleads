@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash add74c4e5bd5ceba56772b05db322fdcd59528ab0446f4eab84e1bbcca716709 -->
+<!-- blueprint:source-hash 429a77bc9b4f5d95b7a6d1702f7f4f059c4f829d882522bf57f18c48bfe2223a -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -197,7 +197,7 @@ provider; Calendly shape, two screens. The login is the CRM, Pipedrive the
 reference feel; mockups in `prototypes/` off one `theme.css`.
 
 - `/sign-in` - email OTP, sign-in only
-- `/admin/clients/new` - the platform admin sets up a client (3b)
+- `/admin/client-setup` - the platform admin sets up a client (3b)
 - `/leads`, `/leads/[id]` (11); `/settings` (12); `/calendar` (12b);
   `/pipeline` (14); more of `/admin/*` (23); `/book/[slug]` (24)
 
@@ -222,6 +222,8 @@ API (`backend/app.ts`, one chain so `AppType` carries every route):
   `CALENDAR_TOKEN_KEY`, `RESEND_API_KEY`, `LOGIN_EMAIL_FROM`, `TWILIO_*`, `PORT`, `WIDGET_ORIGINS`;
   the frontend gets only `NEXT_PUBLIC_API_URL`. Losing `CALENDAR_TOKEN_KEY`
   makes every stored calendar connection undecryptable.
+- The widget calls the API from the visitor's browser (decision 31); public
+  routes are rate limited per visitor and per contact (item 9).
 - CORS: public routes allow `WIDGET_ORIGINS` and the dashboard, never with
   credentials; dashboard routes only `APP_ORIGIN`, with the cookie.
 - Google OAuth stays in Testing (seven-day tokens) until item 22's calendar
@@ -237,7 +239,6 @@ API (`backend/app.ts`, one chain so `AppType` carries every route):
 Carried from the plans, each with the moment it gets answered:
 
 - Whose Calendly has been receiving Latam's bookings. Before item 18.
-- Browser-to-API or proxied through the host's server action. Phase 3.
 - Whether the clinic takes deposits at booking. At her onboarding.
 - Which analytics source feeds the visitor package. When it exists.
 - What Primo needs on day one beyond booking and the leads list. Before 13.

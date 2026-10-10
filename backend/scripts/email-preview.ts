@@ -30,6 +30,10 @@ const sampleFacts: BookingEmailFactsType = {
     phone: "(403) 555-0148",
     details:
       "Two storeys, stucco, last painted about ten years ago.\n\nThe back fence too, please. Mornings are best.",
+    answers: [
+      { question: "Interior or exterior?", answer: "Exterior" },
+      { question: "How many rooms?", answer: "None, the whole outside" },
+    ],
   },
 };
 

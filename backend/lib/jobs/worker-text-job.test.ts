@@ -4,7 +4,7 @@
 
 import { randomInt, randomUUID } from "node:crypto";
 
-import { and, eq, like, sql } from "drizzle-orm";
+import { and, asc, eq, like, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
@@ -111,6 +111,8 @@ async function makeBusiness(
     name: "Interior estimate",
     slug: "interior-estimate",
     durationMinutes: 60,
+    layout: "month",
+    personChoice: "customer_picks",
   });
   await db.insert(bookingLinkResource).values([
     { organizationId: business, bookingLinkId: estimate, resourceId: marco },
@@ -169,6 +171,7 @@ const workerTextEntriesOf = async (business: BusinessType) =>
       .select({ payload: activity.payload })
       .from(activity)
       .where(and(eq(activity.organizationId, business.business), eq(activity.type, "sms_sent")))
+      .orderBy(asc(activity.occurredAt), asc(activity.createdAt))
   )
     .map((row) => row.payload as Record<string, unknown>)
     .filter((payload) => String(payload.kind).startsWith("worker_"));

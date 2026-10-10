@@ -92,7 +92,13 @@ own subpath export.
 - Names say what a thing is. Do not copy abbreviations from library docs
   (`const ac = createAccessControl(...)` is `accessControl` here), and no bare
   `api` in `frontend`: that word is the backend. The frontend's side is
-  `lib/api-client.ts`
+  `lib/api-client/`, one call per file in a folder named for its area
+- The frontend is named like the backend (Frank, 2026-10-08): route folders,
+  component folders, files, components and their inner functions say what
+  they are, in full (`app/customer-booking/[bookingPageToken]`,
+  `components/dashboard/business-picker-screen.tsx`), one export per file. A
+  short public address (the texted `/b/` link) is kept by a Next rewrite,
+  never by a cryptic folder name
 - The thing you import carries the full meaning, however long the name gets,
   and its file is named after it. Zod schemas end in `ValidationSchema` and are
   one object per form (`signInEmailValidationSchema` in
@@ -168,7 +174,7 @@ own subpath export.
   the Hono client typed by the backend's `AppType`, and React Query owns
   caching and refetching once it arrives. A Server Action proxy is used only
   when a call must stay off the browser
-- `frontend/lib/api-client.ts` holds two clients from that one type, matching
+- `frontend/lib/api-client/` holds two clients from that one type, matching
   the backend's two CORS rules: `dashboardApiClient` sends the login cookie
   (dashboard routes), `publicApiClient` never does (`/public/*`, whose rule
   refuses credentials, so the browser would drop the answer). A call to our
@@ -220,9 +226,10 @@ own subpath export.
   query filters on that row's own business; every bad or unknown link answers
   the identical `404`; the answer never carries the customer's own details,
   is never cached, and the link itself is never logged or stored
-- Whether the booking widget calls the API from the browser or proxies through
-  the host site's Server Action is open until Phase 3 (`project-plan.md`,
-  open question 5)
+- The booking component calls the public routes straight from the visitor's
+  browser, never through a Server Action proxy on the host site
+  (`project-plan.md` decision 31): booking holds no secret, and the rate
+  limits must see each visitor
 
 ## Error Handling
 

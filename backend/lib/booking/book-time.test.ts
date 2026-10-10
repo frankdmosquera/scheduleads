@@ -25,6 +25,7 @@ const {
   availabilityRule,
   booking,
   bookingLink,
+  bookingQuestion,
   bookingLinkResource,
   calendarConnection,
   commitment,
@@ -85,6 +86,8 @@ async function makeClinic(name: string) {
       name: "Facial",
       slug: "facial",
       durationMinutes: 75,
+      layout: "month",
+      personChoice: "customer_picks",
       bufferAfterMinutes: 15,
     },
     {
@@ -93,6 +96,8 @@ async function makeClinic(name: string) {
       name: "Massage",
       slug: "massage",
       durationMinutes: 60,
+      layout: "month",
+      personChoice: "customer_picks",
     },
   ]);
   await db.insert(bookingLinkResource).values([
@@ -519,6 +524,69 @@ describe("booking a time", () => {
       "that login does not belong to this business"
     );
     expect((await rowsOf(mine.business)).bookings).toHaveLength(0);
+  });
+
+  test("a customer's pick for a service the business assigns answers person_not_taken and writes nothing; the owner may pick", async () => {
+    const clinic = await makeClinic("assigns");
+    const owner = await makeOwner(clinic, "assigns");
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+
+    expect(await customerBooking(clinic)).toEqual({ booked: false, reason: "person_not_taken" });
+    expect((await rowsOf(clinic.business)).bookings).toEqual([]);
+    // With nobody picked the customer books, and the owner may still pick (feature 9, decision 3).
+    bookedOrThrow(await customerBooking(clinic, { personId: null }));
+    const picked = bookedOrThrow(
+      await ownerBooking(clinic, owner, { startsAt: new Date(NINE.getTime() + 2 * 3_600_000) })
+    );
+    expect(picked.personId).toBe(clinic.ana);
+  });
+
+  test("a booked form sent again after its service changed still gets its booking", async () => {
+    const clinic = await makeClinic("changed");
+    const requestKey = randomUUID();
+    const first = bookedOrThrow(await customerBooking(clinic, { requestKey }));
+
+    // The business now assigns: the retry is its own earlier booking, not a refused pick.
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+    const afterSwitch = bookedOrThrow(await customerBooking(clinic, { requestKey }));
+    // Switched off too: a new booking is not taken, but this form's own still answers.
+    await db.update(bookingLink).set({ active: false }).where(eq(bookingLink.id, clinic.facial));
+    const afterOff = bookedOrThrow(await customerBooking(clinic, { requestKey }));
+
+    expect(afterSwitch.id).toBe(first.id);
+    expect(afterOff.id).toBe(first.id);
+    expect((await rowsOf(clinic.business)).bookings).toHaveLength(1);
+  });
+
+  // A customer answers the business's required questions; the owner, booking from a call, need not.
+  test("a customer must answer a required question; the owner need not", async () => {
+    const clinic = await makeClinic("questions");
+    const owner = await makeOwner(clinic, "questions");
+    await db.insert(bookingQuestion).values({
+      id: randomUUID(),
+      organizationId: clinic.business,
+      position: 1,
+      label: "Any allergies?",
+      required: true,
+    });
+
+    expect(await customerBooking(clinic)).toEqual({
+      booked: false,
+      reason: "answer_needed",
+      question: "Any allergies?",
+    });
+    const made = bookedOrThrow(await ownerBooking(clinic, owner));
+    const [saved] = await db
+      .select({ answers: lead.answers })
+      .from(lead)
+      .where(eq(lead.id, made.leadId));
+    expect(saved?.answers).toEqual([]); // asked, nothing answered
   });
 
   test("an owner-made booking outside bookable hours, on a standby date or within the notice is booked", async () => {

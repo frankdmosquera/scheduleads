@@ -418,11 +418,10 @@ week, pipeline by stage, lead sources.
 
 - `frontend` to Vercel. `backend` to Railway. Database on Railway Postgres.
   All carried from the first repo and already provisioned.
-- The widget calls the API cross-origin. CORS allow-list from
-  `WIDGET_ORIGINS`. **Open for Phase 3:** whether the host site calls the API
-  from the browser or proxies through its own server action. Primo's contact
-  form holds the rationale for the second: a public URL anyone can POST to
-  has no auth and no rate limit. Decide when the first tenant is wired.
+- The widget calls the API cross-origin, from the visitor's browser
+  (decision 31). CORS allow-list from `WIDGET_ORIGINS`. A public URL anyone
+  can POST to has no auth, so the public routes carry their own rate limits,
+  per visitor and per contact (item 9).
 - Google OAuth consent stays in Testing with test users while only the
   agency's own calendar is connected. Testing-mode refresh tokens expire
   after seven days, so a connection needs reconnecting during development.
@@ -538,8 +537,8 @@ Two things the first repo recorded that must not be relearned:
     point at Primo's account. Either Latam's bookings have been landing in
     Primo's calendar, or Latam never had its own. Ask before Latam is
     onboarded, in Phase 7.
-15. **Browser-to-API, or proxied through the host's server action?** Section
-    8. Decided at Phase 3, not before.
+15. **Browser-to-API, or proxied through the host's server action?**
+    Answered 2026-10-08: browser to API, decision 31.
 16. **Does the clinic take deposits at booking?** Square suggests she might.
     Asked at her onboarding, like the calendar question. If yes, payment at
     booking becomes an item before her swap.
@@ -600,3 +599,19 @@ same day. Numbered on from the open questions, one sequence.
     a switch, a one-click preset such as "all of Alberta's main holidays")
     and the owner makes it. Fixed days are not flexibility. Found when step
     2.6 planned to close Alberta's statutory holidays for everyone; see 24.
+
+## Decided 2026-10-08: the booking component
+
+Decided while specifying item 9. Numbered on, one sequence.
+
+31. **The booking component calls the API from the visitor's browser**
+    (Frank, answers open question 15). Booking holds no secret: free times
+    are public anyway, and the routes and their CORS already existed. The
+    rate limits see each visitor. Proxying through each host site's server
+    action would need a key per site and trusting the visitor address the
+    host passes on, or every visitor would share one limit. The Sep 22 lean
+    towards the proxy came from the clinic's store, where there was a secret.
+32. **Who does the job is each service's own setting** (decision 30): the
+    customer picks the person (a salon), or the business assigns one
+    (Primo's estimates). No default; the server refuses a person sent for a
+    service the business assigns.

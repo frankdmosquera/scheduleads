@@ -9,6 +9,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vite
 
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
 
+import { localStartTimes } from "../lib/scheduling/local-start-times.js";
+
 try {
   process.loadEnvFile(new URL("../../.env", import.meta.url)); // the root .env, before the app reads it
 } catch {
@@ -93,6 +95,8 @@ async function makeClinic(name: string) {
     name: "Facial",
     slug: "facial",
     durationMinutes: 60,
+    layout: "month",
+    personChoice: "customer_picks",
     slotIntervalMinutes: 30,
   });
   await db.insert(bookingLinkResource).values([
@@ -267,6 +271,32 @@ describe("free times for moving a booking", () => {
     expect(((await response.json()) as { error: { code: string } }).error.code).toBe("unavailable");
   });
 
+  // A move with nobody picked keeps her own person, so while their calendar cannot be read
+  // the times say "try again" rather than list times that would all fail.
+  test("with nobody picked, her own person's unreadable calendar answers 503, though another is free", async () => {
+    const own = await makeClinic("own-unreadable");
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, own.facial));
+    await saveCalendarConnection({
+      organizationId: own.business,
+      resourceId: own.ana,
+      accountEmail: `ana-own-${tag}@gmail.com`,
+      grantedScopes: ["openid", "email"],
+      credentials: {
+        refreshToken: "1//saved-refresh",
+        accessToken: "ya29.saved-access",
+        accessTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      },
+    });
+    vi.stubGlobal("fetch", async () => new Response("", { status: 500 })); // Google fails for Ana
+    const response = await timesFor(own.janesBooking);
+
+    expect(response.status).toBe(503);
+    expect(((await response.json()) as { error: { code: string } }).error.code).toBe("unavailable");
+  });
+
   test("a person who does not offer the service, or another business's, answers 404", async () => {
     const stranger = await app.request(
       `/public/bookings/${makeBookingPageToken(clinic.janesBooking)}/times?from=${day}&to=${day}&person=${clinic.room}`
@@ -276,6 +306,52 @@ describe("free times for moving a booking", () => {
     expect(stranger.status).toBe(404); // Room 3 is a place, not a person who can be picked
     expect(elsewhere.status).toBe(404);
     expect(await elsewhere.json()).toEqual(await stranger.json());
+  });
+
+  // Feature 9, decision 3: the business sends whoever is free, so the customer's page lists nobody.
+  test("a service the business assigns lists nobody, and still has times", async () => {
+    const clinic = await makeClinic("assigns-times");
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+    const response = await timesFor(clinic.janesBooking);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.people).toEqual([]);
+    expect(body.startTimes.length).toBeGreaterThan(0);
+  });
+
+  test("every time comes with its date, clock time and whole moment, written by the API", async () => {
+    const clinic = await makeClinic("local-labels");
+    const response = await timesFor(clinic.janesBooking);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.startTimes.length).toBeGreaterThan(0);
+    expect(body.localStartTimes).toEqual(localStartTimes(body.startTimes, body.timezone));
+  });
+
+  test("a person asked for on a service the business assigns is a 400", async () => {
+    const clinic = await makeClinic("assigns-ask");
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, clinic.facial));
+    const response = await timesFor(clinic.janesBooking, clinic.ana);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: { code: "bad_request", message: "This service does not take a pick of person." },
+    });
+  });
+
+  test("a service the customer picks for still lists who offers it", async () => {
+    const clinic = await makeClinic("picks-times");
+    const body = await (await timesFor(clinic.janesBooking)).json();
+
+    expect(body.people.map((person: { name: string }) => person.name)).toEqual(["Ana", "Mei"]);
   });
 
   test("a bad link answers 404 with the same body", async () => {

@@ -8,6 +8,7 @@ import { eq, like } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
+import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 
 try {
   process.loadEnvFile(new URL("../../.env", import.meta.url)); // the root .env, before the app reads it
@@ -88,6 +89,8 @@ async function makeBusiness(name: string, businessName: string, timezone = "Amer
     name: "Interior estimate",
     slug: "interior-estimate",
     durationMinutes: 60,
+    layout: "month",
+    personChoice: "customer_picks",
     bufferAfterMinutes: 15,
   });
   await db
@@ -150,6 +153,23 @@ afterAll(async () => {
 });
 
 describe("the customer's booking page", () => {
+  // The panel offers a pick only when this says so (feature 9, decision 3).
+  test("the page says who picks: a service the business assigns says business_assigns", async () => {
+    await db
+      .update(bookingLink)
+      .set({ personChoice: "business_assigns" })
+      .where(eq(bookingLink.id, primo.estimate));
+    try {
+      const body = await (await pageOf(makeBookingPageToken(primo.bookingId))).json();
+      expect(body.booking.personChoice).toBe("business_assigns");
+    } finally {
+      await db
+        .update(bookingLink)
+        .set({ personChoice: "customer_picks" })
+        .where(eq(bookingLink.id, primo.estimate));
+    }
+  });
+
   test("the route answers the page's view for a real link and 404 for every bad one, with the same body", async () => {
     const token = makeBookingPageToken(primo.bookingId);
     const response = await pageOf(token);
@@ -162,11 +182,13 @@ describe("the customer's booking page", () => {
         canMove: true,
         service: "Interior estimate",
         startsAt: primo.startsAt.toISOString(),
+        when: formatBookingTime(primo.startsAt, "America/Edmonton"), // written by the API
         // The appointment itself, not its 15 after.
         endsAt: new Date(primo.startsAt.getTime() + 60 * 60_000).toISOString(),
         timezone: "America/Edmonton",
         person: "Marco",
         personId: primo.marco,
+        personChoice: "customer_picks", // whether Change the time offers a pick (feature 9)
         business: {
           name: "Primo Painters",
           logo: "https://ik.imagekit.io/primo/logo.png",

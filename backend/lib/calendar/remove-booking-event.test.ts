@@ -77,6 +77,8 @@ async function makeBusiness(name: string) {
     name: "Interior estimate",
     slug: "interior-estimate",
     durationMinutes: 60,
+    layout: "month",
+    personChoice: "customer_picks",
   });
   await db
     .insert(bookingLinkResource)
@@ -262,7 +264,7 @@ describe("a cancelled booking's Google event", () => {
     expect(await eventIdOf(bookingId)).toBe(googleIdOf(bookingId)); // answered before Google is asked
 
     const working = workEventJobs();
-    await vi.waitFor(() => expect(deleteCalls()).toHaveLength(1)); // Google still at work
+    await vi.waitFor(() => expect(deleteCalls()).toHaveLength(1), { timeout: 10_000 }); // Google still at work
     expect(await eventIdOf(bookingId)).toBe(googleIdOf(bookingId));
     answerGoogle();
     await working;

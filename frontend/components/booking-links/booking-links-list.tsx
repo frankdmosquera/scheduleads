@@ -5,11 +5,14 @@
 
 import { useEffect, useState } from "react";
 
-import { Notice } from "@/components/auth-card";
+import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { Button } from "@/components/ui/button";
-import { fetchBookingLinks, type BookingLinksResultType } from "@/lib/api-client";
+import {
+  fetchBookingLinks,
+  type BookingLinksResultType,
+} from "@/lib/api-client/booking-links/fetch-booking-links";
 
-export function BookingLinksList({ slug }: { slug: string }) {
+export function BookingLinksList({ businessSlug }: { businessSlug: string }) {
   const [result, setResult] = useState<BookingLinksResultType | null>(null);
 
   // Bump to ask again, on "Try again".
@@ -19,14 +22,14 @@ export function BookingLinksList({ slug }: { slug: string }) {
     // `live` stops a late answer from updating a page the user already left.
     let live = true;
 
-    fetchBookingLinks(slug).then((next) => {
+    fetchBookingLinks(businessSlug).then((next) => {
       if (live) setResult(next);
     });
 
     return () => {
       live = false;
     };
-  }, [slug, reloads]);
+  }, [businessSlug, reloads]);
 
   return (
     <section className="mt-4 rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-md)]">
@@ -34,7 +37,7 @@ export function BookingLinksList({ slug }: { slug: string }) {
       <p className="mt-1 text-sm text-muted-foreground">What customers can book on your site.</p>
 
       <div className="mt-6">
-        <BookingLinksBody
+        <BookingLinksListBody
           result={result}
           onRetry={() => {
             setResult(null); // back to loading while it asks again
@@ -46,7 +49,7 @@ export function BookingLinksList({ slug }: { slug: string }) {
   );
 }
 
-function BookingLinksBody({
+function BookingLinksListBody({
   result,
   onRetry,
 }: {
@@ -60,7 +63,7 @@ function BookingLinksBody({
   if (result.state === "unreachable") {
     return (
       <>
-        <Notice>{result.message}</Notice>
+        <CentredCardNotice>{result.message}</CentredCardNotice>
         <Button className="mt-4" onClick={onRetry}>
           Try again
         </Button>

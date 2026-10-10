@@ -30,6 +30,11 @@ export const bookingLink = pgTable(
     bufferBeforeMinutes: integer("bufferBeforeMinutes").notNull().default(0),
     bufferAfterMinutes: integer("bufferAfterMinutes").notNull().default(0),
     slotIntervalMinutes: integer("slotIntervalMinutes"), // minutes between start times; null = every durationMinutes
+    // The business's choices for this service (decision 30), so neither has a default (feature 9).
+    // How the booking modal looks; only the month is built.
+    layout: text("layout", { enum: ["month"] }).notNull(),
+    // Whether the customer picks who does it, or the business sends whoever is free.
+    personChoice: text("personChoice", { enum: ["customer_picks", "business_assigns"] }).notNull(),
     active: boolean("active").notNull().default(true), // inactive reads as absent publicly
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })
@@ -49,6 +54,12 @@ export const bookingLink = pgTable(
     check(
       "booking_link_slot_interval_check",
       sql`${table.slotIntervalMinutes} is null or ${table.slotIntervalMinutes} > 0`
+    ),
+    // The week strip (prototypes/modal-primo.html) comes back as one more value here.
+    check("booking_link_layout_check", sql`${table.layout} in ('month')`),
+    check(
+      "booking_link_person_choice_check",
+      sql`${table.personChoice} in ('customer_picks', 'business_assigns')`
     ),
   ]
 );

@@ -74,6 +74,8 @@ describe("booking a time", () => {
       name: "Facial",
       slug: "facial",
       durationMinutes: 75,
+      layout: "month",
+      personChoice: "customer_picks",
     });
     await db.insert(bookingLinkResource).values([
       { organizationId: business, bookingLinkId: facial, resourceId: ana },

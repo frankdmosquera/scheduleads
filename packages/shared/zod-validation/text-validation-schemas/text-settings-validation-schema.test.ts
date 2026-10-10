@@ -8,6 +8,7 @@ const summit = {
   reminderMinutesBefore: [1200, 60],
   replyPhone: "(403) 555-0100",
   replyEmail: null,
+  askLaterTextsYes: true,
 };
 
 const message = (changes: Record<string, unknown>) =>
@@ -21,6 +22,7 @@ describe("a business's text settings", () => {
       reminderMinutesBefore: [1200, 60],
       replyPhone: "+14035550100",
       replyEmail: null,
+      askLaterTextsYes: true,
     });
   });
 
@@ -93,6 +95,11 @@ describe("a business's text settings", () => {
 
   test("the confirmation must be chosen, on or off: there is no default", () => {
     const { confirmationOn: _, ...unchosen } = summit;
+    expect(textSettingsValidationSchema.safeParse(unchosen).success).toBe(false);
+  });
+
+  test("whether the booking form asks for a yes to later texts must be chosen too", () => {
+    const { askLaterTextsYes: _, ...unchosen } = summit;
     expect(textSettingsValidationSchema.safeParse(unchosen).success).toBe(false);
   });
 });

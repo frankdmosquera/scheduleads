@@ -1,4 +1,5 @@
-// Backend: every route the API answers, and AppType, the frontend's typed view of them.
+// Backend: every route the API answers, and AppType, the frontend's typed view of them, with
+// PublicAppType, the public routes alone.
 // One chain, so AppType carries every route. Importing this starts nothing; server.ts does.
 
 import { Hono } from "hono";
@@ -9,13 +10,12 @@ import { dashboardCorsMiddleware } from "./middleware/dashboard-middleware/dashb
 import { dashboardCsrfMiddleware } from "./middleware/dashboard-middleware/dashboard-csrf-middleware.js";
 import { dashboardNoStoreMiddleware } from "./middleware/dashboard-middleware/dashboard-no-store-middleware.js";
 import { publicCorsMiddleware } from "./middleware/public-middleware/public-cors-middleware.js";
+import { publicRateLimitMiddleware } from "./middleware/public-middleware/public-rate-limit-middleware.js";
 import { requireKnownSubscriptionMiddleware } from "./middleware/subscription-middleware/require-known-subscription-middleware.js";
 import { adminRoutes } from "./routes/admin-routes.js";
 import { calendarRoutes } from "./routes/calendar-routes.js";
 import { emailSendingRoutes } from "./routes/email-sending-routes.js";
-import { publicBookingLinksRoutes } from "./routes/public-booking-links-routes.js";
-import { publicBookingPageRoutes } from "./routes/public-booking-page-routes.js";
-import { publicBookingsRoutes } from "./routes/public-bookings-routes.js";
+import { publicRoutes } from "./routes/public-routes.js";
 import { publicTextRoutes } from "./routes/public-text-routes.js";
 
 export const app = new Hono()
@@ -30,8 +30,9 @@ export const app = new Hono()
     dashboardCsrfMiddleware,
     dashboardNoStoreMiddleware
   )
-  // Anyone may call these, never with the login cookie: a CORS rule of their own.
-  .use("/public/*", publicCorsMiddleware)
+  // Anyone may call these, never with the login cookie: a CORS rule of their own, and limits per
+  // visitor. Twilio's signed replies under /texts and the dashboard are not limited.
+  .use("/public/*", publicCorsMiddleware, publicRateLimitMiddleware)
 
   // Better Auth owns every route under this path.
   .on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw))
@@ -61,9 +62,7 @@ export const app = new Hono()
   .route("/admin", adminRoutes)
   .route("/calendar", calendarRoutes)
   .route("/email-sending", emailSendingRoutes)
-  .route("/public", publicBookingLinksRoutes)
-  .route("/public", publicBookingsRoutes)
-  .route("/public", publicBookingPageRoutes)
+  .route("/", publicRoutes) // its routes carry /public themselves
   // Twilio posts customers' replies here, signed; no browser calls it, so no CORS.
   .route("/texts", publicTextRoutes)
 
@@ -71,3 +70,6 @@ export const app = new Hono()
   .get("/health", (c) => c.json({ ok: true }));
 
 export type AppType = typeof app;
+
+// The public routes alone, for the booking component a client site runs (feature 9).
+export type PublicAppType = typeof publicRoutes;

@@ -10,21 +10,26 @@ import {
   type CalendarConnectOutcomeType,
 } from "@scheduleads-app/shared/calendar";
 
-import { Notice } from "@/components/auth-card";
+import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { Button } from "@/components/ui/button";
 import {
   disconnectCalendar,
-  fetchCalendarConnection,
-  startCalendarConnect,
-  type CalendarConnectionResultType,
   type DisconnectCalendarResultType,
-} from "@/lib/api-client";
+} from "@/lib/api-client/calendar/disconnect-calendar";
+import {
+  fetchCalendarConnection,
+  type CalendarConnectionResultType,
+} from "@/lib/api-client/calendar/fetch-calendar-connection";
+import { startCalendarConnect } from "@/lib/api-client/calendar/start-calendar-connect";
 
-type NoticeWordsType = { tone: "info" | "error"; text: ReactNode };
-type AtProviderType = Extract<DisconnectCalendarResultType, { state: "ok" }>["atProvider"];
+export type CalendarNoticeType = { tone: "info" | "error"; text: ReactNode };
+export type GoogleDisconnectOutcomeType = Extract<
+  DisconnectCalendarResultType,
+  { state: "ok" }
+>["atProvider"];
 
 // Keyed by the shared list, so an outcome renamed in the API fails this build.
-const OUTCOMES: Record<CalendarConnectOutcomeType, NoticeWordsType> = {
+const OUTCOMES: Record<CalendarConnectOutcomeType, CalendarNoticeType> = {
   connected: { tone: "info", text: "Your Google calendar is connected." },
   denied: { tone: "info", text: "You cancelled at Google. Nothing was connected." },
   expired: {
@@ -41,7 +46,7 @@ const OUTCOMES: Record<CalendarConnectOutcomeType, NoticeWordsType> = {
   },
 };
 
-const DISCONNECTED: Record<AtProviderType, NoticeWordsType> = {
+const DISCONNECTED: Record<GoogleDisconnectOutcomeType, CalendarNoticeType> = {
   handed_back: {
     tone: "info",
     text: "Disconnected. Google no longer gives this app access to your calendar.",
@@ -76,7 +81,7 @@ const DISCONNECTED: Record<AtProviderType, NoticeWordsType> = {
 export function CalendarConnectionCard() {
   const [result, setResult] = useState<CalendarConnectionResultType | null>(null);
   // The card only mounts in the browser, after the dashboard loaded, so the address is there.
-  const [notice, setNotice] = useState<NoticeWordsType | null>(() => {
+  const [notice, setNotice] = useState<CalendarNoticeType | null>(() => {
     const outcome = new URL(window.location.href).searchParams.get("calendar");
     return isCalendarConnectOutcome(outcome) ? OUTCOMES[outcome] : null; // any other word: nothing
   });
@@ -102,12 +107,12 @@ export function CalendarConnectionCard() {
   }, []);
 
   // After Disconnect, and from Try again: back to Loading, then the fresh answer.
-  function reload() {
+  function reloadCalendarConnection() {
     setResult(null);
     fetchCalendarConnection().then(setResult);
   }
 
-  async function connect() {
+  async function connectGoogleCalendar() {
     setRefusal(null);
     setBusy("connect");
     const started = await startCalendarConnect();
@@ -119,7 +124,7 @@ export function CalendarConnectionCard() {
     setRefusal(started.message);
   }
 
-  async function disconnect() {
+  async function disconnectGoogleCalendar() {
     setRefusal(null);
     setBusy("disconnect");
     const done = await disconnectCalendar();
@@ -129,7 +134,7 @@ export function CalendarConnectionCard() {
       return;
     }
     setNotice(DISCONNECTED[done.atProvider]);
-    reload();
+    reloadCalendarConnection();
   }
 
   return (
@@ -141,21 +146,21 @@ export function CalendarConnectionCard() {
 
       {notice ? (
         <div className="mt-6">
-          <Notice tone={notice.tone}>{notice.text}</Notice>
+          <CentredCardNotice tone={notice.tone}>{notice.text}</CentredCardNotice>
         </div>
       ) : null}
 
       <div className="mt-6">
-        <CalendarConnectionBody
+        <CalendarConnectionDetails
           result={result}
           busy={busy}
-          onConnect={connect}
-          onDisconnect={disconnect}
-          onRetry={reload}
+          onConnect={connectGoogleCalendar}
+          onDisconnect={disconnectGoogleCalendar}
+          onRetry={reloadCalendarConnection}
         />
         {refusal ? (
           <div className="mt-4">
-            <Notice>{refusal}</Notice>
+            <CentredCardNotice>{refusal}</CentredCardNotice>
           </div>
         ) : null}
       </div>
@@ -164,7 +169,7 @@ export function CalendarConnectionCard() {
 }
 
 // "Last read 40 seconds ago", from the time the busy times were last read.
-function lastReadWords(lastCheckedAt: string | null): string {
+function lastCheckedWords(lastCheckedAt: string | null): string {
   if (!lastCheckedAt) return "Not read yet.";
   const seconds = Math.round((new Date(lastCheckedAt).getTime() - Date.now()) / 1000);
   const size = Math.abs(seconds);
@@ -175,7 +180,7 @@ function lastReadWords(lastCheckedAt: string | null): string {
   return `Last read ${words.format(Math.round(seconds / 86400), "day")}.`;
 }
 
-function CalendarConnectionBody({
+function CalendarConnectionDetails({
   result,
   busy,
   onConnect,
@@ -193,7 +198,7 @@ function CalendarConnectionBody({
   if (result.state === "unreachable") {
     return (
       <div className="flex items-center justify-between gap-4">
-        <Notice>{result.message}</Notice>
+        <CentredCardNotice>{result.message}</CentredCardNotice>
         <Button variant="outline" size="sm" onClick={onRetry}>
           Try again
         </Button>
@@ -212,7 +217,7 @@ function CalendarConnectionBody({
     );
   }
 
-  const disconnectButton = (variant: "destructive" | "outline") => (
+  const renderDisconnectButton = (variant: "destructive" | "outline") => (
     <Button variant={variant} size="sm" onClick={onDisconnect} disabled={busy !== null}>
       {busy === "disconnect" ? "Disconnecting…" : "Disconnect"}
     </Button>
@@ -231,7 +236,7 @@ function CalendarConnectionBody({
           <Button size="sm" onClick={onConnect} disabled={busy !== null}>
             {busy === "connect" ? "Opening Google…" : "Reconnect"}
           </Button>
-          {disconnectButton("outline")}
+          {renderDisconnectButton("outline")}
         </div>
       </div>
     );
@@ -243,10 +248,10 @@ function CalendarConnectionBody({
         <div className="min-w-0">
           <p className="font-medium text-foreground">Google Calendar · {connection.accountEmail}</p>
           <p className="mt-1 text-muted-foreground">
-            Connected. {lastReadWords(connection.lastCheckedAt)}
+            Connected. {lastCheckedWords(connection.lastCheckedAt)}
           </p>
         </div>
-        <div className="ml-auto shrink-0">{disconnectButton("destructive")}</div>
+        <div className="ml-auto shrink-0">{renderDisconnectButton("destructive")}</div>
       </div>
     );
   }

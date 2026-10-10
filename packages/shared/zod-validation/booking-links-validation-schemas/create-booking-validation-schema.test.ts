@@ -69,3 +69,68 @@ describe("the booking form", () => {
     expect(message({ ...form, ...change })).toBe(expected);
   });
 });
+
+describe("the business's own questions (feature 9)", () => {
+  test("answers are trimmed, and a blank one stays for the API to judge", () => {
+    const parsed = createBookingValidationSchema.parse({
+      ...form,
+      answers: [
+        { questionId: "q1", answer: " Latex " },
+        { questionId: "q2", answer: "   " },
+      ],
+    });
+    expect(parsed.answers).toEqual([
+      { questionId: "q1", answer: "Latex" },
+      { questionId: "q2", answer: "" },
+    ]);
+  });
+
+  test("no answers at all is fine", () => {
+    expect(message(form)).toBeUndefined();
+  });
+
+  test("an answer over 500 characters is refused", () => {
+    expect(message({ ...form, answers: [{ questionId: "q1", answer: "a".repeat(501) }] })).toBe(
+      "Keep each answer to 500 characters."
+    );
+  });
+
+  test("more than 20 answers are refused", () => {
+    const answers = Array.from({ length: 21 }, (_, i) => ({ questionId: `q${i}`, answer: "Yes" }));
+    expect(message({ ...form, answers })).toBe("That is too many answers.");
+  });
+
+  test("a yes to later texts needs a phone that can get texts (decision 13)", () => {
+    const phoned = { ...form, customer: { ...form.customer, phone: "(403) 555-0148" } };
+    expect(message({ ...phoned, laterTextsYes: true })).toBeUndefined();
+    expect(message({ ...form, laterTextsYes: false })).toBeUndefined(); // a no needs nothing
+    expect(message({ ...form, laterTextsYes: true })).toBe("Enter a phone that can get texts.");
+    const notTextable = { ...form, customer: { ...form.customer, phone: "555 0100" } };
+    expect(
+      createBookingValidationSchema.safeParse({ ...notTextable, laterTextsYes: true }).error?.issues
+    ).toEqual([
+      expect.objectContaining({
+        path: ["customer", "phone"],
+        message: "Enter a phone that can get texts.",
+      }),
+    ]);
+  });
+
+  test("the phone's error shows with the others, not after they are fixed", () => {
+    const issues = createBookingValidationSchema.safeParse({
+      ...form,
+      customer: { name: "", email: "jane@example.com" },
+      laterTextsYes: true,
+    }).error?.issues;
+    expect(issues?.map((issue) => issue.message)).toEqual([
+      "Enter a name.",
+      "Enter a phone that can get texts.",
+    ]);
+  });
+
+  test("a question id with a quote is refused", () => {
+    expect(message({ ...form, answers: [{ questionId: "q'1", answer: "Yes" }] })).toBe(
+      "That is not a question id."
+    );
+  });
+});

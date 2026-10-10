@@ -85,6 +85,11 @@ export async function findBookingChoices(
   const states = await Promise.all(candidates.map(isFree)); // side by side, as the free times read them
   if (personId !== null && states[0] === "unreadable")
     return { found: false, reason: "unavailable" };
+  // A move with nobody picked keeps its own person while free (7b decision 14). Their calendar
+  // unreadable is not busy: "try again", never someone else in their place.
+  const ownPerson = personId === null ? input.movingBooking?.personId : undefined;
+  if (ownPerson && states[candidates.indexOf(ownPerson)] === "unreadable")
+    return { found: false, reason: "unavailable" };
   const freePeople = candidates.filter((_, i) => states[i] === "free");
   // Nobody free: "try again" if a calendar could not be read (one of them may be free), else taken.
   if (freePeople.length === 0) {
@@ -117,20 +122,27 @@ export async function findBookingChoices(
     if (freeRooms.length === 0) return { found: false, reason: "time_taken" };
   }
 
-  // The order to try: fewest bookings that day (the moving booking not counted), then name, then
-  // id, each person with the free rooms by name.
-  const dayRows = (
-    await findCommitments(
-      organizationId,
-      freePeople,
-      new Date(startsAt.getTime() - DAY_MS),
-      new Date(startsAt.getTime() + DAY_MS)
-    )
-  ).filter(notTheMovingBooking);
+  // The order to try: fewest bookings that day, then name, then id, each person with the free rooms
+  // by name; a move's own person first. The moving booking needs no leaving out of the counts: it
+  // is its own person's, who is first when free and not counted when busy.
+  const dayRows = await findCommitments(
+    organizationId,
+    freePeople,
+    new Date(startsAt.getTime() - DAY_MS),
+    new Date(startsAt.getTime() + DAY_MS)
+  );
   const counts = countBookingsThatDay(dayRows, date, timezone);
   const people = (await findResourceNames(organizationId, freePeople)).map((person) => ({
     ...person,
     bookingsThatDay: counts.get(person.resourceId) ?? 0,
   }));
-  return { found: true, choices: orderAnyAvailable(people, freeRooms) };
+  const choices = orderAnyAvailable(people, freeRooms);
+  if (!ownPerson) return { found: true, choices };
+  return {
+    found: true,
+    choices: [
+      ...choices.filter((choice) => choice.personId === ownPerson),
+      ...choices.filter((choice) => choice.personId !== ownPerson),
+    ],
+  };
 }
