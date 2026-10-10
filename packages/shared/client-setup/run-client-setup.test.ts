@@ -220,6 +220,11 @@ describe("runClientSetup", () => {
     await db
       .insert(bookingLinkResource)
       .values({ organizationId: business.id, bookingLinkId: phoneCall!.id, resourceId: ana!.id });
+    // Room A unticked from Video call on Settings: it stays off (F-354).
+    const [videoCall] = await db.select({ id: bookingLink.id }).from(bookingLink).where(byHand);
+    await db
+      .delete(bookingLinkResource)
+      .where(eq(bookingLinkResource.bookingLinkId, videoCall!.id));
 
     const result = await runClientSetup(db, setupFor(business.slug), { apply: true });
     expect(result.ok && result.made).toEqual([]);
@@ -229,10 +234,14 @@ describe("runClientSetup", () => {
       '"Video call", asksAddress: saved true, file false',
       expect.stringMatching(/^"Ana", weeklyHours: saved {"tue"/),
       expect.stringMatching(/^"Ana", worker texts: saved {"addedOn":true,"movedOn":false/),
+      '"Video call", unticked by hand: Room A',
       '"Phone call", ticked by hand: Ana',
     ]);
     const [kept] = await db.select().from(bookingLink).where(byHand);
     expect(kept?.durationMinutes).toBe(45);
+    expect(
+      await db.$count(bookingLinkResource, eq(bookingLinkResource.bookingLinkId, videoCall!.id))
+    ).toBe(0);
   });
 
   it("finds a service renamed on Settings by its new name, never adding it twice", async () => {

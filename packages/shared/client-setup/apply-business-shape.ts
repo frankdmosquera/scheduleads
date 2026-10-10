@@ -185,13 +185,13 @@ export async function applyBusinessShape(
       servicesMade++;
     }
 
-    if (!ticked.length) continue;
+    // Ticks only on a service made now: an existing one's ticks are the owner's, on Settings (12d).
+    if (existingLink || !ticked.length) continue;
     const ticks = ticked.map((name) => {
       const resourceId = resourceIdsByName.get(nameKeyOf(name));
       if (!resourceId) throw new Error(`"${service.name}" ticks "${name}", who is not listed.`);
       return { organizationId, bookingLinkId, resourceId };
     });
-    // Only missing ticks: one removed by hand comes back, any added by hand stays.
     const madeTicks = await tx
       .insert(bookingLinkResource)
       .values(ticks)

@@ -393,10 +393,10 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Let Cancel hand the list the saved service without the success notice (a second callback, or a flag on onSaved), or have the list say that who does it was not changed.
 **Resolution:** Fixed 2026-10-10 on Frank's yes: Cancel after a failed tick save tells the list so, and the list says "Saved, but who does <service> was not." instead of the full-save notice. Checked in the browser with the ticks call blocked on Cabinet consultation.
 
-### F-354 [P3] open - The setup command and the seed put back ticks the owner removed on Settings
+### F-354 [P3] fixed - The setup command and the seed put back ticks the owner removed on Settings
 
 **File:** packages/shared/client-setup/apply-business-shape.ts:194-199
 **Found:** 2026-10-10 by the independent review of 12d.3 (scope: 7eb80af..7c8e9e3)
 **Why it matters:** For a service that already exists, the setup still inserts every tick the file names (`onConflictDoNothing`, "one removed by hand comes back"). That rule dates from when "by hand" meant editing the table; since 12d.3 it is the owner's own choice on Settings. On Riverbend Clinic (dev), untick Mei from the laser service, then run `npm run db:seed` (or the setup with `--apply`): Mei is ticked and offered again; a service whose ticks were cleared to "anyone" goes back to only the file's people. The setup already leaves an existing service's other fields alone, so ticks are the odd one out. Read from the code, not run; the setup is local `*_dev` only until item 10b.
 **Suggested fix:** Add a service's ticks only when this run makes the service, and list the file's missing ticks on an existing service as a difference instead; Frank's call, since the current rule was written on purpose.
-**Resolution:**
+**Resolution:** Fixed 2026-10-10 on Frank's yes: the setup and the seed tick only a service they make now; an existing service's ticks are left as the owner set them, and the report names a file tick missing there as "unticked by hand". The setup test unticks Room A and checks it stays off and is reported; it fails on the old code.
