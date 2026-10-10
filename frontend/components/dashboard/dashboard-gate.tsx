@@ -1,10 +1,11 @@
 // Frontend component: every signed-in page's first check. Reads GET /me once and shows one screen
 // per answer (loading, signed out, pick a business, plan refused, API down); only a business that
-// is all set reaches the page itself.
+// is all set reaches the page itself, which reads it with useMe(). Mounted once, in the signed-in
+// layout, so moving between screens never asks again.
 
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { CentredCard } from "@/components/centred-card/centred-card";
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
@@ -14,7 +15,16 @@ import { DashboardSignedOutScreen } from "@/components/dashboard/dashboard-signe
 import { Button } from "@/components/ui/button";
 import { fetchMe, type MeResultType, type MeType } from "@/lib/api-client/dashboard/fetch-me";
 
-export function DashboardGate({ children }: { children: (me: MeType) => ReactNode }) {
+const MeContext = createContext<MeType | null>(null);
+
+// The signed-in business, for any page inside the gate.
+export function useMe(): MeType {
+  const me = useContext(MeContext);
+  if (!me) throw new Error("useMe ran outside DashboardGate.");
+  return me;
+}
+
+export function DashboardGate({ children }: { children: ReactNode }) {
   const [result, setResult] = useState<MeResultType | null>(null);
 
   // Bump to ask /me again: after picking a business, or on "Try again".
@@ -74,6 +84,6 @@ export function DashboardGate({ children }: { children: (me: MeType) => ReactNod
       );
 
     case "ok":
-      return children(result.me);
+      return <MeContext.Provider value={result.me}>{children}</MeContext.Provider>;
   }
 }

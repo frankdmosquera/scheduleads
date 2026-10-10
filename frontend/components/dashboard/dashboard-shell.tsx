@@ -9,14 +9,15 @@ import type { ReactNode } from "react";
 
 import { SignOutLink } from "@/components/auth/sign-out-link";
 import { BusinessInitialMark } from "@/components/dashboard/business-initial-mark";
-import type { MeType } from "@/lib/api-client/dashboard/fetch-me";
+import { useMe } from "@/components/dashboard/dashboard-gate";
 
 const SCREENS = [
   { href: "/leads", label: "Leads" },
   { href: "/", label: "Setup" },
 ];
 
-export function DashboardShell({ me, children }: { me: MeType; children: ReactNode }) {
+export function DashboardShell({ children }: { children: ReactNode }) {
+  const me = useMe();
   const pathname = usePathname();
   const router = useRouter();
 

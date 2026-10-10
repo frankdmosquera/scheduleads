@@ -10,6 +10,7 @@ import { telHref } from "@scheduleads-app/shared/tel-href";
 
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { ContactInitials } from "@/components/leads/contact-initials";
+import { LeadsRefusalNotice } from "@/components/leads/leads-refusal-notice";
 import { TimelineEntryLine } from "@/components/leads/timeline-entry-line";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +56,8 @@ export function LeadPageScreen({ leadId }: { leadId: string }) {
               This address does not match a lead of your business.
             </p>
           </div>
+        ) : result.state === "signed-out" || result.state === "refused" ? (
+          <LeadsRefusalNotice refusal={result} />
         ) : result.state === "unreachable" ? (
           <div>
             <CentredCardNotice>{result.message}</CentredCardNotice>

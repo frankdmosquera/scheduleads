@@ -14,10 +14,10 @@ const EMAIL_LINES: Record<string, string> = {
 };
 
 const TEXT_LINES: Record<string, string> = {
-  confirmation: "Texted the confirmation",
-  added: "Texted the worker about the booking",
-  moved: "Texted the worker about the new time",
-  removed: "Texted the worker about the cancellation",
+  booking_confirmation: "Texted the confirmation",
+  worker_added: "Texted the worker about the booking",
+  worker_moved: "Texted the worker about the new time",
+  worker_removed: "Texted the worker about the cancellation",
 };
 
 const OTHER_LINES: Record<string, string> = {
@@ -56,7 +56,7 @@ function lineOf(entry: TimelineEntryType, timeZone: string | null): string {
     case "email_sent":
       return (entry.kind && EMAIL_LINES[entry.kind]) || "Sent an email";
     case "sms_sent":
-      if (entry.kind === "reminder" && entry.minutesBefore !== null)
+      if (entry.kind === "booking_reminder" && entry.minutesBefore !== null)
         return `Texted a reminder ${lengthOf(entry.minutesBefore)} before`;
       return (entry.kind && TEXT_LINES[entry.kind]) || "Sent a text";
     case "other":

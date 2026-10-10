@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { ContactInitials } from "@/components/leads/contact-initials";
+import { LeadsRefusalNotice } from "@/components/leads/leads-refusal-notice";
 import { Button } from "@/components/ui/button";
 import { fetchLeads, type LeadsListRowType } from "@/lib/api-client/leads/fetch-leads";
 import { formatLeadTime } from "@/lib/format-lead-time";
@@ -17,6 +18,8 @@ const SOURCE_LABELS = { widget: "Website", hosted: "Booking page", manual: "Adde
 type ListStateType =
   | { state: "loading" }
   | { state: "unreachable"; message: string }
+  | { state: "signed-out" }
+  | { state: "refused"; message: string }
   | { state: "ok"; leads: LeadsListRowType[]; nextAfter: string | null; timeZone: string | null };
 
 export function LeadsListScreen() {
@@ -47,6 +50,8 @@ export function LeadsListScreen() {
     setMoreError(null);
     const result = await fetchLeads(list.nextAfter);
     setLoadingMore(false);
+    if (result.state === "signed-out")
+      return setMoreError("Your sign-in has ended. Sign in again to see more.");
     if (result.state !== "ok") return setMoreError(result.message);
     setList({
       ...list,
@@ -65,6 +70,8 @@ export function LeadsListScreen() {
       <div className="mt-6">
         {list.state === "loading" ? (
           <p className="text-sm text-muted-foreground">Loading your leads…</p>
+        ) : list.state === "signed-out" || list.state === "refused" ? (
+          <LeadsRefusalNotice refusal={list} />
         ) : list.state === "unreachable" ? (
           <div>
             <CentredCardNotice>{list.message}</CentredCardNotice>
