@@ -193,7 +193,7 @@ them); treat a 5xx like a lost answer, so the next run asks Twilio first. One
 route test with a 503 on the first send and the text found on the retry.
 **Resolution:**
 
-### F-298 [P3] fixed - The package carries every shared validation schema into each site, not only the booking form's
+### F-298 [P3] closed - The package carries every shared validation schema into each site, not only the booking form's
 
 **File:** packages/booking-component/booking-window/booking-form/read-booking-form.ts:5; packages/shared/zod-validation/index.ts; packages/shared/package.json
 **Found:** 2026-10-09 by independent review of step 10.1 (scope: c786f7e..17264c3; lenses: quality, security, performance, tests)
@@ -215,9 +215,9 @@ false` in its package.json, after checking none of its modules relies on an
 import for its effect), or import the create-booking schema through a narrow
 subpath. Then confirm `emailSendingKeyValidationSchema` and the text settings
 schema are gone from dist/index.js and the 76 tests still pass.
-**Resolution:** Fixed 2026-10-09 in 10.1's review fixes: tsdown.config.ts marks the shared package's built files free of side effects for the bundle (`treeshake.moduleSideEffects`, matching both slash kinds, since a first try during the build matched only `/` and changed nothing on Windows). dist/index.js went from 56.98 kB (13.49 kB gzipped) to 48.55 kB (11.18 kB); the shared regions left are tel-href, the email-address, contact, booking-link-id and create-booking schemas, textable-phone-number, local-date and add-days, each used by the window. On the preview page, Book on an empty form still shows each field's own error with the focus on Name.
+**Resolution:** Fixed 2026-10-09 in 10.1's review fixes: tsdown.config.ts marks the shared package's built files free of side effects for the bundle (`treeshake.moduleSideEffects`, matching both slash kinds, since a first try during the build matched only `/` and changed nothing on Windows). dist/index.js went from 56.98 kB (13.49 kB gzipped) to 48.55 kB (11.18 kB); the shared regions left are tel-href, the email-address, contact, booking-link-id and create-booking schemas, textable-phone-number, local-date and add-days, each used by the window. On the preview page, Book on an empty form still shows each field's own error with the focus on Name. Closed 2026-10-09 by re-review of 10.1's fixes (scope: e9e21d0..7cad72a): the rebuilt dist/index.js is 48.55 kB (11.18 kB gzipped) and its only shared regions are tel-href, email-address, contact, booking-link-id, textable-phone-number, create-booking, local-date and add-days; no sign-in code, client setup, sending key, text settings or weekly hours schema is left. No shared source module has a top-level statement other than a declaration, and none calls .meta, .register or z.config, so marking shared's files side-effect free drops nothing the window needs; the bundle loads in Node (exports BookNowTrigger, BookingProvider, useBooking), the 76 tests pass and the frontend builds against it. The regex matches the resolved Windows path, as the drop in size shows.
 
-### F-299 [P3] fixed - The allow-list became a build check, but the spec and tsdown.config.ts still name a test
+### F-299 [P3] closed - The allow-list became a build check, but the spec and tsdown.config.ts still name a test
 
 **File:** packages/booking-component/tsdown.config.ts:4; blueprint/context/current-feature.md:7, 131-137, 205, 232
 **Found:** 2026-10-09 by independent review of step 10.1 (scope: c786f7e..17264c3; lenses: quality, security, performance, tests)
@@ -235,9 +235,9 @@ wrong way.
 check (and why it is a build step rather than a Vitest test), update the
 Status line, and change the comment in tsdown.config.ts to name
 `check-dist-imports.mjs`.
-**Resolution:** Fixed 2026-10-09: the spec records the change at 10.1 (the check is the build's last step; why a Vitest test would have needed Node's types; the type check and prepublishOnly), its Done when says "that check", Files / areas and Testing name check-dist-imports.mjs, and the Status line says 10.1 is built and reviewed. tsdown.config.ts's header now names check-dist-imports.mjs. The package's suite stays 76; the build log already marks the piece "changed" with the reason.
+**Resolution:** Fixed 2026-10-09: the spec records the change at 10.1 (the check is the build's last step; why a Vitest test would have needed Node's types; the type check and prepublishOnly), its Done when says "that check", Files / areas and Testing name check-dist-imports.mjs, and the Status line says 10.1 is built and reviewed. tsdown.config.ts's header now names check-dist-imports.mjs. The package's suite stays 76; the build log already marks the piece "changed" with the reason. Closed 2026-10-09 by re-review of 10.1's fixes (scope: e9e21d0..7cad72a): step 10.1 carries an accurate amendment (the build's last step, why not Vitest: tsconfig.json has types [] and includes the tests, pretest builds first, the use client check, prepublishOnly, the side-effect marking), Done when says that check, Files / areas and Testing name check-dist-imports.mjs, the Status line says built and reviewed, and tsdown.config.ts names check-dist-imports.mjs; no reference to dist-imports.test.ts or a 77th test remains.
 
-### F-300 [P3] fixed - The dist import check reads only top-level .js and .d.ts files and skips triple-slash type references
+### F-300 [P3] closed - The dist import check reads only top-level .js and .d.ts files and skips triple-slash type references
 
 **File:** packages/booking-component/check-dist-imports.mjs:11-20
 **Found:** 2026-10-09 by independent review of step 10.1 (scope: c786f7e..17264c3; lenses: quality, security, performance, tests)
@@ -259,9 +259,9 @@ the check exists to catch.
 `\.d\.(c|m)?ts$`, and add a pattern for `/// <reference types="...">`. Relative
 specifiers (a split chunk importing `./x.js`) are reported as problems today;
 allow those explicitly if code splitting is ever turned on.
-**Resolution:** Fixed 2026-10-09: check-dist-imports.mjs reads every file under dist/ at any depth (`readdirSync` recursive) ending in .js, .mjs, .cjs, .d.ts, .d.mts or .d.cts, and also reads `/// <reference types|path=...>`. Shown with the reviewer's three cases planted in dist/: `sub/a.js` importing @scheduleads-app/shared, `chunk.mjs` re-exporting drizzle-orm and `extra.d.ts` referencing node each failed (exit 1, all three named); removed, the check passed with the real 2 files.
+**Resolution:** Fixed 2026-10-09: check-dist-imports.mjs reads every file under dist/ at any depth (`readdirSync` recursive) ending in .js, .mjs, .cjs, .d.ts, .d.mts or .d.cts, and also reads `/// <reference types|path=...>`. Shown with the reviewer's three cases planted in dist/: `sub/a.js` importing @scheduleads-app/shared, `chunk.mjs` re-exporting drizzle-orm and `extra.d.ts` referencing node each failed (exit 1, all three named); removed, the check passed with the real 2 files. Closed 2026-10-09 by re-review of 10.1's fixes (scope: e9e21d0..7cad72a): on a copy of the real dist/ outside the repo the check passed clean (2 files), then failed with exit 1 naming all four planted files: sub/deeper/a.js (drizzle-orm), sub/b.cjs (export* from shared, minified), sub/c.d.mts (reference types node) and d.mjs (require pg). Recursive readdirSync returns backslash-separated paths on Windows and join and the extension filter handle them (Node 26.7.0).
 
-### F-301 [P3] fixed - Nothing builds the package before a publish, so npm publish ships whatever dist/ is on disk
+### F-301 [P3] closed - Nothing builds the package before a publish, so npm publish ships whatever dist/ is on disk
 
 **File:** packages/booking-component/package.json:19-24
 **Found:** 2026-10-09 by independent review of step 10.1 (scope: c786f7e..17264c3; lenses: quality, security, performance, tests)
@@ -274,4 +274,4 @@ left from another branch, or a dist/ edited by hand, would be published and
 installed by every site.
 **Suggested fix:** Add `"prepublishOnly": "npm run build"`, so a publish always
 rebuilds from the checked-out source and runs `check-dist-imports.mjs` first.
-**Resolution:** Fixed 2026-10-09: the package's scripts gain `"prepublishOnly": "npm run build"`, so `npm publish` runs prebuild (shared, the backend's types), the type check, tsdown and the import check before anything is sent; a failing check stops the publish.
+**Resolution:** Fixed 2026-10-09: the package's scripts gain `"prepublishOnly": "npm run build"`, so `npm publish` runs prebuild (shared, the backend's types), the type check, tsdown and the import check before anything is sent; a failing check stops the publish. Closed 2026-10-09 by re-review of 10.1's fixes (scope: e9e21d0..7cad72a): `npm run prepublishOnly`, both through --workspace from the root and from inside the package folder, ran prebuild (shared, the backend's build:types), the tsc type check, tsdown and check-dist-imports.mjs, exit 0; no .npmrc sets ignore-scripts.
