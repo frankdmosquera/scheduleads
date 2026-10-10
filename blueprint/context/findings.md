@@ -273,13 +273,13 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Have outsideHoursOf add a `when` string per row with formatBookingTime on the API, as localStartTimes does, and show that.
 **Resolution:**
 
-### F-337 [P3] fixed - OutsideHoursBookingType still sits in a file of its own, though outsideHoursOf now produces it
+### F-337 [P3] closed - OutsideHoursBookingType still sits in a file of its own, though outsideHoursOf now produces it
 
 **File:** backend/lib/settings/outside-hours-booking-type.ts:1-11; backend/lib/settings/outside-hours-of.ts:15-24
 **Found:** 2026-10-10 by the final review of feature 12a (scope: main...76850fe; lenses: quality, security, performance, tests)
 **Why it matters:** The type-only file made sense in 12a.1, when `outsideHours` was always empty and nothing produced it. Since 12a.2 `outsideHoursOf` builds every row of it, and coding-standards.md says "A type sits in the file of the function that produces it". The file is used (outside-hours-of, both saves), so nothing breaks; it is the leftover the standard exists to stop, a file Frank opens to find only a shape whose maker lives elsewhere.
 **Suggested fix:** Move `OutsideHoursBookingType` into outside-hours-of.ts, point the two saves' imports there, and remove outside-hours-booking-type.ts.
-**Resolution:** Fixed 2026-10-10 in step 12d.2: the type became ListedBookingType in backend/lib/settings/listed-booking.ts, beside listedBookingOf, the function that produces it, used by outsideHoursOf (12a) and the People save (12d.2); outside-hours-booking-type.ts is gone.
+**Resolution:** Fixed 2026-10-10 in step 12d.2: the type became ListedBookingType in backend/lib/settings/listed-booking.ts, beside listedBookingOf, the function that produces it, used by outsideHoursOf (12a) and the People save (12d.2); outside-hours-booking-type.ts is gone. Closed 2026-10-10 by independent review of step 12d.2 (2a517f5..f1f8427): the old file and every import of it are gone; ListedBookingType sits beside listedBookingOf, used by outsideHoursOf, both hours saves, the services route and saveResource; backend tests, frontend build and lint pass.
 
 ### F-340 [P3] closed - A service renamed on Settings no longer matches its setup-file entry, so a setup run under the new name adds a second one
 
@@ -312,3 +312,43 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** Settings allows a second service with an existing name (addService gives it `-2`), and a rename can make two names equal. The apply and the field comparison take the oldest such service (`orderBy(createdAt).limit(1)`), but the "ticked by hand" query has no limit, so it gathers the ticks of every same-named service. Run on a throwaway business: setup made "Estimate" ticked Ana, a second "Estimate" (estimate-2) was ticked Bob, and a dry run reported `"Estimate", ticked by hand: Bob`, though Bob is not on the service the setup manages. Under the old slug matching estimate-2 was never matched. It only misleads the report (nothing is written), local `*_dev` only until item 10b. Also, `createdAt` alone has no tiebreak, so two same-named rows made in one transaction (the seed) have no fixed order.
 **Suggested fix:** Find the service once per file entry (order by createdAt, then id) and use that row's id in the ticks query, instead of matching by name again.
 **Resolution:** Fixed 2026-10-10: the ticks report first resolves the one service the file means (by name, oldest first, then by id), then reads that service's ticks by its id, so another of the same name never lends it its ticks; every by-name lookup orders by createdAt then id (oldestServiceFirst in service-named.ts). No new test: only a report line is at stake; the setup tests still pass.
+
+### F-344 [P2] open - A person turned off is no longer texted about the bookings they still hold, so a move or cancellation of one never reaches them
+
+**File:** backend/lib/text/send-worker-text.ts:148; backend/lib/settings/save-resource.ts:44-63
+**Found:** 2026-10-10 by independent review of step 12d.2 (scope: 2a517f5..f1f8427; lenses: quality, security, performance, tests)
+**Why it matters:** sendWorkerText returns "the person is inactive" before every kind, the "off your day" (`removed`) text included. Before 12d.2 nobody could turn a person off from the app; now the step's own story turns Tomas off and keeps his Friday booking. If that customer then cancels, or moves (the move goes to someone still on, since Tomas is no longer offered), Tomas's "off your day" text is skipped and he still believes he has Friday. The spec and the form's copy say off never touches a booking and the ones already made stay; the worker's loop on those bookings silently stops. worker-text-job.test.ts:367 tests the old rule ("an inactive person gets nothing"), written when inactive could only be set by hand.
+**Suggested fix:** Let `removed` (and arguably `moved`) texts through for an inactive person who still holds or held the booking, keeping `added` off; or tell the owner on the turned-off answer that the person will no longer get texts about the listed bookings. Frank's call which.
+**Resolution:**
+
+### F-345 [P2] open - The setup command finds people by exact name, so a rename on Settings breaks it: the first person renamed stops the command, others are added twice
+
+**File:** packages/shared/client-setup/run-client-setup.ts:47-55, 143-147; packages/shared/client-setup/apply-business-shape.ts:29-44
+**Found:** 2026-10-10 by independent review of step 12d.2 (scope: 2a517f5..f1f8427; lenses: quality, security, performance, tests)
+**Why it matters:** runClientSetup finds "the first person" by `resource.name = organization.name`; resource-table.ts:18 says the owner renames that person in feature 12, and 12d.2 is that rename. After it, every run of the command for that business answers `"<business>" has no first person named after it.` and stops. ensureResource matches the file's people with `eq(resource.name, name)`, case and spaces exact, while Settings now enforces decision 6 (case and outer spaces ignored): a person renamed "Diego (painter)" to "Diego" is inserted again under the old name by a file that still lists it, and a file listing "diego" next to a Settings "Diego" adds a second one the People page would have refused. Same class as F-340 for services. Local `*_dev` only until item 10b.
+**Suggested fix:** Find the first person by the business's owner login (`resource.userId` of the owner member) rather than by name, and match the file's people with the same lower(btrim(name)) rule as nameTaken (one shared helper, as service-named.ts does for services), in ensureResource and the differences report.
+**Resolution:**
+
+### F-346 [P3] open - "That name is taken" shows as a form alert, not under the Name field
+
+**File:** frontend/lib/api-client/settings/read-save-refusal.ts:15; backend/routes/settings-routes.ts:200, 226
+**Found:** 2026-10-10 by independent review of step 12d.2 (scope: 2a517f5..f1f8427; lenses: quality, security, performance, tests)
+**Why it matters:** name_taken is a 409 with no `field`, and readSaveRefusal makes a field error only from a 400, so both People forms show it in the SaveNotice: the Name input is not marked aria-invalid, has no error under it, and does not take the focus, unlike every other field error in the 12a pattern the spec names ("each error under its field ... a refused save focuses the first bad field").
+**Suggested fix:** Return `field: "name"` with the 409 and let readSaveRefusal read a field from any refusal that carries one, or map `name_taken` to the name field in save-resource.ts on the frontend.
+**Resolution:**
+
+### F-347 [P3] open - A place turned off listing the bookings that use it has no test
+
+**File:** backend/lib/settings/find-upcoming-bookings.ts:67; backend/lib/settings/save-resource.ts:70; backend/routes/settings-routes.test.ts:558-562
+**Found:** 2026-10-10 by independent review of step 12d.2 (scope: 2a517f5..f1f8427; lenses: quality, security, performance, tests)
+**Why it matters:** The Built note adds this rule ("a place turned off lists the bookings that use it") with its own query branch on booking.placeId; the only place test turns off a place with no bookings and checks the 200. A slip (person id passed, wrong column) would list nothing, and the owner would believe nobody needs a call.
+**Suggested fix:** In the turned-off test, give one booking a placeId, turn that place off, and expect that booking (and not a booking without the place) in `upcomingBookings`.
+**Resolution:**
+
+### F-348 [P3] unverified - A booking made while a person is being turned off can land on them and never be listed
+
+**File:** backend/lib/booking/book-time.ts:213-215; backend/lib/settings/lock-business-resources.ts:1-4; backend/lib/settings/save-resource.ts:59-71
+**Found:** 2026-10-10 by independent review of step 12d.2 (scope: 2a517f5..f1f8427; lenses: quality, security, performance, tests)
+**Why it matters:** book-time reads who is offered (active) before its transaction and never locks the person or the business row (by design, "no key update" lets bookings through). If the turn-off commits between that read and the booking's insert, the new booking lands on a person now off and was not in the answer's list. Same shape as F-331 for hours. Unverified: needs the two to overlap; no reproduction run.
+**Suggested fix:** Inside the booking's transaction, read the chosen person's row `for key share` (or `for share`) and refuse as unavailable when it is no longer active; or record the gap as accepted with F-331.
+**Resolution:**
