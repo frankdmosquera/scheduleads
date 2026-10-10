@@ -1,20 +1,9 @@
-// Shared Zod schemas: a person or a place as the owner adds or changes it on Settings (feature 12d).
-// The kind is picked once, when it is added (decision 4); turning off is the only way to remove one.
+// Shared Zod schema: a person or a place as the owner changes it on Settings (feature 12d). Turning
+// off is the only way to remove one (decision 3); a person also has an optional work email.
 
 import { z } from "zod";
 
-const resourceNameValidationSchema = z
-  .string()
-  .trim()
-  .min(1, "Give them a name.")
-  .max(200, "That name is too long.");
-
-export const addResourceValidationSchema = z
-  .object({
-    name: resourceNameValidationSchema,
-    kind: z.enum(["person", "place"], { error: "Pick a person or a place." }),
-  })
-  .strict();
+import { resourceNameValidationSchema } from "./resource-name-validation-schema.js";
 
 // A person's work email: empty or null clears it. Its domain is checked against the business's
 // sending address on the server, which knows it.
@@ -35,7 +24,5 @@ export const saveResourceValidationSchema = z
   })
   .strict();
 
-export type AddResourceInputType = z.input<typeof addResourceValidationSchema>;
-export type AddResourceType = z.output<typeof addResourceValidationSchema>;
 export type SaveResourceInputType = z.input<typeof saveResourceValidationSchema>;
 export type SaveResourceType = z.output<typeof saveResourceValidationSchema>;

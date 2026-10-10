@@ -17,7 +17,8 @@ import {
   standbyDate,
   workerTextSettings,
 } from "../db/index.js";
-import { freeSlug, toSlug } from "../helpers/to-slug.js";
+import { freeSlug } from "../helpers/free-slug.js";
+import { toSlug } from "../helpers/to-slug.js";
 import { nameKeyOf } from "./name-key-of.js";
 import { resourceNamed } from "./resource-named.js";
 import { oldestServiceFirst, serviceNamed } from "./service-named.js";

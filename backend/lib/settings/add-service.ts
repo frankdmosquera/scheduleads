@@ -6,7 +6,8 @@ import { randomUUID } from "node:crypto";
 import { and, eq, like, or } from "drizzle-orm";
 
 import { bookingLink } from "@scheduleads-app/shared/db";
-import { freeSlug, toSlug } from "@scheduleads-app/shared/helpers";
+import { freeSlug } from "@scheduleads-app/shared/free-slug";
+import { toSlug } from "@scheduleads-app/shared/helpers";
 import type { ServiceType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";

@@ -20,6 +20,10 @@
       "types": "./dist/helpers/to-slug.d.ts",
       "default": "./dist/helpers/to-slug.js"
     },
+    "./free-slug": {
+      "types": "./dist/helpers/free-slug.d.ts",
+      "default": "./dist/helpers/free-slug.js"
+    },
     "./booking-time": {
       "types": "./dist/helpers/format-booking-time.d.ts",
       "default": "./dist/helpers/format-booking-time.js"

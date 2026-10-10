@@ -135,6 +135,7 @@ export function ServiceForm({
   // A new service whose ticks failed to save already exists: saving again changes it, never adds it twice.
   const savedService = useRef<ServiceSettingsType | null>(service);
   const outsideHours = useRef<ServiceSaveOutcomeType["outsideHours"]>([]); // from the last save
+  const lastSavedLength = useRef<number | null>(null);
 
   useEffect(() => nameRef.current?.focus(), []); // the form opens where the owner will type
 
@@ -159,13 +160,12 @@ export function ServiceForm({
     }
     const savedNow = saved.answer.service;
     savedService.current = savedNow;
-    // Kept across saves while the form is open: a second save, after its ticks failed, finds the
-    // length unchanged and lists nothing, yet the first save's bookings still no longer fit (F-359).
-    const listed = new Set(outsideHours.current.map((row) => row.bookingId));
-    outsideHours.current = [
-      ...outsideHours.current,
-      ...saved.answer.outsideHours.filter((row) => !listed.has(row.bookingId)),
-    ];
+    // A save again at the same length, after its ticks failed, finds the length unchanged and lists
+    // nothing, yet the last list still holds (F-359); a new length gets its own list (F-361).
+    if (savedNow.durationMinutes !== lastSavedLength.current) {
+      outsideHours.current = saved.answer.outsideHours;
+    }
+    lastSavedLength.current = savedNow.durationMinutes;
     if (
       sameIds(savedNow.peopleIds, ticks.peopleIds) &&
       sameIds(savedNow.placeIds, ticks.placeIds)
