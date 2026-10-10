@@ -18,7 +18,7 @@ import {
   workerTextSettings,
 } from "../db/index.js";
 import { freeSlug, toSlug } from "../helpers/to-slug.js";
-import { serviceNamed } from "./service-named.js";
+import { oldestServiceFirst, serviceNamed } from "./service-named.js";
 import { personAvailabilityRuleValidationSchema } from "../zod-validation/availability-validation-schemas/availability-rule-validation-schema.js";
 import type { ClientSetupType } from "../zod-validation/admin-validation-schemas/client-setup-validation-schema.js";
 
@@ -147,7 +147,7 @@ export async function applyBusinessShape(
       .select({ id: bookingLink.id })
       .from(bookingLink)
       .where(serviceNamed(organizationId, service.name))
-      .orderBy(bookingLink.createdAt)
+      .orderBy(...oldestServiceFirst)
       .limit(1);
 
     const bookingLinkId = existingLink?.id ?? randomUUID();

@@ -13,7 +13,7 @@ import {
   resource,
   workerTextSettings,
 } from "../db/index.js";
-import { serviceNamed } from "./service-named.js";
+import { oldestServiceFirst, serviceNamed } from "./service-named.js";
 import type { ClientSetupType } from "../zod-validation/admin-validation-schemas/client-setup-validation-schema.js";
 import {
   applyBusinessShape,
@@ -114,7 +114,7 @@ async function findDifferences(
       .select()
       .from(bookingLink)
       .where(serviceNamed(organizationId, service.name))
-      .orderBy(bookingLink.createdAt)
+      .orderBy(...oldestServiceFirst)
       .limit(1);
     if (!saved) continue;
     differs(`"${service.name}", name`, saved.name, service.name);
@@ -187,15 +187,22 @@ async function findDifferences(
 
   // Who does what: a tick added by hand stays, and is named here.
   for (const service of setup.services) {
+    // The one service the file means, so another of the same name never lends it its ticks.
+    const [saved] = await tx
+      .select({ id: bookingLink.id })
+      .from(bookingLink)
+      .where(serviceNamed(organizationId, service.name))
+      .orderBy(...oldestServiceFirst)
+      .limit(1);
+    if (!saved) continue;
     const ticked = await tx
       .select({ name: resource.name })
       .from(bookingLinkResource)
-      .innerJoin(bookingLink, eq(bookingLink.id, bookingLinkResource.bookingLinkId))
       .innerJoin(resource, eq(resource.id, bookingLinkResource.resourceId))
       .where(
         and(
           eq(bookingLinkResource.organizationId, organizationId),
-          serviceNamed(organizationId, service.name)
+          eq(bookingLinkResource.bookingLinkId, saved.id)
         )
       );
     const inFile = new Set(service.ticked ?? []);
