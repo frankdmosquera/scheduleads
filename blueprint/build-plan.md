@@ -224,7 +224,7 @@ Exit: agents-web takes a real booking through this product, the lead lands
 in the agency's own organization, and the site that promises "nothing
 rented" rents nothing.
 
-- [ ] 9. **The booking component** - unstyled trigger, themed modal, one
+- [x] 9. **The booking component** - unstyled trigger, themed modal, one
   provider per host wrapping children, the face-and-body contract. The
   layout is a stored value on the booking link, not a hardcoded shape, so
   the week strip in `prototypes/modal-primo.html` can return later without
