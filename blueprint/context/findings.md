@@ -192,3 +192,86 @@ notification to the business's own phone is at stake, hence P3.
 them); treat a 5xx like a lost answer, so the next run asks Twilio first. One
 route test with a 503 on the first send and the text found on the retry.
 **Resolution:**
+
+### F-298 [P3] open - The package carries every shared validation schema into each site, not only the booking form's
+
+**File:** packages/booking-component/booking-window/booking-form/read-booking-form.ts:5; packages/shared/zod-validation/index.ts; packages/shared/package.json
+**Found:** 2026-10-09 by independent review of step 10.1 (scope: c786f7e..17264c3; lenses: quality, security, performance, tests)
+**Why it matters:** read-booking-form.ts imports `createBookingValidationSchema`
+from the `@scheduleads-app/shared/zod-validation` barrel, and shared's
+package.json has no `"sideEffects": false`, so tsdown keeps every module the
+barrel re-exports with its top-level `z.object(...)` calls. The built
+dist/index.js (lines 314 to 516, about 11 kB of its 57 kB) holds the sign-in
+code schema, the client setup schema, the Resend key format, the email sending
+schema, the availability rule schemas and the text settings schema; the booking
+form needs only the create-booking, contact, booking-link-id and textable phone
+pieces (about 3 kB). The package's own package.json has no `sideEffects` either,
+so a site's bundler cannot drop them: every visitor of every client site
+downloads and runs about 8 kB of admin and dashboard validation it never uses.
+Nothing secret is in it (validation rules and messages), so this is size and
+tidiness, not exposure.
+**Suggested fix:** Mark `packages/shared` side-effect free (`"sideEffects":
+false` in its package.json, after checking none of its modules relies on an
+import for its effect), or import the create-booking schema through a narrow
+subpath. Then confirm `emailSendingKeyValidationSchema` and the text settings
+schema are gone from dist/index.js and the 76 tests still pass.
+**Resolution:**
+
+### F-299 [P3] open - The allow-list became a build check, but the spec and tsdown.config.ts still name a test
+
+**File:** packages/booking-component/tsdown.config.ts:4; blueprint/context/current-feature.md:7, 131-137, 205, 232
+**Found:** 2026-10-09 by independent review of step 10.1 (scope: c786f7e..17264c3; lenses: quality, security, performance, tests)
+**Why it matters:** Step 10.1 and Testing say "a test reads every file in
+dist/" and "Package (Vitest): the new dist/ import allow-list test, plus
+feature 9's 76", and Files / areas lists "a new test over dist/". What was
+built is `check-dist-imports.mjs`, the last command of the package's build
+(which `pretest` runs, so `npm test` still enforces it); the suite is 76 tests,
+not 77. The spec was not amended to say so, and tsdown.config.ts:4 points the
+reader to `dist-imports.test.ts`, a file that does not exist. The spec's
+Status line also still reads "step 10.1's plan with him next" while 10.1 is
+ticked. A later reader looking for the test, or counting 77, is sent the
+wrong way.
+**Suggested fix:** Amend step 10.1, Testing and Files / areas to the build
+check (and why it is a build step rather than a Vitest test), update the
+Status line, and change the comment in tsdown.config.ts to name
+`check-dist-imports.mjs`.
+**Resolution:**
+
+### F-300 [P3] open - The dist import check reads only top-level .js and .d.ts files and skips triple-slash type references
+
+**File:** packages/booking-component/check-dist-imports.mjs:11-20
+**Found:** 2026-10-09 by independent review of step 10.1 (scope: c786f7e..17264c3; lenses: quality, security, performance, tests)
+**Why it matters:** The check uses a non-recursive `readdirSync(dist)` filtered
+by `/\.(js|d\.ts)$/`, and its patterns have no form for
+`/// <reference types="..." />`. Run on a copy outside the repo, each of these
+passed while carrying a forbidden import: `import "drizzle-orm"` in
+`dist/sub/a.js`, the same in `dist/chunk.mjs`, and
+`/// <reference types="node" />` in `index.d.ts`. Every other form tried
+failed as it should (`export ... from`, minified `export*from"x"`, a side
+effect import, default plus namespace import, a type `import("x")`, a lookalike
+name such as `reactx`, a single-quoted directive). Today's output is two
+top-level files with none of these, so nothing slips through now. A switch
+to `.mjs` alone (tsdown's default when `platform` is `node`) would fail loudly,
+since index.js would be missing; the silent gaps are a nested output file
+(an `unbundle` build or a nested entry) and a triple-slash reference, which
+the check exists to catch.
+**Suggested fix:** Walk dist/ recursively, match `\.(c|m)?js$` and
+`\.d\.(c|m)?ts$`, and add a pattern for `/// <reference types="...">`. Relative
+specifiers (a split chunk importing `./x.js`) are reported as problems today;
+allow those explicitly if code splitting is ever turned on.
+**Resolution:**
+
+### F-301 [P3] open - Nothing builds the package before a publish, so npm publish ships whatever dist/ is on disk
+
+**File:** packages/booking-component/package.json:19-24
+**Found:** 2026-10-09 by independent review of step 10.1 (scope: c786f7e..17264c3; lenses: quality, security, performance, tests)
+**Why it matters:** The package now has `publishConfig` and `files: ["dist",
+"booking-component.css"]`, but no `prepublishOnly` or `prepack` script.
+dist/ is gitignored, so `npm publish` (step 10.2) packs whatever the last
+build on that machine left, without the type check or the dist import check;
+`npm pack --dry-run` here packed the existing dist/ with no build run. A build
+left from another branch, or a dist/ edited by hand, would be published and
+installed by every site.
+**Suggested fix:** Add `"prepublishOnly": "npm run build"`, so a publish always
+rebuilds from the checked-out source and runs `check-dist-imports.mjs` first.
+**Resolution:**
