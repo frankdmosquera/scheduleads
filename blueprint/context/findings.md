@@ -280,3 +280,27 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** The type-only file made sense in 12a.1, when `outsideHours` was always empty and nothing produced it. Since 12a.2 `outsideHoursOf` builds every row of it, and coding-standards.md says "A type sits in the file of the function that produces it". The file is used (outside-hours-of, both saves), so nothing breaks; it is the leftover the standard exists to stop, a file Frank opens to find only a shape whose maker lives elsewhere.
 **Suggested fix:** Move `OutsideHoursBookingType` into outside-hours-of.ts, point the two saves' imports there, and remove outside-hours-booking-type.ts.
 **Resolution:**
+
+### F-340 [P3] open - A service renamed on Settings no longer matches its setup-file entry, so a setup run under the new name adds a second one
+
+**File:** packages/shared/client-setup/apply-business-shape.ts:145-150; packages/shared/client-setup/run-client-setup.ts:112-121; backend/lib/settings/save-service.ts:20
+**Found:** 2026-10-10 by independent review of step 12d.1 (scope: main...e18c11a; lenses: quality, security, performance, tests)
+**Why it matters:** The setup command finds a business's service by `toSlug(service.name)`, which held only while every slug came from the current name. 12d.1 keeps the slug fixed and lets the name change (decision 5), and gives a second add of a name `-2`. So after "Estimate" is renamed "Free estimate" on Settings, a setup file listing "Free estimate" inserts a second live "Free estimate", while one still listing "Estimate" keeps matching the renamed row; and a Settings-made `estimate-2` is taken for a setup service named "Estimate 2". The spec's note says the command "adds only what is missing, by name", which is not what it does once names change. Only re-runs on an existing business are affected, and those are local `*_dev` only until item 10b.
+**Suggested fix:** Match setup services by name, trimmed and ignoring case (as the spec says), in both apply-business-shape.ts and run-client-setup.ts, keeping `toSlug` only for the slug of a new row (with the same `-2` rule as addService); or state in the command's header that a re-run after Settings changes is unsupported.
+**Resolution:**
+
+### F-341 [P3] open - Closing the service form drops keyboard focus to the top of the page
+
+**File:** frontend/components/settings/services-screen.tsx:34-38, 58, 75
+**Found:** 2026-10-10 by independent review of step 12d.1 (scope: main...e18c11a; lenses: quality, security, performance, tests)
+**Why it matters:** Save, Add and Cancel all `setOpen(null)`, which unmounts the form that holds the focus, and nothing moves it anywhere. A keyboard or screen reader user hears "Saved" from the status region but is left at the document's start and has to tab back through the dashboard to reach the list. 12a's cards never unmounted, so this is new with the open-one-form pattern.
+**Suggested fix:** After closing, focus the row's Change button (by a ref map keyed by service id) for an edit, and "+ Add a service" for a new one or a Cancel.
+**Resolution:**
+
+### F-342 [P3] unverified - The start-times minutes box sits inside the "Every" radio's label
+
+**File:** frontend/components/settings/service-form.tsx:304-330
+**Found:** 2026-10-10 by independent review of step 12d.1 (scope: main...e18c11a; lenses: quality, security, performance, tests)
+**Why it matters:** HTML allows a label no labelable descendant other than its control; this label holds the radio and the number input, so the radio's name is computed with an embedded spinbutton, and the disabled box (shown while "every service length" is picked) is the natural thing to click but is disabled, so it may not pick the radio. Unverified: not tried in a browser or screen reader.
+**Suggested fix:** Close the label after "Every"; put the input beside it with its aria-label, and either leave it enabled and pick the radio on focus, or keep it disabled and say so in a hint.
+**Resolution:**
