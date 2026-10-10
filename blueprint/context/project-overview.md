@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash 429a77bc9b4f5d95b7a6d1702f7f4f059c4f829d882522bf57f18c48bfe2223a -->
+<!-- blueprint:source-hash 39cc50acf7fceb3ba12844f2bc52ac5fe37829e0af2a372ec312a5cd52f8d4de -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -31,7 +31,8 @@ and paid." This product does, starting with the booking.
 - **Crew member** - later, assigned to jobs. No sign-in until a business asks.
 - **Self-serve customer** - Phase 9. Signs up and pays without the agency.
 
-Tenants, in order: agents-web (tenant zero), primo-painters (first paying
+Tenants, in order: AgentsWeb (tenant zero, the agency itself, its site
+`agency-site-app`), primo-painters (first paying
 client, live and ranking), face-and-body (family, cost-cover, 45 services),
 the-latam-painters (after its site is finished).
 
@@ -80,7 +81,11 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
      runs on one email.
 9. **The booking component** - unstyled trigger, themed modal, one provider
    per host, layout stored on the booking link.
-10. **Tenant zero wired: agents-web**.
+10. **Tenant zero ready: AgentsWeb** - the booking window as one shared
+    package any site installs, never an embed; a business set up from a setup
+    file until item 12; a real call booked on the laptop.
+- **10b. First deploy** - Railway and Vercel for real use, with the agency
+  site's launch.
 11. **Leads list and contact page** - timeline, next steps, a lead by hand.
 12. **Settings** - services, people and places, who does what, bookable hours,
     closed and opened days, the holiday picker (none by default), notice,

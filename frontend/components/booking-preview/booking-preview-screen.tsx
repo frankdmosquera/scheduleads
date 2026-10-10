@@ -3,7 +3,7 @@
 
 "use client";
 
-import { BookingProvider, BookNowTrigger } from "@scheduleads-app/booking-component";
+import { BookingProvider, BookNowTrigger } from "@frankdmosquera/booking-component";
 import { notFound } from "next/navigation";
 import { useEffect, useState } from "react";
 

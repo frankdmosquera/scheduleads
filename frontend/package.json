@@ -3,18 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "tsc -p ../packages/shared/tsconfig.build.json && npm run build:types --workspace=backend && tsc -p ../packages/booking-component/tsconfig.build.json",
+    "predev": "tsc -p ../packages/shared/tsconfig.build.json && npm run build:types --workspace=backend && npm run build --workspace=@frankdmosquera/booking-component --ignore-scripts",
     "dev": "next dev -p 3400",
-    "prebuild": "tsc -p ../packages/shared/tsconfig.build.json && npm run build:types --workspace=backend && tsc -p ../packages/booking-component/tsconfig.build.json",
+    "prebuild": "tsc -p ../packages/shared/tsconfig.build.json && npm run build:types --workspace=backend && npm run build --workspace=@frankdmosquera/booking-component --ignore-scripts",
     "build": "next build",
     "start": "next start -p 3400",
     "lint": "eslint"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "@frankdmosquera/booking-component": "*",
     "@hookform/resolvers": "^5.9.1",
     "@imagekit/next": "^2.1.6",
-    "@scheduleads-app/booking-component": "*",
     "@scheduleads-app/shared": "*",
     "backend": "*",
     "better-auth": "^1.7.5",

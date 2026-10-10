@@ -17,7 +17,7 @@
 //   const { open } = useBooking();
 //   open(); // or open(bookingId)
 //
-// The look comes from the host: import "@scheduleads-app/booking-component/booking-component.css"
+// The look comes from the host: import "@frankdmosquera/booking-component/booking-component.css"
 // and define the --sa-* tokens (colours, fonts, radius) in the host's own stylesheet. Each has a
 // neutral fallback. --sa-action-ink must be set with --sa-action; it is never assumed white.
 

@@ -4,7 +4,7 @@
 
 import type { Metadata } from "next";
 
-import "@scheduleads-app/booking-component/booking-component.css";
+import "@frankdmosquera/booking-component/booking-component.css";
 
 import { BookingPreviewScreen } from "@/components/booking-preview/booking-preview-screen";
 

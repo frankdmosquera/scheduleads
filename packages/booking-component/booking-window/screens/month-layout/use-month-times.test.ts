@@ -102,6 +102,7 @@ const renderScreenOne = (
         logo: null,
         phone: null,
         questions: [],
+        laterTextsYesWords: null,
       } as BookingBusinessType,
       service: {
         id: "facial",

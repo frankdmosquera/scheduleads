@@ -243,13 +243,24 @@ rented" rents nothing.
   visitor, and per contact, so the same email or phone booking a burst in a
   short while is refused. A customer may still book two times at once (a
   parent with two children), so that alone is never refused (5d, Oct 2)
-- [ ] 10. **Tenant zero wired: agents-web** - the agency's siteConfig holds
-  its slug, the existing contact-inquiry seam calls the API, the site's
-  theme reaches the modal. Frank is the first customer.
-  Open, from 2026-09-25: this item goes live before Settings (item 12), so
-  the agency's own business has no in-app way to get its services and hours
-  yet. Decide here: move the needed part of Settings earlier, or a small
-  one-off command for this one business
+- [ ] 10. **Tenant zero ready: AgentsWeb** - the agency's own business
+  (AgentsWeb, its site `agency-site-app`) takes real bookings, and any site
+  in any repo can install the booking window. Decided 2026-10-09: every site
+  installs it as one shared package built into its own files, never a
+  widget or an embed (published privately as
+  `@frankdmosquera/booking-component`); until Settings (item 12) a
+  business's services, people, hours and questions come from a setup file
+  applied by a command, which answers this item's open question; it ends on
+  the laptop with a real call booked into AgentsWeb. The agency site's own
+  pages (installing the package, its Book a call card opening the window)
+  are that site's item 12, in its own repo. Frank is the first customer
+- [ ] 10b. **First deploy** - the API and the dashboard out on Railway and
+  Vercel for real use for the first time: the first-deploy checks (F-176,
+  F-179, whether Railway's proxy replaces a visitor's own `X-Real-IP`,
+  `NODE_ENV=production`), the setup command opened to the live database and
+  AgentsWeb's file applied there. Timed with the agency site's launch, which
+  its own plan holds until texts and QuickBooks (decided 2026-10-09, split
+  out of item 10)
 
 ## Phase 4. The CRM, first release
 
