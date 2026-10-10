@@ -13,7 +13,7 @@ import type { HoursRowsType } from "../bookable-hours/apply-outside-hours-rules.
 import { businessHoursOf } from "./business-hours-of.js";
 import { findUpcomingBookings } from "./find-upcoming-bookings.js";
 import { outsideHoursOf } from "./outside-hours-of.js";
-import type { OutsideHoursBookingType } from "./outside-hours-booking-type.js";
+import type { ListedBookingType } from "./listed-booking.js";
 import { sortedHours } from "./sorted-hours.js";
 
 // The first save makes the business's row with no closed days and no holidays; every later save
@@ -24,7 +24,7 @@ export async function saveBusinessHours(
   organizationId: string,
   hours: BusinessHoursType,
   now: Date
-): Promise<{ business: BusinessHoursType; outsideHours: OutsideHoursBookingType[] }> {
+): Promise<{ business: BusinessHoursType; outsideHours: ListedBookingType[] }> {
   const saved = { ...hours, ...sortedHours(hours) };
   const { weeklyHours, dateHours, timezone, minimumNoticeMinutes, horizonDays } = saved;
 

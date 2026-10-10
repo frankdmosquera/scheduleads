@@ -26,6 +26,7 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the settings route tests")
 
 // Imported after the env is loaded: they read it the moment they load.
 const { app } = await import("../app.js");
+const { findServiceResources } = await import("../lib/scheduling/find-service-resources.js");
 const { db } = await import("../database.js");
 const { appOrigin } = await import("../lib/auth/auth-server.js");
 const {
@@ -530,5 +531,92 @@ describe("the Services settings", () => {
     expect(await listed()).not.toContain(estimateId);
     const [still] = await db.select().from(booking).where(eq(booking.id, lee.bookingId));
     expect([still.status, still.bookingLinkId]).toEqual(["confirmed", estimateId]);
+  });
+});
+
+type SavedResourceType = {
+  resource: { id: string; name: string; kind: string; active: boolean };
+  upcomingBookings: { bookingId: string }[];
+};
+
+describe("the People settings", () => {
+  test("the last active person cannot be turned off", async () => {
+    // Fresh has one person, Juan; a place does not count as someone on.
+    const room = await post("/settings/people", fresh.email, { name: "Chair 1", kind: "place" });
+    expect(room.status).toBe(201);
+    const off = await put(`/settings/people/${fresh.personId}`, fresh.email, {
+      name: "Juan",
+      active: false,
+    });
+    expect(off.status).toBe(409);
+    expect(await off.json()).toMatchObject({ error: { code: "last_person" } });
+    const [juan] = await db.select().from(resource).where(eq(resource.id, fresh.personId));
+    expect(juan.active).toBe(true);
+
+    // A place may go off: bookings never need one to exist.
+    const { resource: chair } = (await room.json()) as SavedResourceType;
+    const chairOff = await put(`/settings/people/${chair.id}`, fresh.email, {
+      name: "Chair 1",
+      active: false,
+    });
+    expect(chairOff.status).toBe(200);
+  });
+
+  test("a name another person or place already has is refused", async () => {
+    const added = await post("/settings/people", summit.email, { name: " juan ", kind: "place" });
+    expect(added.status).toBe(409);
+    expect(await added.json()).toMatchObject({ error: { code: "name_taken" } });
+    const renamed = await put(`/settings/people/${summitPlaceId}`, summit.email, {
+      name: "JUAN",
+      active: true,
+    });
+    expect(renamed.status).toBe(409);
+
+    // Its own name, in another case, is not taken from itself.
+    const same = await put(`/settings/people/${summitPlaceId}`, summit.email, {
+      name: "ROOM 1",
+      active: true,
+    });
+    expect(same.status).toBe(200);
+    // Another business's person: the same 404 as an unknown id.
+    const foreign = await put(`/settings/people/${other.personId}`, summit.email, {
+      name: "Taken over",
+      active: true,
+    });
+    expect(foreign.status).toBe(404);
+  });
+
+  test("a turned-off person is not offered, and their bookings stay and are listed", async () => {
+    const pat = await makeBooking("Pat", bookedAnaId, 600);
+    const off = await put(`/settings/people/${bookedAnaId}`, booked.email, {
+      name: "Ana",
+      active: false,
+    });
+    expect(off.status).toBe(200);
+    const answer = (await off.json()) as SavedResourceType;
+    expect(answer.resource.active).toBe(false);
+    expect(answer.upcomingBookings.map((row) => row.bookingId)).toContain(pat.bookingId);
+
+    const [still] = await db.select().from(booking).where(eq(booking.id, pat.bookingId));
+    expect([still.status, still.personId]).toEqual(["confirmed", bookedAnaId]);
+    const offered = await findServiceResources(booked.organizationId, estimateId, {
+      serviceMayBeOff: true,
+    });
+    expect(offered?.peopleIds).not.toContain(bookedAnaId);
+    const hours = (await (await get("/settings/hours", booked.email)).json()) as {
+      people: { id: string }[];
+    };
+    expect(hours.people.map((person) => person.id)).not.toContain(bookedAnaId);
+
+    // On again: offered again, and nothing is listed.
+    const on = await put(`/settings/people/${bookedAnaId}`, booked.email, {
+      name: "Ana",
+      active: true,
+    });
+    expect(((await on.json()) as SavedResourceType).upcomingBookings).toEqual([]);
+    const back = await findServiceResources(booked.organizationId, estimateId, {
+      serviceMayBeOff: true,
+    });
+    expect(back?.peopleIds).toContain(bookedAnaId);
   });
 });

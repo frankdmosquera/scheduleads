@@ -1,5 +1,5 @@
 // Backend: a business's confirmed bookings still to come, with what the Hours card lists for each:
-// the customer, the service and the person. One person's only, when a person's card is saved.
+// the customer, the service and the person. Only those one person or one place holds, when given.
 
 import { and, asc, eq, gt } from "drizzle-orm";
 
@@ -23,7 +23,7 @@ export async function findUpcomingBookings(
   executor: DatabaseExecutorType,
   organizationId: string,
   now: Date,
-  personId: string | null // null = everyone's
+  holder: { personId: string } | { placeId: string } | null // null = everyone's
 ): Promise<UpcomingBookingType[]> {
   // Every join stays inside the business, as the composite keys do.
   return executor
@@ -63,7 +63,8 @@ export async function findUpcomingBookings(
         eq(booking.organizationId, organizationId),
         eq(booking.status, "confirmed"),
         gt(booking.startsAt, now),
-        personId ? eq(booking.personId, personId) : undefined
+        holder && "personId" in holder ? eq(booking.personId, holder.personId) : undefined,
+        holder && "placeId" in holder ? eq(booking.placeId, holder.placeId) : undefined
       )
     )
     .orderBy(asc(booking.startsAt), asc(booking.id));

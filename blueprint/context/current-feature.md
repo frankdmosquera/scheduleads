@@ -98,7 +98,7 @@ Blocking findings (P0/P1) are fixed by default; P2/P3 are recorded and carried.
   (`settings-section.tsx`, `read-settings-response.ts`), and 12a's `HoursNotice` and
   `SaveHoursResultType` became `SaveNotice` and `SaveResultType`, since Services uses them too.
 
-- [ ] **12d.2 People and places come and go.** "I add 'Room 2', rename 'Diego (painter)' to
+- [x] **12d.2 People and places come and go.** "I add 'Room 2', rename 'Diego (painter)' to
   'Diego', turn Tomas off, and he is no longer offered; his Friday booking is still there."
   - Backend: `GET /settings/people`, `POST /settings/people` (`{ name, kind }`) and
     `PUT /settings/people/:resourceId` (`{ name, active }`), in `backend/lib/settings/`. A new
@@ -113,6 +113,14 @@ Blocking findings (P0/P1) are fixed by default; P2/P3 are recorded and carried.
   and not on Hours (hours are per person), a person turned off disappears from Hours and is
   not offered in the booking preview while their booking stays on its lead page, and turning
   them on again brings both back.
+  *Built 2026-10-10.* Changed while building: `GET /settings/people` also answers the business's
+  `timezone` (the turned-off list shows times in it); a place turned off lists the bookings
+  that use it. Saves of people and places lock the business's row (`for no key update`) so two
+  cannot both find a name free or both find another person on. 12a's
+  `OutsideHoursBookingType` and `OutsideHoursList` became `ListedBookingType` (with
+  `listedBookingOf`) and `ListedBookings` (with a title), shared with this list; this settles
+  F-337. By hand, Summit's services all send whoever is free, so the booking preview never
+  names a person: "not offered" is proved by the route test, not seen in the preview.
 
 - [ ] **12d.3 Who does what.** "On 'Colour consultation' I tick only Marco and Room 1, and the
   booking window offers only Marco."
@@ -189,7 +197,7 @@ every person and place `{ id, name, kind, active }` for the ticks (12d.3).
 **`PUT /settings/services/:serviceId/resources`**, `{ peopleIds: string[], placeIds:
 string[] }`, no repeats. `200 { peopleIds, placeIds }`.
 
-**`GET /settings/people`** `200 { canEdit, people, senderDomain }`: every person and place by
+**`GET /settings/people`** `200 { canEdit, people, timezone, senderDomain }`: every person and place by
 name, `{ id, name, kind, active, workEmail }` (`workEmail` from 12d.4, null for a place);
 `senderDomain` the business's sending domain or null (12d.4).
 **`POST /settings/people`**, `{ name, kind: "person" | "place" }`. `201 { resource }`.

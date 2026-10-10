@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 const SECTIONS = [
   { href: "/settings/hours", label: "Hours" },
   { href: "/settings/services", label: "Services" },
+  { href: "/settings/people", label: "People" },
 ];
 
 export function SettingsFrame({ children }: { children: ReactNode }) {

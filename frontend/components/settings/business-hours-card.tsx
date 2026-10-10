@@ -15,10 +15,7 @@ import {
 
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
 import { NoticeField } from "@/components/settings/notice-field";
-import {
-  OutsideHoursList,
-  type OutsideHoursListType,
-} from "@/components/settings/outside-hours-list";
+import { ListedBookings, type ListedBookingsType } from "@/components/settings/listed-bookings";
 import { OneOffDatesEditor } from "@/components/settings/one-off-dates-editor";
 import { WeekEditor } from "@/components/settings/week-editor";
 import { Button } from "@/components/ui/button";
@@ -50,7 +47,7 @@ export function BusinessHoursCard({
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   // Stays until the card is saved again or the page is left.
-  const [outside, setOutside] = useState<OutsideHoursListType | null>(null);
+  const [outside, setOutside] = useState<ListedBookingsType | null>(null);
   const form = useForm<z.input<typeof businessHoursValidationSchema>, unknown, BusinessHoursType>({
     resolver: zodResolver(businessHoursValidationSchema),
     defaultValues: initial ?? NO_HOURS_YET,
@@ -232,7 +229,11 @@ export function BusinessHoursCard({
         </fieldset>
 
         <SaveNotice notice={notice} />
-        <OutsideHoursList list={outside} Heading="h4" />
+        <ListedBookings
+          list={outside}
+          title="These bookings now sit outside your hours"
+          Heading="h4"
+        />
         {canEdit ? (
           <div className="mt-4">
             <Button type="submit" disabled={form.formState.isSubmitting}>

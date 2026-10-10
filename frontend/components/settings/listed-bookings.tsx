@@ -1,5 +1,6 @@
-// Frontend component: the upcoming bookings a save of hours left outside them, under the card that
-// saved. Nothing about them changed; each opens its lead, so the owner can call the customer.
+// Frontend component: upcoming bookings a Settings save lists under its form, still booked: ones a
+// save of hours left outside them (12a), or ones held by a person or place just turned off (12d).
+// Each opens its lead, so the owner can call the customer.
 
 import Link from "next/link";
 
@@ -7,25 +8,25 @@ import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 
 import type { SavedBusinessHoursType } from "@/lib/api-client/settings/save-business-hours";
 
-export type OutsideHoursListType = {
+export type ListedBookingsType = {
   bookings: SavedBusinessHoursType["outsideHours"];
   timezone: string; // the business's, so times read as the customer was told them
 };
 
-export function OutsideHoursList({
+export function ListedBookings({
   list,
-  Heading, // one level under the card's own title
+  title,
+  Heading, // one level under the form's own title
 }: {
-  list: OutsideHoursListType | null;
-  Heading: "h4" | "h5";
+  list: ListedBookingsType | null;
+  title: string;
+  Heading: "h3" | "h4" | "h5";
 }) {
   if (!list || list.bookings.length === 0) return null;
 
   return (
     <div className="mt-4 rounded-lg border border-[var(--wait)] bg-[var(--wait-soft)] p-4">
-      <Heading className="text-sm font-semibold text-foreground">
-        These bookings now sit outside your hours
-      </Heading>
+      <Heading className="text-sm font-semibold text-foreground">{title}</Heading>
       <p className="mt-1 text-sm text-muted-foreground">
         Still booked. Open a booking to call the customer.
       </p>
