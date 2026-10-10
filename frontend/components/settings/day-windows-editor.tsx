@@ -55,6 +55,10 @@ export function DayWindowsEditor({
   errors: DayWindowsErrorsType;
 }) {
   const added = nextWindow(windows);
+  // An error on the whole day (two windows overlap, a date with none) marks every field of the day,
+  // so a refused save can focus one and a screen reader hears why.
+  const dayError = errors?.message;
+  const dayErrorId = `${idBase}-error`;
   const setTime = (index: number, key: "startMinute" | "endMinute", value: string) => {
     const minute = fromTimeValue(value, key === "endMinute");
     if (minute === null) return;
@@ -69,6 +73,10 @@ export function DayWindowsEditor({
           errors?.[index]?.startMinute?.message ??
           errors?.[index]?.endMinute?.message;
         const errorId = `${idBase}-${index}-error`;
+        const invalid = error || dayError ? true : undefined;
+        const describedBy =
+          [error ? errorId : null, dayError ? dayErrorId : null].filter(Boolean).join(" ") ||
+          undefined;
         return (
           <div key={index} className="flex flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -78,8 +86,8 @@ export function DayWindowsEditor({
                 aria-label={`${label}, window ${index + 1}, from`}
                 value={toTimeValue(window.startMinute)}
                 onChange={(event) => setTime(index, "startMinute", event.target.value)}
-                aria-invalid={error ? true : undefined}
-                aria-describedby={error ? errorId : undefined}
+                aria-invalid={invalid}
+                aria-describedby={describedBy}
                 className="h-9 w-32 bg-muted"
               />
               <span className="text-sm text-muted-foreground">to</span>
@@ -89,8 +97,8 @@ export function DayWindowsEditor({
                 aria-label={`${label}, window ${index + 1}, until`}
                 value={toTimeValue(window.endMinute)}
                 onChange={(event) => setTime(index, "endMinute", event.target.value)}
-                aria-invalid={error ? true : undefined}
-                aria-describedby={error ? errorId : undefined}
+                aria-invalid={invalid}
+                aria-describedby={describedBy}
                 className="h-9 w-32 bg-muted"
               />
               <Button
@@ -111,7 +119,11 @@ export function DayWindowsEditor({
           </div>
         );
       })}
-      {errors?.message ? <p className="text-xs text-destructive">{errors.message}</p> : null}
+      {dayError ? (
+        <p id={dayErrorId} className="text-xs text-destructive">
+          {dayError}
+        </p>
+      ) : null}
       <div>
         <Button
           type="button"
@@ -119,6 +131,8 @@ export function DayWindowsEditor({
           size="sm"
           disabled={!added}
           aria-label={`Add a window to ${label}`}
+          aria-invalid={dayError && windows.length === 0 ? true : undefined}
+          aria-describedby={dayError && windows.length === 0 ? dayErrorId : undefined}
           onClick={() => added && onChange([...windows, added])}
         >
           + Add

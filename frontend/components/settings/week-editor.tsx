@@ -59,6 +59,7 @@ export function WeekEditor({
                 id={switchId}
                 type="checkbox"
                 checked={open}
+                aria-label={labelPrefix ? `${labelPrefix}, ${name}` : undefined}
                 onChange={(event) =>
                   // Turning a day on starts it with one window, 9:00 to 5:00, to change.
                   setDay(day, event.target.checked ? [{ startMinute: 540, endMinute: 1020 }] : null)

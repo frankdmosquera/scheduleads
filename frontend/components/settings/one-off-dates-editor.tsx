@@ -34,6 +34,11 @@ export function OneOffDatesEditor({
 }) {
   const setEntry = (index: number, entry: DateHoursType[number]) =>
     onChange(dates.map((current, i) => (i === index ? entry : current)));
+  // An error on the whole list (the same date twice) marks the date fields that repeat.
+  const listError = errors?.message;
+  const listErrorId = `${idBase}-error`;
+  const repeats = (date: string) =>
+    date !== "" && dates.filter((entry) => entry.date === date).length > 1;
 
   return (
     <div className="flex flex-col gap-3">
@@ -43,6 +48,11 @@ export function OneOffDatesEditor({
       {dates.map((entry, index) => {
         const dateId = `${idBase}-${index}`;
         const dateError = errors?.[index]?.date?.message;
+        const repeated = Boolean(listError) && repeats(entry.date);
+        const describedBy =
+          [dateError ? `${dateId}-error` : null, repeated ? listErrorId : null]
+            .filter(Boolean)
+            .join(" ") || undefined;
         return (
           <div
             key={index}
@@ -55,8 +65,8 @@ export function OneOffDatesEditor({
                 aria-label={`${labelPrefix ? `${labelPrefix}, o` : "O"}ne-off date ${index + 1}`}
                 value={entry.date}
                 onChange={(event) => setEntry(index, { ...entry, date: event.target.value })}
-                aria-invalid={dateError ? true : undefined}
-                aria-describedby={dateError ? `${dateId}-error` : undefined}
+                aria-invalid={dateError || repeated ? true : undefined}
+                aria-describedby={describedBy}
                 className="h-9 bg-muted"
               />
               {dateError ? (
@@ -86,7 +96,11 @@ export function OneOffDatesEditor({
           </div>
         );
       })}
-      {errors?.message ? <p className="text-xs text-destructive">{errors.message}</p> : null}
+      {listError ? (
+        <p id={listErrorId} className="text-xs text-destructive">
+          {listError}
+        </p>
+      ) : null}
       <div>
         <Button
           type="button"

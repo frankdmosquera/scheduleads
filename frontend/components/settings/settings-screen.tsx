@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
+import { LeadsRefusalNotice } from "@/components/leads/leads-refusal-notice";
 import { BusinessHoursCard } from "@/components/settings/business-hours-card";
 import { PersonHoursCard } from "@/components/settings/person-hours-card";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,8 @@ export function SettingsScreen() {
       <div className="mt-3">
         {!result ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : result.state === "signed-out" || result.state === "refused" ? (
+          <LeadsRefusalNotice refusal={result} />
         ) : result.state === "unreachable" ? (
           <div className="flex flex-col items-start gap-3">
             <CentredCardNotice>{result.message}</CentredCardNotice>
@@ -73,7 +76,7 @@ function HoursSection({
     <div className="flex flex-col gap-4">
       {!settings.canEdit ? (
         <CentredCardNotice tone="info">
-          Only the owner can change the hours. You can see them here.
+          Your role cannot change the hours. You can see them here.
         </CentredCardNotice>
       ) : null}
       <BusinessHoursCard initial={business} canEdit={settings.canEdit} onSaved={setBusiness} />

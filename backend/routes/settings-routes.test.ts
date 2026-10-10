@@ -265,6 +265,17 @@ describe("the Hours settings", () => {
       closedDates: [],
     });
     expect(sneaky.status).toBe(400);
+
+    // A refused save says where the problem is, so the card can show it in place.
+    const overlap = await put("/settings/hours/business", fresh.email, {
+      ...summitHours,
+      weeklyHours: { mon: [nineToFive, { startMinute: 960, endMinute: 1080 }] },
+    });
+    expect(overlap.status).toBe(400);
+    expect(await overlap.json()).toMatchObject({
+      error: { code: "bad_request", message: "Two windows on the same day overlap." },
+      field: "weeklyHours.mon",
+    });
   });
 
   test("back to the business's week keeps the person's one-off dates", async () => {
