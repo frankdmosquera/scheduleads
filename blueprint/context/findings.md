@@ -240,3 +240,51 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** F-316's timestamp comparison is untested; reversed, a retry would show "Already a contact" for someone new.
 **Suggested fix:** The same form twice with a known email, expect joinedExistingContact true on both answers; with a new email, false on both.
 **Resolution:** Carried on purpose, for the same reason as F-318: only a notice on screen is at stake.
+
+### F-326 [P3] unverified - A time field cleared mid-edit may snap back while the owner is still typing
+
+**File:** frontend/components/settings/day-windows-editor.tsx:43-48
+**Found:** 2026-10-10 by independent review of step 12a.1 (scope: 86675f7..bbd7510; lenses: quality, security, performance, tests)
+**Why it matters:** An unfinished time keeps the window's last whole time on purpose; in some browsers the controlled field may redraw the old value while a segment is being retyped. Not seen in a browser yet.
+**Missing validation:** Type over one segment of a time field by keyboard in Chrome and Edge.
+**Resolution:**
+
+### F-331 [P3] unverified - A booking made while a save of hours is running can land outside the new hours and never be listed
+
+**File:** backend/lib/booking/book-time.ts:155, 214-226, 254; backend/lib/settings/save-business-hours.ts:31-62
+**Found:** 2026-10-10 by independent review of step 12a.2 (scope: 0f33b77..47dc46e; lenses: quality, security, performance, tests)
+**Why it matters:** book-time reads the hours and checks the start (findBookingChoices, which may wait on Google) before its transaction, with no lock on the business's availability_rule row. If a save locks the row and reads the upcoming bookings in between, the new booking is not yet committed, so the save does not see it; it then commits against the old hours. The owner is told the list is complete and it is not. Unverified: needs the two to overlap within one booking's check time; no reproduction was run.
+**Suggested fix:** Inside the booking's transaction, read the business's availability_rule row `for share` (it waits while a save holds it `for update`) and refuse with the existing "unavailable" answer if the row changed since the hours were read; or record the gap as accepted.
+**Resolution:**
+
+### F-332 [P3] open - "Which windows apply on this date" now lives in three copies that the spec requires to agree
+
+**File:** backend/lib/bookable-hours/apply-outside-hours-rules.ts:25-43; backend/lib/scheduling/apply-free-times-rules.ts:34-39, 57-60; backend/lib/bookable-hours/apply-bookable-hours-rules.ts:48-54
+**Found:** 2026-10-10 by independent review of step 12a.2 (scope: 0f33b77..47dc46e; lenses: quality, security, performance, tests)
+**Why it matters:** windowsOn re-implements the person/business one-off date merge of applyBookableHoursRules and copies free times' WEEKDAYS, weekdayOf and "a one-off date replaces the week" lookup. The step is only correct while these agree, and nothing ties them: F-330 is one such drift already. Today the merge copy matches (checked case by case: own week takes only own dates; following takes the business's with own winning; an empty one-off list replaces the day in both).
+**Suggested fix:** One exported helper in lib/bookable-hours/ (for example `windowsOnDate(weeklyHours, dateHours, date)`, with the merge in one place) used by both applyFreeTimesRules and applyOutsideHoursRules.
+**Resolution:**
+
+### F-334 [P3] unverified - The list's times use the browser's time-zone rules, which the booking window deliberately avoids
+
+**File:** frontend/components/settings/outside-hours-list.tsx:37; backend/lib/scheduling/local-start-times.ts:1-4
+**Found:** 2026-10-10 by independent review of step 12a.2 (scope: 0f33b77..47dc46e; lenses: quality, security, performance, tests)
+**Why it matters:** local-start-times.ts formats times on the API "never re-deriving them with the visitor's browser, whose rules may be older". The outside list formats in the browser. Node here carries tzdata 2026c, where America/Edmonton stays on MDT after November 2026; a browser with older rules would show an Alberta booking after November 1 an hour early and as MST, on the one list whose point is the time. The spec's contract chose browser formatting, so this is a question for the spec, not a build slip. Unverified: no browser with stale rules was tried.
+**Suggested fix:** Have outsideHoursOf add a `when` string per row with formatBookingTime on the API, as localStartTimes does, and show that.
+**Resolution:**
+
+### F-336 [P3] open - The Settings screen's heading levels put "Each person" and every person's card under the business card
+
+**File:** frontend/components/settings/business-hours-card.tsx:105; frontend/components/settings/settings-screen.tsx:44,84; frontend/components/settings/person-hours-card.tsx:89
+**Found:** 2026-10-10 by the final review of feature 12a (scope: main...76850fe; lenses: quality, security, performance, tests)
+**Why it matters:** Only visible with the three components together. The screen draws h1 Settings, h2 Hours, then the business card's own h2 "When you take bookings", which ends the Hours section in the outline; "Each person" (h3) follows it, so a screen reader moving by headings files it under the business's card; and each person's name is also h3, a sibling of "Each person" instead of under it. F-333 fixed the same kind of slip for the list alone.
+**Suggested fix:** One level down for the cards: the business card's title h3 (its "One-off dates" and list h4), "Each person" h3, each person's name h4 (their one-off dates and list h5), or make "Each person" visually a label and keep the names at h3 under an h2-level "When you take bookings".
+**Resolution:**
+
+### F-337 [P3] open - OutsideHoursBookingType still sits in a file of its own, though outsideHoursOf now produces it
+
+**File:** backend/lib/settings/outside-hours-booking-type.ts:1-11; backend/lib/settings/outside-hours-of.ts:15-24
+**Found:** 2026-10-10 by the final review of feature 12a (scope: main...76850fe; lenses: quality, security, performance, tests)
+**Why it matters:** The type-only file made sense in 12a.1, when `outsideHours` was always empty and nothing produced it. Since 12a.2 `outsideHoursOf` builds every row of it, and coding-standards.md says "A type sits in the file of the function that produces it". The file is used (outside-hours-of, both saves), so nothing breaks; it is the leftover the standard exists to stop, a file Frank opens to find only a shape whose maker lives elsewhere.
+**Suggested fix:** Move `OutsideHoursBookingType` into outside-hours-of.ts, point the two saves' imports there, and remove outside-hours-booking-type.ts.
+**Resolution:**

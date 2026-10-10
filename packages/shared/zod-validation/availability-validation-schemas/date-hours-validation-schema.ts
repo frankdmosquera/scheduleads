@@ -9,7 +9,7 @@ export const dateHoursValidationSchema = z
   .array(
     z
       .object({
-        date: z.iso.date(), // YYYY-MM-DD, a real calendar date
+        date: z.iso.date({ error: "Use a real date, like 2026-11-02." }), // YYYY-MM-DD, a real calendar date
         windows: dayWindowsValidationSchema.min(1, "A one-off date needs at least one window."),
       })
       .strict()

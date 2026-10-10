@@ -282,58 +282,68 @@ without Frank touching the database.
   count as busy, the owner's pick (item 3 reads only the main one; the list
   needs `calendar.calendarlist.readonly`, added here, before any client
   connects).
-  From version 8:
-  - Services with their length and buffers; people and places. A person
-    or place with any `commitment` row, cancelled or past included, cannot
-    be deleted (5a.1, F-50): decide here whether removing one deactivates
-    it or clears its rows first.
-  - Who does what: the owner ticks each person's services and the rooms
-    each service needs (item 5 checks them).
-  - Bookable hours per person, and one-off dates.
-  - One click closes a day for online booking for everyone. It stops new
-    bookings only: bookings made before the click are shown to the owner,
-    who keeps them or cancels them, all at once or one by one. One click
-    opens a closed day or a holiday again, for one person or everyone.
-  - The holiday picker: the province's and the country's holidays, none
-    closed by default; all the main ones in one click, or one by one
-    (Frank, 2026-09-28: we build the functionality, the client decides
-    their schedule).
-  - The booking questions (5d, Frank, Oct 2): the owner adds the business's
-    own questions (up to about 20) under the standard ones, starting from a
-    ready-made set for the trade (painting, clinic), and picks whether the
-    form requires an email, a phone, or either one.
-  - Whether the form asks for an address (9.6, Frank, Oct 9): asked and
-    required, asked and optional, or not asked, per business. Until then
-    every booking requires one, the API's rule since 5d, so a clinic's
-    customers are asked for an address it does not need.
-  - Whether screen two asks for the yes to later texts (9.7, decision 13),
-    and what the business later sends with it.
-  - Each person's own work email (6, decision 8, Frank, Oct 2): optional, at
-    the business's domain (pedro@primopainters.com). When set, the
-    customer's confirmation lets them reply straight to the booked person,
-    and that person gets their own booking notification, through feature 6's
-    one "who hears about this booking" function. Never a personal address.
-  - Notice, how far ahead and time zone, once for the business. How far
-    ahead is at most a year (the database refuses more since step 2.6,
-    F-31); the screen offers one month, pre-filled, for the owner to change.
-  - From step 2.6's review, F-32: a holiday pick is saved as the package's
-    name, so a renamed holiday would break that business's booking page.
-    Decide here: check picks when they are saved, or save a name that never
-    changes.
-  - Text settings (8b, Frank, Oct 7): the business's texting number,
-    whether the confirmation text goes, any number of reminders, each any
-    number of minutes before, and where a customer's reply is passed on (a
-    phone, an email, or both). Nothing on by default. Saving refuses a reply
-    phone that is any business's texting number (8b, F-199).
-  - Each person's worker texts (8c, Oct 7): their phone, and whether they
-    hear when a booking is added to their day, moved, or taken off it.
-    Nothing on by default. Saving refuses a phone that is any business's
-    texting number (8c, decision 6).
-  - Changing a service's length or someone's hours keeps existing bookings
-    and warns the owner which ones now fall outside.
-  - Opening hours for the public (the website, the Google profile) are a
-    separate setting from bookable hours, often the same, never forced to
-    be. Not built here; nothing needs them yet
+  Split on 2026-10-10 into six items, one screen each, each its own branch,
+  merged and tagged as it lands; item 12 is done when all six are. 12b and
+  12c below are separate items, so the six skip those letters. Opening
+  hours for the public (the website, the Google profile) are a separate
+  setting from bookable hours, often the same, never forced to be; not
+  built in any of the six, nothing needs them yet:
+  - [x] 12a. **Hours** - the `/settings` page, and when customers can book:
+    bookable hours with several windows a day, for the business and for
+    each person, and one-off dates. Notice, how far ahead and time zone,
+    once for the business. How far ahead is at most a year (the database
+    refuses more since step 2.6, F-31); the screen offers one month,
+    pre-filled, for the owner to change. Changing someone's hours keeps
+    existing bookings and warns the owner which ones now fall outside.
+    Replaces direct edits to `availability_rule`
+  - [ ] 12d. **Services, people and places** - services with their length
+    and buffers; people and places. A person or place with any
+    `commitment` row, cancelled or past included, cannot be deleted (5a.1,
+    F-50): decide here whether removing one deactivates it or clears its
+    rows first. Who does what: the owner ticks each person's services and
+    the rooms each service needs (item 5 checks them). Each person's own
+    work email (6, decision 8, Frank, Oct 2): optional, at the business's
+    domain (pedro@primopainters.com). When set, the customer's confirmation
+    lets them reply straight to the booked person, and that person gets
+    their own booking notification, through feature 6's one "who hears
+    about this booking" function. Never a personal address. Changing a
+    service's length keeps existing bookings and warns the owner which ones
+    now fall outside
+  - [ ] 12e. **Closed days and holidays** - one click closes a day for
+    online booking for everyone. It stops new bookings only: bookings made
+    before the click are shown to the owner, who keeps them or cancels
+    them, all at once or one by one. One click opens a closed day or a
+    holiday again, for one person or everyone. The holiday picker: the
+    province's and the country's holidays, none closed by default; all the
+    main ones in one click, or one by one (Frank, 2026-09-28: we build the
+    functionality, the client decides their schedule). From step 2.6's
+    review, F-32: a holiday pick is saved as the package's name, so a
+    renamed holiday would break that business's booking page. Decide here:
+    check picks when they are saved, or save a name that never changes
+  - [ ] 12f. **The booking form** - the booking questions (5d, Frank,
+    Oct 2): the owner adds the business's own questions (up to about 20)
+    under the standard ones, starting from a ready-made set for the trade
+    (painting, clinic), and picks whether the form requires an email, a
+    phone, or either one. Whether the form asks for an address (9.6, Frank,
+    Oct 9): asked and required, asked and optional, or not asked, per
+    business. Until then every booking requires one, the API's rule since
+    5d, so a clinic's customers are asked for an address it does not need.
+    Whether screen two asks for the yes to later texts (9.7, decision 13),
+    and what the business later sends with it
+  - [ ] 12g. **Texts** - text settings (8b, Frank, Oct 7): the business's
+    texting number, whether the confirmation text goes, any number of
+    reminders, each any number of minutes before, and where a customer's
+    reply is passed on (a phone, an email, or both). Nothing on by default.
+    Saving refuses a reply phone that is any business's texting number (8b,
+    F-199). Each person's worker texts (8c, Oct 7): their phone, and
+    whether they hear when a booking is added to their day, moved, or taken
+    off it. Nothing on by default. Saving refuses a phone that is any
+    business's texting number (8c, decision 6)
+  - [ ] 12h. **Calendar pick** - the calendar connection on the settings
+    page, and which of the owner's Google calendars count as busy, the
+    owner's pick (item 3 reads only the main one; the list needs
+    `calendar.calendarlist.readonly`, added here, before any client
+    connects)
 - [ ] 12b. **Calendars** - every person and every place has a calendar in
   the app, showing their bookings, time off and Google busy times, over
   their bookable hours. The owner adds things by hand: a phone estimate or

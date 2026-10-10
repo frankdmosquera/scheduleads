@@ -15,15 +15,24 @@ function isRealTimezone(timezone: string): boolean {
   }
 }
 
-// The business's row. Everything set once per business lives here and only here.
-export const businessAvailabilityRuleValidationSchema = z
+// The business's row. Everything set once per business lives here and only here. Its fields
+// before the cross-field checks, so the Hours card below can pick from them.
+const businessAvailabilityRuleFields = z
   .object({
     resourceId: z.null(),
     weeklyHours: weeklyHoursValidationSchema,
     dateHours: dateHoursValidationSchema.default([]),
-    timezone: z.string().refine(isRealTimezone, { message: "That is not a time zone." }),
-    minimumNoticeMinutes: z.int().min(0),
-    horizonDays: z.int().min(1).max(365, "Customers can book at most a year ahead."),
+    timezone: z
+      .string()
+      .min(1, "Pick a time zone.")
+      .refine(isRealTimezone, { message: "That is not a time zone." }),
+    minimumNoticeMinutes: z
+      .int({ error: "Enter the notice, 0 or more." })
+      .min(0, "Enter the notice, 0 or more."),
+    horizonDays: z
+      .int({ error: "Enter how many days ahead, 1 to 365." })
+      .min(1, "Enter how many days ahead, 1 to 365.")
+      .max(365, "Customers can book at most a year ahead."),
     closedDates: z.array(z.iso.date()).refine((dates) => new Set(dates).size === dates.length, {
       message: "The same closed date is listed twice.",
     }),
@@ -45,7 +54,9 @@ export const businessAvailabilityRuleValidationSchema = z
       })
       .default([]),
   })
-  .strict()
+  .strict();
+
+export const businessAvailabilityRuleValidationSchema = businessAvailabilityRuleFields
   .refine((rule) => rule.holidayRegion === null || rule.holidayCountry !== null, {
     message: "A province needs its country.",
     path: ["holidayRegion"],
@@ -65,6 +76,23 @@ export const personAvailabilityRuleValidationSchema = z
   })
   .strict();
 
+// What the owner's Hours card saves for the business (feature 12a): its row without the closed
+// days and holidays, which belong to the closed days screen (12e) and are never sent from here.
+export const businessHoursValidationSchema = businessAvailabilityRuleFields
+  .pick({
+    weeklyHours: true,
+    dateHours: true,
+    timezone: true,
+    minimumNoticeMinutes: true,
+    horizonDays: true,
+  })
+  .strict();
+
+// What a person's card saves: their own week (null = follow the business's) and one-off dates.
+export const personHoursValidationSchema = personAvailabilityRuleValidationSchema
+  .omit({ resourceId: true })
+  .strict();
+
 export const availabilityRuleValidationSchema = z.union([
   businessAvailabilityRuleValidationSchema,
   personAvailabilityRuleValidationSchema,
@@ -73,3 +101,5 @@ export const availabilityRuleValidationSchema = z.union([
 export type BusinessAvailabilityRuleType = z.infer<typeof businessAvailabilityRuleValidationSchema>;
 export type PersonAvailabilityRuleType = z.infer<typeof personAvailabilityRuleValidationSchema>;
 export type AvailabilityRuleType = z.infer<typeof availabilityRuleValidationSchema>;
+export type BusinessHoursType = z.infer<typeof businessHoursValidationSchema>;
+export type PersonHoursType = z.infer<typeof personHoursValidationSchema>;

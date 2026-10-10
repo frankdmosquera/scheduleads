@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash 8134ded11a2cdfc40617710a1ad86e249f870b234fa5b3ac2e71c4b4e5866687 -->
+<!-- blueprint:source-hash 5504b0024f5545de48860ca76542bfc4ded4f8537029c488a40c6c23d45f9835 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -87,9 +87,11 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 - **10b. First deploy** - Railway and Vercel for real use, with the agency
   site's launch.
 11. **Leads list and contact page** - timeline, next steps, a lead by hand.
-12. **Settings** - services, people and places, who does what, bookable hours,
-    closed and opened days, the holiday picker (none by default), notice,
-    horizon, time zone, calendar, text settings.
+12. **Settings** - split Oct 10 into six screens, each its own branch:
+    12a hours (bookable hours, notice, horizon, time zone), 12d services,
+    people and places, who does what, 12e closed and opened days and the
+    holiday picker (none by default), 12f the booking form, 12g text settings,
+    12h the calendar connection and busy calendars.
 - **12b. Calendars** - every person and place has an in-app calendar.
 - **12c. Backups, restore and retention** - before any real client's data.
 13. **Primo Painters** - Calendly out. Needs 12c and item 22's calendar half.

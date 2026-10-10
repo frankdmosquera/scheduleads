@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { AddLeadForm } from "@/components/leads/add-lead-form";
 import { ContactInitials } from "@/components/leads/contact-initials";
-import { LeadsRefusalNotice } from "@/components/leads/leads-refusal-notice";
+import { RefusalNotice } from "@/components/centred-card/refusal-notice";
 import { Button } from "@/components/ui/button";
 import { fetchLeads, type LeadsListRowType } from "@/lib/api-client/leads/fetch-leads";
 import { formatLeadTime } from "@/lib/format-lead-time";
@@ -84,7 +84,7 @@ export function LeadsListScreen() {
         {list.state === "loading" ? (
           <p className="text-sm text-muted-foreground">Loading your leads…</p>
         ) : list.state === "signed-out" || list.state === "refused" ? (
-          <LeadsRefusalNotice refusal={list} />
+          <RefusalNotice refusal={list} />
         ) : list.state === "unreachable" ? (
           <div>
             <CentredCardNotice>{list.message}</CentredCardNotice>
