@@ -156,3 +156,11 @@ describe("bookingIcs", () => {
     );
   });
 });
+
+describe("bookingIcs, a booking with no address (the address fix)", () => {
+  test("has no LOCATION line, and every other line as before", () => {
+    const withAddress = bookingIcs(plainBooking).split("\r\n");
+    const without = bookingIcs({ ...plainBooking, location: null }).split("\r\n");
+    expect(without).toEqual(withAddress.filter((line) => !line.startsWith("LOCATION:")));
+  });
+});

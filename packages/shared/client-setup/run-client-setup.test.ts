@@ -3,7 +3,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { afterAll, describe, expect, it } from "vitest";
@@ -16,6 +16,7 @@ import {
   bookingQuestion,
   organization,
   resource,
+  workerTextSettings,
 } from "../db/index.js";
 import { assertLocalDevDatabase } from "../helpers/assert-local-dev-database.js";
 import {
@@ -58,24 +59,42 @@ const fileFor = (slug: string): ClientSetupInputType => ({
     horizonDays: 21,
     closedDates: [],
   },
-  people: [{ name: "Room A", kind: "place" }],
+  people: [
+    { name: "Room A", kind: "place" },
+    {
+      name: "Ana",
+      kind: "person",
+      weeklyHours: { mon: [{ startMinute: 540, endMinute: 720 }] },
+      workerTexts: { phone: "403 555 0161", addedOn: true, movedOn: true, removedOn: true },
+    },
+  ],
   services: [
-    { name: "Video call", durationMinutes: 30, slotIntervalMinutes: 30, ticked: ["Room A"] },
-    { name: "Phone call", durationMinutes: 30 },
+    {
+      name: "Video call",
+      durationMinutes: 30,
+      slotIntervalMinutes: 30,
+      asksAddress: false,
+      ticked: ["Room A"],
+    },
+    { name: "Phone call", durationMinutes: 30, asksAddress: false },
   ],
 });
 const setupFor = (slug: string) => clientSetupValidationSchema.parse(fileFor(slug));
 
 async function countRows(organizationId: string) {
-  const inBusiness = <T extends { organizationId: typeof organization.id }>(table: T) =>
-    eq(table.organizationId, organizationId);
   return {
-    questions: (await db.select().from(bookingQuestion).where(inBusiness(bookingQuestion))).length,
-    hours: (await db.select().from(availabilityRule).where(inBusiness(availabilityRule))).length,
-    resources: (await db.select().from(resource).where(inBusiness(resource))).length,
-    services: (await db.select().from(bookingLink).where(inBusiness(bookingLink))).length,
-    ticks: (await db.select().from(bookingLinkResource).where(inBusiness(bookingLinkResource)))
-      .length,
+    questions: await db.$count(bookingQuestion, eq(bookingQuestion.organizationId, organizationId)),
+    hours: await db.$count(availabilityRule, eq(availabilityRule.organizationId, organizationId)),
+    resources: await db.$count(resource, eq(resource.organizationId, organizationId)),
+    services: await db.$count(bookingLink, eq(bookingLink.organizationId, organizationId)),
+    ticks: await db.$count(
+      bookingLinkResource,
+      eq(bookingLinkResource.organizationId, organizationId)
+    ),
+    workerTexts: await db.$count(
+      workerTextSettings,
+      eq(workerTextSettings.organizationId, organizationId)
+    ),
   };
 }
 
@@ -125,6 +144,7 @@ describe("runClientSetup", () => {
       resources: 1,
       services: 0,
       ticks: 0,
+      workerTexts: 0,
     });
   });
 
@@ -134,20 +154,22 @@ describe("runClientSetup", () => {
     expect(first).toMatchObject({ ok: true, applied: true, differences: [] });
     expect(await countRows(business.id)).toEqual({
       questions: 1,
-      hours: 1,
-      resources: 2,
+      hours: 2,
+      resources: 3,
       services: 2,
       ticks: 1,
+      workerTexts: 1,
     });
 
     const second = await runClientSetup(db, setupFor(business.slug), { apply: true });
     expect(second).toMatchObject({ ok: true, made: [], differences: [] });
     expect(await countRows(business.id)).toEqual({
       questions: 1,
-      hours: 1,
-      resources: 2,
+      hours: 2,
+      resources: 3,
       services: 2,
       ticks: 1,
+      workerTexts: 1,
     });
   });
 
@@ -158,17 +180,43 @@ describe("runClientSetup", () => {
       eq(bookingLink.organizationId, business.id),
       eq(bookingLink.slug, "video-call")
     );
-    await db.update(bookingLink).set({ durationMinutes: 45 }).where(byHand);
+    await db.update(bookingLink).set({ durationMinutes: 45, asksAddress: true }).where(byHand);
     await db
       .update(availabilityRule)
       .set({ horizonDays: 30 })
-      .where(eq(availabilityRule.organizationId, business.id));
+      .where(
+        and(eq(availabilityRule.organizationId, business.id), isNull(availabilityRule.resourceId))
+      );
+    // A person's own hours, their texts and a tick, each changed by hand (F-304).
+    const [ana] = await db
+      .select({ id: resource.id })
+      .from(resource)
+      .where(and(eq(resource.organizationId, business.id), eq(resource.name, "Ana")));
+    await db
+      .update(availabilityRule)
+      .set({ weeklyHours: { tue: [{ startMinute: 540, endMinute: 720 }] } })
+      .where(eq(availabilityRule.resourceId, ana!.id));
+    await db
+      .update(workerTextSettings)
+      .set({ movedOn: false })
+      .where(eq(workerTextSettings.personId, ana!.id));
+    const [phoneCall] = await db
+      .select({ id: bookingLink.id })
+      .from(bookingLink)
+      .where(and(eq(bookingLink.organizationId, business.id), eq(bookingLink.slug, "phone-call")));
+    await db
+      .insert(bookingLinkResource)
+      .values({ organizationId: business.id, bookingLinkId: phoneCall!.id, resourceId: ana!.id });
 
     const result = await runClientSetup(db, setupFor(business.slug), { apply: true });
     expect(result.ok && result.made).toEqual([]);
     expect(result.ok && result.differences).toEqual([
       "hours, horizonDays: saved 30, file 21",
       '"Video call", durationMinutes: saved 45, file 30',
+      '"Video call", asksAddress: saved true, file false',
+      expect.stringMatching(/^"Ana", weeklyHours: saved {"tue"/),
+      expect.stringMatching(/^"Ana", worker texts: saved {"addedOn":true,"movedOn":false/),
+      '"Phone call", ticked by hand: Ana',
     ]);
     const [kept] = await db.select().from(bookingLink).where(byHand);
     expect(kept?.durationMinutes).toBe(45);

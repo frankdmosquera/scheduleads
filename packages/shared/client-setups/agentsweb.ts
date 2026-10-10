@@ -23,7 +23,8 @@ export default {
   },
   people: [],
   services: [
-    { name: "Video call", durationMinutes: 30, slotIntervalMinutes: 30 },
-    { name: "Phone call", durationMinutes: 30, slotIntervalMinutes: 30 },
+    // A call needs no address.
+    { name: "Video call", durationMinutes: 30, slotIntervalMinutes: 30, asksAddress: false },
+    { name: "Phone call", durationMinutes: 30, slotIntervalMinutes: 30, asksAddress: false },
   ],
 } satisfies ClientSetupInputType;

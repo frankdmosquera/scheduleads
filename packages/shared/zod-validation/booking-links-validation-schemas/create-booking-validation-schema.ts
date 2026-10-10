@@ -21,11 +21,13 @@ export const createBookingValidationSchema = z
       (customer) => customer.email !== undefined || customer.phone !== undefined,
       { error: "Enter an email or a phone number. At least one is required.", path: ["email"] }
     ),
+    // Required by the API only for a service that asks for it; left out otherwise.
     location: z
       .string("Enter the address.")
       .trim()
       .min(1, "Enter the address.")
-      .max(300, "That address is too long."),
+      .max(300, "That address is too long.")
+      .optional(),
     details: z.string().trim().max(2000, "Keep it to 2000 characters.").optional(),
     // The business's own questions (feature 9, decision 5), checked against its questions by the API.
     answers: z

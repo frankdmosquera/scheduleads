@@ -152,6 +152,8 @@ beforeAll(async () => {
       slug: "facial",
       durationMinutes: 60,
       layout: "month",
+
+      asksAddress: true,
       personChoice: "customer_picks",
     },
     {
@@ -161,6 +163,8 @@ beforeAll(async () => {
       slug: "old-facial",
       durationMinutes: 60,
       layout: "month",
+
+      asksAddress: true,
       personChoice: "customer_picks",
       active: false,
     },
@@ -171,6 +175,8 @@ beforeAll(async () => {
       slug: "estimate",
       durationMinutes: 60,
       layout: "month",
+
+      asksAddress: true,
       personChoice: "business_assigns",
     },
   ]);
@@ -219,6 +225,8 @@ beforeAll(async () => {
       slug: "quote",
       durationMinutes: 60,
       layout: "month",
+
+      asksAddress: true,
       personChoice: "customer_picks",
     });
     await db.insert(bookingLinkResource).values({
@@ -326,6 +334,81 @@ describe("a booking is made", () => {
     expect(first.status).toBe(201);
     expect(second.status).toBe(201);
     expect((await second.json()).booking.id).toBe((await first.json()).booking.id);
+  });
+});
+
+describe("the address, asked per service (the address fix)", () => {
+  // The day after the shared test day, so these bookings never take a time a later test needs.
+  const nextDay = addDays(day, 1);
+  const estimateTimes = async () => {
+    const response = await app.request(
+      `/public/${clinic.slug}/booking-links/${clinic.estimate}/times?from=${nextDay}&to=${nextDay}`
+    );
+    return (await response.json()).startTimes as string[];
+  };
+  const unpicked = (startsAt: string, change: Record<string, unknown> = {}) => {
+    const { personId: _picked, ...rest } = form(startsAt, {
+      bookingLinkId: clinic.estimate,
+      ...change,
+    });
+    return rest;
+  };
+  const savedLocation = async (bookingId: string) =>
+    (
+      await db.select({ location: booking.location }).from(booking).where(eq(booking.id, bookingId))
+    )[0]?.location;
+
+  beforeAll(async () => {
+    await db
+      .update(bookingLink)
+      .set({ asksAddress: false })
+      .where(eq(bookingLink.id, clinic.estimate));
+  });
+  afterAll(async () => {
+    await db
+      .update(bookingLink)
+      .set({ asksAddress: true })
+      .where(eq(bookingLink.id, clinic.estimate));
+  });
+
+  test("a service that asks refuses a booking with no address, and books nothing", async () => {
+    const [startsAt] = await freeTimes(clinic.mei);
+    const { location: _left, ...noAddress } = form(startsAt, { personId: clinic.mei });
+    const response = await post(bookingsPath, noAddress);
+
+    expect(response.status).toBe(400);
+    expect((await response.json()).error.message).toBe("Enter the address.");
+    expect(await freeTimes(clinic.mei)).toContain(startsAt);
+  });
+
+  test("a service that asks none books with no address, and keeps none", async () => {
+    const [startsAt] = await estimateTimes();
+    const { location: _left, ...noAddress } = unpicked(startsAt);
+    const response = await post(bookingsPath, noAddress);
+
+    expect(response.status).toBe(201);
+    expect(await savedLocation((await response.json()).booking.id)).toBeNull();
+  });
+
+  test("an address sent for a service that asks none is not kept", async () => {
+    const [, startsAt] = await estimateTimes();
+    const response = await post(bookingsPath, unpicked(startsAt));
+
+    expect(response.status).toBe(201);
+    expect(await savedLocation((await response.json()).booking.id)).toBeNull();
+  });
+
+  test("each service in the list says whether it asks", async () => {
+    const list = await (await app.request(`/public/${clinic.slug}/booking-links`)).json();
+    const asks = Object.fromEntries(
+      list.bookingLinks.map((link: { id: string; asksAddress: boolean }) => [
+        link.id,
+        link.asksAddress,
+      ])
+    );
+
+    expect(asks[clinic.facial]).toBe(true);
+    expect(asks[clinic.estimate]).toBe(false);
   });
 });
 

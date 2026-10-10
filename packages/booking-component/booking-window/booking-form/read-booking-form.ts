@@ -18,6 +18,7 @@ export type BookingFormChoiceType = {
   bookingLinkId: string;
   startsAt: string;
   personId: string | null; // null = any available
+  asksAddress: boolean; // the service's own setting: no address box, and none sent, when false
 };
 
 export type ReadBookingFormResultType =
@@ -45,7 +46,7 @@ export function readBookingForm(
       email: filled(values.email),
       phone: filled(values.phone),
     },
-    location: values.location.trim(),
+    ...(choice.asksAddress ? { location: values.location.trim() } : {}), // empty: "Enter the address."
     details: filled(values.details),
     answers: answered.map((question) => ({
       questionId: question.id,

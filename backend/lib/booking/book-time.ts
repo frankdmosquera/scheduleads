@@ -42,7 +42,7 @@ export type BookTimeInputType = {
   startsAt: Date; // the appointment's own start, one of the free times offered
   requestKey: string | null; // one per booking form (decision 7); null when the owner books
   customer: ContactInputType;
-  location: string; // the customer's address
+  location: string | null; // the customer's address; kept only when the service asks for one
   details: string | null; // what they wrote
   answers?: { questionId: string; answer: string }[]; // to the business's own questions (feature 9)
   // The customer's tick for later texts (decision 13); the booking's own texts go either way.
@@ -80,6 +80,7 @@ export type BookTimeResultType =
         | "person_not_taken"
         | "unknown_question"
         | "answered_twice"
+        | "address_needed"
         | "too_many_tries";
     }
   | { booked: false; reason: "answer_needed"; question: string }; // the question's words
@@ -92,6 +93,7 @@ const REQUEST_KEY_USED = { booked: false, reason: "request_key_used" } as const;
 const IN_THE_PAST = { booked: false, reason: "in_the_past" } as const;
 const PERSON_NOT_TAKEN = { booked: false, reason: "person_not_taken" } as const;
 const TOO_MANY_TRIES = { booked: false, reason: "too_many_tries" } as const;
+const ADDRESS_NEEDED = { booked: false, reason: "address_needed" } as const;
 
 // The same form: the same service and start, and the same person when one was picked.
 const isSameRequest = (existing: BookedType, input: BookTimeInputType) =>
@@ -177,6 +179,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
       bufferBeforeMinutes: bookingLink.bufferBeforeMinutes,
       bufferAfterMinutes: bookingLink.bufferAfterMinutes,
       personChoice: bookingLink.personChoice,
+      asksAddress: bookingLink.asksAddress,
     })
     .from(bookingLink)
     .where(
@@ -192,6 +195,9 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
   // owner may. Asked after the form's own booking, so a retry of a booked form still gets it.
   if (source !== "manual" && service.personChoice === "business_assigns" && personId !== null)
     return PERSON_NOT_TAKEN;
+  // The address, when the service asks for it (the address fix); the owner, booking from a phone
+  // call, may leave it for later, as with the questions.
+  if (source !== "manual" && service.asksAddress && !input.location) return ADDRESS_NEEDED;
   // The business's own questions (feature 9, decision 5): a customer answers the required ones; the
   // owner, booking from a phone call, need not.
   const checkedAnswers = checkAnswers(
@@ -268,7 +274,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         placeId: first.placeId,
         startsAt,
         endsAt,
-        location: input.location,
+        location: service.asksAddress ? input.location : null, // never kept when not asked
         requestKey,
       });
       const held = await holdFirstFreeChoice(organizationId, choices, span, bookingId, tx);

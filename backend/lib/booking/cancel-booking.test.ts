@@ -75,6 +75,8 @@ async function makeBooking(name: string) {
     slug: "interior-estimate",
     durationMinutes: 60,
     layout: "month",
+
+    asksAddress: true,
     personChoice: "customer_picks",
     bufferAfterMinutes: 15,
   });

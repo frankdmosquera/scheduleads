@@ -35,6 +35,7 @@ export const bookingLink = pgTable(
     layout: text("layout", { enum: ["month"] }).notNull(),
     // Whether the customer picks who does it, or the business sends whoever is free.
     personChoice: text("personChoice", { enum: ["customer_picks", "business_assigns"] }).notNull(),
+    asksAddress: boolean("asksAddress").notNull(), // the business's choice per service, so no default (decision 30)
     active: boolean("active").notNull().default(true), // inactive reads as absent publicly
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })

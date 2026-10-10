@@ -68,6 +68,8 @@ async function makeBooking(business: string, personId: string) {
     slug: "facial",
     durationMinutes: 60,
     layout: "month",
+
+    asksAddress: true,
     personChoice: "customer_picks",
   });
   await db.insert(lead).values({

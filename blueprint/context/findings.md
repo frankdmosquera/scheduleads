@@ -193,7 +193,7 @@ them); treat a 5xx like a lost answer, so the next run asks Twilio first. One
 route test with a 503 on the first send and the text found on the retry.
 **Resolution:**
 
-### F-304 [P2] open - The setup command lists differences only for business hours, questions, services and a person's kind, so a hand edit to a person's own hours, worker texts or extra ticks is kept without a word
+### F-304 [P2] fixed - The setup command lists differences only for business hours, questions, services and a person's kind, so a hand edit to a person's own hours, worker texts or extra ticks is kept without a word
 
 **File:** packages/shared/client-setup/run-client-setup.ts:143-150 (and apply-business-shape.ts:98-131, 165-177)
 **Found:** 2026-10-10 by independent review of feature 10 (scope: current, c786f7e..d9e4709; lenses: quality, security, performance, tests)
@@ -201,7 +201,9 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** In findDifferences, for each listed person that exists, compare their own hours row (weeklyHours, dateHours) and their worker-text settings with the file, and for each service report ticks in the database that the file does not list; add one test case that changes a person's hours by hand and expects the difference.
 **Resolution:**
 
-### F-305 [P3] open - A setup file's hours are typed unknown, so `satisfies ClientSetupInputType` checks nothing inside them
+**Resolution:** Fixed 2026-10-10 on fix/address-per-service: the differences now cover each person's own hours, their worker texts and ticks added by hand, each shown by run-client-setup.test.ts ("keeps a row changed by hand and reports the difference").
+
+### F-305 [P3] fixed - A setup file's hours are typed unknown, so `satisfies ClientSetupInputType` checks nothing inside them
 
 **File:** packages/shared/zod-validation/admin-validation-schemas/client-setup-validation-schema.ts:261-265 (seen in packages/shared/client-setups/agentsweb.ts:295 and run-client-setup.test.ts:102)
 **Found:** 2026-10-10 by independent review of feature 10 (scope: current, c786f7e..d9e4709; lenses: quality, security, performance, tests)
@@ -209,10 +211,14 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Type the input explicitly, for example `z.preprocess<unknown, typeof schema, Omit<z.input<typeof businessAvailabilityRuleValidationSchema>, "resourceId">>(...)`, or drop the preprocess and use `businessAvailabilityRuleValidationSchema` with `resourceId` made optional-null for the file, so the setup files are checked as they are written.
 **Resolution:**
 
-### F-306 [P3] open - run-client-setup.test.ts has type errors the editor shows and no command catches
+**Resolution:** Fixed 2026-10-10 on fix/address-per-service: setupHoursValidationSchema restates the input type as the business hours input without resourceId, so `satisfies ClientSetupInputType` checks a setup file's hours.
+
+### F-306 [P3] fixed - run-client-setup.test.ts has type errors the editor shows and no command catches
 
 **File:** packages/shared/client-setup/run-client-setup.test.ts:71-77, 102
 **Found:** 2026-10-10 by independent review of feature 10 (scope: current, c786f7e..d9e4709; lenses: quality, security, performance, tests)
 **Why it matters:** `tsc -p packages/shared/tsconfig.json` (the editor's view, which coding-standards.md says type-checks everything in the package) fails with six errors, all in this new file and none elsewhere in the package: five TS2345 because countRows' helper constrains its table to `{ organizationId: typeof organization.id }`, the organization table's own id column, which no other table's organizationId column matches; one TS2698 at line 102 from F-305. Vitest strips types and the build's tsconfig.build.json excludes tests, so the tests pass and the build is green while the file is red in the editor; a later wrong call in this test would not be caught by types either.
 **Suggested fix:** Constrain the helper to the column type it needs (for example `<T extends { organizationId: AnyPgColumn }>` from drizzle-orm/pg-core) or pass the column itself (`inBusiness(bookingQuestion.organizationId)`); line 102 is fixed with F-305. Then `tsc -p packages/shared/tsconfig.json` passes.
 **Resolution:**
+
+**Resolution:** Fixed 2026-10-10 on fix/address-per-service: the test counts rows with db.$count per table; `tsc -p packages/shared/tsconfig.json` is clean.

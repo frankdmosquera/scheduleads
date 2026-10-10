@@ -34,7 +34,7 @@ export const booking = pgTable(
     startsAt: timestamp("startsAt", { withTimezone: true }).notNull(),
     endsAt: timestamp("endsAt", { withTimezone: true }).notNull(),
     status: text("status").notNull().default("confirmed"),
-    location: text("location").notNull(), // the customer's address, as they typed it
+    location: text("location"), // the customer's address, as typed; null when the service asks none
     calendarEventId: text("calendarEventId"), // the booked person's Google event, once written
     requestKey: text("requestKey"), // one per booking form; null when the owner books
     // The calendar invite's number: 0 when made, one more for each move, so the customer's

@@ -79,6 +79,8 @@ describe("moving a booking", () => {
       slug: "facial",
       durationMinutes: 60,
       layout: "month",
+
+      asksAddress: true,
       personChoice: "customer_picks",
     });
     await db

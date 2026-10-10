@@ -70,7 +70,7 @@ function BookingNotificationEmail({ facts, when }: { facts: BookingEmailFactsTyp
           </Link>
         </EmailField>
       ) : null}
-      <EmailField label="Address">{facts.location}</EmailField>
+      {facts.location ? <EmailField label="Address">{facts.location}</EmailField> : null}
 
       {customer.details ? (
         <>

@@ -7,7 +7,12 @@ const questions = [
   { id: "q-colour", label: "Which colour?", required: true },
   { id: "q-pets", label: "Any pets?", required: false },
 ];
-const choice = { bookingLinkId: "facial", startsAt: "2026-10-14T16:00:00.000Z", personId: null };
+const choice = {
+  bookingLinkId: "facial",
+  startsAt: "2026-10-14T16:00:00.000Z",
+  personId: null,
+  asksAddress: true,
+};
 const filledForm = {
   ...newBookingForm(),
   name: " Jane Doe ",
@@ -19,6 +24,23 @@ const filledForm = {
 };
 
 describe("readBookingForm", () => {
+  it("for a service that asks no address, sends none and asks for none (the address fix)", () => {
+    const noAddress = { ...choice, asksAddress: false };
+    const read = readBookingForm({ ...filledForm, location: "" }, questions, noAddress);
+
+    expect(read.state).toBe("ok");
+    expect(read.state === "ok" && read.request).not.toHaveProperty("location");
+  });
+
+  it("for a service that asks, an empty address is said under Address", () => {
+    const read = readBookingForm({ ...filledForm, location: " " }, questions, choice);
+
+    expect(read).toEqual({
+      state: "errors",
+      errors: [{ field: "location", message: "Enter the address." }],
+    });
+  });
+
   it("sends the form as the route reads it: trimmed, empty boxes left out, any available as no person", () => {
     const read = readBookingForm(filledForm, questions, choice);
 

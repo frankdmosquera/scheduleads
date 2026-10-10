@@ -27,7 +27,7 @@ export type WorkerTextContextType = {
   customerName: string;
   serviceName: string;
   placeName: string | null;
-  location: string;
+  location: string | null;
   businessName: string;
   timezone: string | null; // from the business's bookable hours; null before it has any
 };

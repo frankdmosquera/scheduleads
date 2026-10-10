@@ -96,6 +96,8 @@ async function makeClinic(name: string) {
     slug: "facial",
     durationMinutes: 60,
     layout: "month",
+
+    asksAddress: true,
     personChoice: "customer_picks",
     slotIntervalMinutes: 30,
   });

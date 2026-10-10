@@ -32,6 +32,7 @@ const peel = (slotIntervalMinutes: number | undefined) => ({
   durationMinutes: 30,
   layout: "month" as const,
   personChoice: "business_assigns" as const,
+  asksAddress: true,
   ...(slotIntervalMinutes === undefined ? {} : { slotIntervalMinutes }),
 });
 

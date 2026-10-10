@@ -76,6 +76,8 @@ async function makeClinic(name: string) {
       slug: "facial",
       durationMinutes: 75,
       layout: "month",
+
+      asksAddress: true,
       personChoice: "customer_picks",
       bufferAfterMinutes: 15,
     },
@@ -86,6 +88,8 @@ async function makeClinic(name: string) {
       slug: "peel",
       durationMinutes: 30,
       layout: "month",
+
+      asksAddress: true,
       personChoice: "customer_picks",
       slotIntervalMinutes: 15,
     },
