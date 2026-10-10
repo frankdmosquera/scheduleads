@@ -14,7 +14,7 @@ import {
   type WeeklyHoursType,
 } from "@scheduleads-app/shared/zod-validation";
 
-import { HoursNotice, type HoursNoticeType } from "@/components/settings/hours-notice";
+import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
 import { OneOffDatesEditor } from "@/components/settings/one-off-dates-editor";
 import {
   OutsideHoursList,
@@ -40,7 +40,7 @@ export function PersonHoursCard({
   const rowRef = useRef<HTMLDetailsElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
-  const [notice, setNotice] = useState<HoursNoticeType>(null);
+  const [notice, setNotice] = useState<SaveNoticeType>(null);
   // Stays until the card is saved again or the page is left.
   const [outside, setOutside] = useState<OutsideHoursListType | null>(null);
   const form = useForm<z.input<typeof personHoursValidationSchema>, unknown, PersonHoursType>({
@@ -181,7 +181,7 @@ export function PersonHoursCard({
             />
           </div>
         </fieldset>
-        <HoursNotice notice={notice} />
+        <SaveNotice notice={notice} />
         <OutsideHoursList list={outside} Heading="h5" />
         {canEdit ? (
           <div className="mt-4">

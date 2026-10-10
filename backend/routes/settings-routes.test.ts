@@ -417,3 +417,118 @@ describe("the Hours settings", () => {
     expect(listed.map((row) => row.customerName)).toEqual(["Kim"]);
   });
 });
+
+const post = (path: string, email: string, body: unknown) =>
+  app.request(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: appOrigin, Cookie: cookies.get(email)! },
+    body: JSON.stringify(body),
+  });
+
+const cabinet = {
+  name: "Cabinet consultation",
+  description: "",
+  durationMinutes: 45,
+  bufferBeforeMinutes: 0,
+  bufferAfterMinutes: 15,
+  slotIntervalMinutes: null,
+  personChoice: "customer_picks",
+  asksAddress: false,
+  active: true,
+};
+
+type SavedServiceType = { service: { id: string; slug: string; name: string } };
+
+describe("the Services settings", () => {
+  test("a member who may not change the business cannot save a service", async () => {
+    const read = await get("/settings/services", helper.email);
+    expect(read.status).toBe(200);
+    expect(await read.json()).toMatchObject({ canEdit: false });
+
+    expect((await post("/settings/services", helper.email, cabinet)).status).toBe(403);
+    const changed = await put(`/settings/services/${randomUUID()}`, helper.email, cabinet);
+    expect(changed.status).toBe(403);
+    const services = await db
+      .select({ name: bookingLink.name })
+      .from(bookingLink)
+      .where(eq(bookingLink.organizationId, summit.organizationId));
+    expect(services.map((service) => service.name)).not.toContain(cabinet.name);
+  });
+
+  test("another business's service gets the 404", async () => {
+    const theirs = (await (
+      await post("/settings/services", other.email, cabinet)
+    ).json()) as SavedServiceType;
+    const foreign = await put(`/settings/services/${theirs.service.id}`, summit.email, {
+      ...cabinet,
+      name: "Taken over",
+    });
+    const unknown = await put(`/settings/services/${randomUUID()}`, summit.email, cabinet);
+    expect([foreign.status, unknown.status]).toEqual([404, 404]);
+    expect(await foreign.json()).toEqual(await unknown.json());
+    const [row] = await db.select().from(bookingLink).where(eq(bookingLink.id, theirs.service.id));
+    expect(row.name).toBe(cabinet.name);
+  });
+
+  test("a new service gets a unique slug and the month layout, and a rename keeps the slug", async () => {
+    const first = (await (
+      await post("/settings/services", summit.email, cabinet)
+    ).json()) as SavedServiceType;
+    const second = await post("/settings/services", summit.email, cabinet);
+    expect(second.status).toBe(201);
+    const secondService = ((await second.json()) as SavedServiceType).service;
+    expect([first.service.slug, secondService.slug]).toEqual([
+      "cabinet-consultation",
+      "cabinet-consultation-2",
+    ]);
+
+    const renamed = await put(`/settings/services/${first.service.id}`, summit.email, {
+      ...cabinet,
+      name: "Kitchen cabinets",
+    });
+    expect(renamed.status).toBe(200);
+    const [row] = await db.select().from(bookingLink).where(eq(bookingLink.id, first.service.id));
+    expect([row.name, row.slug, row.layout, row.description]).toEqual([
+      "Kitchen cabinets",
+      "cabinet-consultation",
+      "month",
+      null,
+    ]);
+
+    // A refused save says where the problem is, so the form can show it in place.
+    const refused = await post("/settings/services", summit.email, {
+      ...cabinet,
+      durationMinutes: 0,
+    });
+    expect(refused.status).toBe(400);
+    expect(await refused.json()).toMatchObject({ field: "durationMinutes" });
+  });
+
+  test("a hidden service is no longer offered and its bookings stay", async () => {
+    const listed = async () =>
+      (
+        (await (await app.request(`/public/${booked.slug}/booking-links`)).json()) as {
+          bookingLinks: { id: string }[];
+        }
+      ).bookingLinks.map((service) => service.id);
+    expect(await listed()).toContain(estimateId);
+    const lee = await makeBooking("Lee", bookedAnaId, 600, "confirmed");
+
+    const [estimate] = await db.select().from(bookingLink).where(eq(bookingLink.id, estimateId));
+    const hidden = await put(`/settings/services/${estimateId}`, booked.email, {
+      name: estimate.name,
+      description: estimate.description,
+      durationMinutes: estimate.durationMinutes,
+      bufferBeforeMinutes: estimate.bufferBeforeMinutes,
+      bufferAfterMinutes: estimate.bufferAfterMinutes,
+      slotIntervalMinutes: estimate.slotIntervalMinutes,
+      personChoice: estimate.personChoice,
+      asksAddress: estimate.asksAddress,
+      active: false,
+    });
+    expect(hidden.status).toBe(200);
+    expect(await listed()).not.toContain(estimateId);
+    const [still] = await db.select().from(booking).where(eq(booking.id, lee.bookingId));
+    expect([still.status, still.bookingLinkId]).toEqual(["confirmed", estimateId]);
+  });
+});

@@ -1,4 +1,4 @@
-// Backend: the owner's Settings page. Hours so far (feature 12a). The business always comes from the
+// Backend: the owner's Settings pages: Hours (feature 12a) and Services (12d). The business always comes from the
 // session, never from the request; any member may read, only a role that may change the business
 // may save.
 
@@ -9,6 +9,7 @@ import type { ZodError } from "zod";
 import {
   businessHoursValidationSchema,
   personHoursValidationSchema,
+  serviceValidationSchema,
 } from "@scheduleads-app/shared/zod-validation";
 
 import {
@@ -16,9 +17,13 @@ import {
   type PermissionsType,
 } from "../lib/auth/has-business-permission.js";
 import { refuse } from "../lib/errors/refuse.js";
+import { addService } from "../lib/settings/add-service.js";
 import { findHoursSettings } from "../lib/settings/find-hours-settings.js";
+import { findServicesSettings } from "../lib/settings/find-services-settings.js";
+import type { OutsideHoursBookingType } from "../lib/settings/outside-hours-booking-type.js";
 import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
 import { savePersonHours } from "../lib/settings/save-person-hours.js";
+import { saveService } from "../lib/settings/save-service.js";
 import { requireOrganizationMiddleware } from "../middleware/auth-middleware/require-organization-middleware.js";
 import { requirePermissionMiddleware } from "../middleware/auth-middleware/require-permission-middleware.js";
 import { requireKnownSubscriptionMiddleware } from "../middleware/subscription-middleware/require-known-subscription-middleware.js";
@@ -26,12 +31,12 @@ import { requireModuleMiddleware } from "../middleware/subscription-middleware/r
 
 const CHANGE_BUSINESS: PermissionsType = { organization: ["update"] };
 
-// The first problem, with where it is ("weeklyHours.mon.1"), so the card can show it in place.
+// The first problem, with where it is ("weeklyHours.mon.1"), so the form can show it in place.
 const refuseFirstIssue = (c: Context, error: ZodError) => {
   const issue = error.issues[0];
   return c.json(
     {
-      ...refuse("bad_request", issue?.message ?? "Check the hours and try again."),
+      ...refuse("bad_request", issue?.message ?? "Check the form and try again."),
       field: issue?.path.join(".") ?? "",
     },
     400
@@ -100,5 +105,60 @@ export const settingsRoutes = new Hono()
       if (!saved.ok)
         return c.json(refuse("no_business_hours", "Set the business's hours first."), 409);
       return c.json({ person: saved.person, outsideHours: saved.outsideHours }, 200);
+    }
+  )
+
+  // The Services page: every service of the business, live or hidden.
+  .get(
+    "/services",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    async (c) => {
+      const { organizationId } = c.get("organization");
+      const [services, canEdit] = await Promise.all([
+        findServicesSettings(organizationId),
+        hasBusinessPermission(c.req.raw.headers, organizationId, CHANGE_BUSINESS),
+      ]);
+      return c.json({ canEdit, services }, 200);
+    }
+  )
+
+  .post(
+    "/services",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = serviceValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const service = await addService(c.get("organization").organizationId, c.req.valid("json"));
+      return c.json({ service }, 201);
+    }
+  )
+
+  // Another business's service or an unknown id: the same 404.
+  .put(
+    "/services/:serviceId",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = serviceValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const service = await saveService(
+        c.get("organization").organizationId,
+        c.req.param("serviceId"),
+        c.req.valid("json")
+      );
+      if (!service) return c.json(refuse("not_found", "No service here."), 404);
+      const outsideHours: OutsideHoursBookingType[] = []; // filled from step 12d.5
+      return c.json({ service, outsideHours }, 200);
     }
   );
