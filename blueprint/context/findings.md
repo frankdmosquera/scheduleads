@@ -241,53 +241,53 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** The same form twice with a known email, expect joinedExistingContact true on both answers; with a new email, false on both.
 **Resolution:** Carried on purpose, for the same reason as F-318: only a notice on screen is at stake.
 
-### F-320 [P3] fixed - A person's day switches keep the bare day name, so they read the same as the business's
+### F-320 [P3] closed - A person's day switches keep the bare day name, so they read the same as the business's
 
 **File:** frontend/components/settings/week-editor.tsx:52-64
 **Found:** 2026-10-10 by /audit (scope: current, step 12a.1; lenses: all)
 **Why it matters:** The windows and Add buttons on a person's card carry their name ("Marco (estimator), Tuesday, window 1, from"), but the day's checkbox is labelled by its visible text alone, "Tuesday". A screen reader moving through the page hears the business's Tuesday switch and every person's as the same control.
 **Suggested fix:** Give the checkbox an aria-label with the same prefix as its windows when `labelPrefix` is set.
-**Resolution:** Fixed 2026-10-10: the day checkbox takes the same name as its windows when a prefix is set ("Marco (estimator), Tuesday").
+**Resolution:** Fixed 2026-10-10: the day checkbox takes the same name as its windows when a prefix is set ("Marco (estimator), Tuesday"). Closed 2026-10-10 by the check of 12a.1's fixes (bbd7510..5fc529c): week-editor.tsx:62 names a person's day switch with their name; the business's keeps its visible label.
 
-### F-321 [P3] fixed - "Pick a date." now answers every bad one-off date, including an impossible one in a setup file
+### F-321 [P3] closed - "Pick a date." now answers every bad one-off date, including an impossible one in a setup file
 
 **File:** packages/shared/zod-validation/availability-validation-schemas/date-hours-validation-schema.ts:12
 **Found:** 2026-10-10 by /audit (scope: current, step 12a.1; lenses: all)
 **Why it matters:** The message was written for the empty date field on the Hours card, but `dateHoursValidationSchema` also checks the setup file (`client-setup-validation-schema.ts:31`), where 2026-02-30 now reports "Pick a date." instead of saying the date does not exist.
 **Suggested fix:** A message that fits both: "Use a real date, like 2026-11-02." (the card's empty field still shows it under the date).
-**Resolution:** Fixed 2026-10-10: the message is now "Use a real date, like 2026-11-02.", which reads right for the empty field on the card and for an impossible date in a setup file.
+**Resolution:** Fixed 2026-10-10: the message is now "Use a real date, like 2026-11-02.", which reads right for the empty field on the card and for an impossible date in a setup file. Closed 2026-10-10 by the check of 12a.1's fixes: date-hours-validation-schema.ts:12 reads "Use a real date, like 2026-11-02."; the old text is gone and no test asserted it.
 
-### F-322 [P2] fixed - An overlap, a repeated one-off date or a date with no windows gets no focus, no aria-invalid and no announcement
+### F-322 [P2] closed - An overlap, a repeated one-off date or a date with no windows gets no focus, no aria-invalid and no announcement
 
 **File:** frontend/components/settings/day-windows-editor.tsx:122; frontend/components/settings/one-off-dates-editor.tsx:89; frontend/lib/use-focus-first-invalid.ts:13
 **Found:** 2026-10-10 by independent review of step 12a.1 (scope: 86675f7..bbd7510; lenses: quality, security, performance, tests)
 **Why it matters:** These three errors sit on the whole list ("weeklyHours.mon", "dateHours", "dateHours.0.windows"), so the editors show them as a plain paragraph tied to no field. No input is marked invalid, so a refused save leaves focus on Save and a screen reader hears nothing; the spec asks for focus on the first bad field and each field tied to its error. An overlapping second window is the most common mistake on the card.
 **Suggested fix:** When a day or date carries a list error, mark its inputs invalid and describe them by the message; with no windows left, mark the Add button; for a repeated date, mark the date fields that repeat.
-**Resolution:** Fixed 2026-10-10: a day or date error marks every field of that day invalid and describes them by the message (with no windows left, the Add button); a repeated date marks the date fields that repeat. Checked by hand: two overlapping Monday windows on Save put focus on Monday window 1, described by "Two windows on the same day overlap."
+**Resolution:** Fixed 2026-10-10: a day or date error marks every field of that day invalid and describes them by the message (with no windows left, the Add button); a repeated date marks the date fields that repeat. Checked by hand: two overlapping Monday windows on Save put focus on Monday window 1, described by "Two windows on the same day overlap." Closed 2026-10-10 by the check of 12a.1's fixes: day-windows-editor.tsx marks every field of a day with a day error and ties them to its message, the Add button when no windows are left; one-off-dates-editor.tsx marks only the repeating date fields; the new ids do not collide.
 
-### F-323 [P3] fixed - An ended sign-in shows "unexpected status (401)" on Settings, and Try again cannot fix it
+### F-323 [P3] closed - An ended sign-in shows "unexpected status (401)" on Settings, and Try again cannot fix it
 
 **File:** frontend/lib/api-client/settings/fetch-hours-settings.ts:20-24; frontend/components/settings/settings-screen.tsx:47-53
 **Found:** 2026-10-10 by independent review of step 12a.1 (scope: 86675f7..bbd7510; lenses: quality, security, performance, tests)
 **Why it matters:** The spec says to follow the leads screens, which read 401 as "signed out" with a way back and 403 as a refusal (fetch-leads.ts:27-33). The dashboard reads /me only on mount, so a session that ends between screens lands here on a raw status and a Try again that keeps failing.
 **Suggested fix:** Map 401 and 403 as fetchLeads does and show the same notice.
-**Resolution:** Fixed 2026-10-10: fetchHoursSettings reads 401 as signed out and 403 as a refusal, as fetchLeads does, and the screen shows the leads screens' notice with the way back to sign in.
+**Resolution:** Fixed 2026-10-10: fetchHoursSettings reads 401 as signed out and 403 as a refusal, as fetchLeads does, and the screen shows the leads screens' notice with the way back to sign in. Closed 2026-10-10 by the check of 12a.1's fixes: fetch-hours-settings.ts:28-35 maps 401 and 403; settings-screen.tsx:50-51 shows the sign-in notice; Try again is left for real failures.
 
-### F-324 [P3] fixed - No test pins the 400's `field`, which the cards use to show an error in place
+### F-324 [P3] closed - No test pins the 400's `field`, which the cards use to show an error in place
 
 **File:** backend/routes/settings-routes.test.ts:652-656
 **Found:** 2026-10-10 by independent review of step 12a.1 (scope: 86675f7..bbd7510; lenses: quality, security, performance, tests)
 **Why it matters:** The refused save only checks the status, so dropping `field` or joining its path differently would pass while every server-side error lost its place on the card.
 **Suggested fix:** In the same test, send an overlapping window and expect `field: "weeklyHours.mon"` with code bad_request.
-**Resolution:** Fixed 2026-10-10: the first-save test also sends an overlapping Monday and expects bad_request with field "weeklyHours.mon".
+**Resolution:** Fixed 2026-10-10: the first-save test also sends an overlapping Monday and expects bad_request with field "weeklyHours.mon". Closed 2026-10-10 by the check of 12a.1's fixes: settings-routes.test.ts:269-278 asserts the whole 400 with field "weeklyHours.mon".
 
-### F-325 [P3] fixed - The read-only notice names a role ("Only the owner") while the check asks about an action
+### F-325 [P3] closed - The read-only notice names a role ("Only the owner") while the check asks about an action
 
 **File:** frontend/components/settings/settings-screen.tsx:73-75
 **Found:** 2026-10-10 by independent review of step 12a.1 (scope: 86675f7..bbd7510; lenses: quality, security, performance, tests)
 **Why it matters:** The business's admin role may change the business too (auth-server.ts:65-71), and custom roles later make the wording drift further from what is allowed.
 **Suggested fix:** "Your role cannot change the hours. You can see them here."
-**Resolution:** Fixed 2026-10-10: the notice reads "Your role cannot change the hours. You can see them here."
+**Resolution:** Fixed 2026-10-10: the notice reads "Your role cannot change the hours. You can see them here." Closed 2026-10-10 by the check of 12a.1's fixes: settings-screen.tsx:79 asks about what the role may do, not which role.
 
 ### F-326 [P3] unverified - A time field cleared mid-edit may snap back while the owner is still typing
 
@@ -296,3 +296,11 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** An unfinished time keeps the window's last whole time on purpose; in some browsers the controlled field may redraw the old value while a segment is being retyped. Not seen in a browser yet.
 **Missing validation:** Type over one segment of a time field by keyboard in Chrome and Edge.
 **Resolution:**
+
+### F-327 [P3] open - Settings shows its refusal through LeadsRefusalNotice, a component named and commented for the leads screens
+
+**File:** frontend/components/settings/settings-screen.tsx:9,51; frontend/components/leads/leads-refusal-notice.tsx:1-2
+**Found:** 2026-10-10 by the check of 12a.1's fixes (scope: bbd7510..5fc529c)
+**Why it matters:** What it shows is generic, but its name and header say leads, so the naming misleads, and a change made for leads alone would change Settings unnoticed.
+**Suggested fix:** Move it to a shared place as `RefusalNotice` with a generic header, used by both screens.
+**Resolution:** Carried to step 12a.2, which changes the Settings screen anyway.
