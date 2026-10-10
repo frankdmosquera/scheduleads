@@ -50,7 +50,9 @@ export async function saveResource(
         message: "A place has no work email.",
       } as const;
     }
-    if (saved.workEmail) {
+    // Checked only when it changes: one kept from before a move of the sending domain still saves,
+    // so a rename or turning off is never refused over it (F-356).
+    if (saved.workEmail && saved.workEmail !== current.workEmail) {
       const [business] = await tx
         .select({ senderEmail: organization.senderEmail })
         .from(organization)

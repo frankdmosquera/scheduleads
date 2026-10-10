@@ -774,6 +774,27 @@ describe("a person's work email", () => {
       "name",
     ]);
     expect(services.people.every((person) => !("workEmail" in person))).toBe(true);
+    // The sending address moves to another domain: Juan keeps his, and a rename still saves (F-356).
+    await db
+      .update(organization)
+      .set({ senderEmail: "hello@summit.test" })
+      .where(eq(organization.id, summit.organizationId));
+    const renamed = await put(`/settings/people/${summit.personId}`, summit.email, {
+      name: "Juan P.",
+      active: true,
+      workEmail: "juan@summit-painting.test",
+    });
+    expect(renamed.status).toBe(200);
+    const moved = await put(
+      `/settings/people/${summit.personId}`,
+      summit.email,
+      juan("juan2@summit-painting.test")
+    );
+    expect(moved.status).toBe(400); // a new one must be at the new domain
+    await db
+      .update(organization)
+      .set({ senderEmail: "Bookings@Summit-Painting.test" })
+      .where(eq(organization.id, summit.organizationId));
     await put(`/settings/people/${summit.personId}`, summit.email, juan(null));
     expect(await workEmailOf(summit.personId)).toBeNull();
 
