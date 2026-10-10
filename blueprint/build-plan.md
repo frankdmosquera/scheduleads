@@ -243,7 +243,7 @@ rented" rents nothing.
   visitor, and per contact, so the same email or phone booking a burst in a
   short while is refused. A customer may still book two times at once (a
   parent with two children), so that alone is never refused (5d, Oct 2)
-- [ ] 10. **Tenant zero ready: AgentsWeb** - the agency's own business
+- [x] 10. **Tenant zero ready: AgentsWeb** - the agency's own business
   (AgentsWeb, its site `agency-site-app`) takes real bookings, and any site
   in any repo can install the booking window. Decided 2026-10-09: every site
   installs it as one shared package built into its own files, never a

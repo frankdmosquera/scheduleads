@@ -193,100 +193,26 @@ them); treat a 5xx like a lost answer, so the next run asks Twilio first. One
 route test with a 503 on the first send and the text found on the retry.
 **Resolution:**
 
-### F-298 [P3] closed - The package carries every shared validation schema into each site, not only the booking form's
+### F-304 [P2] open - The setup command lists differences only for business hours, questions, services and a person's kind, so a hand edit to a person's own hours, worker texts or extra ticks is kept without a word
 
-**File:** packages/booking-component/booking-window/booking-form/read-booking-form.ts:5; packages/shared/zod-validation/index.ts; packages/shared/package.json
-**Found:** 2026-10-09 by independent review of step 10.1 (scope: c786f7e..17264c3; lenses: quality, security, performance, tests)
-**Why it matters:** read-booking-form.ts imports `createBookingValidationSchema`
-from the `@scheduleads-app/shared/zod-validation` barrel, and shared's
-package.json has no `"sideEffects": false`, so tsdown keeps every module the
-barrel re-exports with its top-level `z.object(...)` calls. The built
-dist/index.js (lines 314 to 516, about 11 kB of its 57 kB) holds the sign-in
-code schema, the client setup schema, the Resend key format, the email sending
-schema, the availability rule schemas and the text settings schema; the booking
-form needs only the create-booking, contact, booking-link-id and textable phone
-pieces (about 3 kB). The package's own package.json has no `sideEffects` either,
-so a site's bundler cannot drop them: every visitor of every client site
-downloads and runs about 8 kB of admin and dashboard validation it never uses.
-Nothing secret is in it (validation rules and messages), so this is size and
-tidiness, not exposure.
-**Suggested fix:** Mark `packages/shared` side-effect free (`"sideEffects":
-false` in its package.json, after checking none of its modules relies on an
-import for its effect), or import the create-booking schema through a narrow
-subpath. Then confirm `emailSendingKeyValidationSchema` and the text settings
-schema are gone from dist/index.js and the 76 tests still pass.
-**Resolution:** Fixed 2026-10-09 in 10.1's review fixes: tsdown.config.ts marks the shared package's built files free of side effects for the bundle (`treeshake.moduleSideEffects`, matching both slash kinds, since a first try during the build matched only `/` and changed nothing on Windows). dist/index.js went from 56.98 kB (13.49 kB gzipped) to 48.55 kB (11.18 kB); the shared regions left are tel-href, the email-address, contact, booking-link-id and create-booking schemas, textable-phone-number, local-date and add-days, each used by the window. On the preview page, Book on an empty form still shows each field's own error with the focus on Name. Closed 2026-10-09 by re-review of 10.1's fixes (scope: e9e21d0..7cad72a): the rebuilt dist/index.js is 48.55 kB (11.18 kB gzipped) and its only shared regions are tel-href, email-address, contact, booking-link-id, textable-phone-number, create-booking, local-date and add-days; no sign-in code, client setup, sending key, text settings or weekly hours schema is left. No shared source module has a top-level statement other than a declaration, and none calls .meta, .register or z.config, so marking shared's files side-effect free drops nothing the window needs; the bundle loads in Node (exports BookNowTrigger, BookingProvider, useBooking), the 76 tests pass and the frontend builds against it. The regex matches the resolved Windows path, as the drop in size shows.
+**File:** packages/shared/client-setup/run-client-setup.ts:143-150 (and apply-business-shape.ts:98-131, 165-177)
+**Found:** 2026-10-10 by independent review of feature 10 (scope: current, c786f7e..d9e4709; lenses: quality, security, performance, tests)
+**Why it matters:** Step 10.3 says the command "lists every difference between the file and the database so a hand edit is seen, not overwritten". findDifferences compares the business hours row, the questions, each service's own fields and a person's kind, but for people it reads only `kind`. applyBusinessShape skips a person whose hours row exists (line 131), adds worker-text settings only while none exist (onConflictDoNothing) and adds missing ticks without reading extra ones. So when a person's week, date hours or worker-text settings in the file differ from the saved row, or a tick was added by hand, the command prints "nothing to add" and no "differs, kept" line: the file and the database disagree and the output says they agree. Not reachable with today's only setup file (agentsweb.ts has `people: []` and no ticks); it is reachable on the first setup file for a business with people, such as Primo Painters or Face and Body. Nothing is lost: every row is kept.
+**Suggested fix:** In findDifferences, for each listed person that exists, compare their own hours row (weeklyHours, dateHours) and their worker-text settings with the file, and for each service report ticks in the database that the file does not list; add one test case that changes a person's hours by hand and expects the difference.
+**Resolution:**
 
-### F-299 [P3] closed - The allow-list became a build check, but the spec and tsdown.config.ts still name a test
+### F-305 [P3] open - A setup file's hours are typed unknown, so `satisfies ClientSetupInputType` checks nothing inside them
 
-**File:** packages/booking-component/tsdown.config.ts:4; blueprint/context/current-feature.md:7, 131-137, 205, 232
-**Found:** 2026-10-09 by independent review of step 10.1 (scope: c786f7e..17264c3; lenses: quality, security, performance, tests)
-**Why it matters:** Step 10.1 and Testing say "a test reads every file in
-dist/" and "Package (Vitest): the new dist/ import allow-list test, plus
-feature 9's 76", and Files / areas lists "a new test over dist/". What was
-built is `check-dist-imports.mjs`, the last command of the package's build
-(which `pretest` runs, so `npm test` still enforces it); the suite is 76 tests,
-not 77. The spec was not amended to say so, and tsdown.config.ts:4 points the
-reader to `dist-imports.test.ts`, a file that does not exist. The spec's
-Status line also still reads "step 10.1's plan with him next" while 10.1 is
-ticked. A later reader looking for the test, or counting 77, is sent the
-wrong way.
-**Suggested fix:** Amend step 10.1, Testing and Files / areas to the build
-check (and why it is a build step rather than a Vitest test), update the
-Status line, and change the comment in tsdown.config.ts to name
-`check-dist-imports.mjs`.
-**Resolution:** Fixed 2026-10-09: the spec records the change at 10.1 (the check is the build's last step; why a Vitest test would have needed Node's types; the type check and prepublishOnly), its Done when says "that check", Files / areas and Testing name check-dist-imports.mjs, and the Status line says 10.1 is built and reviewed. tsdown.config.ts's header now names check-dist-imports.mjs. The package's suite stays 76; the build log already marks the piece "changed" with the reason. Closed 2026-10-09 by re-review of 10.1's fixes (scope: e9e21d0..7cad72a): step 10.1 carries an accurate amendment (the build's last step, why not Vitest: tsconfig.json has types [] and includes the tests, pretest builds first, the use client check, prepublishOnly, the side-effect marking), Done when says that check, Files / areas and Testing name check-dist-imports.mjs, the Status line says built and reviewed, and tsdown.config.ts names check-dist-imports.mjs; no reference to dist-imports.test.ts or a 77th test remains.
+**File:** packages/shared/zod-validation/admin-validation-schemas/client-setup-validation-schema.ts:261-265 (seen in packages/shared/client-setups/agentsweb.ts:295 and run-client-setup.test.ts:102)
+**Found:** 2026-10-10 by independent review of feature 10 (scope: current, c786f7e..d9e4709; lenses: quality, security, performance, tests)
+**Why it matters:** `hours` is `z.preprocess(fn, businessAvailabilityRuleValidationSchema)`, and Zod 4 types a preprocess's input as `unknown` (`ZodPreprocess<U, B = unknown>`). A type probe compiled with the repo's tsc accepts `{ totally: "wrong", horizonDays: "x" }` as `ClientSetupInputType["hours"]`, while a wrong `personChoice` is refused (TS2322). So agentsweb.ts's `satisfies ClientSetupInputType`, and the seed's businesses typed through the same input type, get no editor check on the hours block: a misspelt field or a string horizon shows only when the command or the seed runs and the parse refuses it. It is also the cause of one of the test file's type errors (line 102, TS2698: spread of an unknown). The runtime parse is intact, so nothing wrong reaches the database.
+**Suggested fix:** Type the input explicitly, for example `z.preprocess<unknown, typeof schema, Omit<z.input<typeof businessAvailabilityRuleValidationSchema>, "resourceId">>(...)`, or drop the preprocess and use `businessAvailabilityRuleValidationSchema` with `resourceId` made optional-null for the file, so the setup files are checked as they are written.
+**Resolution:**
 
-### F-300 [P3] closed - The dist import check reads only top-level .js and .d.ts files and skips triple-slash type references
+### F-306 [P3] open - run-client-setup.test.ts has type errors the editor shows and no command catches
 
-**File:** packages/booking-component/check-dist-imports.mjs:11-20
-**Found:** 2026-10-09 by independent review of step 10.1 (scope: c786f7e..17264c3; lenses: quality, security, performance, tests)
-**Why it matters:** The check uses a non-recursive `readdirSync(dist)` filtered
-by `/\.(js|d\.ts)$/`, and its patterns have no form for
-`/// <reference types="..." />`. Run on a copy outside the repo, each of these
-passed while carrying a forbidden import: `import "drizzle-orm"` in
-`dist/sub/a.js`, the same in `dist/chunk.mjs`, and
-`/// <reference types="node" />` in `index.d.ts`. Every other form tried
-failed as it should (`export ... from`, minified `export*from"x"`, a side
-effect import, default plus namespace import, a type `import("x")`, a lookalike
-name such as `reactx`, a single-quoted directive). Today's output is two
-top-level files with none of these, so nothing slips through now. A switch
-to `.mjs` alone (tsdown's default when `platform` is `node`) would fail loudly,
-since index.js would be missing; the silent gaps are a nested output file
-(an `unbundle` build or a nested entry) and a triple-slash reference, which
-the check exists to catch.
-**Suggested fix:** Walk dist/ recursively, match `\.(c|m)?js$` and
-`\.d\.(c|m)?ts$`, and add a pattern for `/// <reference types="...">`. Relative
-specifiers (a split chunk importing `./x.js`) are reported as problems today;
-allow those explicitly if code splitting is ever turned on.
-**Resolution:** Fixed 2026-10-09: check-dist-imports.mjs reads every file under dist/ at any depth (`readdirSync` recursive) ending in .js, .mjs, .cjs, .d.ts, .d.mts or .d.cts, and also reads `/// <reference types|path=...>`. Shown with the reviewer's three cases planted in dist/: `sub/a.js` importing @scheduleads-app/shared, `chunk.mjs` re-exporting drizzle-orm and `extra.d.ts` referencing node each failed (exit 1, all three named); removed, the check passed with the real 2 files. Closed 2026-10-09 by re-review of 10.1's fixes (scope: e9e21d0..7cad72a): on a copy of the real dist/ outside the repo the check passed clean (2 files), then failed with exit 1 naming all four planted files: sub/deeper/a.js (drizzle-orm), sub/b.cjs (export* from shared, minified), sub/c.d.mts (reference types node) and d.mjs (require pg). Recursive readdirSync returns backslash-separated paths on Windows and join and the extension filter handle them (Node 26.7.0).
-
-### F-301 [P3] closed - Nothing builds the package before a publish, so npm publish ships whatever dist/ is on disk
-
-**File:** packages/booking-component/package.json:19-24
-**Found:** 2026-10-09 by independent review of step 10.1 (scope: c786f7e..17264c3; lenses: quality, security, performance, tests)
-**Why it matters:** The package now has `publishConfig` and `files: ["dist",
-"booking-component.css"]`, but no `prepublishOnly` or `prepack` script.
-dist/ is gitignored, so `npm publish` (step 10.2) packs whatever the last
-build on that machine left, without the type check or the dist import check;
-`npm pack --dry-run` here packed the existing dist/ with no build run. A build
-left from another branch, or a dist/ edited by hand, would be published and
-installed by every site.
-**Suggested fix:** Add `"prepublishOnly": "npm run build"`, so a publish always
-rebuilds from the checked-out source and runs `check-dist-imports.mjs` first.
-**Resolution:** Fixed 2026-10-09: the package's scripts gain `"prepublishOnly": "npm run build"`, so `npm publish` runs prebuild (shared, the backend's types), the type check, tsdown and the import check before anything is sent; a failing check stops the publish. Closed 2026-10-09 by re-review of 10.1's fixes (scope: e9e21d0..7cad72a): `npm run prepublishOnly`, both through --workspace from the root and from inside the package folder, ran prebuild (shared, the backend's build:types), the tsc type check, tsdown and check-dist-imports.mjs, exit 0; no .npmrc sets ignore-scripts.
-### F-302 [P2] fixed - The install note says React 19, but the package refuses any React below 19.2.8, which is what Primo Painters runs
-
-**File:** packages/booking-component/package.json:33-36 (and index.ts:11, AGENTS.md install line)
-**Found:** 2026-10-09 by independent review of step 10.2 (scope: 8db88e6..bd39c2c; lenses: quality, security, performance, tests)
-**Why it matters:** 10.2 documents the install as needing "react and react-dom 19", but the peer range is `^19.2.8`. The built `dist/index.js` imports only `createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState` and the JSX runtime, nothing newer than React 18. `primo-painters/package.json` pins `react` and `react-dom` to `19.0.0`; installing the packed `0.1.0` into a throwaway folder with those two versions fails with `npm error code ERESOLVE ... peer react@"^19.2.8" from @frankdmosquera/booking-component@0.1.0`. A tenant named in the plan cannot install it as documented without upgrading React or using `--legacy-peer-deps`. agency-site-app, face-and-body and the-latam-painters are on 19.2.8 and are unaffected.
-**Suggested fix:** Before the first publish, widen the peers to `^19.0.0` (what the code actually needs), or keep `^19.2.8` and make the index.ts header and AGENTS.md say React 19.2.8 or later.
-**Resolution:** Fixed 2026-10-09 in 10.2 review fixes: the peer range is react and react-dom ^19.0.0, so Primo Painters (react 19.0.0) can install it; the package 76 tests and the build check pass.
-
-### F-303 [P3] fixed - The install note says any GitHub token that can read packages, but GitHub Packages npm accepts only a classic token
-
-**File:** packages/booking-component/index.ts:9-10 (and AGENTS.md install line)
-**Found:** 2026-10-09 by independent review of step 10.2 (scope: 8db88e6..bd39c2c; lenses: quality, security, performance, tests)
-**Why it matters:** The header says NODE_AUTH_TOKEN is "a GitHub token that can read packages", set in the shell and in Vercel. GitHub's npm registry page states "GitHub Packages only supports authentication using a personal access token (classic)." A fine-grained token, the kind GitHub now offers first, would fail the site's install on Vercel with an auth error at the agency site's item 12, with nothing in the note pointing at the cause. Locally the `gh auth token` OAuth token works, so the gap only shows on the host.
-**Suggested fix:** Say "a classic personal access token with `read:packages`" for the host's build settings in both places.
-**Resolution:** Fixed 2026-10-09: the package index.ts header and AGENTS.md now say a personal access token (classic) with read:packages, the only kind the GitHub npm registry takes.
+**File:** packages/shared/client-setup/run-client-setup.test.ts:71-77, 102
+**Found:** 2026-10-10 by independent review of feature 10 (scope: current, c786f7e..d9e4709; lenses: quality, security, performance, tests)
+**Why it matters:** `tsc -p packages/shared/tsconfig.json` (the editor's view, which coding-standards.md says type-checks everything in the package) fails with six errors, all in this new file and none elsewhere in the package: five TS2345 because countRows' helper constrains its table to `{ organizationId: typeof organization.id }`, the organization table's own id column, which no other table's organizationId column matches; one TS2698 at line 102 from F-305. Vitest strips types and the build's tsconfig.build.json excludes tests, so the tests pass and the build is green while the file is red in the editor; a later wrong call in this test would not be caught by types either.
+**Suggested fix:** Constrain the helper to the column type it needs (for example `<T extends { organizationId: AnyPgColumn }>` from drizzle-orm/pg-core) or pass the column itself (`inBusiness(bookingQuestion.organizationId)`); line 102 is fixed with F-305. Then `tsc -p packages/shared/tsconfig.json` passes.
+**Resolution:**
