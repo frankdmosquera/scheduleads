@@ -1,6 +1,7 @@
 // Frontend component: the holiday picker on the Days off page (feature 12e). The owner picks the
-// country and the province (nothing picked to start with), then ticks the holidays to close, or
-// presses "Close all main holidays". A pick the holiday list no longer has is shown, to untick.
+// country and the province (nothing picked to start with), then ticks the statutory holidays to
+// close, or presses "Close them all". Any other day is closed by hand. A pick the holiday list no
+// longer has is shown, to untick.
 
 "use client";
 
@@ -131,8 +132,6 @@ export function HolidayPicker({
 
   const ready = choices?.key === key ? choices : null;
   const holidays = ready?.holidays ?? [];
-  const main = holidays.filter((holiday) => holiday.main);
-  const others = holidays.filter((holiday) => !holiday.main);
   const known = new Set(holidays.map((holiday) => holiday.name));
   // Only once the list has loaded, so a pick is never marked while it is still coming. A pick the
   // list no longer has is gone; one that only skips the coming year (a substitute day) is kept.
@@ -158,9 +157,9 @@ export function HolidayPicker({
       <span className="text-muted-foreground">{name}</span>
     </label>
   );
-  const closeAllMain = () => {
+  const closeThemAll = () => {
     edited();
-    setPicks((ticked) => [...new Set([...ticked, ...main.map((holiday) => holiday.name)])]);
+    setPicks((ticked) => [...new Set([...ticked, ...holidays.map((holiday) => holiday.name)])]);
   };
 
   async function save(event: FormEvent) {
@@ -233,7 +232,8 @@ export function HolidayPicker({
           Holidays
         </h3>
         <p className="text-sm text-muted-foreground">
-          Ticked holidays are closed for online booking every year, until unticked.
+          The statutory holidays where the business is. Ticked ones are closed for online booking
+          every year, until unticked; close any other day by hand.
         </p>
       </div>
 
@@ -326,21 +326,15 @@ export function HolidayPicker({
 
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-3">
-              <p className="font-medium text-foreground">Main holidays</p>
-              {canEdit && main.length ? (
-                <Button type="button" variant="outline" size="sm" onClick={closeAllMain}>
-                  Close all main holidays
+              <p className="font-medium text-foreground">Statutory holidays</p>
+              {canEdit && holidays.length ? (
+                <Button type="button" variant="outline" size="sm" onClick={closeThemAll}>
+                  Close them all
                 </Button>
               ) : null}
             </div>
-            {main.map(tickBox)}
+            {holidays.map(tickBox)}
           </div>
-          {others.length ? (
-            <div className="flex flex-col gap-2">
-              <p className="font-medium text-foreground">Other days</p>
-              {others.map((holiday) => tickBox(holiday, -1))}
-            </div>
-          ) : null}
           {errorLine("closedHolidays")}
         </div>
       ) : null}

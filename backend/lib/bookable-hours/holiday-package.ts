@@ -1,10 +1,12 @@
 // Backend: the holiday package, behind one object. The only file that imports it; a holiday is
-// named by its English name, such as "Family Day".
+// named by its English name, such as "Family Day". Only statutory holidays are ever used: the
+// package's "public" ones, a real day off where the business is. Observances (Halloween, Mother's
+// Day), optional days and school terms are left to the owner to close by hand.
 
 import Holidays from "date-holidays";
 
 export type HolidayPlaceType = { code: string; name: string };
-export type PackageHolidayType = { name: string; date: string; type: string }; // date YYYY-MM-DD
+export type PackageHolidayType = { name: string; date: string }; // date YYYY-MM-DD
 
 const OFFERED_COUNTRIES = ["CA", "CO", "US"]; // the countries the businesses are in
 // How far ahead a name is looked for before it counts as gone: a substitute day or an election
@@ -33,34 +35,30 @@ function holidayList(key: string, country: string, region: string | null): Holid
   return list;
 }
 
-// One year of one list: the province's alone, or the country's.
+// One year of one list's statutory holidays: the province's, or the country's.
 function holidaysOfYear(country: string, region: string | null, year: number) {
   const key = region ? `${country}-${region}` : country;
   let holidays = yearsHolidays.get(`${key} ${year}`);
   if (!holidays) {
     holidays = holidayList(key, country, region)
       .getHolidays(year)
+      .filter((holiday) => holiday.type === "public")
       .map((holiday) => ({
         name: holiday.name,
         date: holiday.date.slice(0, 10), // "2027-02-15 00:00:00", local to the province
-        type: holiday.type,
       }));
     yearsHolidays.set(`${key} ${year}`, holidays);
   }
   return holidays;
 }
 
-// A business's holidays for one year. With a province, its own list decides each holiday it has,
-// type and date (the package's province list already carries the national ones it keeps), and
-// the country's list adds only the names the province does not have. None for a country or
-// province the package does not know: it would quietly use the national list for a bad province.
+// A business's statutory holidays for one year: its province's own list when one is picked (the
+// package's province list already carries the national holidays the province keeps, under the
+// province's names and dates), otherwise the country's. None for a country or province the package
+// does not know: it would quietly use the national list for a bad province.
 function holidaysOfPlace(country: string, region: string | null, year: number) {
   if (!knowsCountry(country) || (region && !knowsRegion(country, region))) return [];
-  const national = holidaysOfYear(country, null, year);
-  if (!region) return national;
-  const provincial = holidaysOfYear(country, region, year);
-  const named = new Set(provincial.map((holiday) => holiday.name));
-  return [...provincial, ...national.filter((holiday) => !named.has(holiday.name))];
+  return holidaysOfYear(country, region, year);
 }
 
 export const holidayPackage = {

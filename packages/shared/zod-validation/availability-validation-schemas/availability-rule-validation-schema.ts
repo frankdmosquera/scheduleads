@@ -97,13 +97,6 @@ export const businessHoursValidationSchema = businessAvailabilityRuleFields
   })
   .strict();
 
-// The Days off page's closed days and holidays (feature 12e), never the hours.
-export const daysOffValidationSchema = businessAvailabilityRuleFields
-  .pick({ closedDates: true, holidayCountry: true, holidayRegion: true, closedHolidays: true })
-  .strict()
-  .refine(regionHasCountry, REGION_NEEDS_COUNTRY)
-  .refine(picksHaveCountry, PICKS_NEED_COUNTRY);
-
 // What the holiday picker saves: the holidays alone. The closed days are closed and opened one at
 // a time, so a page loaded earlier never writes back an old list of them.
 export const holidayPicksValidationSchema = businessAvailabilityRuleFields
@@ -127,6 +120,9 @@ export type PersonAvailabilityRuleType = z.infer<typeof personAvailabilityRuleVa
 export type AvailabilityRuleType = z.infer<typeof availabilityRuleValidationSchema>;
 export type BusinessHoursType = z.infer<typeof businessHoursValidationSchema>;
 export type PersonHoursType = z.infer<typeof personHoursValidationSchema>;
-export type DaysOffInputType = z.input<typeof daysOffValidationSchema>;
-export type DaysOffType = z.infer<typeof daysOffValidationSchema>;
+// The Days off page's closed days and holidays as read and written (feature 12e), never the hours.
+export type DaysOffType = Pick<
+  BusinessAvailabilityRuleType,
+  "closedDates" | "holidayCountry" | "holidayRegion" | "closedHolidays"
+>;
 export type HolidayPicksType = z.infer<typeof holidayPicksValidationSchema>;

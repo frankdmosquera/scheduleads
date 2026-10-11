@@ -40,14 +40,14 @@ already ported.
   person their "off your day" text, the
   Google event comes out, and the lead's timeline names the owner.
 - **The holiday picker (12e.3)**: the owner picks the country, Canada, Colombia or the United
-  States only (Frank, 2026-10-11), and the province (none picked by default; Colombia has none in
-  the package); the page lists that province's and that country's holidays for the coming year
-  with their dates, every kind but school terms, the main (public) ones first (Frank, 2026-10-11:
-  a national day such as Truth and Reconciliation is an observance in the package); "Close all
-  main holidays" ticks every public holiday, and each holiday ticks or unticks on its own. With a
-  province, its own list decides each holiday it has, whether main and its date, and the country's
-  adds only the names it lacks (Frank, 2026-10-11, F-379). A pick the package no longer knows is
-  shown as such and never takes the booking page down (decision 8).
+  States only (Frank, 2026-10-11), and optionally the province or state (none picked by default;
+  Colombia has none in the package); the page lists the statutory holidays for the coming year
+  with their dates: the province's own list when one is picked, the country's otherwise, and
+  nothing else (Frank, 2026-10-11, settling F-379: "a holiday that people don't work", by law, the
+  package's public ones; observances, optional days and school terms are closed by hand with
+  "+ Close a day"). "Close them all" ticks every one listed, and each ticks or unticks on its own.
+  A pick the package no longer knows is shown as such and never takes the booking page down
+  (decision 8).
 - Read-only for a role that may not change the business, as 12a.
 
 ## Out of scope
@@ -195,8 +195,9 @@ no_usual_hours` when the weekday has no usual windows for whoever it opens for.
 **`GET /settings/days-off/holidays?country=&region=`** `200 { countries, regions, holidays }`
 (amended in 12e.3: the country picker needs its list, and a holiday can fall twice in the year):
 `countries` the three offered `{ code, name }`; with a country, `regions` its provinces
-`{ code, name }` and `holidays` `{ name, dates, main }` from today to a year ahead, one per name,
-main ones first, each soonest first; without one, both empty. A country not offered or an unknown
+`{ code, name }` and `holidays` `{ name, dates }`, the statutory ones only (amended at the
+final review, F-379), from today to a year ahead, one per name, soonest first; without one, both
+empty. A country not offered or an unknown
 province is `400` on `holidayCountry` or `holidayRegion`; a province without a country is `400`.
 
 **`POST /bookings/cancel`** `{ bookingIds }`, 1 to 100, no repeats. `200 { cancelled,

@@ -1133,7 +1133,7 @@ describe("the Days off settings", () => {
     type ChoicesType = {
       countries: { code: string }[];
       regions: { code: string }[];
-      holidays: { name: string; dates: string[]; main: boolean }[];
+      holidays: { name: string; dates: string[] }[];
     };
     const none = await get("/settings/days-off/holidays", helper.email); // any member reads it
     expect(none.status).toBe(200);
@@ -1145,8 +1145,8 @@ describe("the Days off settings", () => {
       await get("/settings/days-off/holidays?country=CA&region=AB", helper.email)
     ).json()) as ChoicesType;
     expect(alberta.regions.map((region) => region.code)).toContain("AB");
-    expect(alberta.holidays.filter((holiday) => holiday.main)).toHaveLength(9);
-    expect(alberta.holidays.map((holiday) => holiday.name)).toContain("Heritage Day");
+    expect(alberta.holidays).toHaveLength(9); // the statutory ones only
+    expect(alberta.holidays.map((holiday) => holiday.name)).not.toContain("Heritage Day");
 
     const noCountry = await get("/settings/days-off/holidays?region=AB", helper.email);
     const germany = await get("/settings/days-off/holidays?country=DE", helper.email);
@@ -1180,8 +1180,10 @@ describe("the Days off settings", () => {
     expect(await otherProvince.json()).toMatchObject({ field: "holidayRegion" });
     expect(await businessRowOf(summit.organizationId)).toEqual(before); // nothing written
 
-    // Any day in the list can be picked, main or not.
-    const listed = picks(["Thanksgiving", "National Day for Truth and Reconciliation"]);
+    // A day that is not statutory in Alberta is not in its list, so it cannot be picked.
+    const notStatutory = picks(["National Day for Truth and Reconciliation"]);
+    expect((await put("/settings/days-off", summit.email, notStatutory)).status).toBe(400);
+    const listed = picks(["Thanksgiving", "Family Day"]);
     expect((await put("/settings/days-off", summit.email, listed)).status).toBe(200);
 
     // A pick the list renamed after it was saved is named on the read, for the page to mark.

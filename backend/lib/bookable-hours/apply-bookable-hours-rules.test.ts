@@ -147,8 +147,8 @@ describe("applyBookableHoursRules", () => {
   });
 });
 
-// Alberta's nine main holidays, the picker's one-click set.
-const albertaMainHolidays = [
+// Alberta's nine statutory holidays, the picker's one-click set.
+const albertaStatutoryHolidays = [
   "New Year's Day",
   "Family Day",
   "Good Friday",
@@ -191,8 +191,8 @@ describe("holidays the owner picked", () => {
     ).toEqual(["2027-02-15"]);
   });
 
-  test("all nine main holidays picked close exactly nine dates in a year", () => {
-    const allNine = { ...albertaSalon, horizonDays: 364, closedHolidays: albertaMainHolidays };
+  test("all nine statutory holidays picked close exactly nine dates in a year", () => {
+    const allNine = { ...albertaSalon, horizonDays: 364, closedHolidays: albertaStatutoryHolidays };
     const resolved = applyBookableHoursRules(allNine, null, noonInEdmonton("2026-01-01"));
 
     expect(resolved.closedDates).toEqual([
@@ -208,18 +208,19 @@ describe("holidays the owner picked", () => {
     ]);
   });
 
-  test("a national-only holiday can be picked by an Alberta business", () => {
+  test("a day that is not statutory where the business is closes nothing, even picked", () => {
+    // Truth and Reconciliation Day is not a statutory holiday in Alberta.
     const truthAndReconciliation = {
       ...albertaSalon,
       closedHolidays: ["National Day for Truth and Reconciliation"],
     };
     const resolved = applyBookableHoursRules(truthAndReconciliation, null, noonSep25InEdmonton);
 
-    expect(resolved.closedDates).toEqual(["2026-09-30"]);
+    expect(resolved.closedDates).toEqual([]);
   });
 
   test("a holiday that is not picked stays open", () => {
-    const allNine = { ...albertaSalon, horizonDays: 70, closedHolidays: albertaMainHolidays };
+    const allNine = { ...albertaSalon, horizonDays: 70, closedHolidays: albertaStatutoryHolidays };
     const resolved = applyBookableHoursRules(allNine, null, noonInEdmonton("2026-07-01")); // to Sep 9
 
     expect(resolved.closedDates).toEqual(["2026-07-01", "2026-09-07"]); // Heritage Day, Aug 3, stays open
