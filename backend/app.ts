@@ -13,6 +13,7 @@ import { publicCorsMiddleware } from "./middleware/public-middleware/public-cors
 import { publicRateLimitMiddleware } from "./middleware/public-middleware/public-rate-limit-middleware.js";
 import { requireKnownSubscriptionMiddleware } from "./middleware/subscription-middleware/require-known-subscription-middleware.js";
 import { adminRoutes } from "./routes/admin-routes.js";
+import { bookingsRoutes } from "./routes/bookings-routes.js";
 import { calendarRoutes } from "./routes/calendar-routes.js";
 import { emailSendingRoutes } from "./routes/email-sending-routes.js";
 import { leadsRoutes } from "./routes/leads-routes.js";
@@ -26,6 +27,7 @@ export const app = new Hono()
   .use("/me", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
   .use("/calendar/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
   .use("/admin/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
+  .use("/bookings/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
   .use(
     "/email-sending",
     dashboardCorsMiddleware,
@@ -65,6 +67,7 @@ export const app = new Hono()
   })
 
   .route("/admin", adminRoutes)
+  .route("/bookings", bookingsRoutes)
   .route("/calendar", calendarRoutes)
   .route("/email-sending", emailSendingRoutes)
   .route("/leads", leadsRoutes)

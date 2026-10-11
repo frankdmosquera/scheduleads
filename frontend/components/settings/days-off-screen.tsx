@@ -1,6 +1,6 @@
 // Frontend component: the Days off page of Settings (feature 12e): every closed day for a year with
 // who it is opened for, one form at a time to close a day or open one again, and the bookings a
-// close leaves on a closed day, still booked.
+// close leaves on a closed day, to keep or cancel.
 
 "use client";
 
@@ -8,7 +8,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { CloseDayForm } from "@/components/settings/close-day-form";
-import { ListedBookings, type ListedBookingsType } from "@/components/settings/listed-bookings";
+import { ClosedDayBookings } from "@/components/settings/closed-day-bookings";
+import type { ListedBookingsType } from "@/components/settings/listed-bookings";
 import { OpenDayForm } from "@/components/settings/open-day-form";
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
 import { SettingsSection } from "@/components/settings/settings-section";
@@ -114,7 +115,14 @@ function ClosedDaysList({ settings }: { settings: DaysOffSettingsType }) {
         </div>
       )}
       <SaveNotice notice={notice} />
-      <ListedBookings list={listed} title="Bookings on the day you closed" Heading="h3" />
+      {listed ? (
+        // A new close starts a fresh list, with nothing asked and no notice.
+        <ClosedDayBookings
+          key={listed.bookings.map((booking) => booking.bookingId).join()}
+          list={listed}
+          onCancelled={() => setNotice(null)}
+        />
+      ) : null}
 
       {daysOff.closedDays.length === 0 ? (
         <p className="text-sm text-muted-foreground">No closed days in the coming year.</p>

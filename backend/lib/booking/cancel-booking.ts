@@ -3,7 +3,7 @@
 // offered it at once, and a booking_cancelled entry on the contact's timeline. Allowed until the
 // appointment starts (decision 11). Cancelling twice is one cancel (decision 4). Saved with it, as
 // jobs: taking the event out of the booked person's Google and telling both sides, so the answer
-// waits for neither. The owner's screens (features 11 and 12b) call it too.
+// waits for neither. The owner's screens call it too, in the owner's form (feature 12e).
 
 import { and, eq } from "drizzle-orm";
 
@@ -23,10 +23,16 @@ export type CancelBookingResultType =
   | { cancelled: true; alreadyCancelled: boolean }
   | { cancelled: false; reason: "not_found" | "already_started" };
 
-// The booking id comes from a verified link (decision 10); its business comes from the row.
+// The owner cancelling from the dashboard: the booking is looked for inside the session's business,
+// the timeline names the login, and the business is not told what its own owner did.
+export type OwnerCancelType = { organizationId: string; actorUserId: string };
+
+// The customer's form: the booking id comes from a verified link (decision 10), and its business
+// from the row.
 export async function cancelBooking(
   bookingId: string,
-  now: Date
+  now: Date,
+  byOwner: OwnerCancelType | null = null
 ): Promise<CancelBookingResultType> {
   let result: CancelBookingResultType;
   try {
@@ -47,7 +53,12 @@ export async function cancelBooking(
           lead,
           and(eq(lead.organizationId, booking.organizationId), eq(lead.id, booking.leadId))
         )
-        .where(eq(booking.id, bookingId))
+        .where(
+          and(
+            eq(booking.id, bookingId),
+            byOwner ? eq(booking.organizationId, byOwner.organizationId) : undefined
+          )
+        )
         .for("update", { of: booking })
         .limit(1);
       if (!row) return { cancelled: false, reason: "not_found" } as const;
@@ -87,18 +98,26 @@ export async function cancelBooking(
         held.map((rowHeld) => rowHeld.id),
         tx
       );
-      // actorUserId stays null: the customer did it, not a login.
+      // No actor when the customer did it, not a login.
       await recordActivity(
         organizationId,
-        { contactId: row.contactId, type: "booking_cancelled", payload: { bookingId } },
+        {
+          contactId: row.contactId,
+          type: "booking_cancelled",
+          payload: { bookingId },
+          actorUserId: byOwner?.actorUserId ?? null,
+        },
         tx
       );
-      // The two emails, as jobs saved with the cancel (decision 1 of the background runner).
+      // The emails, as jobs saved with the cancel (decision 1 of the background runner). The
+      // business's notification only when the customer cancelled: the owner knows what they did.
       await enqueueBookingEmails(
         tx,
         organizationId,
         bookingId,
-        ["booking_cancellation", "booking_cancellation_notification"],
+        byOwner
+          ? ["booking_cancellation"]
+          : ["booking_cancellation", "booking_cancellation_notification"],
         0
       );
       // The event, wherever it is now: its saved id, or with none saved yet the id of the last

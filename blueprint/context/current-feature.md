@@ -92,7 +92,7 @@ the nine comments F-364 names. `/complete` makes the final pass and merges on Fr
   and opened for one person that person alone is offered that day on their usual hours. The day
   is opened again after the check.
 
-- [ ] **12e.2 Cancelling the bookings on a closed day.** "Under the closed Monday I cancel
+- [x] **12e.2 Cancelling the bookings on a closed day.** "Under the closed Monday I cancel
   Maria's booking alone, then Cancel all takes Lee's; each customer gets the cancellation email,
   and each lead's timeline says I cancelled it."
   - Backend: `POST /bookings/cancel` (`{ bookingIds }`, 1 to 100, `organization: ["update"]`) in a
