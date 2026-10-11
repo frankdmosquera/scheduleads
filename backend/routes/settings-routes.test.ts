@@ -33,6 +33,7 @@ const {
   availabilityRule,
   booking,
   bookingLink,
+  bookingQuestion,
   contact,
   lead,
   member,
@@ -1195,5 +1196,120 @@ describe("the Days off settings", () => {
     const read = await (await get("/settings/days-off", summit.email)).json();
     expect(read).toMatchObject({ unknownHolidays: ["Famly Day"] });
     await resetDaysOff();
+  });
+});
+
+describe("the Booking form settings", () => {
+  type QuestionType = { id: string; label: string; required: boolean };
+  const questionsOf = async (tenant: { email: string }) =>
+    (
+      (await (await get("/settings/booking-form", tenant.email)).json()) as {
+        questions: QuestionType[];
+      }
+    ).questions;
+
+  test("a save keeps the order, changes and removes", async () => {
+    const first = await put("/settings/booking-form/questions", closer.email, {
+      questions: [
+        { label: "Interior or exterior?", required: true },
+        { label: "How many rooms?", required: false },
+        { label: "Any pets?", required: false },
+      ],
+    });
+    expect(first.status).toBe(200);
+    const [inOut, rooms, pets] = await questionsOf(closer);
+
+    // Pets moves up, rooms becomes required, interior or exterior goes.
+    const second = await put("/settings/booking-form/questions", closer.email, {
+      questions: [
+        { id: pets.id, label: "Any pets at home?", required: false },
+        { id: rooms.id, label: "How many rooms?", required: true },
+        { label: "When can we start?", required: false },
+      ],
+    });
+    expect(second.status).toBe(200);
+    const after = await questionsOf(closer);
+    expect(after.map(({ label, required }) => ({ label, required }))).toEqual([
+      { label: "Any pets at home?", required: false },
+      { label: "How many rooms?", required: true },
+      { label: "When can we start?", required: false },
+    ]);
+    expect(after[0].id).toBe(pets.id); // changed in place, not made again
+    expect(after.some((question) => question.id === inOut.id)).toBe(false);
+
+    // Two questions with the same words are refused, the repeat marked.
+    const twice = await put("/settings/booking-form/questions", closer.email, {
+      questions: [
+        { label: "Any pets?", required: false },
+        { label: "any pets?", required: true },
+      ],
+    });
+    expect(twice.status).toBe(400);
+    expect(await twice.json()).toMatchObject({ field: "questions.1.label" });
+  });
+
+  test("another business's question id is refused and nothing is saved", async () => {
+    await put("/settings/booking-form/questions", summit.email, {
+      questions: [{ label: "Summit's own question", required: true }],
+    });
+    const [summitQuestion] = await questionsOf(summit);
+    const before = await questionsOf(closer);
+
+    const foreign = await put("/settings/booking-form/questions", closer.email, {
+      questions: [
+        { label: "A new one", required: false },
+        { id: summitQuestion.id, label: "Taken over", required: false },
+      ],
+    });
+    expect(foreign.status).toBe(404);
+    expect(await questionsOf(closer)).toEqual(before);
+    expect(await questionsOf(summit)).toEqual([summitQuestion]);
+  });
+
+  test("a removed question leaves a lead's saved answer", async () => {
+    await put("/settings/booking-form/questions", closer.email, {
+      questions: [{ label: "Any pets?", required: false }],
+    });
+    const [pets] = await questionsOf(closer);
+    const [contactId, leadId] = [randomUUID(), randomUUID()];
+    const organizationId = closer.organizationId;
+    await db.insert(contact).values({ id: contactId, organizationId, name: "Maria" });
+    const answers = [{ questionId: pets.id, question: "Any pets?", answer: "A cat" }];
+    await db.insert(lead).values({
+      id: leadId,
+      organizationId,
+      contactId,
+      stageId: closerStageId,
+      source: "widget",
+      answers,
+    });
+
+    expect(
+      (await put("/settings/booking-form/questions", closer.email, { questions: [] })).status
+    ).toBe(200);
+    expect(await questionsOf(closer)).toEqual([]);
+    const [kept] = await db.select({ answers: lead.answers }).from(lead).where(eq(lead.id, leadId));
+    expect(kept.answers).toEqual(answers);
+  });
+
+  test("a member without the permission cannot save the questions", async () => {
+    const read = await get("/settings/booking-form", helper.email);
+    expect(read.status).toBe(200);
+    expect(await read.json()).toMatchObject({
+      canEdit: false,
+      presets: [{ trade: "painting" }, { trade: "clinic" }],
+    });
+    const before = await db
+      .select()
+      .from(bookingQuestion)
+      .where(eq(bookingQuestion.organizationId, summit.organizationId));
+    const refused = await put("/settings/booking-form/questions", helper.email, { questions: [] });
+    expect(refused.status).toBe(403);
+    expect(
+      await db
+        .select()
+        .from(bookingQuestion)
+        .where(eq(bookingQuestion.organizationId, summit.organizationId))
+    ).toEqual(before);
   });
 });

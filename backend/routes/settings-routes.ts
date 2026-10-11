@@ -1,12 +1,13 @@
 // Backend: the owner's Settings pages: Hours (feature 12a), Services and People (12d), Days off
-// (12e). The business always comes from the session, never from the request; any member may read,
-// only a role that may change the business may save.
+// (12e), the Booking form (12f). The business always comes from the session, never from the
+// request; any member may read, only a role that may change the business may save.
 
 import { Hono, type Context } from "hono";
 import { validator } from "hono/validator";
 import type { ZodError } from "zod";
 
 import {
+  bookingQuestionsValidationSchema,
   businessHoursValidationSchema,
   addResourceValidationSchema,
   closeDayValidationSchema,
@@ -27,6 +28,7 @@ import { refuse } from "../lib/errors/refuse.js";
 import { addResource } from "../lib/settings/add-resource.js";
 import { addService } from "../lib/settings/add-service.js";
 import { closeDay } from "../lib/settings/close-day.js";
+import { findBookingForm } from "../lib/settings/find-booking-form.js";
 import { findDaysOff } from "../lib/settings/find-days-off.js";
 import { findHolidayChoices } from "../lib/settings/find-holiday-choices.js";
 import { findHoursSettings } from "../lib/settings/find-hours-settings.js";
@@ -34,6 +36,7 @@ import { findPeopleSettings } from "../lib/settings/find-people-settings.js";
 import { findServicesSettings } from "../lib/settings/find-services-settings.js";
 import { openClosedDay } from "../lib/settings/open-closed-day.js";
 import { refuseHolidayPicks } from "../lib/settings/refuse-holiday-picks.js";
+import { saveBookingQuestions } from "../lib/settings/save-booking-questions.js";
 import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
 import { saveHolidayPicks } from "../lib/settings/save-holiday-picks.js";
 import { savePersonHours } from "../lib/settings/save-person-hours.js";
@@ -283,6 +286,44 @@ export const settingsRoutes = new Hono()
           409
         );
       return c.json({ resource: saved.resource, upcomingBookings: saved.upcomingBookings }, 200);
+    }
+  )
+
+  // The Booking form page: the business's own questions in order, and the ready-made sets.
+  .get(
+    "/booking-form",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    async (c) => {
+      const { organizationId } = c.get("organization");
+      const [bookingForm, canEdit] = await Promise.all([
+        findBookingForm(db, organizationId),
+        hasBusinessPermission(c.req.raw.headers, organizationId, CHANGE_BUSINESS),
+      ]);
+      return c.json({ canEdit, ...bookingForm }, 200);
+    }
+  )
+
+  // The business's questions, the whole list in its order. Another business's question, or an
+  // unknown id: one 404, and nothing saved.
+  .put(
+    "/booking-form/questions",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = bookingQuestionsValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const saved = await saveBookingQuestions(
+        c.get("organization").organizationId,
+        c.req.valid("json")
+      );
+      if (!saved.ok) return c.json(refuse("not_found", "No such question here."), 404);
+      return c.json({ questions: saved.questions }, 200);
     }
   )
 

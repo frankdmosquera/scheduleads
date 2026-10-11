@@ -14,6 +14,7 @@ export * from "./admin-validation-schemas/client-setup-validation-schema.js";
 export * from "./crm-validation-schemas/contact-validation-schema.js";
 export * from "./crm-validation-schemas/add-lead-validation-schema.js";
 export * from "./crm-validation-schemas/next-step-validation-schema.js";
+export * from "./crm-validation-schemas/booking-questions-validation-schema.js";
 export * from "./booking-links-validation-schemas/booking-link-id-validation-schema.js";
 export * from "./booking-links-validation-schemas/free-times-query-validation-schema.js";
 export * from "./booking-links-validation-schemas/create-booking-validation-schema.js";
