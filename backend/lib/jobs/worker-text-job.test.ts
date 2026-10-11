@@ -365,7 +365,7 @@ describe("the worker's text when a booking lands on their day", () => {
   });
 
   test("a person turned off still hears about a booking they hold", async () => {
-    // Off stops new bookings only (12d, F-344): the one already theirs is still their day.
+    // Off stops new bookings only (12d): the one already theirs is still their day.
     const business = await makeBusiness("inactive");
     await book(business);
     await db.update(resource).set({ active: false }).where(eq(resource.id, business.marco));

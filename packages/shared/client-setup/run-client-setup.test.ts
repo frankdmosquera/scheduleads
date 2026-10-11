@@ -220,7 +220,7 @@ describe("runClientSetup", () => {
     await db
       .insert(bookingLinkResource)
       .values({ organizationId: business.id, bookingLinkId: phoneCall!.id, resourceId: ana!.id });
-    // Room A unticked from Video call on Settings: it stays off (F-354).
+    // Room A unticked from Video call on Settings: it stays off.
     const [videoCall] = await db.select({ id: bookingLink.id }).from(bookingLink).where(byHand);
     await db
       .delete(bookingLinkResource)
@@ -243,7 +243,7 @@ describe("runClientSetup", () => {
       await db.$count(bookingLinkResource, eq(bookingLinkResource.bookingLinkId, videoCall!.id))
     ).toBe(0);
 
-    // A tick naming nobody listed still stops the run, though the service already exists (F-355).
+    // A tick naming nobody listed still stops the run, though the service already exists.
     const misspelt = fileFor(business.slug);
     misspelt.services[0].ticked = ["Room B"];
     await expect(

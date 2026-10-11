@@ -161,7 +161,7 @@ export function ServiceForm({
     const savedNow = saved.answer.service;
     savedService.current = savedNow;
     // A save again at the same length, after its ticks failed, finds the length unchanged and lists
-    // nothing, yet the last list still holds (F-359); a new length gets its own list (F-361).
+    // nothing, yet the last list still holds; a new length gets its own list.
     if (savedNow.durationMinutes !== lastSavedLength.current) {
       outsideHours.current = saved.answer.outsideHours;
     }

@@ -763,7 +763,7 @@ describe("a person's work email", () => {
     );
     await put(`/settings/people/${summit.personId}`, summit.email, { name: "Juan", active: true });
     expect(await workEmailOf(summit.personId)).toBe("juan@summit-painting.test");
-    // Only People shows it: the Services page's ticks never carry it (F-357).
+    // Only People shows it: the Services page's ticks never carry it.
     const services = (await (await get("/settings/services", summit.email)).json()) as {
       people: Record<string, unknown>[];
     };
@@ -774,7 +774,7 @@ describe("a person's work email", () => {
       "name",
     ]);
     expect(services.people.every((person) => !("workEmail" in person))).toBe(true);
-    // The sending address moves to another domain: Juan keeps his, and a rename still saves (F-356).
+    // The sending address moves to another domain: Juan keeps his, and a rename still saves.
     await db
       .update(organization)
       .set({ senderEmail: "hello@summit.test" })

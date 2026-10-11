@@ -51,7 +51,7 @@ export async function saveResource(
       } as const;
     }
     // Checked only when it changes: one kept from before a move of the sending domain still saves,
-    // so a rename or turning off is never refused over it (F-356).
+    // so a rename or turning off is never refused over it.
     if (saved.workEmail && saved.workEmail !== current.workEmail) {
       const [business] = await tx
         .select({ senderEmail: organization.senderEmail })

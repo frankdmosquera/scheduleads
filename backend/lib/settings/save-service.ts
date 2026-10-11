@@ -44,7 +44,7 @@ export async function saveService(
     }
 
     // Locked, so a save of the business's or a person's hours running meanwhile finishes first and
-    // the list uses its hours; "no key update" still lets bookings be written meanwhile (F-360).
+    // the list uses its hours; "no key update" still lets bookings be written meanwhile.
     const [businessRow] = await tx
       .select()
       .from(availabilityRule)
