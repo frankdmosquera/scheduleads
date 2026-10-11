@@ -144,6 +144,26 @@ describe("applyOpeningRules", () => {
     });
   });
 
+  test("a picked holiday is closed, and opened for everyone it is open that year only", () => {
+    const thanksgiving = {
+      ...summit,
+      closedDates: [],
+      holidayCountry: "CA",
+      holidayRegion: "AB",
+      closedHolidays: ["Thanksgiving"],
+    };
+    expect(closedFor(thanksgiving, null)).toContain("2026-10-12");
+
+    const opening = applyOpeningRules(thanksgiving, null, "2026-10-12", noonOct10InEdmonton);
+    if (!opening.ok || opening.whose !== "business") throw new Error("expected an opening");
+    const opened = { ...thanksgiving, dateHours: opening.dateHours };
+    expect(closedFor(opened, null)).not.toContain("2026-10-12");
+
+    // Still picked, so next year's Thanksgiving, October 11, 2027, is closed again.
+    const nextOctober = new Date("2027-10-01T18:00:00Z");
+    expect(applyBookableHoursRules(opened, null, nextOctober).closedDates).toContain("2027-10-11");
+  });
+
   test("a closed day with no usual hours that weekday cannot be opened", () => {
     // Sunday, November 8: nobody works Sundays here.
     const sunday = { ...summit, closedDates: ["2026-11-08"] };

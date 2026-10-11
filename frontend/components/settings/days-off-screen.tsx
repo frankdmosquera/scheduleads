@@ -1,6 +1,6 @@
 // Frontend component: the Days off page of Settings (feature 12e): every closed day for a year with
-// who it is opened for, one form at a time to close a day or open one again, and the bookings a
-// close leaves on a closed day, to keep or cancel.
+// who it is opened for, one form at a time to close a day or open one again, the holidays picked,
+// and the bookings a close leaves on a closed day, to keep or cancel.
 
 "use client";
 
@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { CloseDayForm } from "@/components/settings/close-day-form";
 import { ClosedDayBookings } from "@/components/settings/closed-day-bookings";
+import { HolidayPicker } from "@/components/settings/holiday-picker";
 import type { ListedBookingsType } from "@/components/settings/listed-bookings";
 import { OpenDayForm } from "@/components/settings/open-day-form";
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
@@ -183,6 +184,17 @@ function ClosedDaysList({ settings }: { settings: DaysOffSettingsType }) {
           )
         )}
       </ul>
+
+      <HolidayPicker
+        daysOff={daysOff}
+        canEdit={canEdit}
+        onSaved={(answer) => {
+          setDaysOff((current) => ({ ...current, ...answer.daysOff }));
+          setNotice(null);
+          const count = answer.newlyClosed.length;
+          setListed(count ? { bookings: answer.newlyClosed, timezone } : null);
+        }}
+      />
     </div>
   );
 }

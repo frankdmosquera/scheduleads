@@ -1098,4 +1098,62 @@ describe("the Days off settings", () => {
     expect(everyoneAnswer.daysOff.closedDates).toEqual([sunday]);
     expect(await closedFor(closer.personId)).not.toContain(monday);
   });
+
+  test("the holiday list answers the countries, then a province's year of holidays", async () => {
+    type ChoicesType = {
+      countries: { code: string }[];
+      regions: { code: string }[];
+      holidays: { name: string; dates: string[]; main: boolean }[];
+    };
+    const none = await get("/settings/days-off/holidays", helper.email); // any member reads it
+    expect(none.status).toBe(200);
+    const countries = (await none.json()) as ChoicesType;
+    expect(countries.countries.map((country) => country.code)).toEqual(["CA", "CO", "US"]);
+    expect([countries.regions, countries.holidays]).toEqual([[], []]);
+
+    const alberta = (await (
+      await get("/settings/days-off/holidays?country=CA&region=AB", helper.email)
+    ).json()) as ChoicesType;
+    expect(alberta.regions.map((region) => region.code)).toContain("AB");
+    expect(alberta.holidays.filter((holiday) => holiday.main)).toHaveLength(9);
+    expect(alberta.holidays.map((holiday) => holiday.name)).toContain("Heritage Day");
+
+    const noCountry = await get("/settings/days-off/holidays?region=AB", helper.email);
+    const germany = await get("/settings/days-off/holidays?country=DE", helper.email);
+    const badProvince = await get("/settings/days-off/holidays?country=CO&region=AB", helper.email);
+    expect([noCountry.status, germany.status, badProvince.status]).toEqual([400, 400, 400]);
+    expect(await germany.json()).toMatchObject({ field: "holidayCountry" });
+    expect(await badProvince.json()).toMatchObject({ field: "holidayRegion" });
+  });
+
+  test("a pick not in the province's list is refused on save", async () => {
+    const picks = (closedHolidays: string[], holidayCountry = "CA", holidayRegion = "AB") => ({
+      closedDates: [],
+      holidayCountry,
+      holidayRegion,
+      closedHolidays,
+    });
+    const before = await businessRowOf(summit.organizationId);
+
+    const renamed = await put(
+      "/settings/days-off",
+      summit.email,
+      picks(["Thanksgiving", "Famly Day"])
+    );
+    expect(renamed.status).toBe(400);
+    expect(await renamed.json()).toMatchObject({
+      field: "closedHolidays",
+      error: { message: "Famly Day is not in the holiday list: untick it." },
+    });
+    const otherCountry = await put("/settings/days-off", summit.email, picks([], "DE", null));
+    const otherProvince = await put("/settings/days-off", summit.email, picks([], "CA", "ZZ"));
+    expect(await otherCountry.json()).toMatchObject({ field: "holidayCountry" });
+    expect(await otherProvince.json()).toMatchObject({ field: "holidayRegion" });
+    expect(await businessRowOf(summit.organizationId)).toEqual(before); // nothing written
+
+    // Any day in the list can be picked, main or not.
+    const listed = picks(["Thanksgiving", "National Day for Truth and Reconciliation"]);
+    expect((await put("/settings/days-off", summit.email, listed)).status).toBe(200);
+    await put("/settings/days-off", summit.email, closeOnly([]));
+  });
 });

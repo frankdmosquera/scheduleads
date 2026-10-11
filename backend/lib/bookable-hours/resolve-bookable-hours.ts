@@ -4,6 +4,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 
 import { availabilityRule, resource } from "@scheduleads-app/shared/db";
+import { localDate } from "@scheduleads-app/shared/local-date";
 
 import { db } from "../../database.js";
 import {
@@ -11,6 +12,7 @@ import {
   type ResolvedBookableHoursType,
 } from "./apply-bookable-hours-rules.js";
 import { businessHoursInputOf } from "./business-hours-input-of.js";
+import { unknownHolidayPicks } from "./unknown-holiday-picks.js";
 
 // null when the business has no hours yet, or the person is not one of its own.
 export async function resolveBookableHours(
@@ -31,6 +33,17 @@ export async function resolveBookableHours(
   if (!businessRow) return null;
 
   const business = businessHoursInputOf(businessRow);
+  // A pick the holiday package renamed closes nothing; said once per read, so it gets unticked.
+  const unknown = unknownHolidayPicks(
+    business.holidayCountry,
+    business.holidayRegion,
+    business.closedHolidays,
+    localDate(now, business.timezone)
+  );
+  if (unknown.length > 0)
+    console.warn(
+      `[hours] business ${organizationId}: not in the holiday list, so not closed: ${unknown.join(", ")}`
+    );
 
   if (resourceId === null) return applyBookableHoursRules(business, null, now);
 

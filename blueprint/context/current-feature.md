@@ -37,11 +37,13 @@ already ported.
   than the customer's own "Thanks for letting us know" (F-370, Frank 2026-10-11), the booked
   person their "off your day" text, the
   Google event comes out, and the lead's timeline names the owner.
-- **The holiday picker (12e.3)**: the owner picks the country and the province from the holiday
-  package's own list (none picked by default); the page lists that province's and that country's
-  holidays for the coming year with their dates; "Close all main holidays" ticks every public
-  holiday, and each holiday ticks or unticks on its own. A pick the package no longer knows is
-  shown as such and never takes the booking page down (decision 8).
+- **The holiday picker (12e.3)**: the owner picks the country, Canada, Colombia or the United
+  States only (Frank, 2026-10-11), and the province (none picked by default; Colombia has none in
+  the package); the page lists that province's and that country's holidays for the coming year
+  with their dates, every kind but school terms, the main (public) ones first (Frank, 2026-10-11:
+  a national day such as Truth and Reconciliation is an observance in the package); "Close all
+  main holidays" ticks every public holiday, and each holiday ticks or unticks on its own. A pick
+  the package no longer knows is shown as such and never takes the booking page down (decision 8).
 - Read-only for a role that may not change the business, as 12a.
 
 ## Out of scope
@@ -114,7 +116,7 @@ the nine comments F-364 names. `/complete` makes the final pass and merges on Fr
   emails queued (the API console names them; dev has no Resend key), and their times free in the
   booking preview once the day is opened again.
 
-- [ ] **12e.3 The holiday picker.** "I pick Canada and Alberta; Close all main holidays ticks the
+- [x] **12e.3 The holiday picker.** "I pick Canada and Alberta; Close all main holidays ticks the
   nine public ones; Thanksgiving's booking is listed. A holiday the list no longer knows shows as
   such, and the booking page still works."
   - Backend: `GET /settings/days-off/holidays?country=CA&region=AB` (any member) answers the
@@ -182,9 +184,12 @@ newlyClosed }` as the PUT's. The page's "+ Close a day" uses this; the PUT is th
 daysOff }` as the PUT's (amended in 12e.1: the page refreshes from one shape). `400 not_closed` when the date is not a closed day; `409
 no_usual_hours` when the weekday has no usual windows for whoever it opens for.
 
-**`GET /settings/days-off/holidays?country=&region=`** `200 { regions, holidays }`: `regions` the
-country's provinces `{ code, name }`; `holidays` `{ name, date, main }` from today to a year
-ahead, sorted. An unknown country or province is `400` on the field.
+**`GET /settings/days-off/holidays?country=&region=`** `200 { countries, regions, holidays }`
+(amended in 12e.3: the country picker needs its list, and a holiday can fall twice in the year):
+`countries` the three offered `{ code, name }`; with a country, `regions` its provinces
+`{ code, name }` and `holidays` `{ name, dates, main }` from today to a year ahead, one per name,
+main ones first, each soonest first; without one, both empty. A country not offered or an unknown
+province is `400` on `holidayCountry` or `holidayRegion`; a province without a country is `400`.
 
 **`POST /bookings/cancel`** `{ bookingIds }`, 1 to 100, no repeats. `200 { cancelled,
 alreadyCancelled, alreadyStarted }`, each a list of booking ids.

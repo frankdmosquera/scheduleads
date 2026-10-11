@@ -28,10 +28,12 @@ import { addResource } from "../lib/settings/add-resource.js";
 import { addService } from "../lib/settings/add-service.js";
 import { closeDay } from "../lib/settings/close-day.js";
 import { findDaysOff } from "../lib/settings/find-days-off.js";
+import { findHolidayChoices } from "../lib/settings/find-holiday-choices.js";
 import { findHoursSettings } from "../lib/settings/find-hours-settings.js";
 import { findPeopleSettings } from "../lib/settings/find-people-settings.js";
 import { findServicesSettings } from "../lib/settings/find-services-settings.js";
 import { openClosedDay } from "../lib/settings/open-closed-day.js";
+import { refuseHolidayPicks } from "../lib/settings/refuse-holiday-picks.js";
 import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
 import { saveDaysOff } from "../lib/settings/save-days-off.js";
 import { savePersonHours } from "../lib/settings/save-person-hours.js";
@@ -314,13 +316,45 @@ export const settingsRoutes = new Hono()
       return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
     }),
     async (c) => {
-      const saved = await saveDaysOff(
-        c.get("organization").organizationId,
-        c.req.valid("json"),
-        new Date()
-      );
+      const { organizationId } = c.get("organization");
+      const daysOff = c.req.valid("json");
+      const refusal = await refuseHolidayPicks(organizationId, daysOff, new Date());
+      if (refusal)
+        return c.json({ ...refuse("bad_request", refusal.message), field: refusal.field }, 400);
+      const saved = await saveDaysOff(organizationId, daysOff, new Date());
       if (!saved.ok) return c.json(NO_BUSINESS_HOURS, 409);
       return c.json({ daysOff: saved.daysOff, newlyClosed: saved.newlyClosed }, 200);
+    }
+  )
+
+  // The holiday picker: the countries offered, and with a country its provinces and its holidays
+  // for the coming year (with a province, the province's too). Nothing picked: just the countries.
+  .get(
+    "/days-off/holidays",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    validator("query", (value, c) => {
+      const { country, region } = value;
+      if (Array.isArray(country) || Array.isArray(region) || (region && !country))
+        return c.json(
+          { ...refuse("bad_request", "A province needs its country."), field: "holidayRegion" },
+          400
+        );
+      return { country: country || null, region: region || null };
+    }),
+    async (c) => {
+      const { country, region } = c.req.valid("query");
+      const choices = await findHolidayChoices(
+        c.get("organization").organizationId,
+        country,
+        region,
+        new Date()
+      );
+      if (!choices.ok)
+        return c.json({ ...refuse("bad_request", choices.message), field: choices.field }, 400);
+      const { countries, regions, holidays } = choices;
+      return c.json({ countries, regions, holidays }, 200);
     }
   )
 

@@ -250,19 +250,19 @@ describe("holidays the owner picked", () => {
     expect(resolved.closedDates).toEqual(["2026-12-25", "2027-01-01"]);
   });
 
-  test("a name or province the holiday list does not know is an error, not a silent skip", () => {
-    const misspelled = { ...albertaSalon, closedHolidays: ["Famly Day"] };
-    const unknownProvince = {
+  test("a holiday the list no longer knows is skipped and the other picks still close", () => {
+    // "Famly Day" stands for a name an update of the holiday package renamed.
+    const renamed = {
       ...albertaSalon,
-      holidayRegion: "ZZ",
-      closedHolidays: ["Canada Day"],
+      horizonDays: 120,
+      closedHolidays: ["Famly Day", "Remembrance Day", "Christmas Day"],
     };
+    const resolved = applyBookableHoursRules(renamed, null, noonInEdmonton("2026-10-11"));
+    expect(resolved.closedDates).toEqual(["2026-11-11", "2026-12-25"]);
 
-    expect(() => applyBookableHoursRules(misspelled, null, noonSep25InEdmonton)).toThrow(
-      /Famly Day/
-    );
-    expect(() => applyBookableHoursRules(unknownProvince, null, noonSep25InEdmonton)).toThrow(
-      /CA-ZZ/
-    );
+    // A province the package no longer knows closes no holiday rather than the national list's.
+    const unknownProvince = { ...renamed, holidayRegion: "ZZ" };
+    const noProvince = applyBookableHoursRules(unknownProvince, null, noonInEdmonton("2026-10-11"));
+    expect(noProvince.closedDates).toEqual([]);
   });
 });
