@@ -6,6 +6,8 @@
 
 **Branch:** feature/12e-closed-days-and-holidays
 
+**Status:** verified 2026-10-11: all three steps built and reviewed, then a final review of the whole feature; backend 966, shared 174 and booking component 79 tests pass, the frontend builds and lints.
+
 ## Goal
 
 The owner closes and opens days on Settings: one click closes a day for online booking for
