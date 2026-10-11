@@ -296,7 +296,7 @@ without Frank touching the database.
     pre-filled, for the owner to change. Changing someone's hours keeps
     existing bookings and warns the owner which ones now fall outside.
     Replaces direct edits to `availability_rule`
-  - [ ] 12d. **Services, people and places** - services with their length
+  - [x] 12d. **Services, people and places** - services with their length
     and buffers; people and places. A person or place with any
     `commitment` row, cancelled or past included, cannot be deleted (5a.1,
     F-50): decide here whether removing one deactivates it or clears its
