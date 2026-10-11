@@ -36,7 +36,7 @@ import { enqueueWorkerText } from "../jobs/enqueue-worker-text.js";
 import { jobNames } from "../jobs/job-names.js";
 import { appointmentSpan } from "../scheduling/appointment-span.js";
 import { findServiceResources } from "../scheduling/find-service-resources.js";
-import { checkAnswers } from "./check-answers.js";
+import { checkAnswers, type GivenAnswerType } from "./check-answers.js";
 import { findBookingChoices } from "./find-booking-choices.js";
 import { findBookingQuestions } from "./find-booking-questions.js";
 import { findLaterTextsYesWords } from "./find-later-texts-yes-words.js";
@@ -51,7 +51,7 @@ export type BookTimeInputType = {
   customer: ContactInputType;
   location: string | null; // the customer's address; kept only when the service asks for one
   details: string | null; // what they wrote
-  answers?: { questionId: string; answer: string }[]; // to the business's own questions (feature 9)
+  answers?: GivenAnswerType[]; // the business's own questions as the form showed them (feature 9)
   // The customer's tick for later texts (decision 13); the booking's own texts go either way.
   laterTextsYes?: boolean;
   source: "widget" | "hosted" | "manual";
@@ -85,7 +85,6 @@ export type BookTimeResultType =
         | "request_key_used"
         | "in_the_past"
         | "person_not_taken"
-        | "unknown_question"
         | "answered_twice"
         | "address_needed"
         | "too_many_tries";

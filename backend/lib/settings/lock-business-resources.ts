@@ -1,7 +1,7 @@
-// Backend: makes the business's people and places change one save at a time, so two saves cannot
-// both find a name free, or both find another person still on, and then both write. Locks the
-// business's own row in the transaction; "no key update" still lets bookings and every other row
-// that points at the business be written meanwhile.
+// Backend: makes the business's people and places, or its questions, change one save at a time, so
+// two saves cannot both find a name free, or both find another person still on, and then both
+// write. Locks the business's own row in the transaction; "no key update" still lets bookings and
+// every other row that points at the business be written meanwhile.
 
 import { eq } from "drizzle-orm";
 

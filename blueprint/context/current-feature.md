@@ -117,7 +117,10 @@ questions: { label, required }[] }`; `contactRule` and `askLaterTextsYes` from 1
 **Booking (public)**: `customer.email` required when the rule is `email`, `customer.phone` when
 `phone`, one of them when `either` (today's rule); `location` required when the service's
 `addressMode` is `required`, taken when `optional`, refused when `not_asked`. Errors keep today's
-shape `400 { error: { code, message }, field }`.
+shape `400 { error: { code, message }, field }`. `answers` (amended after 12f.1's review) carries
+every question the form showed, `{ questionId, question, answer }`, the words as shown and a blank
+answer included: a required question shown and left blank is `400 "Answer: <words>"`; one the form
+never showed is left blank; an answer to a question removed since is kept under its shown words.
 
 **User text**: question words and answers are rendered by React as text, never HTML.
 
@@ -150,3 +153,6 @@ One test per rule that would hurt if broken:
 - The ready-made sets' questions (Frank, 2026-10-11, at 12f.1's plan): the dev seed's own, painting
   "Interior or exterior?" (required) and "How many rooms?"; clinic "Any allergies or skin
   conditions?" (required) and "Is this your first visit?". More can be added any time.
+- A booking sent from a form opened before the owner changed the questions is always taken
+  (Frank, 2026-10-11, at 12f.1's review): answers keep the words the customer read, a newly
+  required question they never saw stays blank, and a fresh form still requires it.

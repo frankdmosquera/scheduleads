@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { BOOKING_QUESTIONS_MAX } from "@scheduleads-app/shared/zod-validation";
 
@@ -32,18 +32,40 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
   const [rowError, setRowError] = useState<{ index: number; message: string } | null>(null);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   const [saving, setSaving] = useState(false);
+  // After a move or a remove the pressed button may be gone or disabled: focus goes to the row's
+  // own control at its new place, or the nearest one, once React has drawn the list.
+  const focusNext = useRef<string | null>(null);
+  const [moved, setMoved] = useState(""); // said by a screen reader
 
-  const edit = (next: QuestionRowType[]) => {
+  useEffect(() => {
+    if (!focusNext.current) return;
+    formRef.current?.querySelector<HTMLElement>(`[data-focus="${focusNext.current}"]`)?.focus();
+    focusNext.current = null;
+  }, [rows]);
+
+  const edit = (next: QuestionRowType[], said = "") => {
     setNotice(null);
     setRowError(null);
+    setMoved(said);
     setRows(next);
   };
   const change = (index: number, fields: Partial<QuestionRowType>) =>
     edit(rows.map((row, at) => (at === index ? { ...row, ...fields } : row)));
   const move = (index: number, by: -1 | 1) => {
+    const to = index + by;
     const next = [...rows];
-    [next[index], next[index + by]] = [next[index + by], next[index]];
-    edit(next);
+    [next[index], next[to]] = [next[to], next[index]];
+    // The same arrow again, unless the row reached the end it points to.
+    const atEnd = by === -1 ? to === 0 : to === rows.length - 1;
+    const control = (by === -1) !== atEnd ? "up" : "down";
+    focusNext.current = `${rows[index].key}:${control}`;
+    edit(next, `Moved to position ${to + 1} of ${rows.length}.`);
+  };
+  const remove = (index: number) => {
+    const next = rows.filter((_, at) => at !== index);
+    const neighbour = next[index] ?? next[index - 1];
+    focusNext.current = neighbour ? `${neighbour.key}:remove` : "add";
+    edit(next, "Question removed.");
   };
   const add = () => edit([...rows, { key: crypto.randomUUID(), label: "", required: false }]);
   const startFrom = (set: (typeof presets)[number]) =>
@@ -145,6 +167,7 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
                   <label className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
+                      aria-label={`Question ${index + 1} must be answered`}
                       checked={row.required}
                       disabled={!canEdit}
                       onChange={(event) => change(index, { required: event.target.checked })}
@@ -160,6 +183,7 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
                       variant="ghost"
                       size="sm"
                       disabled={index === 0}
+                      data-focus={`${row.key}:up`}
                       aria-label={`Move question ${index + 1} up`}
                       onClick={() => move(index, -1)}
                     >
@@ -170,6 +194,7 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
                       variant="ghost"
                       size="sm"
                       disabled={index === rows.length - 1}
+                      data-focus={`${row.key}:down`}
                       aria-label={`Move question ${index + 1} down`}
                       onClick={() => move(index, 1)}
                     >
@@ -179,8 +204,9 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
                       type="button"
                       variant="ghost"
                       size="sm"
+                      data-focus={`${row.key}:remove`}
                       aria-label={`Remove question ${index + 1}`}
-                      onClick={() => edit(rows.filter((_, at) => at !== index))}
+                      onClick={() => remove(index)}
                     >
                       Remove
                     </Button>
@@ -192,6 +218,9 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
         </ol>
       )}
 
+      <p role="status" className="sr-only">
+        {moved}
+      </p>
       <SaveNotice notice={notice} />
       {canEdit ? (
         <div className="flex flex-wrap gap-2">
@@ -199,6 +228,7 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
             type="button"
             variant="outline"
             disabled={rows.length >= BOOKING_QUESTIONS_MAX}
+            data-focus="add"
             onClick={add}
           >
             + Add a question

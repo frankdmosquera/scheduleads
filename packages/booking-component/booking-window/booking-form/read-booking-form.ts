@@ -35,7 +35,6 @@ export function readBookingForm(
   questions: BookingBusinessType["questions"],
   choice: BookingFormChoiceType
 ): ReadBookingFormResultType {
-  const answered = questions.filter((question) => filled(values.answers[question.id] ?? ""));
   const request = {
     bookingLinkId: choice.bookingLinkId,
     startsAt: choice.startsAt,
@@ -48,8 +47,11 @@ export function readBookingForm(
     },
     ...(choice.asksAddress ? { location: values.location.trim() } : {}), // empty: "Enter the address."
     details: filled(values.details),
-    answers: answered.map((question) => ({
+    // Every question shown, with its words, a blank one included: the route then tells a question
+    // the owner added after this form opened from one left blank here.
+    answers: questions.map((question) => ({
       questionId: question.id,
+      question: question.label,
       answer: (values.answers[question.id] ?? "").trim(),
     })),
     ...(values.laterTextsYes ? { laterTextsYes: true } : {}), // no tick: nothing sent
@@ -59,7 +61,7 @@ export function readBookingForm(
   const parsed = createBookingValidationSchema.safeParse(request);
   if (!parsed.success) {
     for (const issue of parsed.error.issues) {
-      const field = fieldOf(issue.path, answered) ?? "form";
+      const field = fieldOf(issue.path, questions) ?? "form";
       if (!found.has(field)) found.set(field, issue.message);
     }
   }
@@ -93,7 +95,7 @@ export function readBookingForm(
 // number of answers).
 function fieldOf(
   path: PropertyKey[],
-  answered: BookingBusinessType["questions"]
+  questions: BookingBusinessType["questions"]
 ): BookingFormFieldType | null {
   const [first, second] = path;
   if (first === "customer" && (second === "name" || second === "email" || second === "phone")) {
@@ -101,7 +103,7 @@ function fieldOf(
   }
   if (first === "location" || first === "details") return first;
   if (first === "answers" && typeof second === "number") {
-    const question = answered[second];
+    const question = questions[second];
     return question ? `answer:${question.id}` : null;
   }
   return null;

@@ -572,15 +572,18 @@ describe("booking a time", () => {
   test("a customer must answer a required question; the owner need not", async () => {
     const clinic = await makeClinic("questions");
     const owner = await makeOwner(clinic, "questions");
+    const question = randomUUID();
     await db.insert(bookingQuestion).values({
-      id: randomUUID(),
+      id: question,
       organizationId: clinic.business,
       position: 1,
       label: "Any allergies?",
       required: true,
     });
 
-    expect(await customerBooking(clinic)).toEqual({
+    // The form showed it and it was left blank.
+    const shownBlank = [{ questionId: question, question: "Any allergies?", answer: "" }];
+    expect(await customerBooking(clinic, { answers: shownBlank })).toEqual({
       booked: false,
       reason: "answer_needed",
       question: "Any allergies?",

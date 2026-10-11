@@ -7,11 +7,12 @@ import { randomUUID } from "node:crypto";
 
 import { and, eq, inArray, notInArray } from "drizzle-orm";
 
-import { bookingQuestion, organization } from "@scheduleads-app/shared/db";
+import { bookingQuestion } from "@scheduleads-app/shared/db";
 import type { BookingQuestionsType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
 import { findBookingForm, type BookingFormSettingsType } from "./find-booking-form.js";
+import { lockBusinessResources } from "./lock-business-resources.js";
 
 export type SaveBookingQuestionsResultType =
   | { ok: true; questions: BookingFormSettingsType["questions"] }
@@ -22,12 +23,8 @@ export async function saveBookingQuestions(
   { questions }: BookingQuestionsType
 ): Promise<SaveBookingQuestionsResultType> {
   return db.transaction(async (tx) => {
-    // Locks the business, so two saves of its list run one after the other and the last one wins.
-    await tx
-      .select({ id: organization.id })
-      .from(organization)
-      .where(eq(organization.id, organizationId))
-      .for("update");
+    // Two saves of the list run one after the other and the last one wins; bookings still go in.
+    await lockBusinessResources(tx, organizationId);
 
     // Every id sent must be one of this business's questions.
     const keptIds = questions.flatMap((question) => (question.id ? [question.id] : []));

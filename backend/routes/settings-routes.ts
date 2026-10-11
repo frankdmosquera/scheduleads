@@ -322,7 +322,14 @@ export const settingsRoutes = new Hono()
         c.get("organization").organizationId,
         c.req.valid("json")
       );
-      if (!saved.ok) return c.json(refuse("not_found", "No such question here."), 404);
+      if (!saved.ok)
+        return c.json(
+          refuse(
+            "not_found",
+            "These questions changed since you opened the page. Reload to see them."
+          ),
+          404
+        );
       return c.json({ questions: saved.questions }, 200);
     }
   )

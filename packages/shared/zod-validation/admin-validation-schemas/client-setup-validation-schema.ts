@@ -12,6 +12,7 @@ import {
   serviceLengthValidationSchema,
   serviceStartEveryValidationSchema,
 } from "../booking-links-validation-schemas/service-validation-schema.js";
+import { setupQuestionsValidationSchema } from "../crm-validation-schemas/booking-questions-validation-schema.js";
 import { workerTextSettingsValidationSchema } from "../text-validation-schemas/worker-text-settings-validation-schema.js";
 
 const nameValidationSchema = z.string().trim().min(1).max(200);
@@ -60,7 +61,7 @@ export const clientSetupValidationSchema = z
   .object({
     slug: z.string().min(1), // the business, already made by the client setup screen
     personChoice: z.enum(["customer_picks", "business_assigns"]),
-    questions: z.array(z.object({ label: nameValidationSchema, required: z.boolean() }).strict()),
+    questions: setupQuestionsValidationSchema, // the Settings page's own rules
     hours: setupHoursValidationSchema,
     people: z.array(setupPersonValidationSchema),
     services: z.array(setupServiceValidationSchema).min(1, "A business needs a service."),

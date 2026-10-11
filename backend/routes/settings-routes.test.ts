@@ -1262,6 +1262,10 @@ describe("the Booking form settings", () => {
       ],
     });
     expect(foreign.status).toBe(404);
+    // Seen by an owner whose other tab removed a question: it says what to do.
+    expect((await foreign.json()).error.message).toBe(
+      "These questions changed since you opened the page. Reload to see them."
+    );
     expect(await questionsOf(closer)).toEqual(before);
     expect(await questionsOf(summit)).toEqual([summitQuestion]);
   });
@@ -1290,6 +1294,37 @@ describe("the Booking form settings", () => {
     expect(await questionsOf(closer)).toEqual([]);
     const [kept] = await db.select({ answers: lead.answers }).from(lead).where(eq(lead.id, leadId));
     expect(kept.answers).toEqual(answers);
+  });
+
+  // A booking or a lead being written for the business holds a share of its row; a save
+  // that locked the row "for update" would wait for it, and hold up the next ones.
+  test("a save does not wait for a lead being written for the business", async () => {
+    let release = () => {};
+    const held = new Promise<void>((resolve) => (release = resolve));
+    let written = () => {};
+    const writing = new Promise<void>((resolve) => (written = resolve));
+    const holder = db
+      .transaction(async (tx) => {
+        await tx
+          .insert(contact)
+          .values({ id: randomUUID(), organizationId: closer.organizationId, name: "Mid-save" });
+        written();
+        await held;
+        tx.rollback();
+      })
+      .catch(() => {}); // the rollback, on purpose: nothing is kept
+
+    await writing;
+    const outcome = await Promise.race([
+      put("/settings/booking-form/questions", closer.email, {
+        questions: [{ label: "Any pets?", required: false }],
+      }).then((response) => response.status),
+      new Promise((resolve) => setTimeout(() => resolve("waited"), 3000)),
+    ]);
+    release();
+    await holder;
+
+    expect(outcome).toBe(200);
   });
 
   test("a member without the permission cannot save the questions", async () => {

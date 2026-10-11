@@ -135,6 +135,29 @@ describe("a setup file", () => {
       }).success
     ).toBe(false);
   });
+
+  // The Settings page's own rules, so it never opens on a list it cannot save.
+  it("is refused with more than 20 questions, or two the same", () => {
+    const file = fileFor("any-dev");
+    const asked = (label: string) => ({ label, required: false });
+    const twenty = Array.from({ length: 20 }, (_, at) => asked(`Question ${at + 1}?`));
+
+    expect(clientSetupValidationSchema.safeParse({ ...file, questions: twenty }).success).toBe(
+      true
+    );
+    expect(
+      clientSetupValidationSchema.safeParse({
+        ...file,
+        questions: [...twenty, asked("Question 21?")],
+      }).success
+    ).toBe(false);
+    expect(
+      clientSetupValidationSchema.safeParse({
+        ...file,
+        questions: [asked("Any pets?"), asked("any pets?")],
+      }).success
+    ).toBe(false);
+  });
 });
 
 describe("runClientSetup", () => {

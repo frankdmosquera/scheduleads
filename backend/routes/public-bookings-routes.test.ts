@@ -31,6 +31,7 @@ const {
   bookingLinkResource,
   bookingQuestion,
   calendarConnection,
+  commitment,
   contact,
   laterTextsYes,
   lead,
@@ -562,10 +563,38 @@ describe("the yes to later texts (feature 9, decision 13)", () => {
 describe("the business's own questions (feature 9)", () => {
   const allergies = id();
   const firstVisit = id();
-  const answerFor = (questionId: string, answer: string) => ({ questionId, answer });
+  const words: Record<string, string> = {
+    [allergies]: "Any allergies or skin conditions?",
+    [firstVisit]: "Is this your first visit?",
+  };
+  // The form sends each question it showed with its words as shown, a blank answer included.
+  const answerFor = (
+    questionId: string,
+    answer: string,
+    question = words[questionId] ?? "Gone?"
+  ) => ({
+    questionId,
+    question,
+    answer,
+  });
   const refusal = async (response: Response) => {
     expect(response.status).toBe(400);
     return (await response.json()).error;
+  };
+  // The answers a booking kept; its time is then given back, so Ana's one day lasts the file.
+  const savedAnswers = async (response: Response) => {
+    expect(response.status).toBe(201);
+    const { booking: made } = await response.json();
+    const [saved] = await db
+      .select({ answers: lead.answers })
+      .from(booking)
+      .innerJoin(lead, eq(lead.id, booking.leadId))
+      .where(eq(booking.id, made.id));
+    await db
+      .update(commitment)
+      .set({ status: "cancelled" })
+      .where(eq(commitment.bookingId, made.id));
+    return saved?.answers;
   };
 
   beforeAll(async () => {
@@ -574,14 +603,14 @@ describe("the business's own questions (feature 9)", () => {
         id: allergies,
         organizationId: clinic.id,
         position: 1,
-        label: "Any allergies or skin conditions?",
+        label: words[allergies] ?? "",
         required: true,
       },
       {
         id: firstVisit,
         organizationId: clinic.id,
         position: 2,
-        label: "Is this your first visit?",
+        label: words[firstVisit] ?? "",
         required: false,
       },
     ]);
@@ -599,26 +628,19 @@ describe("the business's own questions (feature 9)", () => {
         answers: [answerFor(firstVisit, " Yes "), answerFor(allergies, "Latex")],
       })
     );
-    const { booking: made } = await response.json();
-    const [saved] = await db
-      .select({ answers: lead.answers })
-      .from(booking)
-      .innerJoin(lead, eq(lead.id, booking.leadId))
-      .where(eq(booking.id, made.id));
 
-    expect(response.status).toBe(201);
-    expect(saved?.answers).toEqual([
+    expect(await savedAnswers(response)).toEqual([
       { questionId: allergies, question: "Any allergies or skin conditions?", answer: "Latex" },
       { questionId: firstVisit, question: "Is this your first visit?", answer: "Yes" },
     ]);
   });
 
-  test.each([
-    ["left out", () => []],
-    ["blank", () => [answerFor(allergies, "   ")]],
-  ])("a required question %s is a 400 naming it, and books nothing", async (_name, answers) => {
+  test("a required question the form showed and left blank is a 400 naming it, and books nothing", async () => {
     const [startsAt] = await freeTimes(clinic.ana);
-    const response = await post(bookingsPath, form(startsAt, { answers: answers() }));
+    const response = await post(
+      bookingsPath,
+      form(startsAt, { answers: [answerFor(allergies, "   "), answerFor(firstVisit, "Yes")] })
+    );
 
     expect(await refusal(response)).toEqual({
       code: "bad_request",
@@ -627,14 +649,45 @@ describe("the business's own questions (feature 9)", () => {
     expect(await freeTimes(clinic.ana)).toContain(startsAt);
   });
 
-  test("an answer to a question this business does not have is a 400", async () => {
+  // A form opened before the owner changed the questions is still taken.
+  test("a required question the form never showed is left blank, and the booking is taken", async () => {
     const [startsAt] = await freeTimes(clinic.ana);
     const response = await post(
       bookingsPath,
-      form(startsAt, { answers: [answerFor(allergies, "None"), answerFor(id(), "Yes")] })
+      form(startsAt, { answers: [answerFor(firstVisit, "Yes")] })
     );
 
-    expect((await refusal(response)).message).toBe("That is not one of this business's questions.");
+    expect(await savedAnswers(response)).toEqual([
+      { questionId: firstVisit, question: "Is this your first visit?", answer: "Yes" },
+    ]);
+  });
+
+  test("an answer to a question removed since the form opened is kept under the words shown, last", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const removed = id();
+    const response = await post(
+      bookingsPath,
+      form(startsAt, {
+        answers: [answerFor(removed, "A dog", "Any pets at home?"), answerFor(allergies, "None")],
+      })
+    );
+
+    expect(await savedAnswers(response)).toEqual([
+      { questionId: allergies, question: "Any allergies or skin conditions?", answer: "None" },
+      { questionId: removed, question: "Any pets at home?", answer: "A dog" },
+    ]);
+  });
+
+  test("a question reworded since the form opened keeps the words the customer read", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const response = await post(
+      bookingsPath,
+      form(startsAt, { answers: [answerFor(allergies, "Latex", "Any allergies?")] })
+    );
+
+    expect(await savedAnswers(response)).toEqual([
+      { questionId: allergies, question: "Any allergies?", answer: "Latex" },
+    ]);
   });
 
   test("two answers to one question are a 400", async () => {
@@ -673,11 +726,13 @@ describe("the business's own questions (feature 9)", () => {
 
   test("twenty full answers in three-byte letters are not too large", async () => {
     const [startsAt] = await freeTimes(clinic.ana);
-    const answers = Array.from({ length: 20 }, () => answerFor(id(), "語".repeat(500)));
+    const answers = Array.from({ length: 20 }, () =>
+      answerFor(id(), "語".repeat(500), "語".repeat(200))
+    );
     const response = await post(bookingsPath, form(startsAt, { answers }));
 
-    // Read whole and judged (they are not this business's questions), never cut off as too large.
-    expect((await refusal(response)).message).toBe("That is not one of this business's questions.");
+    // Read whole and taken (as questions removed since the form opened), never cut off as too large.
+    expect(await savedAnswers(response)).toHaveLength(20);
   });
 });
 

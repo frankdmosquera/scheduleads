@@ -41,7 +41,7 @@ describe("readBookingForm", () => {
     });
   });
 
-  it("sends the form as the route reads it: trimmed, empty boxes left out, any available as no person", () => {
+  it("sends the form as the route reads it: trimmed, empty boxes left out, every question shown, any available as no person", () => {
     const read = readBookingForm(filledForm, questions, choice);
 
     expect(read).toEqual({
@@ -53,7 +53,10 @@ describe("readBookingForm", () => {
         customer: { name: "Jane Doe", email: undefined, phone: "403 555 0100" },
         location: "12 Elm Street",
         details: undefined,
-        answers: [{ questionId: "q-colour", answer: "Blue" }],
+        answers: [
+          { questionId: "q-colour", question: "Which colour?", answer: "Blue" },
+          { questionId: "q-pets", question: "Any pets?", answer: "" },
+        ],
       },
     });
   });
