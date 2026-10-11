@@ -10,7 +10,7 @@ import {
   businessHoursValidationSchema,
   addResourceValidationSchema,
   closeDayValidationSchema,
-  daysOffValidationSchema,
+  holidayPicksValidationSchema,
   openClosedDayValidationSchema,
   personHoursValidationSchema,
   saveResourceValidationSchema,
@@ -35,7 +35,7 @@ import { findServicesSettings } from "../lib/settings/find-services-settings.js"
 import { openClosedDay } from "../lib/settings/open-closed-day.js";
 import { refuseHolidayPicks } from "../lib/settings/refuse-holiday-picks.js";
 import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
-import { saveDaysOff } from "../lib/settings/save-days-off.js";
+import { saveHolidayPicks } from "../lib/settings/save-holiday-picks.js";
 import { savePersonHours } from "../lib/settings/save-person-hours.js";
 import { saveResource } from "../lib/settings/save-resource.js";
 import { saveService } from "../lib/settings/save-service.js";
@@ -303,8 +303,8 @@ export const settingsRoutes = new Hono()
     }
   )
 
-  // The closed dates and holiday picks, saved; never the hours. Closing stops new bookings only: the
-  // answer lists the upcoming ones on a day now closed, none changed.
+  // The holiday picks, saved; never the closed dates or the hours. Closing stops new bookings only:
+  // the answer lists the upcoming ones on a day now closed, none changed.
   .put(
     "/days-off",
     requireOrganizationMiddleware,
@@ -312,16 +312,16 @@ export const settingsRoutes = new Hono()
     requireModuleMiddleware("booking"),
     requirePermissionMiddleware(CHANGE_BUSINESS),
     validator("json", (value, c) => {
-      const parsed = daysOffValidationSchema.safeParse(value);
+      const parsed = holidayPicksValidationSchema.safeParse(value);
       return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
     }),
     async (c) => {
       const { organizationId } = c.get("organization");
-      const daysOff = c.req.valid("json");
-      const refusal = await refuseHolidayPicks(organizationId, daysOff, new Date());
+      const picks = c.req.valid("json");
+      const refusal = await refuseHolidayPicks(organizationId, picks, new Date());
       if (refusal)
         return c.json({ ...refuse("bad_request", refusal.message), field: refusal.field }, 400);
-      const saved = await saveDaysOff(organizationId, daysOff, new Date());
+      const saved = await saveHolidayPicks(organizationId, picks, new Date());
       if (!saved.ok) return c.json(NO_BUSINESS_HOURS, 409);
       return c.json({ daysOff: saved.daysOff, newlyClosed: saved.newlyClosed }, 200);
     }

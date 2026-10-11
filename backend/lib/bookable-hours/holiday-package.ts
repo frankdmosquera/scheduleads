@@ -7,17 +7,22 @@ export type HolidayPlaceType = { code: string; name: string };
 export type PackageHolidayType = { name: string; date: string; type: string }; // date YYYY-MM-DD
 
 const OFFERED_COUNTRIES = ["CA", "CO", "US"]; // the countries the businesses are in
+// How far ahead a name is looked for before it counts as gone: a substitute day or an election
+// day skips years, and comes back.
+const YEARS_A_NAME_IS_LOOKED_FOR = 10;
 
 const catalogue = new Holidays(); // the package's countries and provinces
 const holidayLists = new Map<string, Holidays>(); // one per country or province, built once
+// A year's holidays never change while the server runs, so each is worked out once.
+const yearsHolidays = new Map<string, PackageHolidayType[]>();
+const knownNames = new Map<string, Set<string>>();
 
 const knowsCountry = (country: string) => Boolean(catalogue.getCountries("en")[country]);
 const knowsRegion = (country: string, region: string) =>
   Boolean(catalogue.getStates(country, "en")?.[region]);
 const byName = (a: HolidayPlaceType, b: HolidayPlaceType) => a.name.localeCompare(b.name);
 
-function holidayList(country: string, region: string | null): Holidays {
-  const key = region ? `${country}-${region}` : country;
+function holidayList(key: string, country: string, region: string | null): Holidays {
   let list = holidayLists.get(key);
   if (!list) {
     list = region
@@ -26,6 +31,36 @@ function holidayList(country: string, region: string | null): Holidays {
     holidayLists.set(key, list);
   }
   return list;
+}
+
+// One year of one list: the province's alone, or the country's.
+function holidaysOfYear(country: string, region: string | null, year: number) {
+  const key = region ? `${country}-${region}` : country;
+  let holidays = yearsHolidays.get(`${key} ${year}`);
+  if (!holidays) {
+    holidays = holidayList(key, country, region)
+      .getHolidays(year)
+      .map((holiday) => ({
+        name: holiday.name,
+        date: holiday.date.slice(0, 10), // "2027-02-15 00:00:00", local to the province
+        type: holiday.type,
+      }));
+    yearsHolidays.set(`${key} ${year}`, holidays);
+  }
+  return holidays;
+}
+
+// A business's holidays for one year. With a province, its own list decides each holiday it has,
+// type and date (the package's province list already carries the national ones it keeps), and
+// the country's list adds only the names the province does not have. None for a country or
+// province the package does not know: it would quietly use the national list for a bad province.
+function holidaysOfPlace(country: string, region: string | null, year: number) {
+  if (!knowsCountry(country) || (region && !knowsRegion(country, region))) return [];
+  const national = holidaysOfYear(country, null, year);
+  if (!region) return national;
+  const provincial = holidaysOfYear(country, region, year);
+  const named = new Set(provincial.map((holiday) => holiday.name));
+  return [...provincial, ...national.filter((holiday) => !named.has(holiday.name))];
 }
 
 export const holidayPackage = {
@@ -43,29 +78,37 @@ export const holidayPackage = {
       .sort(byName);
   },
 
-  // Every holiday of the province's list and the country's own from firstDate to lastDate, both
-  // included. None for a country or province the package does not know: it would quietly use the
-  // national list for a bad province.
+  // Every holiday of the business's province and country from firstDate to lastDate, both included.
   holidaysBetween(
     country: string,
     region: string | null,
     firstDate: string,
     lastDate: string
   ): PackageHolidayType[] {
-    if (!knowsCountry(country) || (region && !knowsRegion(country, region))) return [];
-    const lists = region
-      ? [holidayList(country, region), holidayList(country, null)]
-      : [holidayList(country, null)];
     const found: PackageHolidayType[] = [];
     for (let year = Number(firstDate.slice(0, 4)); year <= Number(lastDate.slice(0, 4)); year++) {
-      for (const list of lists) {
-        for (const holiday of list.getHolidays(year)) {
-          const date = holiday.date.slice(0, 10); // "2027-02-15 00:00:00", local to the province
-          if (date >= firstDate && date <= lastDate)
-            found.push({ name: holiday.name, date, type: holiday.type });
-        }
-      }
+      for (const holiday of holidaysOfPlace(country, region, year))
+        if (holiday.date >= firstDate && holiday.date <= lastDate) found.push(holiday);
     }
     return found;
+  },
+
+  // Every name the lists have from this year to ten years ahead: a pick outside it is one the
+  // package renamed or dropped.
+  namesFrom(country: string, region: string | null, year: number): Set<string> {
+    const key = `${country}-${region ?? ""} ${year}`;
+    let names = knownNames.get(key);
+    if (!names) {
+      names = new Set(
+        this.holidaysBetween(
+          country,
+          region,
+          `${year}-01-01`,
+          `${year + YEARS_A_NAME_IS_LOOKED_FOR}-12-31`
+        ).map((holiday) => holiday.name)
+      );
+      knownNames.set(key, names);
+    }
+    return names;
   },
 };

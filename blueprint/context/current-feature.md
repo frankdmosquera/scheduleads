@@ -42,8 +42,10 @@ already ported.
   the package); the page lists that province's and that country's holidays for the coming year
   with their dates, every kind but school terms, the main (public) ones first (Frank, 2026-10-11:
   a national day such as Truth and Reconciliation is an observance in the package); "Close all
-  main holidays" ticks every public holiday, and each holiday ticks or unticks on its own. A pick
-  the package no longer knows is shown as such and never takes the booking page down (decision 8).
+  main holidays" ticks every public holiday, and each holiday ticks or unticks on its own. With a
+  province, its own list decides each holiday it has, whether main and its date, and the country's
+  adds only the names it lacks (Frank, 2026-10-11, F-379). A pick the package no longer knows is
+  shown as such and never takes the booking page down (decision 8).
 - Read-only for a role that may not change the business, as 12a.
 
 ## Out of scope
@@ -161,18 +163,22 @@ business, or an unknown id, is one `404 not_found`. A business with no hours row
 `409 no_business_hours` on every write, as 12a.
 
 **`GET /settings/days-off`** `200 { canEdit, timezone, closedDates, holidayCountry, holidayRegion,
-closedHolidays, closedDays, people }`: `closedDates` the saved ones from today on, sorted;
+closedHolidays, closedDays, people, unknownHolidays }`: `closedDates` the saved ones from today
+on, sorted; `unknownHolidays` the picks the holiday list has in no year from this one to ten
+years ahead (amended in 12e.3's review, F-375: a substitute day skips years and is not gone);
 `closedDays` every closed day from today to a year ahead (amended in 12e.1: the horizon hid a day
 closed beyond it), sorted, each `{ date, name,
 openedForEveryone, openedFor }` (`name` the holiday's or null; `openedFor` the ids of people it
 is opened for); `people` the active people `{ id, name }`. `timezone` null and lists empty before
 the business has hours.
 
-**`PUT /settings/days-off`** `{ closedDates, holidayCountry, holidayRegion, closedHolidays }`,
-strict: dates `YYYY-MM-DD`, no repeats; a province needs a country; picks need a country and must
-be in the package's list for that country and province. `200 { daysOff, newlyClosed }`:
+**`PUT /settings/days-off`** `{ holidayCountry, holidayRegion, closedHolidays }` (amended in
+12e.3's review, F-376: the closed dates are no longer in the body, so a page loaded before a day
+was closed elsewhere cannot open it again), strict, no repeats; a country from the three offered;
+a province from that country's list, and only with a country; picks need a country and a name
+the holiday list has (as `unknownHolidays` above). `200 { daysOff, newlyClosed }`:
 `daysOff` as the GET answers it (without `canEdit`), `newlyClosed` 12a's rows `{ bookingId, leadId, customerName, serviceName,
-personName, startsAt, endsAt }`, ISO, soonest first. Writes only the four columns.
+personName, startsAt, endsAt }`, ISO, soonest first. Writes only the three holiday columns.
 
 **`POST /settings/days-off/close`** `{ date }` (amended in 12e.1's review, F-365): closes one day for
 everyone: the date joins `closedDates` once, and the business's one-off hours on it go, since a
@@ -217,7 +223,8 @@ One test per rule that would hurt if broken:
   the business's usual hours; a closed day with no usual hours that weekday cannot be opened;
   closing a day lists its bookings, except those of someone it is opened for. Route tests: a
   member without the permission cannot close or open a day; another business's person gets the
-  404; a save writes only the four closed-day columns and keeps the hours.
+  404; a holiday save writes only the three holiday columns and keeps the closed days and the
+  hours (renamed in 12e.3's review, F-376).
 - 12e.2: another business's booking in the list is refused and nothing is cancelled; an owner's
   cancel frees the time, records the owner, queues the customer's email and the worker text and
   no business notification; a started booking is not cancelled and is named.

@@ -33,7 +33,8 @@ export async function resolveBookableHours(
   if (!businessRow) return null;
 
   const business = businessHoursInputOf(businessRow);
-  // A pick the holiday package renamed closes nothing; said once per read, so it gets unticked.
+  // A pick the holiday package renamed closes nothing; said on every read of these hours (once per
+  // person asked about), so it gets unticked.
   const unknown = unknownHolidayPicks(
     business.holidayCountry,
     business.holidayRegion,

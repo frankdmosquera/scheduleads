@@ -1,22 +1,19 @@
-// Backend: saves the business's closed dates and holiday picks from the owner's Days off page
-// (feature 12e). Only those four columns: the hours, one-off dates included, stay as they are.
+// Backend: saves the holidays the owner picked on the Days off page (feature 12e): the country, the
+// province and the picks. The closed dates and the hours stay as they are saved, so a page loaded
+// before a day was closed elsewhere never opens it again.
 
-import type { DaysOffType } from "@scheduleads-app/shared/zod-validation";
+import type { HolidayPicksType } from "@scheduleads-app/shared/zod-validation";
 
 import { writeDaysOff, type WriteDaysOffResultType } from "./write-days-off.js";
 
-export function saveDaysOff(
+export function saveHolidayPicks(
   organizationId: string,
-  daysOff: DaysOffType,
+  picks: HolidayPicksType,
   now: Date
 ): Promise<WriteDaysOffResultType> {
   return writeDaysOff(
     organizationId,
-    (before) => ({
-      ...daysOff,
-      closedDates: [...daysOff.closedDates].sort(), // YYYY-MM-DD sorts as text
-      dateHours: before.dateHours,
-    }),
+    (before) => ({ ...picks, closedDates: before.closedDates, dateHours: before.dateHours }),
     now
   );
 }

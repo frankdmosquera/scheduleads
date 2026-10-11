@@ -30,6 +30,19 @@ describe("the holiday picker's list", () => {
     expect(new Set(choices.map((choice) => choice.name)).size).toBe(choices.length);
   });
 
+  test("a state's own list decides a holiday it has; the country's fills in the rest", () => {
+    const year = (region: string) => holidayChoices("US", region, "2026-10-11", "2027-10-11");
+    const named = (region: string, name: string) =>
+      year(region).find((choice) => choice.name === name);
+
+    // Colorado keeps Columbus Day as an observance: listed, not main.
+    expect(named("CO", "Columbus Day")?.main).toBe(false);
+    // Georgia marks Washington's Birthday on Christmas Eve, so the national February date goes.
+    expect(named("GA", "Washington's Birthday")?.dates).toEqual(["2026-12-24"]);
+    // A national holiday Georgia does not name is still listed.
+    expect(named("GA", "Christmas Eve")).toBeDefined();
+  });
+
   test("only Canada, Colombia and the United States are offered; Colombia has no provinces", () => {
     expect(holidayPackage.countries().map((country) => country.code)).toEqual(["CA", "CO", "US"]);
     expect(holidayPackage.regions("CO")).toEqual([]);

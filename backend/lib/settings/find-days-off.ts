@@ -10,12 +10,14 @@ import type { DaysOffType } from "@scheduleads-app/shared/zod-validation";
 import type { DatabaseExecutorType } from "../../database-executor-type.js";
 import { listClosedDays, type ClosedDayType } from "../bookable-hours/apply-opening-rules.js";
 import { businessHoursInputOf } from "../bookable-hours/business-hours-input-of.js";
+import { unknownHolidayPicks } from "../bookable-hours/unknown-holiday-picks.js";
 import { findPeopleHours } from "./find-people-hours.js";
 
 export type DaysOffSettingsType = DaysOffType & {
   timezone: string | null; // null until the business's hours are first saved
   closedDays: ClosedDayType[];
   people: { id: string; name: string }[]; // the active people, whom a day can be opened for
+  unknownHolidays: string[]; // the picks the holiday list no longer has, to untick
 };
 
 export async function findDaysOff(
@@ -50,7 +52,7 @@ export async function findDaysOff(
 
   if (!businessRow) {
     const none = { closedDates: [], holidayCountry: null, holidayRegion: null, closedHolidays: [] };
-    return { ...none, timezone: null, closedDays: [], people };
+    return { ...none, timezone: null, closedDays: [], people, unknownHolidays: [] };
   }
 
   const business = businessHoursInputOf(businessRow);
@@ -70,5 +72,11 @@ export async function findDaysOff(
     timezone: business.timezone,
     closedDays: listClosedDays(business, activeHours, now),
     people,
+    unknownHolidays: unknownHolidayPicks(
+      business.holidayCountry,
+      business.holidayRegion,
+      business.closedHolidays,
+      today
+    ),
   };
 }

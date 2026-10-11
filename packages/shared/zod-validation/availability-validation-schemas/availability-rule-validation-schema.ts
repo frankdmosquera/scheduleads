@@ -56,14 +56,14 @@ const businessAvailabilityRuleFields = z
   })
   .strict();
 
-type HolidayPicksType = {
+type PicksWithCountryType = {
   holidayCountry: string | null;
   holidayRegion: string | null;
   closedHolidays: string[];
 };
-const regionHasCountry = (rule: HolidayPicksType) =>
+const regionHasCountry = (rule: PicksWithCountryType) =>
   rule.holidayRegion === null || rule.holidayCountry !== null;
-const picksHaveCountry = (rule: HolidayPicksType) =>
+const picksHaveCountry = (rule: PicksWithCountryType) =>
   rule.closedHolidays.length === 0 || rule.holidayCountry !== null;
 const REGION_NEEDS_COUNTRY = { message: "A province needs its country.", path: ["holidayRegion"] };
 const PICKS_NEED_COUNTRY = {
@@ -97,9 +97,17 @@ export const businessHoursValidationSchema = businessAvailabilityRuleFields
   })
   .strict();
 
-// What the Days off page saves (feature 12e): the closed days and holidays, never the hours.
+// The Days off page's closed days and holidays (feature 12e), never the hours.
 export const daysOffValidationSchema = businessAvailabilityRuleFields
   .pick({ closedDates: true, holidayCountry: true, holidayRegion: true, closedHolidays: true })
+  .strict()
+  .refine(regionHasCountry, REGION_NEEDS_COUNTRY)
+  .refine(picksHaveCountry, PICKS_NEED_COUNTRY);
+
+// What the holiday picker saves: the holidays alone. The closed days are closed and opened one at
+// a time, so a page loaded earlier never writes back an old list of them.
+export const holidayPicksValidationSchema = businessAvailabilityRuleFields
+  .pick({ holidayCountry: true, holidayRegion: true, closedHolidays: true })
   .strict()
   .refine(regionHasCountry, REGION_NEEDS_COUNTRY)
   .refine(picksHaveCountry, PICKS_NEED_COUNTRY);
@@ -121,3 +129,4 @@ export type BusinessHoursType = z.infer<typeof businessHoursValidationSchema>;
 export type PersonHoursType = z.infer<typeof personHoursValidationSchema>;
 export type DaysOffInputType = z.input<typeof daysOffValidationSchema>;
 export type DaysOffType = z.infer<typeof daysOffValidationSchema>;
+export type HolidayPicksType = z.infer<typeof holidayPicksValidationSchema>;

@@ -15,7 +15,7 @@ import {
   type HolidayChoicesType,
   type HolidayChoiceType,
 } from "@/lib/api-client/settings/fetch-holiday-choices";
-import { saveDaysOff, type SavedDaysOffType } from "@/lib/api-client/settings/save-days-off";
+import { saveHolidayPicks, type SavedDaysOffType } from "@/lib/api-client/settings/save-days-off";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 type FieldType = "holidayCountry" | "holidayRegion" | "closedHolidays";
@@ -56,6 +56,7 @@ export function HolidayPicker({
   const [choices, setChoices] = useState<(HolidayChoicesType & { key: string }) | null>(null);
   const key = `${country ?? ""}-${region ?? ""}`;
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0); // "Try again" reads the lists once more
   const [errors, setErrors] = useState<Partial<Record<FieldType, string>>>({});
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   const [saving, setSaving] = useState(false);
@@ -63,27 +64,50 @@ export function HolidayPicker({
   // renamed one shows.
   const prune = useRef(false);
 
+  // The countries on their own, so a saved country the list no longer offers can still be changed.
   useEffect(() => {
     let current = true;
-    fetchHolidayChoices(country, region).then((read) => {
+    fetchHolidayChoices(null, null).then((read) => {
       if (!current) return;
+      if (read.state === "ok") setCountries(read.answer.countries);
+      else setLoadError(read.message);
+    });
+    return () => {
+      current = false;
+    };
+  }, [attempt]);
+
+  useEffect(() => {
+    if (!country) return; // no country, no list to read
+    let current = true;
+    (async () => {
+      let read = await fetchHolidayChoices(country, region);
+      // A saved province the list no longer has: the country's own list, to pick another from.
+      const regionError =
+        read.state === "field" && read.field === "holidayRegion" ? read.message : null;
+      if (regionError) read = await fetchHolidayChoices(country, null);
+      if (!current) return;
+      if (read.state === "field") {
+        setErrors({ [read.field]: read.message }); // a saved country the list no longer offers
+        return;
+      }
       if (read.state !== "ok") {
         setLoadError(read.message);
         return;
       }
       setLoadError(null);
-      setCountries(read.answer.countries);
-      setChoices({ ...read.answer, key: `${country ?? ""}-${region ?? ""}` });
+      setChoices({ ...read.answer, key: `${country}-${region ?? ""}` });
+      if (regionError) setErrors({ holidayRegion: regionError });
       if (prune.current) {
         const known = new Set(read.answer.holidays.map((holiday) => holiday.name));
         setPicks((ticked) => ticked.filter((name) => known.has(name)));
         prune.current = false;
       }
-    });
+    })();
     return () => {
       current = false;
     };
-  }, [country, region]);
+  }, [country, region, attempt]);
 
   const edited = () => {
     setNotice(null);
@@ -110,8 +134,30 @@ export function HolidayPicker({
   const main = holidays.filter((holiday) => holiday.main);
   const others = holidays.filter((holiday) => !holiday.main);
   const known = new Set(holidays.map((holiday) => holiday.name));
-  // Only once the list has loaded, so a pick is never marked while it is still coming.
-  const gone = ready && country ? picks.filter((name) => !known.has(name)) : [];
+  // Only once the list has loaded, so a pick is never marked while it is still coming. A pick the
+  // list no longer has is gone; one that only skips the coming year (a substitute day) is kept.
+  // The saved marks hold only while the saved country and province are still the ones picked.
+  const savedPlace = country === daysOff.holidayCountry && region === daysOff.holidayRegion;
+  const gone =
+    ready && country && savedPlace
+      ? picks.filter((name) => daysOff.unknownHolidays.includes(name))
+      : [];
+  const notThisYear =
+    ready && country ? picks.filter((name) => !known.has(name) && !gone.includes(name)) : [];
+  const keptBox = (name: string, refusedHere: boolean) => (
+    <label key={name} className="flex items-center gap-2">
+      <input
+        type="checkbox"
+        checked
+        disabled={!canEdit}
+        onChange={() => tick(name, false)}
+        // A refused save is about these first, so the focus lands here.
+        {...(refusedHere ? errorProps("closedHolidays") : {})}
+        className="size-4 accent-[var(--primary)]"
+      />
+      <span className="text-muted-foreground">{name}</span>
+    </label>
+  );
   const closeAllMain = () => {
     edited();
     setPicks((ticked) => [...new Set([...ticked, ...main.map((holiday) => holiday.name)])]);
@@ -120,8 +166,7 @@ export function HolidayPicker({
   async function save(event: FormEvent) {
     event.preventDefault();
     setSaving(true);
-    const saved = await saveDaysOff({
-      closedDates: daysOff.closedDates,
+    const saved = await saveHolidayPicks({
       holidayCountry: country,
       holidayRegion: region,
       closedHolidays: picks,
@@ -204,6 +249,9 @@ export function HolidayPicker({
             className={selectClass}
           >
             <option value="">No holidays</option>
+            {country && countries.length && !countries.some((place) => place.code === country) ? (
+              <option value={country}>{country}, no longer offered</option>
+            ) : null}
             {countries.map((place) => (
               <option key={place.code} value={place.code}>
                 {place.name}
@@ -212,7 +260,7 @@ export function HolidayPicker({
           </select>
           {errorLine("holidayCountry")}
         </div>
-        {country && ready?.regions.length ? (
+        {country && ready && (ready.regions.length || region) ? (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={FIELD_IDS.holidayRegion}>Province or state</Label>
             <select
@@ -224,6 +272,9 @@ export function HolidayPicker({
               className={selectClass}
             >
               <option value="">Country&apos;s holidays only</option>
+              {region && !ready.regions.some((place) => place.code === region) ? (
+                <option value={region}>{region}, no longer in the list</option>
+              ) : null}
               {ready.regions.map((place) => (
                 <option key={place.code} value={place.code}>
                   {place.name}
@@ -235,7 +286,22 @@ export function HolidayPicker({
         ) : null}
       </div>
 
-      {loadError ? <p className="text-sm text-destructive">{loadError}</p> : null}
+      {loadError ? (
+        <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-destructive">
+          <p>{loadError}</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setLoadError(null);
+              setAttempt((count) => count + 1);
+            }}
+          >
+            Try again
+          </Button>
+        </div>
+      ) : null}
 
       {country && ready ? (
         <div role="group" aria-labelledby="holidays-title" className="flex flex-col gap-4 text-sm">
@@ -245,20 +311,16 @@ export function HolidayPicker({
               <p className="text-xs text-muted-foreground">
                 Picked before, these close nothing now. Untick them to save.
               </p>
-              {gone.map((name, index) => (
-                <label key={name} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked
-                    disabled={!canEdit}
-                    onChange={() => tick(name, false)}
-                    // A refused save is about these first, so the focus lands here.
-                    {...(index === 0 ? errorProps("closedHolidays") : {})}
-                    className="size-4 accent-[var(--primary)]"
-                  />
-                  <span className="text-muted-foreground">{name}</span>
-                </label>
-              ))}
+              {gone.map((name, index) => keptBox(name, index === 0))}
+            </div>
+          ) : null}
+          {notThisYear.length ? (
+            <div className="flex flex-col gap-2">
+              <p className="font-medium text-foreground">Picked, not in the coming year</p>
+              <p className="text-xs text-muted-foreground">
+                These close their day in the years they fall.
+              </p>
+              {notThisYear.map((name) => keptBox(name, false))}
             </div>
           ) : null}
 

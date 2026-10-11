@@ -18,6 +18,7 @@ export type HolidayChoicesResultType =
       countries: HolidayPlaceType[];
       regions: HolidayPlaceType[]; // the country's provinces; none before a country is picked
       holidays: HolidayChoiceType[]; // the country's, and the province's when one is picked
+      today: string; // YYYY-MM-DD on the business's clock, where the year shown starts
     }
   | { ok: false; field: "holidayCountry" | "holidayRegion"; message: string };
 
@@ -28,7 +29,7 @@ export async function findHolidayChoices(
   now: Date
 ): Promise<HolidayChoicesResultType> {
   const countries = holidayPackage.countries();
-  if (country === null) return { ok: true, countries, regions: [], holidays: [] };
+  if (country === null) return { ok: true, countries, regions: [], holidays: [], today: "" };
 
   const regions = holidayPackage.regions(country);
   if (!regions)
@@ -46,5 +47,5 @@ export async function findHolidayChoices(
     .limit(1);
   const today = localDate(now, row?.timezone ?? "UTC");
   const holidays = holidayChoices(country, region, today, addDays(today, DAYS_OFF_AHEAD));
-  return { ok: true, countries, regions, holidays };
+  return { ok: true, countries, regions, holidays, today };
 }

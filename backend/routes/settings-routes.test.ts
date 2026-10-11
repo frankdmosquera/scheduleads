@@ -920,15 +920,21 @@ describe("the Days off settings", () => {
     }[];
   };
   type SavedDaysOffType = { daysOff: DaysOffAnswerType; newlyClosed: { customerName: string }[] };
-  const closeOnly = (closedDates: string[]) => ({
-    closedDates,
-    holidayCountry: null,
-    holidayRegion: null,
-    closedHolidays: [],
-  });
+  const noHolidays = { holidayCountry: null, holidayRegion: null, closedHolidays: [] };
+  // Summit back to no closed days and no holidays, after a test that changed them.
+  const resetDaysOff = () =>
+    db
+      .update(availabilityRule)
+      .set({ closedDates: [], ...noHolidays })
+      .where(
+        and(
+          eq(availabilityRule.organizationId, summit.organizationId),
+          isNull(availabilityRule.resourceId)
+        )
+      );
 
-  // One customer, their lead and a booking with Closer's Visit, on Monday from the minute given.
-  async function bookMonday(customerName: string, personId: string, fromMinute: number) {
+  // One customer, their lead and a booking with Closer's Visit, on the day from the minute given.
+  async function bookDay(day: string, customerName: string, personId: string, fromMinute: number) {
     const [contactId, leadId, bookingId] = [randomUUID(), randomUUID(), randomUUID()];
     const organizationId = closer.organizationId;
     await db.insert(contact).values({ id: contactId, organizationId, name: customerName });
@@ -941,8 +947,8 @@ describe("the Days off settings", () => {
       leadId,
       bookingLinkId: closerVisitId,
       personId,
-      startsAt: localTimeToMoment(monday, fromMinute, "America/Edmonton")!,
-      endsAt: localTimeToMoment(monday, fromMinute + 60, "America/Edmonton")!,
+      startsAt: localTimeToMoment(day, fromMinute, "America/Edmonton")!,
+      endsAt: localTimeToMoment(day, fromMinute + 60, "America/Edmonton")!,
       status: "confirmed",
     });
     return bookingId;
@@ -953,7 +959,7 @@ describe("the Days off settings", () => {
     expect(read.status).toBe(200);
     expect(await read.json()).toMatchObject({ canEdit: false, closedDates: [], closedDays: [] });
 
-    expect((await put("/settings/days-off", helper.email, closeOnly([monday]))).status).toBe(403);
+    expect((await put("/settings/days-off", helper.email, noHolidays)).status).toBe(403);
     const close = await post("/settings/days-off/close", helper.email, { date: monday });
     expect(close.status).toBe(403);
     const open = await post("/settings/days-off/open", helper.email, {
@@ -965,7 +971,9 @@ describe("the Days off settings", () => {
   });
 
   test("another business's person gets the 404", async () => {
-    expect((await put("/settings/days-off", summit.email, closeOnly([monday]))).status).toBe(200);
+    expect((await post("/settings/days-off/close", summit.email, { date: monday })).status).toBe(
+      200
+    );
     const [foreign, place, unknown] = await Promise.all(
       [other.personId, summitPlaceId, randomUUID()].map((personId) =>
         post("/settings/days-off/open", summit.email, { date: monday, personId })
@@ -980,11 +988,11 @@ describe("the Days off settings", () => {
       .from(availabilityRule)
       .where(inArray(availabilityRule.resourceId, [other.personId, summitPlaceId]));
     expect(rows).toEqual([]);
-    await put("/settings/days-off", summit.email, closeOnly([]));
+    await resetDaysOff();
   });
 
-  test("a save writes only the four closed-day columns and keeps the hours", async () => {
-    // Summit has its own hours on Monday and on the Tuesday after; then Monday is saved as closed.
+  test("a holiday save writes only the three holiday columns and keeps the closed days and the hours", async () => {
+    // Summit closed Monday, with its own hours on Monday and on the Tuesday after.
     const oneOffs = [
       { date: monday, windows: [{ startMinute: 600, endMinute: 720 }] },
       { date: addDays(monday, 1), windows: [{ startMinute: 600, endMinute: 720 }] },
@@ -992,20 +1000,19 @@ describe("the Days off settings", () => {
     const rowId = (await businessRowOf(summit.organizationId)).id;
     await db
       .update(availabilityRule)
-      .set({ dateHours: oneOffs })
+      .set({ closedDates: [monday], dateHours: oneOffs })
       .where(eq(availabilityRule.id, rowId));
     const before = await businessRowOf(summit.organizationId);
 
-    const saved = await put("/settings/days-off", summit.email, {
-      closedDates: [monday],
-      holidayCountry: "CA",
-      holidayRegion: "AB",
-      closedHolidays: [],
-    });
+    // A page loaded before Monday was closed saves its holidays: Monday stays closed. A list of
+    // closed days in the body is refused, never written.
+    const withDays = { ...noHolidays, closedDates: [] };
+    expect((await put("/settings/days-off", summit.email, withDays)).status).toBe(400);
+    const holidays = { holidayCountry: "CA", holidayRegion: "AB", closedHolidays: [] };
+    const saved = await put("/settings/days-off", summit.email, holidays);
     expect(saved.status).toBe(200);
     expect(await businessRowOf(summit.organizationId)).toEqual({
       ...before,
-      closedDates: [monday],
       holidayCountry: "CA",
       holidayRegion: "AB",
       updatedAt: expect.any(Date),
@@ -1024,7 +1031,7 @@ describe("the Days off settings", () => {
     const answer = (await closed.json()) as SavedDaysOffType;
     expect(answer.daysOff.closedDays[0]).toMatchObject({ date: monday, openedForEveryone: false });
 
-    await put("/settings/days-off", summit.email, closeOnly([]));
+    await resetDaysOff();
     await db.update(availabilityRule).set({ dateHours: [] }).where(eq(availabilityRule.id, rowId));
   });
 
@@ -1033,8 +1040,8 @@ describe("the Days off settings", () => {
       await import("../lib/bookable-hours/resolve-bookable-hours.js");
     const closedFor = async (personId: string) =>
       (await resolveBookableHours(closer.organizationId, personId, new Date()))!.closedDates;
-    const maria = await bookMonday("Maria", closer.personId, 600); // Juan, 10:00
-    await bookMonday("Lee", closerAnaId, 480); // Ana, 8:00
+    const maria = await bookDay(monday, "Maria", closer.personId, 600); // Juan, 10:00
+    await bookDay(monday, "Lee", closerAnaId, 480); // Ana, 8:00
     const [mariaBefore] = await db.select().from(booking).where(eq(booking.id, maria));
 
     // Not closed yet: nothing to open.
@@ -1099,6 +1106,29 @@ describe("the Days off settings", () => {
     expect(await closedFor(closer.personId)).not.toContain(monday);
   });
 
+  test("a holiday save lists the bookings left on the holidays it closes", async () => {
+    // The next Remembrance Day, November 11, at least two days ahead in Edmonton.
+    const today = localDate(new Date(), "America/Edmonton");
+    let remembrance = `${today.slice(0, 4)}-11-11`;
+    if (remembrance < addDays(today, 2)) remembrance = `${Number(today.slice(0, 4)) + 1}-11-11`;
+    await bookDay(remembrance, "Robin", closer.personId, 600);
+
+    const holidays = {
+      holidayCountry: "CA",
+      holidayRegion: "AB",
+      closedHolidays: ["Remembrance Day"],
+    };
+    const saved = await put("/settings/days-off", closer.email, holidays);
+    expect(saved.status).toBe(200);
+    const answer = (await saved.json()) as SavedDaysOffType;
+    expect(answer.newlyClosed.map((listed) => listed.customerName)).toEqual(["Robin"]);
+    expect(answer.daysOff.closedDays).toContainEqual(
+      expect.objectContaining({ date: remembrance, name: "Remembrance Day" })
+    );
+
+    expect((await put("/settings/days-off", closer.email, noHolidays)).status).toBe(200);
+  });
+
   test("the holiday list answers the countries, then a province's year of holidays", async () => {
     type ChoicesType = {
       countries: { code: string }[];
@@ -1128,7 +1158,6 @@ describe("the Days off settings", () => {
 
   test("a pick not in the province's list is refused on save", async () => {
     const picks = (closedHolidays: string[], holidayCountry = "CA", holidayRegion = "AB") => ({
-      closedDates: [],
       holidayCountry,
       holidayRegion,
       closedHolidays,
@@ -1154,6 +1183,15 @@ describe("the Days off settings", () => {
     // Any day in the list can be picked, main or not.
     const listed = picks(["Thanksgiving", "National Day for Truth and Reconciliation"]);
     expect((await put("/settings/days-off", summit.email, listed)).status).toBe(200);
-    await put("/settings/days-off", summit.email, closeOnly([]));
+
+    // A pick the list renamed after it was saved is named on the read, for the page to mark.
+    const rowId = (await businessRowOf(summit.organizationId)).id;
+    await db
+      .update(availabilityRule)
+      .set({ closedHolidays: ["Thanksgiving", "Famly Day"] })
+      .where(eq(availabilityRule.id, rowId));
+    const read = await (await get("/settings/days-off", summit.email)).json();
+    expect(read).toMatchObject({ unknownHolidays: ["Famly Day"] });
+    await resetDaysOff();
   });
 });

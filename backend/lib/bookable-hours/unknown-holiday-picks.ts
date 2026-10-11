@@ -1,8 +1,10 @@
-// Backend: the holiday picks the package no longer knows, for the booking window to log.
+// Backend: the holiday picks the package no longer knows. The booking window logs them, the save
+// refuses them, and the Days off page shows them to untick.
 
 import { holidayPackage } from "./holiday-package.js";
 
-// Looked for from today to the end of next year, so a holiday later in the year still counts.
+// A pick the lists have in no year from today's to ten years ahead. One that only skips a year,
+// such as a substitute day, still counts: it closes nothing that year and comes back.
 export function unknownHolidayPicks(
   country: string | null,
   region: string | null,
@@ -11,9 +13,6 @@ export function unknownHolidayPicks(
 ): string[] {
   if (names.length === 0) return [];
   if (!country) return names;
-  const lastDate = `${Number(today.slice(0, 4)) + 1}-12-31`;
-  const known = new Set(
-    holidayPackage.holidaysBetween(country, region, today, lastDate).map((holiday) => holiday.name)
-  );
+  const known = holidayPackage.namesFrom(country, region, Number(today.slice(0, 4)));
   return names.filter((name) => !known.has(name));
 }
