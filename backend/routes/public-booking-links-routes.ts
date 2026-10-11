@@ -34,7 +34,7 @@ const publicBookingLinkColumns = {
   durationMinutes: bookingLink.durationMinutes,
   bufferBeforeMinutes: bookingLink.bufferBeforeMinutes,
   bufferAfterMinutes: bookingLink.bufferAfterMinutes,
-  asksAddress: bookingLink.asksAddress, // the window shows the address field only when true
+  addressMode: bookingLink.addressMode, // the window's address field: required, optional or none
 };
 
 // What a stranger may see of the business itself: what its own site shows anyway (feature 9).
@@ -42,6 +42,7 @@ const publicBusinessColumns = {
   name: organization.name,
   logo: organization.logo,
   phone: organization.phone,
+  contactRule: organization.contactRule, // which of email and phone the form marks required
 };
 
 export const publicBookingLinksRoutes = new Hono()

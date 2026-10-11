@@ -29,15 +29,11 @@ describe("the booking form", () => {
     });
   });
 
-  test("an email or a phone, either one is enough (decision 16)", () => {
+  // Which of the two must be there is the business's rule (missingContact), not this schema's.
+  test("an email, a phone or neither all pass the shape", () => {
     expect(message(form)).toBeUndefined();
     expect(message({ ...form, customer: { name: "Jane Doe", phone: "555 0100" } })).toBeUndefined();
-  });
-
-  test("neither an email nor a phone is refused", () => {
-    expect(message({ ...form, customer: { name: "Jane Doe" } })).toBe(
-      "Enter an email or a phone number. At least one is required."
-    );
+    expect(message({ ...form, customer: { name: "Jane Doe" } })).toBeUndefined();
   });
 
   test("a start with an offset is an instant too", () => {
@@ -79,13 +75,13 @@ describe("the business's own questions (feature 9)", () => {
     const parsed = createBookingValidationSchema.parse({
       ...form,
       answers: [
-        { questionId: "q1", answer: " Latex " },
-        { questionId: "q2", answer: "   " },
+        { questionId: "q1", question: " Allergies? ", answer: " Latex " },
+        { questionId: "q2", question: "Pets?", answer: "   " },
       ],
     });
     expect(parsed.answers).toEqual([
-      { questionId: "q1", answer: "Latex" },
-      { questionId: "q2", answer: "" },
+      { questionId: "q1", question: "Allergies?", answer: "Latex" },
+      { questionId: "q2", question: "Pets?", answer: "" },
     ]);
   });
 
@@ -94,13 +90,20 @@ describe("the business's own questions (feature 9)", () => {
   });
 
   test("an answer over 500 characters is refused", () => {
-    expect(message({ ...form, answers: [{ questionId: "q1", answer: "a".repeat(501) }] })).toBe(
-      "Keep each answer to 500 characters."
-    );
+    expect(
+      message({
+        ...form,
+        answers: [{ questionId: "q1", question: "Allergies?", answer: "a".repeat(501) }],
+      })
+    ).toBe("Keep each answer to 500 characters.");
   });
 
   test("more than 20 answers are refused", () => {
-    const answers = Array.from({ length: 21 }, (_, i) => ({ questionId: `q${i}`, answer: "Yes" }));
+    const answers = Array.from({ length: 21 }, (_, i) => ({
+      questionId: `q${i}`,
+      question: "Q?",
+      answer: "Yes",
+    }));
     expect(message({ ...form, answers })).toBe("That is too many answers.");
   });
 
@@ -133,8 +136,8 @@ describe("the business's own questions (feature 9)", () => {
   });
 
   test("a question id with a quote is refused", () => {
-    expect(message({ ...form, answers: [{ questionId: "q'1", answer: "Yes" }] })).toBe(
-      "That is not a question id."
-    );
+    expect(
+      message({ ...form, answers: [{ questionId: "q'1", question: "Q?", answer: "Yes" }] })
+    ).toBe("That is not a question id.");
   });
 });

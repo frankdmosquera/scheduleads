@@ -101,6 +101,7 @@ const renderScreenOne = (
         name: "Riverbend Clinic",
         logo: null,
         phone: null,
+        contactRule: "either",
         questions: [],
         laterTextsYesWords: null,
       } as BookingBusinessType,

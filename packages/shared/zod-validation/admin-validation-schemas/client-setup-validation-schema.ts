@@ -12,6 +12,8 @@ import {
   serviceLengthValidationSchema,
   serviceStartEveryValidationSchema,
 } from "../booking-links-validation-schemas/service-validation-schema.js";
+import { contactRuleValidationSchema } from "../crm-validation-schemas/contact-rule-validation-schema.js";
+import { setupQuestionsValidationSchema } from "../crm-validation-schemas/booking-questions-validation-schema.js";
 import { workerTextSettingsValidationSchema } from "../text-validation-schemas/worker-text-settings-validation-schema.js";
 
 const nameValidationSchema = z.string().trim().min(1).max(200);
@@ -48,7 +50,7 @@ export const setupServiceValidationSchema = z
     name: nameValidationSchema,
     description: z.string().trim().min(1).max(500).optional(),
     durationMinutes: serviceLengthValidationSchema,
-    asksAddress: z.boolean(), // whether the window asks the customer's address
+    addressMode: z.enum(["required", "optional", "not_asked"]), // whether the window asks the address
     bufferBeforeMinutes: serviceBufferValidationSchema.optional(),
     bufferAfterMinutes: serviceBufferValidationSchema.optional(),
     slotIntervalMinutes: serviceStartEveryValidationSchema.optional(), // minutes between start times; missing = every service length
@@ -60,7 +62,8 @@ export const clientSetupValidationSchema = z
   .object({
     slug: z.string().min(1), // the business, already made by the client setup screen
     personChoice: z.enum(["customer_picks", "business_assigns"]),
-    questions: z.array(z.object({ label: nameValidationSchema, required: z.boolean() }).strict()),
+    contactRule: contactRuleValidationSchema, // what a customer must leave: email, phone or either
+    questions: setupQuestionsValidationSchema, // the Settings page's own rules
     hours: setupHoursValidationSchema,
     people: z.array(setupPersonValidationSchema),
     services: z.array(setupServiceValidationSchema).min(1, "A business needs a service."),

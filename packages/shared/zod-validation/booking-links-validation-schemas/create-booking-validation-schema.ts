@@ -16,12 +16,10 @@ export const createBookingValidationSchema = z
     startsAt: z.iso.datetime({ offset: true, error: "Pick one of the times offered." }), // Z or an offset
     personId: idOf("That is not a person id.").optional(), // left out = any available
     requestKey: idOf("That is not a booking form key.").optional(), // one per form (decision 7)
-    // A way to reach the customer: an email or a phone, at least one (decision 16).
-    customer: contactValidationSchema.refine(
-      (customer) => customer.email !== undefined || customer.phone !== undefined,
-      { error: "Enter an email or a phone number. At least one is required.", path: ["email"] }
-    ),
-    // Required by the API only for a service that asks for it; left out otherwise.
+    // Which of email and phone must be there is the business's own rule, checked by the API and the
+    // booking window with missingContact (feature 12f).
+    customer: contactValidationSchema,
+    // Required by the API only for a service that requires it; kept when optional, never otherwise.
     location: z
       .string("Enter the address.")
       .trim()
@@ -29,11 +27,17 @@ export const createBookingValidationSchema = z
       .max(300, "That address is too long.")
       .optional(),
     details: z.string().trim().max(2000, "Keep it to 2000 characters.").optional(),
-    // The business's own questions (feature 9, decision 5), checked against its questions by the API.
+    // The business's own questions (feature 9, decision 5), checked against its questions by the API:
+    // every question the form showed, with its words as shown, a blank answer included.
     answers: z
       .array(
         z.object({
           questionId: idOf("That is not a question id."),
+          question: z
+            .string("That is not a question.")
+            .trim()
+            .min(1, "That is not a question.")
+            .max(200, "That is not a question."),
           answer: z
             .string("Answer in words.")
             .trim()

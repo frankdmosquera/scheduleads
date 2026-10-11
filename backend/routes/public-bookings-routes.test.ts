@@ -31,6 +31,7 @@ const {
   bookingLinkResource,
   bookingQuestion,
   calendarConnection,
+  commitment,
   contact,
   laterTextsYes,
   lead,
@@ -153,7 +154,7 @@ beforeAll(async () => {
       durationMinutes: 60,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "customer_picks",
     },
     {
@@ -164,7 +165,7 @@ beforeAll(async () => {
       durationMinutes: 60,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "customer_picks",
       active: false,
     },
@@ -176,7 +177,7 @@ beforeAll(async () => {
       durationMinutes: 60,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "business_assigns",
     },
   ]);
@@ -226,7 +227,7 @@ beforeAll(async () => {
       durationMinutes: 60,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "customer_picks",
     });
     await db.insert(bookingLinkResource).values({
@@ -361,24 +362,42 @@ describe("the address, asked per service (the address fix)", () => {
   beforeAll(async () => {
     await db
       .update(bookingLink)
-      .set({ asksAddress: false })
+      .set({ addressMode: "not_asked" })
       .where(eq(bookingLink.id, clinic.estimate));
   });
   afterAll(async () => {
     await db
       .update(bookingLink)
-      .set({ asksAddress: true })
+      .set({ addressMode: "required" })
       .where(eq(bookingLink.id, clinic.estimate));
   });
 
-  test("a service that asks refuses a booking with no address, and books nothing", async () => {
+  // The booking window sends a required address's box even when empty.
+  test("a service that requires one refuses an empty address, and books nothing", async () => {
     const [startsAt] = await freeTimes(clinic.mei);
-    const { location: _left, ...noAddress } = form(startsAt, { personId: clinic.mei });
-    const response = await post(bookingsPath, noAddress);
+    const response = await post(
+      bookingsPath,
+      form(startsAt, { personId: clinic.mei, location: " " })
+    );
 
     expect(response.status).toBe(400);
     expect((await response.json()).error.message).toBe("Enter the address.");
     expect(await freeTimes(clinic.mei)).toContain(startsAt);
+  });
+
+  // A form opened before the address was switched on never showed the box, so it sends none.
+  test("a service that requires one takes a booking that sent no address, and keeps none", async () => {
+    const [startsAt] = await freeTimes(clinic.mei);
+    const { location: _left, ...noAddress } = form(startsAt, { personId: clinic.mei });
+    const response = await post(bookingsPath, noAddress);
+
+    expect(response.status).toBe(201);
+    const { booking: made } = await response.json();
+    expect(await savedLocation(made.id)).toBeNull();
+    await db
+      .update(commitment)
+      .set({ status: "cancelled" })
+      .where(eq(commitment.bookingId, made.id)); // its time given back, so the test day lasts
   });
 
   test("a service that asks none books with no address, and keeps none", async () => {
@@ -398,17 +417,91 @@ describe("the address, asked per service (the address fix)", () => {
     expect(await savedLocation((await response.json()).booking.id)).toBeNull();
   });
 
+  // Asked, optional (feature 12f): taken with or without one, and kept when given.
+  test("a service whose address is optional books with or without one", async () => {
+    await db
+      .update(bookingLink)
+      .set({ addressMode: "optional" })
+      .where(eq(bookingLink.id, clinic.estimate));
+    try {
+      const [first, second] = await estimateTimes();
+      const { location: _left, ...noAddress } = unpicked(first);
+      const without = await post(bookingsPath, noAddress);
+      const withOne = await post(bookingsPath, unpicked(second));
+
+      expect(without.status).toBe(201);
+      expect(await savedLocation((await without.json()).booking.id)).toBeNull();
+      expect(withOne.status).toBe(201);
+      expect(await savedLocation((await withOne.json()).booking.id)).toBe("12 Elm Street");
+    } finally {
+      await db
+        .update(bookingLink)
+        .set({ addressMode: "not_asked" })
+        .where(eq(bookingLink.id, clinic.estimate));
+    }
+  });
+
   test("each service in the list says whether it asks", async () => {
     const list = await (await app.request(`/public/${clinic.slug}/booking-links`)).json();
     const asks = Object.fromEntries(
-      list.bookingLinks.map((link: { id: string; asksAddress: boolean }) => [
+      list.bookingLinks.map((link: { id: string; addressMode: string }) => [
         link.id,
-        link.asksAddress,
+        link.addressMode,
       ])
     );
 
-    expect(asks[clinic.facial]).toBe(true);
-    expect(asks[clinic.estimate]).toBe(false);
+    expect(asks[clinic.facial]).toBe("required");
+    expect(asks[clinic.estimate]).toBe("not_asked");
+  });
+});
+
+describe("the business's contact rule (feature 12f)", () => {
+  const setRule = (contactRule: "email" | "phone" | "either") =>
+    db.update(organization).set({ contactRule }).where(eq(organization.id, clinic.id));
+  const sendWith = async (customer: Record<string, string>) => {
+    const [startsAt] = await freeTimes(clinic.mei);
+    const response = await post(
+      bookingsPath,
+      form(startsAt, { personId: clinic.mei, customer: { name: "Jane Doe", ...customer } })
+    );
+    if (response.status === 201) {
+      // Its time given back, so the test day lasts the file.
+      const { booking: made } = await response.clone().json();
+      await db
+        .update(commitment)
+        .set({ status: "cancelled" })
+        .where(eq(commitment.bookingId, made.id));
+    }
+    return response;
+  };
+  const refusedWith = async (response: Response) => {
+    expect(response.status).toBe(400);
+    return (await response.json()).error.message;
+  };
+  const email = `jane-${tag}@example.com`;
+  const phone = "403 555 0100";
+
+  afterAll(() => setRule("either"));
+
+  test("a phone: a booking with only an email is refused, one with a phone is taken", async () => {
+    await setRule("phone");
+    expect(await refusedWith(await sendWith({ email }))).toBe("Enter a phone number.");
+    expect((await sendWith({ phone })).status).toBe(201);
+  });
+
+  test("an email: a booking with only a phone is refused, one with an email is taken", async () => {
+    await setRule("email");
+    expect(await refusedWith(await sendWith({ phone }))).toBe("Enter an email.");
+    expect((await sendWith({ email })).status).toBe(201);
+  });
+
+  test("either one: one is enough, neither is refused", async () => {
+    await setRule("either");
+    expect(await refusedWith(await sendWith({}))).toBe(
+      "Enter an email or a phone number. At least one is required."
+    );
+    expect((await sendWith({ phone })).status).toBe(201);
+    expect((await sendWith({ email })).status).toBe(201);
   });
 });
 
@@ -562,10 +655,38 @@ describe("the yes to later texts (feature 9, decision 13)", () => {
 describe("the business's own questions (feature 9)", () => {
   const allergies = id();
   const firstVisit = id();
-  const answerFor = (questionId: string, answer: string) => ({ questionId, answer });
+  const words: Record<string, string> = {
+    [allergies]: "Any allergies or skin conditions?",
+    [firstVisit]: "Is this your first visit?",
+  };
+  // The form sends each question it showed with its words as shown, a blank answer included.
+  const answerFor = (
+    questionId: string,
+    answer: string,
+    question = words[questionId] ?? "Gone?"
+  ) => ({
+    questionId,
+    question,
+    answer,
+  });
   const refusal = async (response: Response) => {
     expect(response.status).toBe(400);
     return (await response.json()).error;
+  };
+  // The answers a booking kept; its time is then given back, so Ana's one day lasts the file.
+  const savedAnswers = async (response: Response) => {
+    expect(response.status).toBe(201);
+    const { booking: made } = await response.json();
+    const [saved] = await db
+      .select({ answers: lead.answers })
+      .from(booking)
+      .innerJoin(lead, eq(lead.id, booking.leadId))
+      .where(eq(booking.id, made.id));
+    await db
+      .update(commitment)
+      .set({ status: "cancelled" })
+      .where(eq(commitment.bookingId, made.id));
+    return saved?.answers;
   };
 
   beforeAll(async () => {
@@ -574,14 +695,14 @@ describe("the business's own questions (feature 9)", () => {
         id: allergies,
         organizationId: clinic.id,
         position: 1,
-        label: "Any allergies or skin conditions?",
+        label: words[allergies] ?? "",
         required: true,
       },
       {
         id: firstVisit,
         organizationId: clinic.id,
         position: 2,
-        label: "Is this your first visit?",
+        label: words[firstVisit] ?? "",
         required: false,
       },
     ]);
@@ -599,26 +720,19 @@ describe("the business's own questions (feature 9)", () => {
         answers: [answerFor(firstVisit, " Yes "), answerFor(allergies, "Latex")],
       })
     );
-    const { booking: made } = await response.json();
-    const [saved] = await db
-      .select({ answers: lead.answers })
-      .from(booking)
-      .innerJoin(lead, eq(lead.id, booking.leadId))
-      .where(eq(booking.id, made.id));
 
-    expect(response.status).toBe(201);
-    expect(saved?.answers).toEqual([
+    expect(await savedAnswers(response)).toEqual([
       { questionId: allergies, question: "Any allergies or skin conditions?", answer: "Latex" },
       { questionId: firstVisit, question: "Is this your first visit?", answer: "Yes" },
     ]);
   });
 
-  test.each([
-    ["left out", () => []],
-    ["blank", () => [answerFor(allergies, "   ")]],
-  ])("a required question %s is a 400 naming it, and books nothing", async (_name, answers) => {
+  test("a required question the form showed and left blank is a 400 naming it, and books nothing", async () => {
     const [startsAt] = await freeTimes(clinic.ana);
-    const response = await post(bookingsPath, form(startsAt, { answers: answers() }));
+    const response = await post(
+      bookingsPath,
+      form(startsAt, { answers: [answerFor(allergies, "   "), answerFor(firstVisit, "Yes")] })
+    );
 
     expect(await refusal(response)).toEqual({
       code: "bad_request",
@@ -627,14 +741,45 @@ describe("the business's own questions (feature 9)", () => {
     expect(await freeTimes(clinic.ana)).toContain(startsAt);
   });
 
-  test("an answer to a question this business does not have is a 400", async () => {
+  // A form opened before the owner changed the questions is still taken.
+  test("a required question the form never showed is left blank, and the booking is taken", async () => {
     const [startsAt] = await freeTimes(clinic.ana);
     const response = await post(
       bookingsPath,
-      form(startsAt, { answers: [answerFor(allergies, "None"), answerFor(id(), "Yes")] })
+      form(startsAt, { answers: [answerFor(firstVisit, "Yes")] })
     );
 
-    expect((await refusal(response)).message).toBe("That is not one of this business's questions.");
+    expect(await savedAnswers(response)).toEqual([
+      { questionId: firstVisit, question: "Is this your first visit?", answer: "Yes" },
+    ]);
+  });
+
+  test("an answer to a question removed since the form opened is kept under the words shown, last", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const removed = id();
+    const response = await post(
+      bookingsPath,
+      form(startsAt, {
+        answers: [answerFor(removed, "A dog", "Any pets at home?"), answerFor(allergies, "None")],
+      })
+    );
+
+    expect(await savedAnswers(response)).toEqual([
+      { questionId: allergies, question: "Any allergies or skin conditions?", answer: "None" },
+      { questionId: removed, question: "Any pets at home?", answer: "A dog" },
+    ]);
+  });
+
+  test("a question reworded since the form opened keeps the words the customer read", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const response = await post(
+      bookingsPath,
+      form(startsAt, { answers: [answerFor(allergies, "Latex", "Any allergies?")] })
+    );
+
+    expect(await savedAnswers(response)).toEqual([
+      { questionId: allergies, question: "Any allergies?", answer: "Latex" },
+    ]);
   });
 
   test("two answers to one question are a 400", async () => {
@@ -673,11 +818,13 @@ describe("the business's own questions (feature 9)", () => {
 
   test("twenty full answers in three-byte letters are not too large", async () => {
     const [startsAt] = await freeTimes(clinic.ana);
-    const answers = Array.from({ length: 20 }, () => answerFor(id(), "語".repeat(500)));
+    const answers = Array.from({ length: 20 }, () =>
+      answerFor(id(), "語".repeat(500), "語".repeat(200))
+    );
     const response = await post(bookingsPath, form(startsAt, { answers }));
 
-    // Read whole and judged (they are not this business's questions), never cut off as too large.
-    expect((await refusal(response)).message).toBe("That is not one of this business's questions.");
+    // Read whole and taken (as questions removed since the form opened), never cut off as too large.
+    expect(await savedAnswers(response)).toHaveLength(20);
   });
 });
 

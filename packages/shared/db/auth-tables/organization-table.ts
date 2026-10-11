@@ -25,6 +25,18 @@ export const organization = pgTable(
     phone: text("phone"), // for the call button
     website: text("website"), // https://
     brandColor: text("brandColor"), // #rrggbb: email clients ignore CSS variables
+
+    // Which way to reach the customer the booking form requires (feature 12f). Better Auth makes
+    // the row, so a new business starts at either one, the least it can ask; the setup file says it.
+    contactRule: text("contactRule", { enum: ["email", "phone", "either"] })
+      .notNull()
+      .default("either"),
   },
-  (table) => [check("organization_brand_color_check", sql`${table.brandColor} ~ '^#[0-9a-f]{6}$'`)]
+  (table) => [
+    check("organization_brand_color_check", sql`${table.brandColor} ~ '^#[0-9a-f]{6}$'`),
+    check(
+      "organization_contact_rule_check",
+      sql`${table.contactRule} in ('email', 'phone', 'either')`
+    ),
+  ]
 );

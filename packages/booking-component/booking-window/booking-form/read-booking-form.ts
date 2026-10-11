@@ -2,6 +2,7 @@
 // schema the route checks, before anything is sent. Every error is tied to its field, in the
 // form's own order, so the first one is where focus goes.
 
+import { missingContact } from "@scheduleads-app/shared/missing-contact";
 import { createBookingValidationSchema } from "@scheduleads-app/shared/zod-validation";
 
 import type {
@@ -18,7 +19,8 @@ export type BookingFormChoiceType = {
   bookingLinkId: string;
   startsAt: string;
   personId: string | null; // null = any available
-  asksAddress: boolean; // the service's own setting: no address box, and none sent, when false
+  // The service's own setting: no address box, and none sent, when not asked.
+  addressMode: "required" | "optional" | "not_asked";
 };
 
 export type ReadBookingFormResultType =
@@ -32,10 +34,10 @@ const filled = (text: string) => (text.trim() === "" ? undefined : text.trim());
 
 export function readBookingForm(
   values: BookingFormValuesType,
-  questions: BookingBusinessType["questions"],
+  business: Pick<BookingBusinessType, "questions" | "contactRule">,
   choice: BookingFormChoiceType
 ): ReadBookingFormResultType {
-  const answered = questions.filter((question) => filled(values.answers[question.id] ?? ""));
+  const { questions } = business;
   const request = {
     bookingLinkId: choice.bookingLinkId,
     startsAt: choice.startsAt,
@@ -46,10 +48,15 @@ export function readBookingForm(
       email: filled(values.email),
       phone: filled(values.phone),
     },
-    ...(choice.asksAddress ? { location: values.location.trim() } : {}), // empty: "Enter the address."
+    // Required: always sent, so an empty one is "Enter the address."; optional: only when written.
+    ...(choice.addressMode === "required" ? { location: values.location.trim() } : {}),
+    ...(choice.addressMode === "optional" ? { location: filled(values.location) } : {}),
     details: filled(values.details),
-    answers: answered.map((question) => ({
+    // Every question shown, with its words, a blank one included: the route then tells a question
+    // the owner added after this form opened from one left blank here.
+    answers: questions.map((question) => ({
       questionId: question.id,
+      question: question.label,
       answer: (values.answers[question.id] ?? "").trim(),
     })),
     ...(values.laterTextsYes ? { laterTextsYes: true } : {}), // no tick: nothing sent
@@ -59,10 +66,13 @@ export function readBookingForm(
   const parsed = createBookingValidationSchema.safeParse(request);
   if (!parsed.success) {
     for (const issue of parsed.error.issues) {
-      const field = fieldOf(issue.path, answered) ?? "form";
+      const field = fieldOf(issue.path, questions) ?? "form";
       if (!found.has(field)) found.set(field, issue.message);
     }
   }
+  // The business's contact rule, checked the same way the route checks it.
+  const missing = missingContact(business.contactRule, request.customer);
+  if (missing && !found.has(missing.field)) found.set(missing.field, missing.message);
   // The route asks for a required question's answer too; here it is said before sending.
   for (const question of questions) {
     const field: BookingFormFieldType = `answer:${question.id}`;
@@ -93,7 +103,7 @@ export function readBookingForm(
 // number of answers).
 function fieldOf(
   path: PropertyKey[],
-  answered: BookingBusinessType["questions"]
+  questions: BookingBusinessType["questions"]
 ): BookingFormFieldType | null {
   const [first, second] = path;
   if (first === "customer" && (second === "name" || second === "email" || second === "phone")) {
@@ -101,7 +111,7 @@ function fieldOf(
   }
   if (first === "location" || first === "details") return first;
   if (first === "answers" && typeof second === "number") {
-    const question = answered[second];
+    const question = questions[second];
     return question ? `answer:${question.id}` : null;
   }
   return null;

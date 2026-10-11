@@ -83,6 +83,12 @@ export function BookingFormView({
     setWordsShown((count) => count + 1);
   };
 
+  // Under both boxes only when either one will do; otherwise the required one is marked.
+  const eitherHint =
+    business.contactRule === "either"
+      ? "An email or a phone. At least one is required."
+      : undefined;
+
   const errorOf = (field: BookingFormFieldType) =>
     errors.find((error) => error.field === field)?.message ?? null;
 
@@ -95,7 +101,7 @@ export function BookingFormView({
 
   async function book() {
     if (sendingNow.current) return;
-    const read = readBookingForm(form, business.questions, choice);
+    const read = readBookingForm(form, business, choice);
     if (read.state === "errors") {
       const fieldErrors = read.errors.filter((error) => error.field !== "form");
       const formError = read.errors.find((error) => error.field === "form");
@@ -221,7 +227,7 @@ export function BookingFormView({
         {field(
           "email",
           "Email",
-          false,
+          business.contactRule === "email",
           (props) => (
             <input
               {...props}
@@ -231,12 +237,12 @@ export function BookingFormView({
               onChange={(event) => edit(["email", "phone"], { ...form, email: event.target.value })}
             />
           ),
-          "An email or a phone. At least one is required."
+          eitherHint
         )}
         {field(
           "phone",
           "Phone",
-          false,
+          business.contactRule === "phone",
           (props) => (
             <input
               {...props}
@@ -246,7 +252,7 @@ export function BookingFormView({
               onChange={(event) => edit(["email", "phone"], { ...form, phone: event.target.value })}
             />
           ),
-          "An email or a phone. At least one is required."
+          eitherHint
         )}
         {business.laterTextsYesWords && (
           <label className="sa-check">
@@ -260,8 +266,8 @@ export function BookingFormView({
             {business.laterTextsYesWords}
           </label>
         )}
-        {choice.asksAddress &&
-          field("location", "Address", true, (props) => (
+        {choice.addressMode !== "not_asked" &&
+          field("location", "Address", choice.addressMode === "required", (props) => (
             <input
               {...props}
               type="text"

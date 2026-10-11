@@ -96,6 +96,7 @@ const ACCOUNTS = [
       slug: "painting-dev",
       // Who does the job (feature 9): Primo sends whoever is free, so the customer never picks.
       personChoice: "business_assigns",
+      contactRule: "either", // today's rule; Settings > Booking form changes it
       // Its own booking questions (feature 9), as Primo would ask them.
       questions: [
         { label: "Interior or exterior?", required: true },
@@ -162,20 +163,20 @@ const ACCOUNTS = [
         {
           name: "Interior estimate",
           durationMinutes: 60,
-          asksAddress: true,
+          addressMode: "required",
           bufferAfterMinutes: 15,
         },
         {
           name: "Exterior estimate",
           durationMinutes: 45,
-          asksAddress: true,
+          addressMode: "required",
           bufferBeforeMinutes: 15,
           bufferAfterMinutes: 15,
         },
         {
           name: "Colour consultation",
           durationMinutes: 30,
-          asksAddress: true,
+          addressMode: "required",
           bufferAfterMinutes: 10,
         },
       ] satisfies ServiceSeedType[],
@@ -190,6 +191,7 @@ const ACCOUNTS = [
       slug: "clinic-dev",
       // Who does the job (feature 9): a clinic's customer picks a practitioner, or any available.
       personChoice: "customer_picks",
+      contactRule: "either",
       questions: [
         { label: "Any allergies or skin conditions?", required: true },
         { label: "Is this your first visit?", required: false },
@@ -260,54 +262,64 @@ const ACCOUNTS = [
       // Massages and the wrap leave 15 minutes after, to turn the room over. Ticked like Face and
       // Body; the peel ticks no one, so anyone can do it.
       services: [
-        { name: "Deep Cleansing Facial", durationMinutes: 75, asksAddress: true, ticked: FACIALS },
-        { name: "Dermaplaning Facial", durationMinutes: 60, asksAddress: true, ticked: FACIALS },
-        { name: "Hydra Spa Facial", durationMinutes: 70, asksAddress: true, ticked: FACIALS },
+        {
+          name: "Deep Cleansing Facial",
+          durationMinutes: 75,
+          addressMode: "required",
+          ticked: FACIALS,
+        },
+        {
+          name: "Dermaplaning Facial",
+          durationMinutes: 60,
+          addressMode: "required",
+          ticked: FACIALS,
+        },
+        { name: "Hydra Spa Facial", durationMinutes: 70, addressMode: "required", ticked: FACIALS },
         {
           name: "Chemical Peel",
           durationMinutes: 30,
-          asksAddress: true,
+          addressMode: "required",
           slotIntervalMinutes: 15, // the one dev service whose start times repeat more often than its length
           ticked: ["Room 3 (massage, facials)"],
         },
         {
           name: "Relaxation Massage",
           durationMinutes: 60,
-          asksAddress: true,
+          addressMode: "required",
           bufferAfterMinutes: 15,
           ticked: MASSAGES,
         },
         {
           name: "Relaxation Massage, 90 min",
           durationMinutes: 90,
-          asksAddress: true,
+          addressMode: "required",
           bufferAfterMinutes: 15,
           ticked: MASSAGES,
         },
         {
           name: "Deep Tissue Massage",
           durationMinutes: 75,
-          asksAddress: true,
+          addressMode: "required",
           bufferAfterMinutes: 15,
           ticked: MASSAGES,
         },
         {
           name: "Lymphatic Drainage Massage",
           durationMinutes: 60,
-          asksAddress: true,
+          addressMode: "required",
           bufferAfterMinutes: 15,
           ticked: MASSAGES,
         },
         {
           name: "Laser Hair Removal",
           durationMinutes: 10,
-          asksAddress: true,
+          addressMode: "required",
           ticked: ["Mei", "Room 5 (laser)"],
         },
         {
           name: "Body Wrap",
           durationMinutes: 60,
-          asksAddress: true,
+          addressMode: "required",
           bufferAfterMinutes: 15,
           ticked: ["Priya", "Room 4 (massage, body)"],
         },
@@ -501,6 +513,7 @@ try {
       const shape = clientSetupValidationSchema.parse({
         slug: business.slug,
         personChoice: business.personChoice,
+        contactRule: business.contactRule,
         questions: business.questions,
         hours: business.hours,
         people: business.people,

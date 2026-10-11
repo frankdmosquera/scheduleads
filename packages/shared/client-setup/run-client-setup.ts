@@ -122,6 +122,18 @@ async function findDifferences(
     .orderBy(bookingQuestion.position);
   if (questions.length) differs("questions", questions, setup.questions);
 
+  // Set by the apply only while the business has no service; after that a different one is listed.
+  const [business] = await tx
+    .select({ contactRule: organization.contactRule })
+    .from(organization)
+    .where(eq(organization.id, organizationId));
+  const [anyService] = await tx
+    .select({ id: bookingLink.id })
+    .from(bookingLink)
+    .where(eq(bookingLink.organizationId, organizationId))
+    .limit(1);
+  if (anyService) differs("contactRule", business?.contactRule, setup.contactRule);
+
   for (const service of setup.services) {
     const [saved] = await tx
       .select()
@@ -148,7 +160,7 @@ async function findDifferences(
       saved.slotIntervalMinutes,
       service.slotIntervalMinutes ?? null
     );
-    differs(`"${service.name}", asksAddress`, saved.asksAddress, service.asksAddress);
+    differs(`"${service.name}", addressMode`, saved.addressMode, service.addressMode);
     differs(`"${service.name}", personChoice`, saved.personChoice, setup.personChoice);
   }
 

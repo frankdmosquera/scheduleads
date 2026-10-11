@@ -34,17 +34,17 @@ const insertService = (columns: { layout?: string; personChoice?: string }) => {
   const slug = `facial-${randomUUID().slice(0, 8)}`;
   if (columns.layout === undefined) {
     return db.execute(sql`insert into booking_link
-      (id, "organizationId", name, slug, "durationMinutes", "personChoice", "asksAddress")
-      values (${id}, ${business}, 'Facial', ${slug}, 60, ${columns.personChoice ?? null}, true)`);
+      (id, "organizationId", name, slug, "durationMinutes", "personChoice", "addressMode")
+      values (${id}, ${business}, 'Facial', ${slug}, 60, ${columns.personChoice ?? null}, 'required')`);
   }
   if (columns.personChoice === undefined) {
     return db.execute(sql`insert into booking_link
-      (id, "organizationId", name, slug, "durationMinutes", layout, "asksAddress")
-      values (${id}, ${business}, 'Facial', ${slug}, 60, ${columns.layout}, true)`);
+      (id, "organizationId", name, slug, "durationMinutes", layout, "addressMode")
+      values (${id}, ${business}, 'Facial', ${slug}, 60, ${columns.layout}, 'required')`);
   }
   return db.execute(sql`insert into booking_link
-    (id, "organizationId", name, slug, "durationMinutes", layout, "personChoice", "asksAddress")
-    values (${id}, ${business}, 'Facial', ${slug}, 60, ${columns.layout}, ${columns.personChoice}, true)`);
+    (id, "organizationId", name, slug, "durationMinutes", layout, "personChoice", "addressMode")
+    values (${id}, ${business}, 'Facial', ${slug}, 60, ${columns.layout}, ${columns.personChoice}, 'required')`);
 };
 
 beforeAll(async () => {

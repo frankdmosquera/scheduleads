@@ -113,15 +113,10 @@ export const publicBookingsRoutes = new Hono()
             return c.json(notBookableHere, 404);
           case "person_not_taken":
             return c.json(personNotTaken, 400);
-          case "unknown_question":
-            return c.json(
-              refuse("bad_request", "That is not one of this business's questions."),
-              400
-            );
+          case "contact_needed":
+            return c.json(refuse("bad_request", result.message), 400);
           case "answered_twice":
             return c.json(refuse("bad_request", "Each question takes one answer."), 400);
-          case "address_needed":
-            return c.json(refuse("bad_request", "Enter the address."), 400);
           case "too_many_tries":
             c.header("Retry-After", String(retryAfterSeconds));
             return c.json(tooManyTries, 429);

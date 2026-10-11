@@ -13,6 +13,7 @@ import {
   bookingLink,
   bookingLinkResource,
   bookingQuestion,
+  organization,
   resource,
   standbyDate,
   workerTextSettings,
@@ -148,6 +149,18 @@ export async function applyBusinessShape(
     hoursMade++;
   }
 
+  // Its contact rule, only while it has no service yet: after that it is the owner's, on Settings.
+  const [anyService] = await tx
+    .select({ id: bookingLink.id })
+    .from(bookingLink)
+    .where(eq(bookingLink.organizationId, organizationId))
+    .limit(1);
+  if (!anyService)
+    await tx
+      .update(organization)
+      .set({ contactRule: shape.contactRule })
+      .where(eq(organization.id, organizationId));
+
   let servicesMade = 0;
   let ticksMade = 0;
   for (const { ticked = [], ...service } of shape.services) {
@@ -204,6 +217,7 @@ export async function applyBusinessShape(
 
   return [
     questionsMade && `${shape.questions.length} booking questions`,
+    !anyService && "the contact rule",
     !existingBusinessHours && "business hours",
     peopleMade && `${peopleMade} people and places`,
     hoursMade && `${hoursMade} people's own hours`,

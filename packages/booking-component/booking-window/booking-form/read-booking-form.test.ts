@@ -11,8 +11,9 @@ const choice = {
   bookingLinkId: "facial",
   startsAt: "2026-10-14T16:00:00.000Z",
   personId: null,
-  asksAddress: true,
+  addressMode: "required" as const,
 };
+const business = { questions, contactRule: "either" as const };
 const filledForm = {
   ...newBookingForm(),
   name: " Jane Doe ",
@@ -25,15 +26,15 @@ const filledForm = {
 
 describe("readBookingForm", () => {
   it("for a service that asks no address, sends none and asks for none (the address fix)", () => {
-    const noAddress = { ...choice, asksAddress: false };
-    const read = readBookingForm({ ...filledForm, location: "" }, questions, noAddress);
+    const noAddress = { ...choice, addressMode: "not_asked" as const };
+    const read = readBookingForm({ ...filledForm, location: "" }, business, noAddress);
 
     expect(read.state).toBe("ok");
     expect(read.state === "ok" && read.request).not.toHaveProperty("location");
   });
 
   it("for a service that asks, an empty address is said under Address", () => {
-    const read = readBookingForm({ ...filledForm, location: " " }, questions, choice);
+    const read = readBookingForm({ ...filledForm, location: " " }, business, choice);
 
     expect(read).toEqual({
       state: "errors",
@@ -41,8 +42,8 @@ describe("readBookingForm", () => {
     });
   });
 
-  it("sends the form as the route reads it: trimmed, empty boxes left out, any available as no person", () => {
-    const read = readBookingForm(filledForm, questions, choice);
+  it("sends the form as the route reads it: trimmed, empty boxes left out, every question shown, any available as no person", () => {
+    const read = readBookingForm(filledForm, business, choice);
 
     expect(read).toEqual({
       state: "ok",
@@ -53,19 +54,22 @@ describe("readBookingForm", () => {
         customer: { name: "Jane Doe", email: undefined, phone: "403 555 0100" },
         location: "12 Elm Street",
         details: undefined,
-        answers: [{ questionId: "q-colour", answer: "Blue" }],
+        answers: [
+          { questionId: "q-colour", question: "Which colour?", answer: "Blue" },
+          { questionId: "q-pets", question: "Any pets?", answer: "" },
+        ],
       },
     });
   });
 
   it("sends the picked person when there is one", () => {
-    const read = readBookingForm(filledForm, questions, { ...choice, personId: "ana" });
+    const read = readBookingForm(filledForm, business, { ...choice, personId: "ana" });
 
     expect(read.state === "ok" && read.request.personId).toBe("ana");
   });
 
   it("asks for an email or a phone under the email when both are empty", () => {
-    const read = readBookingForm({ ...filledForm, phone: "" }, questions, choice);
+    const read = readBookingForm({ ...filledForm, phone: "" }, business, choice);
 
     expect(read).toEqual({
       state: "errors",
@@ -76,7 +80,7 @@ describe("readBookingForm", () => {
   });
 
   it("says a wrong email under the email", () => {
-    const read = readBookingForm({ ...filledForm, email: "jane@" }, questions, choice);
+    const read = readBookingForm({ ...filledForm, email: "jane@" }, business, choice);
 
     expect(read).toEqual({
       state: "errors",
@@ -87,7 +91,7 @@ describe("readBookingForm", () => {
   it("lists every error in the form's order, a required question left empty among them", () => {
     const read = readBookingForm(
       { ...filledForm, name: "  ", location: "", answers: { "q-colour": " " } },
-      questions,
+      business,
       choice
     );
 
@@ -105,7 +109,7 @@ describe("readBookingForm", () => {
     // The second question is answered too long, the first left empty: each error is its own.
     const read = readBookingForm(
       { ...filledForm, answers: { "q-colour": "", "q-pets": "x".repeat(501) } },
-      questions,
+      business,
       choice
     );
 
@@ -121,7 +125,7 @@ describe("readBookingForm", () => {
   it("ties a too-long answer to its own question when every question is answered", () => {
     const read = readBookingForm(
       { ...filledForm, answers: { "q-colour": "Blue", "q-pets": "x".repeat(501) } },
-      questions,
+      business,
       choice
     );
 
@@ -133,7 +137,7 @@ describe("readBookingForm", () => {
     expect(
       readBookingForm(
         { ...filledForm, answers: { "q-colour": "x".repeat(501), "q-pets": "Yes" } },
-        questions,
+        business,
         choice
       )
     ).toEqual({
@@ -150,15 +154,17 @@ describe("readBookingForm", () => {
     }));
     const answers = Object.fromEntries(many.map((question) => [question.id, "Yes"]));
 
-    expect(readBookingForm({ ...filledForm, answers }, many, choice)).toEqual({
+    expect(
+      readBookingForm({ ...filledForm, answers }, { ...business, questions: many }, choice)
+    ).toEqual({
       state: "errors",
       errors: [{ field: "form", message: "That is too many answers." }],
     });
   });
 
   it("sends a tick for later texts, and nothing at all without one (decision 13)", () => {
-    const ticked = readBookingForm({ ...filledForm, laterTextsYes: true }, questions, choice);
-    const unticked = readBookingForm(filledForm, questions, choice);
+    const ticked = readBookingForm({ ...filledForm, laterTextsYes: true }, business, choice);
+    const unticked = readBookingForm(filledForm, business, choice);
 
     expect(ticked.state === "ok" && ticked.request.laterTextsYes).toBe(true);
     expect(unticked.state === "ok" && "laterTextsYes" in unticked.request).toBe(false);
@@ -169,7 +175,7 @@ describe("readBookingForm", () => {
       expect(
         readBookingForm(
           { ...filledForm, email: "jane@example.com", phone, laterTextsYes: true },
-          questions,
+          business,
           choice
         )
       ).toEqual({
@@ -177,6 +183,30 @@ describe("readBookingForm", () => {
         errors: [{ field: "phone", message: "Enter a phone that can get texts." }],
       });
     }
+  });
+
+  // Feature 12f: the business's contact rule and the service's address choice, as the route checks.
+  it("for a business that requires a phone, an email alone is said under Phone", () => {
+    const phoneOnly = { ...business, contactRule: "phone" as const };
+    const read = readBookingForm(
+      { ...filledForm, email: "jane@example.com", phone: "" },
+      phoneOnly,
+      choice
+    );
+
+    expect(read).toEqual({
+      state: "errors",
+      errors: [{ field: "phone", message: "Enter a phone number." }],
+    });
+  });
+
+  it("for a service where the address is optional, sends it only when written", () => {
+    const optional = { ...choice, addressMode: "optional" as const };
+    const empty = readBookingForm({ ...filledForm, location: " " }, business, optional);
+    const written = readBookingForm(filledForm, business, optional);
+
+    expect(empty.state === "ok" && empty.request.location).toBeUndefined();
+    expect(written.state === "ok" && written.request.location).toBe("12 Elm Street");
   });
 
   it("gives each new form its own key, of the shape the route takes", () => {

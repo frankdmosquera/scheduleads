@@ -12,6 +12,7 @@ const callHours = [{ startMinute: 8 * 60, endMinute: 18 * 60 }];
 export default {
   slug: "agentsweb",
   personChoice: "business_assigns", // Frank is the one person, the business's first
+  contactRule: "either", // an email or a phone, whichever the visitor leaves
   // The card asks only a name and an email or phone, which the booking window asks itself.
   questions: [],
   hours: {
@@ -24,7 +25,7 @@ export default {
   people: [],
   services: [
     // A call needs no address.
-    { name: "Video call", durationMinutes: 30, slotIntervalMinutes: 30, asksAddress: false },
-    { name: "Phone call", durationMinutes: 30, slotIntervalMinutes: 30, asksAddress: false },
+    { name: "Video call", durationMinutes: 30, slotIntervalMinutes: 30, addressMode: "not_asked" },
+    { name: "Phone call", durationMinutes: 30, slotIntervalMinutes: 30, addressMode: "not_asked" },
   ],
 } satisfies ClientSetupInputType;
