@@ -77,7 +77,7 @@ async function makeClinic(name: string) {
       durationMinutes: 75,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "customer_picks",
       bufferAfterMinutes: 15,
     },
@@ -89,7 +89,7 @@ async function makeClinic(name: string) {
       durationMinutes: 30,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "customer_picks",
       slotIntervalMinutes: 15,
     },

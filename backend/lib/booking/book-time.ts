@@ -14,12 +14,14 @@ import {
   laterTextsYes,
   lead,
   member,
+  organization,
   resource,
 } from "@scheduleads-app/shared/db";
 import { localDate } from "@scheduleads-app/shared/local-date";
 import { textablePhoneNumber } from "@scheduleads-app/shared/textable-phone-number";
 import {
   contactValidationSchema,
+  missingContact,
   type ContactInputType,
 } from "@scheduleads-app/shared/zod-validation";
 
@@ -89,7 +91,8 @@ export type BookTimeResultType =
         | "address_needed"
         | "too_many_tries";
     }
-  | { booked: false; reason: "answer_needed"; question: string }; // the question's words
+  | { booked: false; reason: "answer_needed"; question: string } // the question's words
+  | { booked: false; reason: "contact_needed"; field: "email" | "phone"; message: string };
 
 const MINUTE_MS = 60_000;
 const NOT_FOUND = { booked: false, reason: "not_found" } as const;
@@ -185,9 +188,11 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
       bufferBeforeMinutes: bookingLink.bufferBeforeMinutes,
       bufferAfterMinutes: bookingLink.bufferAfterMinutes,
       personChoice: bookingLink.personChoice,
-      asksAddress: bookingLink.asksAddress,
+      addressMode: bookingLink.addressMode,
+      contactRule: organization.contactRule,
     })
     .from(bookingLink)
+    .innerJoin(organization, eq(organization.id, bookingLink.organizationId))
     .where(
       and(
         eq(bookingLink.organizationId, organizationId),
@@ -201,9 +206,16 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
   // owner may. Asked after the form's own booking, so a retry of a booked form still gets it.
   if (source !== "manual" && service.personChoice === "business_assigns" && personId !== null)
     return PERSON_NOT_TAKEN;
-  // The address, when the service asks for it (the address fix); the owner, booking from a phone
-  // call, may leave it for later, as with the questions.
-  if (source !== "manual" && service.asksAddress && !input.location) return ADDRESS_NEEDED;
+  // What the business's form requires (feature 12f): its way to reach the customer, and the address
+  // when the service requires one. The owner, booking from a phone call, may leave both for later.
+  if (source !== "manual") {
+    const missing = missingContact(
+      service.contactRule,
+      contactValidationSchema.parse(input.customer)
+    );
+    if (missing) return { booked: false, reason: "contact_needed", ...missing };
+    if (service.addressMode === "required" && !input.location) return ADDRESS_NEEDED;
+  }
   // The business's own questions (feature 9, decision 5): a customer answers the required ones; the
   // owner, booking from a phone call, need not.
   const checkedAnswers = checkAnswers(
@@ -280,7 +292,8 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         placeId: first.placeId,
         startsAt,
         endsAt,
-        location: service.asksAddress ? input.location : null, // never kept when not asked
+        // Never kept when not asked: a form opened before the address was switched off still books.
+        location: service.addressMode === "not_asked" ? null : input.location,
         requestKey,
       });
       const held = await holdFirstFreeChoice(organizationId, choices, span, bookingId, tx);

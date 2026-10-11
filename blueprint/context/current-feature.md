@@ -68,7 +68,7 @@ default; P2/P3 are recorded and carried. `/complete` makes the final pass and me
   booking preview at http://localhost:3400/admin/booking-preview/painting-dev; Summit's questions
   are put back after.
 
-- [ ] **12f.2 What the form requires.** "Riverbend sets 'a phone' and its facial service's address
+- [x] **12f.2 What the form requires.** "Riverbend sets 'a phone' and its facial service's address
   to 'not asked': the booking preview asks for a phone, marks the email optional, and asks no
   address; a booking sent without a phone is refused. Summit sets its estimate's address to 'asked,
   optional': a booking without one is taken."
@@ -112,12 +112,15 @@ questions: { label, required }[] }`; `contactRule` and `askLaterTextsYes` from 1
 `200 { questions }` as the GET's. `404 not_found` for an id not this business's.
 
 **`PUT /settings/booking-form/rules`** (12f.2) `{ contactRule, askLaterTextsYes }`, strict.
-`200` as the GET without `canEdit`; `409 no_text_settings` for a yes without text settings.
+`200 { contactRule, askLaterTextsYes }` as saved (amended at 12f.2: the card needs only these two);
+`409 no_text_settings` for a yes without text settings.
 
 **Booking (public)**: `customer.email` required when the rule is `email`, `customer.phone` when
 `phone`, one of them when `either` (today's rule); `location` required when the service's
-`addressMode` is `required`, taken when `optional`, refused when `not_asked`. Errors keep today's
-shape `400 { error: { code, message }, field }`. `answers` (amended after 12f.1's review) carries
+`addressMode` is `required`, taken when `optional`, ignored (not kept) when `not_asked` (Frank,
+2026-10-11, at 12f.2's plan: a form opened before the address was switched off still books). Errors keep the public
+route's shape, `400 { error: { code, message } }` with no `field` (amended at 12f.2: the booking
+window marks the field itself, with the same `missingContact`, before anything is sent). `answers` (amended after 12f.1's review) carries
 every question the form showed, `{ questionId, question, answer }`, the words as shown and a blank
 answer included: a required question shown and left blank is `400 "Answer: <words>"`; one the form
 never showed is left blank; an answer to a question removed since is kept under its shown words.

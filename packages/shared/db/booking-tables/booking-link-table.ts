@@ -35,7 +35,9 @@ export const bookingLink = pgTable(
     layout: text("layout", { enum: ["month"] }).notNull(),
     // Whether the customer picks who does it, or the business sends whoever is free.
     personChoice: text("personChoice", { enum: ["customer_picks", "business_assigns"] }).notNull(),
-    asksAddress: boolean("asksAddress").notNull(), // the business's choice per service, so no default (decision 30)
+    // Whether the window asks the customer's address, and must have it; the business's choice per
+    // service, so no default (decision 30).
+    addressMode: text("addressMode", { enum: ["required", "optional", "not_asked"] }).notNull(),
     active: boolean("active").notNull().default(true), // inactive reads as absent publicly
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })
@@ -61,6 +63,10 @@ export const bookingLink = pgTable(
     check(
       "booking_link_person_choice_check",
       sql`${table.personChoice} in ('customer_picks', 'business_assigns')`
+    ),
+    check(
+      "booking_link_address_mode_check",
+      sql`${table.addressMode} in ('required', 'optional', 'not_asked')`
     ),
   ]
 );

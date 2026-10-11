@@ -154,7 +154,7 @@ beforeAll(async () => {
       durationMinutes: 60,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "customer_picks",
     },
     {
@@ -165,7 +165,7 @@ beforeAll(async () => {
       durationMinutes: 60,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "customer_picks",
       active: false,
     },
@@ -177,7 +177,7 @@ beforeAll(async () => {
       durationMinutes: 60,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "business_assigns",
     },
   ]);
@@ -227,7 +227,7 @@ beforeAll(async () => {
       durationMinutes: 60,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "customer_picks",
     });
     await db.insert(bookingLinkResource).values({
@@ -362,13 +362,13 @@ describe("the address, asked per service (the address fix)", () => {
   beforeAll(async () => {
     await db
       .update(bookingLink)
-      .set({ asksAddress: false })
+      .set({ addressMode: "not_asked" })
       .where(eq(bookingLink.id, clinic.estimate));
   });
   afterAll(async () => {
     await db
       .update(bookingLink)
-      .set({ asksAddress: true })
+      .set({ addressMode: "required" })
       .where(eq(bookingLink.id, clinic.estimate));
   });
 
@@ -399,17 +399,91 @@ describe("the address, asked per service (the address fix)", () => {
     expect(await savedLocation((await response.json()).booking.id)).toBeNull();
   });
 
+  // Asked, optional (feature 12f): taken with or without one, and kept when given.
+  test("a service whose address is optional books with or without one", async () => {
+    await db
+      .update(bookingLink)
+      .set({ addressMode: "optional" })
+      .where(eq(bookingLink.id, clinic.estimate));
+    try {
+      const [first, second] = await estimateTimes();
+      const { location: _left, ...noAddress } = unpicked(first);
+      const without = await post(bookingsPath, noAddress);
+      const withOne = await post(bookingsPath, unpicked(second));
+
+      expect(without.status).toBe(201);
+      expect(await savedLocation((await without.json()).booking.id)).toBeNull();
+      expect(withOne.status).toBe(201);
+      expect(await savedLocation((await withOne.json()).booking.id)).toBe("12 Elm Street");
+    } finally {
+      await db
+        .update(bookingLink)
+        .set({ addressMode: "not_asked" })
+        .where(eq(bookingLink.id, clinic.estimate));
+    }
+  });
+
   test("each service in the list says whether it asks", async () => {
     const list = await (await app.request(`/public/${clinic.slug}/booking-links`)).json();
     const asks = Object.fromEntries(
-      list.bookingLinks.map((link: { id: string; asksAddress: boolean }) => [
+      list.bookingLinks.map((link: { id: string; addressMode: string }) => [
         link.id,
-        link.asksAddress,
+        link.addressMode,
       ])
     );
 
-    expect(asks[clinic.facial]).toBe(true);
-    expect(asks[clinic.estimate]).toBe(false);
+    expect(asks[clinic.facial]).toBe("required");
+    expect(asks[clinic.estimate]).toBe("not_asked");
+  });
+});
+
+describe("the business's contact rule (feature 12f)", () => {
+  const setRule = (contactRule: "email" | "phone" | "either") =>
+    db.update(organization).set({ contactRule }).where(eq(organization.id, clinic.id));
+  const sendWith = async (customer: Record<string, string>) => {
+    const [startsAt] = await freeTimes(clinic.mei);
+    const response = await post(
+      bookingsPath,
+      form(startsAt, { personId: clinic.mei, customer: { name: "Jane Doe", ...customer } })
+    );
+    if (response.status === 201) {
+      // Its time given back, so the test day lasts the file.
+      const { booking: made } = await response.clone().json();
+      await db
+        .update(commitment)
+        .set({ status: "cancelled" })
+        .where(eq(commitment.bookingId, made.id));
+    }
+    return response;
+  };
+  const refusedWith = async (response: Response) => {
+    expect(response.status).toBe(400);
+    return (await response.json()).error.message;
+  };
+  const email = `jane-${tag}@example.com`;
+  const phone = "403 555 0100";
+
+  afterAll(() => setRule("either"));
+
+  test("a phone: a booking with only an email is refused, one with a phone is taken", async () => {
+    await setRule("phone");
+    expect(await refusedWith(await sendWith({ email }))).toBe("Enter a phone number.");
+    expect((await sendWith({ phone })).status).toBe(201);
+  });
+
+  test("an email: a booking with only a phone is refused, one with an email is taken", async () => {
+    await setRule("email");
+    expect(await refusedWith(await sendWith({ phone }))).toBe("Enter an email.");
+    expect((await sendWith({ email })).status).toBe(201);
+  });
+
+  test("either one: one is enough, neither is refused", async () => {
+    await setRule("either");
+    expect(await refusedWith(await sendWith({}))).toBe(
+      "Enter an email or a phone number. At least one is required."
+    );
+    expect((await sendWith({ phone })).status).toBe(201);
+    expect((await sendWith({ email })).status).toBe(201);
   });
 });
 

@@ -10,7 +10,8 @@ import {
 
 export const bookingFormRoute = dashboardApiClient.settings["booking-form"];
 
-// The business's own questions in order, the ready-made sets, and whether this login may change them.
+// The business's own questions in order, the ready-made sets, what the form requires, and whether
+// this login may change them.
 export type BookingFormSettingsType = InferResponseType<typeof bookingFormRoute.$get, 200>;
 
 export async function fetchBookingForm(): Promise<SettingsReadResultType<BookingFormSettingsType>> {

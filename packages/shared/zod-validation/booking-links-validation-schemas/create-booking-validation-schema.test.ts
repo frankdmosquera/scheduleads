@@ -29,15 +29,11 @@ describe("the booking form", () => {
     });
   });
 
-  test("an email or a phone, either one is enough (decision 16)", () => {
+  // Which of the two must be there is the business's rule (missingContact), not this schema's.
+  test("an email, a phone or neither all pass the shape", () => {
     expect(message(form)).toBeUndefined();
     expect(message({ ...form, customer: { name: "Jane Doe", phone: "555 0100" } })).toBeUndefined();
-  });
-
-  test("neither an email nor a phone is refused", () => {
-    expect(message({ ...form, customer: { name: "Jane Doe" } })).toBe(
-      "Enter an email or a phone number. At least one is required."
-    );
+    expect(message({ ...form, customer: { name: "Jane Doe" } })).toBeUndefined();
   });
 
   test("a start with an offset is an instant too", () => {

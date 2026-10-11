@@ -26,7 +26,8 @@ export type RefusalCodeType =
   | "name_taken" // settings: another person or place of the business has that name
   | "no_sending_address" // settings: a work email saved before the business has a sending address
   | "not_closed" // settings: opening a day that is not closed for whoever it opens for
-  | "no_usual_hours"; // settings: opening a day on a weekday nobody it opens for works
+  | "no_usual_hours" // settings: opening a day on a weekday nobody it opens for works
+  | "no_text_settings"; // settings: the yes to later texts asked before the business has text settings
 
 export type RefusalType = {
   error: {

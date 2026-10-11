@@ -39,7 +39,10 @@ export const serviceValidationSchema = z
     personChoice: z.enum(["customer_picks", "business_assigns"], {
       error: "Pick who chooses the person.",
     }),
-    asksAddress: z.boolean({ error: "Pick whether it asks the customer's address." }),
+    // Whether the booking form asks the customer's address, and must have it.
+    addressMode: z.enum(["required", "optional", "not_asked"], {
+      error: "Pick whether it asks the customer's address.",
+    }),
     active: z.boolean(), // false: hidden, no longer offered; its bookings stay
   })
   .strict();

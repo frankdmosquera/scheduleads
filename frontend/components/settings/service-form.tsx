@@ -102,7 +102,7 @@ function formValuesOf(service: ServiceSettingsType): ServiceInputType {
     bufferAfterMinutes: service.bufferAfterMinutes,
     slotIntervalMinutes: service.slotIntervalMinutes,
     personChoice: service.personChoice,
-    asksAddress: service.asksAddress,
+    addressMode: service.addressMode,
     active: service.active,
   };
 }
@@ -397,15 +397,16 @@ export function ServiceForm({
         error={ticksError?.field === "placeIds" ? ticksError.message : undefined}
       />
       <Controller
-        name="asksAddress"
+        name="addressMode"
         control={form.control}
         render={({ field, fieldState }) => (
           <ChoiceField
-            name={`${idBase}-asks-address`}
-            legend="Asks the customer's address"
+            name={`${idBase}-address-mode`}
+            legend="The customer's address"
             choices={[
-              { value: true, label: "Yes, we go to them" },
-              { value: false, label: "No" },
+              { value: "required", label: "Asked and required: we go to them" },
+              { value: "optional", label: "Asked, optional" },
+              { value: "not_asked", label: "Not asked" },
             ]}
             value={field.value}
             onChange={edited(field.onChange)}

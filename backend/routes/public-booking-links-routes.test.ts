@@ -105,7 +105,7 @@ beforeAll(async () => {
       durationMinutes: 30,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "customer_picks",
     },
     {
@@ -116,7 +116,7 @@ beforeAll(async () => {
       durationMinutes: 30,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "customer_picks",
     },
     {
@@ -127,7 +127,7 @@ beforeAll(async () => {
       durationMinutes: 60,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "customer_picks",
     },
     {
@@ -138,7 +138,7 @@ beforeAll(async () => {
       durationMinutes: 30,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "customer_picks",
       active: false,
     },
@@ -171,6 +171,7 @@ describe("the documented shape", () => {
       name: "Summit Painting (dev)",
       logo: null,
       phone: "403 555 0100",
+      contactRule: "either", // which of email and phone the form marks required (feature 12f)
       // Its own questions, in its order (feature 9).
       questions: [
         { id: expect.any(String), label: "Interior or exterior?", required: true },
@@ -188,7 +189,7 @@ describe("the documented shape", () => {
     for (const link of body.bookingLinks) {
       expect(Object.keys(link).sort()).toEqual(
         [
-          "asksAddress",
+          "addressMode",
           "bufferAfterMinutes",
           "bufferBeforeMinutes",
           "description",
@@ -210,7 +211,7 @@ describe("the documented shape", () => {
     expect(body.bookingLink.id).toBe(paintingLinkId);
     expect(Object.keys(body.bookingLink).sort()).toEqual(
       [
-        "asksAddress",
+        "addressMode",
         "bufferAfterMinutes",
         "bufferBeforeMinutes",
         "description",
@@ -543,7 +544,7 @@ describe("who picks the person (feature 9, decision 3)", () => {
         durationMinutes: 60,
         layout: "month" as const,
         personChoice: "customer_picks" as const,
-        asksAddress: true,
+        addressMode: "required",
       }))
     );
     await db.insert(bookingLinkResource).values(

@@ -93,7 +93,7 @@ async function makeClinic(name: string, { withRoom = false } = {}) {
     durationMinutes: 60,
     layout: "month",
 
-    asksAddress: true,
+    addressMode: "required",
     personChoice: "customer_picks",
     slotIntervalMinutes: 30,
   });

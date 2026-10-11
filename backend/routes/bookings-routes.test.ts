@@ -200,7 +200,7 @@ beforeAll(async () => {
       slug: "estimate",
       durationMinutes: 60,
       layout: "month",
-      asksAddress: false,
+      addressMode: "not_asked",
       personChoice: "customer_picks",
     }))
   );

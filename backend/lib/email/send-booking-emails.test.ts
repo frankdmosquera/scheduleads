@@ -109,7 +109,7 @@ async function makeBusiness(
     durationMinutes: 60,
     layout: "month",
 
-    asksAddress: true,
+    addressMode: "required",
     personChoice: "customer_picks",
   });
   await db

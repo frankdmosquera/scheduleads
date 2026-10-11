@@ -16,12 +16,10 @@ export const createBookingValidationSchema = z
     startsAt: z.iso.datetime({ offset: true, error: "Pick one of the times offered." }), // Z or an offset
     personId: idOf("That is not a person id.").optional(), // left out = any available
     requestKey: idOf("That is not a booking form key.").optional(), // one per form (decision 7)
-    // A way to reach the customer: an email or a phone, at least one (decision 16).
-    customer: contactValidationSchema.refine(
-      (customer) => customer.email !== undefined || customer.phone !== undefined,
-      { error: "Enter an email or a phone number. At least one is required.", path: ["email"] }
-    ),
-    // Required by the API only for a service that asks for it; left out otherwise.
+    // Which of email and phone must be there is the business's own rule, checked by the API and the
+    // booking window with missingContact (feature 12f).
+    customer: contactValidationSchema,
+    // Required by the API only for a service that requires it; kept when optional, never otherwise.
     location: z
       .string("Enter the address.")
       .trim()

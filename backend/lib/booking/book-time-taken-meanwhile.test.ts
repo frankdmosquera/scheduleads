@@ -76,7 +76,7 @@ describe("booking a time", () => {
       durationMinutes: 75,
       layout: "month",
 
-      asksAddress: true,
+      addressMode: "required",
       personChoice: "customer_picks",
     });
     await db.insert(bookingLinkResource).values([
@@ -97,7 +97,7 @@ describe("booking a time", () => {
       personId: null, // "any available": Ana first by name (no bookings either), then Mei
       startsAt: NINE,
       requestKey: randomUUID(),
-      customer: { name: "Jane" },
+      customer: { name: "Jane", email: "jane@example.com" },
       location: "12 Main Street",
       details: null,
       source: "widget",

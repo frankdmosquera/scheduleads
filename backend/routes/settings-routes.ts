@@ -7,6 +7,7 @@ import { validator } from "hono/validator";
 import type { ZodError } from "zod";
 
 import {
+  bookingFormRulesValidationSchema,
   bookingQuestionsValidationSchema,
   businessHoursValidationSchema,
   addResourceValidationSchema,
@@ -36,6 +37,7 @@ import { findPeopleSettings } from "../lib/settings/find-people-settings.js";
 import { findServicesSettings } from "../lib/settings/find-services-settings.js";
 import { openClosedDay } from "../lib/settings/open-closed-day.js";
 import { refuseHolidayPicks } from "../lib/settings/refuse-holiday-picks.js";
+import { saveBookingFormRules } from "../lib/settings/save-booking-form-rules.js";
 import { saveBookingQuestions } from "../lib/settings/save-booking-questions.js";
 import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
 import { saveHolidayPicks } from "../lib/settings/save-holiday-picks.js";
@@ -289,7 +291,8 @@ export const settingsRoutes = new Hono()
     }
   )
 
-  // The Booking form page: the business's own questions in order, and the ready-made sets.
+  // The Booking form page: the business's own questions in order, the ready-made sets, and what the
+  // form requires (its contact rule, and the yes to later texts: null without text settings).
   .get(
     "/booking-form",
     requireOrganizationMiddleware,
@@ -331,6 +334,34 @@ export const settingsRoutes = new Hono()
           404
         );
       return c.json({ questions: saved.questions }, 200);
+    }
+  )
+
+  // What the form requires: the contact rule and the yes to later texts, which needs text settings.
+  .put(
+    "/booking-form/rules",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = bookingFormRulesValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const saved = await saveBookingFormRules(
+        c.get("organization").organizationId,
+        c.req.valid("json")
+      );
+      if (!saved.ok)
+        return c.json(
+          refuse(
+            "no_text_settings",
+            "Set up texts for this business first: the yes is to texts it sends."
+          ),
+          409
+        );
+      return c.json(saved.rules, 200);
     }
   )
 

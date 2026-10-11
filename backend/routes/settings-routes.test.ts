@@ -1,7 +1,7 @@
 // The owner's Hours settings, called through the real app against the local database. Every
 // business, person and login here is a throwaway made below and removed after.
 
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
@@ -40,6 +40,7 @@ const {
   organization,
   pipelineStage,
   resource,
+  textSettings,
   user,
 } = await import("@scheduleads-app/shared/db");
 
@@ -233,7 +234,7 @@ beforeAll(async () => {
     slug: "visit",
     durationMinutes: 60,
     layout: "month",
-    asksAddress: false,
+    addressMode: "not_asked",
     personChoice: "customer_picks",
   });
   await db.insert(bookingLink).values({
@@ -243,7 +244,7 @@ beforeAll(async () => {
     slug: "estimate",
     durationMinutes: 60,
     layout: "month",
-    asksAddress: false,
+    addressMode: "not_asked",
     personChoice: "customer_picks",
   });
   for (const email of [
@@ -481,7 +482,7 @@ const cabinet = {
   bufferAfterMinutes: 15,
   slotIntervalMinutes: null,
   personChoice: "customer_picks",
-  asksAddress: false,
+  addressMode: "not_asked",
   active: true,
 };
 
@@ -571,10 +572,15 @@ describe("the Services settings", () => {
       bufferAfterMinutes: estimate.bufferAfterMinutes,
       slotIntervalMinutes: estimate.slotIntervalMinutes,
       personChoice: estimate.personChoice,
-      asksAddress: estimate.asksAddress,
+      addressMode: "optional", // asked, not required (feature 12f)
       active: false,
     });
     expect(hidden.status).toBe(200);
+    const [saved] = await db
+      .select({ addressMode: bookingLink.addressMode })
+      .from(bookingLink)
+      .where(eq(bookingLink.id, estimateId));
+    expect(saved?.addressMode).toBe("optional");
     expect(await listed()).not.toContain(estimateId);
     const [still] = await db.select().from(booking).where(eq(booking.id, lee.bookingId));
     expect([still.status, still.bookingLinkId]).toEqual(["confirmed", estimateId]);
@@ -879,7 +885,7 @@ describe("a service's new length", () => {
       bufferAfterMinutes: estimate.bufferAfterMinutes,
       slotIntervalMinutes: estimate.slotIntervalMinutes,
       personChoice: estimate.personChoice,
-      asksAddress: estimate.asksAddress,
+      addressMode: estimate.addressMode,
       active: estimate.active,
     });
   };
@@ -1325,6 +1331,68 @@ describe("the Booking form settings", () => {
     await holder;
 
     expect(outcome).toBe(200);
+  });
+
+  // What the form requires (feature 12f): the contact rule, and the yes to later texts, which needs
+  // text settings: without them the page cannot offer it and a yes is refused.
+  test("the rules save; the yes to later texts needs text settings", async () => {
+    const rulesOf = async () => {
+      const { contactRule, askLaterTextsYes } = await (
+        await get("/settings/booking-form", closer.email)
+      ).json();
+      return { contactRule, askLaterTextsYes };
+    };
+    expect(await rulesOf()).toEqual({ contactRule: "either", askLaterTextsYes: null });
+
+    const refused = await put("/settings/booking-form/rules", closer.email, {
+      contactRule: "phone",
+      askLaterTextsYes: true,
+    });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: { code: "no_text_settings" } });
+    expect(await rulesOf()).toEqual({ contactRule: "either", askLaterTextsYes: null });
+
+    const saved = await put("/settings/booking-form/rules", closer.email, {
+      contactRule: "phone",
+      askLaterTextsYes: false,
+    });
+    expect(saved.status).toBe(200);
+    expect(await saved.json()).toEqual({ contactRule: "phone", askLaterTextsYes: null });
+
+    await db.insert(textSettings).values({
+      organizationId: closer.organizationId,
+      fromNumber: `+1587${randomInt(200, 1000)}${String(randomInt(0, 10_000)).padStart(4, "0")}`,
+      confirmationOn: false,
+      reminderMinutesBefore: [],
+      replyEmail: "office@example.com",
+    });
+    try {
+      const asking = await put("/settings/booking-form/rules", closer.email, {
+        contactRule: "email",
+        askLaterTextsYes: true,
+      });
+      expect(asking.status).toBe(200);
+      expect(await rulesOf()).toEqual({ contactRule: "email", askLaterTextsYes: true });
+    } finally {
+      await db.delete(textSettings).where(eq(textSettings.organizationId, closer.organizationId));
+      await db
+        .update(organization)
+        .set({ contactRule: "either" })
+        .where(eq(organization.id, closer.organizationId));
+    }
+  });
+
+  test("a member without the permission cannot save the rules", async () => {
+    const refused = await put("/settings/booking-form/rules", helper.email, {
+      contactRule: "email",
+      askLaterTextsYes: false,
+    });
+    expect(refused.status).toBe(403);
+    const [summitRow] = await db
+      .select({ contactRule: organization.contactRule })
+      .from(organization)
+      .where(eq(organization.id, summit.organizationId));
+    expect(summitRow?.contactRule).toBe("either");
   });
 
   test("a member without the permission cannot save the questions", async () => {

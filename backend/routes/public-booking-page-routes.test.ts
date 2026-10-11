@@ -91,7 +91,7 @@ async function makeBusiness(name: string, businessName: string, timezone = "Amer
     durationMinutes: 60,
     layout: "month",
 
-    asksAddress: true,
+    addressMode: "required",
     personChoice: "customer_picks",
     bufferAfterMinutes: 15,
   });

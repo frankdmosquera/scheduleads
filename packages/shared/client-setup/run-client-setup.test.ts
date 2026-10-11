@@ -64,6 +64,7 @@ async function makeBusiness(): Promise<{ id: string; slug: string }> {
 const fileFor = (slug: string): ClientSetupInputType => ({
   slug,
   personChoice: "business_assigns",
+  contactRule: "phone",
   questions: [{ label: "What is your business?", required: true }],
   hours: {
     weeklyHours: { mon: [{ startMinute: 480, endMinute: 1080 }] },
@@ -86,10 +87,10 @@ const fileFor = (slug: string): ClientSetupInputType => ({
       name: "Video call",
       durationMinutes: 30,
       slotIntervalMinutes: 30,
-      asksAddress: false,
+      addressMode: "not_asked",
       ticked: ["Room A"],
     },
-    { name: "Phone call", durationMinutes: 30, asksAddress: false },
+    { name: "Phone call", durationMinutes: 30, addressMode: "not_asked" },
   ],
 });
 const setupFor = (slug: string) => clientSetupValidationSchema.parse(fileFor(slug));
@@ -188,6 +189,12 @@ describe("runClientSetup", () => {
     const business = await makeBusiness();
     const first = await runClientSetup(db, setupFor(business.slug), { apply: true });
     expect(first).toMatchObject({ ok: true, applied: true, differences: [] });
+    expect(first.ok && first.made).toContain("the contact rule");
+    const [rule] = await db
+      .select({ contactRule: organization.contactRule })
+      .from(organization)
+      .where(eq(organization.id, business.id));
+    expect(rule?.contactRule).toBe("phone");
     expect(await countRows(business.id)).toEqual({
       questions: 1,
       hours: 2,
@@ -216,7 +223,10 @@ describe("runClientSetup", () => {
       eq(bookingLink.organizationId, business.id),
       eq(bookingLink.slug, "video-call")
     );
-    await db.update(bookingLink).set({ durationMinutes: 45, asksAddress: true }).where(byHand);
+    await db
+      .update(bookingLink)
+      .set({ durationMinutes: 45, addressMode: "required" })
+      .where(byHand);
     await db
       .update(availabilityRule)
       .set({ horizonDays: 30 })
@@ -249,12 +259,19 @@ describe("runClientSetup", () => {
       .delete(bookingLinkResource)
       .where(eq(bookingLinkResource.bookingLinkId, videoCall!.id));
 
+    // The contact rule changed on Settings: kept, and listed.
+    await db
+      .update(organization)
+      .set({ contactRule: "either" })
+      .where(eq(organization.id, business.id));
+
     const result = await runClientSetup(db, setupFor(business.slug), { apply: true });
     expect(result.ok && result.made).toEqual([]);
     expect(result.ok && result.differences).toEqual([
       "hours, horizonDays: saved 30, file 21",
+      'contactRule: saved "either", file "phone"',
       '"Video call", durationMinutes: saved 45, file 30',
-      '"Video call", asksAddress: saved true, file false',
+      '"Video call", addressMode: saved "required", file "not_asked"',
       expect.stringMatching(/^"Ana", weeklyHours: saved {"tue"/),
       expect.stringMatching(/^"Ana", worker texts: saved {"addedOn":true,"movedOn":false/),
       '"Video call", in the file, not ticked here: Room A',

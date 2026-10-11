@@ -69,7 +69,7 @@ function fakeApi(bookAnswers: (Response | Promise<Response>)[]) {
             bufferBeforeMinutes: 0,
             bufferAfterMinutes: 0,
 
-            asksAddress: true,
+            addressMode: "required",
             layout: "month",
             personChoice: "business_assigns",
           },
@@ -77,7 +77,13 @@ function fakeApi(bookAnswers: (Response | Promise<Response>)[]) {
         });
       }
       return json({
-        business: { name: "Riverbend Clinic", logo: null, phone: null, questions: [] },
+        business: {
+          name: "Riverbend Clinic",
+          logo: null,
+          phone: null,
+          contactRule: "either",
+          questions: [],
+        },
         bookingLinks: [],
       });
     },

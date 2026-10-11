@@ -32,7 +32,7 @@ export const serviceSettingsColumns = {
   bufferAfterMinutes: bookingLink.bufferAfterMinutes,
   slotIntervalMinutes: bookingLink.slotIntervalMinutes,
   personChoice: bookingLink.personChoice,
-  asksAddress: bookingLink.asksAddress,
+  addressMode: bookingLink.addressMode,
   active: bookingLink.active,
 };
 

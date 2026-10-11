@@ -2,7 +2,10 @@
 // schema the route checks, before anything is sent. Every error is tied to its field, in the
 // form's own order, so the first one is where focus goes.
 
-import { createBookingValidationSchema } from "@scheduleads-app/shared/zod-validation";
+import {
+  createBookingValidationSchema,
+  missingContact,
+} from "@scheduleads-app/shared/zod-validation";
 
 import type {
   BookingBusinessType,
@@ -18,7 +21,8 @@ export type BookingFormChoiceType = {
   bookingLinkId: string;
   startsAt: string;
   personId: string | null; // null = any available
-  asksAddress: boolean; // the service's own setting: no address box, and none sent, when false
+  // The service's own setting: no address box, and none sent, when not asked.
+  addressMode: "required" | "optional" | "not_asked";
 };
 
 export type ReadBookingFormResultType =
@@ -32,9 +36,10 @@ const filled = (text: string) => (text.trim() === "" ? undefined : text.trim());
 
 export function readBookingForm(
   values: BookingFormValuesType,
-  questions: BookingBusinessType["questions"],
+  business: Pick<BookingBusinessType, "questions" | "contactRule">,
   choice: BookingFormChoiceType
 ): ReadBookingFormResultType {
+  const { questions } = business;
   const request = {
     bookingLinkId: choice.bookingLinkId,
     startsAt: choice.startsAt,
@@ -45,7 +50,9 @@ export function readBookingForm(
       email: filled(values.email),
       phone: filled(values.phone),
     },
-    ...(choice.asksAddress ? { location: values.location.trim() } : {}), // empty: "Enter the address."
+    // Required: always sent, so an empty one is "Enter the address."; optional: only when written.
+    ...(choice.addressMode === "required" ? { location: values.location.trim() } : {}),
+    ...(choice.addressMode === "optional" ? { location: filled(values.location) } : {}),
     details: filled(values.details),
     // Every question shown, with its words, a blank one included: the route then tells a question
     // the owner added after this form opened from one left blank here.
@@ -65,6 +72,9 @@ export function readBookingForm(
       if (!found.has(field)) found.set(field, issue.message);
     }
   }
+  // The business's contact rule, checked the same way the route checks it.
+  const missing = missingContact(business.contactRule, request.customer);
+  if (missing && !found.has(missing.field)) found.set(missing.field, missing.message);
   // The route asks for a required question's answer too; here it is said before sending.
   for (const question of questions) {
     const field: BookingFormFieldType = `answer:${question.id}`;

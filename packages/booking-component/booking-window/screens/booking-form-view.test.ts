@@ -25,6 +25,7 @@ const business = {
   name: "Riverbend Clinic",
   logo: null,
   phone: "403 555 0100",
+  contactRule: "either",
   questions: [{ id: "q-colour", label: "Which colour?", required: true }],
   laterTextsYesWords: null,
 } as BookingBusinessType;
@@ -52,7 +53,7 @@ function clientWithHeldSends() {
 function renderForm(
   apiClient: ReturnType<typeof clientWithHeldSends>["apiClient"],
   shown: BookingBusinessType = business,
-  asksAddress = true
+  addressMode: "required" | "optional" | "not_asked" = "required"
 ) {
   const booked: unknown[] = [];
   const taken: string[] = [];
@@ -63,7 +64,7 @@ function renderForm(
       apiClient,
       slug: "clinic-dev",
       business: shown,
-      choice: { bookingLinkId: "facial", startsAt: booking.startsAt, personId: null, asksAddress },
+      choice: { bookingLinkId: "facial", startsAt: booking.startsAt, personId: null, addressMode },
       form,
       onFormChange: setForm,
       onBooked: (made, email) => booked.push({ made, email }),
@@ -108,8 +109,37 @@ describe("screen two's form", () => {
 
   it("shows no address box for a service that asks none, and sends no address (the address fix)", async () => {
     const { apiClient, sends } = clientWithHeldSends();
-    renderForm(apiClient, business, false);
+    renderForm(apiClient, business, "not_asked");
     expect(screen.queryByLabelText("Address")).toBeNull();
+    type("Name", "Jane Doe");
+    type("Email", "jane@example.com");
+    type("Which colour?", "Blue");
+
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+    await waitFor(() => expect(sends).toHaveLength(1));
+    expect(sends[0]?.body).not.toHaveProperty("location");
+  });
+
+  // Feature 12f: the business's contact rule and the service's address choice, marked as the route
+  // checks them.
+  it("marks the phone required for a business that requires one, and asks it before sending", async () => {
+    const { apiClient, sends } = clientWithHeldSends();
+    renderForm(apiClient, { ...business, contactRule: "phone" });
+    const labelOf = (text: string) => screen.getByText(text, { selector: "label" });
+    expect(labelOf("Phone").className).toContain("sa-req");
+    expect(labelOf("Email").className).not.toContain("sa-req");
+    expect(screen.queryByText("An email or a phone. At least one is required.")).toBeNull();
+
+    fillIn(); // an email, no phone
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+    expect(screen.getByText("Enter a phone number.")).toBeDefined();
+    expect(sends).toHaveLength(0);
+  });
+
+  it("shows the address unmarked for a service where it is optional, and sends none left empty", async () => {
+    const { apiClient, sends } = clientWithHeldSends();
+    renderForm(apiClient, business, "optional");
+    expect(screen.getByText("Address", { selector: "label" }).className).not.toContain("sa-req");
     type("Name", "Jane Doe");
     type("Email", "jane@example.com");
     type("Which colour?", "Blue");
@@ -293,7 +323,7 @@ describe("screen two's form", () => {
           bookingLinkId: "facial",
           startsAt: booking.startsAt,
           personId: null,
-          asksAddress: true,
+          addressMode: "required",
         },
         form,
         onFormChange: setForm,

@@ -3,6 +3,7 @@
 
 "use client";
 
+import { BookingFormRulesCard } from "@/components/settings/booking-form-rules-card";
 import { BookingQuestionsCard } from "@/components/settings/booking-questions-card";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { fetchBookingForm } from "@/lib/api-client/settings/fetch-booking-form";
@@ -10,7 +11,12 @@ import { fetchBookingForm } from "@/lib/api-client/settings/fetch-booking-form";
 export function BookingFormScreen() {
   return (
     <SettingsSection title="Booking form" load={fetchBookingForm}>
-      {(settings) => <BookingQuestionsCard settings={settings} />}
+      {(settings) => (
+        <div className="flex flex-col gap-6">
+          <BookingFormRulesCard settings={settings} />
+          <BookingQuestionsCard settings={settings} />
+        </div>
+      )}
     </SettingsSection>
   );
 }
