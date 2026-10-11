@@ -309,7 +309,7 @@ without Frank touching the database.
     about this booking" function. Never a personal address. Changing a
     service's length keeps existing bookings and warns the owner which ones
     now fall outside
-  - [ ] 12e. **Closed days and holidays** - one click closes a day for
+  - [x] 12e. **Closed days and holidays** - one click closes a day for
     online booking for everyone. It stops new bookings only: bookings made
     before the click are shown to the owner, who keeps them or cancels
     them, all at once or one by one. One click opens a closed day or a
