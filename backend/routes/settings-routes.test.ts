@@ -54,11 +54,15 @@ const summit = makeTenant("s"); // has hours, a person and a place
 const other = makeTenant("o"); // another business, with no hours yet
 const fresh = makeTenant("f"); // a business just made on the client setup screen: no hours
 const booked = makeTenant("b"); // has hours, bookings, Juan following its week and Ana on her own
+const closer = makeTenant("d"); // closes and opens days: Juan following its week, Ana on her own Monday
 const helper = { userId: randomUUID(), email: `hours-m-${tag}@example.com` }; // a member of Summit
 const summitPlaceId = randomUUID();
 const bookedAnaId = randomUUID();
 const bookedStageId = randomUUID();
 const estimateId = randomUUID();
+const closerAnaId = randomUUID();
+const closerStageId = randomUUID();
+const closerVisitId = randomUUID();
 
 // A Tuesday at least two days ahead in Edmonton, so its bookings are still to come.
 let tuesday = addDays(localDate(new Date(), "America/Edmonton"), 2);
@@ -153,7 +157,7 @@ const businessRowOf = async (organizationId: string) =>
 
 beforeAll(async () => {
   await db.insert(user).values(
-    [summit, other, fresh, booked, helper].map((t) => ({
+    [summit, other, fresh, booked, closer, helper].map((t) => ({
       id: t.userId,
       name: "",
       email: t.email,
@@ -161,14 +165,14 @@ beforeAll(async () => {
     }))
   );
   await db.insert(organization).values(
-    [summit, other, fresh, booked].map((t) => ({
+    [summit, other, fresh, booked, closer].map((t) => ({
       id: t.organizationId,
       name: t.slug,
       slug: t.slug,
     }))
   );
   await db.insert(member).values([
-    ...[summit, other, fresh, booked].map((t) => ({
+    ...[summit, other, fresh, booked, closer].map((t) => ({
       id: randomUUID(),
       organizationId: t.organizationId,
       userId: t.userId,
@@ -182,7 +186,7 @@ beforeAll(async () => {
     },
   ]);
   await db.insert(resource).values([
-    ...[summit, other, fresh, booked].map((t) => ({
+    ...[summit, other, fresh, booked, closer].map((t) => ({
       id: t.personId,
       organizationId: t.organizationId,
       name: "Juan",
@@ -190,9 +194,10 @@ beforeAll(async () => {
     })),
     { id: summitPlaceId, organizationId: summit.organizationId, name: "Room 1", kind: "place" },
     { id: bookedAnaId, organizationId: booked.organizationId, name: "Ana", kind: "person" },
+    { id: closerAnaId, organizationId: closer.organizationId, name: "Ana", kind: "person" },
   ]);
   await db.insert(availabilityRule).values([
-    ...[summit, booked].map((t) => ({
+    ...[summit, booked, closer].map((t) => ({
       id: randomUUID(),
       organizationId: t.organizationId,
       resourceId: null,
@@ -207,10 +212,29 @@ beforeAll(async () => {
       weeklyHours: { tue: [{ startMinute: 480, endMinute: 1080 }] },
       dateHours: [],
     },
+    {
+      // Closer's Ana works only Monday mornings, 8:00 to noon.
+      id: randomUUID(),
+      organizationId: closer.organizationId,
+      resourceId: closerAnaId,
+      weeklyHours: { mon: [{ startMinute: 480, endMinute: 720 }] },
+      dateHours: [],
+    },
   ]);
-  await db
-    .insert(pipelineStage)
-    .values({ id: bookedStageId, organizationId: booked.organizationId, name: "New", position: 0 });
+  await db.insert(pipelineStage).values([
+    { id: bookedStageId, organizationId: booked.organizationId, name: "New", position: 0 },
+    { id: closerStageId, organizationId: closer.organizationId, name: "New", position: 0 },
+  ]);
+  await db.insert(bookingLink).values({
+    id: closerVisitId,
+    organizationId: closer.organizationId,
+    name: "Visit",
+    slug: "visit",
+    durationMinutes: 60,
+    layout: "month",
+    asksAddress: false,
+    personChoice: "customer_picks",
+  });
   await db.insert(bookingLink).values({
     id: estimateId,
     organizationId: booked.organizationId,
@@ -221,7 +245,14 @@ beforeAll(async () => {
     asksAddress: false,
     personChoice: "customer_picks",
   });
-  for (const email of [summit.email, other.email, fresh.email, booked.email, helper.email])
+  for (const email of [
+    summit.email,
+    other.email,
+    fresh.email,
+    booked.email,
+    closer.email,
+    helper.email,
+  ])
     cookies.set(email, await signIn(email));
 });
 
@@ -229,13 +260,20 @@ afterAll(async () => {
   await db.delete(organization).where(
     inArray(
       organization.id,
-      [summit, other, fresh, booked].map((t) => t.organizationId)
+      [summit, other, fresh, booked, closer].map((t) => t.organizationId)
     )
   );
   await db
     .delete(user)
     .where(
-      inArray(user.id, [summit.userId, other.userId, fresh.userId, booked.userId, helper.userId])
+      inArray(user.id, [
+        summit.userId,
+        other.userId,
+        fresh.userId,
+        booked.userId,
+        closer.userId,
+        helper.userId,
+      ])
     );
   await db.$client.end();
 });
@@ -397,7 +435,13 @@ describe("the Hours settings", () => {
     const saved = await put("/settings/hours/business", booked.email, shortened);
     expect(saved.status).toBe(200);
     expect(((await saved.json()) as { outsideHours: unknown }).outsideHours).toEqual([
-      { ...maria, customerName: "Maria", serviceName: "Estimate", personName: "Juan" },
+      {
+        ...maria,
+        customerName: "Maria",
+        customerHasEmail: false,
+        serviceName: "Estimate",
+        personName: "Juan",
+      },
     ]);
     const [after] = await db.select().from(booking).where(eq(booking.id, maria.bookingId));
     expect(after).toEqual(before);
@@ -857,5 +901,299 @@ describe("a service's new length", () => {
     const same = await estimateAt(90);
     expect(((await same.json()) as SavedWithListType).outsideHours).toEqual([]);
     await estimateAt(60);
+  });
+});
+
+describe("the Days off settings", () => {
+  // A Monday at least two days ahead in Edmonton, and the Sunday after it.
+  let monday = addDays(localDate(new Date(), "America/Edmonton"), 2);
+  while (new Date(`${monday}T12:00:00Z`).getUTCDay() !== 1) monday = addDays(monday, 1);
+  const sunday = addDays(monday, 6);
+
+  type DaysOffAnswerType = {
+    closedDates: string[];
+    closedDays: {
+      date: string;
+      name: string | null;
+      openedForEveryone: boolean;
+      openedFor: string[];
+    }[];
+  };
+  type SavedDaysOffType = { daysOff: DaysOffAnswerType; newlyClosed: { customerName: string }[] };
+  const noHolidays = { holidayCountry: null, holidayRegion: null, closedHolidays: [] };
+  // Summit back to no closed days and no holidays, after a test that changed them.
+  const resetDaysOff = () =>
+    db
+      .update(availabilityRule)
+      .set({ closedDates: [], ...noHolidays })
+      .where(
+        and(
+          eq(availabilityRule.organizationId, summit.organizationId),
+          isNull(availabilityRule.resourceId)
+        )
+      );
+
+  // One customer, their lead and a booking with Closer's Visit, on the day from the minute given.
+  async function bookDay(day: string, customerName: string, personId: string, fromMinute: number) {
+    const [contactId, leadId, bookingId] = [randomUUID(), randomUUID(), randomUUID()];
+    const organizationId = closer.organizationId;
+    await db.insert(contact).values({ id: contactId, organizationId, name: customerName });
+    await db
+      .insert(lead)
+      .values({ id: leadId, organizationId, contactId, stageId: closerStageId, source: "widget" });
+    await db.insert(booking).values({
+      id: bookingId,
+      organizationId,
+      leadId,
+      bookingLinkId: closerVisitId,
+      personId,
+      startsAt: localTimeToMoment(day, fromMinute, "America/Edmonton")!,
+      endsAt: localTimeToMoment(day, fromMinute + 60, "America/Edmonton")!,
+      status: "confirmed",
+    });
+    return bookingId;
+  }
+
+  test("a member without the permission cannot close or open a day", async () => {
+    const read = await get("/settings/days-off", helper.email);
+    expect(read.status).toBe(200);
+    expect(await read.json()).toMatchObject({ canEdit: false, closedDates: [], closedDays: [] });
+
+    expect((await put("/settings/days-off", helper.email, noHolidays)).status).toBe(403);
+    const close = await post("/settings/days-off/close", helper.email, { date: monday });
+    expect(close.status).toBe(403);
+    const open = await post("/settings/days-off/open", helper.email, {
+      date: monday,
+      personId: null,
+    });
+    expect(open.status).toBe(403);
+    expect((await businessRowOf(summit.organizationId)).closedDates).toEqual([]);
+  });
+
+  test("another business's person gets the 404", async () => {
+    expect((await post("/settings/days-off/close", summit.email, { date: monday })).status).toBe(
+      200
+    );
+    const [foreign, place, unknown] = await Promise.all(
+      [other.personId, summitPlaceId, randomUUID()].map((personId) =>
+        post("/settings/days-off/open", summit.email, { date: monday, personId })
+      )
+    );
+    expect([foreign.status, place.status, unknown.status]).toEqual([404, 404, 404]);
+    const [a, b, c] = await Promise.all([foreign.json(), place.json(), unknown.json()]);
+    expect(a).toEqual(c);
+    expect(b).toEqual(c);
+    const rows = await db
+      .select()
+      .from(availabilityRule)
+      .where(inArray(availabilityRule.resourceId, [other.personId, summitPlaceId]));
+    expect(rows).toEqual([]);
+    await resetDaysOff();
+  });
+
+  test("a holiday save writes only the three holiday columns and keeps the closed days and the hours", async () => {
+    // Summit closed Monday, with its own hours on Monday and on the Tuesday after.
+    const oneOffs = [
+      { date: monday, windows: [{ startMinute: 600, endMinute: 720 }] },
+      { date: addDays(monday, 1), windows: [{ startMinute: 600, endMinute: 720 }] },
+    ];
+    const rowId = (await businessRowOf(summit.organizationId)).id;
+    await db
+      .update(availabilityRule)
+      .set({ closedDates: [monday], dateHours: oneOffs })
+      .where(eq(availabilityRule.id, rowId));
+    const before = await businessRowOf(summit.organizationId);
+
+    // A page loaded before Monday was closed saves its holidays: Monday stays closed. A list of
+    // closed days in the body is refused, never written.
+    const withDays = { ...noHolidays, closedDates: [] };
+    expect((await put("/settings/days-off", summit.email, withDays)).status).toBe(400);
+    const holidays = { holidayCountry: "CA", holidayRegion: "AB", closedHolidays: [] };
+    const saved = await put("/settings/days-off", summit.email, holidays);
+    expect(saved.status).toBe(200);
+    expect(await businessRowOf(summit.organizationId)).toEqual({
+      ...before,
+      holidayCountry: "CA",
+      holidayRegion: "AB",
+      updatedAt: expect.any(Date),
+    });
+    // Monday's own hours open it again for everyone, as the Hours page meant.
+    const read = (await (
+      await get("/settings/days-off", summit.email)
+    ).json()) as DaysOffAnswerType;
+    expect(read.closedDays[0]).toMatchObject({ date: monday, openedForEveryone: true });
+
+    // Closing Monday from the page takes those hours back, so it is closed; Tuesday's stay.
+    const closed = await post("/settings/days-off/close", summit.email, { date: monday });
+    expect(closed.status).toBe(200);
+    const after = await businessRowOf(summit.organizationId);
+    expect([after.closedDates, after.dateHours]).toEqual([[monday], [oneOffs[1]]]);
+    const answer = (await closed.json()) as SavedDaysOffType;
+    expect(answer.daysOff.closedDays[0]).toMatchObject({ date: monday, openedForEveryone: false });
+
+    await resetDaysOff();
+    await db.update(availabilityRule).set({ dateHours: [] }).where(eq(availabilityRule.id, rowId));
+  });
+
+  test("a closed day lists its bookings, and opened for Ana she alone is offered it", async () => {
+    const { resolveBookableHours } =
+      await import("../lib/bookable-hours/resolve-bookable-hours.js");
+    const closedFor = async (personId: string) =>
+      (await resolveBookableHours(closer.organizationId, personId, new Date()))!.closedDates;
+    const maria = await bookDay(monday, "Maria", closer.personId, 600); // Juan, 10:00
+    await bookDay(monday, "Lee", closerAnaId, 480); // Ana, 8:00
+    const [mariaBefore] = await db.select().from(booking).where(eq(booking.id, maria));
+
+    // Not closed yet: nothing to open.
+    const early = await post("/settings/days-off/open", closer.email, {
+      date: monday,
+      personId: closerAnaId,
+    });
+    expect(early.status).toBe(400);
+    expect(await early.json()).toMatchObject({ error: { code: "not_closed" }, field: "date" });
+
+    // Closed: both bookings listed, neither changed, and the day closed for both.
+    const closed = await post("/settings/days-off/close", closer.email, { date: monday });
+    expect(closed.status).toBe(200);
+    expect((await post("/settings/days-off/close", closer.email, { date: sunday })).status).toBe(
+      200
+    );
+    const answer = (await closed.json()) as SavedDaysOffType;
+    expect(answer.newlyClosed.map((row) => row.customerName)).toEqual(["Lee", "Maria"]);
+    expect(answer.daysOff.closedDays[0]).toEqual({
+      date: monday,
+      name: null,
+      openedForEveryone: false,
+      openedFor: [],
+    });
+    const [mariaAfter] = await db.select().from(booking).where(eq(booking.id, maria));
+    expect(mariaAfter).toEqual(mariaBefore);
+    expect(await closedFor(closer.personId)).toContain(monday);
+    expect(await closedFor(closerAnaId)).toContain(monday);
+
+    // Opened for Ana: open for her, on her Monday morning, and still closed for Juan.
+    const forAna = await post("/settings/days-off/open", closer.email, {
+      date: monday,
+      personId: closerAnaId,
+    });
+    expect(forAna.status).toBe(200);
+    const anaAnswer = (await forAna.json()) as { daysOff: DaysOffAnswerType };
+    expect(anaAnswer.daysOff.closedDays[0]).toEqual({
+      date: monday,
+      name: null,
+      openedForEveryone: false,
+      openedFor: [closerAnaId],
+    });
+    expect(await closedFor(closerAnaId)).not.toContain(monday);
+    expect(await closedFor(closer.personId)).toContain(monday);
+
+    // Sunday: nobody works it, so it cannot be opened.
+    const noHours = await post("/settings/days-off/open", closer.email, {
+      date: sunday,
+      personId: null,
+    });
+    expect(noHours.status).toBe(409);
+    expect(await noHours.json()).toMatchObject({ error: { code: "no_usual_hours" } });
+
+    // Opened for everyone: Monday leaves the closed dates and is open for Juan too.
+    const forEveryone = await post("/settings/days-off/open", closer.email, {
+      date: monday,
+      personId: null,
+    });
+    expect(forEveryone.status).toBe(200);
+    const everyoneAnswer = (await forEveryone.json()) as { daysOff: DaysOffAnswerType };
+    expect(everyoneAnswer.daysOff.closedDates).toEqual([sunday]);
+    expect(await closedFor(closer.personId)).not.toContain(monday);
+  });
+
+  test("a holiday save lists the bookings left on the holidays it closes", async () => {
+    // The next Remembrance Day, November 11, at least two days ahead in Edmonton.
+    const today = localDate(new Date(), "America/Edmonton");
+    let remembrance = `${today.slice(0, 4)}-11-11`;
+    if (remembrance < addDays(today, 2)) remembrance = `${Number(today.slice(0, 4)) + 1}-11-11`;
+    await bookDay(remembrance, "Robin", closer.personId, 600);
+
+    const holidays = {
+      holidayCountry: "CA",
+      holidayRegion: "AB",
+      closedHolidays: ["Remembrance Day"],
+    };
+    const saved = await put("/settings/days-off", closer.email, holidays);
+    expect(saved.status).toBe(200);
+    const answer = (await saved.json()) as SavedDaysOffType;
+    expect(answer.newlyClosed.map((listed) => listed.customerName)).toEqual(["Robin"]);
+    expect(answer.daysOff.closedDays).toContainEqual(
+      expect.objectContaining({ date: remembrance, name: "Remembrance Day" })
+    );
+
+    expect((await put("/settings/days-off", closer.email, noHolidays)).status).toBe(200);
+  });
+
+  test("the holiday list answers the countries, then a province's year of holidays", async () => {
+    type ChoicesType = {
+      countries: { code: string }[];
+      regions: { code: string }[];
+      holidays: { name: string; dates: string[] }[];
+    };
+    const none = await get("/settings/days-off/holidays", helper.email); // any member reads it
+    expect(none.status).toBe(200);
+    const countries = (await none.json()) as ChoicesType;
+    expect(countries.countries.map((country) => country.code)).toEqual(["CA", "CO", "US"]);
+    expect([countries.regions, countries.holidays]).toEqual([[], []]);
+
+    const alberta = (await (
+      await get("/settings/days-off/holidays?country=CA&region=AB", helper.email)
+    ).json()) as ChoicesType;
+    expect(alberta.regions.map((region) => region.code)).toContain("AB");
+    expect(alberta.holidays).toHaveLength(9); // the statutory ones only
+    expect(alberta.holidays.map((holiday) => holiday.name)).not.toContain("Heritage Day");
+
+    const noCountry = await get("/settings/days-off/holidays?region=AB", helper.email);
+    const germany = await get("/settings/days-off/holidays?country=DE", helper.email);
+    const badProvince = await get("/settings/days-off/holidays?country=CO&region=AB", helper.email);
+    expect([noCountry.status, germany.status, badProvince.status]).toEqual([400, 400, 400]);
+    expect(await germany.json()).toMatchObject({ field: "holidayCountry" });
+    expect(await badProvince.json()).toMatchObject({ field: "holidayRegion" });
+  });
+
+  test("a pick not in the province's list is refused on save", async () => {
+    const picks = (closedHolidays: string[], holidayCountry = "CA", holidayRegion = "AB") => ({
+      holidayCountry,
+      holidayRegion,
+      closedHolidays,
+    });
+    const before = await businessRowOf(summit.organizationId);
+
+    const renamed = await put(
+      "/settings/days-off",
+      summit.email,
+      picks(["Thanksgiving", "Famly Day"])
+    );
+    expect(renamed.status).toBe(400);
+    expect(await renamed.json()).toMatchObject({
+      field: "closedHolidays",
+      error: { message: "Famly Day is not in the holiday list: untick it." },
+    });
+    const otherCountry = await put("/settings/days-off", summit.email, picks([], "DE", null));
+    const otherProvince = await put("/settings/days-off", summit.email, picks([], "CA", "ZZ"));
+    expect(await otherCountry.json()).toMatchObject({ field: "holidayCountry" });
+    expect(await otherProvince.json()).toMatchObject({ field: "holidayRegion" });
+    expect(await businessRowOf(summit.organizationId)).toEqual(before); // nothing written
+
+    // A day that is not statutory in Alberta is not in its list, so it cannot be picked.
+    const notStatutory = picks(["National Day for Truth and Reconciliation"]);
+    expect((await put("/settings/days-off", summit.email, notStatutory)).status).toBe(400);
+    const listed = picks(["Thanksgiving", "Family Day"]);
+    expect((await put("/settings/days-off", summit.email, listed)).status).toBe(200);
+
+    // A pick the list renamed after it was saved is named on the read, for the page to mark.
+    const rowId = (await businessRowOf(summit.organizationId)).id;
+    await db
+      .update(availabilityRule)
+      .set({ closedHolidays: ["Thanksgiving", "Famly Day"] })
+      .where(eq(availabilityRule.id, rowId));
+    const read = await (await get("/settings/days-off", summit.email)).json();
+    expect(read).toMatchObject({ unknownHolidays: ["Famly Day"] });
+    await resetDaysOff();
   });
 });

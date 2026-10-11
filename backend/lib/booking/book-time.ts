@@ -326,7 +326,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
       }
       // The emails and the booked person's Google event, as jobs saved with the booking
       // (decision 1 of the background runner): the answer never waits for them.
-      // The booked person's own only when they have a work email (12d.4); its job reads it again.
+      // The booked person's own only when they have a work email; its job reads it again.
       const [bookedPerson] = await tx
         .select({ workEmail: resource.workEmail })
         .from(resource)

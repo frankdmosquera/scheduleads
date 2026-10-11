@@ -1,6 +1,6 @@
 // Frontend component: the form that renames a person or place, or turns one off or on, on the People
 // page (feature 12d). Off never touches a booking; the page lists the ones they still hold. A person
-// also has an optional work email at the business's own domain (12d.4).
+// also has an optional work email at the business's own domain.
 
 "use client";
 

@@ -1,6 +1,6 @@
-// Backend: the owner's Settings pages: Hours (feature 12a), Services and People (12d). The business always comes from the
-// session, never from the request; any member may read, only a role that may change the business
-// may save.
+// Backend: the owner's Settings pages: Hours (feature 12a), Services and People (12d), Days off
+// (12e). The business always comes from the session, never from the request; any member may read,
+// only a role that may change the business may save.
 
 import { Hono, type Context } from "hono";
 import { validator } from "hono/validator";
@@ -9,12 +9,16 @@ import type { ZodError } from "zod";
 import {
   businessHoursValidationSchema,
   addResourceValidationSchema,
+  closeDayValidationSchema,
+  holidayPicksValidationSchema,
+  openClosedDayValidationSchema,
   personHoursValidationSchema,
   saveResourceValidationSchema,
   saveServiceResourcesValidationSchema,
   serviceValidationSchema,
 } from "@scheduleads-app/shared/zod-validation";
 
+import { db } from "../database.js";
 import {
   hasBusinessPermission,
   type PermissionsType,
@@ -22,10 +26,16 @@ import {
 import { refuse } from "../lib/errors/refuse.js";
 import { addResource } from "../lib/settings/add-resource.js";
 import { addService } from "../lib/settings/add-service.js";
+import { closeDay } from "../lib/settings/close-day.js";
+import { findDaysOff } from "../lib/settings/find-days-off.js";
+import { findHolidayChoices } from "../lib/settings/find-holiday-choices.js";
 import { findHoursSettings } from "../lib/settings/find-hours-settings.js";
 import { findPeopleSettings } from "../lib/settings/find-people-settings.js";
 import { findServicesSettings } from "../lib/settings/find-services-settings.js";
+import { openClosedDay } from "../lib/settings/open-closed-day.js";
+import { refuseHolidayPicks } from "../lib/settings/refuse-holiday-picks.js";
 import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
+import { saveHolidayPicks } from "../lib/settings/save-holiday-picks.js";
 import { savePersonHours } from "../lib/settings/save-person-hours.js";
 import { saveResource } from "../lib/settings/save-resource.js";
 import { saveService } from "../lib/settings/save-service.js";
@@ -36,6 +46,7 @@ import { requireKnownSubscriptionMiddleware } from "../middleware/subscription-m
 import { requireModuleMiddleware } from "../middleware/subscription-middleware/require-module-middleware.js";
 
 const CHANGE_BUSINESS: PermissionsType = { organization: ["update"] };
+const NO_BUSINESS_HOURS = refuse("no_business_hours", "Set the business's hours first.");
 // Says which field, so the form shows it under the name rather than as a general failure.
 const NAME_TAKEN = {
   ...refuse("name_taken", "Another person or place here already has that name."),
@@ -113,8 +124,7 @@ export const settingsRoutes = new Hono()
       );
       if (!saved.ok && saved.reason === "no_person")
         return c.json(refuse("not_found", "No person here."), 404);
-      if (!saved.ok)
-        return c.json(refuse("no_business_hours", "Set the business's hours first."), 409);
+      if (!saved.ok) return c.json(NO_BUSINESS_HOURS, 409);
       return c.json({ person: saved.person, outsideHours: saved.outsideHours }, 200);
     }
   )
@@ -273,5 +283,132 @@ export const settingsRoutes = new Hono()
           409
         );
       return c.json({ resource: saved.resource, upcomingBookings: saved.upcomingBookings }, 200);
+    }
+  )
+
+  // The Days off page: the closed days and holiday picks, every closed day for a year with who it is
+  // opened for, and the people a day can be opened for.
+  .get(
+    "/days-off",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    async (c) => {
+      const { organizationId } = c.get("organization");
+      const [daysOff, canEdit] = await Promise.all([
+        findDaysOff(db, organizationId, new Date()),
+        hasBusinessPermission(c.req.raw.headers, organizationId, CHANGE_BUSINESS),
+      ]);
+      return c.json({ canEdit, ...daysOff }, 200);
+    }
+  )
+
+  // The holiday picks, saved; never the closed dates or the hours. Closing stops new bookings only:
+  // the answer lists the upcoming ones on a day now closed, none changed.
+  .put(
+    "/days-off",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = holidayPicksValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const { organizationId } = c.get("organization");
+      const picks = c.req.valid("json");
+      const refusal = await refuseHolidayPicks(organizationId, picks, new Date());
+      if (refusal)
+        return c.json({ ...refuse("bad_request", refusal.message), field: refusal.field }, 400);
+      const saved = await saveHolidayPicks(organizationId, picks, new Date());
+      if (!saved.ok) return c.json(NO_BUSINESS_HOURS, 409);
+      return c.json({ daysOff: saved.daysOff, newlyClosed: saved.newlyClosed }, 200);
+    }
+  )
+
+  // The holiday picker: the countries offered, and with a country its provinces and its holidays
+  // for the coming year (with a province, the province's too). Nothing picked: just the countries.
+  .get(
+    "/days-off/holidays",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    validator("query", (value, c) => {
+      const { country, region } = value;
+      if (Array.isArray(country) || Array.isArray(region) || (region && !country))
+        return c.json(
+          { ...refuse("bad_request", "A province needs its country."), field: "holidayRegion" },
+          400
+        );
+      return { country: country || null, region: region || null };
+    }),
+    async (c) => {
+      const { country, region } = c.req.valid("query");
+      const choices = await findHolidayChoices(
+        c.get("organization").organizationId,
+        country,
+        region,
+        new Date()
+      );
+      if (!choices.ok)
+        return c.json({ ...refuse("bad_request", choices.message), field: choices.field }, 400);
+      const { countries, regions, holidays } = choices;
+      return c.json({ countries, regions, holidays }, 200);
+    }
+  )
+
+  // Closes one day for everyone, taking back the business's own one-off hours on it, which would
+  // keep it open. Lists the upcoming bookings left on it, none changed.
+  .post(
+    "/days-off/close",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = closeDayValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const closed = await closeDay(
+        c.get("organization").organizationId,
+        c.req.valid("json").date,
+        new Date()
+      );
+      if (!closed.ok) return c.json(NO_BUSINESS_HOURS, 409);
+      return c.json({ daysOff: closed.daysOff, newlyClosed: closed.newlyClosed }, 200);
+    }
+  )
+
+  // Opens a closed day for one person (personId) or for everyone (null). Another business's person,
+  // a place or an unknown id: the same 404.
+  .post(
+    "/days-off/open",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = openClosedDayValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const opening = c.req.valid("json");
+      const opened = await openClosedDay(c.get("organization").organizationId, opening, new Date());
+      if (opened.ok) return c.json({ daysOff: opened.daysOff }, 200);
+      if (opened.reason === "no_person") return c.json(refuse("not_found", "No person here."), 404);
+      if (opened.reason === "no_business_hours") return c.json(NO_BUSINESS_HOURS, 409);
+      if (opened.reason === "not_closed")
+        return c.json({ ...refuse("not_closed", "That day is not closed."), field: "date" }, 400);
+      return c.json(
+        refuse(
+          "no_usual_hours",
+          opening.personId === null
+            ? "The business does not work that weekday: set that day's hours on Hours."
+            : "They do not work that weekday: set their hours on Hours."
+        ),
+        409
+      );
     }
   );

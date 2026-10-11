@@ -1,7 +1,8 @@
 /** @jsxImportSource react */
 // Backend: the customer's word that their booking is cancelled, from the business and under its
 // brand: what it was and when, and a button to call the business to book again. The withdrawing
-// invite rides along. It never names the product.
+// invite rides along. It never names the product. Its first line says who cancelled: the customer
+// is thanked, and a cancel by the business says so.
 
 import { Heading, Link, render, Text } from "@react-email/components";
 
@@ -16,10 +17,11 @@ import { EmailLayout } from "./email-layout.js";
 import type { RenderedEmailType } from "./rendered-email-type.js";
 
 export async function renderBookingCancelled(
-  facts: BookingEmailFactsType
+  facts: BookingEmailFactsType,
+  byBusiness = false // the owner cancelled it, not the customer
 ): Promise<RenderedEmailType> {
   const when = formatBookingTime(facts.startsAt, facts.business.timezone);
-  const email = <BookingCancelledEmail facts={facts} when={when} />;
+  const email = <BookingCancelledEmail facts={facts} when={when} byBusiness={byBusiness} />;
   return {
     subject: `Your booking with ${facts.business.name} is cancelled: ${when}`,
     html: await render(email),
@@ -27,7 +29,15 @@ export async function renderBookingCancelled(
   };
 }
 
-function BookingCancelledEmail({ facts, when }: { facts: BookingEmailFactsType; when: string }) {
+function BookingCancelledEmail({
+  facts,
+  when,
+  byBusiness,
+}: {
+  facts: BookingEmailFactsType;
+  when: string;
+  byBusiness: boolean;
+}) {
   const { business } = facts;
   const brand = business.brandColor ?? emailColors.ink;
   return (
@@ -59,7 +69,9 @@ function BookingCancelledEmail({ facts, when }: { facts: BookingEmailFactsType; 
           color: emailColors.muted,
         }}
       >
-        {`Thanks for letting us know, ${facts.customer.name}.`}
+        {byBusiness
+          ? `${business.name} had to cancel your booking.`
+          : `Thanks for letting us know, ${facts.customer.name}.`}
       </Text>
 
       <EmailField label="What">{facts.service}</EmailField>

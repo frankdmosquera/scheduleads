@@ -36,9 +36,10 @@ export async function sendCancellationEmails(
   const { facts, apiKey, from } = setup;
 
   // The moment of the cancel, from its own timeline entry: a retry then sends the very same
-  // invite, and Resend refuses a key it already used with a different email.
+  // invite, and Resend refuses a key it already used with a different email. A login on it means
+  // the owner cancelled, not the customer.
   const [cancelled] = await db
-    .select({ occurredAt: activity.occurredAt })
+    .select({ occurredAt: activity.occurredAt, actorUserId: activity.actorUserId })
     .from(activity)
     .where(
       and(
@@ -58,7 +59,7 @@ export async function sendCancellationEmails(
     emails.push({
       kind: "booking_cancellation",
       build: async () => ({
-        ...(await renderBookingCancelled(facts)),
+        ...(await renderBookingCancelled(facts, cancelled?.actorUserId != null)),
         apiKey,
         kind: "booking_cancellation",
         from,

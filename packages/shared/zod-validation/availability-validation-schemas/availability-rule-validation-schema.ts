@@ -56,15 +56,24 @@ const businessAvailabilityRuleFields = z
   })
   .strict();
 
+type PicksWithCountryType = {
+  holidayCountry: string | null;
+  holidayRegion: string | null;
+  closedHolidays: string[];
+};
+const regionHasCountry = (rule: PicksWithCountryType) =>
+  rule.holidayRegion === null || rule.holidayCountry !== null;
+const picksHaveCountry = (rule: PicksWithCountryType) =>
+  rule.closedHolidays.length === 0 || rule.holidayCountry !== null;
+const REGION_NEEDS_COUNTRY = { message: "A province needs its country.", path: ["holidayRegion"] };
+const PICKS_NEED_COUNTRY = {
+  message: "Picked holidays need the country they come from.",
+  path: ["closedHolidays"],
+};
+
 export const businessAvailabilityRuleValidationSchema = businessAvailabilityRuleFields
-  .refine((rule) => rule.holidayRegion === null || rule.holidayCountry !== null, {
-    message: "A province needs its country.",
-    path: ["holidayRegion"],
-  })
-  .refine((rule) => rule.closedHolidays.length === 0 || rule.holidayCountry !== null, {
-    message: "Picked holidays need the country they come from.",
-    path: ["closedHolidays"],
-  });
+  .refine(regionHasCountry, REGION_NEEDS_COUNTRY)
+  .refine(picksHaveCountry, PICKS_NEED_COUNTRY);
 
 // A person's row: only their own week (null = follow the business's) and their one-off
 // dates. strict() refuses a time zone or notice here, like the database does.
@@ -88,6 +97,14 @@ export const businessHoursValidationSchema = businessAvailabilityRuleFields
   })
   .strict();
 
+// What the holiday picker saves: the holidays alone. The closed days are closed and opened one at
+// a time, so a page loaded earlier never writes back an old list of them.
+export const holidayPicksValidationSchema = businessAvailabilityRuleFields
+  .pick({ holidayCountry: true, holidayRegion: true, closedHolidays: true })
+  .strict()
+  .refine(regionHasCountry, REGION_NEEDS_COUNTRY)
+  .refine(picksHaveCountry, PICKS_NEED_COUNTRY);
+
 // What a person's card saves: their own week (null = follow the business's) and one-off dates.
 export const personHoursValidationSchema = personAvailabilityRuleValidationSchema
   .omit({ resourceId: true })
@@ -103,3 +120,9 @@ export type PersonAvailabilityRuleType = z.infer<typeof personAvailabilityRuleVa
 export type AvailabilityRuleType = z.infer<typeof availabilityRuleValidationSchema>;
 export type BusinessHoursType = z.infer<typeof businessHoursValidationSchema>;
 export type PersonHoursType = z.infer<typeof personHoursValidationSchema>;
+// The Days off page's closed days and holidays as read and written (feature 12e), never the hours.
+export type DaysOffType = Pick<
+  BusinessAvailabilityRuleType,
+  "closedDates" | "holidayCountry" | "holidayRegion" | "closedHolidays"
+>;
+export type HolidayPicksType = z.infer<typeof holidayPicksValidationSchema>;

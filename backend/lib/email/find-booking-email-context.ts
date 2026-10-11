@@ -32,7 +32,7 @@ export type BookingEmailContextType = {
   source: string; // the lead's: "widget", "hosted" or "manual"
   customerName: string;
   customerEmail: string | null;
-  personWorkEmail: string | null; // the booked person's, read when the email goes (12d.4)
+  personWorkEmail: string | null; // the booked person's, read when the email goes
   setup: BookingEmailSetupType;
 };
 

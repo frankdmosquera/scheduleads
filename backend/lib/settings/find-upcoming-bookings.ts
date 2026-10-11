@@ -17,6 +17,7 @@ export type UpcomingBookingType = {
   endsAt: Date;
   status: string;
   customerName: string;
+  customerEmail: string | null; // a phone booking may have none
   serviceName: string;
   personName: string;
 };
@@ -38,6 +39,7 @@ export async function findUpcomingBookings(
       endsAt: booking.endsAt,
       status: booking.status,
       customerName: contact.name,
+      customerEmail: contact.email,
       serviceName: bookingLink.name,
       personName: resource.name,
     })

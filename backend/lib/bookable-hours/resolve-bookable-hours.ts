@@ -4,41 +4,15 @@
 import { and, eq, isNull } from "drizzle-orm";
 
 import { availabilityRule, resource } from "@scheduleads-app/shared/db";
+import { localDate } from "@scheduleads-app/shared/local-date";
 
 import { db } from "../../database.js";
 import {
   applyBookableHoursRules,
-  type BusinessHoursInputType,
   type ResolvedBookableHoursType,
 } from "./apply-bookable-hours-rules.js";
-
-export type AvailabilityRuleRowType = typeof availabilityRule.$inferSelect;
-
-// The database check guarantees these on the business's row. A row without them is a
-// corrupt row, a real fault, so it throws instead of being read as "closed".
-function toBusinessHours(row: AvailabilityRuleRowType): BusinessHoursInputType {
-  const { weeklyHours, timezone, minimumNoticeMinutes, horizonDays, closedDates } = row;
-  if (
-    weeklyHours === null ||
-    timezone === null ||
-    minimumNoticeMinutes === null ||
-    horizonDays === null ||
-    closedDates === null
-  ) {
-    throw new Error(`availability_rule ${row.id} is the business's row but is missing a setting.`);
-  }
-  return {
-    weeklyHours,
-    dateHours: row.dateHours,
-    timezone,
-    minimumNoticeMinutes,
-    horizonDays,
-    closedDates,
-    holidayCountry: row.holidayCountry,
-    holidayRegion: row.holidayRegion,
-    closedHolidays: row.closedHolidays,
-  };
-}
+import { businessHoursInputOf } from "./business-hours-input-of.js";
+import { unknownHolidayPicks } from "./unknown-holiday-picks.js";
 
 // null when the business has no hours yet, or the person is not one of its own.
 export async function resolveBookableHours(
@@ -58,7 +32,19 @@ export async function resolveBookableHours(
 
   if (!businessRow) return null;
 
-  const business = toBusinessHours(businessRow);
+  const business = businessHoursInputOf(businessRow);
+  // A pick the holiday package renamed closes nothing; said on every read of these hours (once per
+  // person asked about), so it gets unticked.
+  const unknown = unknownHolidayPicks(
+    business.holidayCountry,
+    business.holidayRegion,
+    business.closedHolidays,
+    localDate(now, business.timezone)
+  );
+  if (unknown.length > 0)
+    console.warn(
+      `[hours] business ${organizationId}: not in the holiday list, so not closed: ${unknown.join(", ")}`
+    );
 
   if (resourceId === null) return applyBookableHoursRules(business, null, now);
 

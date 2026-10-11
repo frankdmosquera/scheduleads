@@ -291,6 +291,26 @@ describe("a cancelled booking's emails", () => {
     expect(calls.map((call) => call.body.to)).toEqual([[jane.email], ["office@primopainters.com"]]);
   });
 
+  test("the customer's cancel thanks Jane; the owner's says the business cancelled", async () => {
+    const business = await makeBusiness("who-cancelled");
+    const owner = await makeOwner(business, "closer");
+    const herOwn = await book(business);
+    await cancel(herOwn);
+    expect(String(calls[0].body.text)).toContain("Thanks for letting us know, Jane Doe.");
+
+    const ownerCancels = await book(business, { startsAt: new Date("2026-10-05T16:00:00Z") });
+    calls.length = 0;
+    await cancelBooking(ownerCancels, new Date("2026-10-02T15:00:00Z"), {
+      organizationId: business.business,
+      actorUserId: owner,
+    });
+    await settled();
+
+    expect(calls).toHaveLength(1); // the owner knows what they did: only Jane hears
+    expect(String(calls[0].body.text)).toContain("Primo Painters had to cancel your booking.");
+    expect(String(calls[0].body.text)).not.toContain("Thanks for letting us know");
+  });
+
   test("a second cancel sends nothing more", async () => {
     const business = await makeBusiness("twice");
     const bookingId = await book(business);

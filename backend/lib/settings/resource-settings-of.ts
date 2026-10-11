@@ -7,7 +7,7 @@ export type ResourceSettingsType = {
   name: string;
   kind: "person" | "place";
   active: boolean;
-  workEmail: string | null; // a person's only (12d.4)
+  workEmail: string | null; // a person's only
 };
 
 // The columns the page shows and saves, so a read and a save answer the same shape.

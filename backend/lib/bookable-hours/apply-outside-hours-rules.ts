@@ -1,12 +1,13 @@
 // Backend: which upcoming bookings a save of hours leaves outside them (feature 12a). No database,
 // so every rule is tested; the saves in lib/settings/ read the rows and the bookings. Its fits test
-// is also what a service's new length is checked with (12d.5).
+// is also what a service's new length is checked with.
 
 import { localDate } from "@scheduleads-app/shared/local-date";
 import type { DateHoursType, WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
 
 import { clockAsUtc } from "../local-time/clock-as-utc.js";
 import { localTimeToMoment } from "../local-time/local-time-to-moment.js";
+import { weekdayOf } from "./weekday-of.js";
 
 // The rows a save replaces, or the ones it writes: the business's week and one-off dates, its time
 // zone, and each person's own row by id (no row: they follow the business's week).
@@ -25,13 +26,6 @@ export type CheckedBookingType = {
 };
 
 const MINUTE_MS = 60_000;
-const WEEKDAYS: (keyof WeeklyHoursType)[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-
-function weekdayOf(date: string): keyof WeeklyHoursType {
-  const [year, month, day] = date.split("-").map(Number);
-  return WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
-}
-
 // The person's windows on a date, by the same merge the booking window uses: an own week takes only
 // their own one-off dates; someone following the business also gets the business's, their own
 // winning on the same date; a one-off date replaces that day's week.

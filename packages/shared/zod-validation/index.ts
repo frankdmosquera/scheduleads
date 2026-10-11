@@ -18,6 +18,7 @@ export * from "./booking-links-validation-schemas/booking-link-id-validation-sch
 export * from "./booking-links-validation-schemas/free-times-query-validation-schema.js";
 export * from "./booking-links-validation-schemas/create-booking-validation-schema.js";
 export * from "./booking-links-validation-schemas/move-booking-validation-schema.js";
+export * from "./booking-links-validation-schemas/cancel-bookings-validation-schema.js";
 export * from "./booking-links-validation-schemas/service-validation-schema.js";
 export * from "./booking-links-validation-schemas/save-service-resources-validation-schema.js";
 export * from "./resource-validation-schemas/resource-name-validation-schema.js";
@@ -26,5 +27,7 @@ export * from "./resource-validation-schemas/save-resource-validation-schema.js"
 export * from "./availability-validation-schemas/weekly-hours-validation-schema.js";
 export * from "./availability-validation-schemas/date-hours-validation-schema.js";
 export * from "./availability-validation-schemas/availability-rule-validation-schema.js";
+export * from "./availability-validation-schemas/close-day-validation-schema.js";
+export * from "./availability-validation-schemas/open-closed-day-validation-schema.js";
 export * from "./text-validation-schemas/text-settings-validation-schema.js";
 export * from "./text-validation-schemas/worker-text-settings-validation-schema.js";

@@ -5,7 +5,7 @@ import { addDays } from "@scheduleads-app/shared/add-days";
 import { localDate } from "@scheduleads-app/shared/local-date";
 import type { DateHoursType, WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
 
-import { closedHolidayDates } from "./closed-holidays.js";
+import { closedDaysBetween } from "./closed-days-between.js";
 
 // The business's row, with the settings the database guarantees are set on it.
 export type BusinessHoursInputType = {
@@ -60,16 +60,9 @@ export function applyBookableHoursRules(
   const openedDates = new Set(
     [...business.dateHours, ...personDateHours].map((entry) => entry.date)
   );
-  const pickedHolidays = closedHolidayDates(
-    business.holidayCountry,
-    business.holidayRegion,
-    business.closedHolidays,
-    firstDate,
-    lastDate
-  );
-  const closedDates = [...new Set([...business.closedDates, ...pickedHolidays])]
-    .filter((date) => insideHorizon(date) && !openedDates.has(date))
-    .sort();
+  const closedDates = closedDaysBetween(business, firstDate, lastDate)
+    .map((closed) => closed.date)
+    .filter((date) => !openedDates.has(date));
 
   return {
     source: hasOwnWeek ? "resource" : "organization",

@@ -1,7 +1,7 @@
 // Backend: who hears about a booking by email, decided in this one place. The customer, when they
 // gave an email; the business's notification address, unless the owner made the booking
-// themselves (decision 10); the booked person only at their work email (12d.4, which replaces
-// feature 6's decision 11 for a person who has one), whoever made the booking.
+// themselves (decision 10); the booked person only at their work email (which replaces feature
+// 6's decision 11 for a person who has one), whoever made the booking.
 
 export type BookingEmailRecipientsInputType = {
   source: string; // the lead's: "widget", "hosted" or "manual" (the owner)

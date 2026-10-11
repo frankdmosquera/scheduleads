@@ -52,8 +52,8 @@ function mondayAfterDays(days: number): string {
 type ResourceSeedType = ClientSetupInputType["people"][number];
 type ServiceSeedType = ClientSetupInputType["services"][number];
 
-// Alberta's nine main holidays, the picker's one-click set (feature 12).
-const albertaMainHolidays = [
+// Alberta's nine statutory holidays, the picker's one-click set (feature 12).
+const albertaStatutoryHolidays = [
   "New Year's Day",
   "Family Day",
   "Good Friday",
@@ -136,7 +136,7 @@ const ACCOUNTS = [
         closedDates: [daysFromToday(21)], // inside the 60-day window
         holidayCountry: "CA",
         holidayRegion: "AB",
-        closedHolidays: albertaMainHolidays, // as if the owner pressed "all main holidays"
+        closedHolidays: albertaStatutoryHolidays, // as if the owner pressed "Close them all"
       },
       // The business's first person (the owner, the estimator) is made separately, below.
       people: [
@@ -216,13 +216,8 @@ const ACCOUNTS = [
         closedDates: [daysFromToday(21)],
         holidayCountry: "CA",
         holidayRegion: "AB",
-        // As if the owner picked one by one, a national-only day among them.
-        closedHolidays: [
-          "New Year's Day",
-          "National Day for Truth and Reconciliation",
-          "Canada Day",
-          "Christmas Day",
-        ],
+        // As if the owner picked a few one by one.
+        closedHolidays: ["New Year's Day", "Canada Day", "Christmas Day"],
       },
       // Six practitioners with every kind of hours, then the five rooms feature 5 wires up.
       people: [
