@@ -320,7 +320,7 @@ without Frank touching the database.
     review, F-32: a holiday pick is saved as the package's name, so a
     renamed holiday would break that business's booking page. Decide here:
     check picks when they are saved, or save a name that never changes
-  - [ ] 12f. **The booking form** - the booking questions (5d, Frank,
+  - [x] 12f. **The booking form** - the booking questions (5d, Frank,
     Oct 2): the owner adds the business's own questions (up to about 20)
     under the standard ones, starting from a ready-made set for the trade
     (painting, clinic), and picks whether the form requires an email, a
