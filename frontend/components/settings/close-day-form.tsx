@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { addDays } from "@scheduleads-app/shared/add-days";
 import { localDate } from "@scheduleads-app/shared/local-date";
 
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { DaysOffSettingsType } from "@/lib/api-client/settings/fetch-days-off";
-import { saveDaysOff, type SavedDaysOffType } from "@/lib/api-client/settings/save-days-off";
+import { closeDay, type ClosedDayAnswerType } from "@/lib/api-client/settings/save-days-off";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 export function CloseDayForm({
@@ -24,7 +25,7 @@ export function CloseDayForm({
 }: {
   daysOff: DaysOffSettingsType;
   timezone: string; // the business's, so "today" is its today
-  onClosed: (answer: SavedDaysOffType, date: string) => void;
+  onClosed: (answer: ClosedDayAnswerType, date: string) => void;
   onCancel: () => void;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -33,21 +34,17 @@ export function CloseDayForm({
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   const form = useForm<{ date: string }>({ defaultValues: { date: "" } });
   const today = localDate(new Date(), timezone);
+  const lastDay = addDays(today, 365); // the page lists a year ahead, so a later day would not show
 
   useEffect(() => dateRef.current?.focus(), []); // the form opens where the owner will pick
 
   async function save({ date }: { date: string }) {
-    const saved = await saveDaysOff({
-      closedDates: [...daysOff.closedDates, date],
-      holidayCountry: daysOff.holidayCountry,
-      holidayRegion: daysOff.holidayRegion,
-      closedHolidays: daysOff.closedHolidays,
-    });
+    const saved = await closeDay({ date });
     if (saved.state === "ok") {
       onClosed(saved.answer, date);
       return;
     }
-    if (saved.state === "field" && saved.field.startsWith("closedDates")) {
+    if (saved.state === "field" && saved.field === "date") {
       form.setError("date", { message: saved.message });
       focusFirstInvalid();
       return;
@@ -61,9 +58,11 @@ export function CloseDayForm({
     validate: (date) =>
       date < today
         ? "Pick today or a later date."
-        : daysOff.closedDays.some((day) => day.date === date && !day.openedForEveryone)
-          ? "That day is already closed."
-          : true,
+        : date > lastDay
+          ? "Pick a date within a year."
+          : daysOff.closedDays.some((day) => day.date === date && !day.openedForEveryone)
+            ? "That day is already closed."
+            : true,
     onChange: () => setNotice(null),
   });
 
@@ -88,6 +87,7 @@ export function CloseDayForm({
           id="close-day-date"
           type="date"
           min={today}
+          max={lastDay}
           {...dateField}
           ref={(element) => {
             dateFieldRef(element);

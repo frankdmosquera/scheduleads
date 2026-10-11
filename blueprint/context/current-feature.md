@@ -168,9 +168,13 @@ the business has hours.
 strict: dates `YYYY-MM-DD`, no repeats; a province needs a country; picks need a country and must
 be in the package's list for that country and province. `200 { daysOff, newlyClosed }`:
 `daysOff` as the GET answers it (without `canEdit`), `newlyClosed` 12a's rows `{ bookingId, leadId, customerName, serviceName,
-personName, startsAt, endsAt }`, ISO, soonest first. A date the save adds to `closedDates` loses the
-business's one-off hours on it (amended in 12e.1: a one-off date opens a closed day, so the close
-would do nothing); people's own one-off dates stay, as their openings.
+personName, startsAt, endsAt }`, ISO, soonest first. Writes only the four columns.
+
+**`POST /settings/days-off/close`** `{ date }` (amended in 12e.1's review, F-365): closes one day for
+everyone: the date joins `closedDates` once, and the business's one-off hours on it go, since a
+one-off date opens a closed day; people's own one-off dates stay, as their openings. `200 { daysOff,
+newlyClosed }` as the PUT's. The page's "+ Close a day" uses this; the PUT is the holiday picker's
+(12e.3).
 
 **`POST /settings/days-off/open`** `{ date, personId }` (`personId` null for everyone). `200 {
 daysOff }` as the PUT's (amended in 12e.1: the page refreshes from one shape). `400 not_closed` when the date is not a closed day; `409

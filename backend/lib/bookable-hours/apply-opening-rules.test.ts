@@ -5,7 +5,8 @@ import {
   type BusinessHoursInputType,
   type PersonHoursInputType,
 } from "./apply-bookable-hours-rules.js";
-import { applyOpeningRules, listClosedDays } from "./apply-opening-rules.js";
+import { applyNewlyClosedRules } from "./apply-newly-closed-rules.js";
+import { applyClosingRules, applyOpeningRules, listClosedDays } from "./apply-opening-rules.js";
 
 const nineToFive = { startMinute: 540, endMinute: 1020 };
 const eightToNoon = { startMinute: 480, endMinute: 720 };
@@ -37,6 +38,52 @@ describe("applyOpeningRules", () => {
     expect(listClosedDays(summit, new Map([[ANA, anaOwnMonday]]), noonOct10InEdmonton)).toEqual([
       { date: "2026-11-02", name: null, openedForEveryone: false, openedFor: [] },
     ]);
+
+    // Closing a day that has the business's own hours on Hours takes them back, or it stays open.
+    const withOwnHours = {
+      ...summit,
+      closedDates: [],
+      dateHours: [
+        { date: "2026-11-09", windows: [eightToNoon] },
+        { date: "2026-11-10", windows: [eightToNoon] },
+      ],
+    };
+    const closing = applyClosingRules(withOwnHours, "2026-11-09");
+    expect(closing).toEqual({
+      closedDates: ["2026-11-09"],
+      dateHours: [{ date: "2026-11-10", windows: [eightToNoon] }],
+    });
+    expect(closedFor({ ...withOwnHours, ...closing }, null)).toContain("2026-11-09");
+  });
+
+  test("a day closed beyond the booking window is listed, can be opened, and lists its bookings", () => {
+    // Christmas Eve is past Summit's 60 days, which end December 9, but inside the page's year.
+    const christmasEve = {
+      ...summit,
+      closedDates: ["2026-12-24"],
+      weeklyHours: { thu: [nineToFive] },
+    };
+    expect(listClosedDays(christmasEve, new Map(), noonOct10InEdmonton)).toEqual([
+      { date: "2026-12-24", name: null, openedForEveryone: false, openedFor: [] },
+    ]);
+    expect(applyOpeningRules(christmasEve, null, "2026-12-24", noonOct10InEdmonton)).toMatchObject({
+      ok: true,
+      closedDates: [],
+    });
+    const booking = {
+      personId: "juan",
+      startsAt: new Date("2026-12-24T17:00:00Z"), // 10:00 in Edmonton, UTC-7 in December
+      endsAt: new Date("2026-12-24T18:00:00Z"),
+      status: "confirmed",
+    };
+    const listed = applyNewlyClosedRules(
+      { ...christmasEve, closedDates: [] },
+      christmasEve,
+      new Map(),
+      [booking],
+      noonOct10InEdmonton
+    );
+    expect(listed).toEqual([booking]);
   });
 
   test("a day opened for Ana is open for her only, on her usual hours for that weekday", () => {

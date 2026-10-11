@@ -26,6 +26,7 @@ export * from "./resource-validation-schemas/save-resource-validation-schema.js"
 export * from "./availability-validation-schemas/weekly-hours-validation-schema.js";
 export * from "./availability-validation-schemas/date-hours-validation-schema.js";
 export * from "./availability-validation-schemas/availability-rule-validation-schema.js";
+export * from "./availability-validation-schemas/close-day-validation-schema.js";
 export * from "./availability-validation-schemas/open-closed-day-validation-schema.js";
 export * from "./text-validation-schemas/text-settings-validation-schema.js";
 export * from "./text-validation-schemas/worker-text-settings-validation-schema.js";

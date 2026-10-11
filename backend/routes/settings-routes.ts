@@ -9,6 +9,7 @@ import type { ZodError } from "zod";
 import {
   businessHoursValidationSchema,
   addResourceValidationSchema,
+  closeDayValidationSchema,
   daysOffValidationSchema,
   openClosedDayValidationSchema,
   personHoursValidationSchema,
@@ -25,6 +26,7 @@ import {
 import { refuse } from "../lib/errors/refuse.js";
 import { addResource } from "../lib/settings/add-resource.js";
 import { addService } from "../lib/settings/add-service.js";
+import { closeDay } from "../lib/settings/close-day.js";
 import { findDaysOff } from "../lib/settings/find-days-off.js";
 import { findHoursSettings } from "../lib/settings/find-hours-settings.js";
 import { findPeopleSettings } from "../lib/settings/find-people-settings.js";
@@ -299,8 +301,8 @@ export const settingsRoutes = new Hono()
     }
   )
 
-  // Closing stops new bookings only: the answer lists the upcoming ones on a day now closed, none
-  // changed. Writes the closed days and holiday picks, never the hours.
+  // The closed dates and holiday picks, saved; never the hours. Closing stops new bookings only: the
+  // answer lists the upcoming ones on a day now closed, none changed.
   .put(
     "/days-off",
     requireOrganizationMiddleware,
@@ -319,6 +321,29 @@ export const settingsRoutes = new Hono()
       );
       if (!saved.ok) return c.json(NO_BUSINESS_HOURS, 409);
       return c.json({ daysOff: saved.daysOff, newlyClosed: saved.newlyClosed }, 200);
+    }
+  )
+
+  // Closes one day for everyone, taking back the business's own one-off hours on it, which would
+  // keep it open. Lists the upcoming bookings left on it, none changed.
+  .post(
+    "/days-off/close",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = closeDayValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const closed = await closeDay(
+        c.get("organization").organizationId,
+        c.req.valid("json").date,
+        new Date()
+      );
+      if (!closed.ok) return c.json(NO_BUSINESS_HOURS, 409);
+      return c.json({ daysOff: closed.daysOff, newlyClosed: closed.newlyClosed }, 200);
     }
   )
 
@@ -346,7 +371,7 @@ export const settingsRoutes = new Hono()
         refuse(
           "no_usual_hours",
           opening.personId === null
-            ? "Nobody works that weekday here: set that day's hours on Hours."
+            ? "The business does not work that weekday: set that day's hours on Hours."
             : "They do not work that weekday: set their hours on Hours."
         ),
         409

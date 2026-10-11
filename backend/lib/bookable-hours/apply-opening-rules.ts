@@ -85,3 +85,16 @@ export function applyOpeningRules(
     dateHours: stillClosed ? withDate(business.dateHours) : business.dateHours,
   };
 }
+
+// What closing a day for everyone writes: the date joins the closed dates, and the business's
+// one-off hours on it go, since a one-off date opens a closed day. People's own one-off dates stay:
+// they are openings for them, and the page shows them.
+export function applyClosingRules(
+  business: Pick<BusinessHoursInputType, "closedDates" | "dateHours">,
+  date: string // YYYY-MM-DD
+): { closedDates: string[]; dateHours: DateHoursType } {
+  return {
+    closedDates: [...new Set([...business.closedDates, date])].sort(), // YYYY-MM-DD sorts as text
+    dateHours: business.dateHours.filter((entry) => entry.date !== date),
+  };
+}

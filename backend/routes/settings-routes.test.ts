@@ -948,6 +948,8 @@ describe("the Days off settings", () => {
     expect(await read.json()).toMatchObject({ canEdit: false, closedDates: [], closedDays: [] });
 
     expect((await put("/settings/days-off", helper.email, closeOnly([monday]))).status).toBe(403);
+    const close = await post("/settings/days-off/close", helper.email, { date: monday });
+    expect(close.status).toBe(403);
     const open = await post("/settings/days-off/open", helper.email, {
       date: monday,
       personId: null,
@@ -976,7 +978,7 @@ describe("the Days off settings", () => {
   });
 
   test("a save writes only the four closed-day columns and keeps the hours", async () => {
-    // Summit has its own hours on Monday and on the Tuesday after; then Monday is closed.
+    // Summit has its own hours on Monday and on the Tuesday after; then Monday is saved as closed.
     const oneOffs = [
       { date: monday, windows: [{ startMinute: 600, endMinute: 720 }] },
       { date: addDays(monday, 1), windows: [{ startMinute: 600, endMinute: 720 }] },
@@ -1000,10 +1002,21 @@ describe("the Days off settings", () => {
       closedDates: [monday],
       holidayCountry: "CA",
       holidayRegion: "AB",
-      // Closing Monday takes back the business's own hours on it, or it would stay open.
-      dateHours: [oneOffs[1]],
       updatedAt: expect.any(Date),
     });
+    // Monday's own hours open it again for everyone, as the Hours page meant.
+    const read = (await (
+      await get("/settings/days-off", summit.email)
+    ).json()) as DaysOffAnswerType;
+    expect(read.closedDays[0]).toMatchObject({ date: monday, openedForEveryone: true });
+
+    // Closing Monday from the page takes those hours back, so it is closed; Tuesday's stay.
+    const closed = await post("/settings/days-off/close", summit.email, { date: monday });
+    expect(closed.status).toBe(200);
+    const after = await businessRowOf(summit.organizationId);
+    expect([after.closedDates, after.dateHours]).toEqual([[monday], [oneOffs[1]]]);
+    const answer = (await closed.json()) as SavedDaysOffType;
+    expect(answer.daysOff.closedDays[0]).toMatchObject({ date: monday, openedForEveryone: false });
 
     await put("/settings/days-off", summit.email, closeOnly([]));
     await db.update(availabilityRule).set({ dateHours: [] }).where(eq(availabilityRule.id, rowId));
@@ -1027,8 +1040,11 @@ describe("the Days off settings", () => {
     expect(await early.json()).toMatchObject({ error: { code: "not_closed" }, field: "date" });
 
     // Closed: both bookings listed, neither changed, and the day closed for both.
-    const closed = await put("/settings/days-off", closer.email, closeOnly([monday, sunday]));
+    const closed = await post("/settings/days-off/close", closer.email, { date: monday });
     expect(closed.status).toBe(200);
+    expect((await post("/settings/days-off/close", closer.email, { date: sunday })).status).toBe(
+      200
+    );
     const answer = (await closed.json()) as SavedDaysOffType;
     expect(answer.newlyClosed.map((row) => row.customerName)).toEqual(["Lee", "Maria"]);
     expect(answer.daysOff.closedDays[0]).toEqual({

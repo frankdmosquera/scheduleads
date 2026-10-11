@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { ChoiceField } from "@/components/settings/choice-field";
@@ -35,6 +35,8 @@ export function OpenDayForm({
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   const form = useForm<{ forWhom: string }>(); // unpicked: the owner says who
+  // The form opens where the owner picks: the button that opened it is gone from the page.
+  useEffect(() => formRef.current?.querySelector<HTMLElement>("[role=radiogroup]")?.focus(), []);
   const choices = [
     { value: EVERYONE, label: "Everyone" },
     ...people
