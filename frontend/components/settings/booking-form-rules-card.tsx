@@ -25,10 +25,10 @@ export function BookingFormRulesCard({ settings }: { settings: BookingFormSettin
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
-    const saved = await saveBookingFormRules({
-      contactRule,
-      askLaterTextsYes: askLaterTextsYes ?? false,
-    });
+    // The yes to later texts only when the page showed it, so a save never changes what was not seen.
+    const saved = await saveBookingFormRules(
+      askLaterTextsYes === null ? { contactRule } : { contactRule, askLaterTextsYes }
+    );
     setSaving(false);
     if (saved.state === "ok") {
       setContactRule(saved.answer.contactRule);

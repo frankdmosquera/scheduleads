@@ -18,14 +18,17 @@ export async function saveBookingFormRules(
   { contactRule, askLaterTextsYes }: BookingFormRulesType
 ): Promise<SaveBookingFormRulesResultType> {
   return db.transaction(async (tx) => {
-    // A business with no text settings sends no texts, so its form cannot ask for the yes.
-    const saved = await tx
-      .update(textSettings)
-      .set({ askLaterTextsYes })
-      .where(eq(textSettings.organizationId, organizationId))
-      .returning({ organizationId: textSettings.organizationId });
-    if (!saved.length && askLaterTextsYes)
-      return { ok: false, reason: "no_text_settings" } as const;
+    // Left as it is when the page did not show the choice. A business with no text settings sends
+    // no texts, so its form cannot ask for the yes.
+    if (askLaterTextsYes !== undefined) {
+      const saved = await tx
+        .update(textSettings)
+        .set({ askLaterTextsYes })
+        .where(eq(textSettings.organizationId, organizationId))
+        .returning({ organizationId: textSettings.organizationId });
+      if (!saved.length && askLaterTextsYes)
+        return { ok: false, reason: "no_text_settings" } as const;
+    }
 
     await tx.update(organization).set({ contactRule }).where(eq(organization.id, organizationId));
     const { contactRule: rule, askLaterTextsYes: asking } = await findBookingForm(

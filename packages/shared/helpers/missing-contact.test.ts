@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { missingContact } from "./contact-rule-validation-schema.js";
+import { missingContact } from "./missing-contact.js";
 
 const email = "jane@example.com";
 const phone = "403 555 0100";

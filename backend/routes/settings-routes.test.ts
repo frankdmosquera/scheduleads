@@ -1373,6 +1373,13 @@ describe("the Booking form settings", () => {
       });
       expect(asking.status).toBe(200);
       expect(await rulesOf()).toEqual({ contactRule: "email", askLaterTextsYes: true });
+
+      // A page opened before texts were set up never showed the choice: its save leaves it alone.
+      const unseen = await put("/settings/booking-form/rules", closer.email, {
+        contactRule: "phone",
+      });
+      expect(unseen.status).toBe(200);
+      expect(await rulesOf()).toEqual({ contactRule: "phone", askLaterTextsYes: true });
     } finally {
       await db.delete(textSettings).where(eq(textSettings.organizationId, closer.organizationId));
       await db

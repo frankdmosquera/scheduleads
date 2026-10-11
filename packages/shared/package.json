@@ -48,6 +48,10 @@
       "types": "./dist/helpers/textable-phone-number.d.ts",
       "default": "./dist/helpers/textable-phone-number.js"
     },
+    "./missing-contact": {
+      "types": "./dist/helpers/missing-contact.d.ts",
+      "default": "./dist/helpers/missing-contact.js"
+    },
     "./assert-local-dev-database": {
       "types": "./dist/helpers/assert-local-dev-database.d.ts",
       "default": "./dist/helpers/assert-local-dev-database.js"

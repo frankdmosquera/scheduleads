@@ -18,10 +18,10 @@ import {
   resource,
 } from "@scheduleads-app/shared/db";
 import { localDate } from "@scheduleads-app/shared/local-date";
+import { missingContact } from "@scheduleads-app/shared/missing-contact";
 import { textablePhoneNumber } from "@scheduleads-app/shared/textable-phone-number";
 import {
   contactValidationSchema,
-  missingContact,
   type ContactInputType,
 } from "@scheduleads-app/shared/zod-validation";
 
@@ -88,7 +88,6 @@ export type BookTimeResultType =
         | "in_the_past"
         | "person_not_taken"
         | "answered_twice"
-        | "address_needed"
         | "too_many_tries";
     }
   | { booked: false; reason: "answer_needed"; question: string } // the question's words
@@ -102,7 +101,6 @@ const REQUEST_KEY_USED = { booked: false, reason: "request_key_used" } as const;
 const IN_THE_PAST = { booked: false, reason: "in_the_past" } as const;
 const PERSON_NOT_TAKEN = { booked: false, reason: "person_not_taken" } as const;
 const TOO_MANY_TRIES = { booked: false, reason: "too_many_tries" } as const;
-const ADDRESS_NEEDED = { booked: false, reason: "address_needed" } as const;
 
 // The same form: the same service and start, and the same person when one was picked.
 const isSameRequest = (existing: BookedType, input: BookTimeInputType) =>
@@ -206,15 +204,15 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
   // owner may. Asked after the form's own booking, so a retry of a booked form still gets it.
   if (source !== "manual" && service.personChoice === "business_assigns" && personId !== null)
     return PERSON_NOT_TAKEN;
-  // What the business's form requires (feature 12f): its way to reach the customer, and the address
-  // when the service requires one. The owner, booking from a phone call, may leave both for later.
+  // The business's way to reach the customer (feature 12f); the owner, booking from a phone call, may
+  // leave it for later. A required address left empty is refused by the form's schema; a form that
+  // sent none never showed the box, so its booking is taken without one.
   if (source !== "manual") {
     const missing = missingContact(
       service.contactRule,
       contactValidationSchema.parse(input.customer)
     );
     if (missing) return { booked: false, reason: "contact_needed", ...missing };
-    if (service.addressMode === "required" && !input.location) return ADDRESS_NEEDED;
   }
   // The business's own questions (feature 9, decision 5): a customer answers the required ones; the
   // owner, booking from a phone call, need not.

@@ -372,14 +372,32 @@ describe("the address, asked per service (the address fix)", () => {
       .where(eq(bookingLink.id, clinic.estimate));
   });
 
-  test("a service that asks refuses a booking with no address, and books nothing", async () => {
+  // The booking window sends a required address's box even when empty.
+  test("a service that requires one refuses an empty address, and books nothing", async () => {
     const [startsAt] = await freeTimes(clinic.mei);
-    const { location: _left, ...noAddress } = form(startsAt, { personId: clinic.mei });
-    const response = await post(bookingsPath, noAddress);
+    const response = await post(
+      bookingsPath,
+      form(startsAt, { personId: clinic.mei, location: " " })
+    );
 
     expect(response.status).toBe(400);
     expect((await response.json()).error.message).toBe("Enter the address.");
     expect(await freeTimes(clinic.mei)).toContain(startsAt);
+  });
+
+  // A form opened before the address was switched on never showed the box, so it sends none.
+  test("a service that requires one takes a booking that sent no address, and keeps none", async () => {
+    const [startsAt] = await freeTimes(clinic.mei);
+    const { location: _left, ...noAddress } = form(startsAt, { personId: clinic.mei });
+    const response = await post(bookingsPath, noAddress);
+
+    expect(response.status).toBe(201);
+    const { booking: made } = await response.json();
+    expect(await savedLocation(made.id)).toBeNull();
+    await db
+      .update(commitment)
+      .set({ status: "cancelled" })
+      .where(eq(commitment.bookingId, made.id)); // its time given back, so the test day lasts
   });
 
   test("a service that asks none books with no address, and keeps none", async () => {

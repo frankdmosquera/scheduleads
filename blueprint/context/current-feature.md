@@ -111,13 +111,15 @@ questions: { label, required }[] }`; `contactRule` and `askLaterTextsYes` from 1
 20, labels 1 to 200 characters trimmed, no two the same (ignoring case). Order is the list's order.
 `200 { questions }` as the GET's. `404 not_found` for an id not this business's.
 
-**`PUT /settings/booking-form/rules`** (12f.2) `{ contactRule, askLaterTextsYes }`, strict.
+**`PUT /settings/booking-form/rules`** (12f.2) `{ contactRule, askLaterTextsYes? }`, strict;
+`askLaterTextsYes` left out when the page did not show it (no text settings), and then left as it is.
 `200 { contactRule, askLaterTextsYes }` as saved (amended at 12f.2: the card needs only these two);
 `409 no_text_settings` for a yes without text settings.
 
 **Booking (public)**: `customer.email` required when the rule is `email`, `customer.phone` when
-`phone`, one of them when `either` (today's rule); `location` required when the service's
-`addressMode` is `required`, taken when `optional`, ignored (not kept) when `not_asked` (Frank,
+`phone`, one of them when `either` (today's rule); `location`, when the service's
+`addressMode` is `required`, refused empty and taken missing (left blank: the form never showed the
+box; amended after 12f.2's review), taken when `optional`, ignored (not kept) when `not_asked` (Frank,
 2026-10-11, at 12f.2's plan: a form opened before the address was switched off still books). Errors keep the public
 route's shape, `400 { error: { code, message } }` with no `field` (amended at 12f.2: the booking
 window marks the field itself, with the same `missingContact`, before anything is sent). `answers` (amended after 12f.1's review) carries
@@ -159,3 +161,6 @@ One test per rule that would hurt if broken:
 - A booking sent from a form opened before the owner changed the questions is always taken
   (Frank, 2026-10-11, at 12f.1's review): answers keep the words the customer read, a newly
   required question they never saw stays blank, and a fresh form still requires it.
+- The same for the address (Frank, 2026-10-11, at 12f.2's review): a form opened before a service's
+  address was made required sends none, and its booking is taken with the address blank; a form
+  that showed the box and left it empty is still refused.

@@ -2,10 +2,8 @@
 // schema the route checks, before anything is sent. Every error is tied to its field, in the
 // form's own order, so the first one is where focus goes.
 
-import {
-  createBookingValidationSchema,
-  missingContact,
-} from "@scheduleads-app/shared/zod-validation";
+import { missingContact } from "@scheduleads-app/shared/missing-contact";
+import { createBookingValidationSchema } from "@scheduleads-app/shared/zod-validation";
 
 import type {
   BookingBusinessType,
