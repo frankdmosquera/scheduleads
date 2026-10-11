@@ -1,7 +1,7 @@
 // Backend: sends one saved booking's emails, from the business through its own Resend key: the
 // customer's confirmation with the invite attached and the link to the booking's own page, the
-// business's notification, and the booked person's own when they have a work email (12d.4). Each email that went gets an email_sent entry on the contact's timeline,
-// with no address and no content.
+// business's notification, and the booked person's own when they have a work email. Each email
+// that went gets an email_sent entry on the contact's timeline, with no address and no content.
 // A business without its two addresses, its key or its time zone sends nothing (decision 4).
 
 import { renderBookingConfirmation } from "../../emails/booking-confirmation.js";

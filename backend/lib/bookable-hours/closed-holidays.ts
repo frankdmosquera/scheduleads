@@ -17,16 +17,16 @@ function holidayList(country: string, region: string | null): Holidays {
   return list;
 }
 
-// The picked holidays' dates from firstDate to lastDate, both included, looked up in the
-// province's list and the country's own. Throws on an unknown country, province or name
+// The picked holidays from firstDate to lastDate, both included, each date with its name, looked
+// up in the province's list and the country's own. Throws on an unknown country, province or name
 // rather than drop a closure: the package quietly uses the national list for a bad province.
-export function closedHolidayDates(
+export function closedHolidays(
   country: string | null,
   region: string | null,
   names: string[],
   firstDate: string,
   lastDate: string
-): string[] {
+): { date: string; name: string }[] {
   if (names.length === 0) return [];
   if (!country) throw new Error("Picked holidays need the country they come from.");
 
@@ -52,11 +52,12 @@ export function closedHolidayDates(
     }
   }
 
-  const closed = new Set<string>();
+  const closed: { date: string; name: string }[] = [];
   for (const name of names) {
     const dates = datesByName.get(name);
     if (!dates) throw new Error(`The holiday list has no holiday named "${name}".`);
-    for (const date of dates) if (date >= firstDate && date <= lastDate) closed.add(date);
+    for (const date of dates)
+      if (date >= firstDate && date <= lastDate) closed.push({ date, name });
   }
-  return [...closed];
+  return closed;
 }

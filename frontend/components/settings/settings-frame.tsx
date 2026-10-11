@@ -11,6 +11,7 @@ const SECTIONS = [
   { href: "/settings/hours", label: "Hours" },
   { href: "/settings/services", label: "Services" },
   { href: "/settings/people", label: "People" },
+  { href: "/settings/days-off", label: "Days off" },
 ];
 
 export function SettingsFrame({ children }: { children: ReactNode }) {

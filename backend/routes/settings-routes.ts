@@ -1,6 +1,6 @@
-// Backend: the owner's Settings pages: Hours (feature 12a), Services and People (12d). The business always comes from the
-// session, never from the request; any member may read, only a role that may change the business
-// may save.
+// Backend: the owner's Settings pages: Hours (feature 12a), Services and People (12d), Days off
+// (12e). The business always comes from the session, never from the request; any member may read,
+// only a role that may change the business may save.
 
 import { Hono, type Context } from "hono";
 import { validator } from "hono/validator";
@@ -9,12 +9,15 @@ import type { ZodError } from "zod";
 import {
   businessHoursValidationSchema,
   addResourceValidationSchema,
+  daysOffValidationSchema,
+  openClosedDayValidationSchema,
   personHoursValidationSchema,
   saveResourceValidationSchema,
   saveServiceResourcesValidationSchema,
   serviceValidationSchema,
 } from "@scheduleads-app/shared/zod-validation";
 
+import { db } from "../database.js";
 import {
   hasBusinessPermission,
   type PermissionsType,
@@ -22,10 +25,13 @@ import {
 import { refuse } from "../lib/errors/refuse.js";
 import { addResource } from "../lib/settings/add-resource.js";
 import { addService } from "../lib/settings/add-service.js";
+import { findDaysOff } from "../lib/settings/find-days-off.js";
 import { findHoursSettings } from "../lib/settings/find-hours-settings.js";
 import { findPeopleSettings } from "../lib/settings/find-people-settings.js";
 import { findServicesSettings } from "../lib/settings/find-services-settings.js";
+import { openClosedDay } from "../lib/settings/open-closed-day.js";
 import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
+import { saveDaysOff } from "../lib/settings/save-days-off.js";
 import { savePersonHours } from "../lib/settings/save-person-hours.js";
 import { saveResource } from "../lib/settings/save-resource.js";
 import { saveService } from "../lib/settings/save-service.js";
@@ -36,6 +42,7 @@ import { requireKnownSubscriptionMiddleware } from "../middleware/subscription-m
 import { requireModuleMiddleware } from "../middleware/subscription-middleware/require-module-middleware.js";
 
 const CHANGE_BUSINESS: PermissionsType = { organization: ["update"] };
+const NO_BUSINESS_HOURS = refuse("no_business_hours", "Set the business's hours first.");
 // Says which field, so the form shows it under the name rather than as a general failure.
 const NAME_TAKEN = {
   ...refuse("name_taken", "Another person or place here already has that name."),
@@ -113,8 +120,7 @@ export const settingsRoutes = new Hono()
       );
       if (!saved.ok && saved.reason === "no_person")
         return c.json(refuse("not_found", "No person here."), 404);
-      if (!saved.ok)
-        return c.json(refuse("no_business_hours", "Set the business's hours first."), 409);
+      if (!saved.ok) return c.json(NO_BUSINESS_HOURS, 409);
       return c.json({ person: saved.person, outsideHours: saved.outsideHours }, 200);
     }
   )
@@ -273,5 +279,77 @@ export const settingsRoutes = new Hono()
           409
         );
       return c.json({ resource: saved.resource, upcomingBookings: saved.upcomingBookings }, 200);
+    }
+  )
+
+  // The Days off page: the closed days and holiday picks, every closed day for a year with who it is
+  // opened for, and the people a day can be opened for.
+  .get(
+    "/days-off",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    async (c) => {
+      const { organizationId } = c.get("organization");
+      const [daysOff, canEdit] = await Promise.all([
+        findDaysOff(db, organizationId, new Date()),
+        hasBusinessPermission(c.req.raw.headers, organizationId, CHANGE_BUSINESS),
+      ]);
+      return c.json({ canEdit, ...daysOff }, 200);
+    }
+  )
+
+  // Closing stops new bookings only: the answer lists the upcoming ones on a day now closed, none
+  // changed. Writes the closed days and holiday picks, never the hours.
+  .put(
+    "/days-off",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = daysOffValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const saved = await saveDaysOff(
+        c.get("organization").organizationId,
+        c.req.valid("json"),
+        new Date()
+      );
+      if (!saved.ok) return c.json(NO_BUSINESS_HOURS, 409);
+      return c.json({ daysOff: saved.daysOff, newlyClosed: saved.newlyClosed }, 200);
+    }
+  )
+
+  // Opens a closed day for one person (personId) or for everyone (null). Another business's person,
+  // a place or an unknown id: the same 404.
+  .post(
+    "/days-off/open",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = openClosedDayValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const opening = c.req.valid("json");
+      const opened = await openClosedDay(c.get("organization").organizationId, opening, new Date());
+      if (opened.ok) return c.json({ daysOff: opened.daysOff }, 200);
+      if (opened.reason === "no_person") return c.json(refuse("not_found", "No person here."), 404);
+      if (opened.reason === "no_business_hours") return c.json(NO_BUSINESS_HOURS, 409);
+      if (opened.reason === "not_closed")
+        return c.json({ ...refuse("not_closed", "That day is not closed."), field: "date" }, 400);
+      return c.json(
+        refuse(
+          "no_usual_hours",
+          opening.personId === null
+            ? "Nobody works that weekday here: set that day's hours on Hours."
+            : "They do not work that weekday: set their hours on Hours."
+        ),
+        409
+      );
     }
   );

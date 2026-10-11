@@ -254,7 +254,7 @@ describe("runClientSetup", () => {
   it("finds a service renamed on Settings by its new name, never adding it twice", async () => {
     const business = await makeBusiness();
     await runClientSetup(db, setupFor(business.slug), { apply: true });
-    // Settings renames a service and keeps its slug (12d.1).
+    // Settings renames a service and keeps its slug.
     await db
       .update(bookingLink)
       .set({ name: "Video consult" })
@@ -285,7 +285,7 @@ describe("runClientSetup", () => {
   it("finds people renamed on Settings, the first one by its login, never adding them twice", async () => {
     const business = await makeBusiness();
     await runClientSetup(db, setupFor(business.slug), { apply: true });
-    // Settings renames the first person and changes the case of another (12d.2).
+    // Settings renames the first person and changes the case of another.
     await db
       .update(resource)
       .set({ name: "Owner" })

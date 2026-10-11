@@ -281,10 +281,10 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Inside the booking's transaction, read the chosen person's row `for key share` (or `for share`) and refuse as unavailable when it is no longer active; or record the gap as accepted with F-331.
 **Resolution:**
 
-### F-364 [P3] open - Code comments added by this feature cite step numbers, which the standards keep out of code
+### F-364 [P3] fixed - Code comments added by this feature cite step numbers, which the standards keep out of code
 
 **File:** backend/lib/bookable-hours/apply-outside-hours-rules.ts:3; backend/lib/booking/book-time.ts:329; backend/lib/email/find-booking-email-context.ts:35; backend/lib/email/find-booking-email-recipients.ts:3; backend/lib/email/send-booking-emails.ts:3; backend/lib/settings/resource-settings-of.ts:10; frontend/components/settings/change-resource-form.tsx:3; packages/shared/client-setup/run-client-setup.test.ts:257, 288
 **Found:** 2026-10-10 by the independent review of feature 12d (scope: current, e1a5d8f..9417aa7; lenses: quality, security, performance, tests)
 **Why it matters:** coding-standards.md (Comments) says "No history in code comments (step numbers, finding numbers ...): that lives in the build log." F-363 removed the finding numbers, but this feature also adds nine comments tagged with a step number, `(12d.1)`, `(12d.2)`, `(12d.4)` or `(12d.5)`, for example "the booked person's, read when the email goes (12d.4)". The base has none (searched at e1a5d8f). A step is build history: once merged, `12d.4` means something only to someone who opens the build log, and each sentence already says what the code does without it. The older `(feature N)` and `(decision N)` tags are an established pattern in the base and are not part of this. Naming only, no behaviour.
 **Suggested fix:** Drop the `(12d.N)` tags from the nine comments, keeping each sentence (in find-booking-email-recipients.ts:3 keep "which replaces feature 6's decision 11 for a person who has one"; in send-booking-emails.ts:3 also rewrap the line, which runs past 100 characters).
-**Resolution:**
+**Resolution:** fixed in step 12e.1: the nine comments keep their sentences without the (12d.N) tags; send-booking-emails.ts rewrapped.

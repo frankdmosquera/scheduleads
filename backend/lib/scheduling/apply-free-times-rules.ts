@@ -3,9 +3,9 @@
 
 import { addDays } from "@scheduleads-app/shared/add-days";
 import { localDate } from "@scheduleads-app/shared/local-date";
-import type { WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
 
 import type { ResolvedBookableHoursType } from "../bookable-hours/apply-bookable-hours-rules.js";
+import { weekdayOf } from "../bookable-hours/weekday-of.js";
 import type { BusyBlockType } from "../calendar/calendar-provider.js";
 import { localTimeToMoment } from "../local-time/local-time-to-moment.js";
 import { appointmentSpan } from "./appointment-span.js";
@@ -31,13 +31,6 @@ export type FreeTimesInputType = {
 };
 
 const MINUTE_MS = 60_000;
-const WEEKDAYS: (keyof WeeklyHoursType)[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-
-function weekdayOf(date: string): keyof WeeklyHoursType {
-  const [year, month, day] = date.split("-").map(Number);
-  return WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
-}
-
 export function applyFreeTimesRules(input: FreeTimesInputType): Date[] {
   const { hours, service, busy, standbyDates, rooms, now } = input;
   const today = localDate(now, hours.timezone);

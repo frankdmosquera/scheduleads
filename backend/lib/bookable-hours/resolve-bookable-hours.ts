@@ -8,37 +8,9 @@ import { availabilityRule, resource } from "@scheduleads-app/shared/db";
 import { db } from "../../database.js";
 import {
   applyBookableHoursRules,
-  type BusinessHoursInputType,
   type ResolvedBookableHoursType,
 } from "./apply-bookable-hours-rules.js";
-
-export type AvailabilityRuleRowType = typeof availabilityRule.$inferSelect;
-
-// The database check guarantees these on the business's row. A row without them is a
-// corrupt row, a real fault, so it throws instead of being read as "closed".
-function toBusinessHours(row: AvailabilityRuleRowType): BusinessHoursInputType {
-  const { weeklyHours, timezone, minimumNoticeMinutes, horizonDays, closedDates } = row;
-  if (
-    weeklyHours === null ||
-    timezone === null ||
-    minimumNoticeMinutes === null ||
-    horizonDays === null ||
-    closedDates === null
-  ) {
-    throw new Error(`availability_rule ${row.id} is the business's row but is missing a setting.`);
-  }
-  return {
-    weeklyHours,
-    dateHours: row.dateHours,
-    timezone,
-    minimumNoticeMinutes,
-    horizonDays,
-    closedDates,
-    holidayCountry: row.holidayCountry,
-    holidayRegion: row.holidayRegion,
-    closedHolidays: row.closedHolidays,
-  };
-}
+import { businessHoursInputOf } from "./business-hours-input-of.js";
 
 // null when the business has no hours yet, or the person is not one of its own.
 export async function resolveBookableHours(
@@ -58,7 +30,7 @@ export async function resolveBookableHours(
 
   if (!businessRow) return null;
 
-  const business = toBusinessHours(businessRow);
+  const business = businessHoursInputOf(businessRow);
 
   if (resourceId === null) return applyBookableHoursRules(business, null, now);
 
