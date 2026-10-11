@@ -6,6 +6,8 @@
 
 **Branch:** feature/12f-the-booking-form
 
+**Status:** verified 2026-10-11: both steps built and reviewed, every finding fixed; backend 980, shared 177 and booking component 83 tests pass, the frontend builds and lints. Then a final review of the whole feature.
+
 ## Goal
 
 The owner sets the booking form on Settings: the business's own questions (up to 20, under the
