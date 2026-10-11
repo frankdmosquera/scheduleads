@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { cancelBookings } from "@/lib/api-client/bookings/cancel-bookings";
 
 const ALL = "all"; // never a booking's id, which is a UUID
+const MOST_AT_ONCE = 100; // the API's cap on one request; Cancel all sends a longer list in parts
 const HEADING_ID = "closed-day-bookings-title";
 
 export function ClosedDayBookings({
@@ -37,23 +38,30 @@ export function ClosedDayBookings({
 
   async function cancel(bookingIds: string[]) {
     setBusy(true);
-    const result = await cancelBookings(bookingIds);
+    const [cancelled, alreadyCancelled, alreadyStarted]: string[][] = [[], [], []];
+    let refusal: string | null = null;
+    for (let start = 0; start < bookingIds.length && !refusal; start += MOST_AT_ONCE) {
+      const result = await cancelBookings(bookingIds.slice(start, start + MOST_AT_ONCE));
+      if (result.state !== "ok") refusal = result.message;
+      else {
+        cancelled.push(...result.answer.cancelled);
+        alreadyCancelled.push(...result.answer.alreadyCancelled);
+        alreadyStarted.push(...result.answer.alreadyStarted);
+      }
+    }
     setBusy(false);
     setAsking(null);
-    if (result.state !== "ok") {
-      setNotice({ tone: "error", text: result.message });
-      return;
-    }
-    const { cancelled, alreadyCancelled, alreadyStarted } = result.answer;
+    document.getElementById(HEADING_ID)?.focus(); // the button pressed is gone with its question
     const gone = new Set([...cancelled, ...alreadyCancelled]);
     const started = bookings.filter((booking) => alreadyStarted.includes(booking.bookingId));
     setBookings((current) => current.filter((booking) => !gone.has(booking.bookingId)));
     const count = gone.size;
     if (count) onCancelled();
     setNotice({
-      tone: started.length ? "error" : "info",
+      tone: started.length || refusal ? "error" : "info",
       text: [
         count ? `Cancelled ${count === 1 ? "one booking" : `${count} bookings`}.` : "",
+        refusal ?? "",
         ...started.map(
           (booking) =>
             `${booking.customerName}'s booking has already started, so it was not cancelled.`
@@ -62,8 +70,14 @@ export function ClosedDayBookings({
         .filter(Boolean)
         .join(" "),
     });
-    document.getElementById(HEADING_ID)?.focus(); // the button pressed may be gone
   }
+
+  // Who a cancel reaches: the email goes only to a customer who left one.
+  const toldOne = (name: string, hasEmail: boolean) =>
+    hasEmail
+      ? `${name} gets the cancellation email.`
+      : `${name} left no email, so is not told: call them from their lead.`;
+  const notTold = bookings.filter((booking) => !booking.customerHasEmail).length;
 
   const question = (text: string, yes: string, bookingIds: string[]) => (
     <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-card p-3">
@@ -101,12 +115,16 @@ export function ClosedDayBookings({
       </div>
       {bookings.length ? (
         <p className="mt-1 text-sm text-muted-foreground">
-          Still booked. Keep them, or cancel them: each customer is told as if they had cancelled.
+          Still booked. Keep them, or cancel them: a customer who left an email is told.
         </p>
       ) : null}
       {asking === ALL
         ? question(
-            `Cancel all ${bookings.length} bookings? Each customer gets the cancellation email.`,
+            `Cancel all ${bookings.length} bookings? Each customer with an email gets the cancellation email.${
+              notTold
+                ? ` ${notTold === 1 ? "One left" : `${notTold} left`} no email and ${notTold === 1 ? "is" : "are"} not told.`
+                : ""
+            }`,
             "Cancel all",
             bookings.map((booking) => booking.bookingId)
           )
@@ -140,7 +158,7 @@ export function ClosedDayBookings({
             </div>
             {asking === booking.bookingId
               ? question(
-                  `Cancel ${booking.customerName}'s booking? ${booking.customerName} gets the cancellation email.`,
+                  `Cancel ${booking.customerName}'s booking? ${toldOne(booking.customerName, booking.customerHasEmail)}`,
                   "Cancel the booking",
                   [booking.bookingId]
                 )

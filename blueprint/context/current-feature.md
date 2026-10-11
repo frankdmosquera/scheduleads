@@ -33,7 +33,9 @@ already ported.
   come on the days it closed, still booked (12a's list), each linking to its lead.
 - **Cancelling from the list (12e.2)**: under that list, "Cancel" on each booking and "Cancel all",
   each confirmed first. A cancel is the customer's cancel done by the owner: the time is freed,
-  the customer gets the cancellation email, the booked person their "off your day" text, the
+  the customer gets the cancellation email, opening "Summit had to cancel your booking." rather
+  than the customer's own "Thanks for letting us know" (F-370, Frank 2026-10-11), the booked
+  person their "off your day" text, the
   Google event comes out, and the lead's timeline names the owner.
 - **The holiday picker (12e.3)**: the owner picks the country and the province from the holiday
   package's own list (none picked by default); the page lists that province's and that country's
@@ -187,8 +189,9 @@ ahead, sorted. An unknown country or province is `400` on the field.
 **`POST /bookings/cancel`** `{ bookingIds }`, 1 to 100, no repeats. `200 { cancelled,
 alreadyCancelled, alreadyStarted }`, each a list of booking ids.
 
-**Errors**: 400 `{ error: { code, message }, field }`; 409 `no_usual_hours` "Nobody works that
-weekday here: set that day's hours on Hours."; 400 `not_closed` "That day is not closed."; 401/403
+**Errors**: 400 `{ error: { code, message }, field }`; 409 `no_usual_hours` "The business does
+not work that weekday: set that day's hours on Hours." (for everyone; for a person "They do not
+work that weekday: set their hours on Hours."); 400 `not_closed` "That day is not closed."; 401/403
 as 12a.
 
 **Formats**: dates `YYYY-MM-DD` on the business's clock; a holiday pick is the package's English

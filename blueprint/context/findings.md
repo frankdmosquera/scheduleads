@@ -289,42 +289,82 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Drop the `(12d.N)` tags from the nine comments, keeping each sentence (in find-booking-email-recipients.ts:3 keep "which replaces feature 6's decision 11 for a person who has one"; in send-booking-emails.ts:3 also rewrap the line, which runs past 100 characters).
 **Resolution:** fixed in step 12e.1: the nine comments keep their sentences without the (12d.N) tags; send-booking-emails.ts rewrapped. Closed 2026-10-10 by independent review of step 12e.1: all nine places read at 080673f, each sentence kept and untagged; `git grep -E "12[a-z]\.[0-9]"` over backend, frontend and packages finds no step tag left; send-booking-emails.ts:3-4 rewrapped, no behaviour touched.
 
-### F-365 [P3] fixed - A closed date opened by the business's one-off hours on Hours cannot be closed again from Days off
+### F-365 [P3] closed - A closed date opened by the business's one-off hours on Hours cannot be closed again from Days off
 
 **File:** frontend/components/settings/close-day-form.tsx:41; backend/lib/settings/save-days-off.ts:48
 **Found:** 2026-10-10 by independent review of step 12e.1 (scope: c40fa2d..080673f; lenses: quality, security, performance, tests)
 **Why it matters:** The Hours page still saves the business's one-off dates freely, so a date can be in `closedDates` and also have a business one-off date. The page then shows it "Open for everyone" with no Open again button, and the close form's own check lets it through (`!day.openedForEveryone`). The form sends `[...daysOff.closedDates, date]`, which repeats the date, so the save is refused with "The same closed date is listed twice." under Date. Even with the repeat removed, the server's `added` only counts dates not already in `closedDates`, so the one-off would stay and the day would stay open. The owner has no way to close that day from Days off, and the message does not say why.
 **Suggested fix:** Send the list without repeats (a `Set`) from the form, and on the server count a submitted date as newly closed when it was not closed for the business before (not in `closedFor(before, null)`), so its business one-off is dropped as for any other close.
-**Resolution:** fixed in the 12e.1 review fixes: closing goes through POST /settings/days-off/close, which adds the date once and always takes back the business's one-off hours on it (applyClosingRules); the PUT writes only the four columns again. Route test, and a hand check on Summit (Oct 30 with its own hours showed Open for everyone, then Closed).
+**Resolution:** fixed in the 12e.1 review fixes: closing goes through POST /settings/days-off/close, which adds the date once and always takes back the business's one-off hours on it (applyClosingRules); the PUT writes only the four columns again. Route test, and a hand check on Summit (Oct 30 with its own hours showed Open for everyone, then Closed). Closed 2026-10-10 by independent review of step 12e.2: read at 1812c4a, close-day-form.tsx now posts only `{ date }` to POST /settings/days-off/close, and `applyClosingRules` (apply-opening-rules.ts:92) adds the date once (a Set) and drops the business's one-off on it while people's stay; the PUT keeps `before.dateHours`, which is right for the holiday picker it now serves. The unit case and the route test (settings-routes.test.ts, Monday shown open for everyone, then closed with Tuesday's hours kept) prove it; backend suite 955/955.
 
-### F-366 [P3] fixed - Opening a plain closed date for everyone needs the business's own hours that weekday, and the refusal says nobody works it
+### F-366 [P3] closed - Opening a plain closed date for everyone needs the business's own hours that weekday, and the refusal says nobody works it
 
 **File:** backend/lib/bookable-hours/apply-opening-rules.ts:71; backend/routes/settings-routes.ts:349
 **Found:** 2026-10-10 by independent review of step 12e.1 (scope: c40fa2d..080673f; lenses: quality, security, performance, tests)
 **Why it matters:** For everyone, `applyOpeningRules` checks the business's week before it knows whether anything needs windows. A date the business closed only leaves `closedDates`, which needs no hours; only a holiday that stays picked needs the business one-off. So a Sunday closed by mistake, at a business whose week has no Sunday but where a person on their own week works Sundays, can never be opened for everyone, and the 409 tells the owner "Nobody works that weekday here", which is false for that person. The workaround (open it for each such person) works, so this is a wording and reach issue, not a booking fault.
 **Suggested fix:** For everyone, refuse with `no_usual_hours` only when the date is still closed after leaving `closedDates` (the holiday case that needs a business one-off). Or, if decision 5 is meant literally for everyone, keep the rule and change the message to "The business does not work that weekday: set that day's hours on Hours, or open it for one person."
-**Resolution:** fixed in the 12e.1 review fixes: decision 5 stands (for everyone, the business's week decides), and the message now says "The business does not work that weekday: set that day's hours on Hours."
+**Resolution:** fixed in the 12e.1 review fixes: decision 5 stands (for everyone, the business's week decides), and the message now says "The business does not work that weekday: set that day's hours on Hours." Closed 2026-10-10 by independent review of step 12e.2: settings-routes.ts:374 says "The business does not work that weekday: set that day's hours on Hours.", true under decision 5; the person's message is unchanged. The spec's Errors line still quotes the old text: F-374.
 
-### F-367 [P3] fixed - The Open again form takes no focus when it opens, so the keyboard falls to the page
+### F-367 [P3] closed - The Open again form takes no focus when it opens, so the keyboard falls to the page
 
 **File:** frontend/components/settings/days-off-screen.tsx:124; frontend/components/settings/open-day-form.tsx:37
 **Found:** 2026-10-10 by independent review of step 12e.1 (scope: c40fa2d..080673f; lenses: quality, security, performance, tests)
 **Why it matters:** Pressing "Open again" replaces that day's row content with the form, so the button that had the focus is unmounted and the focus goes to the document body; the next Tab starts from the top of the page. The close form already moves the focus into itself on open (close-day-form.tsx, `dateRef.current?.focus()`), and 12a's pattern returns the keyboard to where the owner was. Keyboard and screen-reader users lose their place on every opening.
 **Suggested fix:** On mount, focus the form's radio group (it already has `tabIndex={-1}`) or its heading, as CloseDayForm focuses its date field.
-**Resolution:** fixed in the 12e.1 review fixes: the open form focuses its radio group when it opens (checked on Summit: the active element is the radiogroup).
+**Resolution:** fixed in the 12e.1 review fixes: the open form focuses its radio group when it opens (checked on Summit: the active element is the radiogroup). Closed 2026-10-10 by independent review of step 12e.2: open-day-form.tsx:39 focuses the `[role=radiogroup]` on mount, and choice-field.tsx:23-24 renders that group with `tabIndex={-1}`, so it takes the focus; no new effect dependencies or loops.
 
-### F-368 [P3] fixed - No test proves the year window the step amended in, so a day closed beyond the booking horizon can drop off again unnoticed
+### F-368 [P3] closed - No test proves the year window the step amended in, so a day closed beyond the booking horizon can drop off again unnoticed
 
 **File:** backend/lib/bookable-hours/apply-opening-rules.test.ts:21; backend/lib/bookable-hours/apply-newly-closed-rules.test.ts:15
 **Found:** 2026-10-10 by independent review of step 12e.1 (scope: c40fa2d..080673f; lenses: quality, security, performance, tests)
 **Why it matters:** The contract was amended in 12e.1 because the horizon hid a day closed beyond it: `listClosedDays`, `applyOpeningRules` and `applyNewlyClosedRules` all widen the window to `DAYS_OFF_AHEAD` (365). Every fixture date in the unit and route tests lies inside the 60-day horizon, so replacing `DAYS_OFF_AHEAD` with `business.horizonDays` in any of the three still passes every test. That rule would hurt if broken: a closed day past the horizon vanishes from the page, cannot be opened (`not_closed`), and its bookings are not listed when it is closed.
 **Suggested fix:** One unit case with a date past `horizonDays` (for example 2027-01-04 with horizon 60): `listClosedDays` lists it, `applyOpeningRules` opens it, and `applyNewlyClosedRules` lists a booking on it.
-**Resolution:** fixed in the 12e.1 review fixes: a unit test closes Christmas Eve past a 60-day horizon: listed, opened, its booking listed; it fails with DAYS_OFF_AHEAD set to 60 and passes at 365.
+**Resolution:** fixed in the 12e.1 review fixes: a unit test closes Christmas Eve past a 60-day horizon: listed, opened, its booking listed; it fails with DAYS_OFF_AHEAD set to 60 and passes at 365. Closed 2026-10-10 by independent review of step 12e.2: the new case in apply-opening-rules.test.ts uses 2026-12-24, past the fixture's 60-day horizon (ends December 9) and inside 365; `listClosedDays`, `applyOpeningRules` and `applyNewlyClosedRules` each read `DAYS_OFF_AHEAD`, and replacing it with the horizon in any one of the three fails its assertion (not listed, `not_closed`, or the booking not listed).
 
-### F-369 [P3] fixed - Close a day accepts a date beyond the year the list shows, so the closed day is not shown and a second try is refused as a repeat
+### F-369 [P3] closed - Close a day accepts a date beyond the year the list shows, so the closed day is not shown and a second try is refused as a repeat
 
 **File:** frontend/components/settings/close-day-form.tsx:90
 **Found:** 2026-10-10 by independent review of step 12e.1 (scope: c40fa2d..080673f; lenses: quality, security, performance, tests)
 **Why it matters:** The date field has `min={today}` but no upper bound, and its check only looks at `closedDays`, which stops a year ahead. Closing a date more than 365 days out says "Closed ..." but the day never appears in the list; closing it again is refused with "The same closed date is listed twice." It does no harm to bookings (the horizon is at most 365 days), but the owner cannot see or undo what they just did.
 **Suggested fix:** Add `max` (today plus 365, the page's year) to the field and the same bound to its `validate`, with "Pick a date within the coming year."
-**Resolution:** fixed in the 12e.1 review fixes: the date field has max today plus 365, and the check says "Pick a date within a year."
+**Resolution:** fixed in the 12e.1 review fixes: the date field has max today plus 365, and the check says "Pick a date within a year." Closed 2026-10-10 by independent review of step 12e.2: close-day-form.tsx sets `max={lastDay}` (today plus 365 on the business's clock) and the validate refuses a later date; `closedDaysBetween` includes its last date, so the furthest date the field allows is listed.
+
+### F-370 [P2] fixed - The owner's cancel sends the customer "Thanks for letting us know", for a cancel they did not make
+
+**File:** backend/emails/booking-cancelled.tsx:62; backend/lib/booking/cancel-booking.ts:114
+**Found:** 2026-10-10 by independent review of step 12e.2 (scope: 080673f..1812c4a; lenses: quality, security, performance, tests)
+**Why it matters:** The owner's cancel queues the customer's own `booking_cancellation` email unchanged, and its first line is "Thanks for letting us know, Maria." When the business cancels because it closed the day, Maria told nobody anything: she gets an email thanking her for a cancellation she did not make, with no word that the business cancelled it. That reads as a mistake (or as someone else cancelling for her) and invites a confused call. The page even says so to the owner (closed-day-bookings.tsx:104, "each customer is told as if they had cancelled"). The spec says "the customer's email" unchanged, but decision 6 only covers the business notification; the customer-facing wording for an owner's cancel was never decided.
+**Suggested fix:** Carry who cancelled into the email (for example read the cancel's timeline entry's `actorUserId`, which sendCancellationEmails already queries for its stamp, or a flag in the job payload) and render "{business} has cancelled your booking" without the thanks for an owner's cancel; or raise it with Frank as a spec amendment if the current wording is meant.
+**Resolution:** fixed in the 12e.2 review fixes, wording agreed by Frank 2026-10-11: sendCancellationEmails reads the cancel's timeline login with its stamp, and `renderBookingCancelled(facts, byBusiness)` opens "{business} had to cancel your booking." when there is one; the customer's own cancel keeps "Thanks for letting us know". Tests: booking-emails.test.ts "thanks the customer who cancelled, and says so when the business cancelled"; send-cancellation-emails.test.ts "the customer's cancel thanks Jane; the owner's says the business cancelled". Spec amended.
+
+### F-371 [P2] fixed - The confirmation promises the customer an email, but a phone-only customer is told nothing
+
+**File:** frontend/components/settings/closed-day-bookings.tsx:109, 143; backend/lib/settings/listed-booking.ts:6
+**Found:** 2026-10-10 by independent review of step 12e.2 (scope: 080673f..1812c4a; lenses: quality, security, performance, tests)
+**Why it matters:** Each question says "Maria gets the cancellation email." A booking can be phone-only (send-cancellation-emails.ts:56 sends the customer's email only when there is one; its test "a phone-only booking's cancel sends only the business's"), and the owner's cancel queues only that email, so a phone-only customer hears nothing at all, while the owner was just told they would and has no reason to call. The customer then turns up on a closed day. `ListedBookingType` carries no contact detail, so the page cannot tell.
+**Suggested fix:** Add whether the customer has an email to the listed row (a boolean, or the phone for the no-email case) and word the question per booking ("Maria has no email: call her at ..."), and in Cancel all name how many will not be told.
+**Resolution:** fixed in the 12e.2 review fixes: listed rows carry `customerHasEmail`; each question says "{name} left no email, so is not told: call them from their lead." and Cancel all names how many are not told.
+
+### F-372 [P3] fixed - A refused cancel closes the question and drops the keyboard to the page
+
+**File:** frontend/components/settings/closed-day-bookings.tsx:42-45, 65
+**Found:** 2026-10-10 by independent review of step 12e.2 (scope: 080673f..1812c4a; lenses: quality, security, performance, tests)
+**Why it matters:** `cancel` calls `setAsking(null)` before checking the answer, which unmounts the question and its focused button; the heading is focused only on success (line 65), so after a refusal (the API down, a 404, a 500 midway through a list) the focus falls to the document body while the error is announced. Same class as F-367.
+**Suggested fix:** Focus the heading in both paths (move `document.getElementById(HEADING_ID)?.focus()` above the early return).
+**Resolution:** fixed in the 12e.2 review fixes: the list heading takes the focus on both paths.
+
+### F-373 [P3] fixed - Cancel all on more than 100 listed bookings is refused with no way to cancel all
+
+**File:** frontend/components/settings/closed-day-bookings.tsx:111; packages/shared/zod-validation/booking-links-validation-schemas/cancel-bookings-validation-schema.ts:16
+**Found:** 2026-10-10 by independent review of step 12e.2 (scope: 080673f..1812c4a; lenses: quality, security, performance, tests)
+**Why it matters:** The server caps a request at 100 ids, but Cancel all sends every listed id and the list is not capped (`newlyClosed` lists every confirmed booking left on the closed days). Over 100, the press answers "Cancel at most 100 bookings at once." and nothing is cancelled, leaving one-by-one cancels. Rare for one day; likelier if 12e.3's holiday save feeds the same list across many dates.
+**Suggested fix:** Send Cancel all in chunks of 100 and merge the answers, or hide Cancel all above 100 with a line saying so.
+**Resolution:** fixed in the 12e.2 review fixes: Cancel all sends the ids in parts of 100 and merges the answers.
+
+### F-374 [P3] fixed - The spec's Errors line still quotes the old no_usual_hours message
+
+**File:** blueprint/context/current-feature.md:190
+**Found:** 2026-10-10 by independent review of step 12e.2 (scope: 080673f..1812c4a; lenses: quality, security, performance, tests)
+**Why it matters:** F-366's repair changed the business's refusal to "The business does not work that weekday: set that day's hours on Hours." (settings-routes.ts:374), but the spec's Errors contract still says "Nobody works that weekday here: set that day's hours on Hours." The spec is the contract later steps and `/complete` read; the two now disagree.
+**Suggested fix:** Update the Errors line to the current message.
+**Resolution:** fixed in the 12e.2 review fixes: the spec's Errors line quotes the current message.

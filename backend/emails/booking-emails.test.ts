@@ -299,6 +299,16 @@ describe("the customer's cancellation", () => {
     expect(text).toContain("Primo Painters");
   });
 
+  test("thanks the customer who cancelled, and says so when the business cancelled", async () => {
+    const byCustomer = await renderBookingCancelled(facts);
+    const byBusiness = await renderBookingCancelled(facts, true);
+
+    expect(byCustomer.text).toContain(`Thanks for letting us know, ${facts.customer.name}.`);
+    expect(byBusiness.text).toContain("Primo Painters had to cancel your booking.");
+    expect(byBusiness.text).not.toContain("Thanks for letting us know");
+    expect(byBusiness.subject).toBe(byCustomer.subject);
+  });
+
   test("never names the product, and shows what the customer typed as text", async () => {
     const email = await renderBookingCancelled(scriptFacts);
 

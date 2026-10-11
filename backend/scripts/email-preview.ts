@@ -62,6 +62,10 @@ for (const [name, render] of [
     (facts: BookingEmailFactsType) => renderBookingMovedNotification(facts, sampleMovedFrom),
   ],
   ["booking-cancelled", renderBookingCancelled],
+  [
+    "booking-cancelled-by-business",
+    (facts: BookingEmailFactsType) => renderBookingCancelled(facts, true),
+  ],
   ["booking-cancelled-notification", renderBookingCancelledNotification],
 ] as const) {
   const email = await render(sampleFacts);

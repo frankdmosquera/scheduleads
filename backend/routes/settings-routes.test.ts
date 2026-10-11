@@ -435,7 +435,13 @@ describe("the Hours settings", () => {
     const saved = await put("/settings/hours/business", booked.email, shortened);
     expect(saved.status).toBe(200);
     expect(((await saved.json()) as { outsideHours: unknown }).outsideHours).toEqual([
-      { ...maria, customerName: "Maria", serviceName: "Estimate", personName: "Juan" },
+      {
+        ...maria,
+        customerName: "Maria",
+        customerHasEmail: false,
+        serviceName: "Estimate",
+        personName: "Juan",
+      },
     ]);
     const [after] = await db.select().from(booking).where(eq(booking.id, maria.bookingId));
     expect(after).toEqual(before);
