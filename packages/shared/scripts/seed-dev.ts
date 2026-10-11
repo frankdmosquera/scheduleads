@@ -436,8 +436,16 @@ try {
       }
 
       // The first person. Made here because inserting the business directly skips the
-      // Better Auth hook that normally makes it.
-      const firstPerson = await ensureResource(tx, organizationId, business.name, "person");
+      // Better Auth hook that normally makes it. Found by its login once linked, since
+      // Settings may have renamed it (12d).
+      const [linkedPerson] = await tx
+        .select({ id: resource.id })
+        .from(resource)
+        .where(and(eq(resource.organizationId, organizationId), eq(resource.userId, userId)))
+        .limit(1);
+      const firstPerson = linkedPerson
+        ? { id: linkedPerson.id, made: false }
+        : await ensureResource(tx, organizationId, business.name, "person");
 
       // Linked to its owner's login, as the create hook does. Also on a database seeded
       // before the link existed, so no machine needs a rebuild.
@@ -506,7 +514,7 @@ try {
       const madeByShape = await applyBusinessShape(
         tx,
         organizationId,
-        { id: firstPerson.id, name: business.name },
+        { id: firstPerson.id, names: [business.name] },
         shape
       );
 

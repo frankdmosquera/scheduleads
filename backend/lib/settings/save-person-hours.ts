@@ -13,11 +13,11 @@ import { businessHoursOf } from "./business-hours-of.js";
 import type { PersonHoursSettingsType } from "./find-hours-settings.js";
 import { findUpcomingBookings } from "./find-upcoming-bookings.js";
 import { outsideHoursOf } from "./outside-hours-of.js";
-import type { OutsideHoursBookingType } from "./outside-hours-booking-type.js";
+import type { ListedBookingType } from "./listed-booking.js";
 import { sortedHours } from "./sorted-hours.js";
 
 export type SavePersonHoursResultType =
-  | { ok: true; person: PersonHoursSettingsType; outsideHours: OutsideHoursBookingType[] }
+  | { ok: true; person: PersonHoursSettingsType; outsideHours: ListedBookingType[] }
   | { ok: false; reason: "no_person" | "no_business_hours" };
 
 // Makes or updates the person's row; back on the business's week it keeps their one-off dates.
@@ -72,7 +72,7 @@ export async function savePersonHours(
         )
       )
       .for("update");
-    const upcoming = await findUpcomingBookings(tx, organizationId, now, person.id);
+    const upcoming = await findUpcomingBookings(tx, organizationId, now, { personId: person.id });
 
     const { weeklyHours, dateHours } = sortedHours(hours);
     await tx

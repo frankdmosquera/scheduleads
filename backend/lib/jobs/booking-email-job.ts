@@ -45,7 +45,11 @@ export const bookingEmailJob = jobTask(async (payload) => {
     return;
   }
 
-  if (kind === "booking_confirmation" || kind === "booking_notification") {
+  if (
+    kind === "booking_confirmation" ||
+    kind === "booking_notification" ||
+    kind === "booking_person_notification"
+  ) {
     await sendBookingEmails(organizationId, bookingId, kind);
   } else if (kind === "booking_cancellation" || kind === "booking_cancellation_notification") {
     await sendCancellationEmails(organizationId, bookingId, kind);

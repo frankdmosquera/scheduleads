@@ -7,6 +7,11 @@ import { z } from "zod";
 import { businessAvailabilityRuleValidationSchema } from "../availability-validation-schemas/availability-rule-validation-schema.js";
 import { dateHoursValidationSchema } from "../availability-validation-schemas/date-hours-validation-schema.js";
 import { weeklyHoursValidationSchema } from "../availability-validation-schemas/weekly-hours-validation-schema.js";
+import {
+  serviceBufferValidationSchema,
+  serviceLengthValidationSchema,
+  serviceStartEveryValidationSchema,
+} from "../booking-links-validation-schemas/service-validation-schema.js";
 import { workerTextSettingsValidationSchema } from "../text-validation-schemas/worker-text-settings-validation-schema.js";
 
 const nameValidationSchema = z.string().trim().min(1).max(200);
@@ -42,11 +47,11 @@ export const setupServiceValidationSchema = z
   .object({
     name: nameValidationSchema,
     description: z.string().trim().min(1).max(500).optional(),
-    durationMinutes: z.int().min(1),
+    durationMinutes: serviceLengthValidationSchema,
     asksAddress: z.boolean(), // whether the window asks the customer's address
-    bufferBeforeMinutes: z.int().min(0).optional(),
-    bufferAfterMinutes: z.int().min(0).optional(),
-    slotIntervalMinutes: z.int().min(1).optional(), // minutes between start times; missing = every service length
+    bufferBeforeMinutes: serviceBufferValidationSchema.optional(),
+    bufferAfterMinutes: serviceBufferValidationSchema.optional(),
+    slotIntervalMinutes: serviceStartEveryValidationSchema.optional(), // minutes between start times; missing = every service length
     ticked: z.array(nameValidationSchema).optional(), // who does what, by name; missing = anyone
   })
   .strict();

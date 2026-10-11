@@ -1,5 +1,6 @@
 // Backend: which upcoming bookings a save of hours leaves outside them (feature 12a). No database,
-// so every rule is tested; the saves in lib/settings/ read the rows and the bookings.
+// so every rule is tested; the saves in lib/settings/ read the rows and the bookings. Its fits test
+// is also what a service's new length is checked with (12d.5).
 
 import { localDate } from "@scheduleads-app/shared/local-date";
 import type { DateHoursType, WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
@@ -47,7 +48,7 @@ function windowsOn(date: string, personId: string, hours: HoursRowsType) {
 // the booking window's own test: its clock start and length inside the window, and its real end no
 // later than the window's real end, so the spring change cannot stretch a window. When that end is
 // in the hour skipped in spring, the clock count alone decides, as it does in free times.
-function fitsHours(booking: CheckedBookingType, hours: HoursRowsType): boolean {
+export function fitsHours(booking: CheckedBookingType, hours: HoursRowsType): boolean {
   const date = localDate(booking.startsAt, hours.timezone);
   const start = booking.startsAt.getTime();
   const end = booking.endsAt.getTime();

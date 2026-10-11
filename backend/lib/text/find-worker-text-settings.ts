@@ -1,5 +1,5 @@
-// Backend: one person's worker-text settings and whether they still work there (feature 8c,
-// decision 1), read inside their own business. Null when they have no row: no texts.
+// Backend: one person's worker-text settings (feature 8c), read inside their own business. Null when
+// they have no row: no texts. On or off does not matter: they hear about the bookings they hold.
 
 import { and, eq } from "drizzle-orm";
 
@@ -8,7 +8,6 @@ import { resource, workerTextSettings } from "@scheduleads-app/shared/db";
 import { db } from "../../database.js";
 
 export type WorkerTextSettingsRowType = {
-  active: boolean;
   phone: string; // as Twilio texts it, "+14035550161"
   addedOn: boolean;
   movedOn: boolean;
@@ -21,7 +20,6 @@ export async function findWorkerTextSettings(
 ): Promise<WorkerTextSettingsRowType | null> {
   const [row] = await db
     .select({
-      active: resource.active,
       phone: workerTextSettings.phone,
       addedOn: workerTextSettings.addedOn,
       movedOn: workerTextSettings.movedOn,

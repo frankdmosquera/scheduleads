@@ -1,0 +1,2 @@
+ALTER TABLE "resource" ADD COLUMN "workEmail" text;--> statement-breakpoint
+ALTER TABLE "resource" ADD CONSTRAINT "resource_work_email_is_person_check" CHECK ("resource"."workEmail" is null or "resource"."kind" = 'person');

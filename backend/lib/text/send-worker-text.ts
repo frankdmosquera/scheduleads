@@ -145,7 +145,7 @@ export async function sendWorkerText(
 
   const worker = await findWorkerTextSettings(organizationId, text.personId);
   if (!worker) return notSent("the person has no worker text settings");
-  if (!worker.active) return notSent("the person is inactive");
+  // Someone turned off still hears about the bookings they hold: off only stops new ones (12d).
   if (!worker[SWITCH_OF[text.kind]]) return notSent("the person has that text off");
   const { contactId } = context;
   const told = await findWorkerTextsTold({

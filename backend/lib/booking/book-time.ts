@@ -8,7 +8,14 @@ import { randomUUID } from "node:crypto";
 
 import { and, eq } from "drizzle-orm";
 
-import { booking, bookingLink, laterTextsYes, lead, member } from "@scheduleads-app/shared/db";
+import {
+  booking,
+  bookingLink,
+  laterTextsYes,
+  lead,
+  member,
+  resource,
+} from "@scheduleads-app/shared/db";
 import { localDate } from "@scheduleads-app/shared/local-date";
 import { textablePhoneNumber } from "@scheduleads-app/shared/textable-phone-number";
 import {
@@ -317,13 +324,20 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
           tx
         );
       }
-      // The two emails and the booked person's Google event, as jobs saved with the booking
+      // The emails and the booked person's Google event, as jobs saved with the booking
       // (decision 1 of the background runner): the answer never waits for them.
+      // The booked person's own only when they have a work email (12d.4); its job reads it again.
+      const [bookedPerson] = await tx
+        .select({ workEmail: resource.workEmail })
+        .from(resource)
+        .where(and(eq(resource.organizationId, organizationId), eq(resource.id, held.personId)));
       await enqueueBookingEmails(
         tx,
         organizationId,
         bookingId,
-        ["booking_confirmation", "booking_notification"],
+        bookedPerson?.workEmail
+          ? ["booking_confirmation", "booking_notification", "booking_person_notification"]
+          : ["booking_confirmation", "booking_notification"],
         0
       );
       await enqueueBookingEventJob(tx, {

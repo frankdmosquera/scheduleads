@@ -364,15 +364,15 @@ describe("the worker's text when a booking lands on their day", () => {
     expect(loggedNotSent(reason)).toBe(true);
   });
 
-  test("an inactive person gets nothing and one log line", async () => {
+  test("a person turned off still hears about a booking they hold", async () => {
+    // Off stops new bookings only (12d): the one already theirs is still their day.
     const business = await makeBusiness("inactive");
     await book(business);
     await db.update(resource).set({ active: false }).where(eq(resource.id, business.marco));
 
     await workDueJobs();
 
-    expect(calls).toEqual([]);
-    expect(loggedNotSent("the person is inactive")).toBe(true);
+    expect(calls).toHaveLength(1);
   });
 
   test("a business with no time zone: nothing is sent", async () => {

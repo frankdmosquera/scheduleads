@@ -273,10 +273,18 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Have outsideHoursOf add a `when` string per row with formatBookingTime on the API, as localStartTimes does, and show that.
 **Resolution:**
 
-### F-337 [P3] open - OutsideHoursBookingType still sits in a file of its own, though outsideHoursOf now produces it
+### F-348 [P3] unverified - A booking made while a person is being turned off can land on them and never be listed
 
-**File:** backend/lib/settings/outside-hours-booking-type.ts:1-11; backend/lib/settings/outside-hours-of.ts:15-24
-**Found:** 2026-10-10 by the final review of feature 12a (scope: main...76850fe; lenses: quality, security, performance, tests)
-**Why it matters:** The type-only file made sense in 12a.1, when `outsideHours` was always empty and nothing produced it. Since 12a.2 `outsideHoursOf` builds every row of it, and coding-standards.md says "A type sits in the file of the function that produces it". The file is used (outside-hours-of, both saves), so nothing breaks; it is the leftover the standard exists to stop, a file Frank opens to find only a shape whose maker lives elsewhere.
-**Suggested fix:** Move `OutsideHoursBookingType` into outside-hours-of.ts, point the two saves' imports there, and remove outside-hours-booking-type.ts.
+**File:** backend/lib/booking/book-time.ts:213-215; backend/lib/settings/lock-business-resources.ts:1-4; backend/lib/settings/save-resource.ts:59-71
+**Found:** 2026-10-10 by independent review of step 12d.2 (scope: 2a517f5..f1f8427; lenses: quality, security, performance, tests)
+**Why it matters:** book-time reads who is offered (active) before its transaction and never locks the person or the business row (by design, "no key update" lets bookings through). If the turn-off commits between that read and the booking's insert, the new booking lands on a person now off and was not in the answer's list. Same shape as F-331 for hours. Unverified: needs the two to overlap; no reproduction run.
+**Suggested fix:** Inside the booking's transaction, read the chosen person's row `for key share` (or `for share`) and refuse as unavailable when it is no longer active; or record the gap as accepted with F-331.
+**Resolution:**
+
+### F-364 [P3] open - Code comments added by this feature cite step numbers, which the standards keep out of code
+
+**File:** backend/lib/bookable-hours/apply-outside-hours-rules.ts:3; backend/lib/booking/book-time.ts:329; backend/lib/email/find-booking-email-context.ts:35; backend/lib/email/find-booking-email-recipients.ts:3; backend/lib/email/send-booking-emails.ts:3; backend/lib/settings/resource-settings-of.ts:10; frontend/components/settings/change-resource-form.tsx:3; packages/shared/client-setup/run-client-setup.test.ts:257, 288
+**Found:** 2026-10-10 by the independent review of feature 12d (scope: current, e1a5d8f..9417aa7; lenses: quality, security, performance, tests)
+**Why it matters:** coding-standards.md (Comments) says "No history in code comments (step numbers, finding numbers ...): that lives in the build log." F-363 removed the finding numbers, but this feature also adds nine comments tagged with a step number, `(12d.1)`, `(12d.2)`, `(12d.4)` or `(12d.5)`, for example "the booked person's, read when the email goes (12d.4)". The base has none (searched at e1a5d8f). A step is build history: once merged, `12d.4` means something only to someone who opens the build log, and each sentence already says what the code does without it. The older `(feature N)` and `(decision N)` tags are an established pattern in the base and are not part of this. Naming only, no behaviour.
+**Suggested fix:** Drop the `(12d.N)` tags from the nine comments, keeping each sentence (in find-booking-email-recipients.ts:3 keep "which replaces feature 6's decision 11 for a person who has one"; in send-booking-emails.ts:3 also rewrap the line, which runs past 100 characters).
 **Resolution:**

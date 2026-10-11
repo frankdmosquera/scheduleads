@@ -4,7 +4,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, like, or } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import type * as schema from "../db/index.js";
@@ -17,14 +17,19 @@ import {
   standbyDate,
   workerTextSettings,
 } from "../db/index.js";
+import { freeSlug } from "../helpers/free-slug.js";
 import { toSlug } from "../helpers/to-slug.js";
+import { nameKeyOf } from "./name-key-of.js";
+import { resourceNamed } from "./resource-named.js";
+import { oldestServiceFirst, serviceNamed } from "./service-named.js";
 import { personAvailabilityRuleValidationSchema } from "../zod-validation/availability-validation-schemas/availability-rule-validation-schema.js";
 import type { ClientSetupType } from "../zod-validation/admin-validation-schemas/client-setup-validation-schema.js";
 
 export type SetupDatabaseType = PostgresJsDatabase<typeof schema>;
 export type SetupTransactionType = Parameters<Parameters<SetupDatabaseType["transaction"]>[0]>[0];
 
-// Finds a resource by its name in this business, or makes it. Returns its id and whether it was made.
+// Finds a resource by its name in this business (any case, no spaces at the ends), or makes it.
+// Returns its id and whether it was made.
 export async function ensureResource(
   tx: SetupTransactionType,
   organizationId: string,
@@ -34,7 +39,8 @@ export async function ensureResource(
   const [existing] = await tx
     .select({ id: resource.id })
     .from(resource)
-    .where(and(eq(resource.organizationId, organizationId), eq(resource.name, name)))
+    .where(resourceNamed(organizationId, name))
+    .orderBy(resource.createdAt, resource.id)
     .limit(1);
   if (existing) return { id: existing.id, made: false };
 
@@ -43,12 +49,12 @@ export async function ensureResource(
   return { id, made: true };
 }
 
-// `firstPersonId` is the person every business is made with, named after it: a service may
-// tick them by the business's name. Returns what was made, as readable phrases.
+// `firstPerson` is the person every business is made with: a service may tick them by the
+// business's name or by their own, which Settings may have changed. Returns what was made.
 export async function applyBusinessShape(
   tx: SetupTransactionType,
   organizationId: string,
-  firstPerson: { id: string; name: string },
+  firstPerson: { id: string; names: string[] },
   shape: ClientSetupType
 ): Promise<string[]> {
   // Its booking questions, only when it has none, so questions changed by hand survive.
@@ -84,7 +90,10 @@ export async function applyBusinessShape(
   let hoursMade = 0;
   let standbyMade = 0;
   let workerTextsMade = 0;
-  const resourceIdsByName = new Map<string, string>([[firstPerson.name, firstPerson.id]]);
+  // Keyed by nameKeyOf, so a tick finds its person whatever the case.
+  const resourceIdsByName = new Map<string, string>(
+    firstPerson.names.map((name) => [nameKeyOf(name), firstPerson.id])
+  );
   for (const person of shape.people) {
     const { id: resourceId, made } = await ensureResource(
       tx,
@@ -92,7 +101,7 @@ export async function applyBusinessShape(
       person.name,
       person.kind
     );
-    resourceIdsByName.set(person.name, resourceId);
+    resourceIdsByName.set(nameKeyOf(person.name), resourceId);
     if (made) peopleMade++;
 
     // A date already there stays.
@@ -142,15 +151,30 @@ export async function applyBusinessShape(
   let servicesMade = 0;
   let ticksMade = 0;
   for (const { ticked = [], ...service } of shape.services) {
-    const slug = toSlug(service.name);
     const [existingLink] = await tx
       .select({ id: bookingLink.id })
       .from(bookingLink)
-      .where(and(eq(bookingLink.organizationId, organizationId), eq(bookingLink.slug, slug)))
+      .where(serviceNamed(organizationId, service.name))
+      .orderBy(...oldestServiceFirst)
       .limit(1);
 
     const bookingLinkId = existingLink?.id ?? randomUUID();
     if (!existingLink) {
+      // A slug another service already holds (one renamed on Settings keeps its first) gets -2.
+      const base = toSlug(service.name) || "service";
+      const taken = await tx
+        .select({ slug: bookingLink.slug })
+        .from(bookingLink)
+        .where(
+          and(
+            eq(bookingLink.organizationId, organizationId),
+            or(eq(bookingLink.slug, base), like(bookingLink.slug, `${base}-%`))
+          )
+        );
+      const slug = freeSlug(
+        base,
+        taken.map((row) => row.slug)
+      );
       await tx.insert(bookingLink).values({
         id: bookingLinkId,
         organizationId,
@@ -162,13 +186,14 @@ export async function applyBusinessShape(
       servicesMade++;
     }
 
-    if (!ticked.length) continue;
+    // Every tick must name someone listed, even on a service whose ticks are left alone below.
     const ticks = ticked.map((name) => {
-      const resourceId = resourceIdsByName.get(name);
+      const resourceId = resourceIdsByName.get(nameKeyOf(name));
       if (!resourceId) throw new Error(`"${service.name}" ticks "${name}", who is not listed.`);
       return { organizationId, bookingLinkId, resourceId };
     });
-    // Only missing ticks: one removed by hand comes back, any added by hand stays.
+    // Ticks only on a service made now: an existing one's ticks are the owner's, on Settings (12d).
+    if (existingLink || !ticks.length) continue;
     const madeTicks = await tx
       .insert(bookingLinkResource)
       .values(ticks)

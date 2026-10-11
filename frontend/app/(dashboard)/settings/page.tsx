@@ -1,7 +1,7 @@
-// Frontend page /settings: what the owner changes without anyone touching the database.
+// Frontend page /settings: opens the first section, Hours.
 
-import { SettingsScreen } from "@/components/settings/settings-screen";
+import { redirect } from "next/navigation";
 
 export default function SettingsPage() {
-  return <SettingsScreen />;
+  redirect("/settings/hours");
 }

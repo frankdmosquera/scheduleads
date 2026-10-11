@@ -2,7 +2,7 @@
 // back, so a dry run reports exactly what an apply would add. Every difference between the file
 // and a row already there is listed, never overwritten: a hand edit is seen, not lost.
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 
 import {
   availabilityRule,
@@ -13,7 +13,9 @@ import {
   resource,
   workerTextSettings,
 } from "../db/index.js";
-import { toSlug } from "../helpers/to-slug.js";
+import { nameKeyOf } from "./name-key-of.js";
+import { resourceNamed } from "./resource-named.js";
+import { oldestServiceFirst, serviceNamed } from "./service-named.js";
 import type { ClientSetupType } from "../zod-validation/admin-validation-schemas/client-setup-validation-schema.js";
 import {
   applyBusinessShape,
@@ -44,21 +46,31 @@ export async function runClientSetup(
       reason: `No business "${setup.slug}". Make it first on /admin/client-setup.`,
     };
 
-  // Its first person, made with it and named after it.
+  // Its first person, made with it and tied to the owner's login: found by that tie, since
+  // Settings may rename them (12d).
   const [firstPerson] = await db
     .select({ id: resource.id, name: resource.name })
     .from(resource)
-    .where(and(eq(resource.organizationId, business.id), eq(resource.name, business.name)))
+    .where(and(eq(resource.organizationId, business.id), isNotNull(resource.userId)))
+    .orderBy(resource.createdAt, resource.id)
     .limit(1);
   if (!firstPerson)
-    return { ok: false, reason: `"${business.name}" has no first person named after it.` };
+    return { ok: false, reason: `"${business.name}" has no first person tied to a login.` };
 
   let made: string[] = [];
   let differences: string[] = [];
   try {
     await db.transaction(async (tx) => {
-      differences = await findDifferences(tx, business.id, setup);
-      made = await applyBusinessShape(tx, business.id, firstPerson, setup);
+      differences = await findDifferences(tx, business.id, setup, {
+        id: firstPerson.id,
+        businessName: business.name,
+      });
+      made = await applyBusinessShape(
+        tx,
+        business.id,
+        { id: firstPerson.id, names: [business.name, firstPerson.name] },
+        setup
+      );
       if (!apply) throw new DryRunRollback();
     });
   } catch (error) {
@@ -72,7 +84,8 @@ export async function runClientSetup(
 async function findDifferences(
   tx: SetupTransactionType,
   organizationId: string,
-  setup: ClientSetupType
+  setup: ClientSetupType,
+  firstPerson: { id: string; businessName: string } // a file may tick them by the business's name
 ): Promise<string[]> {
   const differences: string[] = [];
   const differs = (what: string, saved: unknown, file: unknown) => {
@@ -113,12 +126,8 @@ async function findDifferences(
     const [saved] = await tx
       .select()
       .from(bookingLink)
-      .where(
-        and(
-          eq(bookingLink.organizationId, organizationId),
-          eq(bookingLink.slug, toSlug(service.name))
-        )
-      )
+      .where(serviceNamed(organizationId, service.name))
+      .orderBy(...oldestServiceFirst)
       .limit(1);
     if (!saved) continue;
     differs(`"${service.name}", name`, saved.name, service.name);
@@ -147,7 +156,8 @@ async function findDifferences(
     const [saved] = await tx
       .select({ id: resource.id, kind: resource.kind })
       .from(resource)
-      .where(and(eq(resource.organizationId, organizationId), eq(resource.name, person.name)))
+      .where(resourceNamed(organizationId, person.name))
+      .orderBy(resource.createdAt, resource.id)
       .limit(1);
     if (!saved) continue;
     differs(`"${person.name}", kind`, saved.kind, person.kind);
@@ -189,23 +199,42 @@ async function findDifferences(
     }
   }
 
-  // Who does what: a tick added by hand stays, and is named here.
+  // Who does what: kept as the owner left it; a tick added by hand, or one in the file but not
+  // here, is named.
   for (const service of setup.services) {
+    // The one service the file means, so another of the same name never lends it its ticks.
+    const [saved] = await tx
+      .select({ id: bookingLink.id })
+      .from(bookingLink)
+      .where(serviceNamed(organizationId, service.name))
+      .orderBy(...oldestServiceFirst)
+      .limit(1);
+    if (!saved) continue;
     const ticked = await tx
-      .select({ name: resource.name })
+      .select({ id: resource.id, name: resource.name })
       .from(bookingLinkResource)
-      .innerJoin(bookingLink, eq(bookingLink.id, bookingLinkResource.bookingLinkId))
       .innerJoin(resource, eq(resource.id, bookingLinkResource.resourceId))
       .where(
         and(
           eq(bookingLinkResource.organizationId, organizationId),
-          eq(bookingLink.slug, toSlug(service.name))
+          eq(bookingLinkResource.bookingLinkId, saved.id)
         )
       );
-    const inFile = new Set(service.ticked ?? []);
-    const added = ticked.map((row) => row.name).filter((name) => !inFile.has(name));
+    const inFile = new Set((service.ticked ?? []).map(nameKeyOf));
+    const tickedInFile = (row: { id: string; name: string }) =>
+      inFile.has(nameKeyOf(row.name)) ||
+      (row.id === firstPerson.id && inFile.has(nameKeyOf(firstPerson.businessName)));
+    const added = ticked.filter((row) => !tickedInFile(row)).map((row) => row.name);
     if (added.length)
       differences.push(`"${service.name}", ticked by hand: ${added.sort().join(", ")}`);
+    const tickedHere = new Set(ticked.map((row) => nameKeyOf(row.name)));
+    if (ticked.some((row) => row.id === firstPerson.id))
+      tickedHere.add(nameKeyOf(firstPerson.businessName));
+    const removed = (service.ticked ?? []).filter((name) => !tickedHere.has(nameKeyOf(name)));
+    if (removed.length)
+      differences.push(
+        `"${service.name}", in the file, not ticked here: ${removed.sort().join(", ")}`
+      );
   }
 
   return differences;

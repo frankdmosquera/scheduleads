@@ -16,6 +16,7 @@ import {
   bookingQuestion,
   organization,
   resource,
+  user,
   workerTextSettings,
 } from "../db/index.js";
 import { assertLocalDevDatabase } from "../helpers/assert-local-dev-database.js";
@@ -31,19 +32,31 @@ const client = postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () => {} 
 const db = drizzle(client, { schema });
 
 const madeBusinessIds: string[] = [];
+const madeUserIds: string[] = [];
 afterAll(async () => {
   for (const id of madeBusinessIds) await db.delete(organization).where(eq(organization.id, id));
+  for (const id of madeUserIds) await db.delete(user).where(eq(user.id, id));
   await client.end();
 });
 
-// A business as the client setup screen leaves it: the business and its first person.
+// A business as the client setup screen leaves it: the business and its first person, tied to the
+// owner's login.
 async function makeBusiness(): Promise<{ id: string; slug: string }> {
   const id = randomUUID();
   const slug = `setup-test-${id.slice(0, 8)}-dev`;
   await db.insert(organization).values({ id, name: `Setup Test ${slug}`, slug });
+  const userId = randomUUID();
   await db
-    .insert(resource)
-    .values({ id: randomUUID(), organizationId: id, name: `Setup Test ${slug}`, kind: "person" });
+    .insert(user)
+    .values({ id: userId, name: "", email: `${slug}@example.com`, emailVerified: true });
+  madeUserIds.push(userId);
+  await db.insert(resource).values({
+    id: randomUUID(),
+    organizationId: id,
+    name: `Setup Test ${slug}`,
+    kind: "person",
+    userId,
+  });
   madeBusinessIds.push(id);
   return { id, slug };
 }
@@ -207,6 +220,11 @@ describe("runClientSetup", () => {
     await db
       .insert(bookingLinkResource)
       .values({ organizationId: business.id, bookingLinkId: phoneCall!.id, resourceId: ana!.id });
+    // Room A unticked from Video call on Settings: it stays off.
+    const [videoCall] = await db.select({ id: bookingLink.id }).from(bookingLink).where(byHand);
+    await db
+      .delete(bookingLinkResource)
+      .where(eq(bookingLinkResource.bookingLinkId, videoCall!.id));
 
     const result = await runClientSetup(db, setupFor(business.slug), { apply: true });
     expect(result.ok && result.made).toEqual([]);
@@ -216,9 +234,74 @@ describe("runClientSetup", () => {
       '"Video call", asksAddress: saved true, file false',
       expect.stringMatching(/^"Ana", weeklyHours: saved {"tue"/),
       expect.stringMatching(/^"Ana", worker texts: saved {"addedOn":true,"movedOn":false/),
+      '"Video call", in the file, not ticked here: Room A',
       '"Phone call", ticked by hand: Ana',
     ]);
     const [kept] = await db.select().from(bookingLink).where(byHand);
     expect(kept?.durationMinutes).toBe(45);
+    expect(
+      await db.$count(bookingLinkResource, eq(bookingLinkResource.bookingLinkId, videoCall!.id))
+    ).toBe(0);
+
+    // A tick naming nobody listed still stops the run, though the service already exists.
+    const misspelt = fileFor(business.slug);
+    misspelt.services[0].ticked = ["Room B"];
+    await expect(
+      runClientSetup(db, clientSetupValidationSchema.parse(misspelt), { apply: true })
+    ).rejects.toThrow('"Video call" ticks "Room B", who is not listed.');
+  });
+
+  it("finds a service renamed on Settings by its new name, never adding it twice", async () => {
+    const business = await makeBusiness();
+    await runClientSetup(db, setupFor(business.slug), { apply: true });
+    // Settings renames a service and keeps its slug (12d.1).
+    await db
+      .update(bookingLink)
+      .set({ name: "Video consult" })
+      .where(and(eq(bookingLink.organizationId, business.id), eq(bookingLink.slug, "video-call")));
+
+    const file = fileFor(business.slug);
+    file.services[0].name = " video CONSULT "; // the same name, any case and spaces
+    const renamed = await runClientSetup(db, clientSetupValidationSchema.parse(file), {
+      apply: true,
+    });
+    expect(renamed.ok && renamed.made).toEqual([]);
+    expect((await countRows(business.id)).services).toBe(2);
+
+    // The old name is a service of its own now; its slug is taken, so it gets -2.
+    const old = await runClientSetup(db, setupFor(business.slug), { apply: true });
+    expect(old.ok && old.made).toContain("1 services");
+    const slugs = await db
+      .select({ slug: bookingLink.slug })
+      .from(bookingLink)
+      .where(eq(bookingLink.organizationId, business.id));
+    expect(slugs.map((row) => row.slug).sort()).toEqual([
+      "phone-call",
+      "video-call",
+      "video-call-2",
+    ]);
+  });
+
+  it("finds people renamed on Settings, the first one by its login, never adding them twice", async () => {
+    const business = await makeBusiness();
+    await runClientSetup(db, setupFor(business.slug), { apply: true });
+    // Settings renames the first person and changes the case of another (12d.2).
+    await db
+      .update(resource)
+      .set({ name: "Owner" })
+      .where(
+        and(
+          eq(resource.organizationId, business.id),
+          eq(resource.name, `Setup Test ${business.slug}`)
+        )
+      );
+    await db
+      .update(resource)
+      .set({ name: "ANA" })
+      .where(and(eq(resource.organizationId, business.id), eq(resource.name, "Ana")));
+
+    const again = await runClientSetup(db, setupFor(business.slug), { apply: true });
+    expect(again).toMatchObject({ ok: true, made: [] });
+    expect((await countRows(business.id)).resources).toBe(3);
   });
 });
