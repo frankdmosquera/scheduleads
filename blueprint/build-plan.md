@@ -348,7 +348,7 @@ without Frank touching the database.
     owner's pick (item 3 reads only the main one; the list needs
     `calendar.calendarlist.readonly`, added here, before any client
     connects)
-- [ ] 12b. **Calendars** - every person and every place has a calendar in
+- [x] 12b. **Calendars** - every person and every place has a calendar in
   the app, showing their bookings, time off and Google busy times, over
   their bookable hours. The owner adds things by hand: a phone estimate or
   a walk-in (a real booking, with the customer, the lead and the texts),
