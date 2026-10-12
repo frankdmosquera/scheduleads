@@ -1,7 +1,9 @@
 // Backend: locks a person's Google tokens and writes their connection. A reconnect
-// replaces the row, so a person never has two.
+// replaces the row, so a person never has two, and keeps the calendar pick for the same account.
 
 import { randomUUID } from "node:crypto";
+
+import { sql } from "drizzle-orm";
 
 import { calendarConnection } from "@scheduleads-app/shared/db";
 import { encryptCredentials, readTokenKey } from "@scheduleads-app/shared/crypto";
@@ -43,6 +45,12 @@ export async function saveCalendarConnection({
     .values({ id: randomUUID(), organizationId, resourceId, ...fields })
     .onConflictDoUpdate({
       target: calendarConnection.resourceId,
-      set: { ...fields, updatedAt: new Date() },
+      set: {
+        ...fields,
+        // The same Google account keeps its pick; another one starts again at its main calendar,
+        // since the old ids mean nothing there. The comparison reads the row as it was.
+        busyCalendarIds: sql`case when lower(${calendarConnection.accountEmail}) = lower(excluded."accountEmail") then ${calendarConnection.busyCalendarIds} else '{primary}'::text[] end`,
+        updatedAt: new Date(),
+      },
     });
 }

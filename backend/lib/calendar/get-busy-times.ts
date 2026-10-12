@@ -1,5 +1,5 @@
 // Backend: "when is this person busy?" The one call the rest of the app makes; the plug
-// behind it is picked by the connection's provider.
+// behind it is picked by the connection's provider, and it reads the calendars the person ticked.
 
 import { eq } from "drizzle-orm";
 
@@ -19,8 +19,13 @@ export async function getBusyTimes({
 
   const access = await getFreshAccessToken({ organizationId, resourceId });
   if (!access) return []; // not connected: no calendar busy times, which is not a failure
+  if (access.busyCalendarIds.length === 0) return []; // nothing ticked: the person's own choice
 
-  const busy = await access.provider.findBusyBlocks(access.accessToken, { from, to });
+  const busy = await access.provider.findBusyBlocks(
+    access.accessToken,
+    { from, to },
+    access.busyCalendarIds
+  );
   await db
     .update(calendarConnection)
     .set({ lastCheckedAt: new Date() })

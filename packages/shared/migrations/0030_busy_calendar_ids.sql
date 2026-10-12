@@ -1,0 +1,1 @@
+ALTER TABLE "calendar_connection" ADD COLUMN "busyCalendarIds" text[] DEFAULT '{primary}'::text[] NOT NULL;

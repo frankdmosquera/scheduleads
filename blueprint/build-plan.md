@@ -260,7 +260,11 @@ rented" rents nothing.
   `NODE_ENV=production`), the setup command opened to the live database and
   AgentsWeb's file applied there, and the booking package published to
   GitHub Packages if the agency site's item 12 has not needed it sooner
-  (moved here from 10.2 on 2026-10-09). Timed with the agency site's launch, which
+  (moved here from 10.2 on 2026-10-09). One trip to Google Cloud covers every Google
+  change at once: the live redirect, `http://localhost:3401/calendar/callback`
+  (never added after the Oct 3 port move), the `calendar.calendarlist.readonly`
+  permission (12h), and 12h's check against a real calendar after it (decided
+  2026-10-12). Timed with the agency site's launch, which
   its own plan holds until texts and QuickBooks (decided 2026-10-09, split
   out of item 10)
 

@@ -77,7 +77,7 @@ export async function finishGoogleConnect({
     await googleOauthClient.revoke(tokens.refreshToken ?? tokens.accessToken);
   };
 
-  if (!googleOauthClient.hasBothCalendarScopes(tokens.grantedScopes)) {
+  if (!googleOauthClient.hasEveryCalendarScope(tokens.grantedScopes)) {
     await handBack();
     return "missing_permission";
   }

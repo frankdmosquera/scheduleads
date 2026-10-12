@@ -52,11 +52,12 @@ async function connect({
   accessToken = "ya29.saved-access",
   refreshToken = "1//saved-refresh",
   expiresInMs = 60 * 60 * 1000,
+  accountEmail = `ana.owner-${tag}@gmail.com`, // this run's own, see the route tests
 } = {}): Promise<void> {
   await saveCalendarConnection({
     organizationId: business.id,
     resourceId: personId,
-    accountEmail: `ana.owner-${tag}@gmail.com`, // this run's own, see the route tests,
+    accountEmail,
     grantedScopes: ["openid", "email"],
     credentials: {
       refreshToken,
@@ -238,7 +239,7 @@ describe("getBusyTimes", () => {
         calendars: { primary: { busy: [], errors: [{ domain: "global", reason: "notFound" }] } },
       });
     await expect(getBusyTimes(range)).rejects.toThrow(
-      "Google could not read the calendar's busy times (notFound)."
+      "Google could not read a calendar's busy times (notFound)."
     );
   });
 
@@ -280,6 +281,88 @@ describe("getBusyTimes", () => {
     expect(freeBusyCalls.map((call) => call.authorization)).toEqual([
       "Bearer ya29.reconnected-access",
     ]);
+  });
+
+  // Feature 12h: the person's pick of calendars.
+  const pick = (busyCalendarIds: string[]) =>
+    db
+      .update(calendarConnection)
+      .set({ busyCalendarIds })
+      .where(eq(calendarConnection.resourceId, personId));
+
+  test("the busy read asks for every ticked calendar in one call and joins their times", async () => {
+    await connect();
+    await pick(["primary", "work-123@group.calendar.google.com"]);
+    freeBusyAnswer = () =>
+      json({
+        calendars: {
+          [`ana.owner-${tag}@gmail.com`]: {
+            busy: [{ start: "2026-10-01T16:00:00Z", end: "2026-10-01T17:00:00Z" }],
+          },
+          "work-123@group.calendar.google.com": {
+            busy: [{ start: "2026-10-02T16:00:00Z", end: "2026-10-02T18:00:00Z" }],
+          },
+        },
+      });
+
+    expect(await getBusyTimes(range)).toEqual([
+      { start: new Date("2026-10-01T16:00:00Z"), end: new Date("2026-10-01T17:00:00Z") },
+      { start: new Date("2026-10-02T16:00:00Z"), end: new Date("2026-10-02T18:00:00Z") },
+    ]);
+    expect(freeBusyCalls).toHaveLength(1);
+    expect(freeBusyCalls[0].body.items).toEqual([
+      { id: "primary" },
+      { id: "work-123@group.calendar.google.com" },
+    ]);
+  });
+
+  test("one ticked calendar Google could not read throws, though the other answered", async () => {
+    await connect();
+    await pick(["primary", "gone@group.calendar.google.com"]);
+    freeBusyAnswer = () =>
+      json({
+        calendars: {
+          primary: { busy: [{ start: "2026-10-01T16:00:00Z", end: "2026-10-01T17:00:00Z" }] },
+          "gone@group.calendar.google.com": { errors: [{ reason: "notFound" }] },
+        },
+      });
+    await expect(getBusyTimes(range)).rejects.toThrow(
+      "Google could not read a calendar's busy times (notFound)."
+    );
+  });
+
+  test("an answer missing a ticked calendar throws, never reads it as free", async () => {
+    await connect();
+    await pick(["primary", "work-123@group.calendar.google.com"]);
+    freeBusyAnswer = () => busyAnswer([]); // only one of the two came back
+    await expect(getBusyTimes(range)).rejects.toThrow(
+      "Google's free/busy answer did not have every calendar asked for."
+    );
+  });
+
+  test("nothing ticked reads nothing from Google: an empty list", async () => {
+    await connect();
+    await pick([]);
+    expect(await getBusyTimes(range)).toEqual([]);
+    expect(freeBusyCalls).toHaveLength(0);
+  });
+
+  test("a new connection counts the main calendar; a reconnect keeps the pick for the same account", async () => {
+    await connect();
+    expect((await storedConnection()).busyCalendarIds).toEqual(["primary"]);
+
+    await pick(["work-123@group.calendar.google.com"]);
+    await connect({ accessToken: "ya29.again", accountEmail: `ANA.Owner-${tag}@gmail.com` });
+    expect((await storedConnection()).busyCalendarIds).toEqual([
+      "work-123@group.calendar.google.com",
+    ]);
+  });
+
+  test("a reconnect with another Google account starts again at its main calendar", async () => {
+    await connect();
+    await pick(["work-123@group.calendar.google.com"]);
+    await connect({ accountEmail: `someone.else-${tag}@gmail.com` });
+    expect((await storedConnection()).busyCalendarIds).toEqual(["primary"]);
   });
 
   test("a range that does not move forward is refused", async () => {

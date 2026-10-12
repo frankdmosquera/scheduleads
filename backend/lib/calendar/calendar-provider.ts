@@ -19,6 +19,9 @@ export type CalendarEventType = {
   timezone: string; // the business's IANA zone
 };
 
+// One calendar in the person's own list (feature 12h). The main one's id is always "primary".
+export type CalendarListEntryType = { id: string; name: string; isMain: boolean };
+
 export type FreshAccessTokenType = {
   accessToken: string;
   accessTokenExpiresAt: Date;
@@ -28,8 +31,15 @@ export type FreshAccessTokenType = {
 export type CalendarProviderType = {
   // Throws CalendarReconnectNeededError when the provider no longer accepts the permission.
   refreshAccessToken(refreshToken: string): Promise<FreshAccessTokenType>;
-  // The busy blocks on the person's calendar. Throws on any failure, never answers "free".
-  findBusyBlocks(accessToken: string, range: TimeRangeType): Promise<BusyBlockType[]>;
+  // The busy blocks on the given calendars of the person, together. Throws on any failure, one
+  // unreadable calendar included, never answers "free". Never called with no calendars.
+  findBusyBlocks(
+    accessToken: string,
+    range: TimeRangeType,
+    calendarIds: string[]
+  ): Promise<BusyBlockType[]>;
+  // The person's own calendars, the main one first. Throws on any failure.
+  listCalendars(accessToken: string): Promise<CalendarListEntryType[]>;
   // Writes the event into the person's main calendar and answers its id; an event already there
   // with that id is the answer too. Throws on any other failure.
   createEvent(accessToken: string, event: CalendarEventType): Promise<string>;

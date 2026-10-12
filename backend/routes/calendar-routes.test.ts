@@ -33,7 +33,8 @@ const { saveCalendarConnection } = await import("../lib/calendar/save-calendar-c
 
 const FREEBUSY = "https://www.googleapis.com/auth/calendar.events.freebusy";
 const EVENTS_OWNED = "https://www.googleapis.com/auth/calendar.events.owned";
-const BOTH_SCOPES = `openid https://www.googleapis.com/auth/userinfo.email ${FREEBUSY} ${EVENTS_OWNED}`;
+const CALENDAR_LIST = "https://www.googleapis.com/auth/calendar.calendarlist.readonly";
+const EVERY_SCOPE = `openid https://www.googleapis.com/auth/userinfo.email ${FREEBUSY} ${EVENTS_OWNED} ${CALENDAR_LIST}`;
 
 const tag = randomUUID().slice(0, 8);
 // Made-up Gmails carry this run's tag: the in-use check reads every business, so two test
@@ -109,7 +110,7 @@ async function connect(
   expect(await callback(`state=${state}&code=abc`, email)).toBe(outcome("connected"));
 }
 
-const outcome = (name: string) => `${appOrigin}/?calendar=${name}`;
+const outcome = (name: string) => `${appOrigin}/settings/calendar?calendar=${name}`;
 const fingerprint = (state: string) => createHash("sha256").update(state).digest("hex");
 
 const connectionsOf = (personId: string) =>
@@ -118,6 +119,8 @@ const connectionsOf = (personId: string) =>
 // Google's side, faked: the token answer each test sets, and every token handed back.
 let tokenAnswer: () => Response = () => new Response("", { status: 500 });
 let revokeAnswer: () => Response | Promise<Response> = () => new Response("", { status: 200 });
+let calendarListAnswer: () => Response = () => new Response("", { status: 500 });
+const calendarListCalls: string[] = [];
 const revoked: string[] = [];
 // Every warning the API logged during a test, and what must never be in one.
 const warnings: string[] = [];
@@ -140,7 +143,7 @@ const idToken = (email: string, claims: Record<string, unknown> = {}) =>
     .join(".");
 
 const googleTokens = ({
-  scope = BOTH_SCOPES,
+  scope = EVERY_SCOPE,
   refreshToken = "1//refresh-token-from-google" as string | null,
   email = gmail("ana.owner"),
   claims = {} as Record<string, unknown>,
@@ -207,6 +210,10 @@ beforeAll(async () => {
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input instanceof Request ? input.url : input);
     if (url.startsWith("https://oauth2.googleapis.com/token")) return tokenAnswer();
+    if (url.startsWith("https://www.googleapis.com/calendar/v3/users/me/calendarList")) {
+      calendarListCalls.push(new Headers(init?.headers).get("Authorization") ?? "");
+      return calendarListAnswer();
+    }
     if (url.startsWith("https://oauth2.googleapis.com/revoke")) {
       revoked.push(new URLSearchParams(String(init?.body)).get("token") ?? "");
       return revokeAnswer();
@@ -218,6 +225,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   revoked.length = 0;
   warnings.length = 0;
+  calendarListCalls.length = 0;
   vi.spyOn(console, "warn").mockImplementation((...parts) => {
     warnings.push(parts.join(" "));
   });
@@ -274,7 +282,13 @@ describe("POST /calendar/connect", () => {
     expect(url.origin + url.pathname).toBe("https://accounts.google.com/o/oauth2/v2/auth");
     expect(params.get("client_id")).toBe(process.env.GOOGLE_CLIENT_ID);
     expect(params.get("redirect_uri")).toBe(`${apiOrigin}/calendar/callback`);
-    expect(params.get("scope")?.split(" ")).toEqual(["openid", "email", FREEBUSY, EVENTS_OWNED]);
+    expect(params.get("scope")?.split(" ")).toEqual([
+      "openid",
+      "email",
+      FREEBUSY,
+      EVENTS_OWNED,
+      CALENDAR_LIST,
+    ]);
     expect(params.get("access_type")).toBe("offline");
     expect(params.get("prompt")).toBe("consent");
     expect(params.get("code_challenge_method")).toBe("S256");
@@ -366,6 +380,16 @@ describe("GET /calendar/callback", () => {
       outcome("missing_permission")
     );
     expect(revoked).toEqual(["1//refresh-token-from-google"]);
+    expect(await connectionsOf(ana.personId)).toEqual([]);
+  });
+
+  test("the calendar list unticked is a missing permission too, and saves nothing", async () => {
+    tokenAnswer = () => googleTokens({ scope: `openid ${FREEBUSY} ${EVENTS_OWNED}` });
+    const state = await startConnect(ana.email);
+
+    expect(await callback(`state=${state}&code=abc`, ana.email)).toBe(
+      outcome("missing_permission")
+    );
     expect(await connectionsOf(ana.personId)).toEqual([]);
   });
 
@@ -718,5 +742,169 @@ describe("GET /calendar/connection", () => {
 
   test("no session is refused with 401", async () => {
     expect((await request("/calendar/connection")).status).toBe(401);
+  });
+});
+
+// Feature 12h: which of your calendars count as busy.
+describe("the calendar pick", () => {
+  const WORK = `work-${tag}@group.calendar.google.com`;
+  const KIDS = `kids-${tag}@group.calendar.google.com`;
+  const GONE = `gone-${tag}@group.calendar.google.com`;
+  const listAnswer = () =>
+    new Response(
+      JSON.stringify({
+        items: [
+          { id: WORK, summary: "Work" },
+          { id: gmail("ana.pick"), summary: gmail("ana.pick"), primary: true },
+          { id: KIDS, summary: "Family", summaryOverride: "Kids" },
+        ],
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  const save = (calendarIds: unknown, email = ana.email) =>
+    app.request("/calendar/busy-calendars", {
+      method: "PUT",
+      headers: {
+        Cookie: cookies.get(email)!,
+        Origin: appOrigin,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ calendarIds }),
+    });
+  const picked = async (personId: string) => (await connectionsOf(personId))[0]?.busyCalendarIds;
+
+  beforeEach(() => {
+    calendarListAnswer = listAnswer;
+  });
+
+  test("lists your calendars, the main one first as primary, the main one ticked", async () => {
+    await connect(ana.email, gmail("ana.pick"));
+    const response = await request("/calendar/calendars", ana.email);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      calendars: [
+        { id: "primary", name: gmail("ana.pick"), isMain: true, counts: true },
+        { id: WORK, name: "Work", isMain: false, counts: false },
+        { id: KIDS, name: "Kids", isMain: false, counts: false },
+      ],
+      missing: [],
+    });
+    expect(calendarListCalls).toEqual(["Bearer ya29.access-token-from-google"]);
+  });
+
+  test("a save keeps the pick, and the list shows it", async () => {
+    await connect(ana.email, gmail("ana.pick"));
+    const response = await save(["primary", WORK]);
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).calendars.map((c: { counts: boolean }) => c.counts)).toEqual([
+      true,
+      true,
+      false,
+    ]);
+    expect(await picked(ana.personId)).toEqual(["primary", WORK]);
+  });
+
+  test("nothing ticked is a pick too", async () => {
+    await connect(ana.email, gmail("ana.pick"));
+    expect((await save([])).status).toBe(200);
+    expect(await picked(ana.personId)).toEqual([]);
+  });
+
+  test("a calendar not in your account is refused under the list, and nothing is saved", async () => {
+    await connect(ana.email, gmail("ana.pick"));
+    const response = await save(["primary", `someone-else-${tag}@group.calendar.google.com`]);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ field: "calendarIds" });
+    expect(await picked(ana.personId)).toEqual(["primary"]);
+  });
+
+  test("a ticked calendar that left the account is listed as missing, and may stay ticked", async () => {
+    await connect(ana.email, gmail("ana.pick"));
+    await db
+      .update(calendarConnection)
+      .set({ busyCalendarIds: ["primary", GONE] })
+      .where(eq(calendarConnection.resourceId, ana.personId));
+
+    const listed = await (await request("/calendar/calendars", ana.email)).json();
+    expect(listed.missing).toEqual([GONE]);
+
+    expect((await save(["primary", GONE])).status).toBe(200);
+    expect((await save(["primary"])).status).toBe(200); // unticked, it is gone for good
+    expect((await save(["primary", GONE])).status).toBe(400);
+  });
+
+  test("a calendar ticked twice, or a list that is not one, is refused", async () => {
+    await connect(ana.email, gmail("ana.pick"));
+    expect((await save(["primary", "primary"])).status).toBe(400);
+    expect((await save("primary")).status).toBe(400);
+    expect(await picked(ana.personId)).toEqual(["primary"]);
+  });
+
+  test("your save never touches anyone else's pick", async () => {
+    await connect(ana.email, gmail("ana.pick"));
+    await saveCalendarConnection({
+      organizationId: ana.organizationId,
+      resourceId: coworkerId,
+      accountEmail: gmail("coworker"),
+      grantedScopes: EVERY_SCOPE.split(" "),
+      credentials: {
+        refreshToken: "1//coworker",
+        accessToken: "ya29.coworker",
+        accessTokenExpiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+      },
+    });
+
+    expect((await save([WORK])).status).toBe(200);
+    expect(await picked(coworkerId)).toEqual(["primary"]);
+  });
+
+  test("no connection is 409 no_connection, and Google is never asked", async () => {
+    const response = await request("/calendar/calendars", ana.email);
+    expect(response.status).toBe(409);
+    expect((await response.json()).error.code).toBe("no_connection");
+    expect((await save(["primary"])).status).toBe(409);
+    expect(calendarListCalls).toEqual([]);
+  });
+
+  test("a connection made before the calendar list needs a reconnect, and keeps its pick", async () => {
+    await saveCalendarConnection({
+      organizationId: ana.organizationId,
+      resourceId: ana.personId,
+      accountEmail: gmail("ana.before"),
+      grantedScopes: [FREEBUSY, EVENTS_OWNED],
+      credentials: {
+        refreshToken: "1//before",
+        accessToken: "ya29.before",
+        accessTokenExpiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+      },
+    });
+
+    const response = await request("/calendar/calendars", ana.email);
+    expect(response.status).toBe(409);
+    expect((await response.json()).error.code).toBe("reconnect_needed");
+    expect((await save([WORK])).status).toBe(409);
+    expect(await picked(ana.personId)).toEqual(["primary"]);
+    expect(calendarListCalls).toEqual([]);
+  });
+
+  test("Google not answering is 503, and nothing is saved", async () => {
+    await connect(ana.email, gmail("ana.pick"));
+    calendarListAnswer = () => new Response("", { status: 500 });
+
+    expect((await request("/calendar/calendars", ana.email)).status).toBe(503);
+    expect((await save(["primary", WORK])).status).toBe(503);
+    expect(await picked(ana.personId)).toEqual(["primary"]);
+  });
+
+  test("a login with no person is 409 no_person", async () => {
+    expect((await request("/calendar/calendars", noPerson.email)).status).toBe(409);
+    expect((await save(["primary"], noPerson.email)).status).toBe(409);
+  });
+
+  test("no session is refused with 401", async () => {
+    expect((await request("/calendar/calendars")).status).toBe(401);
   });
 });
