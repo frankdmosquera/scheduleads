@@ -750,6 +750,7 @@ describe("the calendar pick", () => {
   const WORK = `work-${tag}@group.calendar.google.com`;
   const KIDS = `kids-${tag}@group.calendar.google.com`;
   const GONE = `gone-${tag}@group.calendar.google.com`;
+  const HOLIDAYS = "en.canadian#holiday@group.v.calendar.google.com";
   const listAnswer = () =>
     new Response(
       JSON.stringify({
@@ -757,6 +758,7 @@ describe("the calendar pick", () => {
           { id: WORK, summary: "Work" },
           { id: gmail("ana.pick"), summary: gmail("ana.pick"), primary: true },
           { id: KIDS, summary: "Family", summaryOverride: "Kids" },
+          { id: HOLIDAYS, summary: "Holidays in Canada" }, // Google's own: never offered
         ],
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
@@ -834,6 +836,19 @@ describe("the calendar pick", () => {
     expect((await save(["primary", GONE])).status).toBe(200);
     expect((await save(["primary"])).status).toBe(200); // unticked, it is gone for good
     expect((await save(["primary", GONE])).status).toBe(400);
+  });
+
+  test("Google's own holiday calendar is never offered, and one ticked before is no pick at all", async () => {
+    await connect(ana.email, gmail("ana.pick"));
+    await db
+      .update(calendarConnection)
+      .set({ busyCalendarIds: ["primary", HOLIDAYS] })
+      .where(eq(calendarConnection.resourceId, ana.personId));
+
+    const listed = await (await request("/calendar/calendars", ana.email)).json();
+    expect(listed.calendars.map((c: { id: string }) => c.id)).toEqual(["primary", WORK, KIDS]);
+    expect(listed.missing).toEqual([]);
+    expect((await save(["primary", HOLIDAYS])).status).toBe(400);
   });
 
   test("a calendar ticked twice, or a list that is not one, is refused", async () => {

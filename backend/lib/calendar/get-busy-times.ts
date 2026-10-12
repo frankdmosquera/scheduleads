@@ -9,6 +9,7 @@ import { db } from "../../database.js";
 import { crossOffSpan } from "../scheduling/cross-off-span.js";
 import type { BusyBlockType, TimeRangeType } from "./calendar-provider.js";
 import { getFreshAccessToken } from "./get-fresh-access-token.js";
+import { isGoogleVirtualCalendar } from "./is-google-virtual-calendar.js";
 
 export async function getBusyTimes({
   organizationId, // from the session or the business being booked, never from the request
@@ -17,9 +18,10 @@ export async function getBusyTimes({
   to,
   crossOffOnMain,
 }: { organizationId: string; resourceId: string } & TimeRangeType & {
-    // A booking being moved: its own span is taken out of the main calendar, which holds its
-    // event (feature 7b, decision 11), and never out of another calendar (feature 12h).
-    crossOffOnMain?: BusyBlockType;
+    // The app's own bookings: their spans are taken out of the main calendar, which holds their
+    // events (feature 7b, decision 11), and never out of another calendar (feature 12h). A moved
+    // booking's own old time; the calendar's bookings, shown apart (feature 12b).
+    crossOffOnMain?: BusyBlockType[];
   }): Promise<BusyBlockType[]> {
   if (!(from < to)) throw new Error("The time range must end after it starts.");
 
@@ -35,10 +37,12 @@ export async function getBusyTimes({
       )
     )
     .limit(1);
-  if (!pick || pick.busyCalendarIds.length === 0) return []; // not connected, or nothing ticked
+  // Google's own built-in calendars hold no busy time (F-412): ticked, they count as nothing (F-414).
+  const counts = (ids: string[]) => ids.some((id) => !isGoogleVirtualCalendar(id));
+  if (!pick || !counts(pick.busyCalendarIds)) return []; // not connected, or nothing that counts
 
   const access = await getFreshAccessToken({ organizationId, resourceId });
-  if (!access || access.busyCalendarIds.length === 0) return []; // disconnected or unticked meanwhile
+  if (!access || !counts(access.busyCalendarIds)) return []; // disconnected or unticked meanwhile
 
   const calendars = await access.provider.findBusyBlocks(
     access.accessToken,
@@ -50,6 +54,8 @@ export async function getBusyTimes({
     .set({ lastCheckedAt: new Date() })
     .where(eq(calendarConnection.id, access.connectionId));
   return calendars.flatMap(({ calendarId, busy }) =>
-    crossOffOnMain && calendarId === "primary" ? crossOffSpan(busy, crossOffOnMain) : busy
+    calendarId === "primary"
+      ? (crossOffOnMain ?? []).reduce((left, span) => crossOffSpan(left, span), busy)
+      : busy
   );
 }

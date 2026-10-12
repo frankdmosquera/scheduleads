@@ -20,6 +20,7 @@ import { leadsRoutes } from "./routes/leads-routes.js";
 import { publicRoutes } from "./routes/public-routes.js";
 import { publicTextRoutes } from "./routes/public-text-routes.js";
 import { settingsRoutes } from "./routes/settings-routes.js";
+import { scheduleRoutes } from "./routes/schedule-routes.js";
 
 export const app = new Hono()
   // Every dashboard route mounts both; the ones that change something also check the origin.
@@ -37,6 +38,8 @@ export const app = new Hono()
   .use("/leads", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
   .use("/leads/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
   .use("/settings/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
+  .use("/schedule", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
+  .use("/schedule/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
   // Anyone may call these, never with the login cookie: a CORS rule of their own, and limits per
   // visitor. Twilio's signed replies under /texts and the dashboard are not limited.
   .use("/public/*", publicCorsMiddleware, publicRateLimitMiddleware)
@@ -72,6 +75,7 @@ export const app = new Hono()
   .route("/email-sending", emailSendingRoutes)
   .route("/leads", leadsRoutes)
   .route("/settings", settingsRoutes)
+  .route("/schedule", scheduleRoutes)
   .route("/", publicRoutes) // its routes carry /public themselves
   // Twilio posts customers' replies here, signed; no browser calls it, so no CORS.
   .route("/texts", publicTextRoutes)

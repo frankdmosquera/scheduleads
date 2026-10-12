@@ -4,12 +4,14 @@
 
 import type {
   BusyBlockType,
+  CalendarBusyBlocksType,
   CalendarEventType,
   CalendarListEntryType,
   CalendarProviderType,
   TimeRangeType,
 } from "./calendar-provider.js";
 import { googleOauthClient } from "./google-oauth-client.js";
+import { isGoogleVirtualCalendar } from "./is-google-virtual-calendar.js";
 
 const FREEBUSY_URL = "https://www.googleapis.com/calendar/v3/freeBusy";
 const CALENDAR_LIST_URL = "https://www.googleapis.com/calendar/v3/users/me/calendarList";
@@ -37,48 +39,64 @@ function toBusyBlock(busy: { start?: unknown; end?: unknown }): BusyBlockType {
   return { start, end };
 }
 
+// One free/busy call for the given calendars, each answered apart, in the order asked. Throws on
+// any failure, one unreadable calendar included, never answers "free".
+async function askFreeBusy(
+  accessToken: string,
+  { from, to }: TimeRangeType,
+  calendarIds: string[]
+): Promise<CalendarBusyBlocksType[]> {
+  const response = await fetch(FREEBUSY_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      timeMin: from.toISOString(),
+      timeMax: to.toISOString(),
+      items: calendarIds.map((id) => ({ id })), // the person's pick (feature 12h)
+    }),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`Google's free/busy failed (${response.status}).`);
+
+  const body = (await response.json()) as {
+    calendars?: Record<string, GoogleFreeBusyCalendarType>;
+  };
+  // Every calendar asked for must come back. Google may file "primary" under the account's
+  // address, so the main calendar is the one key left over when it is not under its own.
+  const answered = body.calendars ?? {};
+  const leftOver = Object.keys(answered).filter((key) => !calendarIds.includes(key));
+  if (Object.keys(answered).length !== calendarIds.length) {
+    throw new Error("Google's free/busy answer did not have every calendar asked for.");
+  }
+
+  return calendarIds.map((calendarId) => {
+    const calendar =
+      answered[calendarId] ??
+      (calendarId === "primary" && leftOver.length === 1 ? answered[leftOver[0]] : undefined);
+    if (!calendar) {
+      throw new Error("Google's free/busy answer did not have every calendar asked for.");
+    }
+    // A calendar Google could not read comes back with errors and no busy times: not "free".
+    if (calendar.errors?.length) {
+      const reason = calendar.errors[0].reason;
+      const why = typeof reason === "string" && /^[a-zA-Z]+$/.test(reason) ? reason : "error";
+      throw new Error(`Google could not read a calendar's busy times (${why}).`);
+    }
+    return { calendarId, busy: (calendar.busy ?? []).map(toBusyBlock) };
+  });
+}
+
 export const googleCalendarProvider: CalendarProviderType = {
   refreshAccessToken: (refreshToken) => googleOauthClient.refreshAccessToken(refreshToken),
 
-  async findBusyBlocks(accessToken: string, { from, to }: TimeRangeType, calendarIds: string[]) {
-    const response = await fetch(FREEBUSY_URL, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        timeMin: from.toISOString(),
-        timeMax: to.toISOString(),
-        items: calendarIds.map((id) => ({ id })), // the person's pick (feature 12h)
-      }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-    if (!response.ok) throw new Error(`Google's free/busy failed (${response.status}).`);
-
-    const body = (await response.json()) as {
-      calendars?: Record<string, GoogleFreeBusyCalendarType>;
-    };
-    // Every calendar asked for must come back. Google may file "primary" under the account's
-    // address, so the main calendar is the one key left over when it is not under its own.
-    const answered = body.calendars ?? {};
-    const leftOver = Object.keys(answered).filter((key) => !calendarIds.includes(key));
-    if (Object.keys(answered).length !== calendarIds.length) {
-      throw new Error("Google's free/busy answer did not have every calendar asked for.");
-    }
-
-    return calendarIds.map((calendarId) => {
-      const calendar =
-        answered[calendarId] ??
-        (calendarId === "primary" && leftOver.length === 1 ? answered[leftOver[0]] : undefined);
-      if (!calendar) {
-        throw new Error("Google's free/busy answer did not have every calendar asked for.");
-      }
-      // A calendar Google could not read comes back with errors and no busy times: not "free".
-      if (calendar.errors?.length) {
-        const reason = calendar.errors[0].reason;
-        const why = typeof reason === "string" && /^[a-zA-Z]+$/.test(reason) ? reason : "error";
-        throw new Error(`Google could not read a calendar's busy times (${why}).`);
-      }
-      return { calendarId, busy: (calendar.busy ?? []).map(toBusyBlock) };
-    });
+  async findBusyBlocks(accessToken: string, range: TimeRangeType, calendarIds: string[]) {
+    // Google's own built-in calendars hold no busy time, and free/busy cannot read them.
+    const asked = calendarIds.filter((id) => !isGoogleVirtualCalendar(id));
+    const answers = asked.length === 0 ? [] : await askFreeBusy(accessToken, range, asked);
+    return calendarIds.map(
+      (calendarId) =>
+        answers.find((answer) => answer.calendarId === calendarId) ?? { calendarId, busy: [] }
+    );
   },
 
   async listCalendars(accessToken: string) {
@@ -102,6 +120,7 @@ export const googleCalendarProvider: CalendarProviderType = {
       };
       for (const item of body.items ?? []) {
         if (typeof item.id !== "string" || item.id === "") continue;
+        if (isGoogleVirtualCalendar(item.id)) continue; // never offered: it could not count
         const isMain = item.primary === true;
         const name = [item.summaryOverride, item.summary].find(
           (value): value is string => typeof value === "string" && value.trim() !== ""

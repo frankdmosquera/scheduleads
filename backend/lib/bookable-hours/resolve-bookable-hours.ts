@@ -18,7 +18,10 @@ import { unknownHolidayPicks } from "./unknown-holiday-picks.js";
 export async function resolveBookableHours(
   organizationId: string,
   resourceId: string | null, // null = the business's own hours
-  now: Date // a parameter, not new Date() inside, so the horizon can be tested
+  now: Date, // a parameter, not new Date() inside, so the horizon can be tested
+  // The calendar (feature 12b) shows the owner a whole week however near the customers' horizon
+  // ends: the hours are then resolved over at least this many days from now.
+  { coverDays = 0 }: { coverDays?: number } = {}
 ): Promise<ResolvedBookableHoursType | null> {
   // Every query filters on the business first, so a person id from another business
   // finds nothing here.
@@ -32,7 +35,8 @@ export async function resolveBookableHours(
 
   if (!businessRow) return null;
 
-  const business = businessHoursInputOf(businessRow);
+  const stored = businessHoursInputOf(businessRow);
+  const business = { ...stored, horizonDays: Math.max(stored.horizonDays, coverDays) };
   // A pick the holiday package renamed closes nothing; said on every read of these hours (once per
   // person asked about), so it gets unticked.
   const unknown = unknownHolidayPicks(

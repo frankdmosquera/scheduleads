@@ -140,7 +140,7 @@ export async function findFreeTimes(input: FindFreeTimesInputType): Promise<Free
         to,
         crossOffOnMain:
           ignoreBooking?.personId === id
-            ? { start: ignoreBooking.startsAt, end: ignoreBooking.endsAt }
+            ? [{ start: ignoreBooking.startsAt, end: ignoreBooking.endsAt }]
             : undefined,
       });
     } catch (error) {

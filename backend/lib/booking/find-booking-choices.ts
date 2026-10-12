@@ -33,10 +33,11 @@ export type BookingChoicesInputType = {
   timezone: string;
   span: AppointmentSpanType; // the start with its buffers
   now: Date;
-} & (
-  | { byOwner: true; movingBooking?: never } // any time nobody is busy, rooms on standby included
-  | { byOwner: false; movingBooking?: FindFreeTimesInputType["ignoreBooking"] } // its own time is not busy
-);
+  // The owner: any time nobody is busy, rooms on standby included. A customer: one of the free times.
+  // Either way a booking being moved never stands in its own way (7b; the owner's move, 12b).
+  byOwner: boolean;
+  movingBooking?: FindFreeTimesInputType["ignoreBooking"];
+};
 
 export type BookingChoicesType =
   | { found: true; choices: AnyAvailableChoiceType[] }
@@ -72,9 +73,19 @@ export async function findBookingChoices(
         throw error;
       }
     }
-    if ((await findCommitments(organizationId, [id], from, to)).length > 0) return "busy";
+    const held = await findCommitments(organizationId, [id], from, to);
+    if (held.some(notTheMovingBooking)) return "busy";
     try {
-      const google = await getBusyTimes({ organizationId, resourceId: id, from, to });
+      const moving = input.movingBooking;
+      const google = await getBusyTimes({
+        organizationId,
+        resourceId: id,
+        from,
+        to,
+        // The moving booking's own event is in its person's main calendar (7b, decision 11).
+        crossOffOnMain:
+          moving?.personId === id ? [{ start: moving.startsAt, end: moving.endsAt }] : undefined,
+      });
       return overlapsAny(google, spanStart, spanEnd) ? "busy" : "free";
     } catch (error) {
       console.warn(`[booking] cannot read the calendar of ${id}: ${safeErrorReason(error)}`);

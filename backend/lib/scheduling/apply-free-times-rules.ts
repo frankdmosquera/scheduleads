@@ -5,7 +5,7 @@ import { addDays } from "@scheduleads-app/shared/add-days";
 import { localDate } from "@scheduleads-app/shared/local-date";
 
 import type { ResolvedBookableHoursType } from "../bookable-hours/apply-bookable-hours-rules.js";
-import { weekdayOf } from "../bookable-hours/weekday-of.js";
+import { windowsOnDate } from "../bookable-hours/windows-on-date.js";
 import type { BusyBlockType } from "../calendar/calendar-provider.js";
 import { localTimeToMoment } from "../local-time/local-time-to-moment.js";
 import { appointmentSpan } from "./appointment-span.js";
@@ -46,11 +46,7 @@ export function applyFreeTimesRules(input: FreeTimesInputType): Date[] {
   for (let date = firstDate; date <= lastDate; date = addDays(date, 1)) {
     if (closed.has(date) || standby.has(date)) continue;
 
-    // A one-off date replaces that day's week.
-    const windows =
-      hours.dateHours.find((entry) => entry.date === date)?.windows ??
-      hours.weeklyHours[weekdayOf(date)] ??
-      [];
+    const windows = windowsOnDate(hours, date);
 
     for (const window of windows) {
       // The window's end as a real moment, so the spring change cannot stretch an appointment past
