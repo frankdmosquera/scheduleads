@@ -35,9 +35,7 @@ export function BusyCalendarsPart() {
   if (result.state === "refused") {
     return (
       <div className="mt-6">
-        <CentredCardNotice tone="info">
-          {result.message} Until then only your main calendar counts.
-        </CentredCardNotice>
+        <CentredCardNotice tone="info">{result.message}</CentredCardNotice>
       </div>
     );
   }

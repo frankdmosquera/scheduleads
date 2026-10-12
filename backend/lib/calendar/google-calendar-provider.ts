@@ -56,21 +56,29 @@ export const googleCalendarProvider: CalendarProviderType = {
     const body = (await response.json()) as {
       calendars?: Record<string, GoogleFreeBusyCalendarType>;
     };
-    // Every calendar asked for must come back, whatever key Google files "primary" under.
-    const calendars = Object.values(body.calendars ?? {});
-    if (calendars.length !== calendarIds.length) {
+    // Every calendar asked for must come back. Google may file "primary" under the account's
+    // address, so the main calendar is the one key left over when it is not under its own.
+    const answered = body.calendars ?? {};
+    const leftOver = Object.keys(answered).filter((key) => !calendarIds.includes(key));
+    if (Object.keys(answered).length !== calendarIds.length) {
       throw new Error("Google's free/busy answer did not have every calendar asked for.");
     }
 
-    // A calendar Google could not read comes back with errors and no busy times: not "free".
-    for (const calendar of calendars) {
+    return calendarIds.map((calendarId) => {
+      const calendar =
+        answered[calendarId] ??
+        (calendarId === "primary" && leftOver.length === 1 ? answered[leftOver[0]] : undefined);
+      if (!calendar) {
+        throw new Error("Google's free/busy answer did not have every calendar asked for.");
+      }
+      // A calendar Google could not read comes back with errors and no busy times: not "free".
       if (calendar.errors?.length) {
         const reason = calendar.errors[0].reason;
         const why = typeof reason === "string" && /^[a-zA-Z]+$/.test(reason) ? reason : "error";
         throw new Error(`Google could not read a calendar's busy times (${why}).`);
       }
-    }
-    return calendars.flatMap((calendar) => (calendar.busy ?? []).map(toBusyBlock));
+      return { calendarId, busy: (calendar.busy ?? []).map(toBusyBlock) };
+    });
   },
 
   async listCalendars(accessToken: string) {

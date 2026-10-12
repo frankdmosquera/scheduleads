@@ -28,13 +28,28 @@ import { requireModuleMiddleware } from "../middleware/subscription-middleware/r
 const noPersonMessage = "Your login is not linked to anyone on this business's calendar.";
 
 // Why the calendar list cannot be shown or saved, in one answer each.
-function refuseChoices(c: Context, reason: "no_connection" | "reconnect_needed" | "unavailable") {
+function refuseChoices(
+  c: Context,
+  reason: "no_connection" | "reconnect_needed" | "no_list_permission" | "unavailable"
+) {
   if (reason === "no_connection") {
     return c.json(refuse("no_connection", "Connect your Google calendar first."), 409);
   }
   if (reason === "reconnect_needed") {
     return c.json(
-      refuse("reconnect_needed", "Reconnect your Google calendar to choose which calendars count."),
+      refuse(
+        "reconnect_needed",
+        "Reconnect your Google calendar. Until then none of your calendars is read, so customers cannot book you."
+      ),
+      409
+    );
+  }
+  if (reason === "no_list_permission") {
+    return c.json(
+      refuse(
+        "reconnect_needed",
+        "Reconnect your Google calendar to choose which calendars count. Until then only your main calendar counts."
+      ),
       409
     );
   }

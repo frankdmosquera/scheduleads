@@ -15,7 +15,12 @@ export type CalendarChoicesFoundType =
       listed: CalendarListEntryType[];
       picked: string[];
     }
-  | { ok: false; reason: "no_connection" | "reconnect_needed" | "unavailable" };
+  | {
+      ok: false;
+      // reconnect_needed: Google stopped accepting it, so no calendar is read at all;
+      // no_list_permission: connected before 12h, still reading the main calendar.
+      reason: "no_connection" | "reconnect_needed" | "no_list_permission" | "unavailable";
+    };
 
 export async function findCalendarChoices({
   organizationId, // from the session, never from the request
@@ -29,7 +34,7 @@ export async function findCalendarChoices({
     if (!access) return { ok: false, reason: "no_connection" };
     // Google is the only provider; a connection made before 12h was never allowed the list.
     if (!googleOauthClient.canListCalendars(access.grantedScopes)) {
-      return { ok: false, reason: "reconnect_needed" };
+      return { ok: false, reason: "no_list_permission" };
     }
 
     const listed = await access.provider.listCalendars(access.accessToken);

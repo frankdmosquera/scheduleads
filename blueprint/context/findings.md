@@ -328,3 +328,27 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** enqueueJobs copies `const MOST_ATTEMPTS = 10` and its decision-4 comment from enqueue-job.ts instead of importing it. Reminders now go through enqueueJobs while confirmations and every other job go through enqueueJob, so a change to the retry policy made in one file leaves reminders, or everything else, on the old limit with nothing to notice it.
 **Suggested fix:** Export the constant from enqueue-job.ts (or a small jobs constants file) and import it in enqueue-jobs.ts.
 **Resolution:**
+
+### F-407 [P3] fixed - The Calendar page says "only your main calendar counts" when the connection itself needs reconnecting, though then no calendar is read at all
+
+**File:** frontend/components/settings/busy-calendars-part.tsx:39; backend/lib/calendar/find-calendar-choices.ts:44-45; frontend/lib/api-client/calendar/fetch-calendar-choices.ts:31
+**Found:** 2026-10-12 by /audit independent (scope: current; lenses: quality, security, performance, tests)
+**Why it matters:** `reconnect_needed` from GET /calendar/calendars has two causes: a connection made before 12h (no list permission, still reading the main calendar), and a connection Google stopped accepting (`needs_reconnect`, where getFreshAccessToken throws and every busy read fails, so the person is "try again" or left out). The page answers both with "Until then only your main calendar counts.", which is true for the first and false for the second, under a card that is at the same moment saying Reconnect.
+**Suggested fix:** Give the two causes their own code or message (for example keep `reconnect_needed` for the broken connection and add a distinct one for "connected before the list"), and show "Until then only your main calendar counts" only for the second.
+**Resolution:** Fixed 2026-10-12: the two causes are apart. A connection made before 12h answers "Reconnect ... Until then only your main calendar counts."; one Google stopped accepting answers "Reconnect your Google calendar. Until then none of your calendars is read, so customers cannot book you." (find-calendar-choices.ts `no_list_permission`, calendar-routes.ts refuseChoices); the page shows the API message as it is. Tests: both messages in calendar-routes.test.ts.
+
+### F-408 [P3] fixed - With nothing ticked, a busy read still renews the Google key, and a connection Google stopped accepting still makes the person unbookable
+
+**File:** backend/lib/calendar/get-busy-times.ts:20-22
+**Found:** 2026-10-12 by /audit independent (scope: current; lenses: quality, security, performance, tests)
+**Why it matters:** The empty-pick return sits after getFreshAccessToken, which refreshes an expiring key at Google's token endpoint and throws CalendarReconnectNeededError on a `needs_reconnect` row. A person who chose that nothing in Google counts (Decision 3) is therefore still shown as "try again" or left out of "any available" whenever their Google permission lapses, and every free-times read for them can still cost a token call. The spec says none ticked "reads nothing from Google"; the test only counts free/busy calls, so it passes. Whether a lapsed connection should still block a person who picked nothing is a product call (the booking event write would fail too).
+**Suggested fix:** Frank's call. If "nothing ticked" should never block, read the row's `busyCalendarIds` (and status) before asking for a fresh key and return `[]` first; add a test with a `needs_reconnect` row and an empty pick.
+**Resolution:** Fixed 2026-10-12, keeping the spec ("None ticked reads nothing from Google", decision 3): getBusyTimes reads the pick first and returns [] before asking for a fresh key. Test: nothing ticked with a needs_reconnect row and an expired key makes no token or free/busy call.
+
+### F-409 [P3] fixed - A moved booking's own span is now crossed off every ticked calendar, so an event in "Work" inside that span is read as free
+
+**File:** backend/lib/calendar/google-calendar-provider.ts:73; backend/lib/scheduling/find-free-times.ts:137-143
+**Found:** 2026-10-12 by /audit independent (scope: current; lenses: quality, security, performance, tests)
+**Why it matters:** When a booking moves, its own start to end is cut out of the person's Google busy blocks (7b decision 11), because the booking's event sits in the main calendar and free/busy cannot say which event is which. findBusyBlocks now flattens all ticked calendars into one list, so the cut also removes busy time from other calendars, which never hold the booking. Example: a 10:00-11:00 booking, a "Work" event at 10:00-11:00 added later; moving the booking to 10:30 is offered although Work says busy. Narrow (the new time must overlap the old span), and the main calendar had the same blind spot before, but for the other calendars it is now avoidable.
+**Suggested fix:** Keep which calendar each block came from (or return the main calendar's blocks apart) and cross the moved booking off the main calendar's blocks only; one find-free-times test with an overlapping event in a second calendar.
+**Resolution:** Fixed 2026-10-12: findBusyBlocks keeps each calendar apart (`CalendarBusyBlocksType`, the main one found under its own key or the one key left over), and getBusyTimes takes `crossOffOnMain`, crossing a moved booking off the main calendar only; find-free-times passes it. Test: the same hour busy in the main calendar and in Work, with the span crossed off, leaves Work busy.

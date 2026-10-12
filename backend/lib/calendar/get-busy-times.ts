@@ -1,11 +1,12 @@
 // Backend: "when is this person busy?" The one call the rest of the app makes; the plug
 // behind it is picked by the connection's provider, and it reads the calendars the person ticked.
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { calendarConnection } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
+import { crossOffSpan } from "../scheduling/cross-off-span.js";
 import type { BusyBlockType, TimeRangeType } from "./calendar-provider.js";
 import { getFreshAccessToken } from "./get-fresh-access-token.js";
 
@@ -14,14 +15,32 @@ export async function getBusyTimes({
   resourceId,
   from,
   to,
-}: { organizationId: string; resourceId: string } & TimeRangeType): Promise<BusyBlockType[]> {
+  crossOffOnMain,
+}: { organizationId: string; resourceId: string } & TimeRangeType & {
+    // A booking being moved: its own span is taken out of the main calendar, which holds its
+    // event (feature 7b, decision 11), and never out of another calendar (feature 12h).
+    crossOffOnMain?: BusyBlockType;
+  }): Promise<BusyBlockType[]> {
   if (!(from < to)) throw new Error("The time range must end after it starts.");
 
-  const access = await getFreshAccessToken({ organizationId, resourceId });
-  if (!access) return []; // not connected: no calendar busy times, which is not a failure
-  if (access.busyCalendarIds.length === 0) return []; // nothing ticked: the person's own choice
+  // Nothing ticked is the person's own choice: Google is not asked, not even for a fresh key, so a
+  // lapsed connection never blocks someone whose calendars do not count.
+  const [pick] = await db
+    .select({ busyCalendarIds: calendarConnection.busyCalendarIds })
+    .from(calendarConnection)
+    .where(
+      and(
+        eq(calendarConnection.organizationId, organizationId),
+        eq(calendarConnection.resourceId, resourceId)
+      )
+    )
+    .limit(1);
+  if (!pick || pick.busyCalendarIds.length === 0) return []; // not connected, or nothing ticked
 
-  const busy = await access.provider.findBusyBlocks(
+  const access = await getFreshAccessToken({ organizationId, resourceId });
+  if (!access || access.busyCalendarIds.length === 0) return []; // disconnected or unticked meanwhile
+
+  const calendars = await access.provider.findBusyBlocks(
     access.accessToken,
     { from, to },
     access.busyCalendarIds
@@ -30,5 +49,7 @@ export async function getBusyTimes({
     .update(calendarConnection)
     .set({ lastCheckedAt: new Date() })
     .where(eq(calendarConnection.id, access.connectionId));
-  return busy;
+  return calendars.flatMap(({ calendarId, busy }) =>
+    crossOffOnMain && calendarId === "primary" ? crossOffSpan(busy, crossOffOnMain) : busy
+  );
 }

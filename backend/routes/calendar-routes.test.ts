@@ -884,9 +884,28 @@ describe("the calendar pick", () => {
 
     const response = await request("/calendar/calendars", ana.email);
     expect(response.status).toBe(409);
-    expect((await response.json()).error.code).toBe("reconnect_needed");
+    expect((await response.json()).error).toEqual({
+      code: "reconnect_needed",
+      message:
+        "Reconnect your Google calendar to choose which calendars count. Until then only your main calendar counts.",
+    });
     expect((await save([WORK])).status).toBe(409);
     expect(await picked(ana.personId)).toEqual(["primary"]);
+    expect(calendarListCalls).toEqual([]);
+  });
+
+  test("a connection Google stopped accepting says no calendar is read, never 'only your main one'", async () => {
+    await connect(ana.email, gmail("ana.pick"));
+    await db
+      .update(calendarConnection)
+      .set({ status: "needs_reconnect" })
+      .where(eq(calendarConnection.resourceId, ana.personId));
+
+    const response = await request("/calendar/calendars", ana.email);
+    expect(response.status).toBe(409);
+    const { error } = await response.json();
+    expect(error.code).toBe("reconnect_needed");
+    expect(error.message).toContain("none of your calendars is read");
     expect(calendarListCalls).toEqual([]);
   });
 

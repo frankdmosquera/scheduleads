@@ -22,6 +22,10 @@ export type CalendarEventType = {
 // One calendar in the person's own list (feature 12h). The main one's id is always "primary".
 export type CalendarListEntryType = { id: string; name: string; isMain: boolean };
 
+// One ticked calendar's busy blocks, kept apart because a moved booking is crossed off the main
+// calendar's only: that is the one that holds its event.
+export type CalendarBusyBlocksType = { calendarId: string; busy: BusyBlockType[] };
+
 export type FreshAccessTokenType = {
   accessToken: string;
   accessTokenExpiresAt: Date;
@@ -31,13 +35,13 @@ export type FreshAccessTokenType = {
 export type CalendarProviderType = {
   // Throws CalendarReconnectNeededError when the provider no longer accepts the permission.
   refreshAccessToken(refreshToken: string): Promise<FreshAccessTokenType>;
-  // The busy blocks on the given calendars of the person, together. Throws on any failure, one
-  // unreadable calendar included, never answers "free". Never called with no calendars.
+  // The busy blocks on each of the given calendars of the person, in the order asked. Throws on
+  // any failure, one unreadable calendar included, never answers "free". Never called with none.
   findBusyBlocks(
     accessToken: string,
     range: TimeRangeType,
     calendarIds: string[]
-  ): Promise<BusyBlockType[]>;
+  ): Promise<CalendarBusyBlocksType[]>;
   // The person's own calendars, the main one first. Throws on any failure.
   listCalendars(accessToken: string): Promise<CalendarListEntryType[]>;
   // Writes the event into the person's main calendar and answers its id; an event already there

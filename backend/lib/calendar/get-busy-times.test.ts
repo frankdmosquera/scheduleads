@@ -347,6 +347,42 @@ describe("getBusyTimes", () => {
     expect(freeBusyCalls).toHaveLength(0);
   });
 
+  test("nothing ticked never asks Google, not even for a key, though the connection needs reconnecting", async () => {
+    await connect({ expiresInMs: 0 });
+    await pick([]);
+    await db
+      .update(calendarConnection)
+      .set({ status: "needs_reconnect" })
+      .where(eq(calendarConnection.resourceId, personId));
+
+    expect(await getBusyTimes(range)).toEqual([]);
+    expect(tokenCalls).toHaveLength(0);
+    expect(freeBusyCalls).toHaveLength(0);
+  });
+
+  test("a moved booking's span is crossed off the main calendar only, never another ticked one", async () => {
+    await connect();
+    await pick(["primary", "work-123@group.calendar.google.com"]);
+    const sameHour = [{ start: "2026-10-01T16:00:00Z", end: "2026-10-01T17:00:00Z" }];
+    freeBusyAnswer = () =>
+      json({
+        calendars: {
+          primary: { busy: sameHour }, // the booking's own event
+          "work-123@group.calendar.google.com": { busy: sameHour }, // a real job at that hour
+        },
+      });
+
+    expect(
+      await getBusyTimes({
+        ...range,
+        crossOffOnMain: {
+          start: new Date("2026-10-01T16:00:00Z"),
+          end: new Date("2026-10-01T17:00:00Z"),
+        },
+      })
+    ).toEqual([{ start: new Date("2026-10-01T16:00:00Z"), end: new Date("2026-10-01T17:00:00Z") }]);
+  });
+
   test("a new connection counts the main calendar; a reconnect keeps the pick for the same account", async () => {
     await connect();
     expect((await storedConnection()).busyCalendarIds).toEqual(["primary"]);
