@@ -5,6 +5,7 @@ import type { CalendarListEntryType } from "./calendar-provider.js";
 import { CalendarReconnectNeededError } from "./calendar-reconnect-needed-error.js";
 import { getFreshAccessToken } from "./get-fresh-access-token.js";
 import { googleOauthClient } from "./google-oauth-client.js";
+import { isGoogleVirtualCalendar } from "./is-google-virtual-calendar.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 
 export type CalendarChoicesFoundType =
@@ -43,7 +44,8 @@ export async function findCalendarChoices({
       connectionId: access.connectionId,
       accountEmail: access.accountEmail,
       listed,
-      picked: access.busyCalendarIds,
+      // A built-in Google calendar ticked before it was hidden from the list is no pick at all.
+      picked: access.busyCalendarIds.filter((id) => !isGoogleVirtualCalendar(id)),
     };
   } catch (error) {
     if (error instanceof CalendarReconnectNeededError)

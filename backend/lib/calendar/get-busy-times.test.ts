@@ -340,6 +340,22 @@ describe("getBusyTimes", () => {
     );
   });
 
+  test("a built-in Google calendar ticked is never asked about, and blocks nothing", async () => {
+    await connect();
+    await pick(["primary", "en.canadian#holiday@group.v.calendar.google.com"]);
+    freeBusyAnswer = () =>
+      busyAnswer([{ start: "2026-10-01T16:00:00Z", end: "2026-10-01T17:00:00Z" }]);
+
+    expect(await getBusyTimes(range)).toEqual([
+      { start: new Date("2026-10-01T16:00:00Z"), end: new Date("2026-10-01T17:00:00Z") },
+    ]);
+    expect(freeBusyCalls[0].body.items).toEqual([{ id: "primary" }]);
+
+    await pick(["en.canadian#holiday@group.v.calendar.google.com"]); // only that one: Google is not asked
+    expect(await getBusyTimes(range)).toEqual([]);
+    expect(freeBusyCalls).toHaveLength(1);
+  });
+
   test("nothing ticked reads nothing from Google: an empty list", async () => {
     await connect();
     await pick([]);
@@ -375,10 +391,9 @@ describe("getBusyTimes", () => {
     expect(
       await getBusyTimes({
         ...range,
-        crossOffOnMain: {
-          start: new Date("2026-10-01T16:00:00Z"),
-          end: new Date("2026-10-01T17:00:00Z"),
-        },
+        crossOffOnMain: [
+          { start: new Date("2026-10-01T16:00:00Z"), end: new Date("2026-10-01T17:00:00Z") },
+        ],
       })
     ).toEqual([{ start: new Date("2026-10-01T16:00:00Z"), end: new Date("2026-10-01T17:00:00Z") }]);
   });

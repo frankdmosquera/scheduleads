@@ -17,9 +17,10 @@ export async function getBusyTimes({
   to,
   crossOffOnMain,
 }: { organizationId: string; resourceId: string } & TimeRangeType & {
-    // A booking being moved: its own span is taken out of the main calendar, which holds its
-    // event (feature 7b, decision 11), and never out of another calendar (feature 12h).
-    crossOffOnMain?: BusyBlockType;
+    // The app's own bookings: their spans are taken out of the main calendar, which holds their
+    // events (feature 7b, decision 11), and never out of another calendar (feature 12h). A moved
+    // booking's own old time; the calendar's bookings, shown apart (feature 12b).
+    crossOffOnMain?: BusyBlockType[];
   }): Promise<BusyBlockType[]> {
   if (!(from < to)) throw new Error("The time range must end after it starts.");
 
@@ -50,6 +51,8 @@ export async function getBusyTimes({
     .set({ lastCheckedAt: new Date() })
     .where(eq(calendarConnection.id, access.connectionId));
   return calendars.flatMap(({ calendarId, busy }) =>
-    crossOffOnMain && calendarId === "primary" ? crossOffSpan(busy, crossOffOnMain) : busy
+    calendarId === "primary"
+      ? (crossOffOnMain ?? []).reduce((left, span) => crossOffSpan(left, span), busy)
+      : busy
   );
 }
