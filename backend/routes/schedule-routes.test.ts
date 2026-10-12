@@ -61,21 +61,21 @@ const stageId = randomUUID();
 const serviceId = randomUUID();
 const bookingId = randomUUID();
 
-// The week of Monday Nov 16, 2026, in Edmonton: UTC-6, since Alberta kept daylight time from
-// March 8, 2026 (the tz data, 2026c), so there is no autumn change that year.
+// The week of Monday Sep 14, 2026, in Edmonton: UTC-6, daylight time, whichever tz data the
+// machine has (from 2026c Alberta keeps it all year; before, it ended in November).
 const WEEK = [
-  "2026-11-16",
-  "2026-11-17",
-  "2026-11-18",
-  "2026-11-19",
-  "2026-11-20",
-  "2026-11-21",
-  "2026-11-22",
+  "2026-09-14",
+  "2026-09-15",
+  "2026-09-16",
+  "2026-09-17",
+  "2026-09-18",
+  "2026-09-19",
+  "2026-09-20",
 ];
 const at = (iso: string) => new Date(iso);
-const tuesdayTen = { start: "2026-11-17T16:00:00.000Z", end: "2026-11-17T17:00:00.000Z" }; // 10 to 11
-const fridayOff = { start: "2026-11-20T19:00:00.000Z", end: "2026-11-21T00:00:00.000Z" }; // 1 to 6 pm
-const wednesdayGoogle = { start: "2026-11-18T15:00:00.000Z", end: "2026-11-18T15:30:00.000Z" }; // 9 to 9:30
+const tuesdayTen = { start: "2026-09-15T16:00:00.000Z", end: "2026-09-15T17:00:00.000Z" }; // 10 to 11
+const fridayOff = { start: "2026-09-18T19:00:00.000Z", end: "2026-09-19T00:00:00.000Z" }; // 1 to 6 pm
+const wednesdayGoogle = { start: "2026-09-16T15:00:00.000Z", end: "2026-09-16T15:30:00.000Z" }; // 9 to 9:30
 
 // Google's side, faked: free/busy answers each test sets.
 type AnswerType = () => Response;
@@ -192,7 +192,7 @@ beforeAll(async () => {
       timezone: "America/Edmonton",
       minimumNoticeMinutes: 0,
       horizonDays: 1, // the customers' horizon ends tomorrow; the owner still sees the whole week
-      closedDates: ["2026-11-19"], // Thursday
+      closedDates: ["2026-09-17"], // Thursday
     }))
   );
   await db
@@ -297,25 +297,25 @@ afterAll(async () => {
 
 describe("the Calendar page's week (feature 12b)", () => {
   test("the week shows hours, closed days, bookings, time off and Google busy apart, in the business's zone", async () => {
-    const response = await weekOf(summit.email, `?resourceId=${summit.personId}&weekOf=2026-11-18`);
+    const response = await weekOf(summit.email, `?resourceId=${summit.personId}&weekOf=2026-09-16`);
     expect(response.status).toBe(200);
     const week = await response.json();
 
     expect(week).toMatchObject({
       canEdit: true,
       timezone: "America/Edmonton",
-      weekOf: "2026-11-16", // the Monday of the week asked for
+      weekOf: "2026-09-14", // the Monday of the week asked for
       resource: { id: summit.personId, name: "Carlos", kind: "person" },
       google: "read",
     });
     expect(week.days.map((day: DayType) => day.date)).toEqual(WEEK);
     // Hours past the customers' one-day horizon still show; Thursday is closed; the weekend has none.
-    expect(dayOf(week.days, "2026-11-16").hours).toEqual([{ startMinute: 480, endMinute: 1020 }]);
-    expect(dayOf(week.days, "2026-11-19")).toMatchObject({ closed: true, hours: [] });
-    expect(dayOf(week.days, "2026-11-21").hours).toEqual([]);
+    expect(dayOf(week.days, "2026-09-14").hours).toEqual([{ startMinute: 480, endMinute: 1020 }]);
+    expect(dayOf(week.days, "2026-09-17")).toMatchObject({ closed: true, hours: [] });
+    expect(dayOf(week.days, "2026-09-19").hours).toEqual([]);
 
     // Tuesday: the booking with its customer, once: its own Google event is not shown again.
-    expect(dayOf(week.days, "2026-11-17").items).toEqual([
+    expect(dayOf(week.days, "2026-09-15").items).toEqual([
       {
         kind: "booking",
         startsAt: tuesdayTen.start,
@@ -330,11 +330,11 @@ describe("the Calendar page's week (feature 12b)", () => {
         },
       },
     ]);
-    expect(dayOf(week.days, "2026-11-18").items).toEqual([
+    expect(dayOf(week.days, "2026-09-16").items).toEqual([
       { kind: "google_busy", startsAt: wednesdayGoogle.start, endsAt: wednesdayGoogle.end },
     ]);
     // Friday's time off ends at midnight UTC, still Friday afternoon in Edmonton: Friday only.
-    expect(dayOf(week.days, "2026-11-20").items).toEqual([
+    expect(dayOf(week.days, "2026-09-18").items).toEqual([
       {
         kind: "time_off",
         id: expect.any(String),
@@ -342,7 +342,7 @@ describe("the Calendar page's week (feature 12b)", () => {
         endsAt: fridayOff.end,
       },
     ]);
-    expect(dayOf(week.days, "2026-11-21").items).toEqual([]);
+    expect(dayOf(week.days, "2026-09-19").items).toEqual([]);
     // People first, then places, for the owner to pick between.
     expect(week.resources.map((one: { name: string }) => one.name)).toEqual([
       "Carlos",
@@ -353,31 +353,31 @@ describe("the Calendar page's week (feature 12b)", () => {
 
   test("a place's week shows the bookings that use it, and no Google", async () => {
     const week = await (
-      await weekOf(summit.email, `?resourceId=${vanId}&weekOf=2026-11-16`)
+      await weekOf(summit.email, `?resourceId=${vanId}&weekOf=2026-09-14`)
     ).json();
     expect(week.google).toBe("not_connected");
-    expect(dayOf(week.days, "2026-11-17").items).toMatchObject([
+    expect(dayOf(week.days, "2026-09-15").items).toMatchObject([
       { kind: "booking", booking: { customerName: "Ana Ruiz", personName: "Carlos" } },
     ]);
-    expect(dayOf(week.days, "2026-11-20").items).toEqual([]); // Carlos's time off is his, not the van's
+    expect(dayOf(week.days, "2026-09-18").items).toEqual([]); // Carlos's time off is his, not the van's
   });
 
   test("Google unreadable still shows the rest of the week", async () => {
     freeBusyAnswer = () => json({ error: { code: 500 } }, 500);
     const week = await (
-      await weekOf(summit.email, `?resourceId=${summit.personId}&weekOf=2026-11-16`)
+      await weekOf(summit.email, `?resourceId=${summit.personId}&weekOf=2026-09-14`)
     ).json();
 
     expect(week.google).toBe("unreadable");
-    expect(dayOf(week.days, "2026-11-17").items).toMatchObject([{ kind: "booking" }]);
-    expect(dayOf(week.days, "2026-11-20").items).toMatchObject([{ kind: "time_off" }]);
+    expect(dayOf(week.days, "2026-09-15").items).toMatchObject([{ kind: "booking" }]);
+    expect(dayOf(week.days, "2026-09-18").items).toMatchObject([{ kind: "time_off" }]);
     expect(warnings).toEqual([
       "[calendar] a week's Google busy times could not be read: Google's free/busy failed (500).",
     ]);
   });
 
   test("a member sees only their own calendar, and another business's resource is 404", async () => {
-    const own = await weekOf(helper.email, "?weekOf=2026-11-16");
+    const own = await weekOf(helper.email, "?weekOf=2026-09-14");
     expect(own.status).toBe(200);
     expect(await own.json()).toMatchObject({
       canEdit: false,
@@ -403,19 +403,19 @@ describe("the Calendar page's week (feature 12b)", () => {
     await db.insert(standbyDate).values({
       organizationId: summit.organizationId,
       resourceId: summit.personId,
-      date: "2026-11-18",
+      date: "2026-09-16",
     });
     try {
       const week = await (
-        await weekOf(summit.email, `?resourceId=${summit.personId}&weekOf=2026-11-16`)
+        await weekOf(summit.email, `?resourceId=${summit.personId}&weekOf=2026-09-14`)
       ).json();
-      expect(dayOf(week.days, "2026-11-18")).toMatchObject({
+      expect(dayOf(week.days, "2026-09-16")).toMatchObject({
         standby: true,
         closed: false,
         hours: [],
       });
-      expect(dayOf(week.days, "2026-11-18").items).toMatchObject([{ kind: "google_busy" }]);
-      expect(dayOf(week.days, "2026-11-17")).toMatchObject({ standby: false });
+      expect(dayOf(week.days, "2026-09-16").items).toMatchObject([{ kind: "google_busy" }]);
+      expect(dayOf(week.days, "2026-09-15")).toMatchObject({ standby: false });
     } finally {
       await db.delete(standbyDate).where(inArray(standbyDate.resourceId, [summit.personId]));
     }
@@ -428,13 +428,13 @@ describe("the Calendar page's week (feature 12b)", () => {
       organizationId: summit.organizationId,
       resourceId: summit.personId,
       kind: "time_off",
-      startsAt: at("2026-11-21T16:00:00.000Z"),
-      endsAt: at("2026-11-23T01:00:00.000Z"),
+      startsAt: at("2026-09-19T16:00:00.000Z"),
+      endsAt: at("2026-09-21T01:00:00.000Z"),
     };
     await db.insert(commitment).values(weekend);
     try {
       const week = await (
-        await weekOf(summit.email, `?resourceId=${summit.personId}&weekOf=2026-11-16`)
+        await weekOf(summit.email, `?resourceId=${summit.personId}&weekOf=2026-09-14`)
       ).json();
       const holding = week.days
         .filter((day: DayType) =>
@@ -443,7 +443,7 @@ describe("the Calendar page's week (feature 12b)", () => {
           )
         )
         .map((day: DayType) => day.date);
-      expect(holding).toEqual(["2026-11-21", "2026-11-22"]);
+      expect(holding).toEqual(["2026-09-19", "2026-09-20"]);
     } finally {
       await db.delete(commitment).where(inArray(commitment.id, [weekend.id]));
     }
