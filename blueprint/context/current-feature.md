@@ -6,7 +6,7 @@
 
 **Branch:** feature/12h-calendar-pick
 
-**Status:** 12h.1 built 2026-10-12: shared 188, backend 1010 tests pass, the frontend builds and lints. The check against a real Google calendar moved to 10b (amended below); the final review at /complete is next.
+**Status:** verified 2026-10-12: 12h.1 built, shared 188 and backend 1010 tests pass, the frontend builds and lints; the check against a real Google calendar moved to 10b (Amendments). Then the final review of the whole feature.
 
 ## Goal
 
