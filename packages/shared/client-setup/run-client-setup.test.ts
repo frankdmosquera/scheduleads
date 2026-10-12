@@ -387,5 +387,40 @@ describe("runClientSetup", () => {
         apply: true,
       })
     ).rejects.toThrow("is already another business's texting number.");
+
+    // A texting number is never a worker's phone, either way round, or that worker hears nothing.
+    const withWorkerPhone = (slug: string, phone: string) =>
+      clientSetupValidationSchema.parse({
+        ...fileFor(slug),
+        people: [
+          {
+            name: "Ana",
+            kind: "person",
+            workerTexts: { phone, addedOn: true, movedOn: true, removedOn: true },
+          },
+        ],
+      });
+    await expect(
+      runClientSetup(db, withWorkerPhone(other.slug, own), { apply: true })
+    ).rejects.toThrow("is a business's texting number, not a worker's phone.");
+    // The file's own Ana texts on 403 555 0161, so it cannot be a texting number.
+    await expect(
+      runClientSetup(db, withTexts(other.slug, texts("+14035550161")), { apply: true })
+    ).rejects.toThrow("is the texting number and a worker's phone at once.");
+    const third = await makeBusiness();
+    await runClientSetup(db, setupFor(third.slug), { apply: true }); // Ana's phone is now stored
+    const fourth = await makeBusiness();
+    await expect(
+      runClientSetup(
+        db,
+        clientSetupValidationSchema.parse({
+          ...fileFor(fourth.slug),
+          people: [],
+          services: fileFor(fourth.slug).services.map(({ ticked: _t, ...service }) => service),
+          texts: texts("+14035550161"),
+        }),
+        { apply: true }
+      )
+    ).rejects.toThrow("is already a worker's phone, not a texting number.");
   });
 });

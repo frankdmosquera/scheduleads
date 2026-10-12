@@ -1,11 +1,12 @@
 // Frontend component: the form that renames a person or place, or turns one off or on, on the People
 // page (feature 12d). Off never touches a booking; the page lists the ones they still hold. A person
-// also has an optional work email at the business's own domain.
+// also has an optional work email at the business's own domain, and their texts below, saved by the
+// same Save.
 
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import {
@@ -27,11 +28,17 @@ export function ChangeResourceForm({
   senderDomain,
   onSaved,
   onCancel,
+  beforeSave,
+  children,
 }: {
   resource: ResourceSettingsType;
   senderDomain: string | null; // the domain a work email must be at; null: none can be set yet
   onSaved: (answer: SavedResourceType) => void;
   onCancel: () => void;
+  // A part of the card saved by the same Save, first: false when it was refused, and nothing more
+  // is saved, so the card stays open on its errors.
+  beforeSave?: () => Promise<boolean>;
+  children?: ReactNode;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const nameRef = useRef<HTMLInputElement | null>(null);
@@ -50,6 +57,7 @@ export function ChangeResourceForm({
   useEffect(() => nameRef.current?.focus(), []); // the form opens where the owner will type
 
   async function save(values: SaveResourceType) {
+    if (beforeSave && !(await beforeSave())) return;
     const saved = await saveResource(resource.id, values);
     if (saved.state === "ok") {
       onSaved(saved.answer);
@@ -145,6 +153,7 @@ export function ChangeResourceForm({
           </label>
         )}
       />
+      {children}
       <SaveNotice notice={notice} />
       <div className="flex gap-2">
         <Button type="submit" disabled={form.formState.isSubmitting}>

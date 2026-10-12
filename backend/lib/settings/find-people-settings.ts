@@ -4,7 +4,7 @@
 
 import { and, asc, eq, isNull } from "drizzle-orm";
 
-import { availabilityRule, organization, resource } from "@scheduleads-app/shared/db";
+import { availabilityRule, organization, resource, textSettings } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
 import { emailDomainOf } from "./email-domain-of.js";
@@ -21,8 +21,9 @@ export async function findPeopleSettings(organizationId: string): Promise<{
   timezone: string | null; // null until the business's hours are first saved
   senderDomain: string | null; // null until the business has a sending address
   workerTexts: (WorkerTextSettingsRowType & { personId: string })[]; // a person not listed gets none
+  textsSetUp: boolean; // false until the agency gives the business a texting number: none can go
 }> {
-  const [rows, [hours], [business], workerTexts] = await Promise.all([
+  const [rows, [hours], [business], workerTexts, [texts]] = await Promise.all([
     db
       .select(resourceSettingsColumns)
       .from(resource)
@@ -44,11 +45,17 @@ export async function findPeopleSettings(organizationId: string): Promise<{
       .where(eq(organization.id, organizationId))
       .limit(1),
     findWorkerTexts(db, organizationId),
+    db
+      .select({ id: textSettings.organizationId })
+      .from(textSettings)
+      .where(eq(textSettings.organizationId, organizationId))
+      .limit(1),
   ]);
   return {
     people: rows.map(resourceSettingsOf),
     timezone: hours?.timezone ?? null,
     senderDomain: business?.senderEmail ? emailDomainOf(business.senderEmail) : null,
     workerTexts,
+    textsSetUp: texts !== undefined,
   };
 }

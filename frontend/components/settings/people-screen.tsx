@@ -1,6 +1,6 @@
 // Frontend component: the People page of Settings (feature 12d): every person and place, on or
 // off, and one form at a time to add or change one. Turning one off lists the bookings they hold.
-// A person's worker texts (feature 12g) open with them, in a form of their own.
+// A person's worker texts (feature 12g) are part of their card, saved by its one Save.
 
 "use client";
 
@@ -10,7 +10,12 @@ import { CentredCardNotice } from "@/components/centred-card/centred-card-notice
 import { AddResourceForm } from "@/components/settings/add-resource-form";
 import { ChangeResourceForm } from "@/components/settings/change-resource-form";
 import { ListedBookings, type ListedBookingsType } from "@/components/settings/listed-bookings";
-import { PersonTextsForm, type WorkerTextsType } from "@/components/settings/person-texts-form";
+import {
+  PersonTextsPart,
+  textsCanGo,
+  type PersonTextsPartHandleType,
+  type WorkerTextsType,
+} from "@/components/settings/person-texts-part";
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { Button } from "@/components/ui/button";
@@ -34,6 +39,7 @@ const byName = (a: ResourceSettingsType, b: ResourceSettingsType) => a.name.loca
 
 function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   const [people, setPeople] = useState(settings.people);
+  const textsPart = useRef<PersonTextsPartHandleType>(null); // the open card's texts
   const [workerTexts, setWorkerTexts] = useState(
     () =>
       new Map<string, WorkerTextsType>(
@@ -118,21 +124,29 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
       <ul className="flex flex-col gap-2">
         {people.map((resource) =>
           open === resource.id ? (
-            <li key={resource.id} className="flex flex-col gap-2">
+            <li key={resource.id}>
               <ChangeResourceForm
                 resource={resource}
                 senderDomain={settings.senderDomain}
                 onSaved={(answer) => saved(answer.resource, answer.upcomingBookings)}
                 onCancel={() => close(changeButtonId(resource.id))}
-              />
-              {resource.kind === "person" ? (
-                <PersonTextsForm
-                  personId={resource.id}
-                  personName={resource.name}
-                  texts={workerTexts.get(resource.id) ?? null}
-                  onSaved={(texts) => textsSaved(resource.id, texts)}
-                />
-              ) : null}
+                beforeSave={
+                  resource.kind === "person"
+                    ? async () => (await textsPart.current?.save()) ?? true
+                    : undefined
+                }
+              >
+                {resource.kind === "person" ? (
+                  <PersonTextsPart
+                    ref={textsPart}
+                    personId={resource.id}
+                    personName={resource.name}
+                    texts={workerTexts.get(resource.id) ?? null}
+                    textsSetUp={settings.textsSetUp}
+                    onSaved={(texts) => textsSaved(resource.id, texts)}
+                  />
+                ) : null}
+              </ChangeResourceForm>
             </li>
           ) : (
             <li
@@ -152,7 +166,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
               >
                 {resource.active ? "On" : "Off"}
               </span>
-              {workerTexts.has(resource.id) ? (
+              {textsCanGo(workerTexts.get(resource.id), settings.textsSetUp) ? (
                 <span className="text-xs text-muted-foreground">Gets texts</span>
               ) : null}
               {settings.canEdit ? (

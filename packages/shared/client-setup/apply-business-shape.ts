@@ -59,6 +59,35 @@ export async function applyBusinessShape(
   firstPerson: { id: string; names: string[] },
   shape: ClientSetupType
 ): Promise<string[]> {
+  // A texting number is never a worker's phone, in either direction, or that worker hears nothing.
+  const workerPhones = shape.people.flatMap((person) =>
+    person.workerTexts ? [person.workerTexts.phone] : []
+  );
+  if (shape.texts && workerPhones.includes(shape.texts.fromNumber))
+    throw new Error(
+      `${shape.texts.fromNumber} is the texting number and a worker's phone at once.`
+    );
+  if (workerPhones.length) {
+    const [texting] = await tx
+      .select({ fromNumber: textSettings.fromNumber })
+      .from(textSettings)
+      .where(inArray(textSettings.fromNumber, workerPhones))
+      .limit(1);
+    if (texting)
+      throw new Error(
+        `${texting.fromNumber} is a business's texting number, not a worker's phone.`
+      );
+  }
+  if (shape.texts) {
+    const [worker] = await tx
+      .select({ phone: workerTextSettings.phone })
+      .from(workerTextSettings)
+      .where(eq(workerTextSettings.phone, shape.texts.fromNumber))
+      .limit(1);
+    if (worker)
+      throw new Error(`${worker.phone} is already a worker's phone, not a texting number.`);
+  }
+
   // Its booking questions, only when it has none, so questions changed by hand survive.
   const [anyQuestion] = await tx
     .select({ id: bookingQuestion.id })

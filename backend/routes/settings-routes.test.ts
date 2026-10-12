@@ -1263,6 +1263,15 @@ describe("a person's worker texts (feature 12g)", () => {
     expect(await workerTextsOf(booked)).toEqual([]);
   });
 
+  // A person's texts go only once the agency gives the business a texting number.
+  test("the page says whether the business has a texting number", async () => {
+    const setUpOf = async (tenant: { email: string }) =>
+      ((await (await get("/settings/people", tenant.email)).json()) as { textsSetUp: boolean })
+        .textsSetUp;
+    expect(await setUpOf(booked)).toBe(false);
+    expect(await setUpOf(other)).toBe(true);
+  });
+
   test("another business's person is 404, a place 400, and a member without the permission 403", async () => {
     expect((await put(textsPath(other.personId), booked.email, { texts: on })).status).toBe(404);
     expect((await put(textsPath(summitPlaceId), summit.email, { texts: on })).status).toBe(400);
