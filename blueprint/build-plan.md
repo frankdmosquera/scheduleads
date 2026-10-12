@@ -330,7 +330,7 @@ without Frank touching the database.
     5d, so a clinic's customers are asked for an address it does not need.
     Whether screen two asks for the yes to later texts (9.7, decision 13),
     and what the business later sends with it
-  - [ ] 12g. **Texts** - text settings (8b, Frank, Oct 7): the business's
+  - [x] 12g. **Texts** - text settings (8b, Frank, Oct 7): the business's
     texting number, whether the confirmation text goes, any number of
     reminders, each any number of minutes before, and where a customer's
     reply is passed on (a phone, an email, or both). Nothing on by default.
