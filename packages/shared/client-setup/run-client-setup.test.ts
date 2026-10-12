@@ -1,7 +1,7 @@
 // Runs against the local scheduleads_dev on throwaway businesses, removed after; refuses any
 // other database through the same guard as the seed.
 
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 
 import { and, eq, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -16,6 +16,7 @@ import {
   bookingQuestion,
   organization,
   resource,
+  textSettings,
   user,
   workerTextSettings,
 } from "../db/index.js";
@@ -343,5 +344,83 @@ describe("runClientSetup", () => {
     const again = await runClientSetup(db, setupFor(business.slug), { apply: true });
     expect(again).toMatchObject({ ok: true, made: [] });
     expect((await countRows(business.id)).resources).toBe(3);
+  });
+
+  // The agency gives a business its texting number with its first choices; after that they are the
+  // owner's, on Settings > Texts.
+  it("adds texts only when the business has none, lists a change, and refuses a number already taken", async () => {
+    const number = () =>
+      `+1587${randomInt(200, 1000)}${String(randomInt(0, 10_000)).padStart(4, "0")}`;
+    const texts = (fromNumber: string) => ({
+      fromNumber,
+      confirmationOn: true,
+      reminderMinutesBefore: [1200],
+      replyPhone: null,
+      replyEmail: "office@example.com",
+      askLaterTextsYes: false,
+    });
+    const withTexts = (slug: string, given: ReturnType<typeof texts>) =>
+      clientSetupValidationSchema.parse({ ...fileFor(slug), texts: given });
+    const business = await makeBusiness();
+    const own = number();
+    const first = await runClientSetup(db, withTexts(business.slug, texts(own)), { apply: true });
+    expect(first.ok && first.made).toContain("text settings");
+
+    // Changed on Settings: kept, and listed.
+    await db
+      .update(textSettings)
+      .set({ confirmationOn: false })
+      .where(eq(textSettings.organizationId, business.id));
+    const again = await runClientSetup(db, withTexts(business.slug, texts(own)), { apply: true });
+    expect(again.ok && again.made).toEqual([]);
+    expect(again.ok && again.differences).toEqual([
+      expect.stringMatching(/^texts: saved \{"askLaterTextsYes":false,"confirmationOn":false/),
+    ]);
+
+    // Another business may not take that number, nor send its replies to it.
+    const other = await makeBusiness();
+    await expect(
+      runClientSetup(db, withTexts(other.slug, texts(own)), { apply: true })
+    ).rejects.toThrow("is already another business's texting number.");
+    await expect(
+      runClientSetup(db, withTexts(other.slug, { ...texts(number()), replyPhone: own }), {
+        apply: true,
+      })
+    ).rejects.toThrow("is already another business's texting number.");
+
+    // A texting number is never a worker's phone, either way round, or that worker hears nothing.
+    const withWorkerPhone = (slug: string, phone: string) =>
+      clientSetupValidationSchema.parse({
+        ...fileFor(slug),
+        people: [
+          {
+            name: "Ana",
+            kind: "person",
+            workerTexts: { phone, addedOn: true, movedOn: true, removedOn: true },
+          },
+        ],
+      });
+    await expect(
+      runClientSetup(db, withWorkerPhone(other.slug, own), { apply: true })
+    ).rejects.toThrow("is a business's texting number, not a worker's phone.");
+    // The file's own Ana texts on 403 555 0161, so it cannot be a texting number.
+    await expect(
+      runClientSetup(db, withTexts(other.slug, texts("+14035550161")), { apply: true })
+    ).rejects.toThrow("is the texting number and a worker's phone at once.");
+    const third = await makeBusiness();
+    await runClientSetup(db, setupFor(third.slug), { apply: true }); // Ana's phone is now stored
+    const fourth = await makeBusiness();
+    await expect(
+      runClientSetup(
+        db,
+        clientSetupValidationSchema.parse({
+          ...fileFor(fourth.slug),
+          people: [],
+          services: fileFor(fourth.slug).services.map(({ ticked: _t, ...service }) => service),
+          texts: texts("+14035550161"),
+        }),
+        { apply: true }
+      )
+    ).rejects.toThrow("is already a worker's phone, not a texting number.");
   });
 });

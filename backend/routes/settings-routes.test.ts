@@ -3,7 +3,7 @@
 
 import { randomInt, randomUUID } from "node:crypto";
 
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { addDays } from "@scheduleads-app/shared/add-days";
@@ -27,6 +27,7 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the settings route tests")
 // Imported after the env is loaded: they read it the moment they load.
 const { app } = await import("../app.js");
 const { findServiceResources } = await import("../lib/scheduling/find-service-resources.js");
+const { jobSchema } = await import("../lib/jobs/job-schema.js");
 const { db } = await import("../database.js");
 const { appOrigin } = await import("../lib/auth/auth-server.js");
 const {
@@ -42,6 +43,7 @@ const {
   resource,
   textSettings,
   user,
+  workerTextSettings,
 } = await import("@scheduleads-app/shared/db");
 
 const tag = randomUUID().slice(0, 8);
@@ -1202,6 +1204,260 @@ describe("the Days off settings", () => {
     const read = await (await get("/settings/days-off", summit.email)).json();
     expect(read).toMatchObject({ unknownHolidays: ["Famly Day"] });
     await resetDaysOff();
+  });
+});
+
+describe("a person's worker texts (feature 12g)", () => {
+  const textsPath = (resourceId: string) => `/settings/people/${resourceId}/texts`;
+  const otherNumber = `+1587${randomInt(200, 1000)}${String(randomInt(0, 10_000)).padStart(4, "0")}`;
+  const on = { phone: "(403) 555-0161", addedOn: true, movedOn: true, removedOn: false };
+  const workerTextsOf = async (tenant: { email: string }) =>
+    (
+      (await (await get("/settings/people", tenant.email)).json()) as {
+        workerTexts: { personId: string; phone: string }[];
+      }
+    ).workerTexts;
+
+  beforeAll(async () => {
+    await db.insert(textSettings).values({
+      organizationId: other.organizationId,
+      fromNumber: otherNumber,
+      confirmationOn: false,
+      reminderMinutesBefore: [],
+      replyEmail: "office@example.com",
+    });
+  });
+
+  afterAll(async () => {
+    await db.delete(textSettings).where(eq(textSettings.organizationId, other.organizationId));
+    await db
+      .delete(workerTextSettings)
+      .where(eq(workerTextSettings.organizationId, booked.organizationId));
+  });
+
+  test("a person's texts save, show on the page, and turn off", async () => {
+    const saved = await put(textsPath(booked.personId), booked.email, { texts: on });
+    expect(saved.status).toBe(200);
+    expect(await saved.json()).toEqual({ texts: { ...on, phone: "+14035550161" } });
+    expect(await workerTextsOf(booked)).toEqual([
+      { personId: booked.personId, ...on, phone: "+14035550161" },
+    ]);
+    // Changed in place, then off: the row goes.
+    await put(textsPath(booked.personId), booked.email, { texts: { ...on, removedOn: true } });
+    expect((await workerTextsOf(booked))[0]).toMatchObject({ removedOn: true });
+    const off = await put(textsPath(booked.personId), booked.email, { texts: null });
+    expect(await off.json()).toEqual({ texts: null });
+    expect(await workerTextsOf(booked)).toEqual([]);
+  });
+
+  test("a phone that is any business's texting number is refused, and every choice must be given", async () => {
+    const taken = await put(textsPath(booked.personId), booked.email, {
+      texts: { ...on, phone: otherNumber },
+    });
+    expect(taken.status).toBe(400);
+    expect(await taken.json()).toMatchObject({ field: "texts.phone" });
+    const { removedOn: _left, ...unpicked } = on;
+    const missing = await put(textsPath(booked.personId), booked.email, { texts: unpicked });
+    expect(missing.status).toBe(400);
+    expect(await missing.json()).toMatchObject({ field: "texts.removedOn" });
+    expect(await workerTextsOf(booked)).toEqual([]);
+  });
+
+  // A person's texts go only once the agency gives the business a texting number.
+  test("the page says whether the business has a texting number", async () => {
+    const setUpOf = async (tenant: { email: string }) =>
+      ((await (await get("/settings/people", tenant.email)).json()) as { textsSetUp: boolean })
+        .textsSetUp;
+    expect(await setUpOf(booked)).toBe(false);
+    expect(await setUpOf(other)).toBe(true);
+  });
+
+  test("another business's person is 404, a place 400, and a member without the permission 403", async () => {
+    expect((await put(textsPath(other.personId), booked.email, { texts: on })).status).toBe(404);
+    expect((await put(textsPath(summitPlaceId), summit.email, { texts: on })).status).toBe(400);
+    expect((await put(textsPath(summit.personId), helper.email, { texts: on })).status).toBe(403);
+    expect(await workerTextsOf(summit)).toEqual([]);
+  });
+});
+
+describe("the Texts settings (feature 12g)", () => {
+  const textingNumber = () =>
+    `+1587${randomInt(200, 1000)}${String(randomInt(0, 10_000)).padStart(4, "0")}`;
+  const bookedNumber = textingNumber();
+  const otherNumber = textingNumber();
+  const choices = {
+    confirmationOn: true,
+    reminderMinutesBefore: [1200],
+    replyPhone: null,
+    replyEmail: "office@example.com",
+  };
+  const textsOf = async (tenant: { email: string }) =>
+    (await (await get("/settings/texts", tenant.email)).json()).texts;
+  // The reminder jobs still waiting for a booking, by minutes and move.
+  const remindersOf = async (bookingId: string) =>
+    (
+      (await db.execute(
+        sql`select jobs.payload->>'minutesBefore' as minutes, jobs.payload->>'sequence' as sequence
+            from ${sql.identifier(jobSchema)}._private_jobs jobs
+            join ${sql.identifier(jobSchema)}._private_tasks tasks on tasks.id = jobs.task_id
+            where tasks.identifier = 'booking_text' and jobs.payload->>'bookingId' = ${bookingId}
+            and jobs.payload->>'kind' = 'reminder' order by 1`
+      )) as unknown as { minutes: string; sequence: string }[]
+    ).map((job) => ({ minutesBefore: Number(job.minutes), sequence: Number(job.sequence) }));
+  const madeBookingIds: string[] = [];
+
+  beforeAll(async () => {
+    await db.insert(textSettings).values([
+      { organizationId: booked.organizationId, fromNumber: bookedNumber, ...choices },
+      { organizationId: other.organizationId, fromNumber: otherNumber, ...choices },
+    ]);
+  });
+
+  afterAll(async () => {
+    await db
+      .delete(textSettings)
+      .where(inArray(textSettings.organizationId, [booked.organizationId, other.organizationId]));
+    if (madeBookingIds.length)
+      await db.execute(
+        sql`delete from ${sql.identifier(jobSchema)}._private_jobs
+            where payload->>'bookingId' in (${sql.join(
+              madeBookingIds.map((id) => sql`${id}`),
+              sql`, `
+            )})`
+      );
+  });
+
+  test("a business with no texts yet sees none and cannot save", async () => {
+    expect(await textsOf(closer)).toBeNull();
+    const refused = await put("/settings/texts", closer.email, choices);
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: { code: "no_text_settings" } });
+  });
+
+  test("a save keeps the choices, never the number, reminders the earliest first", async () => {
+    const saved = await put("/settings/texts", booked.email, {
+      confirmationOn: false,
+      reminderMinutesBefore: [60, 1200],
+      replyPhone: "(403) 555-0100",
+      replyEmail: null,
+    });
+    expect(saved.status).toBe(200);
+    expect(await textsOf(booked)).toEqual({
+      fromNumber: bookedNumber,
+      confirmationOn: false,
+      reminderMinutesBefore: [1200, 60],
+      replyPhone: "+14035550100",
+      replyEmail: null,
+    });
+    // The number is the agency's: a save that carries one is refused.
+    const withNumber = await put("/settings/texts", booked.email, {
+      ...choices,
+      fromNumber: otherNumber,
+    });
+    expect(withNumber.status).toBe(400);
+    expect((await textsOf(booked)).fromNumber).toBe(bookedNumber);
+  });
+
+  test("a reply phone that is another business's texting number, or its own, is refused", async () => {
+    const before = await textsOf(booked);
+    for (const replyPhone of [otherNumber, bookedNumber]) {
+      const refused = await put("/settings/texts", booked.email, { ...choices, replyPhone });
+      expect(refused.status).toBe(400);
+      expect(await refused.json()).toMatchObject({ field: "replyPhone" });
+    }
+    expect(await textsOf(booked)).toEqual(before);
+  });
+
+  test("a reminder added reaches an upcoming booking at its current move, never one whose moment has passed", async () => {
+    await put("/settings/texts", booked.email, { ...choices, reminderMinutesBefore: [1200] });
+    const upcoming = await makeBooking("Rita", booked.personId, 600);
+    const past = await makeBooking("Sam", booked.personId, 660);
+    const soon = await makeBooking("Vic", booked.personId, 780); // in an hour: 2 hours before is gone
+    madeBookingIds.push(upcoming.bookingId, past.bookingId, soon.bookingId);
+    await db
+      .update(booking)
+      .set({ startsAt: new Date(Date.now() + 3_600_000), endsAt: new Date(Date.now() + 7_200_000) })
+      .where(eq(booking.id, soon.bookingId));
+    await db.update(booking).set({ sequence: 2 }).where(eq(booking.id, upcoming.bookingId)); // moved twice
+    await db
+      .update(booking)
+      .set({ startsAt: new Date(Date.now() - 3_600_000), endsAt: new Date() })
+      .where(eq(booking.id, past.bookingId));
+
+    const saved = await put("/settings/texts", booked.email, {
+      ...choices,
+      reminderMinutesBefore: [1200, 120],
+    });
+    expect(saved.status).toBe(200);
+    expect(await remindersOf(upcoming.bookingId)).toEqual([{ minutesBefore: 120, sequence: 2 }]);
+    expect(await remindersOf(past.bookingId)).toEqual([]);
+    expect(await remindersOf(soon.bookingId)).toEqual([]);
+  });
+
+  // The save reaches every upcoming booking of its own business at once, and nothing of another's.
+  test("a save changes only its own business: its texts, and its own bookings' reminders", async () => {
+    await put("/settings/texts", booked.email, { ...choices, reminderMinutesBefore: [1200] });
+    const otherBefore = await textsOf(other);
+    const [first, second] = [
+      await makeBooking("Wes", booked.personId, 840),
+      await makeBooking("Xia", booked.personId, 900),
+    ];
+    const [contactId, leadId, closerBookingId] = [randomUUID(), randomUUID(), randomUUID()];
+    await db
+      .insert(contact)
+      .values({ id: contactId, organizationId: closer.organizationId, name: "Yan" });
+    await db.insert(lead).values({
+      id: leadId,
+      organizationId: closer.organizationId,
+      contactId,
+      stageId: closerStageId,
+      source: "widget",
+    });
+    await db.insert(booking).values({
+      id: closerBookingId,
+      organizationId: closer.organizationId,
+      leadId,
+      bookingLinkId: closerVisitId,
+      personId: closerAnaId,
+      startsAt: onTuesday(600),
+      endsAt: onTuesday(660),
+      status: "confirmed",
+    });
+    madeBookingIds.push(first.bookingId, second.bookingId, closerBookingId);
+
+    await put("/settings/texts", booked.email, {
+      confirmationOn: false,
+      reminderMinutesBefore: [1200, 45, 30],
+      replyPhone: null,
+      replyEmail: "front@example.com",
+    });
+    const both = [
+      { minutesBefore: 30, sequence: 0 },
+      { minutesBefore: 45, sequence: 0 },
+    ];
+    expect(await remindersOf(first.bookingId)).toEqual(both);
+    expect(await remindersOf(second.bookingId)).toEqual(both);
+    expect(await remindersOf(closerBookingId)).toEqual([]);
+    expect(await textsOf(other)).toEqual(otherBefore);
+  });
+
+  test("a reminder removed and added back while it waits is queued once", async () => {
+    await put("/settings/texts", booked.email, { ...choices, reminderMinutesBefore: [1200] });
+    const una = await makeBooking("Una", booked.personId, 720);
+    madeBookingIds.push(una.bookingId);
+    await put("/settings/texts", booked.email, { ...choices, reminderMinutesBefore: [1200, 90] });
+    await put("/settings/texts", booked.email, { ...choices, reminderMinutesBefore: [1200] });
+    await put("/settings/texts", booked.email, { ...choices, reminderMinutesBefore: [1200, 90] });
+
+    expect(await remindersOf(una.bookingId)).toEqual([{ minutesBefore: 90, sequence: 0 }]);
+  });
+
+  test("a member without the permission can read the texts but not save them", async () => {
+    const read = await get("/settings/texts", helper.email);
+    expect(read.status).toBe(200);
+    expect(await read.json()).toMatchObject({ canEdit: false });
+    const refused = await put("/settings/texts", helper.email, choices);
+    expect(refused.status).toBe(403);
   });
 });
 

@@ -14,6 +14,7 @@ import {
 } from "../booking-links-validation-schemas/service-validation-schema.js";
 import { contactRuleValidationSchema } from "../crm-validation-schemas/contact-rule-validation-schema.js";
 import { setupQuestionsValidationSchema } from "../crm-validation-schemas/booking-questions-validation-schema.js";
+import { textSettingsValidationSchema } from "../text-validation-schemas/text-settings-validation-schema.js";
 import { workerTextSettingsValidationSchema } from "../text-validation-schemas/worker-text-settings-validation-schema.js";
 
 const nameValidationSchema = z.string().trim().min(1).max(200);
@@ -64,6 +65,7 @@ export const clientSetupValidationSchema = z
     personChoice: z.enum(["customer_picks", "business_assigns"]),
     contactRule: contactRuleValidationSchema, // what a customer must leave: email, phone or either
     questions: setupQuestionsValidationSchema, // the Settings page's own rules
+    texts: textSettingsValidationSchema.optional(), // the agency's texting number and first choices
     hours: setupHoursValidationSchema,
     people: z.array(setupPersonValidationSchema),
     services: z.array(setupServiceValidationSchema).min(1, "A business needs a service."),

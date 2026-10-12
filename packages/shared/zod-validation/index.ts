@@ -32,5 +32,7 @@ export * from "./availability-validation-schemas/date-hours-validation-schema.js
 export * from "./availability-validation-schemas/availability-rule-validation-schema.js";
 export * from "./availability-validation-schemas/close-day-validation-schema.js";
 export * from "./availability-validation-schemas/open-closed-day-validation-schema.js";
+export * from "./text-validation-schemas/text-choices-validation-schema.js";
 export * from "./text-validation-schemas/text-settings-validation-schema.js";
 export * from "./text-validation-schemas/worker-text-settings-validation-schema.js";
+export * from "./text-validation-schemas/save-worker-texts-validation-schema.js";

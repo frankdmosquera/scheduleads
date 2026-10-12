@@ -1,27 +1,16 @@
-// Shared Zod schema: a business's text settings (feature 8b, decision 2), as client setup saves
-// them and Settings (feature 12) will. The numbers are stored as Twilio texts them, "+14035550148".
+// Shared Zod schema: a business's whole text settings (feature 8b, decision 2), as a setup file
+// gives them: the texting number, the agency's, with the business's first text choices. The
+// numbers are stored as Twilio texts them, "+14035550148".
 
 import { z } from "zod";
 
-import { emailAddressValidationSchema } from "../auth-validation-schemas/email-address-validation-schema.js";
+import { textChoicesValidationSchema } from "./text-choices-validation-schema.js";
 import { textableNumberValidationSchema } from "./textable-number-validation-schema.js";
 
 export const textSettingsValidationSchema = z
   .object({
     fromNumber: textableNumberValidationSchema,
-    confirmationOn: z.boolean(),
-    reminderMinutesBefore: z
-      .array(
-        z
-          .int32("Give each reminder in whole minutes.")
-          .positive("A reminder goes at least a minute before.")
-      )
-      .refine(
-        (minutes) => new Set(minutes).size === minutes.length,
-        "That reminder is there twice."
-      ),
-    replyPhone: textableNumberValidationSchema.nullable(),
-    replyEmail: emailAddressValidationSchema.nullable(),
+    ...textChoicesValidationSchema.shape,
     askLaterTextsYes: z.boolean(), // the booking form's box (feature 9, decision 13)
   })
   .refine((settings) => settings.replyPhone !== null || settings.replyEmail !== null, {
