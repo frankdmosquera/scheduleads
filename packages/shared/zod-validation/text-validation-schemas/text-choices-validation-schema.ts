@@ -24,7 +24,9 @@ export const textChoicesValidationSchema = z
       .refine(
         (minutes) => new Set(minutes).size === minutes.length,
         "That reminder is there twice."
-      ),
+      )
+      // Kept the earliest first, however given, so a page and a setup file store the same list.
+      .transform((minutes) => [...minutes].sort((a, b) => b - a)),
     replyPhone: textableNumberValidationSchema.nullable(),
     replyEmail: emailAddressValidationSchema.nullable(),
   })

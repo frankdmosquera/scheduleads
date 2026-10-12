@@ -1320,6 +1320,53 @@ describe("the Texts settings (feature 12g)", () => {
     expect(await remindersOf(soon.bookingId)).toEqual([]);
   });
 
+  // The save reaches every upcoming booking of its own business at once, and nothing of another's.
+  test("a save changes only its own business: its texts, and its own bookings' reminders", async () => {
+    await put("/settings/texts", booked.email, { ...choices, reminderMinutesBefore: [1200] });
+    const otherBefore = await textsOf(other);
+    const [first, second] = [
+      await makeBooking("Wes", booked.personId, 840),
+      await makeBooking("Xia", booked.personId, 900),
+    ];
+    const [contactId, leadId, closerBookingId] = [randomUUID(), randomUUID(), randomUUID()];
+    await db
+      .insert(contact)
+      .values({ id: contactId, organizationId: closer.organizationId, name: "Yan" });
+    await db.insert(lead).values({
+      id: leadId,
+      organizationId: closer.organizationId,
+      contactId,
+      stageId: closerStageId,
+      source: "widget",
+    });
+    await db.insert(booking).values({
+      id: closerBookingId,
+      organizationId: closer.organizationId,
+      leadId,
+      bookingLinkId: closerVisitId,
+      personId: closerAnaId,
+      startsAt: onTuesday(600),
+      endsAt: onTuesday(660),
+      status: "confirmed",
+    });
+    madeBookingIds.push(first.bookingId, second.bookingId, closerBookingId);
+
+    await put("/settings/texts", booked.email, {
+      confirmationOn: false,
+      reminderMinutesBefore: [1200, 45, 30],
+      replyPhone: null,
+      replyEmail: "front@example.com",
+    });
+    const both = [
+      { minutesBefore: 30, sequence: 0 },
+      { minutesBefore: 45, sequence: 0 },
+    ];
+    expect(await remindersOf(first.bookingId)).toEqual(both);
+    expect(await remindersOf(second.bookingId)).toEqual(both);
+    expect(await remindersOf(closerBookingId)).toEqual([]);
+    expect(await textsOf(other)).toEqual(otherBefore);
+  });
+
   test("a reminder removed and added back while it waits is queued once", async () => {
     await put("/settings/texts", booked.email, { ...choices, reminderMinutesBefore: [1200] });
     const una = await makeBooking("Una", booked.personId, 720);

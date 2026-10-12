@@ -18,6 +18,14 @@ describe("a business's text choices, as the owner saves them", () => {
     );
   });
 
+  // A page and a setup file store the same list, so a run of the same file finds no difference.
+  test("keeps the reminders the earliest first, however given", () => {
+    expect(
+      textChoicesValidationSchema.parse({ ...choices, reminderMinutesBefore: [60, 1440, 120] })
+        .reminderMinutesBefore
+    ).toEqual([1440, 120, 60]);
+  });
+
   test.each([
     [
       "no reply destination",

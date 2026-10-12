@@ -7,7 +7,7 @@
 import type { DatabaseExecutorType } from "../../database-executor-type.js";
 import { findTextSettings } from "../text/find-text-settings.js";
 import type { BookingTextJobPayloadType } from "./booking-text-job.js";
-import { enqueueBookingReminder } from "./enqueue-booking-reminder.js";
+import { enqueueBookingReminders } from "./enqueue-booking-reminders.js";
 import { enqueueJob } from "./enqueue-job.js";
 import { jobNames } from "./job-names.js";
 
@@ -38,7 +38,13 @@ export async function enqueueBookingTexts(
   }
 
   const settings = await findTextSettings(organizationId, executor);
-  for (const minutesBefore of settings?.reminderMinutesBefore ?? []) {
-    await enqueueBookingReminder(executor, { ...ids, startsAt, minutesBefore, now });
-  }
+  await enqueueBookingReminders(
+    executor,
+    (settings?.reminderMinutesBefore ?? []).map((minutesBefore) => ({
+      ...ids,
+      startsAt,
+      minutesBefore,
+    })),
+    now
+  );
 }

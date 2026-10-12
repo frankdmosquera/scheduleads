@@ -9,7 +9,7 @@ import { booking, textSettings } from "@scheduleads-app/shared/db";
 import type { TextChoicesType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
-import { enqueueBookingReminder } from "../jobs/enqueue-booking-reminder.js";
+import { enqueueBookingReminders } from "../jobs/enqueue-booking-reminders.js";
 import { findTextingBusiness } from "../text/find-texting-business.js";
 import { findTextsSettings, type TextsSettingsType } from "./find-texts-settings.js";
 import { lockBusinessResources } from "./lock-business-resources.js";
@@ -33,13 +33,14 @@ export async function saveTexts(
       return { ok: false, reason: "texting_number" } as const;
     }
 
-    const reminders = [...choices.reminderMinutesBefore].sort((a, b) => b - a);
     await tx
       .update(textSettings)
-      .set({ ...choices, reminderMinutesBefore: reminders })
+      .set(choices)
       .where(eq(textSettings.organizationId, organizationId));
 
-    const added = reminders.filter((minutes) => !saved.reminderMinutesBefore.includes(minutes));
+    const added = choices.reminderMinutesBefore.filter(
+      (minutes) => !saved.reminderMinutesBefore.includes(minutes)
+    );
     if (added.length) {
       const upcoming = await tx
         .select({ id: booking.id, sequence: booking.sequence, startsAt: booking.startsAt })
@@ -51,18 +52,19 @@ export async function saveTexts(
             gt(booking.startsAt, now)
           )
         );
-      for (const { id, sequence, startsAt } of upcoming) {
-        for (const minutesBefore of added) {
-          await enqueueBookingReminder(tx, {
+      await enqueueBookingReminders(
+        tx,
+        upcoming.flatMap(({ id, sequence, startsAt }) =>
+          added.map((minutesBefore) => ({
             organizationId,
             bookingId: id,
             sequence,
             startsAt,
             minutesBefore,
-            now,
-          });
-        }
-      }
+          }))
+        ),
+        now
+      );
     }
 
     const texts = await findTextsSettings(tx, organizationId);

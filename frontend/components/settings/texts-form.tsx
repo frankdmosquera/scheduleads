@@ -22,6 +22,7 @@ type TextsType = NonNullable<TextsSettingsType["texts"]>;
 type UnitType = "minutes" | "hours" | "days";
 
 const MINUTES_IN: Record<UnitType, number> = { minutes: 1, hours: 60, days: 1440 };
+const MOST_MINUTES = 2_147_483_647; // the most a reminder can hold
 
 // "20 hours before", in the largest whole unit.
 function reminderWords(minutes: number): string {
@@ -46,14 +47,15 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   const [saving, setSaving] = useState(false);
-  // After a remove the pressed button is gone: focus goes to the next one, or to the new reminder.
+  // After a remove the pressed button is gone: focus goes to the next one, or to the new reminder;
+  // after a refused list, to the list.
   const focusNext = useRef<string | null>(null);
 
   useEffect(() => {
     if (!focusNext.current) return;
     formRef.current?.querySelector<HTMLElement>(`[data-focus="${focusNext.current}"]`)?.focus();
     focusNext.current = null;
-  }, [reminders]);
+  }, [reminders, errors]);
 
   const edited = () => {
     setNotice(null);
@@ -68,11 +70,18 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
       setErrors({ newReminder: "Give a whole number, at least 1." });
       return;
     }
+    if (minutes > MOST_MINUTES) {
+      setErrors({ newReminder: "That is too far ahead." });
+      return;
+    }
     if (reminders.includes(minutes)) {
       setErrors({ newReminder: "That reminder is already there." });
       return;
     }
-    setReminders([...reminders, minutes].sort((a, b) => b - a));
+    const next = [...reminders, minutes].sort((a, b) => b - a);
+    // The add row goes once the list is full: focus moves to the new reminder's own Remove.
+    if (next.length >= TEXT_REMINDERS_MAX) focusNext.current = `remove-${minutes}`;
+    setReminders(next);
     setCount("");
   }
 
@@ -86,6 +95,12 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // A reminder typed and not added would be lost without a word.
+    if (count.trim() !== "") {
+      setErrors({ newReminder: "Add this reminder, or clear it, before saving." });
+      focusFirstInvalid();
+      return;
+    }
     setSaving(true);
     const saved = await saveTexts({
       confirmationOn,
@@ -103,8 +118,11 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
       return;
     }
     if (saved.state === "field") {
-      setErrors({ [saved.field.split(".")[0] ?? saved.field]: saved.message });
-      focusFirstInvalid();
+      const field = saved.field.split(".")[0] ?? saved.field;
+      setErrors({ [field]: saved.message });
+      // The list is a group, which cannot be marked invalid: it takes the focus itself.
+      if (field === "reminderMinutesBefore") focusNext.current = "reminders";
+      else focusFirstInvalid();
       return;
     }
     setNotice({ tone: "error", text: saved.message });
@@ -180,8 +198,17 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
           }}
         />
 
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium text-foreground">Reminders before the appointment</p>
+        <div
+          role="group"
+          tabIndex={-1}
+          aria-labelledby="texts-reminders-label"
+          data-focus="reminders"
+          aria-describedby={errors.reminderMinutesBefore ? "texts-reminders-error" : undefined}
+          className="flex flex-col gap-2 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <p id="texts-reminders-label" className="text-sm font-medium text-foreground">
+            Reminders before the appointment
+          </p>
           {reminders.length === 0 ? (
             <p className="text-sm text-muted-foreground">No reminders.</p>
           ) : (
@@ -206,7 +233,9 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
             </ul>
           )}
           {errors.reminderMinutesBefore ? (
-            <p className="text-xs text-destructive">{errors.reminderMinutesBefore}</p>
+            <p id="texts-reminders-error" className="text-xs text-destructive">
+              {errors.reminderMinutesBefore}
+            </p>
           ) : null}
           {canEdit && reminders.length < TEXT_REMINDERS_MAX ? (
             <div className="flex flex-col gap-1">
@@ -222,6 +251,12 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
                   onChange={(event) => {
                     edited();
                     setCount(event.target.value);
+                  }}
+                  onKeyDown={(event) => {
+                    // Enter adds the reminder, never saves the page without it.
+                    if (event.key !== "Enter") return;
+                    event.preventDefault();
+                    addReminder();
                   }}
                   aria-invalid={errors.newReminder ? true : undefined}
                   aria-describedby={errors.newReminder ? "texts-new-reminder-error" : undefined}
