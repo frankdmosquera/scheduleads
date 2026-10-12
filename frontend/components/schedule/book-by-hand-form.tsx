@@ -88,13 +88,19 @@ export function BookByHandForm({
     });
     setSaving(false);
     if (saved.state === "ok") {
+      const reachable = Boolean(phone.trim() || email.trim());
       setName("");
       setPhone("");
       setEmail("");
       setAddress("");
       setNote("");
       setTime("");
-      setNotice({ tone: "info", text: "Booked. The customer hears as your settings say." });
+      setNotice({
+        tone: "info",
+        text: reachable
+          ? "Booked. The customer hears as your settings say."
+          : "Booked. With no phone or email, the customer hears nothing from us.",
+      });
       onBooked();
       return;
     }

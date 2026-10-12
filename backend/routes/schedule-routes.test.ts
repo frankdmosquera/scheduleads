@@ -33,6 +33,7 @@ const {
   availabilityRule,
   booking,
   bookingLink,
+  calendarConnection,
   commitment,
   contact,
   lead,
@@ -586,8 +587,11 @@ describe("booking by hand (feature 12b)", () => {
   });
 
   test("a busy time, time off and a past time are refused", async () => {
-    // The same time again: Carlos is busy with Mrs Lee.
-    const again = await book(summit.email, { customer: { name: "Mr Park" } });
+    // A time of its own, then the same time again: Carlos is busy with Ms Kay.
+    const first = await book(summit.email, { startMinute: 1290, customer: { name: "Ms Kay" } });
+    expect(first.status).toBe(201);
+    made.push((await first.json()).booking.id);
+    const again = await book(summit.email, { startMinute: 1290, customer: { name: "Mr Park" } });
     expect(again.status).toBe(409);
     expect((await again.json()).error.code).toBe("time_taken");
 
@@ -613,6 +617,23 @@ describe("booking by hand (feature 12b)", () => {
     const past = await book(summit.email, { date: yesterday, customer: { name: "Mr Oak" } });
     expect(past.status).toBe(400);
     expect((await past.json()).error.code).toBe("in_the_past");
+  });
+
+  test("a person whose Google needs reconnecting is told so, never to try again", async () => {
+    await db
+      .update(calendarConnection)
+      .set({ status: "needs_reconnect" })
+      .where(inArray(calendarConnection.resourceId, [summit.personId]));
+    try {
+      const response = await book(summit.email, { startMinute: 1380, customer: { name: "Mr Ng" } });
+      expect(response.status).toBe(409);
+      expect((await response.json()).error.code).toBe("reconnect_needed");
+    } finally {
+      await db
+        .update(calendarConnection)
+        .set({ status: "connected" })
+        .where(inArray(calendarConnection.resourceId, [summit.personId]));
+    }
   });
 
   test("a member without the permission cannot book by hand", async () => {

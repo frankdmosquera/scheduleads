@@ -27,8 +27,9 @@ website could sell a slot already given away on the phone.
   Google connected, the Google busy blocks of their ticked calendars (12h) apart from the app's own,
   or "Google could not be read" for that week, the rest still shown.
 - **Book by hand** from the page: a service the person does, the person, a start (any time nobody
-  it needs is busy, inside or outside bookable hours, not in the past), the customer's name and
-  phone or email, the address when the service asks one, a note. The same booking path the website
+  it needs is busy, inside or outside bookable hours, never an earlier day), the customer's name,
+  and if the owner has them their phone, email and the address when the service asks one, and a
+  note (amended at 12b.2's review, F-417: the owner is held to no contact rule, 12f). The same booking path the website
   uses (`bookTime`, source `manual`): a lead in the first stage, the timeline entry, the Google
   event, the confirmation and texts as the business has set them (6, 8b, 12g).
 - **Time off** for a person or a place: a start and an end, any length (an afternoon, a day, a
@@ -74,7 +75,7 @@ P2/P3 are recorded and carried. `/complete` makes the final pass and merges on F
 - [x] **12b.2 Book by hand.** "On Carlos's Thursday the owner books Mrs Lee's phone estimate at
   4:30 pm, after Carlos's hours: it shows on the calendar, Mrs Lee is a new lead, her confirmation
   goes as Summit's settings say, and the event is in Carlos's Google. 4:30 on a day Carlos is off is
-  refused, and so is a time already past."
+  refused, and so is a day already gone."
   - Backend: `POST /schedule/bookings` calling `bookTime` with source `manual` and the owner's login.
   - Frontend: the booking form on the calendar.
   **Done when:** the route tests pass, and by hand on Summit the scene above works.
@@ -120,7 +121,10 @@ React as text.
 phone }, location, details }`, strict (amended at 12b.2: the business's own clock, a date and a minute of
 the day, turned into a moment in its zone by the API, so the page needs no time-zone sums; an hour
 skipped in spring is `400` on `startMinute`). `201 { booking }`. `409 time_taken` when anyone it needs is busy,
-`400 in_the_past`, `400` on a field for a missing contact or address as `bookTime` answers.
+`400 in_the_past` for an earlier day, `400` on a field the schema refuses; never a missing contact
+or address, which the owner may leave for later (F-417). `409 reconnect_needed` when the person's
+Google needs reconnecting, so their time cannot be checked (F-419); `503 unavailable` when Google
+does not answer.
 
 **`POST /schedule/time-off`** `{ resourceId, startsAt, endsAt, bookings: ({ bookingId, action:
 "cancel" } | { bookingId, action: "move", startsAt, personId })[] }`, strict, end after start.

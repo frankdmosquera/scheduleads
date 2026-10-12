@@ -6,7 +6,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { validator } from "hono/validator";
 
-import { availabilityRule, resource } from "@scheduleads-app/shared/db";
+import { availabilityRule, calendarConnection, resource } from "@scheduleads-app/shared/db";
 import { localDate } from "@scheduleads-app/shared/local-date";
 import {
   bookByHandValidationSchema,
@@ -41,6 +41,22 @@ async function businessTimezoneOf(organizationId: string): Promise<string | null
     )
     .limit(1);
   return business?.timezone ?? null;
+}
+
+// Whether the person's Google connection needs reconnecting: their busy times cannot be read until
+// they do, so asking again would never help.
+async function needsReconnect(organizationId: string, personId: string): Promise<boolean> {
+  const [connection] = await db
+    .select({ status: calendarConnection.status })
+    .from(calendarConnection)
+    .where(
+      and(
+        eq(calendarConnection.organizationId, organizationId),
+        eq(calendarConnection.resourceId, personId)
+      )
+    )
+    .limit(1);
+  return connection?.status === "needs_reconnect";
 }
 
 const noBusinessHours = refuse("no_business_hours", "Set the business's hours on Settings first.");
@@ -188,6 +204,15 @@ export const scheduleRoutes = new Hono()
           case "in_the_past":
             return c.json(refuse("in_the_past", "That day is already over."), 400);
           case "unavailable":
+            if (await needsReconnect(organizationId, body.personId)) {
+              return c.json(
+                refuse(
+                  "reconnect_needed",
+                  "This person's Google calendar needs reconnecting, so their time cannot be checked. They reconnect on Settings, Calendar."
+                ),
+                409
+              );
+            }
             return c.json(
               refuse(
                 "unavailable",

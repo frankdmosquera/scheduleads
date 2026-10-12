@@ -98,7 +98,11 @@ export function ScheduleScreen() {
             </Button>
           </div>
         ) : (
-          <ScheduleWeek week={result.week} onAsk={ask} />
+          <ScheduleWeek
+            week={result.week}
+            onAsk={ask}
+            onRefresh={() => setAttempt((count) => count + 1)} // the same week again, in place
+          />
         )}
       </div>
     </div>
@@ -108,9 +112,11 @@ export function ScheduleScreen() {
 function ScheduleWeek({
   week,
   onAsk,
+  onRefresh,
 }: {
   week: ScheduleWeekType;
   onAsk: (next: { resourceId?: string; weekOf?: string }) => void;
+  onRefresh: () => void;
 }) {
   const resourceId = week.resource.id;
   return (
@@ -180,7 +186,7 @@ function ScheduleWeek({
             key={resourceId}
             personId={resourceId}
             dates={week.days.map((day) => day.date)}
-            onBooked={() => onAsk({ resourceId, weekOf: week.weekOf })}
+            onBooked={onRefresh}
           />
         </div>
       ) : null}
