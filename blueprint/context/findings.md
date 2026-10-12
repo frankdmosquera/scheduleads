@@ -416,3 +416,51 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** "a busy time, time off and a past time are refused" expects `time_taken` at 6:30 pm because "Carlos is busy with Mrs Lee", a booking made by the previous test. Run alone (`-t "busy time"`, or `.only` while debugging), the first booking is made with 201 and the test fails although the rule is fine; reordered, its leftover booking is not in `made`, so its jobs are not cleaned up. The rule itself is tested; only the test's independence is not.
 **Suggested fix:** Make the busy booking inside the test (book once, push its id to `made`, expect 201, then book the same time again and expect 409 `time_taken`), or move the "same time again" check into the first test.
 **Resolution:** Fixed 2026-10-12: the busy-time test makes its own booking first, at a time of its own; each booking test passes run alone (checked one by one with -t) and together. Closed 2026-10-12 by independent review of step 12b.2, check of the fixes (9b12f37..39d16fc): the test now books Ms Kay at 9:30 pm (1290), expects 201 and pushes her id to `made`, then books the same minute for Mr Park and expects 409 `time_taken` (schedule-routes.test.ts:589-596), so it needs nothing from the test before it and its booking's jobs are cleaned in `afterAll`. 9:30 pm is used by no other test, and the reconnect test's 11 pm still books clear of it. `-t "busy time"` alone: 1 passed, 13 skipped; the whole file: 14 passed.
+
+### F-421 [P2] open - A place's time off, with a booking moved to a time inside it, is refused as "changed meanwhile" although another room is free
+
+**File:** backend/lib/schedule/save-time-off.ts:87-94,126-132; backend/lib/booking/find-booking-choices.ts:110-133
+**Found:** 2026-10-12 by independent review of step 12b.3 (scope: 2503027..5aed73b; lenses: quality, security, performance, tests)
+**Why it matters:** The time off may be for a place (the route takes any resource), but the `move_into_time_off` check covers only the same person. For a move, findBookingChoices lists the room going off as free (its time off is not held yet, and the moving booking's own time is left out), rooms ordered by name, and holdFirstFreeChoice holds the first. When that is the room going off, the move holds it inside the span, the time off's own hold then collides, and the whole save rolls back as 409 `time_taken`, "Something in that time changed meanwhile". Every retry gives the same answer, although other rooms are free at that time. Keeping the same start in another room cannot be done either: the same start with the same person is `unchanged`, answered "That new time is not free". At Riverbend (five rooms), closing one room for an afternoon can only be saved by moving its bookings out of the afternoon or cancelling them. Found by reading the code. No test has a place's time off.
+**Suggested fix:** When the time off is a place, keep that place out of the move's rooms where the new span overlaps the time off (for example drop those choices from the plan, or pass the span into findBookingChoices), and count the same start in another room as a move. Add one route test with a clinic-dev room off over a booking moved inside the span. If moves for a place are meant to leave the span, say so in the spec and answer `move_into_time_off` for it.
+**Resolution:**
+
+### F-422 [P3] open - Time off over time off already there is refused as "changed meanwhile", every time
+
+**File:** backend/lib/schedule/save-time-off.ts:126-132; backend/routes/schedule-routes.ts:393-399
+**Found:** 2026-10-12 by independent review of step 12b.3 (scope: 2503027..5aed73b; lenses: quality, security, performance, tests)
+**Why it matters:** findBookingsInTheWay looks only at bookings, so time off already in the span is first met by the final holdTime. Its refusal answers 409 `time_taken`, "Something in that time changed meanwhile. Nothing was saved: look again." Marking Carlos off all Friday when Friday afternoon is already off (12b.1's own scene) always gets that answer, and looking again changes nothing. The owner has to guess that the afternoon must be removed first, after choosing a move or cancel for every booking in the way (each one correctly undone).
+**Suggested fix:** Before the transaction, read the resource's active time off over the span and refuse it in its own words ("Already off from 1 pm to 5 pm that day: remove it first, or start after it"). Keep the in-transaction refusal for a real "meanwhile". Add one route test.
+**Resolution:**
+
+### F-423 [P3] open - A booking its customer moves while the save runs is still cancelled or moved by it
+
+**File:** backend/lib/schedule/save-time-off.ts:66-80,117-125; backend/lib/booking/cancel-booking-in-transaction.ts:57-61; backend/lib/booking/apply-booking-move.ts:206-215
+**Found:** 2026-10-12 by independent review of step 12b.3 (scope: 2503027..5aed73b; lenses: quality, security, performance, tests)
+**Why it matters:** The bookings in the way are read before the transaction, and before each move's Google read, which can take seconds. Once a row is locked, the cancel checks only that it is confirmed and has not begun, and applyBookingMove only that it is not cancelled, not begun and not already at the new start. Suppose a customer moves Friday's booking to next Wednesday through their link in that window. The owner's Friday time off then cancels the Wednesday booking (the customer is told of a move, then of a cancel), or moves it again from Wednesday, although it is no longer in the way. Nothing is left half done, but the save acts on a booking that changed meanwhile instead of refusing. The window is narrow.
+**Suggested fix:** In the time off save, after each row is locked, compare its start and person with the entry read before the transaction, and throw ChangedMeanwhileError when they differ. One way is an optional `expected: { startsAt, personId }` on cancelBookingInTransaction and applyBookingMove, used only by this save.
+**Resolution:**
+
+### F-424 [P2] open - The Simulate case "a move to a time taken meanwhile saves nothing, not even the cancel" never reaches the transaction
+
+**File:** backend/routes/schedule-routes.test.ts:802-828 (and :830-874)
+**Found:** 2026-10-12 by independent review of step 12b.3 (scope: 2503027..5aed73b; lenses: quality, security, performance, tests)
+**Why it matters:** Cara's 9 am booking is made before the save, so prepareBookingMove refuses Ana's move (the `bookingId: ana` the test asserts) before the transaction starts, and Ben's cancel is never tried. The test would still pass if the cancels ran in their own transaction ahead of the moves, which is exactly what decision 3 forbids. The one test that fails inside the transaction ("two moves to one free time") has no cancel, and no test checks that a refused save leaves no job (the cancellation email, the worker text, the Google removal). So "no customer told of a cancel that did not finish" is untested. Two smaller rules are untested too: a booking's held time is never removable by DELETE (404, the booking still held), and an owner move to a time already gone is 400 `in_the_past`.
+**Suggested fix:** Make this case fail inside the transaction after a cancel: cancel Ben, and move Ana and a third booking to the same free time, so the second hold fails. Then assert Ben is `confirmed`, `emailsOf(ben)` is empty, Ana is unmoved and there is no time off. Also add a DELETE of a booking's commitment id (expect 404) and a move to yesterday (expect 400 `in_the_past`).
+**Resolution:**
+
+### F-425 [P3] open - The time off form shows nothing when the API refuses a move's day or time
+
+**File:** frontend/components/schedule/time-off-form.tsx:125-128 (the shown keys at :160-201 and :287)
+**Found:** 2026-10-12 by independent review of step 12b.3 (scope: 2503027..5aed73b; lenses: quality, security, performance, tests)
+**Why it matters:** The route answers `field: "bookings.N.startMinute"` for a move into the hour skipped in spring (schedule-routes.ts:299). The schema answers `bookings.N.date` ("Pick a day.") when the owner clears a move's day box, and can also answer `resourceId` or `bookings`. The form files the error under that key but shows only from.*, to.*, `to` and `booking-<id>`, so the button comes back and nothing is shown. Also, a booking already begun gets "Choose move or cancel." from the form's own check, although the form offers it neither.
+**Suggested fix:** Map `bookings.N.*` to `booking-<id>` of the N-th booking sent (the order matches the list), and show any other field in the notice. Leave the begun ones out of the choice check, since their own notice already says to start the time off after them.
+**Resolution:**
+
+### F-426 [P3] open - The time off contract in the spec differs from what the route answers
+
+**File:** blueprint/context/current-feature.md:129-138; backend/routes/schedule-routes.ts:348-399
+**Found:** 2026-10-12 by independent review of step 12b.3 (scope: 2503027..5aed73b; lenses: quality, security, performance, tests)
+**Why it matters:** The contract lists only 409s, and `bookings_in_the_way` always with `{ bookings }`. The route also answers 400 `in_the_past` and 503 `unavailable` for a move, and 400 for a skipped clock time. It answers `bookings_in_the_way` with a `bookingId` and no `bookings` for a move whose booking changed, and for a person who does not do the service. For that person the words "A booking changed meanwhile" are wrong. The form copes, since it branches on `bookings`, but `/complete` and the build log build on the spec.
+**Suggested fix:** Amend the contract lines to the answers the route gives. Give the person who does not do the service its own words (for example `not_found`, "That person does not do this service").
+**Resolution:**
