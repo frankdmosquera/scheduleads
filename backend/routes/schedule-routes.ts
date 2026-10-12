@@ -11,6 +11,7 @@ import { localDate } from "@scheduleads-app/shared/local-date";
 import {
   bookByHandValidationSchema,
   scheduleWeekQueryValidationSchema,
+  timeOffValidationSchema,
 } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../database.js";
@@ -24,6 +25,8 @@ import { refuse } from "../lib/errors/refuse.js";
 import { localTimeToMoment } from "../lib/local-time/local-time-to-moment.js";
 import { findScheduleWeek } from "../lib/schedule/find-schedule-week.js";
 import { mondayOf } from "../lib/schedule/monday-of.js";
+import { removeTimeOff } from "../lib/schedule/remove-time-off.js";
+import { saveTimeOff, type TimeOffChoiceType } from "../lib/schedule/save-time-off.js";
 import { requireOrganizationMiddleware } from "../middleware/auth-middleware/require-organization-middleware.js";
 import { requirePermissionMiddleware } from "../middleware/auth-middleware/require-permission-middleware.js";
 import { requireKnownSubscriptionMiddleware } from "../middleware/subscription-middleware/require-known-subscription-middleware.js";
@@ -238,5 +241,180 @@ export const scheduleRoutes = new Hono()
         },
         201
       );
+    }
+  )
+
+  // Time off for a person or a place (12b.3), and what happens to each booking in its way: one save,
+  // all or nothing (decision 3).
+  .post(
+    "/time-off",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = timeOffValidationSchema.safeParse(value);
+      if (parsed.success) return parsed.data;
+      const issue = parsed.error.issues[0];
+      return c.json(
+        {
+          ...refuse("bad_request", issue?.message ?? "Check the form and try again."),
+          field: issue?.path.join(".") ?? "",
+        },
+        400
+      );
+    }),
+    async (c) => {
+      const { organizationId } = c.get("organization");
+      const body = c.req.valid("json");
+      const timezone = await businessTimezoneOf(organizationId);
+      if (!timezone) return c.json(noBusinessHours, 409);
+
+      // Every time on the business's own clock; an hour skipped in spring is no time.
+      const skipped = (field: string) =>
+        c.json(
+          {
+            ...refuse("bad_request", "That time does not exist that day: the clocks skip it."),
+            field,
+          },
+          400
+        );
+      const startsAt = localTimeToMoment(body.from.date, body.from.minute, timezone);
+      if (!startsAt) return skipped("from.minute");
+      const endsAt = localTimeToMoment(body.to.date, body.to.minute, timezone);
+      if (!endsAt) return skipped("to.minute");
+      if (!(startsAt < endsAt)) {
+        return c.json(
+          { ...refuse("bad_request", "Time off has to end after it starts."), field: "to" },
+          400
+        );
+      }
+      const choices: TimeOffChoiceType[] = [];
+      for (const [index, choice] of body.bookings.entries()) {
+        if (choice.action === "cancel") {
+          choices.push(choice);
+          continue;
+        }
+        const movedTo = localTimeToMoment(choice.date, choice.startMinute, timezone);
+        if (!movedTo) return skipped(`bookings.${index}.startMinute`);
+        choices.push({
+          bookingId: choice.bookingId,
+          action: "move",
+          startsAt: movedTo,
+          personId: choice.personId,
+        });
+      }
+
+      const saved = await saveTimeOff({
+        organizationId,
+        actorUserId: c.get("user").id,
+        resourceId: body.resourceId,
+        startsAt,
+        endsAt,
+        choices,
+        now: new Date(),
+      });
+      if (saved.ok) return c.json({ timeOff: saved.timeOff }, 201);
+      switch (saved.reason) {
+        case "not_found":
+          return c.json(
+            refuse("not_found", "That person or place is not one of this business's."),
+            404
+          );
+        case "bookings_in_the_way":
+          return c.json(
+            {
+              ...refuse(
+                "bookings_in_the_way",
+                saved.bookings.some((one) => one.started)
+                  ? "A booking in that time has already begun, so time off cannot cover it."
+                  : "There are bookings in that time. Choose for each one: move it or cancel it."
+              ),
+              bookings: saved.bookings,
+            },
+            409
+          );
+        case "move_into_time_off":
+          return c.json(
+            {
+              ...refuse(
+                "time_taken",
+                "That new time is inside the time off itself. Pick a time outside it."
+              ),
+              bookingId: saved.bookingId,
+            },
+            409
+          );
+        case "move_refused":
+          if (saved.why === "in_the_past") {
+            return c.json(
+              {
+                ...refuse("in_the_past", "A booking cannot be moved to a time already gone."),
+                bookingId: saved.bookingId,
+              },
+              400
+            );
+          }
+          if (saved.why === "unavailable") {
+            return c.json(
+              {
+                ...refuse(
+                  "unavailable",
+                  "Google did not answer, so that new time cannot be checked. Nothing was saved."
+                ),
+                bookingId: saved.bookingId,
+              },
+              503
+            );
+          }
+          if (saved.why === "time_taken") {
+            return c.json(
+              {
+                ...refuse(
+                  "time_taken",
+                  "That new time is not free. Nothing was saved: pick another time."
+                ),
+                bookingId: saved.bookingId,
+              },
+              409
+            );
+          }
+          // The booking changed or left meanwhile (cancelled, begun, or not this business's).
+          return c.json(
+            {
+              ...refuse(
+                "bookings_in_the_way",
+                "A booking changed meanwhile. Nothing was saved: look again."
+              ),
+              bookingId: saved.bookingId,
+            },
+            409
+          );
+        case "time_taken":
+          return c.json(
+            refuse(
+              "time_taken",
+              "Something in that time changed meanwhile. Nothing was saved: look again."
+            ),
+            409
+          );
+      }
+    }
+  )
+
+  // Taking time off away: its time is free again at once.
+  .delete(
+    "/time-off/:timeOffId",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    async (c) => {
+      const removed = await removeTimeOff(
+        c.get("organization").organizationId,
+        c.req.param("timeOffId")
+      );
+      if (!removed) return c.json(refuse("not_found", "There is no such time off."), 404);
+      return c.body(null, 204);
     }
   );

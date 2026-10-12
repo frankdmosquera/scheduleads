@@ -12,6 +12,7 @@ import { addDays } from "@scheduleads-app/shared/add-days";
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { RefusalNotice } from "@/components/centred-card/refusal-notice";
 import { BookByHandForm } from "@/components/schedule/book-by-hand-form";
+import { TimeOffForm } from "@/components/schedule/time-off-form";
 import { Button } from "@/components/ui/button";
 import {
   fetchScheduleWeek,
@@ -20,6 +21,7 @@ import {
   type ScheduleWeekResultType,
   type ScheduleWeekType,
 } from "@/lib/api-client/schedule/fetch-schedule-week";
+import { removeTimeOff } from "@/lib/api-client/schedule/remove-time-off";
 import { calendarDayWords } from "@/lib/calendar-day-words";
 
 // "8:00 a.m." for a minute of the day.
@@ -176,7 +178,13 @@ function ScheduleWeek({
 
       <ol className="mt-4 grid gap-3 md:grid-cols-7">
         {week.days.map((day) => (
-          <ScheduleDay key={day.date} day={day} timezone={week.timezone} />
+          <ScheduleDay
+            key={day.date}
+            day={day}
+            timezone={week.timezone}
+            canEdit={week.canEdit}
+            onChanged={onRefresh}
+          />
         ))}
       </ol>
 
@@ -190,11 +198,44 @@ function ScheduleWeek({
           />
         </div>
       ) : null}
+      {week.canEdit ? (
+        <div className="mt-6">
+          <TimeOffForm
+            key={resourceId}
+            resourceId={resourceId}
+            firstDate={week.weekOf}
+            timezone={week.timezone}
+            onSaved={onRefresh}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function ScheduleDay({ day, timezone }: { day: ScheduleDayType; timezone: string }) {
+function ScheduleDay({
+  day,
+  timezone,
+  canEdit,
+  onChanged,
+}: {
+  day: ScheduleDayType;
+  timezone: string;
+  canEdit: boolean;
+  onChanged: () => void; // the week reads again
+}) {
+  const [refusal, setRefusal] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
+
+  async function remove(timeOffId: string) {
+    setRefusal(null);
+    setRemoving(timeOffId);
+    const removed = await removeTimeOff(timeOffId);
+    setRemoving(null);
+    if (removed.state === "ok") onChanged();
+    else setRefusal(removed.message);
+  }
+
   return (
     <li className="min-w-0 rounded-lg border border-border bg-card p-3">
       <h2 className="text-sm font-semibold text-foreground">{calendarDayWords(day.date)}</h2>
@@ -239,12 +280,31 @@ function ScheduleDay({ day, timezone }: { day: ScheduleDayType; timezone: string
               ) : (
                 <p className="mt-0.5 text-muted-foreground">
                   {item.kind === "time_off" ? "Time off" : "Busy in Google"}
+                  {item.kind === "time_off" && canEdit ? (
+                    <>
+                      {" "}
+                      &middot;{" "}
+                      <button
+                        type="button"
+                        onClick={() => remove(item.id)}
+                        disabled={removing !== null}
+                        className="underline underline-offset-2"
+                      >
+                        {removing === item.id ? "Removing…" : "Remove"}
+                      </button>
+                    </>
+                  ) : null}
                 </p>
               )}
             </li>
           ))}
         </ul>
       )}
+      {refusal ? (
+        <p role="alert" className="mt-2 text-xs text-[var(--lost)]">
+          {refusal}
+        </p>
+      ) : null}
     </li>
   );
 }

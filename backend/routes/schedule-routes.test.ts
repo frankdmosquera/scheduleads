@@ -653,3 +653,289 @@ describe("booking by hand (feature 12b)", () => {
     expect(await late.json()).toMatchObject({ field: "startMinute" });
   });
 });
+
+// Step 12b.3: time off, with the bookings in its way moved or cancelled in one save. The first four
+// names are the Simulate page's cases.
+describe("time off (feature 12b)", () => {
+  const ZONE = "America/Edmonton";
+  // Each test owns its days, weeks ahead and apart from the tests above.
+  const dayAhead = (days: number) => localDate(new Date(Date.now() + days * 86_400_000), ZONE);
+  const json = (method: string, path: string, email: string, body?: unknown) =>
+    app.request(path, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Origin: appOrigin,
+        Cookie: cookies.get(email)!,
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+  const made: string[] = [];
+  const bookOn = async (date: string, startMinute: number, name: string) => {
+    const response = await json("POST", "/schedule/bookings", summit.email, {
+      bookingLinkId: serviceId,
+      personId: summit.personId,
+      date,
+      startMinute,
+      customer: { name, email: `${name.toLowerCase()}-${tag}@example.com` },
+    });
+    expect(response.status).toBe(201);
+    const { booking: madeOne } = await response.json();
+    made.push(madeOne.id);
+    return madeOne.id as string;
+  };
+  const wholeDay = (date: string) => ({
+    resourceId: summit.personId,
+    from: { date, minute: 0 },
+    to: { date, minute: 1440 },
+  });
+  const timeOffOf = async (date: string) =>
+    (
+      await db
+        .select()
+        .from(commitment)
+        .where(inArray(commitment.resourceId, [summit.personId]))
+    ).filter(
+      (row) =>
+        row.kind === "time_off" && row.status === "active" && localDate(row.startsAt, ZONE) === date
+    );
+  const bookingOf = async (id: string) =>
+    (
+      await db
+        .select({ status: booking.status, startsAt: booking.startsAt })
+        .from(booking)
+        .where(inArray(booking.id, [id]))
+    )[0];
+  const emailsOf = async (bookingId: string) =>
+    (
+      (await db.execute(
+        sql`select jobs.payload->>'kind' as kind from ${sql.identifier(jobSchema)}._private_jobs jobs
+            join ${sql.identifier(jobSchema)}._private_tasks tasks on tasks.id = jobs.task_id
+            where tasks.identifier = 'booking_email' and jobs.payload->>'bookingId' = ${bookingId}
+            order by kind`
+      )) as unknown as { kind: string }[]
+    ).map((job) => job.kind);
+
+  afterAll(async () => {
+    await db.execute(
+      sql`delete from ${sql.identifier(jobSchema)}._private_jobs where payload->>'bookingId' in ${made.length ? made : ["none"]}`
+    );
+  });
+
+  test("time off with no bookings in the way is saved", async () => {
+    const day = dayAhead(30);
+    const saved = await json("POST", "/schedule/time-off", summit.email, {
+      resourceId: summit.personId,
+      from: { date: day, minute: 780 }, // 1 pm
+      to: { date: day, minute: 1020 }, // 5 pm
+      bookings: [],
+    });
+    expect(saved.status).toBe(201);
+    expect(await timeOffOf(day)).toHaveLength(1);
+    // Nobody books into it, the owner included.
+    const into = await json("POST", "/schedule/bookings", summit.email, {
+      bookingLinkId: serviceId,
+      personId: summit.personId,
+      date: day,
+      startMinute: 840,
+      customer: { name: "Mr Into" },
+    });
+    expect(into.status).toBe(409);
+  });
+
+  test("time off over a booking with no choice is refused, and nothing is saved", async () => {
+    const day = dayAhead(33);
+    const ana = await bookOn(day, 600, "Ana");
+    const refused = await json("POST", "/schedule/time-off", summit.email, {
+      ...wholeDay(day),
+      bookings: [],
+    });
+
+    expect(refused.status).toBe(409);
+    const body = await refused.json();
+    expect(body.error.code).toBe("bookings_in_the_way");
+    expect(body.bookings).toMatchObject([
+      {
+        id: ana,
+        customerName: "Ana",
+        serviceName: "Estimate",
+        started: false,
+        people: expect.arrayContaining([{ id: summit.personId, name: "Carlos" }]),
+      },
+    ]);
+    expect(await timeOffOf(day)).toEqual([]);
+    expect((await bookingOf(ana)).status).toBe("confirmed");
+  });
+
+  test("one booking moved and one cancelled in one save: the time off is saved and both customers are told", async () => {
+    const day = dayAhead(36);
+    const nextDay = dayAhead(37);
+    const ana = await bookOn(day, 600, "Ana");
+    const ben = await bookOn(day, 840, "Ben");
+
+    const saved = await json("POST", "/schedule/time-off", summit.email, {
+      ...wholeDay(day),
+      bookings: [
+        {
+          bookingId: ana,
+          action: "move",
+          date: nextDay,
+          startMinute: 540,
+          personId: summit.personId,
+        },
+        { bookingId: ben, action: "cancel" },
+      ],
+    });
+    expect(saved.status).toBe(201);
+    expect(await timeOffOf(day)).toHaveLength(1);
+    const moved = await bookingOf(ana);
+    expect(moved.status).toBe("confirmed");
+    expect(localDate(moved.startsAt, ZONE)).toBe(nextDay);
+    expect((await bookingOf(ben)).status).toBe("cancelled");
+    // Each customer hears what happened to their own booking; the business is not told what it did.
+    expect(await emailsOf(ana)).toContain("booking_move");
+    expect(await emailsOf(ana)).not.toContain("booking_move_notification");
+    expect(await emailsOf(ben)).toContain("booking_cancellation");
+    expect(await emailsOf(ben)).not.toContain("booking_cancellation_notification");
+  });
+
+  test("a move to a time taken meanwhile saves nothing, not even the cancel", async () => {
+    const day = dayAhead(40);
+    const nextDay = dayAhead(41);
+    const ana = await bookOn(day, 600, "Ana");
+    const ben = await bookOn(day, 840, "Ben");
+    // While the owner was choosing, someone else took the next day at 9 am.
+    await bookOn(nextDay, 540, "Cara");
+
+    const refused = await json("POST", "/schedule/time-off", summit.email, {
+      ...wholeDay(day),
+      bookings: [
+        {
+          bookingId: ana,
+          action: "move",
+          date: nextDay,
+          startMinute: 540,
+          personId: summit.personId,
+        },
+        { bookingId: ben, action: "cancel" },
+      ],
+    });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: { code: "time_taken" }, bookingId: ana });
+    expect((await bookingOf(ben)).status).toBe("confirmed");
+    expect(localDate((await bookingOf(ana)).startsAt, ZONE)).toBe(day);
+    expect(await timeOffOf(day)).toEqual([]);
+  });
+
+  test("two moves to one free time save nothing: the second is refused inside the one transaction", async () => {
+    const day = dayAhead(44);
+    const nextDay = dayAhead(45);
+    const ana = await bookOn(day, 600, "Ana");
+    const ben = await bookOn(day, 840, "Ben");
+
+    const refused = await json("POST", "/schedule/time-off", summit.email, {
+      ...wholeDay(day),
+      bookings: [
+        {
+          bookingId: ana,
+          action: "move",
+          date: nextDay,
+          startMinute: 600,
+          personId: summit.personId,
+        },
+        {
+          bookingId: ben,
+          action: "move",
+          date: nextDay,
+          startMinute: 600,
+          personId: summit.personId,
+        },
+      ],
+    });
+    expect(refused.status).toBe(409);
+    // Both still on their own day, and no time off: the first move was undone with the second.
+    expect(localDate((await bookingOf(ana)).startsAt, ZONE)).toBe(day);
+    expect(localDate((await bookingOf(ben)).startsAt, ZONE)).toBe(day);
+    expect(await timeOffOf(day)).toEqual([]);
+  });
+
+  test("a move inside the time off itself is refused", async () => {
+    const day = dayAhead(48);
+    const ana = await bookOn(day, 600, "Ana");
+    const refused = await json("POST", "/schedule/time-off", summit.email, {
+      ...wholeDay(day),
+      bookings: [
+        { bookingId: ana, action: "move", date: day, startMinute: 900, personId: summit.personId },
+      ],
+    });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ bookingId: ana });
+    expect(await timeOffOf(day)).toEqual([]);
+  });
+
+  test("removing time off frees the time", async () => {
+    const day = dayAhead(52);
+    const saved = await json("POST", "/schedule/time-off", summit.email, {
+      ...wholeDay(day),
+      bookings: [],
+    });
+    const { timeOff } = await saved.json();
+
+    expect((await json("DELETE", `/schedule/time-off/${timeOff.id}`, summit.email)).status).toBe(
+      204
+    );
+    expect(await timeOffOf(day)).toEqual([]);
+    await bookOn(day, 600, "Dee"); // free again
+    expect((await json("DELETE", `/schedule/time-off/${timeOff.id}`, summit.email)).status).toBe(
+      404
+    );
+  });
+
+  test("a member without the permission cannot mark time off or remove it, nor touch another business's", async () => {
+    const day = dayAhead(56);
+    const asHelper = await json("POST", "/schedule/time-off", helper.email, {
+      ...wholeDay(day),
+      bookings: [],
+    });
+    expect(asHelper.status).toBe(403);
+    const theirs = await json("POST", "/schedule/time-off", summit.email, {
+      ...wholeDay(day),
+      resourceId: other.personId,
+      bookings: [],
+    });
+    expect(theirs.status).toBe(404);
+    const saved = await json("POST", "/schedule/time-off", summit.email, {
+      ...wholeDay(day),
+      bookings: [],
+    });
+    const { timeOff } = await saved.json();
+    expect((await json("DELETE", `/schedule/time-off/${timeOff.id}`, helper.email)).status).toBe(
+      403
+    );
+    expect((await json("DELETE", `/schedule/time-off/${timeOff.id}`, other.email)).status).toBe(
+      404
+    );
+    expect(await timeOffOf(day)).toHaveLength(1);
+  });
+
+  test("the dashboard's browser may send the remove: its preflight allows DELETE", async () => {
+    const preflight = await app.request(`/schedule/time-off/${randomUUID()}`, {
+      method: "OPTIONS",
+      headers: { Origin: appOrigin, "Access-Control-Request-Method": "DELETE" },
+    });
+    expect(preflight.headers.get("Access-Control-Allow-Methods")).toContain("DELETE");
+    expect(preflight.headers.get("Access-Control-Allow-Origin")).toBe(appOrigin);
+  });
+
+  test("time off that ends before it starts is refused", async () => {
+    const day = dayAhead(58);
+    const backwards = await json("POST", "/schedule/time-off", summit.email, {
+      resourceId: summit.personId,
+      from: { date: day, minute: 900 },
+      to: { date: day, minute: 600 },
+      bookings: [],
+    });
+    expect(backwards.status).toBe(400);
+    expect(await backwards.json()).toMatchObject({ field: "to" });
+  });
+});

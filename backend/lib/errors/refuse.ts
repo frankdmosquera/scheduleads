@@ -17,6 +17,7 @@ export type RefusalCodeType =
   | "unavailable" // the answer depends on something that cannot be read right now; try again shortly
   | "time_taken" // booking: the time stopped being free while the customer was booking
   | "in_the_past" // booking by hand: a day already gone (feature 12b)
+  | "bookings_in_the_way" // time off: bookings it covers need a choice each, or one has begun (12b)
   | "request_key_used" // booking: this form's key already made a different booking
   | "already_started" // booking: it has started, so the customer can no longer change it themselves
   | "already_cancelled" // booking: it was cancelled, so there is nothing to move

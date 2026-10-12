@@ -6,7 +6,7 @@
 
 **Branch:** feature/12b-calendars
 
-**Status:** 12b.1 built and reviewed 2026-10-12; 12b.2 built, its review next; 12b.3 planned.
+**Status:** 12b.1 and 12b.2 built and reviewed 2026-10-12; 12b.3 built, its review next.
 
 ## Goal
 
@@ -80,7 +80,7 @@ P2/P3 are recorded and carried. `/complete` makes the final pass and merges on F
   - Frontend: the booking form on the calendar.
   **Done when:** the route tests pass, and by hand on Summit the scene above works.
 
-- [ ] **12b.3 Time off.** "The owner marks Carlos off all Friday. Carlos has two bookings Friday:
+- [x] **12b.3 Time off.** "The owner marks Carlos off all Friday. Carlos has two bookings Friday:
   the page lists them in the same form; the owner moves one to Monday 9:00 with Carlos and cancels
   the other, then saves once. Friday is off, one customer is told of the new time and one of the
   cancel. If Monday 9:00 was taken meanwhile, nothing is saved, the cancel included. Removing the
@@ -126,10 +126,13 @@ or address, which the owner may leave for later (F-417). `409 reconnect_needed` 
 Google needs reconnecting, so their time cannot be checked (F-419); `503 unavailable` when Google
 does not answer.
 
-**`POST /schedule/time-off`** `{ resourceId, startsAt, endsAt, bookings: ({ bookingId, action:
-"cancel" } | { bookingId, action: "move", startsAt, personId })[] }`, strict, end after start.
+**`POST /schedule/time-off`** `{ resourceId, from: { date, minute }, to: { date, minute }, bookings:
+({ bookingId, action: "cancel" } | { bookingId, action: "move", date, startMinute, personId })[] }`,
+strict, end after start (amended at 12b.3: the business's own clock, as 12b.2, `to.minute` up to 1440
+for the end of a day).
 `201 { timeOff }`. `409 bookings_in_the_way { bookings }` when an active booking in the span has no
-choice (or a choice names one not in the way); `409 time_taken` when a move's time or the span
+choice, a choice names one not in the way, or one has already begun; `409 time_taken { bookingId }`
+for a move into the time off itself or to a time not free; `409 time_taken` when a move's time or the span
 itself is taken meanwhile; nothing saved on any refusal.
 
 **`DELETE /schedule/time-off/:id`** `204`; `404` for another business's or a booking's row.
