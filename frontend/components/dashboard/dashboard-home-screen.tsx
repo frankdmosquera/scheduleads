@@ -1,11 +1,10 @@
 // Frontend component: Setup, once everything is resolved: the business, its plan, who you are, its
-// services, the calendar and email cards.
+// services and the email card. The calendar card is on Settings > Calendar since feature 12h.
 
 "use client";
 
 import Link from "next/link";
 
-import { CalendarConnectionCard } from "@/components/calendar/calendar-connection-card";
 import { BusinessInitialMark } from "@/components/dashboard/business-initial-mark";
 import { EmailSendingCard } from "@/components/email-sending/email-sending-card";
 import { BookingLinksList } from "@/components/booking-links/booking-links-list";
@@ -48,9 +47,6 @@ export function DashboardHomeScreen({ me }: { me: MeType }) {
         </div>
 
         <BookingLinksList businessSlug={me.organization.slug} />
-
-        <CalendarConnectionCard />
-
         <EmailSendingCard />
 
         {isPlatformAdmin(session?.user) ? (

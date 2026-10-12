@@ -12,11 +12,17 @@ const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const REVOKE_URL = "https://oauth2.googleapis.com/revoke";
 const TIMEOUT_MS = 10_000; // a Google that hangs ends in "failed", not a spinning dashboard
 
-// Both are required for a connection to count. freebusy reads busy times; events.owned
-// adds bookings to calendars the person owns (feature 5). The narrowest pair Google offers.
+// The list of the person's calendars, so they pick which count as busy (feature 12h). Connections
+// made before 12h lack it and keep reading the main calendar until reconnected.
+const CALENDAR_LIST_SCOPE = "https://www.googleapis.com/auth/calendar.calendarlist.readonly";
+
+// All three are required for a new connection to count. freebusy reads busy times; events.owned
+// adds bookings to calendars the person owns (feature 5); the list names their calendars. The
+// narrowest three Google offers.
 const CALENDAR_SCOPES = [
   "https://www.googleapis.com/auth/calendar.events.freebusy",
   "https://www.googleapis.com/auth/calendar.events.owned",
+  CALENDAR_LIST_SCOPE,
 ];
 
 export type GoogleTokensType = {
@@ -72,8 +78,12 @@ export const googleOauthClient = {
     return url.toString();
   },
 
-  hasBothCalendarScopes(grantedScopes: string[]): boolean {
+  hasEveryCalendarScope(grantedScopes: string[]): boolean {
     return CALENDAR_SCOPES.every((scope) => grantedScopes.includes(scope));
+  },
+
+  canListCalendars(grantedScopes: string[]): boolean {
+    return grantedScopes.includes(CALENDAR_LIST_SCOPE);
   },
 
   // Throws on any answer but a usable token set; the callback turns that into "failed".

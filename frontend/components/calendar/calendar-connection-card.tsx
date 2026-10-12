@@ -1,5 +1,6 @@
-// Frontend: the dashboard home's calendar card. Connect, Disconnect, Reconnect when Google
-// stopped accepting the saved permission, and one line after each saying what happened.
+// Frontend: the calendar card on Settings > Calendar (on the dashboard home until feature 12h).
+// Connect, Disconnect, Reconnect when Google stopped accepting the saved permission, and one line
+// after each saying what happened; the calendar pick sits under it.
 
 "use client";
 
@@ -38,7 +39,7 @@ const OUTCOMES: Record<CalendarConnectOutcomeType, CalendarNoticeType> = {
   },
   missing_permission: {
     tone: "error",
-    text: "Leave both boxes ticked at Google: seeing when you are busy, and adding bookings. Press Connect again.",
+    text: "Leave every box ticked at Google: seeing when you are busy, adding bookings, and the list of your calendars. Press Connect again.",
   },
   failed: {
     tone: "error",
@@ -78,7 +79,13 @@ const DISCONNECTED: Record<GoogleDisconnectOutcomeType, CalendarNoticeType> = {
   },
 };
 
-export function CalendarConnectionCard() {
+export function CalendarConnectionCard({
+  onChanged,
+  children,
+}: {
+  onChanged: () => void; // after a disconnect, so what sits under the card reads again
+  children: ReactNode;
+}) {
   const [result, setResult] = useState<CalendarConnectionResultType | null>(null);
   // The card only mounts in the browser, after the dashboard loaded, so the address is there.
   const [notice, setNotice] = useState<CalendarNoticeType | null>(() => {
@@ -135,10 +142,11 @@ export function CalendarConnectionCard() {
     }
     setNotice(DISCONNECTED[done.atProvider]);
     reloadCalendarConnection();
+    onChanged();
   }
 
   return (
-    <section className="mt-4 rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-md)]">
+    <section className="rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-md)]">
       <h2 className="text-base font-semibold tracking-tight text-foreground">Calendar</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Your own calendar, so customers are never offered a time you are busy.
@@ -164,6 +172,8 @@ export function CalendarConnectionCard() {
           </div>
         ) : null}
       </div>
+
+      {children}
     </section>
   );
 }

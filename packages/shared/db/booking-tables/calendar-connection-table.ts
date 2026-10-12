@@ -22,6 +22,12 @@ export const calendarConnection = pgTable(
     credentials: text("credentials").notNull(),
     grantedScopes: text("grantedScopes").notNull(), // space-separated, as the provider granted them
     status: text("status").notNull().default("connected"),
+    // The calendars whose busy times count, the person's pick (feature 12h); the main one is
+    // "primary". Starts at the main one, as feature 3 read; another account starts there again.
+    busyCalendarIds: text("busyCalendarIds")
+      .array()
+      .notNull()
+      .default(sql`'{primary}'::text[]`),
     lastCheckedAt: timestamp("lastCheckedAt", { withTimezone: true }), // the last successful busy read
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })

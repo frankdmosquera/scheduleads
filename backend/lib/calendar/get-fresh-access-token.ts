@@ -22,9 +22,22 @@ const ATTEMPTS = 2; // one more read when a reconnect or another refresh changed
 
 export type FreshCalendarAccessType = {
   connectionId: string;
+  accountEmail: string;
+  grantedScopes: string[];
+  busyCalendarIds: string[]; // the person's pick (feature 12h)
   provider: CalendarProviderType;
   accessToken: string;
 };
+
+// What the callers need to know about the connection the key is for. Never its credentials.
+function about(connection: typeof calendarConnection.$inferSelect) {
+  return {
+    connectionId: connection.id,
+    accountEmail: connection.accountEmail,
+    grantedScopes: connection.grantedScopes.split(" ").filter(Boolean),
+    busyCalendarIds: connection.busyCalendarIds,
+  };
+}
 
 export async function getFreshAccessToken({
   organizationId, // from the session or the business being booked, never from the request
@@ -65,7 +78,7 @@ export async function getFreshAccessToken({
     // A key with more than a minute left is used as it is; anything else, an unreadable date too,
     // is refreshed.
     if (expiresAt - Date.now() > REFRESH_MARGIN_MS) {
-      return { connectionId: connection.id, provider, accessToken: credentials.accessToken };
+      return { ...about(connection), provider, accessToken: credentials.accessToken };
     }
 
     let fresh;
@@ -93,7 +106,7 @@ export async function getFreshAccessToken({
       .where(unchangedRow)
       .returning({ id: calendarConnection.id });
     if (saved.length === 0) continue; // changed meanwhile: read it again rather than overwrite it
-    return { connectionId: connection.id, provider, accessToken: renewed.accessToken };
+    return { ...about(connection), provider, accessToken: renewed.accessToken };
   }
 
   throw new Error("The calendar connection kept changing while it was being read.");

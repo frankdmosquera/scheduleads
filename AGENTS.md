@@ -486,8 +486,13 @@ process is stopped, anything else is reported and left running. The ports
 move together, everywhere at once: `git grep -n -E "340[01]"` lists every
 place in the repo, and outside it `PORT`, `BETTER_AUTH_URL` and `APP_ORIGIN`
 in the root `.env`, plus `NEXT_PUBLIC_API_URL` in `frontend/.env.local` if
-that file exists. Google's OAuth client lists
-`http://localhost:3401/calendar/callback` as its redirect.
+that file exists, and Google's OAuth client, which holds the calendar
+redirect. **It still lists only the old `http://localhost:3001/calendar/callback`**
+(set Sep 28; the Oct 3 port move never reached Google, found 2026-10-12), so
+Connect fails locally with `redirect_uri_mismatch`. Adding
+`http://localhost:3401/calendar/callback` and the
+`calendar.calendarlist.readonly` permission (12h) is part of 10b's one trip to
+Google Cloud; until then no change asks Frank to go there.
 
 Database, all from `packages/shared`, which owns the schema and the migration
 ledger:

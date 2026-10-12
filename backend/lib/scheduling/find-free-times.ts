@@ -16,7 +16,6 @@ import type { BusyBlockType } from "../calendar/calendar-provider.js";
 import { getBusyTimes } from "../calendar/get-busy-times.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { applyFreeTimesRules } from "./apply-free-times-rules.js";
-import { crossOffSpan } from "./cross-off-span.js";
 import { findCommitments } from "./find-commitments.js";
 import { findServiceResources } from "./find-service-resources.js";
 import { findStandbyDates } from "./find-standby-dates.js";
@@ -134,13 +133,16 @@ export async function findFreeTimes(input: FindFreeTimesInputType): Promise<Free
 
     let googleBusy: BusyBlockType[];
     try {
-      googleBusy = await getBusyTimes({ organizationId, resourceId: id, from, to });
-      if (ignoreBooking?.personId === id) {
-        googleBusy = crossOffSpan(googleBusy, {
-          start: ignoreBooking.startsAt,
-          end: ignoreBooking.endsAt,
-        });
-      }
+      googleBusy = await getBusyTimes({
+        organizationId,
+        resourceId: id,
+        from,
+        to,
+        crossOffOnMain:
+          ignoreBooking?.personId === id
+            ? { start: ignoreBooking.startsAt, end: ignoreBooking.endsAt }
+            : undefined,
+      });
     } catch (error) {
       // Never read as free: a picked person's times cannot be known, and with "any available"
       // the person is left out. Either way the reason is logged, so the answer can be explained.
