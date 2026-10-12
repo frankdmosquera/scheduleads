@@ -6,6 +6,8 @@
 
 **Branch:** feature/12g-texts
 
+**Status:** verified 2026-10-12: both steps built and reviewed, nine findings fixed and one carried; backend 991, shared 184 and booking component 83 tests pass, the frontend builds and lints. Then a final review of the whole feature.
+
 ## Goal
 
 The owner sets the business's texts on Settings: whether the confirmation text goes, any number of
