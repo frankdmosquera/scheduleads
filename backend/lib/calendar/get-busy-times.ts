@@ -9,6 +9,7 @@ import { db } from "../../database.js";
 import { crossOffSpan } from "../scheduling/cross-off-span.js";
 import type { BusyBlockType, TimeRangeType } from "./calendar-provider.js";
 import { getFreshAccessToken } from "./get-fresh-access-token.js";
+import { isGoogleVirtualCalendar } from "./is-google-virtual-calendar.js";
 
 export async function getBusyTimes({
   organizationId, // from the session or the business being booked, never from the request
@@ -36,10 +37,12 @@ export async function getBusyTimes({
       )
     )
     .limit(1);
-  if (!pick || pick.busyCalendarIds.length === 0) return []; // not connected, or nothing ticked
+  // Google's own built-in calendars hold no busy time (F-412): ticked, they count as nothing (F-414).
+  const counts = (ids: string[]) => ids.some((id) => !isGoogleVirtualCalendar(id));
+  if (!pick || !counts(pick.busyCalendarIds)) return []; // not connected, or nothing that counts
 
   const access = await getFreshAccessToken({ organizationId, resourceId });
-  if (!access || access.busyCalendarIds.length === 0) return []; // disconnected or unticked meanwhile
+  if (!access || !counts(access.busyCalendarIds)) return []; // disconnected or unticked meanwhile
 
   const calendars = await access.provider.findBusyBlocks(
     access.accessToken,

@@ -37,6 +37,7 @@ const {
   organization,
   pipelineStage,
   resource,
+  standbyDate,
   user,
 } = await import("@scheduleads-app/shared/db");
 
@@ -60,7 +61,8 @@ const stageId = randomUUID();
 const serviceId = randomUUID();
 const bookingId = randomUUID();
 
-// The week of Monday Nov 16, 2026, in Edmonton (MST, UTC-7, after the autumn change).
+// The week of Monday Nov 16, 2026, in Edmonton: UTC-6, since Alberta kept daylight time from
+// March 8, 2026 (the tz data, 2026c), so there is no autumn change that year.
 const WEEK = [
   "2026-11-16",
   "2026-11-17",
@@ -71,9 +73,9 @@ const WEEK = [
   "2026-11-22",
 ];
 const at = (iso: string) => new Date(iso);
-const tuesdayTen = { start: "2026-11-17T17:00:00.000Z", end: "2026-11-17T18:00:00.000Z" }; // 10 to 11
-const fridayOff = { start: "2026-11-20T20:00:00.000Z", end: "2026-11-21T00:00:00.000Z" }; // 1 to 5 pm
-const wednesdayGoogle = { start: "2026-11-18T16:00:00.000Z", end: "2026-11-18T16:30:00.000Z" }; // 9 to 9:30
+const tuesdayTen = { start: "2026-11-17T16:00:00.000Z", end: "2026-11-17T17:00:00.000Z" }; // 10 to 11
+const fridayOff = { start: "2026-11-20T19:00:00.000Z", end: "2026-11-21T00:00:00.000Z" }; // 1 to 6 pm
+const wednesdayGoogle = { start: "2026-11-18T15:00:00.000Z", end: "2026-11-18T15:30:00.000Z" }; // 9 to 9:30
 
 // Google's side, faked: free/busy answers each test sets.
 type AnswerType = () => Response;
@@ -395,6 +397,104 @@ describe("the Calendar page's week (feature 12b)", () => {
     expect(new Date(`${week.weekOf}T12:00:00Z`).getUTCDay()).toBe(1); // a Monday
     expect((await weekOf(summit.email, "?weekOf=2026-02-30")).status).toBe(400);
     expect((await weekOf(summit.email, "?weekOf=soon")).status).toBe(400);
+  });
+
+  test("a standby day shows no bookable hours, as the booking window offers none", async () => {
+    await db.insert(standbyDate).values({
+      organizationId: summit.organizationId,
+      resourceId: summit.personId,
+      date: "2026-11-18",
+    });
+    try {
+      const week = await (
+        await weekOf(summit.email, `?resourceId=${summit.personId}&weekOf=2026-11-16`)
+      ).json();
+      expect(dayOf(week.days, "2026-11-18")).toMatchObject({
+        standby: true,
+        closed: false,
+        hours: [],
+      });
+      expect(dayOf(week.days, "2026-11-18").items).toMatchObject([{ kind: "google_busy" }]);
+      expect(dayOf(week.days, "2026-11-17")).toMatchObject({ standby: false });
+    } finally {
+      await db.delete(standbyDate).where(inArray(standbyDate.resourceId, [summit.personId]));
+    }
+  });
+
+  test("an item across several local days shows on each, and only those", async () => {
+    // Saturday 10 am to Sunday 7 pm in Edmonton: past midnight UTC on both days.
+    const weekend = {
+      id: randomUUID(),
+      organizationId: summit.organizationId,
+      resourceId: summit.personId,
+      kind: "time_off",
+      startsAt: at("2026-11-21T16:00:00.000Z"),
+      endsAt: at("2026-11-23T01:00:00.000Z"),
+    };
+    await db.insert(commitment).values(weekend);
+    try {
+      const week = await (
+        await weekOf(summit.email, `?resourceId=${summit.personId}&weekOf=2026-11-16`)
+      ).json();
+      const holding = week.days
+        .filter((day: DayType) =>
+          day.items.some(
+            (item) => item.kind === "time_off" && item.startsAt === weekend.startsAt.toISOString()
+          )
+        )
+        .map((day: DayType) => day.date);
+      expect(holding).toEqual(["2026-11-21", "2026-11-22"]);
+    } finally {
+      await db.delete(commitment).where(inArray(commitment.id, [weekend.id]));
+    }
+  });
+
+  test("a week with the spring clock change has seven days, and places items by the clock after it", async () => {
+    // Sunday March 8, 2026, the clocks go forward at 2 am (UTC-7 to UTC-6). 05:00 UTC on Monday the
+    // 9th is 11 pm on Sunday; 06:00 UTC is midnight, so Monday, next week. Read at the old offset,
+    // both would be Sunday.
+    const rows = [
+      { at: "2026-03-09T05:00:00.000Z", until: "2026-03-09T05:30:00.000Z" }, // Sunday 11 pm
+      { at: "2026-03-09T06:00:00.000Z", until: "2026-03-09T06:30:00.000Z" }, // Monday midnight
+    ].map((row) => ({
+      id: randomUUID(),
+      organizationId: summit.organizationId,
+      resourceId: summit.personId,
+      kind: "time_off",
+      startsAt: at(row.at),
+      endsAt: at(row.until),
+    }));
+    await db.insert(commitment).values(rows);
+    try {
+      const week = await (
+        await weekOf(summit.email, `?resourceId=${summit.personId}&weekOf=2026-03-04`)
+      ).json();
+      expect(week.days.map((day: DayType) => day.date)).toEqual([
+        "2026-03-02",
+        "2026-03-03",
+        "2026-03-04",
+        "2026-03-05",
+        "2026-03-06",
+        "2026-03-07",
+        "2026-03-08",
+      ]);
+      expect(dayOf(week.days, "2026-03-08").items).toEqual([
+        {
+          kind: "time_off",
+          id: rows[0].id,
+          startsAt: rows[0].startsAt.toISOString(),
+          endsAt: rows[0].endsAt.toISOString(),
+        },
+      ]);
+      expect(dayOf(week.days, "2026-03-02").hours).toEqual([{ startMinute: 480, endMinute: 1020 }]);
+    } finally {
+      await db.delete(commitment).where(
+        inArray(
+          commitment.id,
+          rows.map((row) => row.id)
+        )
+      );
+    }
   });
 
   test("no session is refused with 401", async () => {

@@ -24,6 +24,7 @@ import type { BusyBlockType } from "../calendar/calendar-provider.js";
 import { getBusyTimes } from "../calendar/get-busy-times.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { findCommitments } from "../scheduling/find-commitments.js";
+import { findStandbyDates } from "../scheduling/find-standby-dates.js";
 
 export type ScheduleBookingType = {
   id: string;
@@ -42,6 +43,7 @@ export type ScheduleItemType =
 export type ScheduleDayType = {
   date: string; // YYYY-MM-DD in the business's zone
   closed: boolean; // a closed day or a picked holiday (12e), not opened for this one
+  standby: boolean; // on standby (5b): at work, hidden from customers, so no bookable hours
   hours: TimeWindowType[]; // when customers can book; [] on a closed day
   items: ScheduleItemType[]; // every item touching this day, in start order
 };
@@ -73,11 +75,13 @@ export async function findScheduleWeek({
 
   // The hours as on the Hours page, whatever the customers' horizon: the owner sees the whole week.
   const weekStart = new Date(Date.UTC(year, month - 1, day));
-  const [hours, held] = await Promise.all([
+  const [hours, held, standby] = await Promise.all([
     resolveBookableHours(organizationId, shown.id, weekStart, { coverDays: 8 }),
     findCommitments(organizationId, [shown.id], from, to),
+    findStandbyDates(organizationId, [shown.id], dates[0], dates[6]),
   ]);
   const closed = new Set(hours?.closedDates ?? []);
+  const onStandby = new Set(standby.map((row) => row.date));
 
   const bookingIds = held.flatMap((row) =>
     row.kind === "booking" && row.bookingId ? [row.bookingId] : []
@@ -194,7 +198,9 @@ export async function findScheduleWeek({
     days: dates.map((date) => ({
       date,
       closed: closed.has(date),
-      hours: !hours || closed.has(date) ? [] : windowsOnDate(hours, date),
+      standby: onStandby.has(date),
+      // As the booking window reads it: no customer is offered a closed or a standby day.
+      hours: !hours || closed.has(date) || onStandby.has(date) ? [] : windowsOnDate(hours, date),
       items: inOrder.filter((item) => touches(item, date)),
     })),
   };

@@ -192,13 +192,15 @@ function ScheduleDay({ day, timezone }: { day: ScheduleDayType; timezone: string
       <p className="mt-1 text-xs text-muted-foreground">
         {day.closed
           ? "Closed"
-          : day.hours.length === 0
-            ? "No bookable hours"
-            : day.hours
-                .map(
-                  (window) => `${clockWords(window.startMinute)}–${clockWords(window.endMinute)}`
-                )
-                .join(", ")}
+          : day.standby
+            ? "On standby: not offered to customers"
+            : day.hours.length === 0
+              ? "No bookable hours"
+              : day.hours
+                  .map(
+                    (window) => `${clockWords(window.startMinute)}–${clockWords(window.endMinute)}`
+                  )
+                  .join(", ")}
       </p>
       {day.items.length === 0 ? null : (
         <ul className="mt-3 flex flex-col gap-2">

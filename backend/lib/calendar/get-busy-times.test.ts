@@ -356,6 +356,19 @@ describe("getBusyTimes", () => {
     expect(freeBusyCalls).toHaveLength(1);
   });
 
+  test("only a built-in Google calendar ticked never asks for a key, though the connection needs reconnecting", async () => {
+    await connect({ expiresInMs: 0 });
+    await pick(["en.canadian#holiday@group.v.calendar.google.com"]);
+    await db
+      .update(calendarConnection)
+      .set({ status: "needs_reconnect" })
+      .where(eq(calendarConnection.resourceId, personId));
+
+    expect(await getBusyTimes(range)).toEqual([]);
+    expect(tokenCalls).toHaveLength(0);
+    expect(freeBusyCalls).toHaveLength(0);
+  });
+
   test("nothing ticked reads nothing from Google: an empty list", async () => {
     await connect();
     await pick([]);
