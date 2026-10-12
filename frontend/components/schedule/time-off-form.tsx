@@ -22,6 +22,9 @@ const minuteOf = (time: string): number | null => {
   return Number.isNaN(hours) ? null : hours * 60 + minutes;
 };
 
+// The span's own fields, each shown under its box.
+const shownFields = ["from.date", "from.minute", "to.date", "to.minute", "to"];
+
 // "Fri, Nov 20, 10:00 a.m." in the business's zone.
 const momentWords = (iso: string, timezone: string) =>
   new Intl.DateTimeFormat("en-CA", {
@@ -73,6 +76,7 @@ export function TimeOffForm({
     event.preventDefault();
     const bookings = [];
     for (const one of inTheWay) {
+      if (one.started) continue; // offered no choice: its own notice says to start after it
       const choice = choices[one.id];
       if (!choice) {
         setErrors({ [`booking-${one.id}`]: "Choose move or cancel." });
@@ -123,7 +127,13 @@ export function TimeOffForm({
       return;
     }
     if (saved.state === "field") {
-      setErrors({ [saved.field]: saved.message });
+      // "bookings.2.date" is the third booking sent, shown under that booking; a field the form
+      // has no place for goes in the notice.
+      const sent = /^bookings\.(\d+)\./.exec(saved.field);
+      const bookingId = sent ? bookings[Number(sent[1])]?.bookingId : undefined;
+      if (bookingId) setErrors({ [`booking-${bookingId}`]: saved.message });
+      else if (shownFields.includes(saved.field)) setErrors({ [saved.field]: saved.message });
+      else setNotice({ tone: "error", text: saved.message });
       return;
     }
     if (saved.bookingId) setErrors({ [`booking-${saved.bookingId}`]: saved.message });

@@ -130,10 +130,19 @@ does not answer.
 ({ bookingId, action: "cancel" } | { bookingId, action: "move", date, startMinute, personId })[] }`,
 strict, end after start (amended at 12b.3: the business's own clock, as 12b.2, `to.minute` up to 1440
 for the end of a day).
-`201 { timeOff }`. `409 bookings_in_the_way { bookings }` when an active booking in the span has no
-choice, a choice names one not in the way, or one has already begun; `409 time_taken { bookingId }`
-for a move into the time off itself or to a time not free; `409 time_taken` when a move's time or the span
-itself is taken meanwhile; nothing saved on any refusal.
+`201 { timeOff }`. Amended after the 12b.3 review (F-421 to F-426) to the answers the route gives:
+`404 not_found` for another business's person or place; `409 already_off` when time off is already
+in the span ("Already off from ... to ...: remove it first"), said before any booking is chosen for;
+`409 bookings_in_the_way { bookings }` when an active booking in the span has no choice, a choice
+names one not in the way, or one has already begun; per move, each with `{ bookingId }`: `400
+bad_request` for a person who does not do the service, `400 in_the_past` for a time already gone,
+`409 time_taken` for a move into the time off itself or to a time not free, `503 unavailable` when
+Google does not answer, `409 bookings_in_the_way` (no `bookings`) when that booking was cancelled,
+begun or left meanwhile; `400 { field }` for a field the schema refuses or a clock time skipped in
+spring, `bookings.N.startMinute` for a move's; `409 time_taken` with no `bookingId` when a move's time
+or the span itself is taken, or a booking in the way changed, meanwhile. For a place, a move leaves
+that place over the time off: the same start in another room is a move, never "already there".
+Nothing saved on any refusal.
 
 **`DELETE /schedule/time-off/:id`** `204`; `404` for another business's or a booking's row.
 

@@ -23,6 +23,7 @@ import { findSignedInPerson } from "../lib/calendar/find-signed-in-person.js";
 import { bookTime } from "../lib/booking/book-time.js";
 import { refuse } from "../lib/errors/refuse.js";
 import { localTimeToMoment } from "../lib/local-time/local-time-to-moment.js";
+import { formatTextTime } from "../lib/text/format-text-time.js";
 import { findScheduleWeek } from "../lib/schedule/find-schedule-week.js";
 import { mondayOf } from "../lib/schedule/monday-of.js";
 import { removeTimeOff } from "../lib/schedule/remove-time-off.js";
@@ -320,6 +321,25 @@ export const scheduleRoutes = new Hono()
           return c.json(
             refuse("not_found", "That person or place is not one of this business's."),
             404
+          );
+        case "already_off":
+          return c.json(
+            refuse(
+              "already_off",
+              `Already off from ${formatTextTime(saved.timeOff.startsAt, timezone)} to ${formatTextTime(saved.timeOff.endsAt, timezone)}. Remove that time off first, or pick a time around it.`
+            ),
+            409
+          );
+        case "person_not_offered":
+          return c.json(
+            {
+              ...refuse(
+                "bad_request",
+                "That person does not do this service. Pick someone who does."
+              ),
+              bookingId: saved.bookingId,
+            },
+            400
           );
         case "bookings_in_the_way":
           return c.json(

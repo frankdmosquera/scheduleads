@@ -37,6 +37,7 @@ export async function applyBookingMove(
       status: booking.status,
       startsAt: booking.startsAt,
       personId: booking.personId,
+      placeId: booking.placeId,
       sequence: booking.sequence,
       calendarEventId: booking.calendarEventId,
       contactId: lead.contactId,
@@ -52,10 +53,11 @@ export async function applyBookingMove(
   if (!row) return { moved: false, reason: "not_found" };
   if (row.status === "cancelled") return { moved: false, reason: "already_cancelled" };
   if (row.startsAt.getTime() <= now.getTime()) return { moved: false, reason: "already_started" };
-  // A move a moment ago (decision 4).
+  // A move a moment ago (decision 4); one still in the room going off has not moved yet.
   if (
     row.startsAt.getTime() === startsAt.getTime() &&
-    (personId === null || row.personId === personId)
+    (personId === null || row.personId === personId) &&
+    (plan.leavingPlaceId === null || row.placeId !== plan.leavingPlaceId)
   ) {
     return { moved: true, unchanged: true };
   }

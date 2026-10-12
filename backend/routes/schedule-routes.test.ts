@@ -33,6 +33,7 @@ const {
   availabilityRule,
   booking,
   bookingLink,
+  bookingLinkResource,
   calendarConnection,
   commitment,
   contact,
@@ -82,7 +83,7 @@ const fridayOff = { start: "2026-09-18T19:00:00.000Z", end: "2026-09-19T00:00:00
 const wednesdayGoogle = { start: "2026-09-16T15:00:00.000Z", end: "2026-09-16T15:30:00.000Z" }; // 9 to 9:30
 
 // Google's side, faked: free/busy answers each test sets.
-type AnswerType = () => Response;
+type AnswerType = () => Response | Promise<Response>;
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 // Carlos's main calendar: his own booking's event, and a dentist appointment on Wednesday.
@@ -671,9 +672,9 @@ describe("time off (feature 12b)", () => {
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
   const made: string[] = [];
-  const bookOn = async (date: string, startMinute: number, name: string) => {
+  const bookOn = async (date: string, startMinute: number, name: string, service = serviceId) => {
     const response = await json("POST", "/schedule/bookings", summit.email, {
-      bookingLinkId: serviceId,
+      bookingLinkId: service,
       personId: summit.personId,
       date,
       startMinute,
@@ -702,7 +703,7 @@ describe("time off (feature 12b)", () => {
   const bookingOf = async (id: string) =>
     (
       await db
-        .select({ status: booking.status, startsAt: booking.startsAt })
+        .select({ status: booking.status, startsAt: booking.startsAt, placeId: booking.placeId })
         .from(booking)
         .where(inArray(booking.id, [id]))
     )[0];
@@ -715,6 +716,15 @@ describe("time off (feature 12b)", () => {
             order by kind`
       )) as unknown as { kind: string }[]
     ).map((job) => job.kind);
+
+  // Every job saved for a booking: its emails, texts and Google changes.
+  const jobsOf = async (bookingId: string) =>
+    (
+      (await db.execute(
+        sql`select count(*)::int as count from ${sql.identifier(jobSchema)}._private_jobs
+            where payload->>'bookingId' = ${bookingId}`
+      )) as unknown as { count: number }[]
+    )[0].count;
 
   afterAll(async () => {
     await db.execute(
@@ -799,7 +809,7 @@ describe("time off (feature 12b)", () => {
     expect(await emailsOf(ben)).not.toContain("booking_cancellation_notification");
   });
 
-  test("a move to a time taken meanwhile saves nothing, not even the cancel", async () => {
+  test("a move to a time already taken is refused before anything is saved", async () => {
     const day = dayAhead(40);
     const nextDay = dayAhead(41);
     const ana = await bookOn(day, 600, "Ana");
@@ -823,6 +833,77 @@ describe("time off (feature 12b)", () => {
     expect(refused.status).toBe(409);
     expect(await refused.json()).toMatchObject({ error: { code: "time_taken" }, bookingId: ana });
     expect((await bookingOf(ben)).status).toBe("confirmed");
+    expect(localDate((await bookingOf(ana)).startsAt, ZONE)).toBe(day);
+    expect(await timeOffOf(day)).toEqual([]);
+  });
+
+  test("a move to a time taken meanwhile saves nothing, not even the cancel", async () => {
+    const day = dayAhead(42);
+    const nextDay = dayAhead(43);
+    const ana = await bookOn(day, 540, "Ana");
+    const ben = await bookOn(day, 720, "Ben");
+    const cara = await bookOn(day, 840, "Cara");
+    const benJobs = await jobsOf(ben);
+
+    // Ben cancelled first, then Ana and Cara both moved to the next day at 10: each move alone is
+    // free, so only the second hold, inside the transaction, finds the time taken.
+    const move = (bookingId: string) => ({
+      bookingId,
+      action: "move",
+      date: nextDay,
+      startMinute: 600,
+      personId: summit.personId,
+    });
+    const refused = await json("POST", "/schedule/time-off", summit.email, {
+      ...wholeDay(day),
+      bookings: [{ bookingId: ben, action: "cancel" }, move(ana), move(cara)],
+    });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: { code: "time_taken" } });
+    // The cancel went with the rest: Ben still booked, and nobody told of anything.
+    expect((await bookingOf(ben)).status).toBe("confirmed");
+    expect(await jobsOf(ben)).toBe(benJobs);
+    expect(localDate((await bookingOf(ana)).startsAt, ZONE)).toBe(day);
+    expect(localDate((await bookingOf(cara)).startsAt, ZONE)).toBe(day);
+    expect(await timeOffOf(day)).toEqual([]);
+  });
+
+  test("a booking its customer moves while the save runs is not cancelled by it", async () => {
+    const day = dayAhead(46);
+    const nextDay = dayAhead(47);
+    const ana = await bookOn(day, 540, "Ana");
+    const ben = await bookOn(day, 840, "Ben");
+    const benJobs = await jobsOf(ben);
+    // While Ana's new time is read from Google, Ben moves his own booking a week on.
+    const movedTo = new Date((await bookingOf(ben)).startsAt.getTime() + 7 * 86_400_000);
+    freeBusyAnswer = async () => {
+      freeBusyAnswer = googleBusy;
+      await db
+        .update(booking)
+        .set({ startsAt: movedTo, endsAt: new Date(movedTo.getTime() + 3_600_000) })
+        .where(inArray(booking.id, [ben]));
+      return googleBusy();
+    };
+
+    const refused = await json("POST", "/schedule/time-off", summit.email, {
+      ...wholeDay(day),
+      bookings: [
+        {
+          bookingId: ana,
+          action: "move",
+          date: nextDay,
+          startMinute: 540,
+          personId: summit.personId,
+        },
+        { bookingId: ben, action: "cancel" },
+      ],
+    });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: { code: "time_taken" } });
+    const benNow = await bookingOf(ben);
+    expect(benNow.status).toBe("confirmed");
+    expect(benNow.startsAt).toEqual(movedTo);
+    expect(await jobsOf(ben)).toBe(benJobs);
     expect(localDate((await bookingOf(ana)).startsAt, ZONE)).toBe(day);
     expect(await timeOffOf(day)).toEqual([]);
   });
@@ -871,6 +952,116 @@ describe("time off (feature 12b)", () => {
     expect(refused.status).toBe(409);
     expect(await refused.json()).toMatchObject({ bookingId: ana });
     expect(await timeOffOf(day)).toEqual([]);
+  });
+
+  test("a move to a time already gone, or to someone who does not do the service, is refused", async () => {
+    const day = dayAhead(50);
+    const ana = await bookOn(day, 600, "Ana");
+    const moveTo = (date: string, personId: string) =>
+      json("POST", "/schedule/time-off", summit.email, {
+        ...wholeDay(day),
+        bookings: [{ bookingId: ana, action: "move", date, startMinute: 600, personId }],
+      });
+
+    const gone = await moveTo(dayAhead(-1), summit.personId);
+    expect(gone.status).toBe(400);
+    expect(await gone.json()).toMatchObject({ error: { code: "in_the_past" }, bookingId: ana });
+    const notTheirs = await moveTo(dayAhead(51), other.personId);
+    expect(notTheirs.status).toBe(400);
+    expect(await notTheirs.json()).toMatchObject({
+      error: { message: "That person does not do this service. Pick someone who does." },
+      bookingId: ana,
+    });
+    expect(localDate((await bookingOf(ana)).startsAt, ZONE)).toBe(day);
+    expect(await timeOffOf(day)).toEqual([]);
+  });
+
+  test("time off over time off already there is refused in its own words, before any choice", async () => {
+    const day = dayAhead(54);
+    const afternoon = await json("POST", "/schedule/time-off", summit.email, {
+      resourceId: summit.personId,
+      from: { date: day, minute: 780 }, // 1 pm
+      to: { date: day, minute: 1020 }, // 5 pm
+      bookings: [],
+    });
+    expect(afternoon.status).toBe(201);
+    await bookOn(day, 600, "Ana"); // in the morning: in the way of the whole day
+
+    const refused = await json("POST", "/schedule/time-off", summit.email, {
+      ...wholeDay(day),
+      bookings: [],
+    });
+    expect(refused.status).toBe(409);
+    const body = await refused.json();
+    expect(body.error.code).toBe("already_off");
+    expect(body.error.message).toMatch(/^Already off from .* 1:00pm to .* 5:00pm\./);
+    expect(await timeOffOf(day)).toHaveLength(1);
+  });
+
+  test("a room going off: its bookings move to another room, at the same start or another inside it", async () => {
+    const day = dayAhead(60);
+    // A service done in either of two rooms; a booking takes the first free one by name.
+    const fittingId = randomUUID();
+    const [roomA, roomB] = [randomUUID(), randomUUID()];
+    await db.insert(resource).values([
+      { id: roomA, organizationId: summit.organizationId, name: "Room A", kind: "place" },
+      { id: roomB, organizationId: summit.organizationId, name: "Room B", kind: "place" },
+    ]);
+    await db.insert(bookingLink).values({
+      id: fittingId,
+      organizationId: summit.organizationId,
+      name: "Fitting",
+      slug: `fitting-${tag}`,
+      durationMinutes: 60,
+      layout: "month",
+      addressMode: "not_asked",
+      personChoice: "customer_picks",
+    });
+    await db.insert(bookingLinkResource).values(
+      [roomA, roomB].map((resourceId) => ({
+        organizationId: summit.organizationId,
+        bookingLinkId: fittingId,
+        resourceId,
+      }))
+    );
+    const ana = await bookOn(day, 600, "Ana", fittingId); // 10 am
+    const ben = await bookOn(day, 660, "Ben", fittingId); // 11 am
+    expect((await bookingOf(ana)).placeId).toBe(roomA);
+    expect((await bookingOf(ben)).placeId).toBe(roomA);
+
+    // Room A off from 9 am to 1 pm: Ana keeps her time in Room B, Ben moves to noon in Room B.
+    const saved = await json("POST", "/schedule/time-off", summit.email, {
+      resourceId: roomA,
+      from: { date: day, minute: 540 },
+      to: { date: day, minute: 780 },
+      bookings: [
+        { bookingId: ana, action: "move", date: day, startMinute: 600, personId: summit.personId },
+        { bookingId: ben, action: "move", date: day, startMinute: 720, personId: summit.personId },
+      ],
+    });
+    expect(saved.status).toBe(201);
+    const [anaNow, benNow] = [await bookingOf(ana), await bookingOf(ben)];
+    expect(anaNow.placeId).toBe(roomB);
+    expect(anaNow.startsAt).toEqual(localTimeToMoment(day, 600, ZONE));
+    expect(benNow.placeId).toBe(roomB);
+    expect(benNow.startsAt).toEqual(localTimeToMoment(day, 720, ZONE));
+    expect(await emailsOf(ana)).toContain("booking_move");
+  });
+
+  test("a booking's own held time is never removed as time off", async () => {
+    const day = dayAhead(62);
+    const ana = await bookOn(day, 600, "Ana");
+    const [held] = await db
+      .select({ id: commitment.id })
+      .from(commitment)
+      .where(inArray(commitment.bookingId, [ana]));
+
+    expect((await json("DELETE", `/schedule/time-off/${held.id}`, summit.email)).status).toBe(404);
+    const [still] = await db
+      .select({ status: commitment.status })
+      .from(commitment)
+      .where(inArray(commitment.id, [held.id]));
+    expect(still.status).toBe("active");
   });
 
   test("removing time off frees the time", async () => {

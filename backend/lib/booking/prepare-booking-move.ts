@@ -2,7 +2,8 @@
 // is there and still ahead, the new start is free for it (its own old time never in the way), and
 // who and which room can take it, in the order to try them. applyBookingMove then makes the change
 // inside a transaction. The customer's move through their link, or the owner's (feature 12b): any
-// time nobody is busy, as the owner books, never a start already past.
+// time nobody is busy, as the owner books, never a start already past. A room going off (12b.3):
+// the booking leaves it over its time off, so the same start in another room is a move.
 
 import { and, eq } from "drizzle-orm";
 
@@ -24,6 +25,7 @@ export type BookingMovePlanType = {
   personId: string | null; // asked for; null = any available
   choices: Extract<BookingChoicesType, { found: true }>["choices"];
   actorUserId: string | null; // the owner's login when the owner moves it
+  leavingPlaceId: string | null; // the room going off: the same start elsewhere is no "already there"
   now: Date;
 };
 
@@ -50,8 +52,10 @@ export async function prepareBookingMove(input: {
   now: Date;
   // The owner's move: the booking must be this business's, and the login is the actor.
   byOwner?: { organizationId: string; actorUserId: string };
+  // The owner marking a room off over a span (12b.3): the move keeps out of that room there.
+  leavingPlace?: { placeId: string; startsAt: Date; endsAt: Date };
 }): Promise<BookingMovePreparedType> {
-  const { bookingId, startsAt, personId, now, byOwner } = input;
+  const { bookingId, startsAt, personId, now, byOwner, leavingPlace } = input;
   if (Number.isNaN(startsAt.getTime())) throw new Error("Moving failed: the start is not a time.");
   const refused = (reason: MoveRefusalType) =>
     ({ ready: false, unchanged: false, reason }) as const;
@@ -61,6 +65,7 @@ export async function prepareBookingMove(input: {
       organizationId: booking.organizationId,
       bookingLinkId: booking.bookingLinkId,
       personId: booking.personId,
+      placeId: booking.placeId,
       startsAt: booking.startsAt,
       endsAt: booking.endsAt,
       status: booking.status,
@@ -76,9 +81,12 @@ export async function prepareBookingMove(input: {
   if (!current) return refused("not_found");
   if (current.status === "cancelled") return refused("already_cancelled");
   if (current.startsAt.getTime() <= now.getTime()) return refused("already_started");
+  const leavingPlaceId =
+    leavingPlace && current.placeId === leavingPlace.placeId ? leavingPlace.placeId : null;
   if (
     current.startsAt.getTime() === startsAt.getTime() &&
-    (personId === null || current.personId === personId)
+    (personId === null || current.personId === personId) &&
+    leavingPlaceId === null
   ) {
     return { ready: false, unchanged: true };
   }
@@ -136,6 +144,16 @@ export async function prepareBookingMove(input: {
     movingBooking,
   });
   if (!checked.found) return refused(checked.reason);
+  // The room going off reads free until its time off is held: kept out wherever the two overlap.
+  const choices = leavingPlace
+    ? checked.choices.filter(
+        (choice) =>
+          choice.placeId !== leavingPlace.placeId ||
+          spanEnd <= leavingPlace.startsAt.getTime() ||
+          spanStart >= leavingPlace.endsAt.getTime()
+      )
+    : checked.choices;
+  if (choices.length === 0) return refused("time_taken");
 
   return {
     ready: true,
@@ -146,8 +164,9 @@ export async function prepareBookingMove(input: {
       endsAt: new Date(startsAt.getTime() + service.durationMinutes * MINUTE_MS),
       span: { startsAt: new Date(spanStart), endsAt: new Date(spanEnd) },
       personId,
-      choices: checked.choices,
+      choices,
       actorUserId: byOwner?.actorUserId ?? null,
+      leavingPlaceId,
       now,
     },
   };
