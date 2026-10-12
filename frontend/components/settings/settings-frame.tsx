@@ -13,6 +13,7 @@ const SECTIONS = [
   { href: "/settings/people", label: "People" },
   { href: "/settings/days-off", label: "Days off" },
   { href: "/settings/booking-form", label: "Booking form" },
+  { href: "/settings/texts", label: "Texts" },
 ];
 
 export function SettingsFrame({ children }: { children: ReactNode }) {

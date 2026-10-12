@@ -4,7 +4,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq, isNull, like, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, like, or } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import type * as schema from "../db/index.js";
@@ -16,6 +16,7 @@ import {
   organization,
   resource,
   standbyDate,
+  textSettings,
   workerTextSettings,
 } from "../db/index.js";
 import { freeSlug } from "../helpers/free-slug.js";
@@ -149,6 +150,27 @@ export async function applyBusinessShape(
     hoursMade++;
   }
 
+  // Its texts, only when it has none: after that they are the owner's, on Settings > Texts. A
+  // number is one business's, since a reply finds its business by it; never a reply phone either.
+  const [existingTexts] = await tx
+    .select({ id: textSettings.organizationId })
+    .from(textSettings)
+    .where(eq(textSettings.organizationId, organizationId))
+    .limit(1);
+  const textsMade = !existingTexts && shape.texts !== undefined;
+  if (shape.texts && textsMade) {
+    const numbers = [shape.texts.fromNumber, shape.texts.replyPhone].filter(
+      (number): number is string => number !== null
+    );
+    const [taken] = await tx
+      .select({ fromNumber: textSettings.fromNumber })
+      .from(textSettings)
+      .where(inArray(textSettings.fromNumber, numbers))
+      .limit(1);
+    if (taken) throw new Error(`${taken.fromNumber} is already another business's texting number.`);
+    await tx.insert(textSettings).values({ organizationId, ...shape.texts });
+  }
+
   // Its contact rule, only while it has no service yet: after that it is the owner's, on Settings.
   const [anyService] = await tx
     .select({ id: bookingLink.id })
@@ -218,6 +240,7 @@ export async function applyBusinessShape(
   return [
     questionsMade && `${shape.questions.length} booking questions`,
     !anyService && "the contact rule",
+    textsMade && "text settings",
     !existingBusinessHours && "business hours",
     peopleMade && `${peopleMade} people and places`,
     hoursMade && `${hoursMade} people's own hours`,

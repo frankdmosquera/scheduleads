@@ -11,6 +11,7 @@ import {
   bookingQuestion,
   organization,
   resource,
+  textSettings,
   workerTextSettings,
 } from "../db/index.js";
 import { nameKeyOf } from "./name-key-of.js";
@@ -133,6 +134,20 @@ async function findDifferences(
     .where(eq(bookingLink.organizationId, organizationId))
     .limit(1);
   if (anyService) differs("contactRule", business?.contactRule, setup.contactRule);
+
+  // Texts already there are the owner's: a file that says otherwise is listed, never applied.
+  const [texts] = await tx
+    .select({
+      fromNumber: textSettings.fromNumber,
+      confirmationOn: textSettings.confirmationOn,
+      reminderMinutesBefore: textSettings.reminderMinutesBefore,
+      replyPhone: textSettings.replyPhone,
+      replyEmail: textSettings.replyEmail,
+      askLaterTextsYes: textSettings.askLaterTextsYes,
+    })
+    .from(textSettings)
+    .where(eq(textSettings.organizationId, organizationId));
+  if (texts && setup.texts) differs("texts", texts, setup.texts);
 
   for (const service of setup.services) {
     const [saved] = await tx

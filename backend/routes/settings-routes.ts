@@ -1,6 +1,6 @@
 // Backend: the owner's Settings pages: Hours (feature 12a), Services and People (12d), Days off
-// (12e), the Booking form (12f). The business always comes from the session, never from the
-// request; any member may read, only a role that may change the business may save.
+// (12e), the Booking form (12f), Texts (12g). The business always comes from the session, never
+// from the request; any member may read, only a role that may change the business may save.
 
 import { Hono, type Context } from "hono";
 import { validator } from "hono/validator";
@@ -9,6 +9,7 @@ import type { ZodError } from "zod";
 import {
   bookingFormRulesValidationSchema,
   bookingQuestionsValidationSchema,
+  textChoicesValidationSchema,
   businessHoursValidationSchema,
   addResourceValidationSchema,
   closeDayValidationSchema,
@@ -30,6 +31,7 @@ import { addResource } from "../lib/settings/add-resource.js";
 import { addService } from "../lib/settings/add-service.js";
 import { closeDay } from "../lib/settings/close-day.js";
 import { findBookingForm } from "../lib/settings/find-booking-form.js";
+import { findTextsSettings } from "../lib/settings/find-texts-settings.js";
 import { findDaysOff } from "../lib/settings/find-days-off.js";
 import { findHolidayChoices } from "../lib/settings/find-holiday-choices.js";
 import { findHoursSettings } from "../lib/settings/find-hours-settings.js";
@@ -39,6 +41,7 @@ import { openClosedDay } from "../lib/settings/open-closed-day.js";
 import { refuseHolidayPicks } from "../lib/settings/refuse-holiday-picks.js";
 import { saveBookingFormRules } from "../lib/settings/save-booking-form-rules.js";
 import { saveBookingQuestions } from "../lib/settings/save-booking-questions.js";
+import { saveTexts } from "../lib/settings/save-texts.js";
 import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
 import { saveHolidayPicks } from "../lib/settings/save-holiday-picks.js";
 import { savePersonHours } from "../lib/settings/save-person-hours.js";
@@ -362,6 +365,57 @@ export const settingsRoutes = new Hono()
           409
         );
       return c.json(saved.rules, 200);
+    }
+  )
+
+  // The Texts page: the business's texting number, the agency's, and its text choices; null when
+  // the agency has not set its texts up yet.
+  .get(
+    "/texts",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    async (c) => {
+      const { organizationId } = c.get("organization");
+      const [texts, canEdit] = await Promise.all([
+        findTextsSettings(db, organizationId),
+        hasBusinessPermission(c.req.raw.headers, organizationId, CHANGE_BUSINESS),
+      ]);
+      return c.json({ canEdit, texts }, 200);
+    }
+  )
+
+  // The text choices: the confirmation, the reminders and where replies go. Never the number.
+  .put(
+    "/texts",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = textChoicesValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const saved = await saveTexts(
+        c.get("organization").organizationId,
+        c.req.valid("json"),
+        new Date()
+      );
+      if (!saved.ok && saved.reason === "no_text_settings")
+        return c.json(
+          refuse("no_text_settings", "Texts are not set up for your business yet."),
+          409
+        );
+      if (!saved.ok)
+        return c.json(
+          {
+            ...refuse("bad_request", "That is a texting number, so replies cannot go to it."),
+            field: "replyPhone",
+          },
+          400
+        );
+      return c.json({ texts: saved.texts }, 200);
     }
   )
 
