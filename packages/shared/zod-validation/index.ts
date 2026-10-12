@@ -38,3 +38,4 @@ export * from "./text-validation-schemas/worker-text-settings-validation-schema.
 export * from "./text-validation-schemas/save-worker-texts-validation-schema.js";
 export * from "./calendar-validation-schemas/busy-calendars-validation-schema.js";
 export * from "./schedule-validation-schemas/schedule-week-query-validation-schema.js";
+export * from "./schedule-validation-schemas/book-by-hand-validation-schema.js";

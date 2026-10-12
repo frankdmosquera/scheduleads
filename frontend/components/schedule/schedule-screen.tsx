@@ -11,6 +11,7 @@ import { addDays } from "@scheduleads-app/shared/add-days";
 
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { RefusalNotice } from "@/components/centred-card/refusal-notice";
+import { BookByHandForm } from "@/components/schedule/book-by-hand-form";
 import { Button } from "@/components/ui/button";
 import {
   fetchScheduleWeek,
@@ -19,16 +20,7 @@ import {
   type ScheduleWeekResultType,
   type ScheduleWeekType,
 } from "@/lib/api-client/schedule/fetch-schedule-week";
-
-// "Mon, Nov 16" for a calendar date, which has no zone of its own.
-function dayWords(date: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "UTC",
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(`${date}T12:00:00Z`));
-}
+import { calendarDayWords } from "@/lib/calendar-day-words";
 
 // "8:00 a.m." for a minute of the day.
 function clockWords(minuteOfDay: number): string {
@@ -165,7 +157,7 @@ function ScheduleWeek({
       </div>
 
       <p className="mt-3 text-sm text-muted-foreground">
-        Week of {dayWords(week.weekOf)} &middot; times in {week.timezone}
+        Week of {calendarDayWords(week.weekOf)} &middot; times in {week.timezone}
       </p>
       {week.google === "unreadable" ? (
         <div className="mt-3">
@@ -181,6 +173,17 @@ function ScheduleWeek({
           <ScheduleDay key={day.date} day={day} timezone={week.timezone} />
         ))}
       </ol>
+
+      {week.canEdit && week.resource.kind === "person" ? (
+        <div className="mt-6">
+          <BookByHandForm
+            key={resourceId}
+            personId={resourceId}
+            dates={week.days.map((day) => day.date)}
+            onBooked={() => onAsk({ resourceId, weekOf: week.weekOf })}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -188,7 +191,7 @@ function ScheduleWeek({
 function ScheduleDay({ day, timezone }: { day: ScheduleDayType; timezone: string }) {
   return (
     <li className="min-w-0 rounded-lg border border-border bg-card p-3">
-      <h2 className="text-sm font-semibold text-foreground">{dayWords(day.date)}</h2>
+      <h2 className="text-sm font-semibold text-foreground">{calendarDayWords(day.date)}</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         {day.closed
           ? "Closed"

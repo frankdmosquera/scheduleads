@@ -4,10 +4,11 @@
 
 import { randomUUID } from "node:crypto";
 
-import { inArray } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { assertLocalDevDatabase } from "@scheduleads-app/shared/assert-local-dev-database";
+import { localDate } from "@scheduleads-app/shared/local-date";
 
 try {
   process.loadEnvFile(new URL("../../.env", import.meta.url)); // the root .env, before the app reads it
@@ -26,6 +27,8 @@ const { app } = await import("../app.js");
 const { db } = await import("../database.js");
 const { appOrigin } = await import("../lib/auth/auth-server.js");
 const { saveCalendarConnection } = await import("../lib/calendar/save-calendar-connection.js");
+const { jobSchema } = await import("../lib/jobs/job-schema.js");
+const { localTimeToMoment } = await import("../lib/local-time/local-time-to-moment.js");
 const {
   availabilityRule,
   booking,
@@ -499,5 +502,133 @@ describe("the Calendar page's week (feature 12b)", () => {
 
   test("no session is refused with 401", async () => {
     expect((await app.request("/schedule", { headers: { Origin: appOrigin } })).status).toBe(401);
+  });
+});
+
+// Step 12b.2: the owner books by hand, a phone estimate or a walk-in.
+describe("booking by hand (feature 12b)", () => {
+  const ZONE = "America/Edmonton";
+  // Three weeks ahead, a day the test owns: well clear of the fixtures above.
+  const day = localDate(new Date(Date.now() + 21 * 86_400_000), ZONE);
+  const book = (email: string, changes: Record<string, unknown> = {}) =>
+    app.request("/schedule/bookings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: appOrigin,
+        Cookie: cookies.get(email)!,
+      },
+      body: JSON.stringify({
+        bookingLinkId: serviceId,
+        personId: summit.personId,
+        date: day,
+        startMinute: 1110, // 6:30 pm: after Carlos's hours, which end at 5
+        customer: { name: "Mrs Lee", phone: "403 555 0123" },
+        ...changes,
+      }),
+    });
+  const jobsOf = async (bookingId: string) =>
+    (
+      (await db.execute(
+        sql`select tasks.identifier as task from ${sql.identifier(jobSchema)}._private_jobs jobs
+            join ${sql.identifier(jobSchema)}._private_tasks tasks on tasks.id = jobs.task_id
+            where jobs.payload->>'bookingId' = ${bookingId} order by task`
+      )) as unknown as { task: string }[]
+    ).map((job) => job.task);
+  const made: string[] = [];
+
+  afterAll(async () => {
+    // Its jobs never run here: the Google event and messages belong to a business about to go.
+    await db.execute(
+      sql`delete from ${sql.identifier(jobSchema)}._private_jobs where payload->>'bookingId' in ${made.length ? made : ["none"]}`
+    );
+  });
+
+  test("a booking by hand outside bookable hours is made, with a lead and its jobs", async () => {
+    const response = await book(summit.email);
+    expect(response.status).toBe(201);
+    const { booking: made1 } = await response.json();
+    made.push(made1.id);
+
+    // 6:30 pm in Edmonton on that day, whatever its offset.
+    expect(localDate(new Date(made1.startsAt), ZONE)).toBe(day);
+    expect(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: ZONE,
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      }).format(new Date(made1.startsAt))
+    ).toBe("18:30");
+    const [row] = await db
+      .select({ source: lead.source, contactId: lead.contactId })
+      .from(lead)
+      .where(inArray(lead.id, [made1.leadId]));
+    expect(row.source).toBe("manual");
+    const [customer] = await db
+      .select({ name: contact.name, phone: contact.phone })
+      .from(contact)
+      .where(inArray(contact.id, [row.contactId]));
+    expect(customer.name).toBe("Mrs Lee");
+    // Carlos has Google connected: his event is queued with the booking, as for a website booking.
+    expect(await jobsOf(made1.id)).toContain("booking_event_write");
+
+    // It shows on the calendar.
+    const week = await (
+      await weekOf(summit.email, `?resourceId=${summit.personId}&weekOf=${day}`)
+    ).json();
+    expect(dayOf(week.days, day).items).toMatchObject([
+      {
+        kind: "booking",
+        booking: { id: made1.id, customerName: "Mrs Lee", serviceName: "Estimate" },
+      },
+    ]);
+  });
+
+  test("a busy time, time off and a past time are refused", async () => {
+    // The same time again: Carlos is busy with Mrs Lee.
+    const again = await book(summit.email, { customer: { name: "Mr Park" } });
+    expect(again.status).toBe(409);
+    expect((await again.json()).error.code).toBe("time_taken");
+
+    // Time off: the morning off, booked into.
+    const offId = randomUUID();
+    const nine = localTimeToMoment(day, 540, ZONE)!;
+    await db.insert(commitment).values({
+      id: offId,
+      organizationId: summit.organizationId,
+      resourceId: summit.personId,
+      kind: "time_off",
+      startsAt: nine,
+      endsAt: new Date(nine.getTime() + 3 * 3_600_000),
+    });
+    try {
+      const off = await book(summit.email, { startMinute: 600, customer: { name: "Ms Ito" } });
+      expect(off.status).toBe(409);
+    } finally {
+      await db.delete(commitment).where(inArray(commitment.id, [offId]));
+    }
+
+    const yesterday = localDate(new Date(Date.now() - 86_400_000), ZONE);
+    const past = await book(summit.email, { date: yesterday, customer: { name: "Mr Oak" } });
+    expect(past.status).toBe(400);
+    expect((await past.json()).error.code).toBe("in_the_past");
+  });
+
+  test("a member without the permission cannot book by hand", async () => {
+    const response = await book(helper.email, { startMinute: 1200, customer: { name: "Mr Fox" } });
+    expect(response.status).toBe(403);
+  });
+
+  test("another business's person, an unknown service and a bad time are refused", async () => {
+    expect((await book(summit.email, { personId: other.personId, startMinute: 1230 })).status).toBe(
+      404
+    );
+    expect(
+      (await book(summit.email, { bookingLinkId: randomUUID(), startMinute: 1230 })).status
+    ).toBe(404);
+    const late = await book(summit.email, { startMinute: 1440 });
+    expect(late.status).toBe(400);
+    expect(await late.json()).toMatchObject({ field: "startMinute" });
   });
 });

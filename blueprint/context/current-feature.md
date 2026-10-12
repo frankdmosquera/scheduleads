@@ -6,7 +6,7 @@
 
 **Branch:** feature/12b-calendars
 
-**Status:** 12b.1 built 2026-10-12, its audit and independent review next; 12b.2 and 12b.3 planned.
+**Status:** 12b.1 built and reviewed 2026-10-12; 12b.2 built, its review next; 12b.3 planned.
 
 ## Goal
 
@@ -71,7 +71,7 @@ P2/P3 are recorded and carried. `/complete` makes the final pass and merges on F
   - Frontend: `app/(dashboard)/calendar/page.tsx`, "Calendar" in the dashboard list, the week screen.
   **Done when:** the route tests pass, and by hand on Summit the scene above shows.
 
-- [ ] **12b.2 Book by hand.** "On Carlos's Thursday the owner books Mrs Lee's phone estimate at
+- [x] **12b.2 Book by hand.** "On Carlos's Thursday the owner books Mrs Lee's phone estimate at
   4:30 pm, after Carlos's hours: it shows on the calendar, Mrs Lee is a new lead, her confirmation
   goes as Summit's settings say, and the event is in Carlos's Google. 4:30 on a day Carlos is off is
   refused, and so is a time already past."
@@ -116,8 +116,10 @@ one. `404` for a resource not of the business. `google: "read" | "not_connected"
 A booking item carries `{ id, leadId, customerName, serviceName, personName }`; text rendered by
 React as text.
 
-**`POST /schedule/bookings`** `{ bookingLinkId, personId, startsAt, customer: { name, email, phone },
-location, details }`, strict. `201 { booking }`. `409 time_taken` when anyone it needs is busy,
+**`POST /schedule/bookings`** `{ bookingLinkId, personId, date, startMinute, customer: { name, email,
+phone }, location, details }`, strict (amended at 12b.2: the business's own clock, a date and a minute of
+the day, turned into a moment in its zone by the API, so the page needs no time-zone sums; an hour
+skipped in spring is `400` on `startMinute`). `201 { booking }`. `409 time_taken` when anyone it needs is busy,
 `400 in_the_past`, `400` on a field for a missing contact or address as `bookTime` answers.
 
 **`POST /schedule/time-off`** `{ resourceId, startsAt, endsAt, bookings: ({ bookingId, action:
