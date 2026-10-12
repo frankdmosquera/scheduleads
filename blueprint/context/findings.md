@@ -353,7 +353,7 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Never offer Google's built-in calendars, never ask free/busy about them, and drop one ticked before from the pick.
 **Resolution:** Fixed 2026-10-12 on `feature/12b-calendars`: `is-google-virtual-calendar.ts` names them; `listCalendars` skips them, `findBusyBlocks` answers them empty without asking Google, and `findCalendarChoices` leaves one ticked before out of the pick, so the next save drops it. Tests: get-busy-times.test.ts ("a built-in Google calendar ticked is never asked about, and blocks nothing"), calendar-routes.test.ts ("Google's own holiday calendar is never offered, and one ticked before is no pick at all"). Seen live after: the Calendar page reads Frank's Google again with the holiday calendar still ticked in the database. Closed 2026-10-12 by independent review of step 12b.1 (91b217c..3aafcf3): re-read google-calendar-provider.ts (listCalendars skips the suffix; findBusyBlocks asks free/busy only for the rest, answers the built-in ones `busy: []` and calls nothing when only they are ticked, while askFreeBusy keeps every 12h guarantee: one call, every asked calendar must come back, "primary" filed under the account's address, an errored calendar throws), find-calendar-choices.ts (picked filtered, so `missing` stays empty and the save refuses the id as unknown), and the two tests, which fail if either filter is removed. Both suites pass. One residual edge is its own entry, F-414.
 
-### F-413 [P2] open - A standby day shows the person's bookable hours on the Calendar page, though customers cannot book them that day
+### F-413 [P2] fixed - A standby day shows the person's bookable hours on the Calendar page, though customers cannot book them that day
 
 **File:** backend/lib/schedule/find-schedule-week.ts:197 (and the contract comment at :45)
 **Found:** 2026-10-12 by independent review of step 12b.1 (scope: 91b217c..3aafcf3; lenses: quality, security, performance, tests)
@@ -361,7 +361,7 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Read the shown person's standby dates for the week (`findStandbyDates`) and mark the day (for example `standby: true` with `hours: []`, or the hours kept and labelled "on standby, hidden from customers"); one route test with a standby date in the week.
 **Resolution:** Fixed 2026-10-12: findScheduleWeek reads the person's or place's standby dates for the week (findStandbyDates, as the booking window does); a standby day answers `standby: true` and no hours, and the page says "On standby: not offered to customers". Test: schedule-routes.test.ts "a standby day shows no bookable hours, as the booking window offers none", proved able to fail.
 
-### F-414 [P3] open - Only a built-in Google calendar ticked, and a lapsed connection, still makes the person unreadable
+### F-414 [P3] fixed - Only a built-in Google calendar ticked, and a lapsed connection, still makes the person unreadable
 
 **File:** backend/lib/calendar/get-busy-times.ts:39
 **Found:** 2026-10-12 by independent review of step 12b.1 (scope: 91b217c..3aafcf3; lenses: quality, security, performance, tests)
@@ -369,7 +369,7 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Apply `isGoogleVirtualCalendar` to the pick in getBusyTimes before the empty check (line 39 and 42), so an only-built-in pick is "nothing ticked"; extend the existing built-in-calendar test with a `needs_reconnect` connection.
 **Resolution:** Fixed 2026-10-12: getBusyTimes counts only calendars that are not Google's built-in ones before asking for a key, so a pick of only a holiday calendar reads nothing and never makes the person unreadable. Test: get-busy-times.test.ts "only a built-in Google calendar ticked never asks for a key, though the connection needs reconnecting".
 
-### F-415 [P3] open - No test places an item that spans several local days, or reads a week with a clock change
+### F-415 [P3] fixed - No test places an item that spans several local days, or reads a week with a clock change
 
 **File:** backend/routes/schedule-routes.test.ts; backend/lib/schedule/find-schedule-week.ts:186
 **Found:** 2026-10-12 by independent review of step 12b.1 (scope: 91b217c..3aafcf3; lenses: quality, security, performance, tests)
