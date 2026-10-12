@@ -6,7 +6,7 @@
 
 **Branch:** feature/12b-calendars
 
-**Status:** 12b.1 and 12b.2 built and reviewed 2026-10-12; 12b.3 built, its review next.
+**Status:** verified 2026-10-12: 12b.1, 12b.2 and 12b.3 built and reviewed, every step finding closed (F-412 to F-427); shared 188 and backend 1046 tests pass, the frontend builds and lints. Then the final review of the whole feature.
 
 ## Goal
 
