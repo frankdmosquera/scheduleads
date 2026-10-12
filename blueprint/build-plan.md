@@ -279,7 +279,7 @@ without Frank touching the database.
   contact page with its timeline and its open next steps, and adding a lead
   by hand. A painter takes phone calls; with no way to type one in he keeps
   the notebook and the CRM sits half empty
-- [ ] 12. **Settings** - hours with several windows a day, services,
+- [x] 12. **Settings** - hours with several windows a day, services,
   resources, blackout dates, statutory holidays, the booking horizon, and
   the calendar connection, replacing direct edits to `availability_rule`.
   The calendar connection includes which of the owner's Google calendars
@@ -343,7 +343,7 @@ without Frank touching the database.
     whether they hear when a booking is added to their day, moved, or taken
     off it. Nothing on by default. Saving refuses a phone that is any
     business's texting number (8c, decision 6)
-  - [ ] 12h. **Calendar pick** - the calendar connection on the settings
+  - [x] 12h. **Calendar pick** - the calendar connection on the settings
     page, and which of the owner's Google calendars count as busy, the
     owner's pick (item 3 reads only the main one; the list needs
     `calendar.calendarlist.readonly`, added here, before any client
