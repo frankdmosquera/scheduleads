@@ -74,7 +74,7 @@ recorded and carried. `/complete` makes the final pass and merges on Frank's yes
   **Done when:** the route tests below pass, and by hand on Summit the scene above shows on the page
   and in the database's queued jobs; Summit's texts are put back after.
 
-- [ ] **12g.2 Each person's worker texts.** "On Summit's People, Carlos's texts go on with his
+- [x] **12g.2 Each person's worker texts.** "On Summit's People, Carlos's texts go on with his
   phone, yes to added and moved, no to taken off: a booking added to his day queues his text, a
   cancel does not. Marco's phone set to Summit's texting number is refused. Turning Carlos's texts
   off removes them."
@@ -110,9 +110,11 @@ strict: reminders whole minutes, at least 1, no repeats, at most 10; a reply pho
 both; phones typed any common way, stored as Twilio texts them. `200 { texts }` as the GET's.
 `409 no_text_settings` without texts. `400 { error, field: "replyPhone" }` for a texting number.
 
-**`PUT /settings/people/:resourceId/texts`** `{ phone, addedOn, movedOn, removedOn }` or `null`,
-strict, every switch given. `200 { texts }` (null when off). `404 not_found` for another business's
-or an unknown person, `400` for a place, `400 { error, field: "phone" }` for a texting number.
+**`PUT /settings/people/:resourceId/texts`** `{ texts: { phone, addedOn, movedOn, removedOn } | null }`
+(amended at 12g.2: wrapped, so one strict schema reads both), every switch given. `200 { texts }`
+(null when off). `404 not_found` for another business's or an unknown person, `400` for a place,
+`400 { error, field: "texts.phone" }` for a texting number. The People read answers `workerTexts`,
+`{ personId, phone, addedOn, movedOn, removedOn }[]`, a person not listed having none.
 
 **User text**: phones and emails are rendered by React as text, never HTML.
 

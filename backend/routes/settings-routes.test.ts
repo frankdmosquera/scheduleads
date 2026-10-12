@@ -43,6 +43,7 @@ const {
   resource,
   textSettings,
   user,
+  workerTextSettings,
 } = await import("@scheduleads-app/shared/db");
 
 const tag = randomUUID().slice(0, 8);
@@ -1203,6 +1204,70 @@ describe("the Days off settings", () => {
     const read = await (await get("/settings/days-off", summit.email)).json();
     expect(read).toMatchObject({ unknownHolidays: ["Famly Day"] });
     await resetDaysOff();
+  });
+});
+
+describe("a person's worker texts (feature 12g)", () => {
+  const textsPath = (resourceId: string) => `/settings/people/${resourceId}/texts`;
+  const otherNumber = `+1587${randomInt(200, 1000)}${String(randomInt(0, 10_000)).padStart(4, "0")}`;
+  const on = { phone: "(403) 555-0161", addedOn: true, movedOn: true, removedOn: false };
+  const workerTextsOf = async (tenant: { email: string }) =>
+    (
+      (await (await get("/settings/people", tenant.email)).json()) as {
+        workerTexts: { personId: string; phone: string }[];
+      }
+    ).workerTexts;
+
+  beforeAll(async () => {
+    await db.insert(textSettings).values({
+      organizationId: other.organizationId,
+      fromNumber: otherNumber,
+      confirmationOn: false,
+      reminderMinutesBefore: [],
+      replyEmail: "office@example.com",
+    });
+  });
+
+  afterAll(async () => {
+    await db.delete(textSettings).where(eq(textSettings.organizationId, other.organizationId));
+    await db
+      .delete(workerTextSettings)
+      .where(eq(workerTextSettings.organizationId, booked.organizationId));
+  });
+
+  test("a person's texts save, show on the page, and turn off", async () => {
+    const saved = await put(textsPath(booked.personId), booked.email, { texts: on });
+    expect(saved.status).toBe(200);
+    expect(await saved.json()).toEqual({ texts: { ...on, phone: "+14035550161" } });
+    expect(await workerTextsOf(booked)).toEqual([
+      { personId: booked.personId, ...on, phone: "+14035550161" },
+    ]);
+    // Changed in place, then off: the row goes.
+    await put(textsPath(booked.personId), booked.email, { texts: { ...on, removedOn: true } });
+    expect((await workerTextsOf(booked))[0]).toMatchObject({ removedOn: true });
+    const off = await put(textsPath(booked.personId), booked.email, { texts: null });
+    expect(await off.json()).toEqual({ texts: null });
+    expect(await workerTextsOf(booked)).toEqual([]);
+  });
+
+  test("a phone that is any business's texting number is refused, and every choice must be given", async () => {
+    const taken = await put(textsPath(booked.personId), booked.email, {
+      texts: { ...on, phone: otherNumber },
+    });
+    expect(taken.status).toBe(400);
+    expect(await taken.json()).toMatchObject({ field: "texts.phone" });
+    const { removedOn: _left, ...unpicked } = on;
+    const missing = await put(textsPath(booked.personId), booked.email, { texts: unpicked });
+    expect(missing.status).toBe(400);
+    expect(await missing.json()).toMatchObject({ field: "texts.removedOn" });
+    expect(await workerTextsOf(booked)).toEqual([]);
+  });
+
+  test("another business's person is 404, a place 400, and a member without the permission 403", async () => {
+    expect((await put(textsPath(other.personId), booked.email, { texts: on })).status).toBe(404);
+    expect((await put(textsPath(summitPlaceId), summit.email, { texts: on })).status).toBe(400);
+    expect((await put(textsPath(summit.personId), helper.email, { texts: on })).status).toBe(403);
+    expect(await workerTextsOf(summit)).toEqual([]);
   });
 });
 

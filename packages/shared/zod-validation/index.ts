@@ -35,3 +35,4 @@ export * from "./availability-validation-schemas/open-closed-day-validation-sche
 export * from "./text-validation-schemas/text-choices-validation-schema.js";
 export * from "./text-validation-schemas/text-settings-validation-schema.js";
 export * from "./text-validation-schemas/worker-text-settings-validation-schema.js";
+export * from "./text-validation-schemas/save-worker-texts-validation-schema.js";

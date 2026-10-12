@@ -9,6 +9,7 @@ import type { ZodError } from "zod";
 import {
   bookingFormRulesValidationSchema,
   bookingQuestionsValidationSchema,
+  saveWorkerTextsValidationSchema,
   textChoicesValidationSchema,
   businessHoursValidationSchema,
   addResourceValidationSchema,
@@ -42,6 +43,7 @@ import { refuseHolidayPicks } from "../lib/settings/refuse-holiday-picks.js";
 import { saveBookingFormRules } from "../lib/settings/save-booking-form-rules.js";
 import { saveBookingQuestions } from "../lib/settings/save-booking-questions.js";
 import { saveTexts } from "../lib/settings/save-texts.js";
+import { saveWorkerTexts } from "../lib/settings/save-worker-texts.js";
 import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
 import { saveHolidayPicks } from "../lib/settings/save-holiday-picks.js";
 import { savePersonHours } from "../lib/settings/save-person-hours.js";
@@ -291,6 +293,40 @@ export const settingsRoutes = new Hono()
           409
         );
       return c.json({ resource: saved.resource, upcomingBookings: saved.upcomingBookings }, 200);
+    }
+  )
+
+  // A person's worker texts: on with a phone and three choices, or null to turn them off. Another
+  // business's person or an unknown id: the same 404; a place gets no texts.
+  .put(
+    "/people/:resourceId/texts",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = saveWorkerTextsValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const saved = await saveWorkerTexts(
+        c.get("organization").organizationId,
+        c.req.param("resourceId"),
+        c.req.valid("json")
+      );
+      if (!saved.ok && saved.reason === "not_found")
+        return c.json(refuse("not_found", "No person here."), 404);
+      if (!saved.ok && saved.reason === "a_place")
+        return c.json(refuse("bad_request", "A place gets no texts: only people do."), 400);
+      if (!saved.ok)
+        return c.json(
+          {
+            ...refuse("bad_request", "That is a texting number, so texts cannot reach them there."),
+            field: "texts.phone",
+          },
+          400
+        );
+      return c.json({ texts: saved.texts }, 200);
     }
   )
 
