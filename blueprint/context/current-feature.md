@@ -131,7 +131,8 @@ does not answer.
 strict, end after start (amended at 12b.3: the business's own clock, as 12b.2, `to.minute` up to 1440
 for the end of a day).
 `201 { timeOff }`. Amended after the 12b.3 review (F-421 to F-426) to the answers the route gives:
-`404 not_found` for another business's person or place; `409 already_off` when time off is already
+`409 no_business_hours` when the business has no hours yet; `404 not_found` for another
+business's person or place; `409 already_off` when time off is already
 in the span ("Already off from ... to ...: remove it first"), said before any booking is chosen for;
 `409 bookings_in_the_way { bookings }` when an active booking in the span has no choice, a choice
 names one not in the way, or one has already begun; per move, each with `{ bookingId }`: `400

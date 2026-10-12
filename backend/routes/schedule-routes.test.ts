@@ -859,7 +859,10 @@ describe("time off (feature 12b)", () => {
       bookings: [{ bookingId: ben, action: "cancel" }, move(ana), move(cara)],
     });
     expect(refused.status).toBe(409);
-    expect(await refused.json()).toMatchObject({ error: { code: "time_taken" } });
+    // No bookingId: refused inside the transaction, never by one move checked before it.
+    const body = await refused.json();
+    expect(body).toMatchObject({ error: { code: "time_taken" } });
+    expect(body).not.toHaveProperty("bookingId");
     // The cancel went with the rest: Ben still booked, and nobody told of anything.
     expect((await bookingOf(ben)).status).toBe("confirmed");
     expect(await jobsOf(ben)).toBe(benJobs);
@@ -899,7 +902,10 @@ describe("time off (feature 12b)", () => {
       ],
     });
     expect(refused.status).toBe(409);
-    expect(await refused.json()).toMatchObject({ error: { code: "time_taken" } });
+    // No bookingId: refused inside the transaction, never by one move checked before it.
+    const body = await refused.json();
+    expect(body).toMatchObject({ error: { code: "time_taken" } });
+    expect(body).not.toHaveProperty("bookingId");
     const benNow = await bookingOf(ben);
     expect(benNow.status).toBe("confirmed");
     expect(benNow.startsAt).toEqual(movedTo);
