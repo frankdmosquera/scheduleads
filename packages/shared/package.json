@@ -56,6 +56,10 @@
       "types": "./dist/helpers/assert-local-dev-database.d.ts",
       "default": "./dist/helpers/assert-local-dev-database.js"
     },
+    "./database-label": {
+      "types": "./dist/helpers/database-label.d.ts",
+      "default": "./dist/helpers/database-label.js"
+    },
     "./crypto": {
       "types": "./dist/crypto/token-cipher.d.ts",
       "default": "./dist/crypto/token-cipher.js"
@@ -71,6 +75,10 @@
     "./crm": {
       "types": "./dist/crm/index.d.ts",
       "default": "./dist/crm/index.js"
+    },
+    "./platform-admin": {
+      "types": "./dist/platform-admin/create-platform-admin.d.ts",
+      "default": "./dist/platform-admin/create-platform-admin.js"
     }
   },
   "scripts": {
@@ -82,7 +90,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env scripts/seed-dev.ts",
     "db:studio": "drizzle-kit studio",
-    "client:setup": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env scripts/apply-client-setup.ts"
+    "client:setup": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env scripts/apply-client-setup.ts",
+    "admin:create": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env scripts/create-platform-admin.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

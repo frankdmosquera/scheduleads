@@ -264,9 +264,10 @@ rented" rents nothing.
   change at once: the live redirect, `http://localhost:3401/calendar/callback`
   (never added after the Oct 3 port move), the `calendar.calendarlist.readonly`
   permission (12h), and 12h's check against a real calendar after it (decided
-  2026-10-12). Timed with the agency site's launch, which
-  its own plan holds until texts and QuickBooks (decided 2026-10-09, split
-  out of item 10)
+  2026-10-12). Deployed now, ahead of the agency site's launch, so 12c and
+  Primo (13) can follow; the site goes live on it when its own plan allows
+  (Frank, 2026-10-12, replacing the Oct 9 timing; split out of item 10 on
+  2026-10-09)
 
 ## Phase 4. The CRM, first release
 

@@ -502,8 +502,16 @@ ledger:
 - Seed the two development accounts: `npm run db:seed --workspace=@scheduleads-app/shared`
 - Browse the data: `npm run db:studio --workspace=@scheduleads-app/shared`
 - Set a business up from its setup file (made first on `/admin/client-setup`; a dry run
-  unless `--apply`; adds only what is missing; local `*_dev` only until item 10b):
-  `npm run client:setup --workspace=@scheduleads-app/shared -- client-setups/<file>.ts [--apply]`
+  unless `--apply`; adds only what is missing; the local `*_dev` database unless `--live`;
+  its first line names the database):
+  `npm run client:setup --workspace=@scheduleads-app/shared -- client-setups/<file>.ts [--live] [--apply]`
+- Make the one platform admin login on a database with none, for the live app's first sign-in
+  (refuses once an admin exists; its first line names the database):
+  `npm run admin:create --workspace=@scheduleads-app/shared -- <email>`
+
+The live app (10b): the dashboard at `https://app.booking-crm.com` (Vercel), the API at
+`https://api.booking-crm.com` (Railway), the domain and its DNS in Vercel. The live values are
+listed at the top of `.env.example`.
 
 Development runs against a local PostgreSQL 18, the same major version as
 Railway, in a database named `scheduleads_dev` on 127.0.0.1:5432, and `.env`

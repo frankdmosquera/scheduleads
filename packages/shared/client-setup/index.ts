@@ -2,3 +2,4 @@
 
 export * from "./apply-business-shape.js";
 export * from "./run-client-setup.js";
+export * from "./setup-database.js";

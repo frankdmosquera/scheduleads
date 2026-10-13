@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash fa5f05a86faa9530309d6c66e5f5e51fd32d2e8be8db1e457405ee8f5410952e -->
+<!-- blueprint:source-hash ddfc6c8d461c9ff999f09489d9226eab9b452446cc55d6ccb92de3678940c1f8 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -84,8 +84,8 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 10. **Tenant zero ready: AgentsWeb** - the booking window as one shared
     package any site installs, never an embed; a business set up from a setup
     file until item 12; a real call booked on the laptop.
-- **10b. First deploy** - Railway and Vercel for real use, with the agency
-  site's launch.
+- **10b. First deploy** - Railway and Vercel for real use, ahead of the agency
+  site's launch, so backups (12c) and Primo (13) can follow.
 11. **Leads list and contact page** - timeline, next steps, a lead by hand.
 12. **Settings** - split Oct 10 into six screens, each its own branch:
     12a hours (bookable hours, notice, horizon, time zone), 12d services,

@@ -21,6 +21,7 @@
     "subscriptions",
     "zod-validation",
     "client-setup",
+    "platform-admin",
     "client-setups",
     "scripts",
     "drizzle.config.ts"
