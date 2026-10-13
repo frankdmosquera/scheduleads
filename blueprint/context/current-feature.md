@@ -157,6 +157,15 @@ frontend build and lint. One test per rule that would hurt if broken:
 
 ## Notes for the AI
 
+- Railway builds from the repo root with `railway.json` (build, start, watch paths, health check,
+  draining) and Node 26 from `.node-version` (2026-10-12: the dashboard's build command never
+  reached the first build, and Railpack chose Node 24). Not the root `engines`: Vercel offers only
+  Node 24 and 22, so the frontend runs on 24. Check its time zone data on the live
+  `/b/` page in 10b.2 (Alberta on UTC-6 all year needs tz 2026c). Railway retires `railway.json`
+  on 2026-12-01: move it to `.railway/railway.ts` (`railway config migrate`) before then, in 10b.
+- The dashboard's watch paths skip commits that change only root files: such a commit deploys
+  with `railway redeploy --service scheduleads --from-source`.
+
 - Railway with Root Directory `backend` may not see `packages/shared`, which the backend's
   `prebuild` compiles. Check Railway's monorepo docs in 10b.1 before Frank's Railway trip; if it
   cannot, the service builds from the repo root with `npm run build --workspace=backend` and

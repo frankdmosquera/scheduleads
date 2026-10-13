@@ -8,7 +8,8 @@
       "/packages/shared/**",
       "/package.json",
       "/package-lock.json",
-      "/railway.json"
+      "/railway.json",
+      "/.node-version"
     ]
   },
   "deploy": {
