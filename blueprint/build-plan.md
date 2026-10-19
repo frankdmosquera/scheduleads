@@ -487,6 +487,19 @@ booking with no one at the agency involved.
 
 Nothing above depends on these. Each gets a phase when something does.
 
+- How messages are offered and paid (Frank, Oct 19). Each business toggles
+  its own channels, each toggle showing what it costs and what is included:
+  WhatsApp offered at booking or not (the booking asks the customer and
+  says why), texts (RCS where it works, else SMS), email. Every message is
+  counted per channel per month and the CRM shows it ("120 of 250 texts").
+  USA and Canada: a set number of texts included in the plan; past it, the
+  business chose ahead of time between **stop and switch to email** (the
+  default, as Calendly and Cal.com do) and **pay extra** per text at cost
+  plus a margin. Colombia and the rest of Latin America: WhatsApp and email
+  included, no texts included; a business that wants texts pays from the
+  first one. Not offered: a business plugging in its own Twilio account.
+  Needs the missing **reminder by email** (today only confirmations, moves
+  and cancellations are emailed), which is also the free fallback
 - Photo attachments on a lead
 - Orders in the CRM (Frank, Oct 18): the CRM holds orders as well as
   bookings (ordered, paid, picked up), the store module kept for later on
