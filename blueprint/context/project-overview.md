@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash ddfc6c8d461c9ff999f09489d9226eab9b452446cc55d6ccb92de3678940c1f8 -->
+<!-- blueprint:source-hash 9ff38906008ca6ab343533c6b3b92969ec011e8887ddc463e243142a433b4ed7 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -101,7 +101,7 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 17. **Face and Body** - Cal.com out; 45 services, practitioners, rooms.
 18. **The Latam Painters** - after its site and siteConfig exist.
 19. **Crew and job scheduling** - jobs of daily visits, crews as saved lists.
-20. **Reports**. 21. **WhatsApp**. 21b. **RCS**. 22. **Google OAuth verification**
+20. **Reports**. 21. **Connect to the Agent app** (WhatsApp lives there). 21b. **RCS**. 22. **Google OAuth verification**
     (calendar half before 13). 23. **Packages ladder and admin area**.
     24. **Hosted booking page** `/book/<slug>`. 25. **Self-serve and
     billing**. 26. **Two-way Gmail sync**.
@@ -186,7 +186,7 @@ business uses a composite FK on `(organizationId, id)`.
 - **Better Auth** - `organization`, `emailOTP`, `admin` plugins.
 - **Resend + React Email** - confirmations, `.ics`, later CRM email.
 - **Google Calendar API** - free/busy and writing each booking.
-- **Twilio** - SMS from item 8; WhatsApp later.
+- **Twilio** - SMS from item 8, SMS only; WhatsApp is the Agent app's (item 21).
 - Installed at the feature that needs them: TanStack Query (CRM lists),
   dnd-kit (board), shadcn charts (reports). No state manager yet.
 

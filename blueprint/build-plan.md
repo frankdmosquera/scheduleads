@@ -201,7 +201,9 @@ and a second resource can hold the same time as the first.
   a runner**, and reminders, follow-ups and the calendar token refresh all
   need one, which is why it is here rather than left to Phase 8. Every
   message goes out through one place in the code, Twilio for all of it for
-  now, so moving WhatsApp to Meta directly later changes that one place.
+  now. (Changed Oct 7: WhatsApp lives in the Agent app, the `whatsapp-app`
+  repo, its decision record 0001; a WhatsApp reminder is asked of it
+  through its API, and Twilio carries SMS only.)
   When a business runs on one email, the booked worker gets a text with the
   booking, the last resort that keeps them in the loop; the customer's
   replies still go to the business (feature 6, decision 8, Frank, Oct 2)
@@ -441,8 +443,13 @@ reads a report page instead of asking Frank how the month went.
   - The crew view is everyone's calendar from item 12b, side by side by day
 - [ ] 20. **Reports** - bookings per week, pipeline by stage, lead sources,
   on shadcn charts
-- [ ] 21. **WhatsApp** - Meta verification, a dedicated number, approved
-  templates; sent and logged like SMS
+- [ ] 21. **Connect to the Agent app** (was "WhatsApp"; changed by the
+  Agent app's decision record 0001, Oct 7) - the WhatsApp chat and its Meta
+  setup live in the Agent app, never here. Scheduleads asks it to send a
+  booking reminder by WhatsApp when the customer agreed (otherwise SMS as
+  now), sends it a "booked" event when a booking is made, and receives its
+  monthly usage per business. Signed API calls both ways; neither reads the
+  other's database
 - [ ] 21b. **RCS** (Frank, Oct 7) - the branded chat version of a text, in
   the phone's own Messages app: the business's verified name and logo,
   buttons such as "Change booking", read receipts. Twilio carries it to
@@ -481,6 +488,10 @@ booking with no one at the agency involved.
 Nothing above depends on these. Each gets a phase when something does.
 
 - Photo attachments on a lead
+- Orders in the CRM (Frank, Oct 18): the CRM holds orders as well as
+  bookings (ordered, paid, picked up), the store module kept for later on
+  Sep 27. Items arrive when the first real store needs them, most likely
+  the tamales site, whose orders the Agent would take in the chat
 - An owner booking two clients into one sales talk on purpose, the only
   double booking ever discussed. Only if a client asks
 - No-show handling: a card on file, a fee, or a deposit held
