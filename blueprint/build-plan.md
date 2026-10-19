@@ -449,7 +449,11 @@ reads a report page instead of asking Frank how the month went.
   booking reminder by WhatsApp when the customer agreed (otherwise SMS as
   now), sends it a "booked" event when a booking is made, and receives its
   monthly usage per business. Signed API calls both ways; neither reads the
-  other's database
+  other's database. A contact is matched by email **or** phone (Frank,
+  Oct 19): today only email matches and a contact without one is refused,
+  but a WhatsApp customer often has only a number. When one person is first
+  known by email and later by phone, the two join into one contact, never
+  two
 - [ ] 21b. **RCS** (Frank, Oct 7) - the branded chat version of a text, in
   the phone's own Messages app: the business's verified name and logo,
   buttons such as "Change booking", read receipts. Twilio carries it to
