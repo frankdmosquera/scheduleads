@@ -361,3 +361,19 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** Each of the three schemas this feature adds carries its own copy of a YYYY-MM-DD regex plus a `Date.UTC` round-trip refine. The package's other date fields (close-day, open-closed-day, date-hours, availability-rule closedDates) use Zod's own `z.iso.date()`, which checks a real calendar date. Three copies of a hand-rolled check are three places to keep in step, and `Date.UTC` maps years 0 to 99 to 1900 to 1999, so the copies do not even mean exactly what `z.iso.date()` means. Low risk today; it is drift from the package's own way.
 **Suggested fix:** Use `z.iso.date({ error: "Pick a day." })` (or one shared `calendarDateOf(message)` in the package) in all three schemas, keeping each field's words.
 **Resolution:**
+
+### F-430 [P3] open - railway.json says how the API starts and drains, but Railway runs the dashboard's values
+
+**File:** railway.json:15-21
+**Found:** 2026-10-21 by /audit (scope: current, c89e355..ce8474c; lenses: quality, security, performance, tests)
+**Why it matters:** On this service the dashboard's settings beat the file's deploy section: the deployments built after 6ed237b still ran `npm run start` with draining unset until Frank typed the same values into the dashboard (each deployment's `serviceManifest`). The watch paths behave the same way. So the file now restates values that do not take effect from it, and the next edit to `railway.json` (or to `.railway/railway.ts`, due before Dec 1) will look applied while the dashboard keeps the old value. It bit three times in 10b.1 (the missing build command, the skipped root-only commit, the start command and draining time).
+**Suggested fix:** At the `.railway/railway.ts` migration planned in 10b, find which source the service honours (Railway's config-as-code setting for this service, or a `serviceManifest` read after a change to the file alone) and keep that one source; until then, a line in AGENTS.md's live-app paragraph that the dashboard wins and that `railway deployment list --json` (`serviceManifest`) is the check.
+**Resolution:**
+
+### F-431 [P3] unverified - The runner's first start waits only for "refused" and "starting up", while the live database is reached by a private host name
+
+**File:** backend/lib/jobs/retry-while-database-refuses.ts:6-11
+**Found:** 2026-10-21 by /audit (scope: current, c89e355..ce8474c; lenses: quality, security, performance, tests)
+**Why it matters:** The live `DATABASE_URL` host is `postgres.railway.internal`, Railway's private network. While Postgres is down, a connection there may fail as a lookup error (`ENOTFOUND`, `EAI_AGAIN`) or a timeout (`ETIMEDOUT`) rather than `ECONNREFUSED` or `57P03`, and those are thrown at once, so the API would crash and lean on Railway's 10 restarts, the case F-179 was about. The Oct 21 live check could not show which error comes, because Postgres was back in about 4 seconds, before the API asked. Missing validation: the error the API gets from `postgres.railway.internal` while Postgres is down.
+**Suggested fix:** When a Postgres outage is next seen (or on a planned stop), read the API's error code from its log; if it is a lookup or timeout error, add that code to `isDatabaseNotUpYet` with a test.
+**Resolution:**
