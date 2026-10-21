@@ -115,7 +115,7 @@ hand, then PATCH it). If it answers 200, read `status` from the answer and
 treat "cancelled" as not there, and cite what was observed beside the line.
 **Resolution:**
 
-### F-176 [P2] open - A deploy's clean stop depends on Railway's grace period, which nothing has confirmed
+### F-176 [P2] fixed - A deploy's clean stop depends on Railway's grace period, which nothing has confirmed
 
 **File:** backend/server.ts:39-49 (spec: decision 9, "a job left mid-run by a crash (not a deploy, which stops cleanly)")
 **Found:** 2026-10-05 by independent review of step 8a.1 (scope: 779512a..17a9118; lenses: quality, security, performance, tests)
@@ -133,8 +133,9 @@ observed deploy with a job in flight.
 (for example 30) when the runner first runs on Railway; optionally bound the
 wait in `stop()` so the API exits itself before the SIGKILL.
 **Resolution:** Confirmed 2026-10-05 from Railway's documentation (deployment teardown): an old deployment gets SIGTERM, then SIGKILL after RAILWAY_DEPLOYMENT_DRAINING_SECONDS, about 0 to 3 seconds by default. A job in flight at a deploy can be killed and then waits about 4 hours for its lock to expire. The fix is a Railway setting on the backend service (for example 30 seconds), which only Frank changes; raised with him after 8a.1's review. Frank, 2026-10-05: set at the deploy that ships 8a; written into the spec's deploy notes. Stays open until then.
+Fixed 2026-10-21, observed on the live API (10b.1). Three stops (2026-10-19 and 2026-10-20) showed no `[api] SIGTERM: stopping`: Railway ran `npm run start`, npm passed the signal to `sh -c node`, and the shell died without passing it on, so the API was cut off. Railway's dashboard settings overrode `railway.json`'s deploy section (the deployment's settings read start command `npm run start --workspace=backend`, draining unset). `railway.json` now starts `node backend/dist/server.js` (6ed237b), and Frank set the same start command and Teardown (overlap 0, draining 30) in the dashboard. A `railway restart` at 01:23 UTC then logged `[api] SIGTERM: stopping` and came back healthy. No job was in flight (the live database has no business until 10b.2); the stop path itself is what was unproved.
 
-### F-179 [P3] unverified - A self-stop during a Postgres restart may restart the API into a database that is still down, until Railway's retries run out
+### F-179 [P3] fixed - A self-stop during a Postgres restart may restart the API into a database that is still down, until Railway's retries run out
 
 **File:** backend/lib/jobs/exit-when-runner-stops.ts:12; backend/server.ts:31 (graphile-worker 0.18.0: dist/lib.js:324-326)
 **Found:** 2026-10-05 by independent review of 8a.1's fixes (scope: 17a9118..882086a; lenses: quality, security, performance, tests)
@@ -153,7 +154,7 @@ restarts and whether the count resets, observed once on the backend service.
 **Suggested fix:** Check it alongside F-176's Railway setting; if restarts
 come fast, have the API retry the runner's first start for a bounded time
 (say a minute) before giving up, or raise the service's restart limit.
-**Resolution:**
+**Resolution:** Fixed in 10b.1 (bd239f2): the runner's first start retries every 2 seconds for up to 60 while Postgres refuses or is starting up, proved by `retry-while-database-refuses.test.ts`. Observed on the live app 2026-10-21 at 01:37 UTC: Postgres and then the API restarted back to back; Postgres was taking connections again about 4 seconds after its restart, before the new API's runner started, so the API came up with no retry needed and no crash. The wait itself was not reached live, because that needs the live database kept down on purpose, judged not worth the risk. With Postgres back in seconds and a 60-second wait, the crash loop this finding feared does not arise.
 
 ### F-229 [P3] unverified - Nothing limits how many replies are passed on, so anyone with a business's number makes the agency pay for a text per text they send
 

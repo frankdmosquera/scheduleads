@@ -203,6 +203,9 @@ export const auth = betterAuth({
     defaultCookieAttributes: isProduction
       ? { sameSite: "none", secure: true, partitioned: true }
       : { sameSite: "lax", secure: false },
+    // Railway's proxy names the visitor in X-Real-IP, the header visitor-address.ts reads. With the
+    // default X-Forwarded-For Better Auth found no address there, so all visitors shared one limit.
+    ipAddress: isProduction ? { ipAddressHeaders: ["x-real-ip"] } : undefined,
   },
 });
 
