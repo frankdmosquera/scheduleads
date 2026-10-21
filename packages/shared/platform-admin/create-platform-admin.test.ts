@@ -18,18 +18,24 @@ const db = drizzle(client, { schema });
 afterAll(() => client.end());
 
 class Undo extends Error {}
+type TransactionType = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-// Runs the test on a database with no admin, as a fresh live one is, then undoes everything.
-async function onDatabaseWithNoAdmin(
-  test: (tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) => Promise<void>
-) {
+// Runs the test inside a transaction, then undoes everything it wrote.
+async function rolledBack(test: (tx: TransactionType) => Promise<void>) {
   await expect(
     db.transaction(async (tx) => {
-      await tx.update(user).set({ role: null }).where(eq(user.role, "admin"));
       await test(tx);
       throw new Undo();
     })
   ).rejects.toThrow(Undo);
+}
+
+// The same, on a database with no admin, as a fresh live one is.
+async function onDatabaseWithNoAdmin(test: (tx: TransactionType) => Promise<void>) {
+  await rolledBack(async (tx) => {
+    await tx.update(user).set({ role: null }).where(eq(user.role, "admin"));
+    await test(tx);
+  });
 }
 
 describe("admin:create", () => {
@@ -50,8 +56,11 @@ describe("admin:create", () => {
   });
 
   it("refuses on the seeded database, which has its admin", async () => {
-    const result = await createPlatformAdmin(db, "another-admin@example.com");
-    expect(result.ok).toBe(false);
+    // Rolled back too: on a dev database that was never seeded it would make a real admin.
+    await rolledBack(async (tx) => {
+      const result = await createPlatformAdmin(tx, "another-admin@example.com");
+      expect(result.ok).toBe(false);
+    });
   });
 
   it("refuses what is not an email, and an email that is already a login", async () => {

@@ -474,7 +474,8 @@ reformatted.
 - Frontend build: `npm run build --workspace=frontend`
 - Backend build: `npm run build --workspace=backend`
 - Frontend start (serves the build): `npm run start --workspace=frontend`
-- Backend start (runs `dist/`): `npm run start --workspace=backend`
+- Backend start (runs `dist/`): `npm run start --workspace=backend` (on this machine; Railway
+  starts it differently, see the live app below)
 - Frontend lint: `npm run lint --workspace=frontend`
 
 **Scheduleads owns 3400 (frontend) and 3401 (API), and nothing else.**
@@ -512,6 +513,14 @@ ledger:
 The live app (10b): the dashboard at `https://app.booking-crm.com` (Vercel), the API at
 `https://api.booking-crm.com` (Railway), the domain and its DNS in Vercel. The live values are
 listed at the top of `.env.example`.
+
+**Railway starts the API with `node backend/dist/server.js`, never through npm** (F-176,
+2026-10-21): npm does not pass Railway's stop signal on, so a deploy would cut the API off
+mid-job instead of letting it finish. The start command, the draining time (30 seconds, overlap
+0) and the watch paths are set in Railway's dashboard, which wins over `railway.json`; change
+them there, then check what a deployment really ran with `railway deployment list --json`
+(`serviceManifest`), not by reading the file (F-430). A plain `railway redeploy` rebuilds
+without the build step and fails; use `railway redeploy --service scheduleads --from-source`.
 
 Development runs against a local PostgreSQL 18, the same major version as
 Railway, in a database named `scheduleads_dev` on 127.0.0.1:5432, and `.env`

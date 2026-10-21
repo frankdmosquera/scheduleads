@@ -3,11 +3,13 @@
 import { getConnInfo } from "@hono/node-server/conninfo";
 import type { Context } from "hono";
 
+import { VISITOR_ADDRESS_HEADER } from "./visitor-address-header.js";
+
 export function visitorAddress(c: Context): string {
   // On Railway the socket is Railway's own proxy, which names the visitor in X-Real-IP (Railway's
   // networking docs). Read only in production: anywhere else anyone could send it.
   if (process.env.NODE_ENV === "production") {
-    const realAddress = c.req.header("x-real-ip")?.trim();
+    const realAddress = c.req.header(VISITOR_ADDRESS_HEADER)?.trim();
     if (realAddress) return realAddress;
   }
 
