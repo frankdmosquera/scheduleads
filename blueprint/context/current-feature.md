@@ -65,7 +65,7 @@ recorded and carried. `/complete` makes the final pass and merges on Frank's yes
 
 ## Build steps
 
-- [ ] **10b.1 Live, and Frank signs in.** "Frank opens the dashboard at its live address, asks
+- [x] **10b.1 Live, and Frank signs in.** "Frank opens the dashboard at its live address, asks
   for a code, gets it by email from the agency's address, and is in as the platform admin. He
   signs out and back in. The API's health answers at its own address. A redeploy while a job runs
   lets the job finish. A visitor who sends a made-up `X-Real-IP` is still limited as themselves."
