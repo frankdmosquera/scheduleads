@@ -154,6 +154,14 @@ frontend build and lint. One test per rule that would hurt if broken:
    (Railway), the bare name kept free for a product page later. So `COOKIE_DOMAIN` is
    `.booking-crm.com`, `APP_ORIGIN` is `https://app.booking-crm.com`, and `BETTER_AUTH_URL` and
    `NEXT_PUBLIC_API_URL` are `https://api.booking-crm.com`.
+6. **Google's consent screen stays in Testing for 10b** (Frank, 2026-10-21). Found while planning
+   10b.2: the Google Auth Platform app is in Testing, where Google drops a calendar connection
+   after 7 days. Publishing needs a home page, a privacy policy link and `booking-crm.com` as an
+   authorized domain, all empty, and the consent screen shows the app name `scheduleads-app`
+   (the product name talk, parked). 10b.2's checks fit inside 7 days and AgentsWeb is the
+   agency's own business, so it stays in Testing, and Frank reconnects when the dashboard shows
+   the connection broke. Publishing (the privacy page, the name, Publish) is its own planned
+   piece before a client connects a calendar: build-plan item 17, Face and Body.
 
 ## Notes for the AI
 

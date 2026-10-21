@@ -415,7 +415,10 @@ Exit: four organizations, four live sites, zero rented booking.
   decisions file built for this. Its 45 services become booking links, its
   practitioners become resources, and its treatment rooms become places
   that the services needing them are ticked to. Ask at onboarding whether
-  the clinic keeps a Google calendar and whether it takes deposits
+  the clinic keeps a Google calendar and whether it takes deposits.
+  First, before any client connects a calendar: Google's consent screen
+  published (a privacy page on booking-crm.com, the name owners see there,
+  then Publish), or Google drops the connection every 7 days (10b decision 6)
 - [ ] 18. **The Latam Painters** - after its own site is finished. First
   find out whose Calendly has been receiving its bookings. It needs a
   siteConfig before it can be a tenant
