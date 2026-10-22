@@ -488,12 +488,12 @@ move together, everywhere at once: `git grep -n -E "340[01]"` lists every
 place in the repo, and outside it `PORT`, `BETTER_AUTH_URL` and `APP_ORIGIN`
 in the root `.env`, plus `NEXT_PUBLIC_API_URL` in `frontend/.env.local` if
 that file exists, and Google's OAuth client, which holds the calendar
-redirect. **It still lists only the old `http://localhost:3001/calendar/callback`**
-(set Sep 28; the Oct 3 port move never reached Google, found 2026-10-12), so
-Connect fails locally with `redirect_uri_mismatch`. Adding
-`http://localhost:3401/calendar/callback` and the
-`calendar.calendarlist.readonly` permission (12h) is part of 10b's one trip to
-Google Cloud; until then no change asks Frank to go there.
+redirect. Checked 2026-10-21 (10b.2.1): its redirect list holds
+`http://localhost:3401/calendar/callback` and the live
+`https://api.booking-crm.com/calendar/callback`, and Data Access lists the
+three calendar scopes the code asks for (`calendar.events.freebusy`,
+`calendar.events.owned`, `calendar.calendarlist.readonly`). The consent screen
+stays in Testing until Face and Body (10b decision 6).
 
 Database, all from `packages/shared`, which owns the schema and the migration
 ledger:

@@ -87,14 +87,15 @@ recorded and carried. `/complete` makes the final pass and merges on Frank's yes
   database without `--live` (test), and every check above is observed on the live app and written
   in the log, with F-176 and F-179 closed or re-recorded with what was seen.
 
-- [ ] **10b.2 AgentsWeb live, with Frank's real calendar.** "On the live app Frank makes AgentsWeb
+- [x] **10b.2 AgentsWeb live, with Frank's real calendar.** "On the live app Frank makes AgentsWeb
   on `/admin/client-setup`, applies its setup file, connects his real Google calendar on Settings,
   Calendar and ticks the calendars that count. The live API's free times for AgentsWeb leave out
   his real appointments, and a test booking through the live API lands in his Google calendar and
   his inbox. The booking package is published."
   - Frank's trip: Google Cloud once (the live redirect `https://api.booking-crm.com/calendar/callback`,
     `http://localhost:3401/calendar/callback`, the `calendar.calendarlist.readonly` permission on
-    the client's Data Access).
+    the client's Data Access). Done 2026-10-21 (10b.2.1): the local redirect was already there;
+    Data Access had no scopes at all, so all three the code asks for were added.
   - On his yes: `client:setup --live` dry run, then `--apply`, against the live database; the
     package published (`npm publish`, its version first).
   - Checks: 12h's pick against the real calendar (a second calendar ticked and unticked changes
@@ -102,6 +103,7 @@ recorded and carried. `/complete` makes the final pass and merges on Frank's yes
     test booking made and then cancelled through its own link.
   **Done when:** every check above is observed on the live app and written in the log, and the
   package installs from GitHub Packages in an empty folder.
+  Done 2026-10-22. The business is IA a la Orden (`ia-la-orden`, Frank bought ialaorden.com on Oct 21; AgentsWeb stays for the US and Canada later), owner login heguer76@gmail.com, renamed by hand and set up from `client-setups/ia-la-orden.ts`. Railway's security incident (Oct 21) came first: every secret was replaced and the API redeployed. Seen live: free times leave out Frank's appointments and follow the ticks; a test booking reached both inboxes and his calendar, then cancelled through its own link; booking emails from hola@ialaorden.com, notifications to his Gmail (ImprovMX refuses Resend's blacklisted IPs). F-176 closed on the evidence; F-410 and F-411 carried to the Calendar page's UI pass. Package 0.1.0 published and installed in an empty folder.
 
 ## Files / areas
 

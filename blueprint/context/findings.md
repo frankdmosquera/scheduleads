@@ -115,7 +115,7 @@ hand, then PATCH it). If it answers 200, read `status` from the answer and
 treat "cancelled" as not there, and cite what was observed beside the line.
 **Resolution:**
 
-### F-176 [P2] fixed - A deploy's clean stop depends on Railway's grace period, which nothing has confirmed
+### F-176 [P2] closed - A deploy's clean stop depends on Railway's grace period, which nothing has confirmed
 
 **File:** backend/server.ts:39-49 (spec: decision 9, "a job left mid-run by a crash (not a deploy, which stops cleanly)")
 **Found:** 2026-10-05 by independent review of step 8a.1 (scope: 779512a..17a9118; lenses: quality, security, performance, tests)
@@ -135,6 +135,7 @@ wait in `stop()` so the API exits itself before the SIGKILL.
 **Resolution:** Confirmed 2026-10-05 from Railway's documentation (deployment teardown): an old deployment gets SIGTERM, then SIGKILL after RAILWAY_DEPLOYMENT_DRAINING_SECONDS, about 0 to 3 seconds by default. A job in flight at a deploy can be killed and then waits about 4 hours for its lock to expire. The fix is a Railway setting on the backend service (for example 30 seconds), which only Frank changes; raised with him after 8a.1's review. Frank, 2026-10-05: set at the deploy that ships 8a; written into the spec's deploy notes. Stays open until then.
 Fixed 2026-10-21, observed on the live API (10b.1). Three stops (2026-10-19 and 2026-10-20) showed no `[api] SIGTERM: stopping`: Railway ran `npm run start`, npm passed the signal to `sh -c node`, and the shell died without passing it on, so the API was cut off. Railway's dashboard settings overrode `railway.json`'s deploy section (the deployment's settings read start command `npm run start --workspace=backend`, draining unset). `railway.json` now starts `node backend/dist/server.js` (6ed237b), and Frank set the same start command and Teardown (overlap 0, draining 30) in the dashboard. A `railway restart` at 01:23 UTC then logged `[api] SIGTERM: stopping` and came back healthy. No job was in flight (the live database has no business until 10b.2); the stop path itself is what was unproved.
 Independent review of 10b.1, 2026-10-21: left `fixed`, not closed. The draining time and the signal reaching the API are seen, but the case this finding is about, a job in flight at a deploy, was not (the step's own check "a redeploy while a job runs lets the job finish"), and the rule that makes the repair hold (start with `node`, never through npm) is written nowhere a later session reads (F-432). Close once a redeploy with a job in flight is seen in 10b.2 and F-432 is done.
+Closed by Frank, 2026-10-22 (10b.2.4), on the evidence rather than a timed redeploy: a booking email leaves within about a second of the booking, so catching one in flight at the instant a deploy swaps is luck. Seen: the stop signal reaches the API and it stops cleanly (Oct 21); the redeploy of Oct 22 (secret swap) came back healthy with the runner working; and a job cut off anyway stays in the database queue and runs again once its lock expires (delayed, never lost). F-432 was fixed in b56dd77.
 
 ### F-179 [P3] fixed - A self-stop during a Postgres restart may restart the API into a database that is still down, until Railway's retries run out
 
@@ -340,6 +341,8 @@ route test with a 503 on the first send and the text found on the retry.
 **Suggested fix:** Drop the "so customers cannot book you" clause, or word it from the pick (for an empty pick, say only that bookings cannot be written into Google until reconnected); no new test needed beyond the message assertion already there.
 **Resolution:**
 
+Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page says, and the page gets its own UI pass; logic first, the look later. Looked at on the real account in 10b.2: connect, ticks and busy times all worked.
+
 ### F-411 [P3] open - A ticked calendar the person hid from their list at Google shows as "No longer in your Google account" and cannot be ticked again once unticked
 
 **File:** backend/lib/calendar/google-calendar-provider.ts:89-92; frontend/components/settings/busy-calendars-part.tsx:135; backend/lib/calendar/save-busy-calendars.ts:29-30
@@ -347,6 +350,8 @@ route test with a 503 on the first send and the text found on the retry.
 **Why it matters:** listCalendars asks Google's calendarList without `showHidden`, whose documented default is false, so a calendar the person chose "Hide from list" for at Google is left out although it is still in the account and free/busy still reads it. If it was ticked, the page files it under "No longer in your Google account" (wrong words); once unticked and saved, the save refuses it as `unknown_calendar`, so it can never be ticked again until it is un-hidden at Google. The spec's "left the account" means deleted or unsubscribed, which hidden is not. Found from the request shape and Google's documented default; not seen against a real account (that check is in 10b).
 **Suggested fix:** Set `showHidden=true` on the list request (deleted entries stay out by default), and one route test that the request carries it.
 **Resolution:**
+
+Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page says, and the page gets its own UI pass; logic first, the look later. Looked at on the real account in 10b.2: connect, ticks and busy times all worked.
 
 ### F-428 [P3] open - A move placed right beside the time off, whose buffer reaches into it, is refused as "changed meanwhile", every time
 
