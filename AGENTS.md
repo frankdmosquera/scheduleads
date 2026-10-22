@@ -517,10 +517,9 @@ listed at the top of `.env.example`.
 **Railway starts the API with `node backend/dist/server.js`, never through npm** (F-176,
 2026-10-21): npm does not pass Railway's stop signal on, so a deploy would cut the API off
 mid-job instead of letting it finish. The start command, the draining time (30 seconds, overlap
-0), the build command (`npm run build --workspace=backend`), the health check and the watch
-paths live only in Railway's dashboard: there is no `railway.json` since 2026-10-22 (F-430).
-Change them there, then check what a deployment really ran with `railway deployment list --json`
-(`serviceManifest`). A plain `railway redeploy` rebuilds
+0) and the watch paths are set in Railway's dashboard, which wins over `railway.json`; change
+them there, then check what a deployment really ran with `railway deployment list --json`
+(`serviceManifest`), not by reading the file (F-430). A plain `railway redeploy` rebuilds
 without the build step and fails; use `railway redeploy --service scheduleads --from-source`.
 
 Development runs against a local PostgreSQL 18, the same major version as
