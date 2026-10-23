@@ -374,6 +374,18 @@ without Frank touching the database.
   Hobby (Frank, 2026-10-23). What happens when a client leaves or a customer
   asks to be removed moved to 13b the same day. Numbered 12c so nothing after
   it renumbers
+- [ ] 12i. **Spanish booking** - the booking window, its dates, the customer
+  emails (confirmation, moved, cancelled) and the customer's cancel and move
+  page speak Spanish as well as English. The site picks the window's language
+  on its `BookingProvider`; each business picks the language of its customer
+  emails and pages, a setting (decision 30); open for the spec: the booking
+  keeps the language its window used and its emails follow it, the business's
+  setting only the default, so one business with two sites never answers in
+  the wrong one. Service names are data, renamed in
+  Settings. Added by Frank on 2026-10-23: IA a la Orden's site, ialaorden.com,
+  is in Spanish, and it gets the booking window only once the window speaks it
+  (its item 12). Published as the package's next version. Numbered 12i so
+  nothing after it renumbers
 
 ## Phase 5. The first paying client
 
@@ -387,7 +399,9 @@ list, Calendly is gone from his site, and the ranking is untouched.
   Alberta's holiday list, write down the holidays his Calendly closes today
   (Canada's list, with Sep 30 on and no Family Day), so the switch changes
   nothing he did not choose. Needs item 22 finished first: his Google
-  connection would otherwise drop every seven days
+  connection would otherwise drop every seven days. Waits until IA a la Orden,
+  the agency itself, has taken real bookings on its own site and the product
+  is proven there; no real client before that (Frank, 2026-10-23)
 - [ ] 13b. **When a client leaves, and removal requests** - what happens to
   a business's data when it leaves (kept how long, then deleted), and to a
   customer who asks to be removed (deleted from the app, and from the backup
@@ -487,6 +501,19 @@ booking with no one at the agency involved.
   Google's Testing mode a client's connection drops every seven days and
   their booking page shows no times until they reconnect, which is what
   stalled the first repo. Decided 2026-09-25
+  - [x] 22a. **Google calendar approval** - the calendar half, first: the
+    product's own site at booking-crm.com (a home page, a privacy policy and
+    terms, in the new `booking-crm-site` project), the consent screen named
+    "Booking CRM" (Frank, 2026-10-23), the app published so connections stop
+    dropping every seven days. Before item 13
+  - [ ] 22c. **Google verifies the calendar scopes** - split from 22a by Frank
+    on 2026-10-23, so the wait does not hold the feature slot: submit the
+    calendar scopes for Google's verification, answer its emails, check IA a
+    la Orden's connection still reads the calendar more than seven days after
+    it was made, and once Google approves, a fresh connect shows no
+    unverified warning. A form and a wait, not code
+  - [ ] 22b. **Gmail approval** - the Gmail restricted scopes and their
+    security assessment, when item 26 needs them
 - [ ] 23. **Packages ladder and the admin area** - the tiers above `agency`
   in the subscription-limits config, what each unlocks, and the admin
   screens: who is on what, move a client up. The subscription middleware

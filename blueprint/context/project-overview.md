@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash 05f497ca3cb8725844f1326bf21d4cfddaea2be2b2086f0fcb3c811dbeb4dfda -->
+<!-- blueprint:source-hash ea36dec9c8cf2a5472553f91f2c5a74d7cbe92537de3a6a8ad6ba5bd0bfc6896 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -94,7 +94,8 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
     12h the calendar connection and busy calendars.
 - **12b. Calendars** - every person and place has an in-app calendar.
 - **12c. Backups and restore** - before any real client's data.
-13. **Primo Painters** - Calendly out. Needs 12c and item 22's calendar half.
+- **12i. Spanish booking** - window, customer emails and pages in Spanish; before ialaorden.com takes bookings.
+13. **Primo Painters** - Calendly out. Needs 12c, item 22's calendar half, and IA a la Orden proven on real bookings first.
 13b. **When a client leaves, and removal requests** - before the first client leaves.
 14. **Pipeline board** - drag and drop between stages the business names.
 15. **Email from the CRM** - sends logged on the timeline; BCC capture.
@@ -102,8 +103,8 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 17. **Face and Body** - Cal.com out; 45 services, practitioners, rooms.
 18. **The Latam Painters** - after its site and siteConfig exist.
 19. **Crew and job scheduling** - jobs of daily visits, crews as saved lists.
-20. **Reports**. 21. **Connect to the Agent app** (WhatsApp lives there). 21b. **RCS**. 22. **Google OAuth verification**
-    (calendar half before 13). 23. **Packages ladder and admin area**.
+20. **Reports**. 21. **Connect to the Agent app** (WhatsApp lives there). 21b. **RCS**. 22. **Google OAuth verification** (22a calendar, before 13, done; 22b Gmail; 22c Google verifies the calendar scopes)
+    23. **Packages ladder and admin area**.
     24. **Hosted booking page** `/book/<slug>`. 25. **Self-serve and
     billing** (booking emails from `booking-crm.com` by default, own domain optional). 26. **Two-way Gmail sync**.
 

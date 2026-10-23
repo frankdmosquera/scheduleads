@@ -1,4 +1,4 @@
-// Shared script: restores a backup copy from R2 into a scratch database on this laptop (12c), then
+// Shared script: restores a backup copy from R2 into a scratch database on this laptop, then
 // prints every table's rows. Never the working database, never a remote one.
 // The key is BACKUP_PASSPHRASE from the root .env; without it, gpg asks for it.
 // Run: npm run backup:restore --workspace=@scheduleads-app/shared -- <copy.dump.gpg> --into <name>
@@ -51,7 +51,7 @@ const gpg =
   process.env.GPG ??
   (process.platform === "win32" && existsSync(WINDOWS_GPG) ? WINDOWS_GPG : "gpg");
 
-// Both tools must run before anything is opened or dropped, so a missing one is named (F-447).
+// Both tools must run before anything is opened or dropped, so a missing one is named.
 for (const [tool, path, hint] of [
   ["gpg", gpg, "GPG"],
   ["pg_restore", pgRestore, "PG_BIN"],
@@ -62,7 +62,7 @@ for (const [tool, path, hint] of [
   }
 }
 
-// An opened copy left by a run stopped with Ctrl+C holds every client's data: remove it first (F-448).
+// An opened copy left by a run stopped with Ctrl+C holds every client's data: remove it first.
 for (const leftover of readdirSync(tmpdir()).filter((name) =>
   name.startsWith("scheduleads-restore-")
 )) {
@@ -112,7 +112,7 @@ try {
 
     // 3. Restore. Owners and grants are the live server's, so they are left out. The address goes
     // in as separate flags, the password through PGPASSWORD, and no other PG* setting from this
-    // shell reaches pg_restore, so nothing can point it at another database (F-446).
+    // shell reaches pg_restore, so nothing can point it at another database.
     const target = new URL(targetUrl);
     const env: NodeJS.ProcessEnv = Object.fromEntries(
       Object.entries(process.env).filter(([name]) => !name.startsWith("PG"))
