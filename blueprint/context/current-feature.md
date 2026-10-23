@@ -172,7 +172,11 @@ frontend build and lint. One test per rule that would hurt if broken:
   reached the first build, and Railpack chose Node 24). Not the root `engines`: Vercel offers only
   Node 24 and 22, so the frontend runs on 24. Check its time zone data on the live
   `/b/` page in 10b.2 (Alberta on UTC-6 all year needs tz 2026c). Railway retires `railway.json`
-  on 2026-12-01: move it to `.railway/railway.ts` (`railway config migrate`) before then, in 10b.
+  on 2026-12-01. Done 2026-10-23 another way: the converter would have made a second service
+  ("scheduleads-app"), dropped the 30-second draining and needed a new package; the dashboard held
+  every setting but the build command, and its build command never took (a deploy without
+  `railway.json` ran only `npm install` and failed its health check, reverted in 9485cf9). So the
+  build is a root `build` script, which Railway runs by itself, and `railway.json` is gone.
 - The dashboard's watch paths skip commits that change only root files: such a commit deploys
   with `railway redeploy --service scheduleads --from-source`.
 

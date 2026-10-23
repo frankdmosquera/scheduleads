@@ -460,10 +460,14 @@ checks do not make the Blueprint unusable.
 
 npm workspaces monorepo (`frontend`, `backend`, `packages/*`). Every app
 command targets one workspace explicitly. The only root-level scripts are the
-formatter, which covers the whole repo:
+formatter, which covers the whole repo, and one `build` that is Railway's:
 
 - Format every code file: `npm run format`
 - Check formatting without changing anything: `npm run format:check`
+- `build` runs the backend's build. It is there because Railway builds from the repo root and
+  runs a root `build` script by itself; there is no `railway.json` (Railway stops reading it on
+  2026-12-01) and its dashboard build command never took (2026-10-12, 2026-10-22). Locally,
+  keep building with `--workspace`.
 
 Prettier is a root dev dependency, configured in `.prettierrc`. `.prettierignore`
 keeps it to code: docs, the Blueprint skills and generated files are never
@@ -517,9 +521,10 @@ listed at the top of `.env.example`.
 **Railway starts the API with `node backend/dist/server.js`, never through npm** (F-176,
 2026-10-21): npm does not pass Railway's stop signal on, so a deploy would cut the API off
 mid-job instead of letting it finish. The start command, the draining time (30 seconds, overlap
-0) and the watch paths are set in Railway's dashboard, which wins over `railway.json`; change
-them there, then check what a deployment really ran with `railway deployment list --json`
-(`serviceManifest`), not by reading the file (F-430). A plain `railway redeploy` rebuilds
+0), the health check and the watch paths live in Railway's dashboard; the build is the root
+`build` script (Commands above). There is no `railway.json` since 2026-10-23 (F-430). Change
+settings in the dashboard, then check what a deployment really ran with
+`railway deployment list --json` (`serviceManifest`). A plain `railway redeploy` rebuilds
 without the build step and fails; use `railway redeploy --service scheduleads --from-source`.
 
 Development runs against a local PostgreSQL 18, the same major version as
