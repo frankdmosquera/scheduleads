@@ -486,7 +486,12 @@ booking with no one at the agency involved.
   itself exists since item 1
 - [ ] 24. **Hosted booking page** - `/book/<slug>`
 - [ ] 25. **Self-serve onboarding and billing** - signup, pick a package,
-  Stripe hosted checkout, the webhook writes `organization.plan`
+  Stripe hosted checkout, the webhook writes `organization.plan`. Booking emails send from
+  `booking-crm.com` by default, in the business's name with replies to its own
+  email, so a business signs up with any email and books from day one; its own
+  domain is an optional later step (Resend can add it through its API). Today
+  a business without its own sending setup sends no booking email (feature 6,
+  decision 4). Decided by Frank, 2026-10-23
 - [ ] 26. **Two-way Gmail sync** - after 22. The owner's mailbox threads land
   on the contact timeline
 
