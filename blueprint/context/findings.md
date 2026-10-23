@@ -418,7 +418,7 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
 **Why it matters:** The 12c.1 build log says the backup key went into "Google Password Manager, GitHub and .env", and the download check opened the copy with "your key from .env". The root `.env` is loaded into every local API, test and script process and is copied to each machine, and it already holds the live Railway login; one leak of that file now also opens every backup copy. The docs promise the opposite, and `.env.example` has no line for it. 12c.2's restore plan has `gpg` ask for the passphrase, so nothing needs it in `.env`.
 **Suggested fix:** Remove it from `.env` (the password manager is the second copy), or, if Frank wants it there, say so in the spec's protection line and AGENTS.md and add the name to `.env.example`.
-**Resolution:** Fixed 2026-10-23 in the docs: the spec and AGENTS.md now say the passphrase is also in the root `.env` (Frank's choice that day, for the restore) and in Google Password Manager. The risk that one leaked `.env` opens the copies is left to Frank (that file already holds the live database tunnel line).
+**Resolution:** Fixed 2026-10-23 in the docs: the spec and AGENTS.md now say the passphrase is also in the root `.env` (Frank's choice that day, for the restore) and in Google Password Manager. The risk that one leaked `.env` opens the copies is left to Frank (that file already holds the live database tunnel line). Note from the independent review of 12c.2 (e445997..d1f883d): the restore now reads `BACKUP_PASSPHRASE` from the root `.env` and passes it to gpg on stdin, never in arguments or logs; the runbook and spec amendment say so, consistent with this resolution. Status left for the reviewer of a pass that re-reviews 12c.1's files.
 
 ### F-444 [P3] fixed - No check exercises the daily, weekly and monthly folders before the merge, and the Done when names only "the next scheduled run"
 
@@ -427,3 +427,43 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Why it matters:** The folder rule is the one piece of logic in the step, and it decides which copies outlive 3 days. The only proven run stored to `6h/` at 15:56 UTC; `daily/`, `weekly/` (`%u` = 7) and `monthly/` (`%d` = 01) first run after the merge, on the first 00 UTC, first Sunday and the 1st. The code reads correctly, but a slip there fails silently: no error, just no long-lived copy, noticed only when one is needed.
 **Suggested fix:** Add to 12c's Done when (or `/complete`'s checks) one listing of `daily/` after the first 00 UTC run, `weekly/` after the first Sunday and `monthly/` after the first 1st following the merge, each written in the log.
 **Resolution:** Fixed 2026-10-23: with F-439's rule the first run fills every empty folder, so run 39987049465 stored a copy in each of `6h/`, `daily/`, `weekly/`, `monthly/` before the merge.
+
+### F-445 [P3] fixed - The restore drops any local _dev database it is named, another project's working one included, without asking
+
+**File:** packages/shared/backups/restore-target.ts:13-23; packages/shared/scripts/restore-backup.ts:83
+**Found:** 2026-10-23 by independent review of step 12c.2 (scope: e445997..d1f883d; lenses: quality, security, performance, tests)
+**Why it matters:** The guard protects only the one database `DATABASE_URL` names. The same local server holds other projects' working databases: `list-board`'s `.env.example` points at `localhost:5432/list_board_dev`, and `restoreTargetUrl(<local scheduleads_dev URL>, "list_board_dev")` returns a target (checked against the built guard). The script then runs `drop database ... with (force)`, cutting off that project's running server, with no prompt. A wrong name from shell history or a copied command is enough. The spec's aim is "a restore never replaces real work".
+**Suggested fix:** Accept only names ending in `_restore_dev` (the runbook's `scheduleads_restore_dev` already does) and add that rule to the guard's tests; the error names the expected shape.
+**Resolution:** Fixed 2026-10-23: the target must end in `_restore_dev`; `list_board_dev` is refused (test, and by hand: one-line refusal, exit 1).
+
+### F-446 [P3] fixed - The restore target keeps the working URL's query string and goes to pg_restore as a URL, password included, on its command line
+
+**File:** packages/shared/backups/restore-target.ts:21-24; packages/shared/scripts/restore-backup.ts:90-92
+**Found:** 2026-10-23 by independent review of step 12c.2 (scope: e445997..d1f883d; lenses: quality, security, performance, tests)
+**Why it matters:** The guard checks only the URL's host and path, but `target` is the whole working URL with its path swapped: `?port=5433&dbname=railway` survives (checked against the built guard). libpq, which pg_restore uses, reads `host`, `hostaddr`, `port` and `dbname` from the query and they win over the host and path; it also takes `PGHOSTADDR` from the environment, which postgres.js ignores and which the root `.env` would put there. Today such a URL fails earlier only by accident (postgres.js sends unknown query keys as startup parameters and the server refuses them), so three parsers read one URL three ways and only one is guarded. Separately, `--dbname <url>` puts the local Postgres password in pg_restore's process arguments, visible to process listings for as long as the restore runs.
+**Suggested fix:** In `restoreTargetUrl`, refuse a `DATABASE_URL` with a query or fragment (or clear both) and test it; call pg_restore with `--host`, `--port`, `--username` and `--dbname <name>`, the password in `PGPASSWORD` in its env, and `PGHOSTADDR`/`PGSERVICE` removed from that env.
+**Resolution:** Fixed 2026-10-23: a `DATABASE_URL` with a query string or hash is refused (test); `pg_restore` gets `--host`, `--port`, `--username`, `--dbname` as separate flags with the password in `PGPASSWORD` and every other `PG*` variable removed from its environment. The re-run drill restored the same 33 tables.
+
+### F-447 [P3] fixed - A gpg or pg_restore that cannot be found is reported as "wrong key" or as restore errors
+
+**File:** packages/shared/scripts/restore-backup.ts:74-75,97-99
+**Found:** 2026-10-23 by independent review of step 12c.2 (scope: e445997..d1f883d; lenses: quality, security, performance, tests)
+**Why it matters:** When the program is missing, `spawnSync` returns `status: null` with `error.code = "ENOENT"` and prints nothing. The script then says "The copy did not open: wrong key, or not a backup copy." for gpg, and for pg_restore "ended with errors (exit none)" followed by "0 tables.", after the target was already dropped. On a second machine (Git or PostgreSQL 18 not at the default path, which the workspace expects) the first message sends Frank hunting for a passphrase that is fine, during a restore he may need in a hurry.
+**Suggested fix:** Check `opened.error` / `restored.error` first and print "gpg was not found: put it on PATH or set GPG" (and the same for pg_restore with `PG_BIN`); better, check both programs exist before anything is decrypted or dropped.
+**Resolution:** Fixed 2026-10-23: `gpg` and `pg_restore` are each run with `--version` before anything is opened or dropped; a missing one is named with the setting that points at it.
+
+### F-448 [P3] fixed - The opened copy is left in the temp folder on Ctrl+C, and the scratch database keeps every client's customers with no step to remove it
+
+**File:** packages/shared/scripts/restore-backup.ts:48,124; AGENTS.md:573-580
+**Found:** 2026-10-23 by independent review of step 12c.2 (scope: e445997..d1f883d; lenses: quality, security, performance, tests)
+**Why it matters:** `finally` removes the decrypted dump on every thrown error, but Node's default Ctrl+C exits without running it, and `spawnSync` blocks while gpg or pg_restore runs, so an interrupted restore leaves the whole unencrypted database in `%TEMP%\scheduleads-restore-*`, against the comment "the opened copy never stays on disk". More lasting: `scheduleads_restore_dev` holds the full live data after every restore and the runbook never says to drop it when done, while the copies themselves are encrypted precisely because they hold every client's customers (Decision 6).
+**Suggested fix:** Add one runbook line: when the rows are found, drop `scheduleads_restore_dev`. At the start of a run, remove leftover `scheduleads-restore-*` folders in the temp folder (or soften the comment).
+**Resolution:** Fixed 2026-10-23: leftover `scheduleads-restore-*` folders in the temp folder are removed at the start of each run; the runbook says to drop `scheduleads_restore_dev` when done (it was dropped after the drill).
+
+### F-449 [P3] fixed - The runbook's "live database is lost" case swallowed the backup paragraph's last lines and leaves out opening the copy and the backup secret
+
+**File:** AGENTS.md:587-592
+**Found:** 2026-10-23 by independent review of step 12c.2 (scope: e445997..d1f883d; lenses: quality, security, performance, tests)
+**Why it matters:** "A copy now: `gh workflow run database-backup.yml`. A failed run emails Frank; a run that never starts emails nobody." now continues the third bullet, so it reads as a step of the disaster case and drops out of the Backups paragraph it belongs to. The case itself: `backup:restore` refuses a non-local target, so the copy must be opened by hand, and no gpg command is given; and after the new Postgres, `BACKUP_DATABASE_URL` in GitHub (and the public TCP proxy) must point at it, or every 6-hourly run fails from then on.
+**Suggested fix:** Move the two sentences back to the end of the Backups paragraph. In the third case add the gpg line (`gpg --output <copy.dump> --decrypt <copy.dump.gpg>`, then delete the opened file) and "update `BACKUP_DATABASE_URL` in GitHub and open the TCP proxy again".
+**Resolution:** Fixed 2026-10-23: the two Backups sentences are back in the Backups paragraph; the lost-database case now opens the copy by hand, turns on the new database's TCP proxy, makes `backup_reader` again and saves its address as `BACKUP_DATABASE_URL`.

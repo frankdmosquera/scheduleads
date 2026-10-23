@@ -568,28 +568,35 @@ earlier delete or overwrite. The secrets live in GitHub: `BACKUP_DATABASE_URL`,
 `BACKUP_PASSPHRASE`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
 `R2_SECRET_ACCESS_KEY`. The passphrase is also in Frank's Google Password
 Manager ("Scheduleads backup key") and in the root `.env` as
-`BACKUP_PASSPHRASE` for the restore; without it no copy can be opened.
+`BACKUP_PASSPHRASE` for the restore; without it no copy can be opened. A copy
+now: `gh workflow run database-backup.yml`. A failed run emails Frank; a run that
+never starts emails nobody.
 
 **Restoring a copy (12c.2).** Download the copy from the bucket (Cloudflare,
 R2, `scheduleads-backups`, its folder), then
 `npm run backup:restore --workspace=@scheduleads-app/shared -- <copy.dump.gpg> --into scheduleads_restore_dev`.
 It opens the copy with `BACKUP_PASSPHRASE` from the root `.env` (gpg asks when
 it is missing), drops and makes the target fresh, restores it, and prints every
-table's rows. It refuses any database not on this machine, not ending in `_dev`,
-or the one `DATABASE_URL` names. `pg_restore` comes from `PG_BIN`, PATH, or
-PostgreSQL's Windows install; `gpg` from `GPG`, PATH, or Git's. The three cases:
+table's rows. It refuses any database not on this machine, any name not ending
+in `_restore_dev` (so neither the working database nor another project's is
+dropped), and a `DATABASE_URL` with options after its name. `pg_restore` comes
+from `PG_BIN`, PATH, or PostgreSQL's Windows install; `gpg` from `GPG`, PATH, or
+Git's. The scratch database holds every client's customers: drop it when done
+(`drop database scheduleads_restore_dev`). The three cases:
 
 - **One thing deleted by mistake** (a lead, a booking): restore the newest copy
   from before it into the scratch database, find the rows there, and put just
   those back on live by hand. The live database is never replaced.
 - **A bug or a migration damaged rows**: the same, from a copy before the
   damage, for the damaged rows only.
-- **The live database is lost**: restore the newest copy into a new Railway
-  Postgres with `pg_restore --no-owner --no-privileges`, point the API's
-  `DATABASE_URL` at it, and make `backup_reader` again. Only on Frank's yes on
-  the day; at most 6 hours of data are lost, and the day's bookings can be
-  typed back from their emails and calendar events. A copy now: `gh workflow run database-backup.yml`. A failed run emails
-Frank; a run that never starts emails nobody.
+- **The live database is lost**: only on Frank's yes on the day. Open the newest
+  copy by hand (`gpg --decrypt <copy.dump.gpg> > copy.dump`, with the key), make
+  a new Railway Postgres, restore into it with
+  `pg_restore --no-owner --no-privileges` through its tunnel, point the API's
+  `DATABASE_URL` at it, turn on its TCP proxy, make `backup_reader` again, and
+  save its new address as `BACKUP_DATABASE_URL` in GitHub. At most 6 hours of
+  data are lost; the day's bookings can be typed back from their emails and
+  calendar events. Delete `copy.dump` afterwards.
 
 `drizzle.config.ts` loads the root `.env`. `db:generate` needs no database.
 Never generate a migration from `backend` or `frontend`: two workspaces

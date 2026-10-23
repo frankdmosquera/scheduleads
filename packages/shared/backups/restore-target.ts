@@ -1,24 +1,28 @@
-// Shared: where a backup copy may be restored (12c). Only a database on this laptop whose name ends
-// in _dev, and never the working one DATABASE_URL names, so a restore never replaces real work.
-// Returns the target's URL: the working server's address and login, the target's name.
+// Shared: where a backup copy may be restored (12c). Only a scratch database on this laptop whose
+// name ends in _restore_dev, so neither the working database nor another project's _dev one is
+// ever dropped (F-445). Returns the target's URL: the working server's address and login, the
+// target's name, and nothing else.
 
 import { assertLocalDevDatabase } from "../helpers/assert-local-dev-database.js";
 import { parseDatabaseUrl } from "../helpers/parse-database-url.js";
 
 export function restoreTargetUrl(workingUrl: string | undefined, into: string): string {
-  // The name goes into CREATE DATABASE, so nothing but the characters a _dev name needs.
-  if (!/^[a-z0-9_]+$/.test(into)) {
-    throw new Error(`"${into}" is not a database name: lowercase letters, digits and _ only.`);
-  }
-  const working = assertLocalDevDatabase(workingUrl, "restore a backup");
-  if (into === working) {
+  // The name goes into DROP and CREATE DATABASE, so nothing but the characters it needs.
+  if (!/^[a-z0-9_]+_restore_dev$/.test(into)) {
     throw new Error(
-      `Refusing to restore over ${into}, the working database DATABASE_URL names. ` +
-        "Pick another name ending in _dev, such as scheduleads_restore_dev."
+      `Refusing to restore into "${into}": the name must end in _restore_dev, ` +
+        "with lowercase letters, digits and _ only (for example scheduleads_restore_dev)."
     );
   }
+  assertLocalDevDatabase(workingUrl, "restore a backup");
 
+  // libpq would take a host, port or database from the query string past the checks (F-446).
   const target = parseDatabaseUrl(workingUrl as string);
+  if (target.search || target.hash) {
+    throw new Error(
+      "Refusing to restore: DATABASE_URL carries options after the name. Remove them."
+    );
+  }
   target.pathname = `/${into}`;
   assertLocalDevDatabase(target.toString(), "restore a backup");
   return target.toString();

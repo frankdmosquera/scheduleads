@@ -129,7 +129,7 @@ default; P2/P3 are recorded and carried. `/complete` makes the final pass and me
 - **`backup_reader`**: a login role with `pg_read_all_data` and `BYPASSRLS` (graphile-worker's four `_private_*` tables use row-level security, which `pg_dump` will not read around otherwise); no write, no DDL. Its password
   exists only in the `BACKUP_DATABASE_URL` secret; lost means rotated.
 - **`backup:restore <copy> --into <name>`**: refuses (message, exit 1) a target that is not
-  local, does not end in `_dev`, or is the `DATABASE_URL` database; prints the target first;
+  local, does not end in `_restore_dev`, or comes from a `DATABASE_URL` with options after its name (F-445, F-446); prints the target first;
   prints `table: rows` for every table after.
 - Secrets in GitHub: `BACKUP_DATABASE_URL`, `BACKUP_PASSPHRASE`, `R2_ACCOUNT_ID`,
   `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`. The passphrase also in Frank's Google Password
@@ -140,8 +140,9 @@ default; P2/P3 are recorded and carried. `/complete` makes the final pass and me
 
 `npm run test --workspace=@scheduleads-app/shared`. One test per rule that would hurt if broken:
 
-- 12c.2: the restore target guard refuses a non-local database, a name not ending in `_dev`, and
-  the `DATABASE_URL` database, and accepts `scheduleads_restore_dev`.
+- 12c.2: the restore target guard refuses a non-local database, a name not ending in
+  `_restore_dev` (the working database and another project's `_dev` one included), and a
+  `DATABASE_URL` with options after its name, and accepts `scheduleads_restore_dev`.
 - 12c.1 has no app logic; its checks are observed (the runs, the refused insert, the refused
   delete, the unreadable download) and written in the log.
 
@@ -184,6 +185,11 @@ default; P2/P3 are recorded and carried. `/complete` makes the final pass and me
   when they are not on PATH (`PG_BIN` and `GPG` override).
 - 2026-10-23, 12c.2: the drill's live counts were read with read-only queries through the superuser,
   not `backup_reader`, whose address lives only in the GitHub secret. All 33 tables matched.
+- 2026-10-23, 12c.2 review: the target must end in `_restore_dev`, not just `_dev`, so another
+  project's database on this laptop is never dropped (F-445); a `DATABASE_URL` with a query string is
+  refused and `pg_restore` gets the address as separate flags with no other `PG*` setting (F-446);
+  both tools are checked before anything is dropped (F-447); leftover opened copies are removed at the
+  start and the runbook says to drop the scratch database (F-448).
 
 ## Notes for the AI
 

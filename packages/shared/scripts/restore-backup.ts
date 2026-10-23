@@ -4,7 +4,7 @@
 // Run: npm run backup:restore --workspace=@scheduleads-app/shared -- <copy.dump.gpg> --into <name>
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -23,7 +23,7 @@ const into = intoAt >= 0 ? args[intoAt + 1] : undefined;
 const copy = args.find((arg, at) => !arg.startsWith("--") && at !== intoAt + 1);
 if (!copy || !into) {
   console.error(
-    "Name the copy and the target: npm run backup:restore -- <copy.dump.gpg> --into <name>_dev"
+    "Name the copy and the target: npm run backup:restore -- <copy.dump.gpg> --into scheduleads_restore_dev"
   );
   process.exit(1);
 }
@@ -34,7 +34,13 @@ if (!existsSync(copyPath)) {
 }
 
 // First, before anything is touched: which database this is about to replace.
-const targetUrl = restoreTargetUrl(process.env.DATABASE_URL, into);
+let targetUrl: string;
+try {
+  targetUrl = restoreTargetUrl(process.env.DATABASE_URL, into);
+} catch (error) {
+  console.error((error as Error).message);
+  process.exit(1);
+}
 console.log(`Restoring into: ${databaseLabel(targetUrl)} (made fresh)`);
 
 const pgBin =
@@ -44,6 +50,24 @@ const pgRestore = pgBin ? join(pgBin, "pg_restore") : "pg_restore";
 const gpg =
   process.env.GPG ??
   (process.platform === "win32" && existsSync(WINDOWS_GPG) ? WINDOWS_GPG : "gpg");
+
+// Both tools must run before anything is opened or dropped, so a missing one is named (F-447).
+for (const [tool, path, hint] of [
+  ["gpg", gpg, "GPG"],
+  ["pg_restore", pgRestore, "PG_BIN"],
+]) {
+  if (spawnSync(path, ["--version"], { stdio: "ignore" }).error) {
+    console.error(`${tool} was not found at ${path}. Install it, or set ${hint} in the root .env.`);
+    process.exit(1);
+  }
+}
+
+// An opened copy left by a run stopped with Ctrl+C holds every client's data: remove it first (F-448).
+for (const leftover of readdirSync(tmpdir()).filter((name) =>
+  name.startsWith("scheduleads-restore-")
+)) {
+  rmSync(join(tmpdir(), leftover), { recursive: true, force: true });
+}
 
 const work = mkdtempSync(join(tmpdir(), "scheduleads-restore-"));
 const plain = join(work, "copy.dump");
@@ -86,13 +110,30 @@ try {
       await admin.end();
     }
 
-    // 3. Restore. Owners and grants are the live server's, so they are left out.
+    // 3. Restore. Owners and grants are the live server's, so they are left out. The address goes
+    // in as separate flags, the password through PGPASSWORD, and no other PG* setting from this
+    // shell reaches pg_restore, so nothing can point it at another database (F-446).
+    const target = new URL(targetUrl);
+    const env: NodeJS.ProcessEnv = Object.fromEntries(
+      Object.entries(process.env).filter(([name]) => !name.startsWith("PG"))
+    );
+    env.PGPASSWORD = decodeURIComponent(target.password);
     const restored = spawnSync(
       pgRestore,
-      ["--no-owner", "--no-privileges", "--dbname", targetUrl, plain],
-      {
-        stdio: "inherit",
-      }
+      [
+        "--no-owner",
+        "--no-privileges",
+        "--host",
+        target.hostname.replace(/^\[|\]$/g, ""), // [::1] in a URL is ::1 to pg_restore
+        "--port",
+        target.port || "5432",
+        "--username",
+        decodeURIComponent(target.username),
+        "--dbname",
+        into,
+        plain,
+      ],
+      { stdio: "inherit", env }
     );
     if (restored.status !== 0) {
       console.error(
