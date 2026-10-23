@@ -6,7 +6,7 @@
 
 **Branch:** feature/10b-first-deploy
 
-**Status:** specced 2026-10-12; live domain bought (decision 5); waiting on 10b.1's yes.
+**Status:** verified 2026-10-23: both steps built, checked on the live app and reviewed; shared 196, backend 1052 and booking component 83 tests pass, the root build and the frontend build pass, the frontend lints.
 
 ## Goal
 
