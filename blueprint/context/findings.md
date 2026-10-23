@@ -364,101 +364,13 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Add the three names to the live block (RESEND_API_KEY: the agency's Resend key; GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET: the same OAuth client, which holds both redirects), and say WIDGET_ORIGINS stays empty until a site goes live, as the spec's contract does.
 **Resolution:**
 
-### F-437 [P2] accepted - The public TCP proxy opened for the backup lets every live login in from the internet, not only backup_reader
-
-**File:** blueprint/context/current-feature.md:156-158 (Decision 5); AGENTS.md:556-559
-**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
-**Why it matters:** Decision 5 weighs only the job's own credential ("a leaked read-only login can read but never delete"). Railway's TCP proxy forwards raw Postgres traffic and authenticates by password, so the address it opened also accepts the `postgres` superuser that the API's `DATABASE_URL` uses (Railway publishes exactly that pair as `DATABASE_PUBLIC_URL`). Before 12c.1 that password alone was useless outside Railway's private network or a Railway-token tunnel; now anyone holding it (the laptop's root `.env` carries the Railway line for the tunnel) can write to and drop the live database from anywhere. The password is long and random, so this is a leak risk, not a brute-force one. Missing validation: whether the superuser connects through the proxy address (a `psql` through it with the Railway credentials, by Frank).
-**Suggested fix:** Record the trade in Decision 5 and the AGENTS.md Backups paragraph so it is Frank's call with the full picture. If he wants it narrowed: give the API its own non-superuser login so the superuser password lives nowhere in daily use, or rotate the superuser password and keep it only in the password manager.
-**Resolution:** Confirmed 2026-10-23: the one-off that made backup_reader connected as the live superuser (`postgres`, from Railway's variables) through `shortline.proxy.rlwy.net` over SSL, so every live login is now reachable from the internet with its password. Open: Frank's decision (keep the proxy and rotate or lock down the superuser, or another way in). Accepted by Frank, 2026-10-23: a 32-character random password plus an encrypted connection; rotate it if the `.env` ever leaks.
-
-### F-438 [P3] fixed - The job's "tables" count counts every table twice, so "66 tables" in the log and build log is about 33
-
-**File:** .github/workflows/database-backup.yml:57-58
-**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
-**Why it matters:** `pg_restore --list` writes one `TABLE` entry and one `TABLE DATA` entry per table, and `grep -c " TABLE "` matches both. The migrations create 28 tables, plus drizzle's ledger and graphile-worker's five, about 33 to 34, against the 66 the run printed and the build log repeats ("opens all 66 tables"). The refusal still works (zero is zero), but the spec's contract "prints the copy's size and table count" prints the wrong number, and 12c.2 compares per-table counts, where 66 against roughly 33 restored tables reads as missing tables.
-**Suggested fix:** Count only the definition entries, e.g. `grep " TABLE " | grep -vc " TABLE DATA "` (keeping `|| true`), and correct the count in the 12c.1 log entry.
-**Resolution:** Fixed 2026-10-23: the count drops `TABLE DATA` lines. Run 39987049465 printed `33 tables` for the same copy that read 66 before.
-
-### F-439 [P3] fixed - A dropped or very late 00 UTC run leaves that day with no daily copy, and a Sunday or the 1st with no weekly or monthly one, without any email
-
-**File:** .github/workflows/database-backup.yml:69-77
-**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
-**Why it matters:** Only the run whose start hour is 00-05 UTC adds `daily/`, `weekly/` or `monthly/`. GitHub documents that scheduled runs can be delayed under load and that queued scheduled runs can be dropped; a dropped 00 run is a run that never starts, so no failure email. That day's only copies then sit in `6h/` and expire after 3 days; a dropped first-of-month run means no copy of that month survives past 14 days. The opposite edge also exists: an 18 UTC run delayed past midnight lands in slot 0 and adds a second `daily/` (and on a Sunday or the 1st, a second weekly or monthly) copy, which the lock then keeps. The slot comment ("a late start still counts") covers delays under 6 hours only.
-**Suggested fix:** Decide by what is already stored rather than by the hour: before uploading, list `daily/<today's UTC date>` and add `daily/` when nothing for today is there yet (and the same for the ISO week in `weekly/` and the month in `monthly/`). The first successful run of a day, week or month is then the kept one, and the double copy goes. Or accept it and say so in the spec's Out of scope.
-**Resolution:** Fixed 2026-10-23: the folders come from what the bucket holds (newest `daily/` not today, newest `monthly/` not this month, newest `weekly/` 7 days old or more), not from the start hour. Run 39987049465 (16:28 UTC) stored 6h, daily, weekly and monthly; run 39987173568 a minute later stored 6h only. Spec Data / contracts and AGENTS.md updated.
-
-### F-440 [P3] fixed - The workflow does not require an encrypted connection; the live data travels however the secret URL says
-
-**File:** .github/workflows/database-backup.yml:37,53
-**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
-**Why it matters:** The dump crosses the public internet through the TCP proxy. The workflow sets no `PGSSLMODE`, so `pg_dump` uses whatever `sslmode` the `BACKUP_DATABASE_URL` secret carries, and libpq's default `prefer` falls back to plaintext if the server's TLS offer is stripped on the way, sending the backup_reader password and every client's rows in the clear. The build log says the login was made "over the new public address (SSL)", which shows the server offers TLS, not that the secret insists on it. Missing validation: whether the secret's URL carries `sslmode=require` (or stronger); it cannot be read from the repo.
-**Suggested fix:** Add `PGSSLMODE: require` to the step's `env` (libpq uses it whenever the URL names no `sslmode`), so the rule lives in the reviewed file rather than only in a secret. `require` stops passive reading; Railway's self-signed certificate rules out `verify-full` without its CA.
-**Resolution:** Fixed 2026-10-23: `PGSSLMODE: require` in the step env (the secret URL also carries `sslmode=require`).
-
-### F-441 [P3] fixed - The PostgreSQL apt signing key is downloaded on every run and trusted without checking its fingerprint
-
-**File:** .github/workflows/database-backup.yml:27-31
-**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
-**Why it matters:** The job that holds the database login, the passphrase and the R2 key installs and runs `pg_dump` from a repository whose trust root is whatever `www.postgresql.org` serves at that moment. This is PGDG's own published recipe and HTTPS protects it, so the risk is small, but a pinned fingerprint costs one line and turns a swapped key into a failed run instead of trusted packages.
-**Suggested fix:** After the download, check `gpg --show-keys --with-colons` on the file for PGDG's documented fingerprint for ACCC4CF8 (`B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8`) and exit 1 if it is not there.
-**Resolution:** Fixed 2026-10-23: the downloaded key is trusted only if its fingerprint is `B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8`; runs 39987049465 and 39987173568 installed the client past the check.
-
-### F-442 [P3] fixed - AGENTS.md says backup_reader has pg_read_all_data "nothing else", but it also bypasses row-level security
-
-**File:** AGENTS.md:558
-**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
-**Why it matters:** The spec's Data / contracts and the 12c.1 amendment record `BYPASSRLS` as part of the login (graphile-worker's `_private_*` tables need it). AGENTS.md, the file every session loads and the one a rebuild of the login would follow, still says "nothing else", so a login recreated from it would make the next run fail on those four tables.
-**Suggested fix:** Say `pg_read_all_data` and `BYPASSRLS` (reading only), with the reason in a few words.
-**Resolution:** Fixed 2026-10-23: AGENTS.md names `pg_read_all_data` and `BYPASSRLS` and why.
-
-### F-443 [P3] fixed - The backup passphrase is also in the laptop's root .env, where the spec and AGENTS.md say it lives only in GitHub and the password manager
-
-**File:** AGENTS.md:564-567; blueprint/context/current-feature.md:30-31,133-135
-**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
-**Why it matters:** The 12c.1 build log says the backup key went into "Google Password Manager, GitHub and .env", and the download check opened the copy with "your key from .env". The root `.env` is loaded into every local API, test and script process and is copied to each machine, and it already holds the live Railway login; one leak of that file now also opens every backup copy. The docs promise the opposite, and `.env.example` has no line for it. 12c.2's restore plan has `gpg` ask for the passphrase, so nothing needs it in `.env`.
-**Suggested fix:** Remove it from `.env` (the password manager is the second copy), or, if Frank wants it there, say so in the spec's protection line and AGENTS.md and add the name to `.env.example`.
-**Resolution:** Fixed 2026-10-23 in the docs: the spec and AGENTS.md now say the passphrase is also in the root `.env` (Frank's choice that day, for the restore) and in Google Password Manager. The risk that one leaked `.env` opens the copies is left to Frank (that file already holds the live database tunnel line). Note from the independent review of 12c.2 (e445997..d1f883d): the restore now reads `BACKUP_PASSPHRASE` from the root `.env` and passes it to gpg on stdin, never in arguments or logs; the runbook and spec amendment say so, consistent with this resolution. Status left for the reviewer of a pass that re-reviews 12c.1's files.
-
 ### F-444 [P3] fixed - No check exercises the daily, weekly and monthly folders before the merge, and the Done when names only "the next scheduled run"
 
 **File:** .github/workflows/database-backup.yml:73-77; blueprint/context/current-feature.md (12c.1 Done when)
 **Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
 **Why it matters:** The folder rule is the one piece of logic in the step, and it decides which copies outlive 3 days. The only proven run stored to `6h/` at 15:56 UTC; `daily/`, `weekly/` (`%u` = 7) and `monthly/` (`%d` = 01) first run after the merge, on the first 00 UTC, first Sunday and the 1st. The code reads correctly, but a slip there fails silently: no error, just no long-lived copy, noticed only when one is needed.
 **Suggested fix:** Add to 12c's Done when (or `/complete`'s checks) one listing of `daily/` after the first 00 UTC run, `weekly/` after the first Sunday and `monthly/` after the first 1st following the merge, each written in the log.
-**Resolution:** Fixed 2026-10-23: with F-439's rule the first run fills every empty folder, so run 39987049465 stored a copy in each of `6h/`, `daily/`, `weekly/`, `monthly/` before the merge.
-
-### F-445 [P3] fixed - The restore drops any local _dev database it is named, another project's working one included, without asking
-
-**File:** packages/shared/backups/restore-target.ts:13-23; packages/shared/scripts/restore-backup.ts:83
-**Found:** 2026-10-23 by independent review of step 12c.2 (scope: e445997..d1f883d; lenses: quality, security, performance, tests)
-**Why it matters:** The guard protects only the one database `DATABASE_URL` names. The same local server holds other projects' working databases: `list-board`'s `.env.example` points at `localhost:5432/list_board_dev`, and `restoreTargetUrl(<local scheduleads_dev URL>, "list_board_dev")` returns a target (checked against the built guard). The script then runs `drop database ... with (force)`, cutting off that project's running server, with no prompt. A wrong name from shell history or a copied command is enough. The spec's aim is "a restore never replaces real work".
-**Suggested fix:** Accept only names ending in `_restore_dev` (the runbook's `scheduleads_restore_dev` already does) and add that rule to the guard's tests; the error names the expected shape.
-**Resolution:** Fixed 2026-10-23: the target must end in `_restore_dev`; `list_board_dev` is refused (test, and by hand: one-line refusal, exit 1).
-
-### F-446 [P3] fixed - The restore target keeps the working URL's query string and goes to pg_restore as a URL, password included, on its command line
-
-**File:** packages/shared/backups/restore-target.ts:21-24; packages/shared/scripts/restore-backup.ts:90-92
-**Found:** 2026-10-23 by independent review of step 12c.2 (scope: e445997..d1f883d; lenses: quality, security, performance, tests)
-**Why it matters:** The guard checks only the URL's host and path, but `target` is the whole working URL with its path swapped: `?port=5433&dbname=railway` survives (checked against the built guard). libpq, which pg_restore uses, reads `host`, `hostaddr`, `port` and `dbname` from the query and they win over the host and path; it also takes `PGHOSTADDR` from the environment, which postgres.js ignores and which the root `.env` would put there. Today such a URL fails earlier only by accident (postgres.js sends unknown query keys as startup parameters and the server refuses them), so three parsers read one URL three ways and only one is guarded. Separately, `--dbname <url>` puts the local Postgres password in pg_restore's process arguments, visible to process listings for as long as the restore runs.
-**Suggested fix:** In `restoreTargetUrl`, refuse a `DATABASE_URL` with a query or fragment (or clear both) and test it; call pg_restore with `--host`, `--port`, `--username` and `--dbname <name>`, the password in `PGPASSWORD` in its env, and `PGHOSTADDR`/`PGSERVICE` removed from that env.
-**Resolution:** Fixed 2026-10-23: a `DATABASE_URL` with a query string or hash is refused (test); `pg_restore` gets `--host`, `--port`, `--username`, `--dbname` as separate flags with the password in `PGPASSWORD` and every other `PG*` variable removed from its environment. The re-run drill restored the same 33 tables.
-
-### F-447 [P3] fixed - A gpg or pg_restore that cannot be found is reported as "wrong key" or as restore errors
-
-**File:** packages/shared/scripts/restore-backup.ts:74-75,97-99
-**Found:** 2026-10-23 by independent review of step 12c.2 (scope: e445997..d1f883d; lenses: quality, security, performance, tests)
-**Why it matters:** When the program is missing, `spawnSync` returns `status: null` with `error.code = "ENOENT"` and prints nothing. The script then says "The copy did not open: wrong key, or not a backup copy." for gpg, and for pg_restore "ended with errors (exit none)" followed by "0 tables.", after the target was already dropped. On a second machine (Git or PostgreSQL 18 not at the default path, which the workspace expects) the first message sends Frank hunting for a passphrase that is fine, during a restore he may need in a hurry.
-**Suggested fix:** Check `opened.error` / `restored.error` first and print "gpg was not found: put it on PATH or set GPG" (and the same for pg_restore with `PG_BIN`); better, check both programs exist before anything is decrypted or dropped.
-**Resolution:** Fixed 2026-10-23: `gpg` and `pg_restore` are each run with `--version` before anything is opened or dropped; a missing one is named with the setting that points at it.
-
-### F-448 [P3] fixed - The opened copy is left in the temp folder on Ctrl+C, and the scratch database keeps every client's customers with no step to remove it
-
-**File:** packages/shared/scripts/restore-backup.ts:48,124; AGENTS.md:573-580
-**Found:** 2026-10-23 by independent review of step 12c.2 (scope: e445997..d1f883d; lenses: quality, security, performance, tests)
-**Why it matters:** `finally` removes the decrypted dump on every thrown error, but Node's default Ctrl+C exits without running it, and `spawnSync` blocks while gpg or pg_restore runs, so an interrupted restore leaves the whole unencrypted database in `%TEMP%\scheduleads-restore-*`, against the comment "the opened copy never stays on disk". More lasting: `scheduleads_restore_dev` holds the full live data after every restore and the runbook never says to drop it when done, while the copies themselves are encrypted precisely because they hold every client's customers (Decision 6).
-**Suggested fix:** Add one runbook line: when the rows are found, drop `scheduleads_restore_dev`. At the start of a run, remove leftover `scheduleads-restore-*` folders in the temp folder (or soften the comment).
-**Resolution:** Fixed 2026-10-23: leftover `scheduleads-restore-*` folders in the temp folder are removed at the start of each run; the runbook says to drop `scheduleads_restore_dev` when done (it was dropped after the drill).
+**Resolution:** Fixed 2026-10-23: with F-439's rule the first run fills every empty folder, so run 39987049465 stored a copy in each of `6h/`, `daily/`, `weekly/`, `monthly/` before the merge. Re-examined 2026-10-23 by the independent review of 24ba21a..7208529: the code fills every empty folder on the first run (database-backup.yml:86-93), but the run itself was not re-observed (this review does not touch GitHub Actions), so it stays `fixed`.
 
 ### F-449 [P3] fixed - The runbook's "live database is lost" case swallowed the backup paragraph's last lines and leaves out opening the copy and the backup secret
 
@@ -466,4 +378,44 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Found:** 2026-10-23 by independent review of step 12c.2 (scope: e445997..d1f883d; lenses: quality, security, performance, tests)
 **Why it matters:** "A copy now: `gh workflow run database-backup.yml`. A failed run emails Frank; a run that never starts emails nobody." now continues the third bullet, so it reads as a step of the disaster case and drops out of the Backups paragraph it belongs to. The case itself: `backup:restore` refuses a non-local target, so the copy must be opened by hand, and no gpg command is given; and after the new Postgres, `BACKUP_DATABASE_URL` in GitHub (and the public TCP proxy) must point at it, or every 6-hourly run fails from then on.
 **Suggested fix:** Move the two sentences back to the end of the Backups paragraph. In the third case add the gpg line (`gpg --output <copy.dump> --decrypt <copy.dump.gpg>`, then delete the opened file) and "update `BACKUP_DATABASE_URL` in GitHub and open the TCP proxy again".
-**Resolution:** Fixed 2026-10-23: the two Backups sentences are back in the Backups paragraph; the lost-database case now opens the copy by hand, turns on the new database's TCP proxy, makes `backup_reader` again and saves its address as `BACKUP_DATABASE_URL`.
+**Resolution:** Fixed 2026-10-23: the two Backups sentences are back in the Backups paragraph; the lost-database case now opens the copy by hand, turns on the new database's TCP proxy, makes `backup_reader` again and saves its address as `BACKUP_DATABASE_URL`. Re-examined 2026-10-23 by the independent review of 24ba21a..7208529: the two sentences are back in the Backups paragraph and the lost-database case names the proxy, `backup_reader` and the secret, but the new hand-opening command redirects gpg's binary output (F-453), so it stays `fixed` until that is settled.
+
+### F-450 [P3] open - New code comments and test names carry step and finding numbers, which the comment standard keeps in the build log
+
+**File:** packages/shared/backups/restore-target.ts:1,3,19; packages/shared/scripts/restore-backup.ts:1,54,65,115; packages/shared/backups/restore-target.test.ts:1,23,38; .github/workflows/database-backup.yml:1
+**Found:** 2026-10-23 by /audit independent current (scope: 24ba21a..7208529; lenses: quality, security, performance, tests)
+**Why it matters:** coding-standards.md:365-366: "No history in code comments (step numbers, finding numbers ...): that lives in the build log." The new files tag their comments and test names with `(12c)`, `(12c.2)` and `(F-445)` to `(F-448)`. Once `/complete` archives this ledger and resets it, a bare `F-445` points at nothing (its permanent form is `12c/F-445`), and a later ledger restarting at `F-01` can reach the same number for a different finding. Every one of these comments already states its reason without the tag.
+**Suggested fix:** Drop the `(12c)`, `(12c.2)` and `(F-44x)` tags from the comments and test names; keep the sentences.
+**Resolution:**
+
+### F-451 [P3] fixed - The overview's plan fingerprint matches neither the committed nor the checked-out plans, so /status will ask for /overview
+
+**File:** blueprint/context/project-overview.md:3
+**Found:** 2026-10-23 by /audit independent current (scope: 24ba21a..7208529; lenses: quality, security, performance, tests)
+**Why it matters:** a9e3d66 set the marker to `0ae170a8...`. Recomputing `/overview`'s contract (project-plan bytes, one zero byte, build-plan bytes with `- [x]` normalized) gives `05f497ca...` on the checked-out CRLF files and `43581c55...` on the committed LF blobs; the legacy exact-byte forms (`e817f86d...`, `443127c1...`) differ too. The markers at 24ba21a and 8640e41 both matched the CRLF form, so the contract held until this commit. The overview's text does carry the 12c/13b split, so the content is current and the marker is not: every `/status` now reports drift, and a later real plan change will look the same.
+**Suggested fix:** Recompute the marker from the final plans by `/overview`'s contract (or rerun `/overview`).
+**Resolution:** Fixed 2026-10-23 by /complete for 12c: the marker is recomputed over the checked-out (CRLF) bytes with 12c ticked, `05f497ca…`, the form the review computed.
+
+### F-452 [P3] open - The package's editor and type-check config leaves out `backups/`, so the new test file is type-checked by nothing
+
+**File:** packages/shared/tsconfig.json:15-28
+**Found:** 2026-10-23 by /audit independent current (scope: 24ba21a..7208529; lenses: quality, security, performance, tests)
+**Why it matters:** tsconfig.json describes itself as "the whole package: the code, its tests, ..." and lists every source folder except the new `backups`. tsconfig.build.json compiles `restore-target.ts` but excludes tests, and Vitest does not type-check, so `restore-target.test.ts` is checked by no config; in the editor both files fall into an inferred project without `types: ["node"]` or NodeNext resolution. `tsc -p tsconfig.json --listFilesOnly` lists only `dist/backups/restore-target.d.ts`. Both files type-check today when compiled by hand with the package's options, so this is a gap, not a present error.
+**Suggested fix:** Add `"backups"` to tsconfig.json's `include`.
+**Resolution:**
+
+### F-453 [P3] open - The runbook's hand-opening command writes the decrypted copy through a shell redirect, which Windows PowerShell 5.1 turns into a corrupt file
+
+**File:** AGENTS.md:592-593
+**Found:** 2026-10-23 by /audit independent current (scope: 24ba21a..7208529; lenses: quality, security, performance, tests)
+**Why it matters:** `gpg --decrypt <copy.dump.gpg> > copy.dump` is safe in Git Bash, but in Windows PowerShell 5.1 (this laptop's default shell) a native command's output is read as text and `>` writes it back as UTF-16, so the file is no longer a pg_dump archive and pg_restore refuses it. This is the "live database is lost" case, the one run under pressure. F-449's suggested fix gave the shell-independent form.
+**Suggested fix:** Use `gpg --output copy.dump --decrypt <copy.dump.gpg>` (or say the line is for Git Bash).
+**Resolution:**
+
+### F-454 [P3] open - `.env.example` does not name the three variables the restore reads from the root `.env`
+
+**File:** .env.example; packages/shared/scripts/restore-backup.ts:47,51,76
+**Found:** 2026-10-23 by /audit independent current (scope: 24ba21a..7208529; lenses: quality, security, performance, tests)
+**Why it matters:** The restore reads `BACKUP_PASSPHRASE`, `PG_BIN` and `GPG` from the root `.env`, and its own error says "set PG_BIN in the root .env", but `.env.example`, the list a new machine's `.env` is built from, names none of them; only AGENTS.md does. F-443's suggested fix asked for the passphrase line if it stayed in `.env`. A second machine still restores without them (gpg asks for the key), so this is discoverability, not breakage.
+**Suggested fix:** Add the three names to `.env.example`, commented and empty, with a line each on what they are for. No values.
+**Resolution:**

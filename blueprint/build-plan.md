@@ -363,7 +363,7 @@ without Frank touching the database.
   already gave away on the phone. After item 5 because it shows bookings,
   before item 13 because Primo takes phone calls. Numbered 12b so nothing
   after it renumbers
-- [ ] 12c. **Backups and restore** - a copy of the live database every 6
+- [x] 12c. **Backups and restore** - a copy of the live database every 6
   hours, kept outside Railway in Cloudflare R2, encrypted, locked so no copy
   can be deleted early, and thinned by age (every 6 hours for 3 days, daily
   for 2 weeks, weekly for 2 months, monthly for a year); a restore actually
