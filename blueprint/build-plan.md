@@ -256,7 +256,7 @@ rented" rents nothing.
   the laptop with a real call booked into AgentsWeb. The agency site's own
   pages (installing the package, its Book a call card opening the window)
   are that site's item 12, in its own repo. Frank is the first customer
-- [ ] 10b. **First deploy** - the API and the dashboard out on Railway and
+- [x] 10b. **First deploy** - the API and the dashboard out on Railway and
   Vercel for real use for the first time: the first-deploy checks (F-176,
   F-179, whether Railway's proxy replaces a visitor's own `X-Real-IP`,
   `NODE_ENV=production`), the setup command opened to the live database and

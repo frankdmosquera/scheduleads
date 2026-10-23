@@ -115,28 +115,6 @@ hand, then PATCH it). If it answers 200, read `status` from the answer and
 treat "cancelled" as not there, and cite what was observed beside the line.
 **Resolution:**
 
-### F-176 [P2] closed - A deploy's clean stop depends on Railway's grace period, which nothing has confirmed
-
-**File:** backend/server.ts:39-49 (spec: decision 9, "a job left mid-run by a crash (not a deploy, which stops cleanly)")
-**Found:** 2026-10-05 by independent review of step 8a.1 (scope: 779512a..17a9118; lenses: quality, security, performance, tests)
-**Why it matters:** On SIGTERM the API waits for `runner.stop()` with no time
-limit, then exits. Railway sends SIGKILL after `RAILWAY_DEPLOYMENT_DRAINING_SECONDS`;
-its docs page on teardown names the variable but this review could not
-confirm its default. If the window is shorter than a running job (a Google
-call or an email send), the job is killed while locked and is only taken
-again when graphile-worker treats the lock as abandoned (about four hours),
-so a confirmation could arrive hours late, the case decision 9 says a deploy
-avoids. The spec's Notes already say the SIGTERM path is first seen on
-Railway. Missing validation: Railway's default draining time and one
-observed deploy with a job in flight.
-**Suggested fix:** Confirm the default and set `RAILWAY_DEPLOYMENT_DRAINING_SECONDS`
-(for example 30) when the runner first runs on Railway; optionally bound the
-wait in `stop()` so the API exits itself before the SIGKILL.
-**Resolution:** Confirmed 2026-10-05 from Railway's documentation (deployment teardown): an old deployment gets SIGTERM, then SIGKILL after RAILWAY_DEPLOYMENT_DRAINING_SECONDS, about 0 to 3 seconds by default. A job in flight at a deploy can be killed and then waits about 4 hours for its lock to expire. The fix is a Railway setting on the backend service (for example 30 seconds), which only Frank changes; raised with him after 8a.1's review. Frank, 2026-10-05: set at the deploy that ships 8a; written into the spec's deploy notes. Stays open until then.
-Fixed 2026-10-21, observed on the live API (10b.1). Three stops (2026-10-19 and 2026-10-20) showed no `[api] SIGTERM: stopping`: Railway ran `npm run start`, npm passed the signal to `sh -c node`, and the shell died without passing it on, so the API was cut off. Railway's dashboard settings overrode `railway.json`'s deploy section (the deployment's settings read start command `npm run start --workspace=backend`, draining unset). `railway.json` now starts `node backend/dist/server.js` (6ed237b), and Frank set the same start command and Teardown (overlap 0, draining 30) in the dashboard. A `railway restart` at 01:23 UTC then logged `[api] SIGTERM: stopping` and came back healthy. No job was in flight (the live database has no business until 10b.2); the stop path itself is what was unproved.
-Independent review of 10b.1, 2026-10-21: left `fixed`, not closed. The draining time and the signal reaching the API are seen, but the case this finding is about, a job in flight at a deploy, was not (the step's own check "a redeploy while a job runs lets the job finish"), and the rule that makes the repair hold (start with `node`, never through npm) is written nowhere a later session reads (F-432). Close once a redeploy with a job in flight is seen in 10b.2 and F-432 is done.
-Closed by Frank, 2026-10-22 (10b.2.4), on the evidence rather than a timed redeploy: a booking email leaves within about a second of the booking, so catching one in flight at the instant a deploy swaps is luck. Seen: the stop signal reaches the API and it stops cleanly (Oct 21); the redeploy of Oct 22 (secret swap) came back healthy with the runner working; and a job cut off anyway stays in the database queue and runs again once its lock expires (delayed, never lost). F-432 was fixed in b56dd77.
-
 ### F-179 [P3] fixed - A self-stop during a Postgres restart may restart the API into a database that is still down, until Railway's retries run out
 
 **File:** backend/lib/jobs/exit-when-runner-stops.ts:12; backend/server.ts:31 (graphile-worker 0.18.0: dist/lib.js:324-326)
@@ -158,6 +136,7 @@ come fast, have the API retry the runner's first start for a bounded time
 (say a minute) before giving up, or raise the service's restart limit.
 **Resolution:** Fixed in 10b.1 (bd239f2): the runner's first start retries every 2 seconds for up to 60 while Postgres refuses or is starting up, proved by `retry-while-database-refuses.test.ts`. Observed on the live app 2026-10-21 at 01:37 UTC: Postgres and then the API restarted back to back; Postgres was taking connections again about 4 seconds after its restart, before the new API's runner started, so the API came up with no retry needed and no crash. The wait itself was not reached live, because that needs the live database kept down on purpose, judged not worth the risk. With Postgres back in seconds and a 60-second wait, the crash loop this finding feared does not arise.
 Independent review of 10b.1, 2026-10-21: left `fixed`, not closed. The helper and its tests are sound (graphile-worker 0.18.0 rethrows the raw pg error and releases its pool when a start fails, dist/runner.js `runInternal` and dist/lib.js `withReleasers`, so the retries leak nothing), but the wait was never reached live and F-431 leaves open whether the live private host fails with a code it waits for. Close with F-431.
+Independent review of feature 10b, 2026-10-23: re-examined, left `fixed`. Unchanged since 10b.1's review; the four helper tests pass, and graphile-worker 0.18.0's `RETRYABLE_ERROR_CODES` (dist/lib.js:354-362) still list `EHOSTUNREACH` and `ETIMEDOUT`, which the helper does not wait for, so F-431 still decides it.
 
 ### F-229 [P3] unverified - Nothing limits how many replies are passed on, so anyone with a business's number makes the agency pay for a text per text they send
 
@@ -369,14 +348,6 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Use `z.iso.date({ error: "Pick a day." })` (or one shared `calendarDateOf(message)` in the package) in all three schemas, keeping each field's words.
 **Resolution:**
 
-### F-430 [P3] fixed - railway.json says how the API starts and drains, but Railway runs the dashboard's values
-
-**File:** railway.json:15-21
-**Found:** 2026-10-21 by /audit (scope: current, c89e355..ce8474c; lenses: quality, security, performance, tests)
-**Why it matters:** On this service the dashboard's settings beat the file's deploy section: the deployments built after 6ed237b still ran `npm run start` with draining unset until Frank typed the same values into the dashboard (each deployment's `serviceManifest`). The watch paths behave the same way. So the file now restates values that do not take effect from it, and the next edit to `railway.json` (or to `.railway/railway.ts`, due before Dec 1) will look applied while the dashboard keeps the old value. It bit three times in 10b.1 (the missing build command, the skipped root-only commit, the start command and draining time).
-**Suggested fix:** At the `.railway/railway.ts` migration planned in 10b, find which source the service honours (Railway's config-as-code setting for this service, or a `serviceManifest` read after a change to the file alone) and keep that one source; until then, a line in AGENTS.md's live-app paragraph that the dashboard wins and that `railway deployment list --json` (`serviceManifest`) is the check.
-**Resolution:** Fixed 2026-10-23 (10b): one source per setting. `railway.json` is deleted; start, draining, health check and watch paths live in the dashboard, and the build is the root `build` script, which Railway runs by itself (5382dbe, a deploy showed install then build and passed its health check). The dashboard build command never took: a deploy without the file ran only `npm install` and failed, reverted in 9485cf9.
-
 ### F-431 [P3] unverified - The runner's first start waits only for "refused" and "starting up", while the live database is reached by a private host name
 
 **File:** backend/lib/jobs/retry-while-database-refuses.ts:6-11
@@ -385,34 +356,10 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** When a Postgres outage is next seen (or on a planned stop), read the API's error code from its log; if it is a lookup or timeout error, add that code to `isDatabaseNotUpYet` with a test. Independent review of 10b.1 agrees and keeps it `unverified`: graphile-worker 0.18.0's own `RETRYABLE_ERROR_CODES` (dist/lib.js) treat `EHOSTUNREACH` and `ETIMEDOUT` as a database not reachable yet, which supports adding at least those two.
 **Resolution:**
 
-### F-432 [P2] closed - The rule that keeps the clean stop working, start the API with node and never through npm, is written nowhere a later session reads
+### F-436 [P3] open - The live variables listed in .env.example leave out three the live API refuses to start without
 
-**File:** AGENTS.md:477; railway.json:16; backend/server.ts:43-45
-**Found:** 2026-10-21 by independent review of step 10b.1 (scope: c89e355..ebf0b33; lenses: quality, security, performance, tests)
-**Why it matters:** F-176's repair rests on one fact: through `npm run start` the SIGTERM never reaches the API (npm hands it to `sh -c`, which dies without passing it on), so a deploy cuts jobs off. That fact lives only in findings.md and the message of 6ed237b. AGENTS.md's Commands still give `npm run start --workspace=backend` as the backend start, railway.json cannot hold a comment, and server.ts's stop comment says nothing of it. The next tidy of railway.json or of the Railway dashboard to the documented command brings F-176 back with nothing failing, only a missing `[api] SIGTERM: stopping` line.
-**Suggested fix:** One line in AGENTS.md beside the backend start (and in the live-app paragraph): on Railway the API starts as `node backend/dist/server.js`, never through npm, because npm does not pass SIGTERM on; the same in the server.ts comment above `STOP_LIMIT_MS`.
-**Resolution:** Fixed 2026-10-21: AGENTS.md now says, beside the live app, that Railway starts the API with `node backend/dist/server.js` and never through npm (F-176), that the dashboard wins over `railway.json` and `serviceManifest` is the check (F-430), and that a plain redeploy fails; the local backend start line says Railway starts it differently. Closed 2026-10-21 by the check of the fixes (ebf0b33..b56dd77): AGENTS.md, which every session loads, now states the node start, why npm breaks the stop signal, and that the dashboard wins, and railway.json already starts with `node backend/dist/server.js`; the server.ts comment was not touched, which leaves no gap since AGENTS.md carries the rule.
-
-### F-433 [P3] closed - The trusted visitor header is named in two places, and Better Auth's side has no test
-
-**File:** backend/lib/auth/auth-server.ts:208; backend/lib/rate-limit/visitor-address.ts:9-12
-**Found:** 2026-10-21 by independent review of step 10b.1 (scope: c89e355..ebf0b33; lenses: quality, security, performance, tests)
-**Why it matters:** Which header names the visitor, and that it is trusted only in production, is one decision now written twice: `visitorAddress` for the app's own limits and `advanced.ipAddress.ipAddressHeaders` for Better Auth's sign-in limits. A change of proxy (another host, a CDN in front) that updates one leaves the other on a header the new proxy does not set, or one a visitor can send; Better Auth then falls back silently to one shared bucket for everyone (its rate limiter warns once, @better-auth/core dist/utils/ip.mjs `getIP` returns null). No test pins the Better Auth setting, which is why its absence was only found on the live app.
-**Suggested fix:** One exported constant (for example the header name beside `visitorAddress`) used by both, so the two can only change together.
-**Resolution:** Fixed 2026-10-21: one name, `VISITOR_ADDRESS_HEADER` in backend/lib/rate-limit/visitor-address-header.ts, read by visitor-address.ts and auth-server.ts; backend/lib/auth/auth-visitor-address.test.ts checks Better Auth uses it in production and its own default elsewhere (proved able to fail with `x-forwarded-for` in its place). Closed 2026-10-21 by the check of the fixes (ebf0b33..b56dd77): `git grep` finds the header literal only in visitor-address-header.ts, both readers import it, the new test passes in production and development, and public-rate-limit-middleware.test.ts still pins the value Railway sends.
-
-### F-434 [P3] closed - databaseLabel copies the label assertLocalDevDatabase builds, and a DATABASE_URL that does not parse prints its password
-
-**File:** packages/shared/helpers/database-label.ts:3-5; packages/shared/helpers/assert-local-dev-database.ts:14-20; packages/shared/scripts/create-platform-admin.ts:23
-**Found:** 2026-10-21 by independent review of step 10b.1 (scope: c89e355..ebf0b33; lenses: quality, security, performance, tests)
-**Why it matters:** `assertLocalDevDatabase` still builds `host:port/name` inline for its refusal while the new `databaseLabel` builds the same string, so the two can drift on how a database is named. Both call `new URL(url)` unguarded, and Node's `ERR_INVALID_URL` carries the whole URL in its `input` property (checked locally: a password containing `#` makes `new URL` throw with `input` set to the full URL, password included). `admin:create` calls it at the top level, so the uncaught error prints the password to the terminal. Reachable only with a password holding URL-special characters, which Railway's generated ones do not.
-**Suggested fix:** Have `assertLocalDevDatabase` use `databaseLabel` for its message, and have `databaseLabel` catch the parse error and throw its own "DATABASE_URL is not a valid URL" without the input.
-**Resolution:** Fixed 2026-10-21: packages/shared/helpers/parse-database-url.ts replaces Node's URL error with one that carries no input; databaseLabel and assertLocalDevDatabase both use it, and the refusal message uses databaseLabel instead of its own copy. database-label.test.ts checks that a password with `#` is not in the error (proved able to fail on the old code). Closed 2026-10-21 by the check of the fixes (ebf0b33..b56dd77): no other unguarded `new URL` of a database URL remains outside tests, Node was confirmed to put the full URL in its error, and the replacement error carries neither input nor cause.
-
-### F-435 [P3] closed - One admin:create test runs outside its undo, so on a database without the seed's admin it leaves a real admin login behind
-
-**File:** packages/shared/platform-admin/create-platform-admin.test.ts:52-55
-**Found:** 2026-10-21 by independent review of step 10b.1 (scope: c89e355..ebf0b33; lenses: quality, security, performance, tests)
-**Why it matters:** "refuses on the seeded database" calls `createPlatformAdmin(db, ...)` on the real connection, not inside `onDatabaseWithNoAdmin`'s rolled-back transaction. On a freshly migrated `*_dev` database before `db:seed`, or one whose seed admin was changed, the call succeeds, the test fails, and `another-admin@example.com` stays as the platform admin, so later `admin:create` runs and seed-based checks behave differently. It also only repeats the refusal the first test already proves.
-**Suggested fix:** Drop it, or run it inside a transaction that is rolled back, as the other two are.
-**Resolution:** Fixed 2026-10-21: the test runs inside a rolled-back transaction like the others (`rolledBack`), so it writes nothing on any database. Closed 2026-10-21 by the check of the fixes (ebf0b33..b56dd77): the call now goes through `tx` inside `rolledBack`, which always throws Undo, and all 196 shared tests pass.
+**File:** .env.example:17-28 (required by backend/server.ts:28-31; backend/lib/email/read-email-settings.ts:12-21; backend/lib/calendar/google-oauth-client.ts:60-62)
+**Found:** 2026-10-23 by /audit independent (scope: current, c89e355..7654439; lenses: quality, security, performance, tests)
+**Why it matters:** AGENTS.md says "The live values are listed at the top of `.env.example`", and the block says "Railway sets these on the API". It names APP_ORIGIN, BETTER_AUTH_URL, NEXT_PUBLIC_API_URL, COOKIE_DOMAIN, NODE_ENV, DATABASE_URL, LOGIN_EMAIL_FROM and the three keys, but not RESEND_API_KEY, GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET. server.ts calls `readEmailSettings()` (production refuses without RESEND_API_KEY) and `googleOauthClient.assertConfigured()` (refuses without the Google client) before it listens. Someone rebuilding the Railway service from this list, as after the Oct 21 secret swap, gets an API that fails its health check until those are found elsewhere. It fails loudly, never silently, hence P3.
+**Suggested fix:** Add the three names to the live block (RESEND_API_KEY: the agency's Resend key; GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET: the same OAuth client, which holds both redirects), and say WIDGET_ORIGINS stays empty until a site goes live, as the spec's contract does.
+**Resolution:**
