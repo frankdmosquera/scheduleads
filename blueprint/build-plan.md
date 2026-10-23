@@ -374,6 +374,15 @@ without Frank touching the database.
   Hobby (Frank, 2026-10-23). What happens when a client leaves or a customer
   asks to be removed moved to 13b the same day. Numbered 12c so nothing after
   it renumbers
+- [ ] 12i. **Spanish booking** - the booking window, its dates, the customer
+  emails (confirmation, moved, cancelled) and the customer's cancel and move
+  page speak Spanish as well as English. The site picks the window's language
+  on its `BookingProvider`; each business picks the language of its customer
+  emails and pages, a setting (decision 30). Service names are data, renamed in
+  Settings. Added by Frank on 2026-10-23: IA a la Orden's site, ialaorden.com,
+  is in Spanish, and it gets the booking window only once the window speaks it
+  (its item 12). Published as the package's next version. Numbered 12i so
+  nothing after it renumbers
 
 ## Phase 5. The first paying client
 
