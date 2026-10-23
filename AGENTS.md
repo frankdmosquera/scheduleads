@@ -555,17 +555,20 @@ as the host.
 
 **Backups (12c).** Every 6 hours (00, 06, 12, 18 UTC) the GitHub workflow
 `.github/workflows/database-backup.yml` copies the live database with `pg_dump`
-through the read-only login `backup_reader` (`pg_read_all_data`, nothing else)
-over Postgres's public TCP proxy, locks the copy with GnuPG (AES-256), and
-uploads it to the Cloudflare R2 bucket `scheduleads-backups` as
-`<folder>/<UTC yyyy-mm-ddTHHMM>Z.dump.gpg`. Every copy goes to `6h/`; the 00 UTC
-slot's also to `daily/`, Sunday's also to `weekly/`, the 1st's also to
-`monthly/`. R2's lifecycle rules delete them after 3, 14, 60 and 365 days, and
-its bucket lock rules refuse any earlier delete or overwrite. The secrets live
-only in GitHub: `BACKUP_DATABASE_URL`, `BACKUP_PASSPHRASE`, `R2_ACCOUNT_ID`,
-`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`; the passphrase is also in Frank's
-password manager ("Scheduleads backup key"), and without it no copy can be
-opened. A copy now: `gh workflow run database-backup.yml`. A failed run emails
+through the read-only login `backup_reader` (`pg_read_all_data` and
+`BYPASSRLS`, which graphile-worker's row-level-security tables need; it can
+write nothing) over Postgres's public TCP proxy, locks the copy with GnuPG
+(AES-256), and uploads it to the Cloudflare R2 bucket `scheduleads-backups` as
+`<folder>/<UTC yyyy-mm-ddTHHMM>Z.dump.gpg`. Every copy goes to `6h/`; the first
+copy of each UTC day also to `daily/`, of each UTC month to `monthly/`, and one
+to `weekly/` once the newest there is 7 days old, decided by what the bucket
+already holds, so a dropped or late run never skips one. R2's lifecycle rules
+delete them after 3, 14, 60 and 365 days, and its bucket lock rules refuse any
+earlier delete or overwrite. The secrets live in GitHub: `BACKUP_DATABASE_URL`,
+`BACKUP_PASSPHRASE`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`. The passphrase is also in Frank's Google Password
+Manager ("Scheduleads backup key") and in the root `.env` as
+`BACKUP_PASSPHRASE` for the restore; without it no copy can be opened. A copy now: `gh workflow run database-backup.yml`. A failed run emails
 Frank; a run that never starts emails nobody.
 
 `drizzle.config.ts` loads the root `.env`. `db:generate` needs no database.

@@ -24,11 +24,11 @@ end to end, and written down so it can be repeated on a bad day. Before item 13,
   database through a read-only login, encrypts the dump, and uploads it to R2. A failed run sends
   GitHub's own failure email to Frank.
 - **The schedule** (Frank, 2026-10-23), by folder in the bucket, each expiring by itself:
-  every copy in `6h/` for 3 days; the 00:00 UTC copy also in `daily/` for 14 days; Sunday's
-  00:00 UTC copy also in `weekly/` for 60 days (Frank set 60 in R2, 2026-10-23); the 1st of the month's 00:00 UTC copy also in
-  `monthly/` for 365 days. About 40 copies at any moment.
-- **Protection against one mistake**: copies encrypted with a passphrase kept only in Frank's
-  password manager and GitHub; the job's database login can read but never change anything; the
+  every copy in `6h/` for 3 days; one a day also in `daily/` for 14 days; one a week also in
+  `weekly/` for 60 days (Frank set 60 in R2, 2026-10-23); one a month also in `monthly/` for
+  365 days. About 40 copies at any moment.
+- **Protection against one mistake**: copies encrypted with a passphrase kept in Frank's
+  password manager, GitHub and the root `.env`; the job's database login can read but never change anything; the
   bucket's lock rules refuse deleting or overwriting a copy before its folder's age, even with
   the job's own key; the copies live outside Railway, so nothing done in Railway reaches them.
 - **The restore**: one command that decrypts a copy and restores it into a local scratch
@@ -121,8 +121,9 @@ default; P2/P3 are recorded and carried. `/complete` makes the final pass and me
 - **A copy**: `pg_dump --format=custom` of the whole live database, encrypted with GnuPG
   symmetric AES-256; object key `<folder>/<UTC yyyy-mm-ddTHHMM>Z.dump.gpg` (minutes, so two runs never share a name the lock would refuse to overwrite); folders `6h`, `daily`,
   `weekly`, `monthly`. The same copy may sit in up to four folders.
-- **Which folders**: every run `6h/`; the run at 00 UTC also `daily/`; 00 UTC on a Sunday (UTC)
-  also `weekly/`; 00 UTC on the 1st (UTC) also `monthly/`.
+- **Which folders**: every run `6h/`; also `daily/` when the newest there is not from today
+  (UTC), `monthly/` when the newest there is not from this month, and `weekly/` when the newest
+  there is 7 days old or more. What the bucket holds decides, not the clock (F-439).
 - **Expiry and lock**: per folder, 3, 14, 60 and 365 days; R2 lifecycle deletes, the lock refuses
   any earlier delete or overwrite.
 - **`backup_reader`**: a login role with `pg_read_all_data` and `BYPASSRLS` (graphile-worker's four `_private_*` tables use row-level security, which `pg_dump` will not read around otherwise); no write, no DDL. Its password
@@ -130,9 +131,10 @@ default; P2/P3 are recorded and carried. `/complete` makes the final pass and me
 - **`backup:restore <copy> --into <name>`**: refuses (message, exit 1) a target that is not
   local, does not end in `_dev`, or is the `DATABASE_URL` database; prints the target first;
   prints `table: rows` for every table after.
-- Secrets in GitHub only: `BACKUP_DATABASE_URL`, `BACKUP_PASSPHRASE`, `R2_ACCOUNT_ID`,
-  `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`. The passphrase also in Frank's password manager:
-  without it no copy can ever be opened.
+- Secrets in GitHub: `BACKUP_DATABASE_URL`, `BACKUP_PASSPHRASE`, `R2_ACCOUNT_ID`,
+  `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`. The passphrase also in Frank's Google Password
+  Manager and the root `.env` (`BACKUP_PASSPHRASE`, for the restore; Frank, 2026-10-23): without
+  it no copy can ever be opened.
 
 ## Testing
 
