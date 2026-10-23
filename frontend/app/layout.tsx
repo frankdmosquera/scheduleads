@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Scheduleads",
+  title: "Booking CRM",
   description: "Leads, bookings and hours for the business behind the site.",
 };
 
