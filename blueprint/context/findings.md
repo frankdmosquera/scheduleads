@@ -364,13 +364,13 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Add the three names to the live block (RESEND_API_KEY: the agency's Resend key; GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET: the same OAuth client, which holds both redirects), and say WIDGET_ORIGINS stays empty until a site goes live, as the spec's contract does.
 **Resolution:**
 
-### F-437 [P2] open - The public TCP proxy opened for the backup lets every live login in from the internet, not only backup_reader
+### F-437 [P2] accepted - The public TCP proxy opened for the backup lets every live login in from the internet, not only backup_reader
 
 **File:** blueprint/context/current-feature.md:156-158 (Decision 5); AGENTS.md:556-559
 **Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
 **Why it matters:** Decision 5 weighs only the job's own credential ("a leaked read-only login can read but never delete"). Railway's TCP proxy forwards raw Postgres traffic and authenticates by password, so the address it opened also accepts the `postgres` superuser that the API's `DATABASE_URL` uses (Railway publishes exactly that pair as `DATABASE_PUBLIC_URL`). Before 12c.1 that password alone was useless outside Railway's private network or a Railway-token tunnel; now anyone holding it (the laptop's root `.env` carries the Railway line for the tunnel) can write to and drop the live database from anywhere. The password is long and random, so this is a leak risk, not a brute-force one. Missing validation: whether the superuser connects through the proxy address (a `psql` through it with the Railway credentials, by Frank).
 **Suggested fix:** Record the trade in Decision 5 and the AGENTS.md Backups paragraph so it is Frank's call with the full picture. If he wants it narrowed: give the API its own non-superuser login so the superuser password lives nowhere in daily use, or rotate the superuser password and keep it only in the password manager.
-**Resolution:** Confirmed 2026-10-23: the one-off that made backup_reader connected as the live superuser (`postgres`, from Railway's variables) through `shortline.proxy.rlwy.net` over SSL, so every live login is now reachable from the internet with its password. Open: Frank's decision (keep the proxy and rotate or lock down the superuser, or another way in).
+**Resolution:** Confirmed 2026-10-23: the one-off that made backup_reader connected as the live superuser (`postgres`, from Railway's variables) through `shortline.proxy.rlwy.net` over SSL, so every live login is now reachable from the internet with its password. Open: Frank's decision (keep the proxy and rotate or lock down the superuser, or another way in). Accepted by Frank, 2026-10-23: a 32-character random password plus an encrypted connection; rotate it if the `.env` ever leaks.
 
 ### F-438 [P3] fixed - The job's "tables" count counts every table twice, so "66 tables" in the log and build log is about 33
 
