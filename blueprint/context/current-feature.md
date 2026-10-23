@@ -7,7 +7,7 @@ to Google Cloud, and a wait for Google's review.
 
 **Branch:** feature/22a-google-calendar-approval
 
-**Status:** 22a.1 done 2026-10-23 (booking-crm.com live); 22a.2 next.
+**Status:** verified
 
 ## Goal
 
@@ -63,15 +63,14 @@ is a surprise. Google's review is a wait: the feature stays open until it answer
   **Done when:** `https://booking-crm.com`, `/privacy` and `/terms` each load over HTTPS with
   their content, and the home page links to both.
 
-- [ ] **22a.2 Google publishes, then approves.** "The consent screen says Booking CRM,
+- [x] **22a.2 Google publishes, then approves.** "The consent screen says Booking CRM,
   connections stop expiring, and once Google approves, the unverified warning is gone."
   - Claude: the dashboard title; the reasons for each scope and the recording's script, written
     out for Frank.
   - Frank's Google Cloud trip: branding (name, support email, the three links, the authorized
     domain), publish, then submit verification with the recording (unlisted on YouTube).
-  **Done when:** the consent screen shows "Booking CRM"; the app is In production; IA a la
-  Orden's connection still reads the calendar more than seven days after it was made; Google
-  approves, and a fresh connect shows no unverified warning.
+  **Done when:** the consent screen shows "Booking CRM"; the app is In production. (The
+  seven-day check and Google's approval moved to 22c on 2026-10-23, see Amendments.)
 
 ## Files / areas
 
@@ -113,6 +112,13 @@ fresh connect after approval.
   domain. `newproj` failed on `@hookform/resolvers` 6.0's peer clash, so the site is plain Next.js
   without the Blueprint kit or the default libraries (Frank: keep it simple). Contact on the pages:
   `hola@ialaorden.com`.
+- 2026-10-23, 22a.2: done as far as it can be today: the consent screen's branding says Booking
+  CRM with booking-crm.com's three links and its authorized domain, booking-crm.com is verified in
+  Search Console, the app is published (In production), and IA a la Orden reconnected after
+  publishing. The dashboard's title and icon say Booking CRM. Frank closed the feature here so the
+  slot frees for 12i: submitting Google's verification, waiting for its answer, the seven-day
+  check on IA a la Orden's connection and the fresh connect without the warning moved to a new
+  build-plan item, 22c.
 
 ## Notes for the AI
 

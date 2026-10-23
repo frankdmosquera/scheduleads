@@ -505,8 +505,13 @@ booking with no one at the agency involved.
     product's own site at booking-crm.com (a home page, a privacy policy and
     terms, in the new `booking-crm-site` project), the consent screen named
     "Booking CRM" (Frank, 2026-10-23), the app published so connections stop
-    dropping every seven days, then Google's verification of the calendar
-    scopes. Before item 13
+    dropping every seven days. Before item 13
+  - [ ] 22c. **Google verifies the calendar scopes** - split from 22a by Frank
+    on 2026-10-23, so the wait does not hold the feature slot: submit the
+    calendar scopes for Google's verification, answer its emails, check IA a
+    la Orden's connection still reads the calendar more than seven days after
+    it was made, and once Google approves, a fresh connect shows no
+    unverified warning. A form and a wait, not code
   - [ ] 22b. **Gmail approval** - the Gmail restricted scopes and their
     security assessment, when item 26 needs them
 - [ ] 23. **Packages ladder and the admin area** - the tiers above `agency`
