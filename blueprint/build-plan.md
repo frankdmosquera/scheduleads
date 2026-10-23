@@ -201,7 +201,9 @@ and a second resource can hold the same time as the first.
   a runner**, and reminders, follow-ups and the calendar token refresh all
   need one, which is why it is here rather than left to Phase 8. Every
   message goes out through one place in the code, Twilio for all of it for
-  now, so moving WhatsApp to Meta directly later changes that one place.
+  now. (Changed Oct 7: WhatsApp lives in the Agent app, the `whatsapp-app`
+  repo, its decision record 0001; a WhatsApp reminder is asked of it
+  through its API, and Twilio carries SMS only.)
   When a business runs on one email, the booked worker gets a text with the
   booking, the last resort that keeps them in the loop; the customer's
   replies still go to the business (feature 6, decision 8, Frank, Oct 2)
@@ -254,7 +256,7 @@ rented" rents nothing.
   the laptop with a real call booked into AgentsWeb. The agency site's own
   pages (installing the package, its Book a call card opening the window)
   are that site's item 12, in its own repo. Frank is the first customer
-- [ ] 10b. **First deploy** - the API and the dashboard out on Railway and
+- [x] 10b. **First deploy** - the API and the dashboard out on Railway and
   Vercel for real use for the first time: the first-deploy checks (F-176,
   F-179, whether Railway's proxy replaces a visitor's own `X-Real-IP`,
   `NODE_ENV=production`), the setup command opened to the live database and
@@ -264,9 +266,10 @@ rented" rents nothing.
   change at once: the live redirect, `http://localhost:3401/calendar/callback`
   (never added after the Oct 3 port move), the `calendar.calendarlist.readonly`
   permission (12h), and 12h's check against a real calendar after it (decided
-  2026-10-12). Timed with the agency site's launch, which
-  its own plan holds until texts and QuickBooks (decided 2026-10-09, split
-  out of item 10)
+  2026-10-12). Deployed now, ahead of the agency site's launch, so 12c and
+  Primo (13) can follow; the site goes live on it when its own plan allows
+  (Frank, 2026-10-12, replacing the Oct 9 timing; split out of item 10 on
+  2026-10-09)
 
 ## Phase 4. The CRM, first release
 
@@ -412,7 +415,10 @@ Exit: four organizations, four live sites, zero rented booking.
   decisions file built for this. Its 45 services become booking links, its
   practitioners become resources, and its treatment rooms become places
   that the services needing them are ticked to. Ask at onboarding whether
-  the clinic keeps a Google calendar and whether it takes deposits
+  the clinic keeps a Google calendar and whether it takes deposits.
+  First, before any client connects a calendar: Google's consent screen
+  published (a privacy page on booking-crm.com, the name owners see there,
+  then Publish), or Google drops the connection every 7 days (10b decision 6)
 - [ ] 18. **The Latam Painters** - after its own site is finished. First
   find out whose Calendly has been receiving its bookings. It needs a
   siteConfig before it can be a tenant
@@ -440,8 +446,17 @@ reads a report page instead of asking Frank how the month went.
   - The crew view is everyone's calendar from item 12b, side by side by day
 - [ ] 20. **Reports** - bookings per week, pipeline by stage, lead sources,
   on shadcn charts
-- [ ] 21. **WhatsApp** - Meta verification, a dedicated number, approved
-  templates; sent and logged like SMS
+- [ ] 21. **Connect to the Agent app** (was "WhatsApp"; changed by the
+  Agent app's decision record 0001, Oct 7) - the WhatsApp chat and its Meta
+  setup live in the Agent app, never here. Scheduleads asks it to send a
+  booking reminder by WhatsApp when the customer agreed (otherwise SMS as
+  now), sends it a "booked" event when a booking is made, and receives its
+  monthly usage per business. Signed API calls both ways; neither reads the
+  other's database. A contact is matched by email **or** phone (Frank,
+  Oct 19): today only email matches and a contact without one is refused,
+  but a WhatsApp customer often has only a number. When one person is first
+  known by email and later by phone, the two join into one contact, never
+  two
 - [ ] 21b. **RCS** (Frank, Oct 7) - the branded chat version of a text, in
   the phone's own Messages app: the business's verified name and logo,
   buttons such as "Change booking", read receipts. Twilio carries it to
@@ -479,7 +494,24 @@ booking with no one at the agency involved.
 
 Nothing above depends on these. Each gets a phase when something does.
 
+- How messages are offered and paid (Frank, Oct 19). Each business toggles
+  its own channels, each toggle showing what it costs and what is included:
+  WhatsApp offered at booking or not (the booking asks the customer and
+  says why), texts (RCS where it works, else SMS), email. Every message is
+  counted per channel per month and the CRM shows it ("120 of 250 texts").
+  USA and Canada: a set number of texts included in the plan; past it, the
+  business chose ahead of time between **stop and switch to email** (the
+  default, as Calendly and Cal.com do) and **pay extra** per text at cost
+  plus a margin. Colombia and the rest of Latin America: WhatsApp and email
+  included, no texts included; a business that wants texts pays from the
+  first one. Not offered: a business plugging in its own Twilio account.
+  Needs the missing **reminder by email** (today only confirmations, moves
+  and cancellations are emailed), which is also the free fallback
 - Photo attachments on a lead
+- Orders in the CRM (Frank, Oct 18): the CRM holds orders as well as
+  bookings (ordered, paid, picked up), the store module kept for later on
+  Sep 27. Items arrive when the first real store needs them, most likely
+  the tamales site, whose orders the Agent would take in the chat
 - An owner booking two clients into one sales talk on purpose, the only
   double booking ever discussed. Only if a client asks
 - No-show handling: a card on file, a fee, or a deposit held

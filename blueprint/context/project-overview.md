@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash fa5f05a86faa9530309d6c66e5f5e51fd32d2e8be8db1e457405ee8f5410952e -->
+<!-- blueprint:source-hash 63338ad61a9a80935b584126a43e864f2f7c933d665fe68910b2b812566a4a7b -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -84,8 +84,8 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 10. **Tenant zero ready: AgentsWeb** - the booking window as one shared
     package any site installs, never an embed; a business set up from a setup
     file until item 12; a real call booked on the laptop.
-- **10b. First deploy** - Railway and Vercel for real use, with the agency
-  site's launch.
+- **10b. First deploy** - Railway and Vercel for real use, ahead of the agency
+  site's launch, so backups (12c) and Primo (13) can follow.
 11. **Leads list and contact page** - timeline, next steps, a lead by hand.
 12. **Settings** - split Oct 10 into six screens, each its own branch:
     12a hours (bookable hours, notice, horizon, time zone), 12d services,
@@ -101,7 +101,7 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 17. **Face and Body** - Cal.com out; 45 services, practitioners, rooms.
 18. **The Latam Painters** - after its site and siteConfig exist.
 19. **Crew and job scheduling** - jobs of daily visits, crews as saved lists.
-20. **Reports**. 21. **WhatsApp**. 21b. **RCS**. 22. **Google OAuth verification**
+20. **Reports**. 21. **Connect to the Agent app** (WhatsApp lives there). 21b. **RCS**. 22. **Google OAuth verification**
     (calendar half before 13). 23. **Packages ladder and admin area**.
     24. **Hosted booking page** `/book/<slug>`. 25. **Self-serve and
     billing**. 26. **Two-way Gmail sync**.
@@ -186,7 +186,7 @@ business uses a composite FK on `(organizationId, id)`.
 - **Better Auth** - `organization`, `emailOTP`, `admin` plugins.
 - **Resend + React Email** - confirmations, `.ics`, later CRM email.
 - **Google Calendar API** - free/busy and writing each booking.
-- **Twilio** - SMS from item 8; WhatsApp later.
+- **Twilio** - SMS from item 8, SMS only; WhatsApp is the Agent app's (item 21).
 - Installed at the feature that needs them: TanStack Query (CRM lists),
   dnd-kit (board), shadcn charts (reports). No state manager yet.
 

@@ -1,6 +1,9 @@
 // Shared helper: the guard in front of everything that writes throwaway rows or reads with
 // real keys in development (the seed, the route tests, calendar:check).
 
+import { databaseLabel } from "./database-label.js";
+import { parseDatabaseUrl } from "./parse-database-url.js";
+
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
 // Two conditions, not one: the Railway tunnel ALSO listens on 127.0.0.1, so a host check
@@ -11,12 +14,12 @@ export function assertLocalDevDatabase(url: string | undefined, refusedAction: s
     throw new Error("DATABASE_URL is not set. It is read from the root .env.");
   }
 
-  const parsed = new URL(url);
+  const parsed = parseDatabaseUrl(url);
   const database = parsed.pathname.replace(/^\//, "");
 
   if (!LOOPBACK.has(parsed.hostname) || !database.endsWith("_dev")) {
     throw new Error(
-      `Refusing to ${refusedAction} against ${parsed.hostname}:${parsed.port || "5432"}/${database}. ` +
+      `Refusing to ${refusedAction} against ${databaseLabel(url)}. ` +
         "Only a database on this machine whose name ends in _dev is allowed. " +
         "Check which DATABASE_URL line is active in .env."
     );

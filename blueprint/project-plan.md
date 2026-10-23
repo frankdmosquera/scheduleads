@@ -146,7 +146,8 @@ CRM modules, in the order they arrive:
   the business's own theme and accepts. The half of "found you to paid"
   that the first draft left out.
 - **Messaging.** The confirmation and the reminder, by text, in Phase 2.
-  WhatsApp later, next to them.
+  WhatsApp belongs to the Agent app (Oct 7), which sends a reminder by
+  WhatsApp when Scheduleads asks.
 - **Reports.** Bookings, pipeline by stage, lead sources, on shadcn charts.
 - **Packages.** Section 6.
 
@@ -303,8 +304,8 @@ things to add.
   person's calendar, which needs the "add and edit events" permission as
   well, asked for in the same connection.
 - **Twilio** for SMS. Kept from the first plan, Phase 2, and the first thing
-  to cut if Phase 2 runs long. WhatsApp can ride the same Twilio account
-  later.
+  to cut if Phase 2 runs long. SMS only: WhatsApp goes through the Agent
+  app, on Meta's own API (Twilio was dropped there, Oct 7).
 
 Frontend libraries decided here, installed at the feature that needs them,
 asked first like every dependency:
@@ -508,10 +509,12 @@ Two things the first repo recorded that must not be relearned:
 8. **Packages are a ladder**, `organization.plan` holds the tier, and the
    subscription middleware that reads the ladder is built in Phase 1 with one tier so nothing is
    retrofitted. Section 6.
-9. **WhatsApp is named next to SMS**, not a launch feature. Per-message cost
-   in Canada is small (marketing about 2.5 cents, utility under half a
-   cent); the cost is Meta verification, a dedicated number and approved
-   templates. Phase 8.
+9. **WhatsApp lives in the Agent app**, not here (changed Oct 7 by the Agent
+   app's decision record 0001; it was "named next to SMS"). The Agent app is
+   its own product with its own database, sold also to businesses with no
+   CRM; Scheduleads connects to it by signed API calls (item 21). Its one
+   Agent answers customers on the WhatsApp chat and, later, the website chat
+   (Frank, Oct 18), and what it books or sells lands in this CRM.
 10. **Frontend libraries.** TanStack Query, dnd-kit and shadcn charts, each
     installed at the feature that needs it. No state manager until one is
     needed. Section 5.

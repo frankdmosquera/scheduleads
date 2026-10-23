@@ -1,7 +1,8 @@
-// AgentsWeb, the agency's own business (feature 10). Every value is read from the agency site's
-// Book a call card (agency-site-app/data/contactData.ts, contactBookingData) and its base
-// (siteConfig visits.base "colombia"). Made first on /admin/client-setup.
-// Apply: npm run client:setup --workspace=@scheduleads-app/shared -- client-setups/agentsweb.ts --apply
+// IA a la Orden, the agency's own business in Colombia (feature 10; the English AgentsWeb comes
+// later). Every value is read from the agency site's Book a call card
+// (agency-site-app/data/contactData.ts, contactBookingData) and its base (siteConfig visits.base
+// "colombia"). Made first on /admin/client-setup.
+// Apply: npm run client:setup --workspace=@scheduleads-app/shared -- client-setups/ia-la-orden.ts --apply
 
 import type { ClientSetupInputType } from "@scheduleads-app/shared/zod-validation";
 
@@ -10,7 +11,7 @@ import type { ClientSetupInputType } from "@scheduleads-app/shared/zod-validatio
 const callHours = [{ startMinute: 8 * 60, endMinute: 18 * 60 }];
 
 export default {
-  slug: "agentsweb",
+  slug: "ia-la-orden",
   personChoice: "business_assigns", // Frank is the one person, the business's first
   contactRule: "either", // an email or a phone, whichever the visitor leaves
   // The card asks only a name and an email or phone, which the booking window asks itself.

@@ -460,10 +460,14 @@ checks do not make the Blueprint unusable.
 
 npm workspaces monorepo (`frontend`, `backend`, `packages/*`). Every app
 command targets one workspace explicitly. The only root-level scripts are the
-formatter, which covers the whole repo:
+formatter, which covers the whole repo, and one `build` that is Railway's:
 
 - Format every code file: `npm run format`
 - Check formatting without changing anything: `npm run format:check`
+- `build` runs the backend's build. It is there because Railway builds from the repo root and
+  runs a root `build` script by itself; there is no `railway.json` (Railway stops reading it on
+  2026-12-01) and its dashboard build command never took (2026-10-12, 2026-10-22). Locally,
+  keep building with `--workspace`.
 
 Prettier is a root dev dependency, configured in `.prettierrc`. `.prettierignore`
 keeps it to code: docs, the Blueprint skills and generated files are never
@@ -474,7 +478,8 @@ reformatted.
 - Frontend build: `npm run build --workspace=frontend`
 - Backend build: `npm run build --workspace=backend`
 - Frontend start (serves the build): `npm run start --workspace=frontend`
-- Backend start (runs `dist/`): `npm run start --workspace=backend`
+- Backend start (runs `dist/`): `npm run start --workspace=backend` (on this machine; Railway
+  starts it differently, see the live app below)
 - Frontend lint: `npm run lint --workspace=frontend`
 
 **Scheduleads owns 3400 (frontend) and 3401 (API), and nothing else.**
@@ -487,12 +492,12 @@ move together, everywhere at once: `git grep -n -E "340[01]"` lists every
 place in the repo, and outside it `PORT`, `BETTER_AUTH_URL` and `APP_ORIGIN`
 in the root `.env`, plus `NEXT_PUBLIC_API_URL` in `frontend/.env.local` if
 that file exists, and Google's OAuth client, which holds the calendar
-redirect. **It still lists only the old `http://localhost:3001/calendar/callback`**
-(set Sep 28; the Oct 3 port move never reached Google, found 2026-10-12), so
-Connect fails locally with `redirect_uri_mismatch`. Adding
-`http://localhost:3401/calendar/callback` and the
-`calendar.calendarlist.readonly` permission (12h) is part of 10b's one trip to
-Google Cloud; until then no change asks Frank to go there.
+redirect. Checked 2026-10-21 (10b.2.1): its redirect list holds
+`http://localhost:3401/calendar/callback` and the live
+`https://api.booking-crm.com/calendar/callback`, and Data Access lists the
+three calendar scopes the code asks for (`calendar.events.freebusy`,
+`calendar.events.owned`, `calendar.calendarlist.readonly`). The consent screen
+stays in Testing until Face and Body (10b decision 6).
 
 Database, all from `packages/shared`, which owns the schema and the migration
 ledger:
@@ -502,8 +507,25 @@ ledger:
 - Seed the two development accounts: `npm run db:seed --workspace=@scheduleads-app/shared`
 - Browse the data: `npm run db:studio --workspace=@scheduleads-app/shared`
 - Set a business up from its setup file (made first on `/admin/client-setup`; a dry run
-  unless `--apply`; adds only what is missing; local `*_dev` only until item 10b):
-  `npm run client:setup --workspace=@scheduleads-app/shared -- client-setups/<file>.ts [--apply]`
+  unless `--apply`; adds only what is missing; the local `*_dev` database unless `--live`;
+  its first line names the database):
+  `npm run client:setup --workspace=@scheduleads-app/shared -- client-setups/<file>.ts [--live] [--apply]`
+- Make the one platform admin login on a database with none, for the live app's first sign-in
+  (refuses once an admin exists; its first line names the database):
+  `npm run admin:create --workspace=@scheduleads-app/shared -- <email>`
+
+The live app (10b): the dashboard at `https://app.booking-crm.com` (Vercel), the API at
+`https://api.booking-crm.com` (Railway), the domain and its DNS in Vercel. The live values are
+listed at the top of `.env.example`.
+
+**Railway starts the API with `node backend/dist/server.js`, never through npm** (F-176,
+2026-10-21): npm does not pass Railway's stop signal on, so a deploy would cut the API off
+mid-job instead of letting it finish. The start command, the draining time (30 seconds, overlap
+0), the health check and the watch paths live in Railway's dashboard; the build is the root
+`build` script (Commands above). There is no `railway.json` since 2026-10-23 (F-430). Change
+settings in the dashboard, then check what a deployment really ran with
+`railway deployment list --json` (`serviceManifest`). A plain `railway redeploy` rebuilds
+without the build step and fails; use `railway redeploy --service scheduleads --from-source`.
 
 Development runs against a local PostgreSQL 18, the same major version as
 Railway, in a database named `scheduleads_dev` on 127.0.0.1:5432, and `.env`

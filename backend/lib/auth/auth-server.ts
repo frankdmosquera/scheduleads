@@ -15,6 +15,7 @@ import { member, resource } from "@scheduleads-app/shared/db";
 import { db } from "../../database.js";
 import { seedPipelineStages } from "../crm/seed-pipeline-stages.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
+import { VISITOR_ADDRESS_HEADER } from "../rate-limit/visitor-address-header.js";
 import { sendLoginCode } from "./send-login-code.js";
 
 if (!process.env.BETTER_AUTH_SECRET) {
@@ -203,6 +204,9 @@ export const auth = betterAuth({
     defaultCookieAttributes: isProduction
       ? { sameSite: "none", secure: true, partitioned: true }
       : { sameSite: "lax", secure: false },
+    // The header Railway's proxy names the visitor in, as for our own limits. With the default
+    // X-Forwarded-For Better Auth found no address there, so all visitors shared one limit.
+    ipAddress: isProduction ? { ipAddressHeaders: [VISITOR_ADDRESS_HEADER] } : undefined,
   },
 });
 

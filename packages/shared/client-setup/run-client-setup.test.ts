@@ -355,7 +355,7 @@ describe("runClientSetup", () => {
       fromNumber,
       confirmationOn: true,
       reminderMinutesBefore: [1200],
-      replyPhone: null,
+      replyPhone: null as string | null, // one case below gives it a number
       replyEmail: "office@example.com",
       askLaterTextsYes: false,
     });
