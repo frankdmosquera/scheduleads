@@ -363,16 +363,17 @@ without Frank touching the database.
   already gave away on the phone. After item 5 because it shows bookings,
   before item 13 because Primo takes phone calls. Numbered 12b so nothing
   after it renumbers
-- [ ] 12c. **Backups, restore and retention** - daily backups of the live
-  database, a nightly copy kept outside Railway, a restore actually tested
-  into a scratch database, protection against deleting the database by
-  mistake, and the retention rules: how long copies are kept, and what
-  happens to a business's data when a client leaves or a customer asks to be
-  removed. Added 2026-09-30 by Frank: one wrong click on Railway or a bad
-  migration would lose every client's leads and bookings with no way back.
-  Before item 13, the first real client's data. What Railway's own backups
-  cover on the current plan is checked when this item is specced. Numbered
-  12c so nothing after it renumbers
+- [ ] 12c. **Backups and restore** - a copy of the live database every 6
+  hours, kept outside Railway in Cloudflare R2, encrypted, locked so no copy
+  can be deleted early, and thinned by age (every 6 hours for 3 days, daily
+  for 2 weeks, weekly for 2 months, monthly for a year); a restore actually
+  tested into a scratch database. Added 2026-09-30 by Frank: one wrong click
+  on Railway or a bad migration would lose every client's leads and bookings
+  with no way back. Before item 13, the first real client's data. Railway's
+  own backups need the Pro plan and die with the disk; the account stays on
+  Hobby (Frank, 2026-10-23). What happens when a client leaves or a customer
+  asks to be removed moved to 13b the same day. Numbered 12c so nothing after
+  it renumbers
 
 ## Phase 5. The first paying client
 
@@ -387,6 +388,12 @@ list, Calendly is gone from his site, and the ranking is untouched.
   (Canada's list, with Sep 30 on and no Family Day), so the switch changes
   nothing he did not choose. Needs item 22 finished first: his Google
   connection would otherwise drop every seven days
+- [ ] 13b. **When a client leaves, and removal requests** - what happens to
+  a business's data when it leaves (kept how long, then deleted), and to a
+  customer who asks to be removed (deleted from the app, and from the backup
+  copies as they expire, within a year at most). Split from 12c by Frank on
+  2026-10-23: backups keep data, this deletes it on purpose. Before the first
+  client leaves
 
 ## Phase 6. The CRM, second release
 

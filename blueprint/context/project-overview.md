@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash cd27b678f7e3835cd89673162045244c40a09b1da53fae163004ad7fb5054969 -->
+<!-- blueprint:source-hash 0ae170a87455546825207c4befbf0b4724af904d6f82c69c1401c6b29ff2e457 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -93,8 +93,9 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
     holiday picker (none by default), 12f the booking form, 12g text settings,
     12h the calendar connection and busy calendars.
 - **12b. Calendars** - every person and place has an in-app calendar.
-- **12c. Backups, restore and retention** - before any real client's data.
+- **12c. Backups and restore** - before any real client's data.
 13. **Primo Painters** - Calendly out. Needs 12c and item 22's calendar half.
+13b. **When a client leaves, and removal requests** - before the first client leaves.
 14. **Pipeline board** - drag and drop between stages the business names.
 15. **Email from the CRM** - sends logged on the timeline; BCC capture.
 16. **Quotes** - line items, a total, a tokenized accept link.
