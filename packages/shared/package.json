@@ -79,6 +79,10 @@
     "./platform-admin": {
       "types": "./dist/platform-admin/create-platform-admin.d.ts",
       "default": "./dist/platform-admin/create-platform-admin.js"
+    },
+    "./backups": {
+      "types": "./dist/backups/restore-target.d.ts",
+      "default": "./dist/backups/restore-target.js"
     }
   },
   "scripts": {
@@ -91,7 +95,8 @@
     "db:seed": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env scripts/seed-dev.ts",
     "db:studio": "drizzle-kit studio",
     "client:setup": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env scripts/apply-client-setup.ts",
-    "admin:create": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env scripts/create-platform-admin.ts"
+    "admin:create": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env scripts/create-platform-admin.ts",
+    "backup:restore": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env scripts/restore-backup.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

@@ -9,6 +9,17 @@
     "rootDir": ".",
     "outDir": "./dist"
   },
-  "include": ["db", "crypto", "calendar", "crm", "helpers", "subscriptions", "zod-validation", "client-setup", "platform-admin"],
+  "include": [
+    "db",
+    "crypto",
+    "calendar",
+    "crm",
+    "helpers",
+    "subscriptions",
+    "zod-validation",
+    "client-setup",
+    "platform-admin",
+    "backups"
+  ],
   "exclude": ["**/*.test.ts"] // tests run through Vitest, never shipped in dist/
 }

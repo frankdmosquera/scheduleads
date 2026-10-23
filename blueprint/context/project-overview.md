@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash 63338ad61a9a80935b584126a43e864f2f7c933d665fe68910b2b812566a4a7b -->
+<!-- blueprint:source-hash 05f497ca3cb8725844f1326bf21d4cfddaea2be2b2086f0fcb3c811dbeb4dfda -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -93,8 +93,9 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
     holiday picker (none by default), 12f the booking form, 12g text settings,
     12h the calendar connection and busy calendars.
 - **12b. Calendars** - every person and place has an in-app calendar.
-- **12c. Backups, restore and retention** - before any real client's data.
+- **12c. Backups and restore** - before any real client's data.
 13. **Primo Painters** - Calendly out. Needs 12c and item 22's calendar half.
+13b. **When a client leaves, and removal requests** - before the first client leaves.
 14. **Pipeline board** - drag and drop between stages the business names.
 15. **Email from the CRM** - sends logged on the timeline; BCC capture.
 16. **Quotes** - line items, a total, a tokenized accept link.
@@ -104,7 +105,7 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 20. **Reports**. 21. **Connect to the Agent app** (WhatsApp lives there). 21b. **RCS**. 22. **Google OAuth verification**
     (calendar half before 13). 23. **Packages ladder and admin area**.
     24. **Hosted booking page** `/book/<slug>`. 25. **Self-serve and
-    billing**. 26. **Two-way Gmail sync**.
+    billing** (booking emails from `booking-crm.com` by default, own domain optional). 26. **Two-way Gmail sync**.
 
 ## Data model
 

@@ -553,6 +553,51 @@ switch the Railway `DATABASE_URL` line in `.env` back on. The tunnel also
 listens on localhost, which is why the seed checks the database name as well
 as the host.
 
+**Backups (12c).** Every 6 hours (00, 06, 12, 18 UTC) the GitHub workflow
+`.github/workflows/database-backup.yml` copies the live database with `pg_dump`
+through the read-only login `backup_reader` (`pg_read_all_data` and
+`BYPASSRLS`, which graphile-worker's row-level-security tables need; it can
+write nothing) over Postgres's public TCP proxy, locks the copy with GnuPG
+(AES-256), and uploads it to the Cloudflare R2 bucket `scheduleads-backups` as
+`<folder>/<UTC yyyy-mm-ddTHHMM>Z.dump.gpg`. Every copy goes to `6h/`; the first
+copy of each UTC day also to `daily/`, of each UTC month to `monthly/`, and one
+to `weekly/` once the newest there is 7 days old, decided by what the bucket
+already holds, so a dropped or late run never skips one. R2's lifecycle rules
+delete them after 3, 14, 60 and 365 days, and its bucket lock rules refuse any
+earlier delete or overwrite. The secrets live in GitHub: `BACKUP_DATABASE_URL`,
+`BACKUP_PASSPHRASE`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`. The passphrase is also in Frank's Google Password
+Manager ("Scheduleads backup key") and in the root `.env` as
+`BACKUP_PASSPHRASE` for the restore; without it no copy can be opened. A copy
+now: `gh workflow run database-backup.yml`. A failed run emails Frank; a run that
+never starts emails nobody.
+
+**Restoring a copy (12c.2).** Download the copy from the bucket (Cloudflare,
+R2, `scheduleads-backups`, its folder), then
+`npm run backup:restore --workspace=@scheduleads-app/shared -- <copy.dump.gpg> --into scheduleads_restore_dev`.
+It opens the copy with `BACKUP_PASSPHRASE` from the root `.env` (gpg asks when
+it is missing), drops and makes the target fresh, restores it, and prints every
+table's rows. It refuses any database not on this machine, any name not ending
+in `_restore_dev` (so neither the working database nor another project's is
+dropped), and a `DATABASE_URL` with options after its name. `pg_restore` comes
+from `PG_BIN`, PATH, or PostgreSQL's Windows install; `gpg` from `GPG`, PATH, or
+Git's. The scratch database holds every client's customers: drop it when done
+(`drop database scheduleads_restore_dev`). The three cases:
+
+- **One thing deleted by mistake** (a lead, a booking): restore the newest copy
+  from before it into the scratch database, find the rows there, and put just
+  those back on live by hand. The live database is never replaced.
+- **A bug or a migration damaged rows**: the same, from a copy before the
+  damage, for the damaged rows only.
+- **The live database is lost**: only on Frank's yes on the day. Open the newest
+  copy by hand (`gpg --decrypt <copy.dump.gpg> > copy.dump`, with the key), make
+  a new Railway Postgres, restore into it with
+  `pg_restore --no-owner --no-privileges` through its tunnel, point the API's
+  `DATABASE_URL` at it, turn on its TCP proxy, make `backup_reader` again, and
+  save its new address as `BACKUP_DATABASE_URL` in GitHub. At most 6 hours of
+  data are lost; the day's bookings can be typed back from their emails and
+  calendar events. Delete `copy.dump` afterwards.
+
 `drizzle.config.ts` loads the root `.env`. `db:generate` needs no database.
 Never generate a migration from `backend` or `frontend`: two workspaces
 generating against one database is how a migration ledger forks.

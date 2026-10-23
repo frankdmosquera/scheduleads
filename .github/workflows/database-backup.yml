@@ -1,0 +1,101 @@
+# A copy of the live database every 6 hours, locked and kept outside Railway in R2 (12c).
+# Folders and how long R2 keeps them: 6h/ 3 days, daily/ 14, weekly/ 60, monthly/ 365.
+# Never prints a secret or any data: only the copy's size and its number of tables.
+
+name: Database backup
+
+on:
+  schedule:
+    - cron: "0 */6 * * *" # 00, 06, 12, 18 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # pg_dump must be at least the server's version (18); Ubuntu's own client is older.
+      - name: Install the PostgreSQL 18 client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          # Trust the downloaded key only if it is the PostgreSQL repository's own.
+          fingerprint=$(gpg --show-keys --with-colons /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            | awk -F: '/^fpr/ { print $10; exit }')
+          if [ "$fingerprint" != "B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8" ]; then
+            echo "Unexpected PostgreSQL apt key: $fingerprint"
+            exit 1
+          fi
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-18 > /dev/null
+
+      - name: Copy, lock and store
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          PGSSLMODE: require # never fall back to an unencrypted connection
+          AWS_DEFAULT_REGION: auto
+          # R2 refuses the newer checksum headers the aws tool sends by default.
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+        run: |
+          set -euo pipefail
+          for name in BACKUP_DATABASE_URL BACKUP_PASSPHRASE R2_ACCOUNT_ID AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            if [ -z "${!name}" ]; then echo "Missing secret: $name"; exit 1; fi
+          done
+          pg=/usr/lib/postgresql/18/bin
+
+          "$pg/pg_dump" --format=custom --dbname="$BACKUP_DATABASE_URL" --file=copy.dump
+
+          # An empty or broken copy must fail the run, never be stored as if it were good.
+          size=$(stat -c%s copy.dump)
+          # Each table has a TABLE line and a TABLE DATA line: count the first only.
+          tables=$("$pg/pg_restore" --list copy.dump | grep " TABLE " | grep -vc " TABLE DATA " || true)
+          echo "Copy: $size bytes, $tables tables"
+          if [ "$size" -lt 10240 ] || [ "$tables" -eq 0 ]; then
+            echo "Refusing to store a copy under 10 KB or with no tables."
+            exit 1
+          fi
+
+          # The passphrase goes in through a file descriptor, never the command line.
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 \
+            --symmetric --cipher-algo AES256 --output copy.dump.gpg copy.dump 3<<< "$BACKUP_PASSPHRASE"
+          rm copy.dump
+
+          endpoint="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          bucket="s3://scheduleads-backups"
+          newest() { aws s3 ls "$bucket/$1/" --endpoint-url "$endpoint" 2>/dev/null | awk '{ print $4 }' | sort | tail -1 || true; }
+
+          # What is already stored decides the folders, not the clock, so a run GitHub drops or
+          # starts late never leaves a day, week or month without its copy, nor gives it two.
+          today=$(date -u +%Y-%m-%d)
+          folders="6h"
+          daily=$(newest daily)
+          if [ "${daily:0:10}" != "$today" ]; then folders="$folders daily"; fi
+          weekly=$(newest weekly)
+          if [ -z "$weekly" ] || [[ "${weekly:0:10}" < "$(date -u -d '6 days ago' +%Y-%m-%d)" ]]; then
+            folders="$folders weekly"
+          fi
+          monthly=$(newest monthly)
+          if [ "${monthly:0:7}" != "${today:0:7}" ]; then folders="$folders monthly"; fi
+
+          # Minutes in the name: the lock refuses an overwrite, so two runs must never share one.
+          key="$(date -u +%Y-%m-%dT%H%M)Z.dump.gpg"
+          for folder in $folders; do
+            aws s3 cp copy.dump.gpg "$bucket/$folder/$key" \
+              --endpoint-url "$endpoint" --only-show-errors
+            echo "Stored $folder/$key"
+          done
