@@ -363,3 +363,67 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Why it matters:** AGENTS.md says "The live values are listed at the top of `.env.example`", and the block says "Railway sets these on the API". It names APP_ORIGIN, BETTER_AUTH_URL, NEXT_PUBLIC_API_URL, COOKIE_DOMAIN, NODE_ENV, DATABASE_URL, LOGIN_EMAIL_FROM and the three keys, but not RESEND_API_KEY, GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET. server.ts calls `readEmailSettings()` (production refuses without RESEND_API_KEY) and `googleOauthClient.assertConfigured()` (refuses without the Google client) before it listens. Someone rebuilding the Railway service from this list, as after the Oct 21 secret swap, gets an API that fails its health check until those are found elsewhere. It fails loudly, never silently, hence P3.
 **Suggested fix:** Add the three names to the live block (RESEND_API_KEY: the agency's Resend key; GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET: the same OAuth client, which holds both redirects), and say WIDGET_ORIGINS stays empty until a site goes live, as the spec's contract does.
 **Resolution:**
+
+### F-437 [P2] open - The public TCP proxy opened for the backup lets every live login in from the internet, not only backup_reader
+
+**File:** blueprint/context/current-feature.md:156-158 (Decision 5); AGENTS.md:556-559
+**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
+**Why it matters:** Decision 5 weighs only the job's own credential ("a leaked read-only login can read but never delete"). Railway's TCP proxy forwards raw Postgres traffic and authenticates by password, so the address it opened also accepts the `postgres` superuser that the API's `DATABASE_URL` uses (Railway publishes exactly that pair as `DATABASE_PUBLIC_URL`). Before 12c.1 that password alone was useless outside Railway's private network or a Railway-token tunnel; now anyone holding it (the laptop's root `.env` carries the Railway line for the tunnel) can write to and drop the live database from anywhere. The password is long and random, so this is a leak risk, not a brute-force one. Missing validation: whether the superuser connects through the proxy address (a `psql` through it with the Railway credentials, by Frank).
+**Suggested fix:** Record the trade in Decision 5 and the AGENTS.md Backups paragraph so it is Frank's call with the full picture. If he wants it narrowed: give the API its own non-superuser login so the superuser password lives nowhere in daily use, or rotate the superuser password and keep it only in the password manager.
+**Resolution:** Confirmed 2026-10-23: the one-off that made backup_reader connected as the live superuser (`postgres`, from Railway's variables) through `shortline.proxy.rlwy.net` over SSL, so every live login is now reachable from the internet with its password. Open: Frank's decision (keep the proxy and rotate or lock down the superuser, or another way in).
+
+### F-438 [P3] fixed - The job's "tables" count counts every table twice, so "66 tables" in the log and build log is about 33
+
+**File:** .github/workflows/database-backup.yml:57-58
+**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
+**Why it matters:** `pg_restore --list` writes one `TABLE` entry and one `TABLE DATA` entry per table, and `grep -c " TABLE "` matches both. The migrations create 28 tables, plus drizzle's ledger and graphile-worker's five, about 33 to 34, against the 66 the run printed and the build log repeats ("opens all 66 tables"). The refusal still works (zero is zero), but the spec's contract "prints the copy's size and table count" prints the wrong number, and 12c.2 compares per-table counts, where 66 against roughly 33 restored tables reads as missing tables.
+**Suggested fix:** Count only the definition entries, e.g. `grep " TABLE " | grep -vc " TABLE DATA "` (keeping `|| true`), and correct the count in the 12c.1 log entry.
+**Resolution:** Fixed 2026-10-23: the count drops `TABLE DATA` lines. Run 39987049465 printed `33 tables` for the same copy that read 66 before.
+
+### F-439 [P3] fixed - A dropped or very late 00 UTC run leaves that day with no daily copy, and a Sunday or the 1st with no weekly or monthly one, without any email
+
+**File:** .github/workflows/database-backup.yml:69-77
+**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
+**Why it matters:** Only the run whose start hour is 00-05 UTC adds `daily/`, `weekly/` or `monthly/`. GitHub documents that scheduled runs can be delayed under load and that queued scheduled runs can be dropped; a dropped 00 run is a run that never starts, so no failure email. That day's only copies then sit in `6h/` and expire after 3 days; a dropped first-of-month run means no copy of that month survives past 14 days. The opposite edge also exists: an 18 UTC run delayed past midnight lands in slot 0 and adds a second `daily/` (and on a Sunday or the 1st, a second weekly or monthly) copy, which the lock then keeps. The slot comment ("a late start still counts") covers delays under 6 hours only.
+**Suggested fix:** Decide by what is already stored rather than by the hour: before uploading, list `daily/<today's UTC date>` and add `daily/` when nothing for today is there yet (and the same for the ISO week in `weekly/` and the month in `monthly/`). The first successful run of a day, week or month is then the kept one, and the double copy goes. Or accept it and say so in the spec's Out of scope.
+**Resolution:** Fixed 2026-10-23: the folders come from what the bucket holds (newest `daily/` not today, newest `monthly/` not this month, newest `weekly/` 7 days old or more), not from the start hour. Run 39987049465 (16:28 UTC) stored 6h, daily, weekly and monthly; run 39987173568 a minute later stored 6h only. Spec Data / contracts and AGENTS.md updated.
+
+### F-440 [P3] fixed - The workflow does not require an encrypted connection; the live data travels however the secret URL says
+
+**File:** .github/workflows/database-backup.yml:37,53
+**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
+**Why it matters:** The dump crosses the public internet through the TCP proxy. The workflow sets no `PGSSLMODE`, so `pg_dump` uses whatever `sslmode` the `BACKUP_DATABASE_URL` secret carries, and libpq's default `prefer` falls back to plaintext if the server's TLS offer is stripped on the way, sending the backup_reader password and every client's rows in the clear. The build log says the login was made "over the new public address (SSL)", which shows the server offers TLS, not that the secret insists on it. Missing validation: whether the secret's URL carries `sslmode=require` (or stronger); it cannot be read from the repo.
+**Suggested fix:** Add `PGSSLMODE: require` to the step's `env` (libpq uses it whenever the URL names no `sslmode`), so the rule lives in the reviewed file rather than only in a secret. `require` stops passive reading; Railway's self-signed certificate rules out `verify-full` without its CA.
+**Resolution:** Fixed 2026-10-23: `PGSSLMODE: require` in the step env (the secret URL also carries `sslmode=require`).
+
+### F-441 [P3] fixed - The PostgreSQL apt signing key is downloaded on every run and trusted without checking its fingerprint
+
+**File:** .github/workflows/database-backup.yml:27-31
+**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
+**Why it matters:** The job that holds the database login, the passphrase and the R2 key installs and runs `pg_dump` from a repository whose trust root is whatever `www.postgresql.org` serves at that moment. This is PGDG's own published recipe and HTTPS protects it, so the risk is small, but a pinned fingerprint costs one line and turns a swapped key into a failed run instead of trusted packages.
+**Suggested fix:** After the download, check `gpg --show-keys --with-colons` on the file for PGDG's documented fingerprint for ACCC4CF8 (`B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8`) and exit 1 if it is not there.
+**Resolution:** Fixed 2026-10-23: the downloaded key is trusted only if its fingerprint is `B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8`; runs 39987049465 and 39987173568 installed the client past the check.
+
+### F-442 [P3] fixed - AGENTS.md says backup_reader has pg_read_all_data "nothing else", but it also bypasses row-level security
+
+**File:** AGENTS.md:558
+**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
+**Why it matters:** The spec's Data / contracts and the 12c.1 amendment record `BYPASSRLS` as part of the login (graphile-worker's `_private_*` tables need it). AGENTS.md, the file every session loads and the one a rebuild of the login would follow, still says "nothing else", so a login recreated from it would make the next run fail on those four tables.
+**Suggested fix:** Say `pg_read_all_data` and `BYPASSRLS` (reading only), with the reason in a few words.
+**Resolution:** Fixed 2026-10-23: AGENTS.md names `pg_read_all_data` and `BYPASSRLS` and why.
+
+### F-443 [P3] fixed - The backup passphrase is also in the laptop's root .env, where the spec and AGENTS.md say it lives only in GitHub and the password manager
+
+**File:** AGENTS.md:564-567; blueprint/context/current-feature.md:30-31,133-135
+**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
+**Why it matters:** The 12c.1 build log says the backup key went into "Google Password Manager, GitHub and .env", and the download check opened the copy with "your key from .env". The root `.env` is loaded into every local API, test and script process and is copied to each machine, and it already holds the live Railway login; one leak of that file now also opens every backup copy. The docs promise the opposite, and `.env.example` has no line for it. 12c.2's restore plan has `gpg` ask for the passphrase, so nothing needs it in `.env`.
+**Suggested fix:** Remove it from `.env` (the password manager is the second copy), or, if Frank wants it there, say so in the spec's protection line and AGENTS.md and add the name to `.env.example`.
+**Resolution:** Fixed 2026-10-23 in the docs: the spec and AGENTS.md now say the passphrase is also in the root `.env` (Frank's choice that day, for the restore) and in Google Password Manager. The risk that one leaked `.env` opens the copies is left to Frank (that file already holds the live database tunnel line).
+
+### F-444 [P3] fixed - No check exercises the daily, weekly and monthly folders before the merge, and the Done when names only "the next scheduled run"
+
+**File:** .github/workflows/database-backup.yml:73-77; blueprint/context/current-feature.md (12c.1 Done when)
+**Found:** 2026-10-23 by independent review of step 12c.1 (scope: 8640e41..0dd870b; lenses: quality, security, performance, tests)
+**Why it matters:** The folder rule is the one piece of logic in the step, and it decides which copies outlive 3 days. The only proven run stored to `6h/` at 15:56 UTC; `daily/`, `weekly/` (`%u` = 7) and `monthly/` (`%d` = 01) first run after the merge, on the first 00 UTC, first Sunday and the 1st. The code reads correctly, but a slip there fails silently: no error, just no long-lived copy, noticed only when one is needed.
+**Suggested fix:** Add to 12c's Done when (or `/complete`'s checks) one listing of `daily/` after the first 00 UTC run, `weekly/` after the first Sunday and `monthly/` after the first 1st following the merge, each written in the log.
+**Resolution:** Fixed 2026-10-23: with F-439's rule the first run fills every empty folder, so run 39987049465 stored a copy in each of `6h/`, `daily/`, `weekly/`, `monthly/` before the merge.
