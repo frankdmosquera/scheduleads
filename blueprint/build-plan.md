@@ -387,7 +387,9 @@ list, Calendly is gone from his site, and the ranking is untouched.
   Alberta's holiday list, write down the holidays his Calendly closes today
   (Canada's list, with Sep 30 on and no Family Day), so the switch changes
   nothing he did not choose. Needs item 22 finished first: his Google
-  connection would otherwise drop every seven days
+  connection would otherwise drop every seven days. Waits until IA a la Orden,
+  the agency itself, has taken real bookings on its own site and the product
+  is proven there; no real client before that (Frank, 2026-10-23)
 - [ ] 13b. **When a client leaves, and removal requests** - what happens to
   a business's data when it leaves (kept how long, then deleted), and to a
   customer who asks to be removed (deleted from the app, and from the backup

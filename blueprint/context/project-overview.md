@@ -94,7 +94,7 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
     12h the calendar connection and busy calendars.
 - **12b. Calendars** - every person and place has an in-app calendar.
 - **12c. Backups and restore** - before any real client's data.
-13. **Primo Painters** - Calendly out. Needs 12c and item 22's calendar half.
+13. **Primo Painters** - Calendly out. Needs 12c, item 22's calendar half, and IA a la Orden proven on real bookings first.
 13b. **When a client leaves, and removal requests** - before the first client leaves.
 14. **Pipeline board** - drag and drop between stages the business names.
 15. **Email from the CRM** - sends logged on the timeline; BCC capture.
