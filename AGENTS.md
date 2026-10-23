@@ -343,7 +343,7 @@ push, or publish unless the user gives a separate yes in the current chat.
 
 **It lives in the buildlogs app**, in `ai-web-agency/buildlogs`, folder
 `buildlogs/logs/scheduleads/`. Frank reads it at http://localhost:3100 on the
-laptop and online on his phone. How to write it, what a step looks like and
+laptop only (never online, since 2026-10-23). How to write it, what a step looks like and
 when to save it are in `buildlogs/logs/README.md`: read that before writing any entry. Every step uses its piece shape
 (since 2026-10-09): pieces N.M.k holding plan, what happened, findings and
 code together, then Part 2 Testing. Decided by Frank, 2026-09-29: the single-page `project-log.html`
@@ -362,7 +362,7 @@ Order, every time:
 3. write the step's entry in `buildlogs/logs/scheduleads/` (its file, its state
    in `roadmap.json`, the feature's Log), then commit that folder to buildlogs'
    `main`, as the guide says; it is pushed about once a day, never per step
-   (Frank, 2026-10-09), or whenever he asks to see it online
+   (Frank, 2026-10-09)
 4. commit the step here and push it (see Git above)
 5. only then report the step in chat
 
