@@ -25,18 +25,24 @@ describe("the database a backup is restored into", () => {
 
   test("a database that is not on this laptop is refused, the Railway tunnel included", () => {
     const remote = "postgresql://postgres:x@db.example.com:5432/scheduleads_dev";
-    expect(() => restoreTargetUrl(remote, "scheduleads_restore_dev")).toThrow(/Refusing to restore/);
+    expect(() => restoreTargetUrl(remote, "scheduleads_restore_dev")).toThrow(
+      /Refusing to restore/
+    );
     const tunnel = "postgresql://postgres:x@127.0.0.1:5433/railway";
-    expect(() => restoreTargetUrl(tunnel, "scheduleads_restore_dev")).toThrow(/Refusing to restore/);
-  });
-
-  test("a name with anything but lowercase letters, digits and _ is refused", () => {
-    expect(() => restoreTargetUrl(WORKING, 'x_dev"; drop database scheduleads_dev; --_dev')).toThrow(
-      /not a database name/
+    expect(() => restoreTargetUrl(tunnel, "scheduleads_restore_dev")).toThrow(
+      /Refusing to restore/
     );
   });
 
+  test("a name with anything but lowercase letters, digits and _ is refused", () => {
+    expect(() =>
+      restoreTargetUrl(WORKING, 'x_dev"; drop database scheduleads_dev; --_dev')
+    ).toThrow(/not a database name/);
+  });
+
   test("no DATABASE_URL is refused", () => {
-    expect(() => restoreTargetUrl(undefined, "scheduleads_restore_dev")).toThrow(/DATABASE_URL is not set/);
+    expect(() => restoreTargetUrl(undefined, "scheduleads_restore_dev")).toThrow(
+      /DATABASE_URL is not set/
+    );
   });
 });
