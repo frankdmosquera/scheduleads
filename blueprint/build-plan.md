@@ -501,7 +501,7 @@ booking with no one at the agency involved.
   Google's Testing mode a client's connection drops every seven days and
   their booking page shows no times until they reconnect, which is what
   stalled the first repo. Decided 2026-09-25
-  - [ ] 22a. **Google calendar approval** - the calendar half, first: the
+  - [x] 22a. **Google calendar approval** - the calendar half, first: the
     product's own site at booking-crm.com (a home page, a privacy policy and
     terms, in the new `booking-crm-site` project), the consent screen named
     "Booking CRM" (Frank, 2026-10-23), the app published so connections stop
