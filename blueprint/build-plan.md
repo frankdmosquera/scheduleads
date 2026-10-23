@@ -378,7 +378,10 @@ without Frank touching the database.
   emails (confirmation, moved, cancelled) and the customer's cancel and move
   page speak Spanish as well as English. The site picks the window's language
   on its `BookingProvider`; each business picks the language of its customer
-  emails and pages, a setting (decision 30). Service names are data, renamed in
+  emails and pages, a setting (decision 30); open for the spec: the booking
+  keeps the language its window used and its emails follow it, the business's
+  setting only the default, so one business with two sites never answers in
+  the wrong one. Service names are data, renamed in
   Settings. Added by Frank on 2026-10-23: IA a la Orden's site, ialaorden.com,
   is in Spanish, and it gets the booking window only once the window speaks it
   (its item 12). Published as the package's next version. Numbered 12i so
