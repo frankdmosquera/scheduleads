@@ -8,11 +8,6 @@ on:
   schedule:
     - cron: "0 */6 * * *" # 00, 06, 12, 18 UTC
   workflow_dispatch:
-  # Temporary, to prove the job before it is on main (scheduled runs start only from main).
-  # Removed before 12c is merged.
-  push:
-    branches: [feature/12c-backups-and-restore]
-    paths: [.github/workflows/database-backup.yml]
 
 permissions:
   contents: read

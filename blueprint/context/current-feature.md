@@ -8,7 +8,7 @@ restore proved to bring every row back.
 
 **Branch:** feature/12c-backups-and-restore
 
-**Status:** specced 2026-10-23; waiting on 12c.1's yes.
+**Status:** 12c.1 built 2026-10-23; its review next.
 
 ## Goal
 
@@ -61,7 +61,7 @@ default; P2/P3 are recorded and carried. `/complete` makes the final pass and me
 
 ## Build steps
 
-- [ ] **12c.1 A copy lands in R2 every 6 hours.** "Every 6 hours a locked, encrypted copy of the
+- [x] **12c.1 A copy lands in R2 every 6 hours.** "Every 6 hours a locked, encrypted copy of the
   live database appears in the R2 bucket, in the right folders, and nobody can delete it early."
   - Frank's one trip, in this order:
     1. Railway: turn on the Postgres service's public TCP proxy (Settings, Networking).
@@ -78,7 +78,7 @@ default; P2/P3 are recorded and carried. `/complete` makes the final pass and me
     `workflow_dispatch`; installs `postgresql-client-18` from the PostgreSQL apt repository;
     `pg_dump --format=custom`; refuses a dump under 10 KB or with no tables; `gpg --symmetric
     --cipher-algo AES256` with the passphrase from the secret; uploads with the runner's `aws` CLI
-    to R2's S3 endpoint as `6h/<UTC yyyy-mm-ddThh>.dump.gpg`, plus `daily/`, `weekly/`,
+    to R2's S3 endpoint as `6h/<UTC yyyy-mm-ddTHHMM>Z.dump.gpg`, plus `daily/`, `weekly/`,
     `monthly/` on the matching runs; prints the copy's size and table count, never data.
   - `AGENTS.md`: a Backups paragraph (where, the schedule, the secrets' names, the login, how
     to run a copy now).
@@ -119,13 +119,13 @@ default; P2/P3 are recorded and carried. `/complete` makes the final pass and me
 ## Data / contracts
 
 - **A copy**: `pg_dump --format=custom` of the whole live database, encrypted with GnuPG
-  symmetric AES-256; object key `<folder>/<UTC yyyy-mm-ddThh>.dump.gpg`; folders `6h`, `daily`,
+  symmetric AES-256; object key `<folder>/<UTC yyyy-mm-ddTHHMM>Z.dump.gpg` (minutes, so two runs never share a name the lock would refuse to overwrite); folders `6h`, `daily`,
   `weekly`, `monthly`. The same copy may sit in up to four folders.
 - **Which folders**: every run `6h/`; the run at 00 UTC also `daily/`; 00 UTC on a Sunday (UTC)
   also `weekly/`; 00 UTC on the 1st (UTC) also `monthly/`.
 - **Expiry and lock**: per folder, 3, 14, 60 and 365 days; R2 lifecycle deletes, the lock refuses
   any earlier delete or overwrite.
-- **`backup_reader`**: a login role with `pg_read_all_data` only; no write, no DDL. Its password
+- **`backup_reader`**: a login role with `pg_read_all_data` and `BYPASSRLS` (graphile-worker's four `_private_*` tables use row-level security, which `pg_dump` will not read around otherwise); no write, no DDL. Its password
   exists only in the `BACKUP_DATABASE_URL` secret; lost means rotated.
 - **`backup:restore <copy> --into <name>`**: refuses (message, exit 1) a target that is not
   local, does not end in `_dev`, or is the `DATABASE_URL` database; prints the target first;
@@ -164,6 +164,19 @@ default; P2/P3 are recorded and carried. `/complete` makes the final pass and me
 8. **Expiry by folder in R2**, not code that deletes: nothing to break, nothing to run.
 9. **The restore goes into a local scratch database**, never the working dev one and never live;
    replacing live is a runbook entry, done only on Frank's yes on the day.
+
+## Amendments
+
+- 2026-10-23, 12c.1: weekly copies kept 60 days, not 90 (Frank set 60 in R2 and kept it).
+- 2026-10-23, 12c.1: `backup_reader` also has `BYPASSRLS`. The first run failed: graphile-worker's
+  `_private_job_queues`, `_private_jobs`, `_private_known_crontabs` and `_private_tasks` have row-level
+  security on, and `pg_dump` refuses to copy them past it. Reading only; an insert is still refused (`42501`).
+- 2026-10-23, 12c.1: object names carry minutes and `Z` (`2026-10-23T1556Z.dump.gpg`): the lock refuses an
+  overwrite, so two runs in one hour must never share a name.
+- 2026-10-23, 12c.1: no temporary `push` trigger: `gh workflow run database-backup.yml --ref <branch>`
+  runs the job from the feature branch, so it was removed before the step closed.
+- 2026-10-23, 12c.1: one copy is 105 KB before locking and 24 KB locked (GnuPG compresses), not about
+  1 MB: about 40 copies hold about 1 MB of R2.
 
 ## Notes for the AI
 
