@@ -369,13 +369,13 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Use `z.iso.date({ error: "Pick a day." })` (or one shared `calendarDateOf(message)` in the package) in all three schemas, keeping each field's words.
 **Resolution:**
 
-### F-430 [P3] open - railway.json says how the API starts and drains, but Railway runs the dashboard's values
+### F-430 [P3] fixed - railway.json says how the API starts and drains, but Railway runs the dashboard's values
 
 **File:** railway.json:15-21
 **Found:** 2026-10-21 by /audit (scope: current, c89e355..ce8474c; lenses: quality, security, performance, tests)
 **Why it matters:** On this service the dashboard's settings beat the file's deploy section: the deployments built after 6ed237b still ran `npm run start` with draining unset until Frank typed the same values into the dashboard (each deployment's `serviceManifest`). The watch paths behave the same way. So the file now restates values that do not take effect from it, and the next edit to `railway.json` (or to `.railway/railway.ts`, due before Dec 1) will look applied while the dashboard keeps the old value. It bit three times in 10b.1 (the missing build command, the skipped root-only commit, the start command and draining time).
 **Suggested fix:** At the `.railway/railway.ts` migration planned in 10b, find which source the service honours (Railway's config-as-code setting for this service, or a `serviceManifest` read after a change to the file alone) and keep that one source; until then, a line in AGENTS.md's live-app paragraph that the dashboard wins and that `railway deployment list --json` (`serviceManifest`) is the check.
-**Resolution:**
+**Resolution:** Fixed 2026-10-23 (10b): one source per setting. `railway.json` is deleted; start, draining, health check and watch paths live in the dashboard, and the build is the root `build` script, which Railway runs by itself (5382dbe, a deploy showed install then build and passed its health check). The dashboard build command never took: a deploy without the file ran only `npm install` and failed, reverted in 9485cf9.
 
 ### F-431 [P3] unverified - The runner's first start waits only for "refused" and "starting up", while the live database is reached by a private host name
 
