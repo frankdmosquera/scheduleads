@@ -8,7 +8,7 @@ restore proved to bring every row back.
 
 **Branch:** feature/12c-backups-and-restore
 
-**Status:** 12c.1 built 2026-10-23; its review next.
+**Status:** verified 2026-10-23: both steps built and checked on the live database and a real copy; 12c.1 reviewed (F-437 accepted, F-438 to F-444 fixed); shared 202 tests pass.
 
 ## Goal
 
@@ -87,7 +87,7 @@ default; P2/P3 are recorded and carried. `/complete` makes the final pass and me
   `backup_reader` is refused; deleting a fresh copy with the job's own key is refused; the copy's
   size is written in the log.
 
-- [ ] **12c.2 A copy comes back, every row.** "Frank downloads the newest copy, one command
+- [x] **12c.2 A copy comes back, every row.** "Frank downloads the newest copy, one command
   restores it into a scratch database on the laptop, and every table holds what the live
   database held."
   - Code: `packages/shared/scripts/restore-backup.ts`
@@ -179,6 +179,11 @@ default; P2/P3 are recorded and carried. `/complete` makes the final pass and me
   runs the job from the feature branch, so it was removed before the step closed.
 - 2026-10-23, 12c.1: one copy is 105 KB before locking and 24 KB locked (GnuPG compresses), not about
   1 MB: about 40 copies hold about 1 MB of R2.
+- 2026-10-23, 12c.2: the restore reads the key from `BACKUP_PASSPHRASE` in the root `.env` (Frank keeps
+  it there) and asks only when it is missing; it finds `pg_restore` and `gpg` in their Windows installs
+  when they are not on PATH (`PG_BIN` and `GPG` override).
+- 2026-10-23, 12c.2: the drill's live counts were read with read-only queries through the superuser,
+  not `backup_reader`, whose address lives only in the GitHub secret. All 33 tables matched.
 
 ## Notes for the AI
 
