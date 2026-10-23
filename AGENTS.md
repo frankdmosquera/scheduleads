@@ -590,7 +590,8 @@ Git's. The scratch database holds every client's customers: drop it when done
 - **A bug or a migration damaged rows**: the same, from a copy before the
   damage, for the damaged rows only.
 - **The live database is lost**: only on Frank's yes on the day. Open the newest
-  copy by hand (`gpg --decrypt <copy.dump.gpg> > copy.dump`, with the key), make
+  copy by hand (`gpg --output copy.dump --decrypt <copy.dump.gpg>`, with the key;
+  a shell redirect corrupts it in Windows PowerShell 5.1), make
   a new Railway Postgres, restore into it with
   `pg_restore --no-owner --no-privileges` through its tunnel, point the API's
   `DATABASE_URL` at it, turn on its TCP proxy, make `backup_reader` again, and

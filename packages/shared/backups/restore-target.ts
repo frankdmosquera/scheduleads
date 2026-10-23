@@ -1,6 +1,6 @@
-// Shared: where a backup copy may be restored (12c). Only a scratch database on this laptop whose
+// Shared: where a backup copy may be restored. Only a scratch database on this laptop whose
 // name ends in _restore_dev, so neither the working database nor another project's _dev one is
-// ever dropped (F-445). Returns the target's URL: the working server's address and login, the
+// ever dropped. Returns the target's URL: the working server's address and login, the
 // target's name, and nothing else.
 
 import { assertLocalDevDatabase } from "../helpers/assert-local-dev-database.js";
@@ -16,7 +16,7 @@ export function restoreTargetUrl(workingUrl: string | undefined, into: string): 
   }
   assertLocalDevDatabase(workingUrl, "restore a backup");
 
-  // libpq would take a host, port or database from the query string past the checks (F-446).
+  // libpq would take a host, port or database from the query string past the checks.
   const target = parseDatabaseUrl(workingUrl as string);
   if (target.search || target.hash) {
     throw new Error(

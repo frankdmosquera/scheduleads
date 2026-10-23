@@ -356,13 +356,13 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** When a Postgres outage is next seen (or on a planned stop), read the API's error code from its log; if it is a lookup or timeout error, add that code to `isDatabaseNotUpYet` with a test. Independent review of 10b.1 agrees and keeps it `unverified`: graphile-worker 0.18.0's own `RETRYABLE_ERROR_CODES` (dist/lib.js) treat `EHOSTUNREACH` and `ETIMEDOUT` as a database not reachable yet, which supports adding at least those two.
 **Resolution:**
 
-### F-436 [P3] open - The live variables listed in .env.example leave out three the live API refuses to start without
+### F-436 [P3] fixed - The live variables listed in .env.example leave out three the live API refuses to start without
 
 **File:** .env.example:17-28 (required by backend/server.ts:28-31; backend/lib/email/read-email-settings.ts:12-21; backend/lib/calendar/google-oauth-client.ts:60-62)
 **Found:** 2026-10-23 by /audit independent (scope: current, c89e355..7654439; lenses: quality, security, performance, tests)
 **Why it matters:** AGENTS.md says "The live values are listed at the top of `.env.example`", and the block says "Railway sets these on the API". It names APP_ORIGIN, BETTER_AUTH_URL, NEXT_PUBLIC_API_URL, COOKIE_DOMAIN, NODE_ENV, DATABASE_URL, LOGIN_EMAIL_FROM and the three keys, but not RESEND_API_KEY, GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET. server.ts calls `readEmailSettings()` (production refuses without RESEND_API_KEY) and `googleOauthClient.assertConfigured()` (refuses without the Google client) before it listens. Someone rebuilding the Railway service from this list, as after the Oct 21 secret swap, gets an API that fails its health check until those are found elsewhere. It fails loudly, never silently, hence P3.
 **Suggested fix:** Add the three names to the live block (RESEND_API_KEY: the agency's Resend key; GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET: the same OAuth client, which holds both redirects), and say WIDGET_ORIGINS stays empty until a site goes live, as the spec's contract does.
-**Resolution:**
+**Resolution:** Fixed 2026-10-23 on feature/22a: the live block in `.env.example` names RESEND_API_KEY, GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET as required to start, and WIDGET_ORIGINS as empty until a site goes live.
 
 ### F-444 [P3] fixed - No check exercises the daily, weekly and monthly folders before the merge, and the Done when names only "the next scheduled run"
 
@@ -380,13 +380,13 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Move the two sentences back to the end of the Backups paragraph. In the third case add the gpg line (`gpg --output <copy.dump> --decrypt <copy.dump.gpg>`, then delete the opened file) and "update `BACKUP_DATABASE_URL` in GitHub and open the TCP proxy again".
 **Resolution:** Fixed 2026-10-23: the two Backups sentences are back in the Backups paragraph; the lost-database case now opens the copy by hand, turns on the new database's TCP proxy, makes `backup_reader` again and saves its address as `BACKUP_DATABASE_URL`. Re-examined 2026-10-23 by the independent review of 24ba21a..7208529: the two sentences are back in the Backups paragraph and the lost-database case names the proxy, `backup_reader` and the secret, but the new hand-opening command redirects gpg's binary output (F-453), so it stays `fixed` until that is settled.
 
-### F-450 [P3] open - New code comments and test names carry step and finding numbers, which the comment standard keeps in the build log
+### F-450 [P3] fixed - New code comments and test names carry step and finding numbers, which the comment standard keeps in the build log
 
 **File:** packages/shared/backups/restore-target.ts:1,3,19; packages/shared/scripts/restore-backup.ts:1,54,65,115; packages/shared/backups/restore-target.test.ts:1,23,38; .github/workflows/database-backup.yml:1
 **Found:** 2026-10-23 by /audit independent current (scope: 24ba21a..7208529; lenses: quality, security, performance, tests)
 **Why it matters:** coding-standards.md:365-366: "No history in code comments (step numbers, finding numbers ...): that lives in the build log." The new files tag their comments and test names with `(12c)`, `(12c.2)` and `(F-445)` to `(F-448)`. Once `/complete` archives this ledger and resets it, a bare `F-445` points at nothing (its permanent form is `12c/F-445`), and a later ledger restarting at `F-01` can reach the same number for a different finding. Every one of these comments already states its reason without the tag.
 **Suggested fix:** Drop the `(12c)`, `(12c.2)` and `(F-44x)` tags from the comments and test names; keep the sentences.
-**Resolution:**
+**Resolution:** Fixed 2026-10-23 on feature/22a: the `(12c)`, `(12c.2)` and `(F-44x)` tags are gone from the comments and test names in the four files; the sentences stay.
 
 ### F-451 [P3] fixed - The overview's plan fingerprint matches neither the committed nor the checked-out plans, so /status will ask for /overview
 
@@ -396,26 +396,26 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Recompute the marker from the final plans by `/overview`'s contract (or rerun `/overview`).
 **Resolution:** Fixed 2026-10-23 by /complete for 12c: the marker is recomputed over the checked-out (CRLF) bytes with 12c ticked, `05f497ca…`, the form the review computed.
 
-### F-452 [P3] open - The package's editor and type-check config leaves out `backups/`, so the new test file is type-checked by nothing
+### F-452 [P3] fixed - The package's editor and type-check config leaves out `backups/`, so the new test file is type-checked by nothing
 
 **File:** packages/shared/tsconfig.json:15-28
 **Found:** 2026-10-23 by /audit independent current (scope: 24ba21a..7208529; lenses: quality, security, performance, tests)
 **Why it matters:** tsconfig.json describes itself as "the whole package: the code, its tests, ..." and lists every source folder except the new `backups`. tsconfig.build.json compiles `restore-target.ts` but excludes tests, and Vitest does not type-check, so `restore-target.test.ts` is checked by no config; in the editor both files fall into an inferred project without `types: ["node"]` or NodeNext resolution. `tsc -p tsconfig.json --listFilesOnly` lists only `dist/backups/restore-target.d.ts`. Both files type-check today when compiled by hand with the package's options, so this is a gap, not a present error.
 **Suggested fix:** Add `"backups"` to tsconfig.json's `include`.
-**Resolution:**
+**Resolution:** Fixed 2026-10-23 on feature/22a: `backups` is in `packages/shared/tsconfig.json`; `tsc --noEmit -p tsconfig.json` passes with the test file in it.
 
-### F-453 [P3] open - The runbook's hand-opening command writes the decrypted copy through a shell redirect, which Windows PowerShell 5.1 turns into a corrupt file
+### F-453 [P3] fixed - The runbook's hand-opening command writes the decrypted copy through a shell redirect, which Windows PowerShell 5.1 turns into a corrupt file
 
 **File:** AGENTS.md:592-593
 **Found:** 2026-10-23 by /audit independent current (scope: 24ba21a..7208529; lenses: quality, security, performance, tests)
 **Why it matters:** `gpg --decrypt <copy.dump.gpg> > copy.dump` is safe in Git Bash, but in Windows PowerShell 5.1 (this laptop's default shell) a native command's output is read as text and `>` writes it back as UTF-16, so the file is no longer a pg_dump archive and pg_restore refuses it. This is the "live database is lost" case, the one run under pressure. F-449's suggested fix gave the shell-independent form.
 **Suggested fix:** Use `gpg --output copy.dump --decrypt <copy.dump.gpg>` (or say the line is for Git Bash).
-**Resolution:**
+**Resolution:** Fixed 2026-10-23 on feature/22a: the runbook opens the copy with `gpg --output copy.dump --decrypt <copy.dump.gpg>` and says why a redirect is not used.
 
-### F-454 [P3] open - `.env.example` does not name the three variables the restore reads from the root `.env`
+### F-454 [P3] fixed - `.env.example` does not name the three variables the restore reads from the root `.env`
 
 **File:** .env.example; packages/shared/scripts/restore-backup.ts:47,51,76
 **Found:** 2026-10-23 by /audit independent current (scope: 24ba21a..7208529; lenses: quality, security, performance, tests)
 **Why it matters:** The restore reads `BACKUP_PASSPHRASE`, `PG_BIN` and `GPG` from the root `.env`, and its own error says "set PG_BIN in the root .env", but `.env.example`, the list a new machine's `.env` is built from, names none of them; only AGENTS.md does. F-443's suggested fix asked for the passphrase line if it stayed in `.env`. A second machine still restores without them (gpg asks for the key), so this is discoverability, not breakage.
 **Suggested fix:** Add the three names to `.env.example`, commented and empty, with a line each on what they are for. No values.
-**Resolution:**
+**Resolution:** Fixed 2026-10-23 on feature/22a: `.env.example` ends with the restore's BACKUP_PASSPHRASE, PG_BIN and GPG, commented and empty, each with what it is for.

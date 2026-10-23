@@ -1,4 +1,4 @@
-# A copy of the live database every 6 hours, locked and kept outside Railway in R2 (12c).
+# A copy of the live database every 6 hours, locked and kept outside Railway in R2.
 # Folders and how long R2 keeps them: 6h/ 3 days, daily/ 14, weekly/ 60, monthly/ 365.
 # Never prints a secret or any data: only the copy's size and its number of tables.
 

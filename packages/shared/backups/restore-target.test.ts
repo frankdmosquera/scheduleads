@@ -1,4 +1,4 @@
-// Where a backup may be restored (12c.2): a scratch _restore_dev database on this laptop only.
+// Where a backup may be restored: a scratch _restore_dev database on this laptop only.
 
 import { describe, expect, test } from "vitest";
 
@@ -20,7 +20,7 @@ describe("the database a backup is restored into", () => {
     expect(() => restoreTargetUrl(WORKING, "scheduleads_dev")).toThrow(/_restore_dev/);
   });
 
-  test("another project's _dev database is refused (F-445)", () => {
+  test("another project's _dev database is refused", () => {
     expect(() => restoreTargetUrl(WORKING, "list_board_dev")).toThrow(/_restore_dev/);
   });
 
@@ -35,7 +35,7 @@ describe("the database a backup is restored into", () => {
     );
   });
 
-  test("a DATABASE_URL with options after the name is refused, so none can redirect pg_restore (F-446)", () => {
+  test("a DATABASE_URL with options after the name is refused, so none can redirect pg_restore", () => {
     expect(() =>
       restoreTargetUrl(`${WORKING}?port=5433&dbname=railway`, "scheduleads_restore_dev")
     ).toThrow(/options after the name/);

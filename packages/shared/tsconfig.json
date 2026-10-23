@@ -22,6 +22,7 @@
     "zod-validation",
     "client-setup",
     "platform-admin",
+    "backups",
     "client-setups",
     "scripts",
     "drizzle.config.ts"
