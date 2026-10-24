@@ -45,6 +45,10 @@ export function CustomerBookingScreen({ token }: { token: string }) {
   const words = customerBookingWordsOf[language];
 
   useEffect(() => {
+    if (!result || result.state !== "ok") document.title = words.yourBooking;
+  }, [result, words]);
+
+  useEffect(() => {
     let live = true; // a late answer never updates a page the customer already left
     fetchBookingPage(token).then((next) => {
       if (live) setResult(next);
@@ -60,7 +64,7 @@ export function CustomerBookingScreen({ token }: { token: string }) {
 
   if (!result) {
     return (
-      <CustomerBookingFrame>
+      <CustomerBookingFrame lang={language}>
         <p role="status" className="text-sm text-slate-500">
           {words.oneMoment}
         </p>
@@ -69,7 +73,7 @@ export function CustomerBookingScreen({ token }: { token: string }) {
   }
   if (result.state === "not-found") {
     return (
-      <CustomerBookingFrame>
+      <CustomerBookingFrame lang={language}>
         <h1
           ref={heading}
           tabIndex={-1}
@@ -83,7 +87,7 @@ export function CustomerBookingScreen({ token }: { token: string }) {
   }
   if (result.state === "unreachable") {
     return (
-      <CustomerBookingFrame>
+      <CustomerBookingFrame lang={language}>
         <h1
           ref={heading}
           tabIndex={-1}

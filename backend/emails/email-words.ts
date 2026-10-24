@@ -20,6 +20,7 @@ export type EmailWordsType = {
   bookedHeading: string;
   bookedThanks(customer: string, business: string): string;
   needToChange: string;
+  bookedPreview(service: string, when: string): string;
   movedSubject(business: string, when: string): string;
   movedPreview(service: string, when: string): string;
   movedHeading: string;
@@ -68,6 +69,7 @@ const english: EmailWordsType = {
   bookedHeading: "You're booked",
   bookedThanks: (customer, business) => `Thanks, ${customer}. ${business} has you booked.`,
   needToChange: "Need to change it?",
+  bookedPreview: (service, when) => `${service}, ${when}`,
   movedSubject: (business, when) => `Your booking with ${business} has moved: ${when}`,
   movedPreview: (service, when) => `Moved: ${service}, ${when}`,
   movedHeading: "Your booking has moved",
@@ -125,11 +127,12 @@ const spanish: EmailWordsType = {
   bookedHeading: "Su reserva está confirmada",
   bookedThanks: (customer, business) => `Gracias, ${customer}. ${business} tiene su reserva.`,
   needToChange: "¿Necesita cambiarla?",
+  bookedPreview: (service, when) => `${service}, ${inLine(when)}`,
   movedSubject: (business, when) => `Su reserva con ${business} cambió de hora: ${inLine(when)}`,
   movedPreview: (service, when) => `Cambio de hora: ${service}, ${inLine(when)}`,
   movedHeading: "Su reserva cambió de hora",
   movedThanks: (customer, business) =>
-    `Gracias, ${customer}. ${business} lo espera a la nueva hora.`,
+    `Gracias, ${customer}. Su nueva hora con ${business} está confirmada.`,
   needToChangeAgain: "¿Necesita cambiarla de nuevo?",
   cancelledSubject: (business, when) => `Su reserva con ${business} fue cancelada: ${inLine(when)}`,
   cancelledPreview: (service, when) => `Cancelada: ${service}, ${inLine(when)}`,
@@ -149,7 +152,7 @@ const spanish: EmailWordsType = {
   bookedOnSiteReply: (customer) =>
     `Reservado en su sitio web. Al responder, le escribe directamente a ${customer}.`,
   bookedOnSiteNoEmail: (customer) =>
-    `Reservado en su sitio web. ${customer} no dejó correo: llame para contactarlo.`,
+    `Reservado en su sitio web. ${customer} no dejó correo: llame para comunicarse.`,
   ownerMovedSubject: (service, when) => `Cambio de hora: ${service}, ${inLine(when)}`,
   ownerMovedHeading: "Reserva cambiada de hora",
   ownerMovedFooter: (customer, canReply) =>

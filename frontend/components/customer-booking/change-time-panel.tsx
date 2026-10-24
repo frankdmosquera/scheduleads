@@ -41,6 +41,9 @@ function formatWeekName(from: string, to: string, words: CustomerBookingWordsTyp
       new Date(`${date}T12:00:00Z`)
     );
   const sameMonth = from.slice(0, 7) === to.slice(0, 7);
+  // Spanish names the month after its days: "4 al 10 oct", "28 sept al 4 oct".
+  if (words.intlLocale.startsWith("es"))
+    return `${named(from, sameMonth ? { day: "numeric" } : { month: "short", day: "numeric" })} ${words.weekTo} ${named(to, { month: "short", day: "numeric" })}`;
   return `${named(from, { month: "short", day: "numeric" })} ${words.weekTo} ${named(to, sameMonth ? { day: "numeric" } : { month: "short", day: "numeric" })}`;
 }
 

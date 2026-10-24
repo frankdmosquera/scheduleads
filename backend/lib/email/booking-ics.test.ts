@@ -14,6 +14,7 @@ const plainBooking: BookingIcsInputType = {
   customerEmail: "jane@example.com",
   stampedAt: new Date("2026-10-02T20:30:00.000Z"),
   sequence: 0,
+  language: "en",
 };
 
 // A folded line rejoined: every line break followed by a space is removed (RFC 5545, 3.1).
@@ -162,5 +163,12 @@ describe("bookingIcs, a booking with no address (the address fix)", () => {
     const withAddress = bookingIcs(plainBooking).split("\r\n");
     const without = bookingIcs({ ...plainBooking, location: null }).split("\r\n");
     expect(without).toEqual(withAddress.filter((line) => !line.startsWith("LOCATION:")));
+  });
+});
+
+describe("the invite in Spanish (feature 12i)", () => {
+  test("a Spanish booking's calendar shows its title in Spanish", () => {
+    const ics = bookingIcs({ ...plainBooking, language: "es" });
+    expect(ics).toContain("SUMMARY:Exterior painting estimate con Primo Painters");
   });
 });

@@ -50,7 +50,7 @@ export const createBookingValidationSchema = z
       .optional(),
     // Her yes to later texts (decision 13), only from a business that asks; left out = no yes.
     laterTextsYes: z.boolean("That is not a yes or a no.").optional(),
-    // The language the window spoke (feature 12i); left out = English.
+    // The language the window spoke (feature 12i); left out, the booking takes its business's.
     language: bookingLanguageValidationSchema.optional(),
   })
   // A yes belongs to a number that can get texts: without one it proves nothing.

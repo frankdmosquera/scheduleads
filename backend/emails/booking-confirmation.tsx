@@ -56,7 +56,7 @@ function BookingConfirmationEmail({
       lang={facts.language}
       businessName={business.name}
       logo={business.logo}
-      preview={`${facts.service}, ${when}`}
+      preview={words.bookedPreview(facts.service, when)}
       footer={
         business.website ? (
           <Link href={business.website} style={{ color: emailColors.muted }}>

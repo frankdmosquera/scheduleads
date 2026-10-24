@@ -288,6 +288,29 @@ const changedSignature = (token: string) => {
   return `${id}.${signature.slice(0, -2)}${signature.at(-2) === "A" ? "B" : "A"}${signature.at(-1)}`;
 };
 
+describe("a Spanish booking (feature 12i)", () => {
+  test("its page and its move times speak Spanish", async () => {
+    await db.update(booking).set({ language: "es" }).where(eq(booking.id, primo.bookingId));
+    try {
+      const token = makeBookingPageToken(primo.bookingId);
+      const page = (await (await pageOf(token)).json()).booking;
+      expect(page.language).toBe("es");
+      expect(page.when).toBe(formatBookingTime(primo.startsAt, primo.timezone, "es"));
+
+      const day = dayAhead(primo.timezone);
+      const times = await (
+        await app.request(
+          `/public/bookings/${encodeURIComponent(token)}/times?from=${day}&to=${day}&language=es`
+        )
+      ).json();
+      expect(times.localStartTimes.length).toBeGreaterThan(0);
+      for (const time of times.localStartTimes) expect(time.when).toMatch(/ de /);
+    } finally {
+      await db.update(booking).set({ language: "en" }).where(eq(booking.id, primo.bookingId));
+    }
+  });
+});
+
 describe("cancelling from the page", () => {
   test("a cancel frees the time: the free-times route offers it again", async () => {
     const { bookingId, startsAt } = await bookFor(primo, 900); // 15:00
