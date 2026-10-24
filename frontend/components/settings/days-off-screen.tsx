@@ -59,7 +59,7 @@ function ClosedDaysList({ settings }: { settings: DaysOffSettingsType }) {
     setReadAnswer(settings);
     setDaysOff(settings);
   }
-  const { words } = useDashboardWords();
+  const { language, words } = useDashboardWords();
   const { daysOffWords } = words;
   const dayName = (date: string) => formatDayName(date, words.intlLocale);
   const [open, setOpen] = useState<string | "close" | null>(null); // a day's date, or the close form
@@ -191,6 +191,7 @@ function ClosedDaysList({ settings }: { settings: DaysOffSettingsType }) {
       </ul>
 
       <HolidayPicker
+        key={language} // a language switch reads its countries and holidays again, in the new one
         daysOff={daysOff}
         canEdit={canEdit}
         onSaved={(answer) => {

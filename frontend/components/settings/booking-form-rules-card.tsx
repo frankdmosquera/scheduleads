@@ -17,7 +17,13 @@ import type { BookingFormSettingsType } from "@/lib/api-client/settings/fetch-bo
 import { saveBookingFormRules } from "@/lib/api-client/settings/save-booking-form-rules";
 import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
-export function BookingFormRulesCard({ settings }: { settings: BookingFormSettingsType }) {
+export function BookingFormRulesCard({
+  settings,
+  onLanguageSaved,
+}: {
+  settings: BookingFormSettingsType;
+  onLanguageSaved: (language: BookingFormSettingsType["language"]) => void;
+}) {
   const { canEdit } = settings;
   const { words } = useDashboardWords();
   const formWords = words.bookingFormWords;
@@ -41,6 +47,7 @@ export function BookingFormRulesCard({ settings }: { settings: BookingFormSettin
       setContactRule(saved.answer.contactRule);
       setAskLaterTextsYes(saved.answer.askLaterTextsYes);
       setLanguage(saved.answer.language);
+      onLanguageSaved(saved.answer.language);
       setNotice({ tone: "info", text: formWords.rulesSaved });
       return;
     }

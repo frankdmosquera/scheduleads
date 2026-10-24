@@ -24,7 +24,13 @@ const rowsOf = (questions: BookingFormSettingsType["questions"]): QuestionRowTyp
   questions.map((question) => ({ key: question.id, ...question }));
 const labelId = (key: string) => `question-${key}`;
 
-export function BookingQuestionsCard({ settings }: { settings: BookingFormSettingsType }) {
+export function BookingQuestionsCard({
+  settings,
+  businessLanguage, // the ready-made questions are in it: what its customers read
+}: {
+  settings: BookingFormSettingsType;
+  businessLanguage: BookingFormSettingsType["language"];
+}) {
   const { canEdit, presets } = settings;
   const { language, words } = useDashboardWords();
   const formWords = words.bookingFormWords;
@@ -73,7 +79,7 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
   const add = () => edit([...rows, { key: crypto.randomUUID(), label: "", required: false }]);
   const startFrom = (set: (typeof presets)[number]) =>
     edit(
-      set.questions[settings.language].map((question) => ({
+      set.questions[businessLanguage].map((question) => ({
         key: crypto.randomUUID(),
         ...question,
       }))
