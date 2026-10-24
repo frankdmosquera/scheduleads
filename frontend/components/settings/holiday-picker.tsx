@@ -48,7 +48,9 @@ export function HolidayPicker({
   canEdit: boolean;
   onSaved: (answer: SavedDaysOffType) => void;
 }) {
-  const { words } = useDashboardWords();
+  // A language switch reads the countries and holidays again in the new one; the picks are English
+  // names, so they stay as they are.
+  const { language, words } = useDashboardWords();
   const { daysOffWords } = words;
   const formRef = useRef<HTMLFormElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
@@ -79,7 +81,7 @@ export function HolidayPicker({
     return () => {
       current = false;
     };
-  }, [attempt]);
+  }, [attempt, language]);
 
   useEffect(() => {
     if (!country) return; // no country, no list to read
@@ -111,7 +113,7 @@ export function HolidayPicker({
     return () => {
       current = false;
     };
-  }, [country, region, attempt]);
+  }, [country, region, attempt, language]);
 
   const edited = () => {
     setNotice(null);

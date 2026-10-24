@@ -1,5 +1,6 @@
 // Backend: the ready-made booking questions an owner can start from on Settings (feature 12f), one
-// set per trade, in English and Spanish (12j): the page fills in the language its login reads.
+// set per trade, in English and Spanish (12j): the page names a set in the language its login
+// reads and fills its questions in the business's language, the one its customers read.
 // They fill the page's list only when pressed, to change before saving; nothing is ever saved from
 // here on its own.
 
