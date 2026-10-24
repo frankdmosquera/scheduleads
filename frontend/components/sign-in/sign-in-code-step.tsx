@@ -37,8 +37,17 @@ export function SignInCodeStep({
     const { error } = await authClient.signIn.emailOtp({ email, otp: code });
 
     if (error) {
-      // A wrong code and an unknown account get the same answer on purpose; don't guess which.
-      setRefusal(error.message ?? words.codeNotRight);
+      // The page's own words, never Better Auth's English "Invalid OTP". A wrong code and an
+      // unknown account get the same answer on purpose; don't guess which.
+      setRefusal(
+        error.status === 429
+          ? words.tooManyTries
+          : error.code === "OTP_EXPIRED"
+            ? words.codeExpired
+            : error.code === "TOO_MANY_ATTEMPTS"
+              ? words.codeTriedTooOften
+              : words.codeNotRight
+      );
       return;
     }
 

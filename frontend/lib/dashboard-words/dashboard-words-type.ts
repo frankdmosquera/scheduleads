@@ -37,6 +37,9 @@ export type DashboardWordsType = {
   loginCodeLabel: string;
   checking: string;
   codeNotRight: string;
+  codeExpired: string;
+  codeTriedTooOften: string;
+  tooManyTries: string; // the sign-in steps were asked too often in a short time
   signOut: string;
   // Before a business opens
   oneMoment: string;

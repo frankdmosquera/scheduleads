@@ -41,7 +41,8 @@ export function SignInEmailStep({
     );
 
     if (error) {
-      setRefusal(error.message ?? words.codeNotSent);
+      // The page's own words, never Better Auth's English message.
+      setRefusal(error.status === 429 ? words.tooManyTries : words.codeNotSent);
       return;
     }
 
