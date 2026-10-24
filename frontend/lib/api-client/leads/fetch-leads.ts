@@ -5,6 +5,7 @@ import type { InferResponseType } from "hono/client";
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import { dashboardApiClient } from "@/lib/api-client/dashboard-api-client";
 import type { RefusalType } from "@/lib/api-client/refusal-type";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 const leadsRoute = dashboardApiClient.leads;
 
@@ -22,17 +23,21 @@ export type LeadsResultType =
 export async function fetchLeads(after?: string): Promise<LeadsResultType> {
   // An empty after is the first page: the route reads it as none.
   const response = await leadsRoute.$get({ query: { after: after ?? "" } }).catch(() => null);
-  if (!response) return { state: "unreachable", message: apiNotRespondingMessage };
+  if (!response)
+    return { state: "unreachable", message: inDashboardLanguage(apiNotRespondingMessage) };
   if (response.status === 200) return { state: "ok", page: await response.json() };
   // From the middleware, which the route's type does not list: an ended sign-in, or a refusal.
   const status: number = response.status;
   if (status === 401) return { state: "signed-out" };
   if (status === 403) {
     const body = (await response.json().catch(() => ({}))) as RefusalType;
-    return { state: "refused", message: body.error?.message ?? "This business cannot see leads." };
+    return {
+      state: "refused",
+      message: body.error?.message ?? inDashboardLanguage("This business cannot see leads."),
+    };
   }
   return {
     state: "unreachable",
-    message: `The API answered with an unexpected status (${status}).`,
+    message: inDashboardLanguage(`The API answered with an unexpected status (${status}).`),
   };
 }

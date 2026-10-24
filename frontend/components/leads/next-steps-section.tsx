@@ -16,6 +16,7 @@ import { addNextStep } from "@/lib/api-client/leads/add-next-step";
 import { finishNextStep } from "@/lib/api-client/leads/finish-next-step";
 import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { formatLeadTime } from "@/lib/format-lead-time";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 export function NextStepsSection({
   leadId,
@@ -42,8 +43,10 @@ export function NextStepsSection({
       dueLocal: due,
       browserTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
-    if (!parsed.success)
-      return setError(parsed.error.issues[0]?.message ?? leadsWords.checkTheStep);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0]?.message;
+      return setError(issue ? inDashboardLanguage(issue) : leadsWords.checkTheStep);
+    }
     setBusy(true);
     setError(null);
     const saved = await addNextStep(leadId, parsed.data);

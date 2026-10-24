@@ -87,6 +87,10 @@
     "./pick-dashboard-language": {
       "types": "./dist/helpers/pick-dashboard-language.d.ts",
       "default": "./dist/helpers/pick-dashboard-language.js"
+    },
+    "./spanish-messages": {
+      "types": "./dist/helpers/spanish-messages.d.ts",
+      "default": "./dist/helpers/spanish-messages.js"
     }
   },
   "scripts": {

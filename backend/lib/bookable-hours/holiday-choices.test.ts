@@ -50,7 +50,27 @@ describe("the holiday picker's list", () => {
     expect(holidayPackage.regions("DE")).toBeNull();
     expect(year("CO", null).find((choice) => choice.name === "Christmas Day")).toEqual({
       name: "Christmas Day",
+      label: "Christmas Day",
       dates: ["2026-12-25"],
     });
+  });
+
+  // Feature 12j: the two languages' lists are paired by date, so a substitute day never borrows
+  // the real day's name.
+  test("each holiday carries its Spanish name, paired by date", () => {
+    const usHolidays = holidayPackage.holidaysBetween("US", null, "2026-07-01", "2026-07-31");
+    expect(usHolidays).toEqual([
+      {
+        name: "Independence Day (substitute day)",
+        spanishName: "Día de la Independencia (día sustituto)",
+        date: "2026-07-03",
+      },
+      { name: "Independence Day", spanishName: "Día de la Independencia", date: "2026-07-04" },
+    ]);
+    expect(holidayPackage.nameOn("CO", null, "Christmas Day", "2026-12-25", "es")).toBe("Navidad");
+    expect(holidayPackage.nameOn("CO", null, "Christmas Day", "2026-12-25", "en")).toBe(
+      "Christmas Day"
+    );
+    expect(holidayPackage.nameOn("CA", "AB", "Family Day", "2027-02-15", "es")).toBe("Family Day");
   });
 });

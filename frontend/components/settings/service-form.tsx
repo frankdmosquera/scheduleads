@@ -4,7 +4,7 @@
 
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm, type DefaultValues } from "react-hook-form";
 
@@ -126,7 +126,7 @@ export function ServiceForm({
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   const form = useForm<ServiceInputType, unknown, ServiceType>({
-    resolver: zodResolver(serviceValidationSchema),
+    resolver: dashboardFormResolver(serviceValidationSchema),
     defaultValues: service ? formValuesOf(service) : NEW_SERVICE,
   });
   const idBase = `service-${service?.id ?? "new"}`;

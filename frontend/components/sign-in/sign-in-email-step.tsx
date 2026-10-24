@@ -2,7 +2,7 @@
 
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -27,7 +27,7 @@ export function SignInEmailStep({
   const [refusal, setRefusal] = useState<string | null>(null);
   // Checked here before sending; Better Auth checks the address again with its own rule.
   const form = useForm({
-    resolver: zodResolver(signInEmailValidationSchema),
+    resolver: dashboardFormResolver(signInEmailValidationSchema),
     defaultValues: { email: initialEmail },
   });
 

@@ -8,6 +8,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useLayoutEffect,
   useMemo,
   useState,
   useSyncExternalStore,
@@ -21,6 +22,7 @@ import {
 
 import type { DashboardWordsType } from "@/lib/dashboard-words/dashboard-words-type";
 import { englishDashboardWords } from "@/lib/dashboard-words/english-dashboard-words";
+import { setMessageLanguage } from "@/lib/dashboard-words/message-language";
 import {
   readSignInLanguagePick,
   subscribeToSignInLanguagePick,
@@ -79,6 +81,10 @@ export function DashboardWordsProvider({ children }: { children: ReactNode }) {
       forgetLoginLanguage,
     };
   }, [loginLanguage, browserLanguage, signInPick, showLoginLanguage, forgetLoginLanguage]);
+
+  // The API client and the form checks write their messages in it too. A layout effect, so it is
+  // set before any screen's own effect asks the API for something.
+  useLayoutEffect(() => setMessageLanguage(value.language), [value.language]);
 
   return <DashboardWordsContext.Provider value={value}>{children}</DashboardWordsContext.Provider>;
 }

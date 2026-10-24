@@ -7,6 +7,7 @@ import type { TextChoicesInputType } from "@scheduleads-app/shared/zod-validatio
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import { textsRoute } from "@/lib/api-client/settings/fetch-texts";
 import { readSaveRefusal, type SaveResultType } from "@/lib/api-client/settings/read-save-refusal";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 export type SavedTextsType = InferResponseType<typeof textsRoute.$put, 200>;
 
@@ -14,7 +15,7 @@ export async function saveTexts(
   choices: TextChoicesInputType
 ): Promise<SaveResultType<SavedTextsType>> {
   const response = await textsRoute.$put({ json: choices }).catch(() => null);
-  if (!response) return { state: "refused", message: apiNotRespondingMessage };
+  if (!response) return { state: "refused", message: inDashboardLanguage(apiNotRespondingMessage) };
   if (response.status === 200) return { state: "ok", answer: await response.json() };
   return readSaveRefusal(response);
 }

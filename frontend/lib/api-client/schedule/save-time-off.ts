@@ -6,6 +6,7 @@ import type { TimeOffInputType } from "@scheduleads-app/shared/zod-validation";
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import { dashboardApiClient } from "@/lib/api-client/dashboard-api-client";
 import type { RefusalType } from "@/lib/api-client/refusal-type";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 const timeOffRoute = dashboardApiClient.schedule["time-off"];
 
@@ -30,7 +31,12 @@ export type SaveTimeOffResultType =
 
 export async function saveTimeOff(timeOff: TimeOffInputType): Promise<SaveTimeOffResultType> {
   const response = await timeOffRoute.$post({ json: timeOff }).catch(() => null);
-  if (!response) return { state: "refused", message: apiNotRespondingMessage, bookingId: null };
+  if (!response)
+    return {
+      state: "refused",
+      message: inDashboardLanguage(apiNotRespondingMessage),
+      bookingId: null,
+    };
   if (response.status === 201) return { state: "ok" };
 
   const body = (await response.json().catch(() => ({}))) as RefusalType & {
@@ -39,7 +45,8 @@ export async function saveTimeOff(timeOff: TimeOffInputType): Promise<SaveTimeOf
     bookings?: BookingInTheWayType[];
   };
   const message =
-    body.error?.message ?? `The API answered with an unexpected status (${response.status}).`;
+    body.error?.message ??
+    inDashboardLanguage(`The API answered with an unexpected status (${response.status}).`);
   if (body.bookings) return { state: "in_the_way", message, bookings: body.bookings };
   if (body.field) return { state: "field", field: body.field, message };
   return { state: "refused", message, bookingId: body.bookingId ?? null };

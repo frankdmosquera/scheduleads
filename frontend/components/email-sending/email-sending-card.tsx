@@ -5,7 +5,7 @@
 
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -88,7 +88,7 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
   const [notice, setNotice] = useState<{ tone: "info" | "error"; text: string } | null>(null);
 
   const form = useForm<EmailSendingInputType>({
-    resolver: zodResolver(emailSendingValidationSchema),
+    resolver: dashboardFormResolver(emailSendingValidationSchema),
     defaultValues: {
       senderEmail: initial.senderEmail ?? "",
       notifyEmail: initial.notifyEmail ?? "",

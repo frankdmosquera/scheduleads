@@ -11,6 +11,7 @@ import type {
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import { daysOffRoute } from "@/lib/api-client/settings/fetch-days-off";
 import { readSaveRefusal, type SaveResultType } from "@/lib/api-client/settings/read-save-refusal";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 // The days off as saved, and the upcoming bookings now on a closed day, still booked.
 export type SavedDaysOffType = InferResponseType<typeof daysOffRoute.$put, 200>;
@@ -23,14 +24,14 @@ export async function saveHolidayPicks(
   picks: HolidayPicksType
 ): Promise<SaveResultType<SavedDaysOffType>> {
   const response = await daysOffRoute.$put({ json: picks }).catch(() => null);
-  if (!response) return { state: "refused", message: apiNotRespondingMessage };
+  if (!response) return { state: "refused", message: inDashboardLanguage(apiNotRespondingMessage) };
   if (response.status === 200) return { state: "ok", answer: await response.json() };
   return readSaveRefusal(response);
 }
 
 export async function closeDay(day: CloseDayType): Promise<SaveResultType<ClosedDayAnswerType>> {
   const response = await daysOffRoute.close.$post({ json: day }).catch(() => null);
-  if (!response) return { state: "refused", message: apiNotRespondingMessage };
+  if (!response) return { state: "refused", message: inDashboardLanguage(apiNotRespondingMessage) };
   if (response.status === 200) return { state: "ok", answer: await response.json() };
   return readSaveRefusal(response);
 }
@@ -39,7 +40,7 @@ export async function openClosedDay(
   opening: OpenClosedDayType
 ): Promise<SaveResultType<OpenedClosedDayType>> {
   const response = await daysOffRoute.open.$post({ json: opening }).catch(() => null);
-  if (!response) return { state: "refused", message: apiNotRespondingMessage };
+  if (!response) return { state: "refused", message: inDashboardLanguage(apiNotRespondingMessage) };
   if (response.status === 200) return { state: "ok", answer: await response.json() };
   return readSaveRefusal(response);
 }

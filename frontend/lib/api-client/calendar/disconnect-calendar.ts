@@ -5,6 +5,7 @@ import type { InferResponseType } from "hono/client";
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import { dashboardApiClient } from "@/lib/api-client/dashboard-api-client";
 import type { RefusalType } from "@/lib/api-client/refusal-type";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 export type DisconnectCalendarResultType =
   | {
@@ -19,7 +20,7 @@ export type DisconnectCalendarResultType =
 // Pressing Disconnect: the API hands the permission back and deletes the connection.
 export async function disconnectCalendar(): Promise<DisconnectCalendarResultType> {
   const response = await dashboardApiClient.calendar.disconnect.$post().catch(() => null);
-  if (!response) return { state: "refused", message: apiNotRespondingMessage };
+  if (!response) return { state: "refused", message: inDashboardLanguage(apiNotRespondingMessage) };
 
   if (response.status === 200) {
     return { state: "ok", atProvider: (await response.json()).atProvider };
@@ -29,6 +30,7 @@ export async function disconnectCalendar(): Promise<DisconnectCalendarResultType
   return {
     state: "refused",
     message:
-      body.error?.message ?? `The API answered with an unexpected status (${response.status}).`,
+      body.error?.message ??
+      inDashboardLanguage(`The API answered with an unexpected status (${response.status}).`),
   };
 }

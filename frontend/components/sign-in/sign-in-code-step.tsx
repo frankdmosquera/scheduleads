@@ -2,7 +2,7 @@
 
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -28,7 +28,7 @@ export function SignInCodeStep({
   const { words } = useDashboardWords();
   const [refusal, setRefusal] = useState<string | null>(null);
   const form = useForm({
-    resolver: zodResolver(signInCodeValidationSchema),
+    resolver: dashboardFormResolver(signInCodeValidationSchema),
     defaultValues: { code: "" },
   });
 

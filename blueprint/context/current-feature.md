@@ -6,7 +6,7 @@
 sign-in, every dashboard screen's words and dates moved into word lists, and the messages that
 come from the API and the shared rules.
 
-**Status:** planned
+**Status:** verified
 
 **Branch:** feature/12j-spanish-dashboard
 
@@ -111,7 +111,7 @@ blocking findings. `/complete` makes the final feature commit and merges on Fran
     are unchanged; `npm run build --workspace=frontend` fails when a Spanish word is removed and
     passes again when restored. All suites, builds, lint and format pass.
 
-- [ ] **12j.3 The API's messages and the form errors in Spanish.**
+- [x] **12j.3 The API's messages and the form errors in Spanish.**
   - One table of Spanish for every message the shared rules and the API's dashboard routes can
     send, keyed by the English message (functions for those carrying a value), in
     `packages/shared/helpers/`. The dashboard shows a refusal or a form error through it when

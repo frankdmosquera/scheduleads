@@ -5,7 +5,7 @@
 
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -47,7 +47,7 @@ export function ChangeResourceForm({
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   const { peopleWords } = useDashboardWords().words;
   const form = useForm<SaveResourceInputType, unknown, SaveResourceType>({
-    resolver: zodResolver(saveResourceValidationSchema),
+    resolver: dashboardFormResolver(saveResourceValidationSchema),
     // A place sends no work email at all, so saving one never touches the column.
     defaultValues:
       resource.kind === "person"

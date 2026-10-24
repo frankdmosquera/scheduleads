@@ -209,7 +209,7 @@ export function HolidayPicker({
         className="mt-0.5 size-4 accent-[var(--primary)]"
       />
       <span>
-        <span className="text-foreground">{holiday.name}</span>{" "}
+        <span className="text-foreground">{holiday.label}</span>{" "}
         <span className="text-muted-foreground">
           {formatDates(holiday.dates, words.intlLocale, daysOffWords.and)}
         </span>

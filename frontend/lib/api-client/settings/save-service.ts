@@ -7,6 +7,7 @@ import type { ServiceInputType } from "@scheduleads-app/shared/zod-validation";
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import { servicesSettingsRoute } from "@/lib/api-client/settings/fetch-services-settings";
 import { readSaveRefusal, type SaveResultType } from "@/lib/api-client/settings/read-save-refusal";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 export type SavedServiceType = InferResponseType<
   (typeof servicesSettingsRoute)[":serviceId"]["$put"],
@@ -23,7 +24,7 @@ export async function saveService(
       ? servicesSettingsRoute[":serviceId"].$put({ param: { serviceId }, json: service })
       : servicesSettingsRoute.$post({ json: service })
   ).catch(() => null);
-  if (!response) return { state: "refused", message: apiNotRespondingMessage };
+  if (!response) return { state: "refused", message: inDashboardLanguage(apiNotRespondingMessage) };
   if (response.status === 200) return { state: "ok", answer: await response.json() };
   if (response.status === 201) {
     const { service: added } = await response.json();

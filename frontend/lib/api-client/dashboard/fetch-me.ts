@@ -5,6 +5,7 @@ import type { InferResponseType } from "hono/client";
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import { dashboardApiClient } from "@/lib/api-client/dashboard-api-client";
 import type { RefusalType } from "@/lib/api-client/refusal-type";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 export type MeType = InferResponseType<typeof dashboardApiClient.me.$get, 200>;
 
@@ -19,7 +20,8 @@ export type MeResultType =
 
 export async function fetchMe(): Promise<MeResultType> {
   const response = await dashboardApiClient.me.$get().catch(() => null);
-  if (!response) return { state: "unreachable", message: apiNotRespondingMessage }; // the API is not answering at all
+  if (!response)
+    return { state: "unreachable", message: inDashboardLanguage(apiNotRespondingMessage) }; // the API is not answering at all
 
   if (response.ok) return { state: "ok", me: await response.json() };
 
@@ -39,7 +41,8 @@ export async function fetchMe(): Promise<MeResultType> {
       return {
         state: "plan-refused",
         message:
-          body.error?.message ?? "This business is on a plan the product does not recognise.",
+          body.error?.message ??
+          inDashboardLanguage("This business is on a plan the product does not recognise."),
       };
     }
   }
@@ -47,6 +50,6 @@ export async function fetchMe(): Promise<MeResultType> {
   // Shown as-is, never dressed up as a known refusal.
   return {
     state: "unreachable",
-    message: `The API answered with an unexpected status (${status}).`,
+    message: inDashboardLanguage(`The API answered with an unexpected status (${status}).`),
   };
 }

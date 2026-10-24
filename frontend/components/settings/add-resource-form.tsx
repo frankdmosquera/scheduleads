@@ -3,7 +3,7 @@
 
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -36,7 +36,7 @@ export function AddResourceForm({
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   const { peopleWords } = useDashboardWords().words;
   const form = useForm<AddResourceInputType, unknown, AddResourceType>({
-    resolver: zodResolver(addResourceValidationSchema),
+    resolver: dashboardFormResolver(addResourceValidationSchema),
     defaultValues: { name: "" }, // person or place: unpicked, the owner says which
   });
 

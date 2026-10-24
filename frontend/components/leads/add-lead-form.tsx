@@ -4,7 +4,7 @@
 
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -33,7 +33,7 @@ export function AddLeadForm({ onCancel }: { onCancel: () => void }) {
   const [refusal, setRefusal] = useState<string | null>(null);
 
   const form = useForm<AddLeadInputType>({
-    resolver: zodResolver(addLeadValidationSchema),
+    resolver: dashboardFormResolver(addLeadValidationSchema),
     defaultValues: { requestKey: crypto.randomUUID(), name: "", phone: "", email: "", details: "" },
   });
 

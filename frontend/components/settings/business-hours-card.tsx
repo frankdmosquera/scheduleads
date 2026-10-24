@@ -3,7 +3,7 @@
 
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
 import { useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import type { z } from "zod";
@@ -51,7 +51,7 @@ export function BusinessHoursCard({
   // Stays until the card is saved again or the page is left.
   const [outside, setOutside] = useState<ListedBookingsType | null>(null);
   const form = useForm<z.input<typeof businessHoursValidationSchema>, unknown, BusinessHoursType>({
-    resolver: zodResolver(businessHoursValidationSchema),
+    resolver: dashboardFormResolver(businessHoursValidationSchema),
     defaultValues: initial ?? NO_HOURS_YET,
   });
 

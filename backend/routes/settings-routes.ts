@@ -35,6 +35,7 @@ import { findBookingForm } from "../lib/settings/find-booking-form.js";
 import { findTextsSettings } from "../lib/settings/find-texts-settings.js";
 import { findDaysOff } from "../lib/settings/find-days-off.js";
 import { findHolidayChoices } from "../lib/settings/find-holiday-choices.js";
+import { holidayPackage, type HolidayLanguageType } from "../lib/bookable-hours/holiday-package.js";
 import { findHoursSettings } from "../lib/settings/find-hours-settings.js";
 import { findPeopleSettings } from "../lib/settings/find-people-settings.js";
 import { findServicesSettings } from "../lib/settings/find-services-settings.js";
@@ -64,6 +65,14 @@ const NAME_TAKEN = {
 };
 
 // The first problem, with where it is ("weeklyHours.mon.1"), so the form can show it in place.
+// The language the Days off routes name holidays in (feature 12j): en when not given, en or es only.
+const holidayLanguageOf = (language: unknown): HolidayLanguageType | null =>
+  language === undefined || language === "" || language === "en"
+    ? "en"
+    : language === "es"
+      ? "es"
+      : null;
+
 const refuseFirstIssue = (c: Context, error: ZodError) => {
   const issue = error.issues[0];
   return c.json(
@@ -462,13 +471,31 @@ export const settingsRoutes = new Hono()
     requireOrganizationMiddleware,
     requireKnownSubscriptionMiddleware,
     requireModuleMiddleware("booking"),
+    validator("query", (value, c) => {
+      const language = holidayLanguageOf(value.language);
+      return language ? { language } : c.json(refuse("bad_request", "Use en or es."), 400);
+    }),
     async (c) => {
       const { organizationId } = c.get("organization");
+      const { language } = c.req.valid("query");
       const [daysOff, canEdit] = await Promise.all([
         findDaysOff(db, organizationId, new Date()),
         hasBusinessPermission(c.req.raw.headers, organizationId, CHANGE_BUSINESS),
       ]);
-      return c.json({ canEdit, ...daysOff }, 200);
+      // A closed holiday shows under its name in the login's language; the picks stay English.
+      const closedDays = daysOff.closedDays.map((day) => ({
+        ...day,
+        name:
+          day.name &&
+          holidayPackage.nameOn(
+            daysOff.holidayCountry,
+            daysOff.holidayRegion,
+            day.name,
+            day.date,
+            language
+          ),
+      }));
+      return c.json({ canEdit, ...daysOff, closedDays }, 200);
     }
   )
 
@@ -510,15 +537,18 @@ export const settingsRoutes = new Hono()
           { ...refuse("bad_request", "A province needs its country."), field: "holidayRegion" },
           400
         );
-      return { country: country || null, region: region || null };
+      const language = holidayLanguageOf(value.language);
+      if (!language) return c.json(refuse("bad_request", "Use en or es."), 400);
+      return { country: country || null, region: region || null, language };
     }),
     async (c) => {
-      const { country, region } = c.req.valid("query");
+      const { country, region, language } = c.req.valid("query");
       const choices = await findHolidayChoices(
         c.get("organization").organizationId,
         country,
         region,
-        new Date()
+        new Date(),
+        language
       );
       if (!choices.ok)
         return c.json({ ...refuse("bad_request", choices.message), field: choices.field }, 400);

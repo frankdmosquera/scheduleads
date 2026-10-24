@@ -444,13 +444,13 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Pick one word per state and use it everywhere: for people and places "Disponible" / "No disponible" (ticks: " (no disponible)", "Todos los marcados no están disponibles"); for services "Activo" / "Oculto" ("Si lo desmarca, se oculta").
 **Resolution:** Fixed 2026-10-24: a person or place switched off is "Fuera de servicio" / "En servicio" (People, the Settings suffix, the service form's notes), gender-free and apart from the Calendar's "No disponible"; a service stays "Activo" / "Oculto" and the form's "Apagado" became "Oculto".
 
-### F-474 [P3] open - The default lead stages are stored in English, so a Spanish dashboard shows "New", "Contacted", "Booked", "Done"
+### F-474 [P3] accepted - The default lead stages are stored in English, so a Spanish dashboard shows "New", "Contacted", "Booked", "Done"
 
 **File:** packages/shared/crm/default-pipeline-stages.ts:4; backend/lib/crm/seed-pipeline-stages.ts:25; frontend/components/leads/leads-list-screen.tsx:157; frontend/components/leads/lead-page-screen.tsx:139, 218
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..0acd574; lenses: quality, security, performance, tests)
 **Why it matters:** Every business gets its stages from `DEFAULT_PIPELINE_STAGES`, written in English, and the leads list, a lead's page and its other requests show `stage.name` as stored. The business never typed them, so they are not "words a business typed itself" under Out of scope, and neither 12j.2 nor 12j.3 names them. A Spanish owner's leads list reads "New" and "Booked" beside Spanish words.
 **Suggested fix:** Decide it in the spec: either the stage names are business data (shown as stored, said so under Out of scope), or a Spanish business gets Spanish stages when it is set up (the business's `language` choosing the names in `seed-pipeline-stages.ts`), or the dashboard names the four default stages through the words while their stored names are untouched.
-**Resolution:**
+**Resolution:** Accepted 2026-10-24 by Frank ("sure" to moving it): moved to feature 14, where each business names, adds and reorders its own stages and boards, so translating the four defaults now would be undone there.
 
 ### F-475 [P3] fixed - The sign-in page's email placeholder stays English in Spanish
 
