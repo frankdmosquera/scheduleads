@@ -8,10 +8,21 @@ export type ScheduleWordsType = {
   loading: string;
   calendarOf: string;
   placeSuffix: string; // after a place's name in the picker, with its leading space
-  previousWeek: string;
-  thisWeek: string;
-  nextWeek: string;
+  viewLabel: string;
+  dayView: string;
+  weekView: string;
+  monthView: string;
+  previous: string;
+  today: string;
+  next: string;
   weekOf(day: string, timezone: string): string;
+  dayOf(day: string, timezone: string): string;
+  monthOf(month: string, timezone: string): string;
+  hoursExplained: string;
+  legendBooking: string;
+  moreItems(count: number): string; // a month day with more than it can show
+  openDay(day: string): string; // a month day's button, for screen readers
+  closeForm: string;
   googleUnreadable: string;
   midnight: string;
   closed: string;
@@ -65,10 +76,22 @@ export const englishScheduleWords: ScheduleWordsType = {
   loading: "Loading…",
   calendarOf: "Calendar of",
   placeSuffix: " (place)",
-  previousWeek: "Previous week",
-  thisWeek: "This week",
-  nextWeek: "Next week",
+  viewLabel: "View",
+  dayView: "Day",
+  weekView: "Week",
+  monthView: "Month",
+  previous: "Previous",
+  today: "Today",
+  next: "Next",
   weekOf: (day, timezone) => `Week of ${day} · times in ${timezone}`,
+  dayOf: (day, timezone) => `${day} · times in ${timezone}`,
+  monthOf: (month, timezone) => `${month} · times in ${timezone}`,
+  hoursExplained:
+    "Shaded: the online booking hours, when customers can book on your site. Book by hand works at any free time.",
+  legendBooking: "Booking",
+  moreItems: (count) => `+${count} more`,
+  openDay: (day) => `Open ${day}`,
+  closeForm: "Close",
   googleUnreadable:
     "Google could not be read for this week, so its busy times are missing below. Everything else is shown.",
   midnight: "midnight",
@@ -125,10 +148,22 @@ export const spanishScheduleWords: ScheduleWordsType = {
   loading: "Cargando…",
   calendarOf: "Calendario de",
   placeSuffix: " (lugar)",
-  previousWeek: "Semana anterior",
-  thisWeek: "Esta semana",
-  nextWeek: "Semana siguiente",
+  viewLabel: "Vista",
+  dayView: "Día",
+  weekView: "Semana",
+  monthView: "Mes",
+  previous: "Anterior",
+  today: "Hoy",
+  next: "Siguiente",
   weekOf: (day, timezone) => `Semana del ${day} · horas en ${timezone}`,
+  dayOf: (day, timezone) => `${day} · horas en ${timezone}`,
+  monthOf: (month, timezone) => `${month} · horas en ${timezone}`,
+  hoursExplained:
+    "Sombreado: las horas de reserva en línea, cuando los clientes pueden reservar en su sitio. Reservar a mano funciona en cualquier hora libre.",
+  legendBooking: "Reserva",
+  moreItems: (count) => `+${count} más`,
+  openDay: (day) => `Abrir el ${day}`,
+  closeForm: "Cerrar",
   googleUnreadable:
     "No se pudo leer Google para esta semana, así que abajo faltan sus horas ocupadas. Todo lo demás se muestra.",
   midnight: "medianoche",
