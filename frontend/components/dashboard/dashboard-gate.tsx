@@ -26,7 +26,7 @@ export function useMe(): MeType {
 }
 
 export function DashboardGate({ children }: { children: ReactNode }) {
-  const { words, showLoginLanguage } = useDashboardWords();
+  const { words, showLoginLanguage, forgetLoginLanguage } = useDashboardWords();
   const [result, setResult] = useState<MeResultType | null>(null);
 
   // Bump to ask /me again: after picking a business, or on "Try again".
@@ -41,12 +41,13 @@ export function DashboardGate({ children }: { children: ReactNode }) {
       if (!live) return;
       setResult(next);
       if (next.state === "ok") showLoginLanguage(next.me.user.language); // the login's own pick
+      if (next.state === "signed-out") forgetLoginLanguage(); // its sign-in ended
     });
 
     return () => {
       live = false;
     };
-  }, [reloads, showLoginLanguage]);
+  }, [reloads, showLoginLanguage, forgetLoginLanguage]);
 
   if (!result) {
     return (
