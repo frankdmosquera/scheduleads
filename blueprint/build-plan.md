@@ -374,7 +374,7 @@ without Frank touching the database.
   Hobby (Frank, 2026-10-23). What happens when a client leaves or a customer
   asks to be removed moved to 13b the same day. Numbered 12c so nothing after
   it renumbers
-- [ ] 12i. **Spanish booking** - the booking window, its dates, the customer
+- [x] 12i. **Spanish booking** - the booking window, its dates, the customer
   emails (confirmation, moved, cancelled) and the customer's cancel and move
   page speak Spanish as well as English. The site picks the window's language
   on its `BookingProvider`; each business picks the language of its customer
