@@ -24,12 +24,13 @@ export type BookingMoveTimesResultType =
 // available when no person is given (feature 7b). The public client: never the login cookie.
 export async function fetchBookingMoveTimes(
   token: string,
-  week: { from: string; to: string; personId: string | null }
+  week: { from: string; to: string; personId: string | null; language: "en" | "es" }
 ): Promise<BookingMoveTimesResultType> {
   const query = {
     from: week.from,
     to: week.to,
     ...(week.personId ? { person: week.personId } : {}),
+    language: week.language, // the booking's: the API writes each time in it (feature 12i)
   };
   const response = await bookingMoveTimesRoute.$get({ param: { token }, query }).catch(() => null);
   if (!response) return { state: "unreachable", message: apiNotRespondingMessage };

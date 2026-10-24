@@ -24,6 +24,7 @@ export type BookingPageType = {
   service: string;
   startsAt: string; // ISO 8601 in UTC
   when: string; // "Monday, November 2 at 9:00 a.m. MDT", written here, never by the browser
+  language: "en" | "es"; // the booking's: the page speaks it, as its emails do (feature 12i)
   endsAt: string; // the appointment's own end, without the buffer after
   timezone: string; // the business's IANA zone
   person: string; // the booked person's name
@@ -48,6 +49,7 @@ export async function findBookingPage(
       status: booking.status,
       startsAt: booking.startsAt,
       endsAt: booking.endsAt,
+      language: booking.language,
       service: bookingLink.name,
       person: resource.name,
       personId: booking.personId,
@@ -95,7 +97,8 @@ export async function findBookingPage(
     canMove: changeable,
     service: row.service,
     startsAt: row.startsAt.toISOString(),
-    when: formatBookingTime(row.startsAt, row.timezone),
+    when: formatBookingTime(row.startsAt, row.timezone, row.language),
+    language: row.language,
     endsAt: row.endsAt.toISOString(),
     timezone: row.timezone,
     person: row.person,

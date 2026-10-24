@@ -14,6 +14,7 @@ export type BookingFormSettingsType = {
   presets: BookingQuestionSetType[];
   contactRule: ContactRuleType;
   askLaterTextsYes: boolean | null; // null: no text settings yet, so the form cannot ask
+  language: "en" | "es"; // its owner's emails, and a booking that came with none (feature 12i)
 };
 
 export async function findBookingForm(
@@ -34,6 +35,7 @@ export async function findBookingForm(
       .select({
         contactRule: organization.contactRule,
         askLaterTextsYes: textSettings.askLaterTextsYes,
+        language: organization.language,
       })
       .from(organization)
       .leftJoin(textSettings, eq(textSettings.organizationId, organization.id))

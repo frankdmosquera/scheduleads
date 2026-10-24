@@ -37,6 +37,10 @@ export const booking = pgTable(
     location: text("location"), // the customer's address, as typed; null when the service asks none
     calendarEventId: text("calendarEventId"), // the booked person's Google event, once written
     requestKey: text("requestKey"), // one per booking form; null when the owner books
+    // The language its window spoke, kept for its emails and its page (feature 12i); never changes.
+    language: text("language", { enum: ["en", "es"] })
+      .notNull()
+      .default("en"),
     // The calendar invite's number: 0 when made, one more for each move, so the customer's
     // calendar always takes the latest version (feature 7b, decision 6).
     sequence: integer("sequence").notNull().default(0),
@@ -75,6 +79,7 @@ export const booking = pgTable(
     check("booking_status_check", sql`${table.status} in ('confirmed', 'cancelled')`),
     check("booking_time_order_check", sql`${table.endsAt} > ${table.startsAt}`),
     check("booking_location_check", sql`length(btrim(${table.location})) > 0`),
+    check("booking_language_check", sql`${table.language} in ('en', 'es')`),
     index("booking_starts_at_index").on(table.organizationId, table.startsAt),
     index("booking_lead_index").on(table.organizationId, table.leadId),
     // One booking per form, even when two copies arrive at the same instant (a double tap).

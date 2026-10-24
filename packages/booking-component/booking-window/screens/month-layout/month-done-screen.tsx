@@ -6,6 +6,7 @@ import type {
   BookingMadeType,
   BookingServiceDetailsType,
 } from "../../../api-client/booking-api-types.js";
+import { useBookingWords } from "../../../words/booking-words-context.js";
 import { MonthRail } from "./month-rail.js";
 
 export type MonthDoneScreenPropsType = {
@@ -23,13 +24,14 @@ export function MonthDoneScreen({
   email,
   titleId,
 }: MonthDoneScreenPropsType) {
+  const words = useBookingWords();
   return (
     <div className="sa-book">
       <MonthRail business={business} service={service} back={null} />
 
       <div className="sa-panel sa-done">
         <h2 className="sa-panel-h" id={titleId} tabIndex={-1}>
-          You&apos;re booked
+          {words.youreBooked}
         </h2>
         <div className="sa-facts">
           <div className="sa-fact">
@@ -48,10 +50,10 @@ export function MonthDoneScreen({
             <span className="sa-fact-i" aria-hidden="true">
               &#128100;
             </span>
-            <span>With {booking.person.name}</span>
+            <span>{words.withPerson(booking.person.name)}</span>
           </div>
         </div>
-        {email && <p className="sa-fine">A confirmation is on its way to {email}.</p>}
+        {email && <p className="sa-fine">{words.confirmationOnItsWay(email)}</p>}
       </div>
     </div>
   );

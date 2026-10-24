@@ -9,7 +9,9 @@ export type BookingEmailFactsType = {
     website: string | null;
     brandColor: string | null; // #rrggbb
     timezone: string; // the business's own, from its bookable hours
+    language: "en" | "es"; // the owner's emails are written in it (feature 12i)
   };
+  language: "en" | "es"; // the booking's, kept from its window: the customer's emails are in it
   service: string;
   startsAt: Date;
   personName: string; // who was booked

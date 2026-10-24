@@ -69,6 +69,7 @@ describe("useMonthTimes", () => {
       slug: "clinic-dev",
       bookingLinkId: "facial",
       dates: { from: "2026-10-09", to: "2026-10-31" },
+      language: "en" as const,
     };
     const { result, rerender } = renderHook(
       (personId: string) => useMonthTimes({ ...question, personId }),

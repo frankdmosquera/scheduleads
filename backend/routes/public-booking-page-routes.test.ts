@@ -185,6 +185,7 @@ describe("the customer's booking page", () => {
         service: "Interior estimate",
         startsAt: primo.startsAt.toISOString(),
         when: formatBookingTime(primo.startsAt, "America/Edmonton"), // written by the API
+        language: "en", // the booking's own, kept from its window (feature 12i)
         // The appointment itself, not its 15 after.
         endsAt: new Date(primo.startsAt.getTime() + 60 * 60_000).toISOString(),
         timezone: "America/Edmonton",
@@ -286,6 +287,29 @@ const changedSignature = (token: string) => {
   const [id, signature] = token.split(".");
   return `${id}.${signature.slice(0, -2)}${signature.at(-2) === "A" ? "B" : "A"}${signature.at(-1)}`;
 };
+
+describe("a Spanish booking (feature 12i)", () => {
+  test("its page and its move times speak Spanish", async () => {
+    await db.update(booking).set({ language: "es" }).where(eq(booking.id, primo.bookingId));
+    try {
+      const token = makeBookingPageToken(primo.bookingId);
+      const page = (await (await pageOf(token)).json()).booking;
+      expect(page.language).toBe("es");
+      expect(page.when).toBe(formatBookingTime(primo.startsAt, primo.timezone, "es"));
+
+      const day = dayAhead(primo.timezone);
+      const times = await (
+        await app.request(
+          `/public/bookings/${encodeURIComponent(token)}/times?from=${day}&to=${day}&language=es`
+        )
+      ).json();
+      expect(times.localStartTimes.length).toBeGreaterThan(0);
+      for (const time of times.localStartTimes) expect(time.when).toMatch(/ de /);
+    } finally {
+      await db.update(booking).set({ language: "en" }).where(eq(booking.id, primo.bookingId));
+    }
+  });
+});
 
 describe("cancelling from the page", () => {
   test("a cancel frees the time: the free-times route offers it again", async () => {

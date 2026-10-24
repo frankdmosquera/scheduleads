@@ -20,8 +20,8 @@ import { datesToAsk } from "../../month-calendar/dates-to-ask.js";
 import { formatMonthName } from "../../month-calendar/format-month-name.js";
 import { formatZoneName } from "../../month-calendar/format-zone-name.js";
 import { shiftMonth } from "../../month-calendar/shift-month.js";
+import { useBookingWords } from "../../../words/booking-words-context.js";
 import { ProblemMessage } from "../problem-message.js";
-import { problemWords } from "../problem-words.js";
 import { DayTimesView } from "./day-times-view.js";
 import { MonthCalendarView } from "./month-calendar-view.js";
 import { MonthRail } from "./month-rail.js";
@@ -53,6 +53,7 @@ export function MonthServiceScreen({
   onBack,
   onTimeChosen,
 }: MonthServiceScreenPropsType) {
+  const words = useBookingWords();
   const timeZone = availability.timezone;
   // Today where the business is, read once: the calendar never starts before it.
   const [today] = useState(() => localDate(new Date(), timeZone));
@@ -71,6 +72,9 @@ export function MonthServiceScreen({
     customerPicks ? (place?.personId ?? null) : null
   );
   const [pickedDate, setPickedDate] = useState<string | null>(place?.date ?? null);
+  // A phone shows the calendar or one day's times, never both (feature 12i): a day picked opens
+  // its times, Back closes them. A big screen shows both side by side and ignores this.
+  const [dayOpen, setDayOpen] = useState(place !== null);
   const [pickedTime, setPickedTime] = useState<string | null>(null);
 
   const { times, people, askAgain } = useMonthTimes({
@@ -79,6 +83,7 @@ export function MonthServiceScreen({
     bookingLinkId: service.id,
     dates: datesToAsk(month, bounds),
     personId,
+    language: words.language,
   });
 
   const days = times.state === "ok" ? times.days : new Map<string, BookingStartTimeType[]>();
@@ -89,6 +94,7 @@ export function MonthServiceScreen({
 
   const changeMonth = (by: -1 | 1) => {
     setMonth((current) => shiftMonth(current, by));
+    setDayOpen(false);
     setPickedTime(null);
   };
   const changePerson = (next: string | null) => {
@@ -98,10 +104,10 @@ export function MonthServiceScreen({
 
   const panelProblem =
     times.state === "times-unreadable"
-      ? { words: times.message, retry: askAgain }
+      ? { words: words.language === "en" ? times.message : words.timesUnreadable, retry: askAgain }
       : times.state === "problem"
         ? {
-            words: problemWords[times.problem],
+            words: words.problems[times.problem],
             retry: times.problem === "nothing-to-book" ? null : askAgain,
           }
         : null;
@@ -111,7 +117,7 @@ export function MonthServiceScreen({
       <MonthRail
         business={business}
         service={service}
-        back={onBack ? { label: "Back to services", onBack } : null}
+        back={onBack ? { label: words.backToServices, onBack } : null}
       >
         {customerPicks && people.length > 0 && (
           <PersonChoice people={people} personId={personId} onChange={changePerson} />
@@ -120,7 +126,7 @@ export function MonthServiceScreen({
 
       <div className="sa-panel">
         <h2 className="sa-panel-h" id={titleId} tabIndex={-1}>
-          Select a date &amp; time
+          {words.pickDateAndTime}
         </h2>
         {notice && (
           <p className="sa-notice" role="alert">
@@ -135,7 +141,7 @@ export function MonthServiceScreen({
             phone={business.phone}
           />
         ) : (
-          <div className="sa-pick">
+          <div className={dayOpen ? "sa-pick sa-pick--day" : "sa-pick"}>
             <div>
               <MonthCalendarView
                 month={month}
@@ -144,25 +150,26 @@ export function MonthServiceScreen({
                 pickedDate={shownDate}
                 onPickDate={(date) => {
                   setPickedDate(date);
+                  setDayOpen(true);
                   setPickedTime(null);
                 }}
                 onMonth={changeMonth}
               />
-              <p className="sa-tz">Times in {formatZoneName(timeZone)}</p>
+              <p className="sa-tz">{words.timesIn(formatZoneName(timeZone, words.language))}</p>
             </div>
 
             {times.state === "loading" ? (
               <p className="sa-loading" role="status">
-                Finding times…
+                {words.findingTimes}
               </p>
             ) : shownDate === null ? (
               <div className="sa-times">
                 <p className="sa-times-none" role="status">
-                  No times left in {formatMonthName(month)}.
+                  {words.noTimesLeftIn(formatMonthName(month, words.language))}
                 </p>
                 {month < bounds.lastMonth && (
                   <button type="button" className="sa-go" onClick={() => changeMonth(1)}>
-                    Next month
+                    {words.nextMonth}
                   </button>
                 )}
               </div>
@@ -174,6 +181,11 @@ export function MonthServiceScreen({
                 onPickTime={(startsAt) => {
                   setPickedDate(shownDate);
                   setPickedTime(startsAt);
+                }}
+                onBackToCalendar={() => {
+                  setDayOpen(false);
+                  // The calendar comes back in place of the times: focus goes to the screen's heading.
+                  requestAnimationFrame(() => document.getElementById(titleId)?.focus());
                 }}
                 onNext={() => {
                   if (!shownTime) return;

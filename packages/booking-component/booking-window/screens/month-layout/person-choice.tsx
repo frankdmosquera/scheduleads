@@ -3,6 +3,8 @@
 
 import { useId } from "react";
 
+import { useBookingWords } from "../../../words/booking-words-context.js";
+
 export type PersonChoicePropsType = {
   people: { id: string; name: string }[];
   personId: string | null; // null = any available
@@ -11,11 +13,12 @@ export type PersonChoicePropsType = {
 
 export function PersonChoice({ people, personId, onChange }: PersonChoicePropsType) {
   const groupName = useId();
-  const options = [{ id: null, name: "Any available" }, ...people];
+  const words = useBookingWords();
+  const options = [{ id: null, name: words.anyAvailable }, ...people];
 
   return (
     <fieldset className="sa-people">
-      <legend className="sa-people-h">Who would you like?</legend>
+      <legend className="sa-people-h">{words.whoWouldYouLike}</legend>
       {options.map((option) => (
         <label key={option.id ?? "any"} className="sa-person">
           <input

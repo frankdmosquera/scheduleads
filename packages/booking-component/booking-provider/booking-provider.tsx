@@ -8,17 +8,29 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 
 import { createBookingApiClient } from "../api-client/create-booking-api-client.js";
 import { BookingWindow } from "../booking-window/booking-window.js";
+import { wordsOf } from "../words/booking-words-context.js";
+import type { AfterBookingType, BookedType } from "./after-booking-type.js";
 import { BookingContext, type BookingContextType } from "./booking-context.js";
 
 export type BookingProviderPropsType = {
   apiUrl: string; // the API's address, e.g. "https://api.example.com"
   slug: string; // the business's slug: whose services the window books
+  language?: "en" | "es"; // the window's language, and its booking's; left out = English
+  afterBooking?: AfterBookingType; // left out = "stay", the window's own confirmation
+  onBooked?: (booked: BookedType) => void; // once per booking made; never the customer's details
   children: ReactNode;
 };
 
 type OpenWindowType = { bookingId: string | undefined; opener: HTMLElement | null };
 
-export function BookingProvider({ apiUrl, slug, children }: BookingProviderPropsType) {
+export function BookingProvider({
+  apiUrl,
+  slug,
+  language = "en",
+  afterBooking = "stay",
+  onBooked,
+  children,
+}: BookingProviderPropsType) {
   const apiClient = useMemo(() => createBookingApiClient(apiUrl), [apiUrl]);
   const [openWindow, setOpenWindow] = useState<OpenWindowType | null>(null);
 
@@ -42,6 +54,10 @@ export function BookingProvider({ apiUrl, slug, children }: BookingProviderProps
           apiClient={apiClient}
           slug={slug}
           bookingId={openWindow.bookingId}
+          words={wordsOf[language]}
+          afterBooking={afterBooking}
+          onBooked={onBooked}
+          goTo={(address) => window.location.assign(address)}
           onClosed={closed}
         />
       )}

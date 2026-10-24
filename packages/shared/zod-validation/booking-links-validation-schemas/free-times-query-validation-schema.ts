@@ -3,6 +3,8 @@
 
 import { z } from "zod";
 
+import { bookingLanguageValidationSchema } from "./booking-language-validation-schema.js";
+
 const DAY_MS = 86_400_000;
 const MOST_DATES = 31; // one Google read per person covers the whole range
 
@@ -18,6 +20,7 @@ export const freeTimesQueryValidationSchema = z
       .string("That is not a person id.") // also a person asked for twice
       .regex(/^[A-Za-z0-9_-]{1,64}$/, "That is not a person id.")
       .optional(),
+    language: bookingLanguageValidationSchema.optional(), // the times' words; left out = English
   })
   .refine((query) => query.from <= query.to, {
     message: "The last date comes before the first.",

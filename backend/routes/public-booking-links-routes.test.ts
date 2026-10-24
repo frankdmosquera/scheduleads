@@ -351,6 +351,25 @@ describe("free times for a service", () => {
     expect((await response.json()).startTimes).toEqual([]);
   });
 
+  test("writes each moment in Spanish for language=es, and refuses any other language", async () => {
+    const english = await (await get(`${facialPath}?from=${from}&to=${to}`)).json();
+    const spanish = await (await get(`${facialPath}?from=${from}&to=${to}&language=es`)).json();
+    expect(spanish.startTimes).toEqual(english.startTimes);
+    expect(spanish.localStartTimes.length).toBeGreaterThan(0);
+    for (const [index, time] of spanish.localStartTimes.entries()) {
+      expect(time.when).not.toBe(english.localStartTimes[index].when);
+      expect(time.when).toMatch(
+        / de (octubre|noviembre|diciembre|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre)/
+      );
+    }
+
+    const french = await get(`${facialPath}?from=${from}&to=${to}&language=fr`);
+    expect(french.status).toBe(400);
+    expect(await french.json()).toEqual({
+      error: { code: "bad_request", message: "Use en or es." },
+    });
+  });
+
   test("a picked practitioner: the time zone, who can be picked, and their start times", async () => {
     const anyAvailable = await (await get(`${facialPath}?from=${from}&to=${to}`)).json();
     const ana = anyAvailable.people.find((person: { name: string }) => person.name === "Ana");

@@ -1613,7 +1613,28 @@ describe("the Booking form settings", () => {
       askLaterTextsYes: false,
     });
     expect(saved.status).toBe(200);
-    expect(await saved.json()).toEqual({ contactRule: "phone", askLaterTextsYes: null });
+    expect(await saved.json()).toEqual({
+      contactRule: "phone",
+      askLaterTextsYes: null,
+      language: "en", // left as it is: the page did not send it
+    });
+
+    // The business's language (feature 12i): saved, read back, and anything but en or es refused.
+    const spanish = await put("/settings/booking-form/rules", closer.email, {
+      contactRule: "phone",
+      language: "es",
+    });
+    expect((await spanish.json()).language).toBe("es");
+    expect((await (await get("/settings/booking-form", closer.email)).json()).language).toBe("es");
+    const french = await put("/settings/booking-form/rules", closer.email, {
+      contactRule: "phone",
+      language: "fr",
+    });
+    expect(french.status).toBe(400);
+    await put("/settings/booking-form/rules", closer.email, {
+      contactRule: "phone",
+      language: "en",
+    });
 
     await db.insert(textSettings).values({
       organizationId: closer.organizationId,

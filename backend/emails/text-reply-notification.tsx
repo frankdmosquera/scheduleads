@@ -38,6 +38,7 @@ function TextReplyNotificationEmail({ facts, who }: { facts: TextReplyFactsType;
   const brand = facts.business.brandColor ?? emailColors.ink;
   return (
     <EmailLayout
+      lang="en" // texts are English-only for now (feature 12i keeps them out)
       businessName={facts.business.name}
       logo={facts.business.logo}
       preview={facts.words.slice(0, 90)}

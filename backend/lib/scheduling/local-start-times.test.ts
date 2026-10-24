@@ -34,6 +34,17 @@ describe("localStartTimes", () => {
     ]);
   });
 
+  test("writes the clock time and the moment in Spanish when the window speaks it", () => {
+    expect(localStartTimes(["2026-10-14T15:30:00.000Z"], "America/Bogota", "es")).toEqual([
+      {
+        startsAt: "2026-10-14T15:30:00.000Z",
+        date: "2026-10-14",
+        time: "10:30 a.m.",
+        when: "Miércoles, 14 de octubre, 10:30 a.m. GMT-5",
+      },
+    ]);
+  });
+
   test("keeps the order it was given, and is empty for no times", () => {
     const times = ["2026-10-14T15:00:00.000Z", "2026-10-14T16:00:00.000Z"];
     expect(localStartTimes(times, "America/Edmonton").map((time) => time.startsAt)).toEqual(times);

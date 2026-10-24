@@ -7,6 +7,7 @@ import type {
   BookingBusinessType,
   BookingServiceDetailsType,
 } from "../../../api-client/booking-api-types.js";
+import { useBookingWords } from "../../../words/booking-words-context.js";
 
 export type MonthRailPropsType = {
   business: BookingBusinessType;
@@ -16,6 +17,7 @@ export type MonthRailPropsType = {
 };
 
 export function MonthRail({ business, service, back, children }: MonthRailPropsType) {
+  const words = useBookingWords();
   return (
     <aside className="sa-rail">
       <div className="sa-rail-logo">
@@ -42,7 +44,7 @@ export function MonthRail({ business, service, back, children }: MonthRailPropsT
             <span className="sa-fact-i" aria-hidden="true">
               &#9201;
             </span>
-            <span>{service.durationMinutes} min</span>
+            <span>{words.minutes(service.durationMinutes)}</span>
           </div>
         </div>
         {service.description && <p className="sa-rail-where">{service.description}</p>}

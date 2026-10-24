@@ -93,6 +93,7 @@ export async function sendMoveEmails(
               endsAt,
               location: facts.location,
               businessName: facts.business.name,
+              language: facts.language,
               senderEmail: setup.senderEmail,
               customerName: context.customerName,
               customerEmail,

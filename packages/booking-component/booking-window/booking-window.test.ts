@@ -1,13 +1,33 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  configure,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { hc } from "hono/client";
 import { createElement } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { PublicAppType } from "backend/app-type";
 
+import { englishWords } from "../words/english-words.js";
 import { BookingWindow } from "./booking-window.js";
+
+// The window as every site had it before Spanish came: English, staying on its confirmation.
+const englishWindow = {
+  words: englishWords,
+  afterBooking: "stay" as const,
+  onBooked: undefined,
+  goTo() {},
+};
+
+// Two jsdom window files run side by side; a cold first run can take longer than a second.
+configure({ asyncUtilTimeout: 3000 });
 
 // jsdom has no <dialog> behaviour: open and close are enough here.
 beforeAll(() => {
@@ -97,6 +117,7 @@ const openToScreenTwo = async (apiClient: ReturnType<typeof fakeApi>["apiClient"
       apiClient,
       slug: "clinic-dev",
       bookingId: "facial",
+      ...englishWindow,
       onClosed() {},
     })
   );
@@ -139,6 +160,7 @@ describe("the booking window", () => {
         apiClient,
         slug: "clinic-dev",
         bookingId: "facial",
+        ...englishWindow,
         onClosed() {},
       })
     );

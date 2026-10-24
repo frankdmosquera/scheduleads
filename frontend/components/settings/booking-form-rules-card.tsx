@@ -1,6 +1,7 @@
 // Frontend component: what the business's booking form requires, on the Booking form page (feature
 // 12f): which way to reach the customer it must have, and whether it asks the customer's yes to
-// later texts, which only a business with text settings can ask.
+// later texts, which only a business with text settings can ask; and the business's language
+// (feature 12i): its owner's emails, while customers get theirs in the language they booked in.
 
 "use client";
 
@@ -19,6 +20,7 @@ export function BookingFormRulesCard({ settings }: { settings: BookingFormSettin
   const { canEdit } = settings;
   const [contactRule, setContactRule] = useState<ContactRuleType>(settings.contactRule);
   const [askLaterTextsYes, setAskLaterTextsYes] = useState(settings.askLaterTextsYes); // null: no text settings
+  const [language, setLanguage] = useState(settings.language);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   const [saving, setSaving] = useState(false);
 
@@ -27,13 +29,16 @@ export function BookingFormRulesCard({ settings }: { settings: BookingFormSettin
     setSaving(true);
     // The yes to later texts only when the page showed it, so a save never changes what was not seen.
     const saved = await saveBookingFormRules(
-      askLaterTextsYes === null ? { contactRule } : { contactRule, askLaterTextsYes }
+      askLaterTextsYes === null
+        ? { contactRule, language }
+        : { contactRule, askLaterTextsYes, language }
     );
     setSaving(false);
     if (saved.state === "ok") {
       setContactRule(saved.answer.contactRule);
       setAskLaterTextsYes(saved.answer.askLaterTextsYes);
-      setNotice({ tone: "info", text: "Saved what the form requires." });
+      setLanguage(saved.answer.language);
+      setNotice({ tone: "info", text: "Saved what the form requires and its language." });
       return;
     }
     setNotice({ tone: "error", text: saved.message });
@@ -95,6 +100,23 @@ export function BookingFormRulesCard({ settings }: { settings: BookingFormSettin
             business.
           </p>
         )}
+        <ChoiceField
+          name="business-language"
+          legend="Your booking emails come in"
+          choices={[
+            { value: "en", label: "English" },
+            { value: "es", label: "Español" },
+          ]}
+          value={language}
+          onChange={(value) => {
+            setNotice(null);
+            setLanguage(value);
+          }}
+        />
+        <p className="-mt-2 text-sm text-muted-foreground">
+          Customers get theirs in the language they booked in: a Spanish site&apos;s window books in
+          Spanish.
+        </p>
       </fieldset>
 
       <SaveNotice notice={notice} />

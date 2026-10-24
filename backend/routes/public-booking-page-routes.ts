@@ -81,7 +81,11 @@ export const publicBookingPageRoutes = new Hono()
         if (result.state === "person_not_taken") return c.json(personNotTaken, 400);
         const { startTimes, timezone } = result.times;
         return c.json(
-          { ...result.times, localStartTimes: localStartTimes(startTimes, timezone) },
+          // In the language the page asks, the booking's own (feature 12i).
+          {
+            ...result.times,
+            localStartTimes: localStartTimes(startTimes, timezone, query.language),
+          },
           200
         );
       } catch (error) {

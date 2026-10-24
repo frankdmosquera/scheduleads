@@ -374,7 +374,7 @@ without Frank touching the database.
   Hobby (Frank, 2026-10-23). What happens when a client leaves or a customer
   asks to be removed moved to 13b the same day. Numbered 12c so nothing after
   it renumbers
-- [ ] 12i. **Spanish booking** - the booking window, its dates, the customer
+- [x] 12i. **Spanish booking** - the booking window, its dates, the customer
   emails (confirmation, moved, cancelled) and the customer's cancel and move
   page speak Spanish as well as English. The site picks the window's language
   on its `BookingProvider`; each business picks the language of its customer
@@ -386,6 +386,16 @@ without Frank touching the database.
   is in Spanish, and it gets the booking window only once the window speaks it
   (its item 12). Published as the package's next version. Numbered 12i so
   nothing after it renumbers
+- [ ] 12j. **Spanish dashboard** - the whole dashboard speaks Spanish as
+  well as English: every screen's words, its dates, times and money, its form
+  errors and the sign-in pages. Each login picks its own language, a setting
+  (decision 30), so two people in one business can each read their own; it is
+  not the business's language, which 12i keeps for the customer and the
+  owner's booking emails. Today every word is written into the screens in
+  English, so this moves them into an English and a Spanish word list, the
+  way 12i did for the window. Added by Frank on 2026-10-24: the Latin
+  American businesses (IA a la Orden first) run their day in Spanish. Numbered
+  12j so nothing after it renumbers
 
 ## Phase 5. The first paying client
 

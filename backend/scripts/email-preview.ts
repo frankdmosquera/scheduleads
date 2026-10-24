@@ -1,5 +1,5 @@
 // Backend: writes the booking emails, made, moved and cancelled, filled with a sample booking, to
-// .email-preview/ to open in a browser. Nothing is sent. Run: npm run email:preview --workspace=backend
+// .email-preview/ to open in a browser, in English and then in Spanish ("-es"). Nothing is sent. Run: npm run email:preview --workspace=backend
 
 import { mkdirSync, writeFileSync } from "node:fs";
 
@@ -19,7 +19,9 @@ const sampleFacts: BookingEmailFactsType = {
     website: "https://example.com",
     brandColor: "#1d4ed8",
     timezone: "America/Edmonton",
+    language: "en",
   },
+  language: "en",
   service: "Exterior painting estimate",
   startsAt: new Date("2026-10-08T15:00:00Z"), // 9:00 a.m. in Edmonton
   personName: "Marco",
@@ -68,8 +70,12 @@ for (const [name, render] of [
   ],
   ["booking-cancelled-notification", renderBookingCancelledNotification],
 ] as const) {
-  const email = await render(sampleFacts);
-  const file = new URL(`${name}.html`, folder);
-  writeFileSync(file, email.html);
-  console.log(`[email preview] ${email.subject}\n  ${file.pathname}`);
+  // The same booking and business once in each language (feature 12i).
+  for (const language of ["en", "es"] as const) {
+    const facts = { ...sampleFacts, language, business: { ...sampleFacts.business, language } };
+    const email = await render(facts);
+    const file = new URL(`${name}${language === "es" ? "-es" : ""}.html`, folder);
+    writeFileSync(file, email.html);
+    console.log(`[email preview] ${email.subject}\n  ${file.pathname}`);
+  }
 }

@@ -265,6 +265,47 @@ afterAll(async () => {
 });
 
 describe("a booking is made", () => {
+  test("answers with its time in Spanish when the window spoke Spanish", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const response = await post(bookingsPath, { ...form(startsAt), language: "es" });
+    const body = await response.json();
+    expect(response.status).toBe(201);
+    expect(body.booking.when).toBe(formatBookingTime(new Date(startsAt), "America/Edmonton", "es"));
+    expect(body.booking.when).toMatch(/ de /);
+    // Kept on the booking for its emails and its page.
+    const [saved] = await db
+      .select({ language: booking.language })
+      .from(booking)
+      .where(and(eq(booking.organizationId, clinic.id), eq(booking.id, body.booking.id)));
+    expect(saved?.language).toBe("es");
+  });
+
+  test("a booking that names no language takes the business's, as an older window's does", async () => {
+    await db.update(organization).set({ language: "es" }).where(eq(organization.id, clinic.id));
+    try {
+      const [startsAt] = await freeTimes(clinic.ana);
+      const response = await post(bookingsPath, form(startsAt));
+      const body = await response.json();
+      expect(response.status).toBe(201);
+      const [saved] = await db
+        .select({ language: booking.language })
+        .from(booking)
+        .where(and(eq(booking.organizationId, clinic.id), eq(booking.id, body.booking.id)));
+      expect(saved?.language).toBe("es");
+    } finally {
+      await db.update(organization).set({ language: "en" }).where(eq(organization.id, clinic.id));
+    }
+  });
+
+  test("refuses a language other than English or Spanish, like any other bad field", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const response = await post(bookingsPath, { ...form(startsAt), language: "fr" });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: { code: "bad_request", message: "Use en or es." },
+    });
+  });
+
   test("201 with the booking's times, service and person, and none of the customer's details", async () => {
     const [startsAt] = await freeTimes(clinic.ana);
     const response = await post(bookingsPath, form(startsAt));

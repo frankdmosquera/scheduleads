@@ -12,6 +12,7 @@ import {
   serviceLengthValidationSchema,
   serviceStartEveryValidationSchema,
 } from "../booking-links-validation-schemas/service-validation-schema.js";
+import { bookingLanguageValidationSchema } from "../booking-links-validation-schemas/booking-language-validation-schema.js";
 import { contactRuleValidationSchema } from "../crm-validation-schemas/contact-rule-validation-schema.js";
 import { setupQuestionsValidationSchema } from "../crm-validation-schemas/booking-questions-validation-schema.js";
 import { textSettingsValidationSchema } from "../text-validation-schemas/text-settings-validation-schema.js";
@@ -64,6 +65,7 @@ export const clientSetupValidationSchema = z
     slug: z.string().min(1), // the business, already made by the client setup screen
     personChoice: z.enum(["customer_picks", "business_assigns"]),
     contactRule: contactRuleValidationSchema, // what a customer must leave: email, phone or either
+    language: bookingLanguageValidationSchema.optional(), // its owner's emails (feature 12i); left out: English
     questions: setupQuestionsValidationSchema, // the Settings page's own rules
     texts: textSettingsValidationSchema.optional(), // the agency's texting number and first choices
     hours: setupHoursValidationSchema,

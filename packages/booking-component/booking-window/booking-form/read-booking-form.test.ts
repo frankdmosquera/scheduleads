@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import { newBookingForm } from "./new-booking-form.js";
-import { readBookingForm } from "./read-booking-form.js";
+import { englishWords } from "../../words/english-words.js";
+import { readBookingForm as readInWords } from "./read-booking-form.js";
+
+// The English window, as every site had before Spanish came.
+const readBookingForm = (
+  ...args: [
+    Parameters<typeof readInWords>[0],
+    Parameters<typeof readInWords>[1],
+    Parameters<typeof readInWords>[2],
+  ]
+) => readInWords(...args, englishWords);
 
 const questions = [
   { id: "q-colour", label: "Which colour?", required: true },
@@ -12,6 +22,7 @@ const choice = {
   startsAt: "2026-10-14T16:00:00.000Z",
   personId: null,
   addressMode: "required" as const,
+  language: "en" as const,
 };
 const business = { questions, contactRule: "either" as const };
 const filledForm = {
@@ -58,6 +69,7 @@ describe("readBookingForm", () => {
           { questionId: "q-colour", question: "Which colour?", answer: "Blue" },
           { questionId: "q-pets", question: "Any pets?", answer: "" },
         ],
+        language: "en", // always sent: an English site of a Spanish business still answers in English
       },
     });
   });

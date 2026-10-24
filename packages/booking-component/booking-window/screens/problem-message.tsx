@@ -4,6 +4,8 @@
 
 import { telHref } from "@scheduleads-app/shared/tel-href";
 
+import { useBookingWords } from "../../words/booking-words-context.js";
+
 export type ProblemMessagePropsType = {
   words: string;
   retry: (() => void) | null;
@@ -11,6 +13,7 @@ export type ProblemMessagePropsType = {
 };
 
 export function ProblemMessage({ words, retry, phone }: ProblemMessagePropsType) {
+  const windowWords = useBookingWords();
   return (
     <div className="sa-problem">
       <p className="sa-problem-words" role="alert">
@@ -20,12 +23,12 @@ export function ProblemMessage({ words, retry, phone }: ProblemMessagePropsType)
         <div className="sa-actions">
           {retry && (
             <button type="button" className="sa-go" onClick={retry}>
-              Try again
+              {windowWords.tryAgain}
             </button>
           )}
           {phone && (
             <a className="sa-call" href={telHref(phone)}>
-              Call {phone}
+              {windowWords.call(phone)}
             </a>
           )}
         </div>

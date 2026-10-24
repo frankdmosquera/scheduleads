@@ -200,7 +200,8 @@ export async function applyBusinessShape(
     await tx.insert(textSettings).values({ organizationId, ...shape.texts });
   }
 
-  // Its contact rule, only while it has no service yet: after that it is the owner's, on Settings.
+  // Its contact rule and language, only while it has no service yet: after that they are the
+  // owner's, on Settings.
   const [anyService] = await tx
     .select({ id: bookingLink.id })
     .from(bookingLink)
@@ -209,7 +210,10 @@ export async function applyBusinessShape(
   if (!anyService)
     await tx
       .update(organization)
-      .set({ contactRule: shape.contactRule })
+      .set({
+        contactRule: shape.contactRule,
+        ...(shape.language ? { language: shape.language } : {}),
+      })
       .where(eq(organization.id, organizationId));
 
   let servicesMade = 0;

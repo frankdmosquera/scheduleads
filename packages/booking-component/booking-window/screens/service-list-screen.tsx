@@ -5,6 +5,7 @@ import type {
   BookingBusinessType,
   BookingServiceType,
 } from "../../api-client/booking-api-types.js";
+import { useBookingWords } from "../../words/booking-words-context.js";
 
 export type ServiceListScreenPropsType = {
   business: BookingBusinessType;
@@ -19,14 +20,15 @@ export function ServiceListScreen({
   titleId,
   onPick,
 }: ServiceListScreenPropsType) {
+  const words = useBookingWords();
   return (
     <>
       <div className="sa-head">
         <div>
           <h2 className="sa-title" id={titleId} tabIndex={-1}>
-            Book with {business.name}
+            {words.bookWith(business.name)}
           </h2>
-          <p className="sa-sub">Choose what you would like to book.</p>
+          <p className="sa-sub">{words.chooseService}</p>
         </div>
       </div>
       <div className="sa-body">
@@ -35,7 +37,7 @@ export function ServiceListScreen({
             <li key={service.id}>
               <button type="button" className="sa-service" onClick={() => onPick(service.id)}>
                 <span className="sa-service-name">{service.name}</span>
-                <span className="sa-service-meta">{service.durationMinutes} min</span>
+                <span className="sa-service-meta">{words.minutes(service.durationMinutes)}</span>
                 {service.description && (
                   <span className="sa-service-desc">{service.description}</span>
                 )}

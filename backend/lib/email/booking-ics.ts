@@ -16,6 +16,7 @@ export type BookingIcsInputType = {
   stampedAt: Date; // when the invite is written (DTSTAMP)
   sequence: number; // above every invite for this booking sent before (feature 7b, decision 6)
   cancelled?: boolean; // the cancelling form: withdraws the event it once sent
+  language: "en" | "es"; // the booking's: the customer's calendar shows its title in it (feature 12i)
 };
 
 export function bookingIcs(input: BookingIcsInputType): string {
@@ -37,7 +38,7 @@ export function bookingIcs(input: BookingIcsInputType): string {
     `DTSTAMP:${utcStamp(input.stampedAt)}`,
     `DTSTART:${utcStamp(input.startsAt)}`, // UTC: each calendar shows its reader's own zone
     `DTEND:${utcStamp(input.endsAt)}`,
-    `SUMMARY:${escapeText(`${input.service} with ${input.businessName}`)}`,
+    `SUMMARY:${escapeText(`${input.service} ${input.language === "es" ? "con" : "with"} ${input.businessName}`)}`,
     ...(input.location ? [`LOCATION:${escapeText(input.location)}`] : []),
     `ORGANIZER;CN=${quoteParameter(input.businessName)}:mailto:${input.senderEmail}`,
     // She booked it herself, so she is already in, and no reply is asked of her.
