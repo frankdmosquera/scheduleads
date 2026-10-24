@@ -265,6 +265,15 @@ afterAll(async () => {
 });
 
 describe("a booking is made", () => {
+  test("answers with its time in Spanish when the window spoke Spanish", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const response = await post(bookingsPath, { ...form(startsAt), language: "es" });
+    const body = await response.json();
+    expect(response.status).toBe(201);
+    expect(body.booking.when).toBe(formatBookingTime(new Date(startsAt), "America/Edmonton", "es"));
+    expect(body.booking.when).toMatch(/ de /);
+  });
+
   test("201 with the booking's times, service and person, and none of the customer's details", async () => {
     const [startsAt] = await freeTimes(clinic.ana);
     const response = await post(bookingsPath, form(startsAt));

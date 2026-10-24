@@ -3,6 +3,7 @@
 
 "use client";
 
+import type { BookingLanguageType } from "@scheduleads-app/shared/zod-validation";
 import { useCallback, useEffect, useState } from "react";
 
 import type {
@@ -25,10 +26,11 @@ export type MonthTimesQuestionType = {
   bookingLinkId: string;
   dates: { from: string; to: string } | null; // null: nothing in this month can be booked
   personId: string | null;
+  language: BookingLanguageType; // the language the API writes the times in
 };
 
 export function useMonthTimes(question: MonthTimesQuestionType) {
-  const { apiClient, slug, bookingLinkId, dates, personId } = question;
+  const { apiClient, slug, bookingLinkId, dates, personId, language } = question;
   const from = dates?.from ?? null;
   const to = dates?.to ?? null;
   const [times, setTimes] = useState<MonthTimesType>({ state: "loading" });
@@ -43,20 +45,22 @@ export function useMonthTimes(question: MonthTimesQuestionType) {
     }
     let live = true;
     setTimes({ state: "loading" });
-    fetchFreeTimes(apiClient, slug, bookingLinkId, { from, to, personId }).then((answer) => {
-      if (!live) return;
-      if (answer.state !== "ok") {
-        setTimes(answer);
-        return;
+    fetchFreeTimes(apiClient, slug, bookingLinkId, { from, to, personId, language }).then(
+      (answer) => {
+        if (!live) return;
+        if (answer.state !== "ok") {
+          setTimes(answer);
+          return;
+        }
+        const { localStartTimes, people: answeredPeople } = answer.freeTimes;
+        setTimes({ state: "ok", days: groupTimesByDay(localStartTimes) });
+        setPeople(answeredPeople);
       }
-      const { localStartTimes, people: answeredPeople } = answer.freeTimes;
-      setTimes({ state: "ok", days: groupTimesByDay(localStartTimes) });
-      setPeople(answeredPeople);
-    });
+    );
     return () => {
       live = false;
     };
-  }, [apiClient, slug, bookingLinkId, from, to, personId, asks]);
+  }, [apiClient, slug, bookingLinkId, from, to, personId, language, asks]);
 
   const askAgain = useCallback(() => setAsks((count) => count + 1), []);
   return { times, people, askAgain };

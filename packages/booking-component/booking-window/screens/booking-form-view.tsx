@@ -21,8 +21,8 @@ import type {
   BookingFormValuesType,
 } from "../booking-form/booking-form-values-type.js";
 import { readBookingForm, type BookingFormChoiceType } from "../booking-form/read-booking-form.js";
+import { useBookingWords } from "../../words/booking-words-context.js";
 import { ProblemMessage } from "./problem-message.js";
-import { problemWords } from "./problem-words.js";
 
 export type BookingFormViewPropsType = {
   apiClient: BookingApiClientType;
@@ -38,12 +38,6 @@ export type BookingFormViewPropsType = {
 
 type SendProblemType = { words: string; retry: boolean };
 
-const noAnswerWords =
-  "We couldn't hear back about your booking. It may have gone through: press Try again to find out. It never books twice.";
-// While unsure, a limit reached still leaves her booking unknown, and says so.
-const tooManyWhileUnsureWords =
-  "Too many tries. Wait a few minutes, then press Try again to find out whether your booking went through. It never books twice.";
-
 export function BookingFormView({
   apiClient,
   slug,
@@ -56,6 +50,7 @@ export function BookingFormView({
   onFrozenChange,
 }: BookingFormViewPropsType) {
   const idPrefix = useId();
+  const words = useBookingWords();
   const idOf = (field: BookingFormFieldType) => `${idPrefix}-${field.replace(":", "-")}`;
   const [errors, setErrors] = useState<BookingFormErrorType[]>([]);
   const [sending, setSending] = useState(false);
@@ -84,10 +79,7 @@ export function BookingFormView({
   };
 
   // Under both boxes only when either one will do; otherwise the required one is marked.
-  const eitherHint =
-    business.contactRule === "either"
-      ? "An email or a phone. At least one is required."
-      : undefined;
+  const eitherHint = business.contactRule === "either" ? words.eitherHint : undefined;
 
   const errorOf = (field: BookingFormFieldType) =>
     errors.find((error) => error.field === field)?.message ?? null;
@@ -101,7 +93,7 @@ export function BookingFormView({
 
   async function book() {
     if (sendingNow.current) return;
-    const read = readBookingForm(form, business, choice);
+    const read = readBookingForm(form, business, choice, words);
     if (read.state === "errors") {
       const fieldErrors = read.errors.filter((error) => error.field !== "form");
       const formError = read.errors.find((error) => error.field === "form");
@@ -141,23 +133,32 @@ export function BookingFormView({
         onBooked(answer.booking, request.customer.email ?? null); // where the confirmation went
         return;
       case "time-taken":
-        onTimeTaken(answer.message);
+        // The route's words are English: another language says its own.
+        onTimeTaken(words.language === "en" ? answer.message : words.timeTaken);
         return;
       case "refused":
-        showWords({ words: answer.message, retry: answer.canRetry });
+        showWords({
+          words:
+            words.language === "en"
+              ? answer.message
+              : answer.canRetry
+                ? words.timesUnreadable
+                : words.refused,
+          retry: answer.canRetry,
+        });
         return;
       case "problem":
         showWords({
           words: !nowUnsure
-            ? problemWords[answer.problem]
+            ? words.problems[answer.problem]
             : answer.problem === "too-many-tries"
-              ? tooManyWhileUnsureWords
-              : noAnswerWords,
+              ? words.tooManyWhileUnsure
+              : words.noAnswer,
           retry: nowUnsure || answer.problem !== "nothing-to-book",
         });
         return;
       case "no-answer":
-        showWords({ words: noAnswerWords, retry: true });
+        showWords({ words: words.noAnswer, retry: true });
         return;
     }
   }
@@ -215,7 +216,7 @@ export function BookingFormView({
       }}
     >
       <fieldset className="sa-fields" disabled={frozen}>
-        {field("name", "Name", true, (props) => (
+        {field("name", words.nameLabel, true, (props) => (
           <input
             {...props}
             type="text"
@@ -226,7 +227,7 @@ export function BookingFormView({
         ))}
         {field(
           "email",
-          "Email",
+          words.emailLabel,
           business.contactRule === "email",
           (props) => (
             <input
@@ -241,7 +242,7 @@ export function BookingFormView({
         )}
         {field(
           "phone",
-          "Phone",
+          words.phoneLabel,
           business.contactRule === "phone",
           (props) => (
             <input
@@ -267,7 +268,7 @@ export function BookingFormView({
           </label>
         )}
         {choice.addressMode !== "not_asked" &&
-          field("location", "Address", choice.addressMode === "required", (props) => (
+          field("location", words.addressLabel, choice.addressMode === "required", (props) => (
             <input
               {...props}
               type="text"
@@ -276,7 +277,7 @@ export function BookingFormView({
               onChange={(event) => edit(["location"], { ...form, location: event.target.value })}
             />
           ))}
-        {field("details", "What would you like done?", false, (props) => (
+        {field("details", words.detailsLabel, false, (props) => (
           <textarea
             {...props}
             rows={3}
@@ -313,12 +314,12 @@ export function BookingFormView({
 
       {!frozen && (
         <button type="submit" className="sa-submit">
-          Book
+          {words.book}
         </button>
       )}
       {sending && (
         <p ref={checkingRef} tabIndex={-1} className="sa-loading sa-focus-place" role="status">
-          {unsure ? "Checking your booking…" : "Booking…"}
+          {unsure ? words.checkingBooking : words.booking}
         </p>
       )}
     </form>

@@ -18,6 +18,7 @@ export * from "./crm-validation-schemas/booking-questions-validation-schema.js";
 export * from "./crm-validation-schemas/booking-form-rules-validation-schema.js";
 export * from "./crm-validation-schemas/contact-rule-validation-schema.js";
 export * from "./booking-links-validation-schemas/booking-link-id-validation-schema.js";
+export * from "./booking-links-validation-schemas/booking-language-validation-schema.js";
 export * from "./booking-links-validation-schemas/free-times-query-validation-schema.js";
 export * from "./booking-links-validation-schemas/create-booking-validation-schema.js";
 export * from "./booking-links-validation-schemas/move-booking-validation-schema.js";

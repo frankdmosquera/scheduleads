@@ -16,6 +16,7 @@ import type { BookingFormValuesType } from "../../booking-form/booking-form-valu
 import type { ChosenTimeType } from "../../booking-screen-type.js";
 import { formatDayName } from "../../month-calendar/format-day-name.js";
 import { formatZoneName } from "../../month-calendar/format-zone-name.js";
+import { useBookingWords } from "../../../words/booking-words-context.js";
 import { BookingFormView } from "../booking-form-view.js";
 import { MonthRail } from "./month-rail.js";
 
@@ -48,7 +49,8 @@ export function MonthDetailsScreen({
   onBooked,
   onTimeTaken,
 }: MonthDetailsScreenPropsType) {
-  const day = formatDayName(chosen.date);
+  const words = useBookingWords();
+  const day = formatDayName(chosen.date, words.language);
   // No Back while a send is unknown: another time with the same form could book her twice.
   const [frozen, setFrozen] = useState(false);
 
@@ -57,7 +59,7 @@ export function MonthDetailsScreen({
       <MonthRail
         business={business}
         service={service}
-        back={frozen ? null : { label: "Back to the times", onBack }}
+        back={frozen ? null : { label: words.backToTimes, onBack }}
       >
         <div className="sa-facts">
           <div className="sa-fact sa-fact--picked">
@@ -67,7 +69,7 @@ export function MonthDetailsScreen({
             <span>
               {chosen.time}, {day}
               <br />
-              {formatZoneName(availability.timezone)}
+              {formatZoneName(availability.timezone, words.language)}
             </span>
           </div>
           {chosen.personName && (
@@ -75,7 +77,7 @@ export function MonthDetailsScreen({
               <span className="sa-fact-i" aria-hidden="true">
                 &#128100;
               </span>
-              <span>With {chosen.personName}</span>
+              <span>{words.withPerson(chosen.personName)}</span>
             </div>
           )}
         </div>
@@ -83,7 +85,7 @@ export function MonthDetailsScreen({
 
       <div className="sa-panel">
         <h2 className="sa-panel-h" id={titleId} tabIndex={-1}>
-          Your details
+          {words.yourDetails}
         </h2>
         <BookingFormView
           apiClient={apiClient}
@@ -94,6 +96,7 @@ export function MonthDetailsScreen({
             startsAt: chosen.startsAt,
             personId: chosen.personId,
             addressMode: service.addressMode,
+            language: words.language,
           }}
           form={form}
           onFormChange={onFormChange}

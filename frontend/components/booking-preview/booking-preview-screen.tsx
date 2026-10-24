@@ -1,5 +1,6 @@
 // Frontend: the booking preview's stand-in host page. A Book now that names no service, one per
-// service, and a switch between the agency's look and Primo's. Shown to the platform admin only.
+// service, and switches for the look (the agency's or Primo's), the window's language, and what
+// happens after Book (feature 12i). Shown to the platform admin only.
 
 "use client";
 
@@ -18,9 +19,22 @@ export type BookingPreviewViewerType = "checking" | "platform-admin" | "someone-
 
 export type BookingPreviewLookType = "agency" | "primo";
 
-const looks: { look: BookingPreviewLookType; label: string }[] = [
-  { look: "agency", label: "Agency" },
-  { look: "primo", label: "Primo" },
+const looks: { value: BookingPreviewLookType; label: string }[] = [
+  { value: "agency", label: "Agency" },
+  { value: "primo", label: "Primo" },
+];
+
+type PreviewLanguageType = "en" | "es";
+const languages: { value: PreviewLanguageType; label: string }[] = [
+  { value: "en", label: "English" },
+  { value: "es", label: "Español" },
+];
+
+// After Book: the window's own confirmation, or this page again as the site's thank-you page.
+type PreviewAfterType = "stay" | "thanks";
+const afters: { value: PreviewAfterType; label: string }[] = [
+  { value: "stay", label: "Stay" },
+  { value: "thanks", label: "Thank-you page" },
 ];
 
 export type BookingPreviewScreenPropsType = { businessSlug: string };
@@ -29,6 +43,13 @@ export function BookingPreviewScreen({ businessSlug }: BookingPreviewScreenProps
   const [viewer, setViewer] = useState<BookingPreviewViewerType>("checking");
   const [services, setServices] = useState<BookingLinksResultType | null>(null);
   const [look, setLook] = useState<BookingPreviewLookType>("agency");
+  const [language, setLanguage] = useState<PreviewLanguageType>("en");
+  const [after, setAfter] = useState<PreviewAfterType>("stay");
+  // Set when the window sent the browser back here as the thank-you page. Read once, in the
+  // browser; nothing is drawn before the session check, so the server's null never shows.
+  const [thankedFor] = useState(() =>
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("booked")
+  );
 
   useEffect(() => {
     let live = true; // a late answer never updates a page the user already left
@@ -57,26 +78,37 @@ export function BookingPreviewScreen({ businessSlug }: BookingPreviewScreenProps
 
   return (
     <div className={`booking-preview booking-preview--${look}`}>
-      <BookingProvider apiUrl={API_URL} slug={businessSlug}>
+      <BookingProvider
+        apiUrl={API_URL}
+        slug={businessSlug}
+        language={language}
+        afterBooking={
+          after === "stay"
+            ? "stay"
+            : {
+                redirectTo: (booked) =>
+                  `/admin/booking-preview/${businessSlug}?booked=${encodeURIComponent(booked.startsAt)}`,
+              }
+        }
+      >
         <div className="booking-preview-note">
           <b>Booking preview</b>
           <span>{businessSlug}</span>
-          <fieldset className="booking-preview-looks">
-            <legend className="sr-only">Look</legend>
-            {looks.map((option) => (
-              <label key={option.look}>
-                <input
-                  type="radio"
-                  name="booking-preview-look"
-                  value={option.look}
-                  checked={look === option.look}
-                  onChange={() => setLook(option.look)}
-                />
-                {option.label}
-              </label>
-            ))}
-          </fieldset>
+          <PreviewChoice legend="Look" options={looks} value={look} onChange={setLook} />
+          <PreviewChoice
+            legend="Language"
+            options={languages}
+            value={language}
+            onChange={setLanguage}
+          />
+          <PreviewChoice legend="After Book" options={afters} value={after} onChange={setAfter} />
         </div>
+
+        {thankedFor && (
+          <p className="booking-preview-thanks" role="status">
+            Thank-you page: the window sent you here after booking {thankedFor}.
+          </p>
+        )}
 
         <header className="booking-preview-top">
           <span className="booking-preview-wordmark">A client&apos;s site</span>
@@ -116,5 +148,37 @@ export function BookingPreviewScreen({ businessSlug }: BookingPreviewScreenProps
         ) : null}
       </BookingProvider>
     </div>
+  );
+}
+
+type PreviewChoicePropsType<ValueType extends string> = {
+  legend: string;
+  options: { value: ValueType; label: string }[];
+  value: ValueType;
+  onChange(value: NoInfer<ValueType>): void;
+};
+
+function PreviewChoice<ValueType extends string>({
+  legend,
+  options,
+  value,
+  onChange,
+}: PreviewChoicePropsType<ValueType>) {
+  return (
+    <fieldset className="booking-preview-looks">
+      <legend className="sr-only">{legend}</legend>
+      {options.map((option) => (
+        <label key={option.value}>
+          <input
+            type="radio"
+            name={`booking-preview-${legend}`}
+            value={option.value}
+            checked={value === option.value}
+            onChange={() => onChange(option.value)}
+          />
+          {option.label}
+        </label>
+      ))}
+    </fieldset>
   );
 }

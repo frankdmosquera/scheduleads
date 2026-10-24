@@ -30,7 +30,11 @@ describe("fetchFreeTimes", () => {
     const { apiClient, asked } = clientAnswering(200, freeTimes);
 
     expect(
-      await fetchFreeTimes(apiClient, "clinic-dev", "abc", { ...october, personId: null })
+      await fetchFreeTimes(apiClient, "clinic-dev", "abc", {
+        ...october,
+        personId: null,
+        language: "en",
+      })
     ).toEqual({ state: "ok", freeTimes });
     expect(asked).toEqual([
       "https://api.example.com/public/clinic-dev/booking-links/abc/times?from=2026-10-09&to=2026-10-31",
@@ -44,7 +48,11 @@ describe("fetchFreeTimes", () => {
       localStartTimes: [],
     });
 
-    await fetchFreeTimes(apiClient, "clinic-dev", "abc", { ...october, personId: "ana" });
+    await fetchFreeTimes(apiClient, "clinic-dev", "abc", {
+      ...october,
+      personId: "ana",
+      language: "en",
+    });
 
     expect(asked[0]).toContain("&person=ana");
   });
@@ -54,7 +62,11 @@ describe("fetchFreeTimes", () => {
     const { apiClient } = clientAnswering(503, { error: { code: "unavailable", message: words } });
 
     expect(
-      await fetchFreeTimes(apiClient, "clinic-dev", "abc", { ...october, personId: null })
+      await fetchFreeTimes(apiClient, "clinic-dev", "abc", {
+        ...october,
+        personId: null,
+        language: "en",
+      })
     ).toEqual({ state: "times-unreadable", message: words });
   });
 
@@ -62,7 +74,11 @@ describe("fetchFreeTimes", () => {
     const { apiClient } = clientAnswering(200, { timezone: "America/Edmonton" });
 
     expect(
-      await fetchFreeTimes(apiClient, "clinic-dev", "abc", { ...october, personId: null })
+      await fetchFreeTimes(apiClient, "clinic-dev", "abc", {
+        ...october,
+        personId: null,
+        language: "en",
+      })
     ).toEqual({ state: "problem", problem: "cannot-load" });
   });
 
@@ -70,7 +86,11 @@ describe("fetchFreeTimes", () => {
     const { apiClient, asked } = clientAnswering(200, {});
 
     expect(
-      await fetchFreeTimes(apiClient, "clinic-dev", " ", { ...october, personId: null })
+      await fetchFreeTimes(apiClient, "clinic-dev", " ", {
+        ...october,
+        personId: null,
+        language: "en",
+      })
     ).toEqual({ state: "problem", problem: "nothing-to-book" });
     expect(asked).toEqual([]);
   });

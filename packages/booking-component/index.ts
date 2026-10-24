@@ -17,6 +17,16 @@
 //     {children}
 //   </BookingProvider>
 //
+// It speaks English unless the site says otherwise: language="es" puts the window, its dates and
+// its booking's emails in Spanish (feature 12i). After a booking the window shows its own
+// confirmation; a site that has a thank-you page names it, and can hear of each booking made
+// (its id, service, time and zone, never the customer's details):
+//
+//   <BookingProvider apiUrl="..." slug="..." language="es"
+//     afterBooking={{ redirectTo: "/gracias" }} onBooked={(booked) => countIt(booked)}>
+//
+// redirectTo may also be a function of the booking, to put its time in the page's address.
+//
 // Then any number of buttons inside it. With no bookingId the window opens on the business's
 // services; with a service's bookingId it opens straight on that service:
 //
@@ -37,6 +47,7 @@ export {
   type BookingProviderPropsType,
 } from "./booking-provider/booking-provider.js";
 export { useBooking, type UseBookingType } from "./booking-provider/use-booking.js";
+export type { AfterBookingType, BookedType } from "./booking-provider/after-booking-type.js";
 export {
   BookNowTrigger,
   type BookNowTriggerPropsType,

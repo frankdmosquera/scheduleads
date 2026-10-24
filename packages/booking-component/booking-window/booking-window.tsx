@@ -8,8 +8,12 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type {
   BookingApiClientType,
   BookingBusinessType,
+  BookingMadeType,
   BookingServiceType,
 } from "../api-client/booking-api-types.js";
+import type { AfterBookingType, BookedType } from "../booking-provider/after-booking-type.js";
+import { BookingWordsContext } from "../words/booking-words-context.js";
+import type { BookingWordsType } from "../words/booking-words-type.js";
 import { fetchOneService } from "../api-client/fetch-one-service.js";
 import { fetchServiceList } from "../api-client/fetch-service-list.js";
 import { newBookingForm } from "./booking-form/new-booking-form.js";
@@ -27,10 +31,23 @@ export type BookingWindowPropsType = {
   apiClient: BookingApiClientType;
   slug: string;
   bookingId: string | undefined;
+  words: BookingWordsType;
+  afterBooking: AfterBookingType;
+  onBooked: ((booked: BookedType) => void) | undefined;
+  goTo(address: string): void; // the browser's own navigation; a test hands its own
   onClosed(): void;
 };
 
-export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingWindowPropsType) {
+export function BookingWindow({
+  apiClient,
+  slug,
+  bookingId,
+  words,
+  afterBooking,
+  onBooked,
+  goTo,
+  onClosed,
+}: BookingWindowPropsType) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const [screen, setScreen] = useState<BookingScreenType>({ screen: "loading" });
@@ -140,107 +157,139 @@ export function BookingWindow({ apiClient, slug, bookingId, onClosed }: BookingW
     document.getElementById(titleId)?.focus();
   }, [screen, titleId]);
 
-  return (
-    <dialog
-      ref={dialogRef}
-      className="sa-dialog"
-      aria-labelledby={titleId}
-      onClose={() => {
-        latestLoad.current++;
-        onClosed();
-      }}
-    >
-      <div
-        className={
-          screen.screen === "service" || screen.screen === "details" || screen.screen === "done"
-            ? "sa-modal sa-modal--book"
-            : "sa-modal"
-        }
-      >
-        <button
-          type="button"
-          className="sa-x sa-x--corner"
-          aria-label="Close"
-          onClick={() => dialogRef.current?.close()}
-        >
-          &#10005;
-        </button>
+  // After a 201: the site hears of it, then the visitor stays on the confirmation or goes to the
+  // site's page. The confirmation shows either way, so nothing waits on a blank form while the
+  // browser leaves; a site's code that throws only costs the redirect, never the booking.
+  const booked = (booking: BookingMadeType) => {
+    const made: BookedType = {
+      bookingId: booking.id,
+      serviceName: booking.service.name,
+      startsAt: booking.startsAt,
+      timeZone: booking.timezone,
+    };
+    try {
+      onBooked?.(made);
+    } catch (error) {
+      console.error("The site's onBooked failed:", error);
+    }
+    if (afterBooking === "stay") return;
+    try {
+      const { redirectTo } = afterBooking;
+      goTo(typeof redirectTo === "function" ? redirectTo(made) : redirectTo);
+    } catch (error) {
+      console.error("The site's redirectTo failed:", error);
+    }
+  };
 
-        {screen.screen === "loading" ? (
-          <LoadingScreen titleId={titleId} />
-        ) : screen.screen === "services" ? (
-          <ServiceListScreen
-            business={screen.business}
-            services={screen.services}
-            titleId={titleId}
-            onPick={(bookingLinkId) =>
-              void loadPickedService(screen.business, screen.services, bookingLinkId)
-            }
-          />
-        ) : screen.screen === "service" ? (
-          <ServiceScreen
-            apiClient={apiClient}
-            slug={slug}
-            business={screen.business}
-            service={screen.service}
-            availability={screen.availability}
-            place={screen.place}
-            notice={screen.notice}
-            titleId={titleId}
-            onBack={
-              screen.pickedFrom
-                ? () =>
-                    setScreen({
-                      screen: "services",
-                      business: screen.business,
-                      services: screen.pickedFrom ?? [],
-                    })
-                : null
-            }
-            onTimeChosen={(chosen) => setScreen({ ...screen, screen: "details", chosen })}
-          />
-        ) : screen.screen === "details" ? (
-          <DetailsScreen
-            apiClient={apiClient}
-            slug={slug}
-            business={screen.business}
-            service={screen.service}
-            availability={screen.availability}
-            chosen={screen.chosen}
-            form={form}
-            titleId={titleId}
-            onFormChange={setForm}
-            onBack={() => {
-              const { chosen, ...oneService } = screen;
-              setScreen({ ...oneService, screen: "service", place: chosen.place, notice: null });
-            }}
-            onBooked={(booking, email) => {
-              const { chosen: _chosen, ...oneService } = screen;
-              setScreen({ ...oneService, screen: "done", booking, email });
-            }}
-            onTimeTaken={(message) => {
-              // Back to the same month and person, whose times load again without the taken one.
-              const { chosen, ...oneService } = screen;
-              setScreen({ ...oneService, screen: "service", place: chosen.place, notice: message });
-            }}
-          />
-        ) : screen.screen === "done" ? (
-          <DoneScreen
-            business={screen.business}
-            service={screen.service}
-            booking={screen.booking}
-            email={screen.email}
-            titleId={titleId}
-          />
-        ) : (
-          <BookingProblemScreen
-            problem={screen.problem}
-            business={screen.business}
-            retry={screen.retry}
-            titleId={titleId}
-          />
-        )}
-      </div>
-    </dialog>
+  return (
+    <BookingWordsContext value={words}>
+      <dialog
+        ref={dialogRef}
+        className="sa-dialog"
+        aria-labelledby={titleId}
+        onClose={() => {
+          latestLoad.current++;
+          onClosed();
+        }}
+      >
+        <div
+          className={
+            screen.screen === "service" || screen.screen === "details" || screen.screen === "done"
+              ? "sa-modal sa-modal--book"
+              : "sa-modal"
+          }
+        >
+          <button
+            type="button"
+            className="sa-x sa-x--corner"
+            aria-label={words.close}
+            onClick={() => dialogRef.current?.close()}
+          >
+            &#10005;
+          </button>
+
+          {screen.screen === "loading" ? (
+            <LoadingScreen titleId={titleId} />
+          ) : screen.screen === "services" ? (
+            <ServiceListScreen
+              business={screen.business}
+              services={screen.services}
+              titleId={titleId}
+              onPick={(bookingLinkId) =>
+                void loadPickedService(screen.business, screen.services, bookingLinkId)
+              }
+            />
+          ) : screen.screen === "service" ? (
+            <ServiceScreen
+              apiClient={apiClient}
+              slug={slug}
+              business={screen.business}
+              service={screen.service}
+              availability={screen.availability}
+              place={screen.place}
+              notice={screen.notice}
+              titleId={titleId}
+              onBack={
+                screen.pickedFrom
+                  ? () =>
+                      setScreen({
+                        screen: "services",
+                        business: screen.business,
+                        services: screen.pickedFrom ?? [],
+                      })
+                  : null
+              }
+              onTimeChosen={(chosen) => setScreen({ ...screen, screen: "details", chosen })}
+            />
+          ) : screen.screen === "details" ? (
+            <DetailsScreen
+              apiClient={apiClient}
+              slug={slug}
+              business={screen.business}
+              service={screen.service}
+              availability={screen.availability}
+              chosen={screen.chosen}
+              form={form}
+              titleId={titleId}
+              onFormChange={setForm}
+              onBack={() => {
+                const { chosen, ...oneService } = screen;
+                setScreen({ ...oneService, screen: "service", place: chosen.place, notice: null });
+              }}
+              onBooked={(booking, email) => {
+                const { chosen: _chosen, ...oneService } = screen;
+                setScreen({ ...oneService, screen: "done", booking, email });
+                booked(booking);
+              }}
+              onTimeTaken={(message) => {
+                // Back to the same month and person, whose times load again without the taken one.
+                const { chosen, ...oneService } = screen;
+                setScreen({
+                  ...oneService,
+                  screen: "service",
+                  place: chosen.place,
+                  notice: message,
+                });
+              }}
+            />
+          ) : screen.screen === "done" ? (
+            <DoneScreen
+              business={screen.business}
+              service={screen.service}
+              booking={screen.booking}
+              email={screen.email}
+              titleId={titleId}
+            />
+          ) : (
+            <BookingProblemScreen
+              problem={screen.problem}
+              business={screen.business}
+              retry={screen.retry}
+              titleId={titleId}
+            />
+          )}
+        </div>
+      </dialog>
+    </BookingWordsContext>
   );
 }

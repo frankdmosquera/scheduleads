@@ -6,6 +6,7 @@
 import { useEffect, useRef } from "react";
 
 import type { BookingStartTimeType } from "../../../api-client/booking-api-types.js";
+import { useBookingWords } from "../../../words/booking-words-context.js";
 import { formatDayName } from "../../month-calendar/format-day-name.js";
 
 export type DayTimesViewPropsType = {
@@ -24,7 +25,8 @@ export function DayTimesView({
   onNext,
 }: DayTimesViewPropsType) {
   const nextRef = useRef<HTMLButtonElement>(null);
-  const dayName = formatDayName(date);
+  const words = useBookingWords();
+  const dayName = formatDayName(date, words.language);
 
   useEffect(() => {
     if (pickedTime) nextRef.current?.focus(); // the button pressed was replaced by the split
@@ -42,10 +44,10 @@ export function DayTimesView({
                 ref={nextRef}
                 type="button"
                 className="sa-t-next"
-                aria-label={`Next: ${dayName} at ${time}`}
+                aria-label={words.nextAt(dayName, time)}
                 onClick={onNext}
               >
-                Next
+                {words.next}
               </button>
             </div>
           ) : (

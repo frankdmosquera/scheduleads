@@ -16,4 +16,10 @@ describe("the calendar's words", () => {
   it("names the zone the same way in summer and winter", () => {
     expect(formatZoneName("America/Edmonton")).toBe("Mountain Time");
   });
+
+  it("names them in Spanish when the window speaks it", () => {
+    expect(formatDayName("2026-10-14", "es")).toBe("Miércoles, 14 de octubre");
+    expect(formatMonthName("2026-10", "es")).toBe("Octubre de 2026");
+    expect(formatZoneName("America/Bogota", "es")).toBe("hora estándar de Colombia");
+  });
 });

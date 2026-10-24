@@ -7,7 +7,16 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { PublicAppType } from "backend/app-type";
 
+import { englishWords } from "../words/english-words.js";
 import { BookingWindow } from "./booking-window.js";
+
+// The window as every site had it before Spanish came: English, staying on its confirmation.
+const englishWindow = {
+  words: englishWords,
+  afterBooking: "stay" as const,
+  onBooked: undefined,
+  goTo() {},
+};
 
 // jsdom has no <dialog> behaviour: open and close are enough here.
 beforeAll(() => {
@@ -97,6 +106,7 @@ const openToScreenTwo = async (apiClient: ReturnType<typeof fakeApi>["apiClient"
       apiClient,
       slug: "clinic-dev",
       bookingId: "facial",
+      ...englishWindow,
       onClosed() {},
     })
   );
@@ -139,6 +149,7 @@ describe("the booking window", () => {
         apiClient,
         slug: "clinic-dev",
         bookingId: "facial",
+        ...englishWindow,
         onClosed() {},
       })
     );

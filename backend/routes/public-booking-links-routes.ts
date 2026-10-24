@@ -150,7 +150,7 @@ export const publicBookingLinksRoutes = new Hono()
         });
         if (!freeTimes) return c.json(notBookableHere, 404);
         const people = personChoice === "customer_picks" ? freeTimes.people : [];
-        const local = localStartTimes(freeTimes.startTimes, freeTimes.timezone);
+        const local = localStartTimes(freeTimes.startTimes, freeTimes.timezone, query.language);
         return c.json({ ...freeTimes, people, localStartTimes: local }, 200);
       } catch (error) {
         // Only unreadable calendars are expected (the picked person's, or everyone's with "any

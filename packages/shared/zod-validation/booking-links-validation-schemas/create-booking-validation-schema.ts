@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { textablePhoneNumber } from "../../helpers/textable-phone-number.js";
 import { contactValidationSchema } from "../crm-validation-schemas/contact-validation-schema.js";
+import { bookingLanguageValidationSchema } from "./booking-language-validation-schema.js";
 import { bookingLinkIdValidationSchema } from "./booking-link-id-validation-schema.js";
 
 // The same rule as a booking link id: any id format fits, no arbitrary text reaches a query.
@@ -49,6 +50,8 @@ export const createBookingValidationSchema = z
       .optional(),
     // Her yes to later texts (decision 13), only from a business that asks; left out = no yes.
     laterTextsYes: z.boolean("That is not a yes or a no.").optional(),
+    // The language the window spoke (feature 12i); left out = English.
+    language: bookingLanguageValidationSchema.optional(),
   })
   // A yes belongs to a number that can get texts: without one it proves nothing.
   .refine(

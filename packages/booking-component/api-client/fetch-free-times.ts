@@ -1,6 +1,8 @@
 // Booking component: a service's free start times for some dates (31 at most), with one person or
 // any available, and the people the customer may pick from.
 
+import type { BookingLanguageType } from "@scheduleads-app/shared/zod-validation";
+
 import type { BookingApiClientType, BookingFreeTimesType } from "./booking-api-types.js";
 import { problemFromApiAnswer, type BookingProblemType } from "./problem-from-api-answer.js";
 
@@ -8,6 +10,7 @@ export type FreeTimesQuestionType = {
   from: string; // YYYY-MM-DD in the business's zone
   to: string;
   personId: string | null; // null = any available
+  language: BookingLanguageType; // the language the API writes each time in
 };
 
 export type FreeTimesResultType =
@@ -36,6 +39,8 @@ export async function fetchFreeTimes(
         from: question.from,
         to: question.to,
         ...(question.personId === null ? {} : { person: question.personId }),
+        // English is the API's own: asked only for another language, so English asks stay as they were.
+        ...(question.language === "en" ? {} : { language: question.language }),
       },
     });
     const status: number = response.status; // the rate limit's 429 is not in the route's type

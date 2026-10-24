@@ -5,8 +5,7 @@ import type { BookableMonthsType } from "../../month-calendar/bookable-months.js
 import { formatDayName } from "../../month-calendar/format-day-name.js";
 import { formatMonthName } from "../../month-calendar/format-month-name.js";
 import { monthGrid } from "../../month-calendar/month-grid.js";
-
-const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+import { useBookingWords } from "../../../words/booking-words-context.js";
 
 export type MonthCalendarViewPropsType = {
   month: string; // YYYY-MM
@@ -25,25 +24,26 @@ export function MonthCalendarView({
   onPickDate,
   onMonth,
 }: MonthCalendarViewPropsType) {
+  const words = useBookingWords();
   return (
     <div>
       <div className="sa-mhead">
         <button
           type="button"
           className="sa-mnav"
-          aria-label="Previous month"
+          aria-label={words.previousMonth}
           disabled={month <= bounds.firstMonth}
           onClick={() => onMonth(-1)}
         >
           &#8249;
         </button>
         <span className="sa-mtitle" aria-live="polite">
-          {formatMonthName(month)}
+          {formatMonthName(month, words.language)}
         </span>
         <button
           type="button"
           className="sa-mnav"
-          aria-label="Next month"
+          aria-label={words.nextMonth}
           disabled={month >= bounds.lastMonth}
           onClick={() => onMonth(1)}
         >
@@ -52,7 +52,7 @@ export function MonthCalendarView({
       </div>
 
       <div className="sa-dow" aria-hidden="true">
-        {weekdays.map((weekday) => (
+        {words.weekdays.map((weekday) => (
           <span key={weekday}>{weekday}</span>
         ))}
       </div>
@@ -73,7 +73,7 @@ export function MonthCalendarView({
                 data-free={freeDays.has(date) ? "yes" : undefined}
                 disabled={!freeDays.has(date)}
                 aria-pressed={freeDays.has(date) ? date === pickedDate : undefined}
-                aria-label={formatDayName(date)}
+                aria-label={formatDayName(date, words.language)}
                 onClick={() => onPickDate(date)}
               >
                 {Number(date.slice(8))}

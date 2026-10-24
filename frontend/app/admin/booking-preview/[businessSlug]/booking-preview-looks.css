@@ -197,3 +197,10 @@
   padding: 0 40px 64px;
   color: var(--host-muted);
 }
+
+.booking-preview-thanks {
+  margin: 0;
+  padding: 8px 40px;
+  border-bottom: 1px solid var(--host-line);
+  color: var(--host-text);
+}

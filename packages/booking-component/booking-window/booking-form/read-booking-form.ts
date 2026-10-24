@@ -14,6 +14,7 @@ import type {
   BookingFormFieldType,
   BookingFormValuesType,
 } from "./booking-form-values-type.js";
+import type { BookingWordsType } from "../../words/booking-words-type.js";
 
 export type BookingFormChoiceType = {
   bookingLinkId: string;
@@ -21,13 +22,12 @@ export type BookingFormChoiceType = {
   personId: string | null; // null = any available
   // The service's own setting: no address box, and none sent, when not asked.
   addressMode: "required" | "optional" | "not_asked";
+  language: BookingWordsType["language"]; // the window's, kept on the booking (feature 12i)
 };
 
 export type ReadBookingFormResultType =
   | { state: "ok"; request: BookingRequestType }
   | { state: "errors"; errors: BookingFormErrorType[] };
-
-const answerNeeded = "Answer this question.";
 
 // A box left empty is not sent: an empty email is no email, not a wrong one.
 const filled = (text: string) => (text.trim() === "" ? undefined : text.trim());
@@ -35,7 +35,8 @@ const filled = (text: string) => (text.trim() === "" ? undefined : text.trim());
 export function readBookingForm(
   values: BookingFormValuesType,
   business: Pick<BookingBusinessType, "questions" | "contactRule">,
-  choice: BookingFormChoiceType
+  choice: BookingFormChoiceType,
+  words: Pick<BookingWordsType, "formError">
 ): ReadBookingFormResultType {
   const { questions } = business;
   const request = {
@@ -60,6 +61,7 @@ export function readBookingForm(
       answer: (values.answers[question.id] ?? "").trim(),
     })),
     ...(values.laterTextsYes ? { laterTextsYes: true } : {}), // no tick: nothing sent
+    language: choice.language,
   };
 
   const found = new Map<BookingFormFieldType, string>();
@@ -77,7 +79,7 @@ export function readBookingForm(
   for (const question of questions) {
     const field: BookingFormFieldType = `answer:${question.id}`;
     if (question.required && !filled(values.answers[question.id] ?? "") && !found.has(field)) {
-      found.set(field, answerNeeded);
+      found.set(field, "Answer this question.");
     }
   }
 
@@ -95,7 +97,8 @@ export function readBookingForm(
     state: "errors",
     errors: order
       .filter((field) => found.has(field))
-      .map((field) => ({ field, message: found.get(field) ?? "" })),
+      // Said in the window's words: the shared rules' messages are English.
+      .map((field) => ({ field, message: words.formError(found.get(field) ?? "") })),
   };
 }
 
