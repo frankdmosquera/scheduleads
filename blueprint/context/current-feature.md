@@ -8,7 +8,7 @@ every customer email; and the redirect after booking, a new contract every site 
 
 **Branch:** feature/12i-spanish-booking
 
-**Status:** 12i.1 built 2026-10-24, in review; 12i.2 next.
+**Status:** 12i.1 done 2026-10-24; 12i.2 built 2026-10-24; 12i.3 next.
 
 ## Goal
 
@@ -58,7 +58,7 @@ checks, tick the box, the build log, commit and push to `feature/12i-spanish-boo
 scoped to the step, then an independent review. The one planned stop is after the review, where its
 findings are talked through (AGENTS.md, "After the green light, nothing stops until the review").
 P0 and P1 findings are fixed before the next step; P2 and P3 are recorded and carried. Publishing
-0.2.0 is Frank's separate yes at the end of 12i.2.
+0.2.0 is Frank's separate yes at the end of 12i.3.
 
 ## Build steps
 
@@ -81,18 +81,30 @@ P0 and P1 findings are fixed before the next step; P2 and P3 are recorded and ca
   400 for any other value; and on the laptop a Spanish test page shows the window in Spanish end to
   end and lands on a thank-you page after a booking.
 
-- [ ] **12i.2 The booking keeps its language: emails and the customer's page.** "A Spanish
+- [x] **12i.2 The times on a phone.** Added by Frank on 2026-10-24 ("I'm not quite happy with the
+  design... how to scroll the times"). "On a phone, picking a time feels quick even with 40 times in
+  a day." Calendly's way: below phone width the window fills the screen, the calendar and a day's
+  times take turns (pick a day and its times open as one scrolling list with the day's name and a
+  way back), and the big-screen layout is unchanged. A week strip, closed Mañana/Tarde/Noche bars
+  and a two-layout A/B try were weighed and dropped by Frank: he likes Calendly's list and will
+  change it if he comes to hate it. The start-time grid stays (a customer never types 8:35); a clock
+  picker is only a note for later.
+  **Done when:** at phone size on the booking preview, with a 15-minute service, a picked day opens
+  its times alone and Back returns to the calendar; a big screen shows both side by side as before;
+  the turn-taking has a saved test.
+
+- [ ] **12i.3 The booking keeps its language: emails and the customer's page.** "A Spanish
   booking gets its confirmation in Spanish, and its cancel and move page is in Spanish; the owner's
   notification is in the business's language."
-  - 12i.2.1 `booking.language` and `organization.language`, `"en"` or `"es"`, one migration,
+  - 12i.3.1 `booking.language` and `organization.language`, `"en"` or `"es"`, one migration,
     every existing row `"en"`. The booking route stores the asked language, or the business's.
-  - 12i.2.2 The three customer emails and their subjects in the booking's language; the three owner
+  - 12i.3.2 The three customer emails and their subjects in the booking's language; the three owner
     notifications in the business's.
-  - 12i.2.3 The customer's booking page and its change-time panel in the booking's language, its
+  - 12i.3.3 The customer's booking page and its change-time panel in the booking's language, its
     page's `lang` attribute included (on its own container: the root layout owns `<html>`).
-  - 12i.2.4 The setting: Settings, Booking form page, "Language of the customer emails"; the
+  - 12i.3.4 The setting: Settings, Booking form page, "Language of the customer emails"; the
     client setup file's `language`, and the setup form on `/admin/client-setup`.
-  - 12i.2.5 Publish 0.2.0, on Frank's yes.
+  - 12i.3.5 Publish 0.2.0, on Frank's yes.
   **Done when:** the backend tests show a Spanish booking's confirmation, moved and cancelled emails
   in Spanish and its owner notification in the business's language, a booking without a language
   taking the business's, and the customer page answering in the booking's language; the setting
@@ -177,7 +189,7 @@ email preview script. No browser test harness exists, so none is added.
   from the shared rules' English message, with a general Spanish line for any message added later,
   instead of by field alone: one field has several messages ("Enter a name.", "That name is too
   long."). English free-times questions carry no `language`, so they stay as before; a booking always
-  sends its language, so an English site of a Spanish business is answered in English (12i.2). The
+  sends its language, so an English site of a Spanish business is answered in English (12i.3). The
   dashboard's booking preview (`/admin/booking-preview/<slug>`) gained Language and After Book
   switches, the laptop check's stand-in site.
 

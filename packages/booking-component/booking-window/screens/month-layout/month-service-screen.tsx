@@ -72,6 +72,9 @@ export function MonthServiceScreen({
     customerPicks ? (place?.personId ?? null) : null
   );
   const [pickedDate, setPickedDate] = useState<string | null>(place?.date ?? null);
+  // A phone shows the calendar or one day's times, never both (feature 12i): a day picked opens
+  // its times, Back closes them. A big screen shows both side by side and ignores this.
+  const [dayOpen, setDayOpen] = useState(place !== null);
   const [pickedTime, setPickedTime] = useState<string | null>(null);
 
   const { times, people, askAgain } = useMonthTimes({
@@ -91,6 +94,7 @@ export function MonthServiceScreen({
 
   const changeMonth = (by: -1 | 1) => {
     setMonth((current) => shiftMonth(current, by));
+    setDayOpen(false);
     setPickedTime(null);
   };
   const changePerson = (next: string | null) => {
@@ -137,7 +141,7 @@ export function MonthServiceScreen({
             phone={business.phone}
           />
         ) : (
-          <div className="sa-pick">
+          <div className={dayOpen ? "sa-pick sa-pick--day" : "sa-pick"}>
             <div>
               <MonthCalendarView
                 month={month}
@@ -146,6 +150,7 @@ export function MonthServiceScreen({
                 pickedDate={shownDate}
                 onPickDate={(date) => {
                   setPickedDate(date);
+                  setDayOpen(true);
                   setPickedTime(null);
                 }}
                 onMonth={changeMonth}
@@ -176,6 +181,11 @@ export function MonthServiceScreen({
                 onPickTime={(startsAt) => {
                   setPickedDate(shownDate);
                   setPickedTime(startsAt);
+                }}
+                onBackToCalendar={() => {
+                  setDayOpen(false);
+                  // The calendar comes back in place of the times: focus goes to the screen's heading.
+                  requestAnimationFrame(() => document.getElementById(titleId)?.focus());
                 }}
                 onNext={() => {
                   if (!shownTime) return;

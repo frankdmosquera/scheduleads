@@ -244,6 +244,23 @@ describe("every screen in Spanish", () => {
   });
 });
 
+describe("on a phone, the calendar and a day's times take turns", () => {
+  it("opens a day's times when the day is picked, and goes back to the calendar", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-09T18:00:00.000Z"));
+    openWindow({ words: spanishWords });
+    const pick = () => document.querySelector(".sa-pick");
+    await screen.findByRole("button", { name: /^10:00/ });
+    expect(pick()?.classList.contains("sa-pick--day")).toBe(false); // the calendar first
+
+    fireEvent.click(screen.getByRole("button", { name: "Miércoles, 14 de octubre" }));
+    expect(pick()?.classList.contains("sa-pick--day")).toBe(true); // the day's times, alone
+
+    fireEvent.click(screen.getByRole("button", { name: /Volver al calendario/ }));
+    expect(pick()?.classList.contains("sa-pick--day")).toBe(false);
+  });
+});
+
 describe("after a booking", () => {
   it("stays on its own confirmation when the site names no page", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });

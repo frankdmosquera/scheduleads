@@ -865,11 +865,46 @@
   }
   .sa-times-list {
     max-height: none;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
   }
-  .sa-t-split {
-    grid-column: 1 / -1;
+  /* The calendar, or one day's times: never both (feature 12i). */
+  .sa-pick--day > :first-child,
+  .sa-pick:not(.sa-pick--day) .sa-times--day {
+    display: none;
+  }
+  .sa-times .sa-times-back {
+    display: inline-flex; /* beats the rule below that hides it on a big screen */
+  }
+}
+
+/* A day's way back to the calendar: a phone's only. */
+.sa-times-back {
+  all: unset;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  margin-bottom: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--sa-identity, #18181b);
+}
+.sa-times-back:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* On a phone the window is the whole screen: no frame, no margin, the page beneath unseen. */
+@media (max-width: 520px) {
+  .sa-dialog {
+    padding: 0;
+  }
+  .sa-modal {
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border: none;
   }
 }
 

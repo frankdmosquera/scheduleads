@@ -20,6 +20,7 @@ export const englishWords: BookingWordsType = {
   backToServices: "Back to services",
   backToTimes: "Back to the times",
   pickDateAndTime: "Select a date & time",
+  backToCalendar: "Back to the calendar",
   previousMonth: "Previous month",
   nextMonth: "Next month",
   weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],

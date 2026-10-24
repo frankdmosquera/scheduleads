@@ -19,6 +19,7 @@ export type BookingWordsType = {
   backToServices: string;
   backToTimes: string;
   pickDateAndTime: string;
+  backToCalendar: string; // a phone's way back from a day's times
   previousMonth: string;
   nextMonth: string;
   weekdays: [string, string, string, string, string, string, string]; // Monday first

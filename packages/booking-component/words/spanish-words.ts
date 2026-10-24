@@ -41,6 +41,7 @@ export const spanishWords: BookingWordsType = {
   backToServices: "Volver a los servicios",
   backToTimes: "Volver a los horarios",
   pickDateAndTime: "Elija fecha y hora",
+  backToCalendar: "Volver al calendario",
   previousMonth: "Mes anterior",
   nextMonth: "Mes siguiente",
   weekdays: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
