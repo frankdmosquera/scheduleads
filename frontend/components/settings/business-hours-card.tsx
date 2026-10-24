@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { saveBusinessHours } from "@/lib/api-client/settings/save-business-hours";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 // A business with no hours yet starts empty but for how far ahead: one month, the one value the
@@ -46,6 +47,7 @@ export function BusinessHoursCard({
   const formRef = useRef<HTMLFormElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
+  const { hoursWords } = useDashboardWords().words;
   // Stays until the card is saved again or the page is left.
   const [outside, setOutside] = useState<ListedBookingsType | null>(null);
   const form = useForm<z.input<typeof businessHoursValidationSchema>, unknown, BusinessHoursType>({
@@ -76,14 +78,7 @@ export function BusinessHoursCard({
       form.reset(saved.answer.business);
       onSaved(saved.answer.business);
       setOutside({ bookings: saved.answer.outsideHours, timezone: saved.answer.business.timezone });
-      setNotice({
-        tone: "info",
-        text: `Saved. Customers can book these hours now.${
-          count
-            ? ` ${count === 1 ? "One booking now sits" : `${count} bookings now sit`} outside them, listed below.`
-            : ""
-        }`,
-      });
+      setNotice({ tone: "info", text: hoursWords.savedBusinessHours(count) });
       return;
     }
     if (saved.state === "field") {
@@ -100,7 +95,7 @@ export function BusinessHoursCard({
     <section className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-md)] md:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-base font-semibold tracking-tight text-foreground">
-          When you take bookings
+          {hoursWords.whenYouTakeBookings}
         </h3>
         {initial ? (
           <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
@@ -109,9 +104,7 @@ export function BusinessHoursCard({
         ) : null}
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        {initial
-          ? "The hours customers can book online. Everyone follows this week unless their own card says otherwise."
-          : "Set your hours. Until you do, customers cannot book online."}
+        {initial ? hoursWords.businessLede : hoursWords.noHoursYetLede}
       </p>
 
       <form
@@ -135,7 +128,7 @@ export function BusinessHoursCard({
           />
 
           <div className="flex flex-col gap-2">
-            <h4 className="text-sm font-semibold text-foreground">One-off dates</h4>
+            <h4 className="text-sm font-semibold text-foreground">{hoursWords.oneOffDates}</h4>
             <Controller
               name="dateHours"
               control={form.control}
@@ -168,7 +161,7 @@ export function BusinessHoursCard({
               control={form.control}
               render={({ field, fieldState }) => (
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="business-horizon">How far ahead, in days</Label>
+                  <Label htmlFor="business-horizon">{hoursWords.howFarAhead}</Label>
                   <Input
                     id="business-horizon"
                     type="number"
@@ -197,7 +190,7 @@ export function BusinessHoursCard({
               control={form.control}
               render={({ field, fieldState }) => (
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="business-timezone">Time zone</Label>
+                  <Label htmlFor="business-timezone">{hoursWords.timeZone}</Label>
                   <select
                     id="business-timezone"
                     value={field.value}
@@ -206,7 +199,7 @@ export function BusinessHoursCard({
                     aria-describedby={fieldState.error ? "business-timezone-error" : undefined}
                     className="h-10 rounded-lg border border-input bg-muted px-3 text-sm aria-invalid:border-destructive"
                   >
-                    <option value="">Pick a time zone</option>
+                    <option value="">{hoursWords.pickATimeZone}</option>
                     {timeZones.map((zone) => (
                       <option key={zone} value={zone}>
                         {zone}
@@ -222,22 +215,15 @@ export function BusinessHoursCard({
               )}
             />
           </div>
-          <p className="-mt-3 text-xs text-muted-foreground">
-            Notice and how far ahead apply to every service: a customer can never book sooner than
-            the notice or further ahead than this.
-          </p>
+          <p className="-mt-3 text-xs text-muted-foreground">{hoursWords.noticeAndHorizonNote}</p>
         </fieldset>
 
         <SaveNotice notice={notice} />
-        <ListedBookings
-          list={outside}
-          title="These bookings now sit outside your hours"
-          Heading="h4"
-        />
+        <ListedBookings list={outside} title={hoursWords.outsideYourHours} Heading="h4" />
         {canEdit ? (
           <div className="mt-4">
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Saving…" : "Save hours"}
+              {form.formState.isSubmitting ? hoursWords.saving : hoursWords.saveHours}
             </Button>
           </div>
         ) : null}

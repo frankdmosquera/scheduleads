@@ -4,18 +4,20 @@
 import Link from "next/link";
 
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export function RefusalNotice({
   refusal,
 }: {
   refusal: { state: "signed-out" } | { state: "refused"; message: string };
 }) {
+  const { words } = useDashboardWords();
   if (refusal.state === "refused") return <CentredCardNotice>{refusal.message}</CentredCardNotice>;
   return (
     <div>
-      <CentredCardNotice>Your sign-in has ended.</CentredCardNotice>
+      <CentredCardNotice>{words.signInEnded}</CentredCardNotice>
       <Link href="/sign-in" className="mt-4 inline-block text-sm underline underline-offset-2">
-        Sign in again
+        {words.signInAgain}
       </Link>
     </div>
   );

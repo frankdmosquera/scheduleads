@@ -1,6 +1,17 @@
 // Frontend: the dashboard's words in Spanish (feature 12j), in "usted", as the booking window.
 
 import type { DashboardWordsType } from "@/lib/dashboard-words/dashboard-words-type";
+import { spanishLeadsWords } from "@/lib/dashboard-words/leads-words";
+import { spanishScheduleWords } from "@/lib/dashboard-words/schedule-words";
+import { spanishHoursWords } from "@/lib/dashboard-words/hours-words";
+import { spanishDaysOffWords } from "@/lib/dashboard-words/days-off-words";
+import { spanishPeopleWords } from "@/lib/dashboard-words/people-words";
+import { spanishServicesWords } from "@/lib/dashboard-words/services-words";
+import { spanishBookingFormWords } from "@/lib/dashboard-words/booking-form-words";
+import { spanishTextsWords } from "@/lib/dashboard-words/texts-words";
+import { spanishCalendarSettingsWords } from "@/lib/dashboard-words/calendar-settings-words";
+import { spanishSettingsFrameWords } from "@/lib/dashboard-words/settings-frame-words";
+import { spanishSetupCardsWords } from "@/lib/dashboard-words/setup-cards-words";
 
 const roleNames: Record<string, string> = {
   owner: "propietario",
@@ -61,4 +72,17 @@ export const spanishDashboardWords: DashboardWordsType = {
   homeNote:
     "Cada dato de arriba vino de una sola llamada a la API, limitada a este negocio por su sesión. Todos los prospectos están en la pantalla Prospectos.",
   setUpAClient: "Configurar un cliente",
+  signInEnded: "Su sesión ha terminado.",
+  signInAgain: "Iniciar sesión de nuevo",
+  leadsWords: spanishLeadsWords,
+  scheduleWords: spanishScheduleWords,
+  hoursWords: spanishHoursWords,
+  daysOffWords: spanishDaysOffWords,
+  peopleWords: spanishPeopleWords,
+  servicesWords: spanishServicesWords,
+  bookingFormWords: spanishBookingFormWords,
+  textsWords: spanishTextsWords,
+  calendarSettingsWords: spanishCalendarSettingsWords,
+  settingsFrameWords: spanishSettingsFrameWords,
+  setupCardsWords: spanishSetupCardsWords,
 };

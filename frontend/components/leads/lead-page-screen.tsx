@@ -20,11 +20,12 @@ import {
   type LeadPageType,
   type LeadResultType,
 } from "@/lib/api-client/leads/fetch-lead";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { formatLeadTime } from "@/lib/format-lead-time";
 
-const SOURCE_LABELS = { widget: "Website", hosted: "Booking page", manual: "Added by hand" };
-
 export function LeadPageScreen({ leadId }: { leadId: string }) {
+  const { words } = useDashboardWords();
+  const leadsWords = words.leadsWords;
   const [result, setResult] = useState<LeadResultType | null>(null);
   // Set by "Add a lead" when the email was already a contact, so a different name is no surprise.
   const joined = useSearchParams().get("joined") === "1";
@@ -48,17 +49,15 @@ export function LeadPageScreen({ leadId }: { leadId: string }) {
   return (
     <div className="mx-auto w-full max-w-5xl">
       <Link href="/leads" className="text-sm text-muted-foreground hover:text-foreground">
-        ← Leads
+        {leadsWords.backToLeads}
       </Link>
       <div className="mt-4">
         {!result ? (
-          <p className="text-sm text-muted-foreground">Loading this lead…</p>
+          <p className="text-sm text-muted-foreground">{leadsWords.loadingThisLead}</p>
         ) : result.state === "not-found" ? (
           <div className="rounded-xl border border-border bg-card p-8">
-            <h1 className="text-lg font-semibold text-foreground">No lead here</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              This address does not match a lead of your business.
-            </p>
+            <h1 className="text-lg font-semibold text-foreground">{leadsWords.noLeadHere}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{leadsWords.noLeadHereLede}</p>
           </div>
         ) : result.state === "signed-out" || result.state === "refused" ? (
           <RefusalNotice refusal={result} />
@@ -72,7 +71,7 @@ export function LeadPageScreen({ leadId }: { leadId: string }) {
                 setReloads((n) => n + 1);
               }}
             >
-              Try again
+              {words.tryAgain}
             </Button>
           </div>
         ) : (
@@ -96,8 +95,10 @@ function LeadPageBody({
   joined: boolean;
   onChanged: () => void;
 }) {
+  const { words } = useDashboardWords();
+  const leadsWords = words.leadsWords;
   const { lead, contact, timeZone } = page;
-  const time = (iso: string) => formatLeadTime(iso, timeZone);
+  const time = (iso: string) => formatLeadTime(iso, timeZone, words.intlLocale);
 
   return (
     <>
@@ -123,31 +124,26 @@ function LeadPageBody({
       </header>
       {joined ? (
         <div className="mt-3">
-          <CentredCardNotice>
-            Already a contact: this request was added to {contact.name}, whose details stay as first
-            given.
-          </CentredCardNotice>
+          <CentredCardNotice>{leadsWords.alreadyAContact(contact.name)}</CentredCardNotice>
         </div>
       ) : null}
       {timeZone ? null : (
-        <p className="mt-2 text-xs text-muted-foreground">
-          Times are in your browser&apos;s time zone: this business has no bookable hours yet.
-        </p>
+        <p className="mt-2 text-xs text-muted-foreground">{leadsWords.browserTimeZoneNote}</p>
       )}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="flex flex-col gap-4">
-          <LeadSection title="This request">
+          <LeadSection title={leadsWords.thisRequest}>
             <dl className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
-              <dt className="text-muted-foreground">Stage</dt>
+              <dt className="text-muted-foreground">{leadsWords.stage}</dt>
               <dd className="text-foreground">{lead.stage.name}</dd>
-              <dt className="text-muted-foreground">Came from</dt>
-              <dd className="text-foreground">{SOURCE_LABELS[lead.source]}</dd>
-              <dt className="text-muted-foreground">Came in</dt>
+              <dt className="text-muted-foreground">{leadsWords.cameFrom}</dt>
+              <dd className="text-foreground">{leadsWords.sourceName[lead.source]}</dd>
+              <dt className="text-muted-foreground">{leadsWords.cameIn}</dt>
               <dd className="text-foreground">{time(lead.createdAt)}</dd>
               {lead.phone && lead.phone !== contact.phone ? (
                 <>
-                  <dt className="text-muted-foreground">Phone given</dt>
+                  <dt className="text-muted-foreground">{leadsWords.phoneGiven}</dt>
                   <dd className="text-foreground">{lead.phone}</dd>
                 </>
               ) : null}
@@ -163,7 +159,7 @@ function LeadPageBody({
           </LeadSection>
 
           {page.bookings.length > 0 ? (
-            <LeadSection title={page.bookings.length === 1 ? "Booking" : "Bookings"}>
+            <LeadSection title={leadsWords.bookings(page.bookings.length)}>
               <ul className="flex flex-col gap-3">
                 {page.bookings.map((one) => (
                   <li key={one.id} className="text-sm">
@@ -171,7 +167,7 @@ function LeadPageBody({
                       {one.serviceName}, {time(one.startsAt)}
                       {one.status === "cancelled" ? (
                         <span className="ml-2 rounded-full bg-lost-soft px-2 py-0.5 text-xs text-lost">
-                          Cancelled
+                          {leadsWords.cancelled}
                         </span>
                       ) : null}
                     </div>
@@ -184,9 +180,9 @@ function LeadPageBody({
             </LeadSection>
           ) : null}
 
-          <LeadSection title="Everything that happened">
+          <LeadSection title={leadsWords.everythingThatHappened}>
             {page.timeline.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nothing yet.</p>
+              <p className="text-sm text-muted-foreground">{leadsWords.nothingYet}</p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {page.timeline.map((entry) => (
@@ -195,13 +191,13 @@ function LeadPageBody({
               </ul>
             )}
             {page.timelineCut ? (
-              <p className="mt-3 text-xs text-muted-foreground">Only the newest 200 are shown.</p>
+              <p className="mt-3 text-xs text-muted-foreground">{leadsWords.onlyNewest200}</p>
             ) : null}
           </LeadSection>
         </div>
 
         <div className="flex flex-col gap-4">
-          <LeadSection title="Next steps">
+          <LeadSection title={leadsWords.nextSteps}>
             <NextStepsSection
               leadId={lead.id}
               steps={page.nextSteps}
@@ -211,12 +207,12 @@ function LeadPageBody({
           </LeadSection>
 
           {page.otherLeads.length > 0 ? (
-            <LeadSection title="Other requests">
+            <LeadSection title={leadsWords.otherRequests}>
               <ul className="flex flex-col gap-2 text-sm">
                 {page.otherLeads.map((other) => (
                   <li key={other.id}>
                     <Link href={`/leads/${other.id}`} className="text-foreground hover:underline">
-                      {other.what ?? "A request"}
+                      {other.what ?? leadsWords.aRequest}
                     </Link>
                     <div className="text-xs text-muted-foreground">
                       {other.stageName} · {time(other.createdAt)}

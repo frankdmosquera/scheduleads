@@ -2,11 +2,14 @@
 // save of hours left outside them (12a), or ones held by a person or place just turned off (12d).
 // Each opens its lead, so the owner can call the customer.
 
+"use client";
+
 import Link from "next/link";
 
 import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
 
 import type { SavedBusinessHoursType } from "@/lib/api-client/settings/save-business-hours";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export type ListedBookingsType = {
   bookings: SavedBusinessHoursType["outsideHours"];
@@ -22,14 +25,13 @@ export function ListedBookings({
   title: string;
   Heading: "h3" | "h4" | "h5";
 }) {
+  const { words, language } = useDashboardWords();
   if (!list || list.bookings.length === 0) return null;
 
   return (
     <div className="mt-4 rounded-lg border border-[var(--wait)] bg-[var(--wait-soft)] p-4">
       <Heading className="text-sm font-semibold text-foreground">{title}</Heading>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Still booked. Open a booking to call the customer.
-      </p>
+      <p className="mt-1 text-sm text-muted-foreground">{words.hoursWords.stillBookedCallThem}</p>
       <ul className="mt-3 flex flex-col gap-2">
         {list.bookings.map((booking) => (
           <li key={booking.bookingId} className="text-sm">
@@ -40,8 +42,8 @@ export function ListedBookings({
               {booking.customerName}
             </Link>{" "}
             <span className="text-muted-foreground">
-              &middot; {booking.serviceName} with {booking.personName} &middot;{" "}
-              {formatBookingTime(new Date(booking.startsAt), list.timezone)}
+              &middot; {words.hoursWords.serviceWith(booking.serviceName, booking.personName)}{" "}
+              &middot; {formatBookingTime(new Date(booking.startsAt), list.timezone, language)}
             </span>
           </li>
         ))}

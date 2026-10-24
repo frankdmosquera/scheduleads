@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { TextsSettingsType } from "@/lib/api-client/settings/fetch-texts";
 import { saveTexts } from "@/lib/api-client/settings/save-texts";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
+import type { TextsWordsType } from "@/lib/dashboard-words/texts-words";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 type TextsType = NonNullable<TextsSettingsType["texts"]>;
@@ -25,17 +27,15 @@ const MINUTES_IN: Record<UnitType, number> = { minutes: 1, hours: 60, days: 1440
 const MOST_MINUTES = 2_147_483_647; // the most a reminder can hold
 
 // "20 hours before", in the largest whole unit.
-function reminderWords(minutes: number): string {
-  const [count, unit] =
-    minutes % 1440 === 0
-      ? [minutes / 1440, "day"]
-      : minutes % 60 === 0
-        ? [minutes / 60, "hour"]
-        : [minutes, "minute"];
-  return `${count} ${unit}${count === 1 ? "" : "s"} before`;
+function reminderWords(minutes: number, words: TextsWordsType): string {
+  if (minutes % 1440 === 0) return words.reminderBefore(minutes / 1440, "day");
+  if (minutes % 60 === 0) return words.reminderBefore(minutes / 60, "hour");
+  return words.reminderBefore(minutes, "minute");
 }
 
 export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boolean }) {
+  const { words } = useDashboardWords();
+  const textsWords = words.textsWords;
   const formRef = useRef<HTMLFormElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [confirmationOn, setConfirmationOn] = useState(texts.confirmationOn);
@@ -67,15 +67,15 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
     const amount = Number(count);
     const minutes = amount * MINUTES_IN[unit];
     if (!Number.isInteger(amount) || amount < 1) {
-      setErrors({ newReminder: "Give a whole number, at least 1." });
+      setErrors({ newReminder: textsWords.wholeNumber });
       return;
     }
     if (minutes > MOST_MINUTES) {
-      setErrors({ newReminder: "That is too far ahead." });
+      setErrors({ newReminder: textsWords.tooFarAhead });
       return;
     }
     if (reminders.includes(minutes)) {
-      setErrors({ newReminder: "That reminder is already there." });
+      setErrors({ newReminder: textsWords.alreadyThere });
       return;
     }
     const next = [...reminders, minutes].sort((a, b) => b - a);
@@ -97,7 +97,7 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
     event.preventDefault();
     // A reminder typed and not added would be lost without a word.
     if (count.trim() !== "") {
-      setErrors({ newReminder: "Add this reminder, or clear it, before saving." });
+      setErrors({ newReminder: textsWords.addOrClearFirst });
       focusFirstInvalid();
       return;
     }
@@ -114,7 +114,7 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
       setReminders(kept.reminderMinutesBefore);
       setReplyPhone(kept.replyPhone ?? "");
       setReplyEmail(kept.replyEmail ?? "");
-      setNotice({ tone: "info", text: "Saved the texts." });
+      setNotice({ tone: "info", text: textsWords.saved });
       return;
     }
     if (saved.state === "field") {
@@ -171,25 +171,21 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
     >
       <div className="flex flex-col gap-1">
         <h3 id="texts-title" className="text-base font-semibold tracking-tight text-foreground">
-          Texts to your customers
+          {textsWords.title}
         </h3>
-        <p className="text-sm text-muted-foreground">
-          They go from your texting number, {texts.fromNumber}, which the agency set up.
-        </p>
+        <p className="text-sm text-muted-foreground">{textsWords.fromNumber(texts.fromNumber)}</p>
       </div>
       {!canEdit ? (
-        <CentredCardNotice tone="info">
-          Your role cannot change the texts. You can see them here.
-        </CentredCardNotice>
+        <CentredCardNotice tone="info">{textsWords.cannotChange}</CentredCardNotice>
       ) : null}
 
       <fieldset disabled={!canEdit} className="flex flex-col gap-5">
         <ChoiceField
           name="texts-confirmation"
-          legend="A text when a customer books"
+          legend={textsWords.whenCustomerBooks}
           choices={[
-            { value: true, label: "Yes, send it" },
-            { value: false, label: "No" },
+            { value: true, label: textsWords.yesSendIt },
+            { value: false, label: textsWords.no },
           ]}
           value={confirmationOn}
           onChange={(value) => {
@@ -207,25 +203,25 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
           className="flex flex-col gap-2 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           <p id="texts-reminders-label" className="text-sm font-medium text-foreground">
-            Reminders before the appointment
+            {textsWords.reminders}
           </p>
           {reminders.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No reminders.</p>
+            <p className="text-sm text-muted-foreground">{textsWords.noReminders}</p>
           ) : (
             <ul className="flex flex-col gap-1 text-sm">
               {reminders.map((minutes, index) => (
                 <li key={minutes} className="flex items-center gap-3">
-                  <span>{reminderWords(minutes)}</span>
+                  <span>{reminderWords(minutes, textsWords)}</span>
                   {canEdit ? (
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       data-focus={`remove-${minutes}`}
-                      aria-label={`Remove the reminder ${reminderWords(minutes)}`}
+                      aria-label={textsWords.removeReminder(reminderWords(minutes, textsWords))}
                       onClick={() => removeReminder(index)}
                     >
-                      Remove
+                      {words.settingsFrameWords.remove}
                     </Button>
                   ) : null}
                 </li>
@@ -241,7 +237,7 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
             <div className="flex flex-col gap-1">
               <div className="flex flex-wrap items-center gap-2">
                 <label htmlFor="texts-new-reminder" className="sr-only">
-                  New reminder, how many
+                  {textsWords.newReminderCount}
                 </label>
                 <Input
                   id="texts-new-reminder"
@@ -263,7 +259,7 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
                   className="h-10 w-24 bg-muted px-3"
                 />
                 <label htmlFor="texts-new-reminder-unit" className="sr-only">
-                  New reminder, unit
+                  {textsWords.newReminderUnit}
                 </label>
                 <select
                   id="texts-new-reminder-unit"
@@ -271,12 +267,12 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
                   onChange={(event) => setUnit(event.target.value as UnitType)}
                   className="h-10 rounded-md border border-border bg-muted px-2 text-sm"
                 >
-                  <option value="minutes">minutes before</option>
-                  <option value="hours">hours before</option>
-                  <option value="days">days before</option>
+                  <option value="minutes">{textsWords.minutesBefore}</option>
+                  <option value="hours">{textsWords.hoursBefore}</option>
+                  <option value="days">{textsWords.daysBefore}</option>
                 </select>
                 <Button type="button" variant="outline" onClick={addReminder}>
-                  + Add a reminder
+                  {textsWords.addReminder}
                 </Button>
               </div>
               {errors.newReminder ? (
@@ -290,13 +286,11 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
 
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">
-            <p className="text-sm font-medium text-foreground">
-              When a customer answers a text, pass it on to
-            </p>
-            <p className="text-xs text-muted-foreground">A phone, an email, or both.</p>
+            <p className="text-sm font-medium text-foreground">{textsWords.passRepliesTo}</p>
+            <p className="text-xs text-muted-foreground">{textsWords.phoneEmailOrBoth}</p>
           </div>
-          {textField("replyPhone", "Phone", replyPhone, setReplyPhone, "tel")}
-          {textField("replyEmail", "Email", replyEmail, setReplyEmail, "email")}
+          {textField("replyPhone", textsWords.phone, replyPhone, setReplyPhone, "tel")}
+          {textField("replyEmail", textsWords.email, replyEmail, setReplyEmail, "email")}
         </div>
       </fieldset>
 
@@ -304,7 +298,7 @@ export function TextsForm({ texts, canEdit }: { texts: TextsType; canEdit: boole
       {canEdit ? (
         <div>
           <Button type="submit" disabled={saving}>
-            {saving ? "Saving…" : "Save texts"}
+            {saving ? words.settingsFrameWords.saving : textsWords.saveTexts}
           </Button>
         </div>
       ) : null}

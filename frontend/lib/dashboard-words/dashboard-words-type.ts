@@ -4,6 +4,18 @@
 
 import type { DashboardLanguageType } from "@scheduleads-app/shared/pick-dashboard-language";
 
+import type { LeadsWordsType } from "@/lib/dashboard-words/leads-words";
+import type { ScheduleWordsType } from "@/lib/dashboard-words/schedule-words";
+import type { HoursWordsType } from "@/lib/dashboard-words/hours-words";
+import type { DaysOffWordsType } from "@/lib/dashboard-words/days-off-words";
+import type { PeopleWordsType } from "@/lib/dashboard-words/people-words";
+import type { ServicesWordsType } from "@/lib/dashboard-words/services-words";
+import type { BookingFormWordsType } from "@/lib/dashboard-words/booking-form-words";
+import type { TextsWordsType } from "@/lib/dashboard-words/texts-words";
+import type { CalendarSettingsWordsType } from "@/lib/dashboard-words/calendar-settings-words";
+import type { SettingsFrameWordsType } from "@/lib/dashboard-words/settings-frame-words";
+import type { SetupCardsWordsType } from "@/lib/dashboard-words/setup-cards-words";
+
 export type { DashboardLanguageType };
 
 export type DashboardWordsType = {
@@ -59,4 +71,19 @@ export type DashboardWordsType = {
   nothingIncluded: string;
   homeNote: string;
   setUpAClient: string;
+  // A screen whose sign-in has ended
+  signInEnded: string;
+  signInAgain: string;
+  // Each area's own words
+  leadsWords: LeadsWordsType;
+  scheduleWords: ScheduleWordsType;
+  hoursWords: HoursWordsType;
+  daysOffWords: DaysOffWordsType;
+  peopleWords: PeopleWordsType;
+  servicesWords: ServicesWordsType;
+  bookingFormWords: BookingFormWordsType;
+  textsWords: TextsWordsType;
+  calendarSettingsWords: CalendarSettingsWordsType;
+  settingsFrameWords: SettingsFrameWordsType;
+  setupCardsWords: SetupCardsWordsType;
 };

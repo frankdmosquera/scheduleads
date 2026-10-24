@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { DaysOffSettingsType } from "@/lib/api-client/settings/fetch-days-off";
 import { closeDay, type ClosedDayAnswerType } from "@/lib/api-client/settings/save-days-off";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 export function CloseDayForm({
@@ -32,6 +33,7 @@ export function CloseDayForm({
   const dateRef = useRef<HTMLInputElement | null>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
+  const { daysOffWords } = useDashboardWords().words;
   const form = useForm<{ date: string }>({ defaultValues: { date: "" } });
   const today = localDate(new Date(), timezone);
   const lastDay = addDays(today, 365); // the page lists a year ahead, so a later day would not show
@@ -54,14 +56,14 @@ export function CloseDayForm({
 
   const dateError = form.formState.errors.date?.message;
   const { ref: dateFieldRef, ...dateField } = form.register("date", {
-    required: "Pick a date.",
+    required: daysOffWords.pickADate,
     validate: (date) =>
       date < today
-        ? "Pick today or a later date."
+        ? daysOffWords.pickTodayOrLater
         : date > lastDay
-          ? "Pick a date within a year."
+          ? daysOffWords.pickWithinAYear
           : daysOff.closedDays.some((day) => day.date === date && !day.openedForEveryone)
-            ? "That day is already closed."
+            ? daysOffWords.alreadyClosed
             : true,
     onChange: () => setNotice(null),
   });
@@ -75,14 +77,11 @@ export function CloseDayForm({
       className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-md)] md:p-6"
     >
       <h3 id="close-day-title" className="text-base font-semibold tracking-tight text-foreground">
-        Close a day
+        {daysOffWords.closeADay}
       </h3>
-      <p className="text-sm text-muted-foreground">
-        Nobody can book online that day. Bookings already made stay, and are listed for you. The
-        business&apos;s one-off hours for that date on Hours, if any, are removed.
-      </p>
+      <p className="text-sm text-muted-foreground">{daysOffWords.closeLede}</p>
       <div className="flex flex-col gap-1.5 sm:max-w-xs">
-        <Label htmlFor="close-day-date">Date</Label>
+        <Label htmlFor="close-day-date">{daysOffWords.date}</Label>
         <Input
           id="close-day-date"
           type="date"
@@ -106,10 +105,10 @@ export function CloseDayForm({
       <SaveNotice notice={notice} />
       <div className="flex gap-2">
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Closing…" : "Close the day"}
+          {form.formState.isSubmitting ? daysOffWords.closing : daysOffWords.closeTheDay}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          {daysOffWords.cancel}
         </Button>
       </div>
     </form>

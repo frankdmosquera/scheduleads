@@ -6,6 +6,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { capitalized } from "@scheduleads-app/shared/booking-time";
+
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { CloseDayForm } from "@/components/settings/close-day-form";
 import { ClosedDayBookings } from "@/components/settings/closed-day-bookings";
@@ -20,10 +22,12 @@ import {
   type ClosedDaySettingsType,
   type DaysOffSettingsType,
 } from "@/lib/api-client/settings/fetch-days-off";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export function DaysOffScreen() {
+  const { words } = useDashboardWords();
   return (
-    <SettingsSection title="Days off" load={fetchDaysOff}>
+    <SettingsSection title={words.settingsFrameWords.daysOff} load={fetchDaysOff}>
       {(settings) => <ClosedDaysList settings={settings} />}
     </SettingsSection>
   );
@@ -32,9 +36,10 @@ export function DaysOffScreen() {
 const CLOSE_BUTTON_ID = "close-a-day";
 const openButtonId = (date: string) => `open-day-${date}`;
 
-// "Monday, November 2, 2026" for a calendar date; noon UTC names the same day everywhere.
-const formatDayName = (date: string) =>
-  new Intl.DateTimeFormat("en-CA", {
+// "Monday, November 2, 2026" for a calendar date, "lunes, 2 de noviembre de 2026" in Spanish;
+// noon UTC names the same day everywhere.
+const formatDayName = (date: string, intlLocale: string) =>
+  new Intl.DateTimeFormat(intlLocale, {
     timeZone: "UTC",
     weekday: "long",
     month: "long",
@@ -44,6 +49,9 @@ const formatDayName = (date: string) =>
 
 function ClosedDaysList({ settings }: { settings: DaysOffSettingsType }) {
   const [daysOff, setDaysOff] = useState(settings);
+  const { words } = useDashboardWords();
+  const { daysOffWords } = words;
+  const dayName = (date: string) => formatDayName(date, words.intlLocale);
   const [open, setOpen] = useState<string | "close" | null>(null); // a day's date, or the close form
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   // Stays until the next save or the page is left, so the owner can call each customer.
@@ -66,28 +74,22 @@ function ClosedDaysList({ settings }: { settings: DaysOffSettingsType }) {
 
   const { timezone, canEdit } = daysOff;
   if (!timezone) {
-    return (
-      <CentredCardNotice tone="info">
-        Set the business&apos;s hours on Hours first: a day is closed on the business&apos;s clock.
-      </CentredCardNotice>
-    );
+    return <CentredCardNotice tone="info">{daysOffWords.setHoursFirst}</CentredCardNotice>;
   }
 
   const nameOf = (personId: string) =>
     daysOff.people.find((person) => person.id === personId)?.name ?? "";
   const openedLabel = (day: ClosedDaySettingsType) =>
     day.openedForEveryone
-      ? "Open for everyone"
+      ? daysOffWords.openForEveryone
       : day.openedFor.length
-        ? `Open for ${day.openedFor.map(nameOf).join(", ")}`
-        : "Closed";
+        ? daysOffWords.openFor(day.openedFor.map(nameOf).join(", "))
+        : daysOffWords.closed;
 
   return (
     <div className="flex flex-col gap-3">
       {!canEdit ? (
-        <CentredCardNotice tone="info">
-          Your role cannot change the days off. You can see them here.
-        </CentredCardNotice>
+        <CentredCardNotice tone="info">{daysOffWords.cannotChange}</CentredCardNotice>
       ) : open === "close" ? (
         <CloseDayForm
           daysOff={daysOff}
@@ -97,21 +99,14 @@ function ClosedDaysList({ settings }: { settings: DaysOffSettingsType }) {
             close(CLOSE_BUTTON_ID);
             const count = answer.newlyClosed.length;
             setListed(count ? { bookings: answer.newlyClosed, timezone } : null);
-            setNotice({
-              tone: "info",
-              text: `Closed ${formatDayName(date)}.${
-                count
-                  ? ` ${count === 1 ? "One booking stays" : `${count} bookings stay`}, listed below.`
-                  : ""
-              }`,
-            });
+            setNotice({ tone: "info", text: daysOffWords.closedTheDay(dayName(date), count) });
           }}
           onCancel={() => close(CLOSE_BUTTON_ID)}
         />
       ) : (
         <div>
           <Button id={CLOSE_BUTTON_ID} variant="outline" onClick={() => openForm("close")}>
-            + Close a day
+            {daysOffWords.closeADayButton}
           </Button>
         </div>
       )}
@@ -126,7 +121,7 @@ function ClosedDaysList({ settings }: { settings: DaysOffSettingsType }) {
       ) : null}
 
       {daysOff.closedDays.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No closed days in the coming year.</p>
+        <p className="text-sm text-muted-foreground">{daysOffWords.noClosedDays}</p>
       ) : null}
       <ul className="flex flex-col gap-2">
         {daysOff.closedDays.map((day) =>
@@ -134,7 +129,7 @@ function ClosedDaysList({ settings }: { settings: DaysOffSettingsType }) {
             <li key={day.date}>
               <OpenDayForm
                 day={day}
-                dayName={formatDayName(day.date)}
+                dayName={dayName(day.date)}
                 people={daysOff.people}
                 onOpened={(answer, forWhom) => {
                   setDaysOff((current) => ({ ...current, ...answer.daysOff }));
@@ -146,7 +141,7 @@ function ClosedDaysList({ settings }: { settings: DaysOffSettingsType }) {
                   setListed(null);
                   setNotice({
                     tone: "info",
-                    text: `Opened ${formatDayName(day.date)} for ${forWhom}, on their usual hours.`,
+                    text: daysOffWords.openedTheDay(dayName(day.date), forWhom),
                   });
                 }}
                 onCancel={() => close(openButtonId(day.date))}
@@ -157,7 +152,7 @@ function ClosedDaysList({ settings }: { settings: DaysOffSettingsType }) {
               key={day.date}
               className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-card px-4 py-3 md:px-6"
             >
-              <span className="font-medium text-foreground">{formatDayName(day.date)}</span>
+              <span className="font-medium text-foreground">{capitalized(dayName(day.date))}</span>
               {day.name ? <span className="text-sm text-muted-foreground">{day.name}</span> : null}
               <span
                 className={
@@ -174,10 +169,10 @@ function ClosedDaysList({ settings }: { settings: DaysOffSettingsType }) {
                   variant="ghost"
                   size="sm"
                   className="ml-auto"
-                  aria-label={`Open ${formatDayName(day.date)} again`}
+                  aria-label={daysOffWords.openDayAgain(dayName(day.date))}
                   onClick={() => openForm(day.date)}
                 >
-                  Open again
+                  {daysOffWords.openAgain}
                 </Button>
               ) : null}
             </li>

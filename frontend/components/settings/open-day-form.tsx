@@ -14,6 +14,7 @@ import type {
   DaysOffSettingsType,
 } from "@/lib/api-client/settings/fetch-days-off";
 import { openClosedDay, type OpenedClosedDayType } from "@/lib/api-client/settings/save-days-off";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 const EVERYONE = "everyone"; // never a person's id, which is a UUID
@@ -26,19 +27,20 @@ export function OpenDayForm({
   onCancel,
 }: {
   day: ClosedDaySettingsType;
-  dayName: string; // "Monday, November 2, 2026"
+  dayName: string; // "Monday, November 2, 2026", "lunes, 2 de noviembre de 2026"
   people: DaysOffSettingsType["people"];
-  onOpened: (answer: OpenedClosedDayType, forWhom: string) => void; // "everyone" or a name
+  onOpened: (answer: OpenedClosedDayType, forWhom: string) => void; // everyone, or a name
   onCancel: () => void;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
+  const { daysOffWords } = useDashboardWords().words;
   const form = useForm<{ forWhom: string }>(); // unpicked: the owner says who
   // The form opens where the owner picks: the button that opened it is gone from the page.
   useEffect(() => formRef.current?.querySelector<HTMLElement>("[role=radiogroup]")?.focus(), []);
   const choices = [
-    { value: EVERYONE, label: "Everyone" },
+    { value: EVERYONE, label: daysOffWords.everyone },
     ...people
       .filter((person) => !day.openedFor.includes(person.id))
       .map((person) => ({ value: person.id, label: person.name })),
@@ -51,7 +53,7 @@ export function OpenDayForm({
     });
     if (opened.state === "ok") {
       const person = people.find((candidate) => candidate.id === forWhom);
-      onOpened(opened.answer, person?.name ?? "everyone");
+      onOpened(opened.answer, person?.name ?? daysOffWords.everyoneInASentence);
       return;
     }
     setNotice({ tone: "error", text: opened.message });
@@ -67,16 +69,16 @@ export function OpenDayForm({
       className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-md)] md:p-6"
     >
       <h3 id={titleId} className="text-base font-semibold tracking-tight text-foreground">
-        Open {dayName} again
+        {daysOffWords.openDayAgain(dayName)}
       </h3>
       <Controller
         name="forWhom"
         control={form.control}
-        rules={{ required: "Pick who it opens for." }}
+        rules={{ required: daysOffWords.pickWhoItOpensFor }}
         render={({ field, fieldState }) => (
           <ChoiceField
             name={`open-day-${day.date}-for`}
-            legend="Open it for, on their usual hours for that weekday"
+            legend={daysOffWords.openItFor}
             choices={choices}
             value={field.value}
             onChange={(forWhom) => {
@@ -90,10 +92,10 @@ export function OpenDayForm({
       <SaveNotice notice={notice} />
       <div className="flex gap-2">
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Opening…" : "Open the day"}
+          {form.formState.isSubmitting ? daysOffWords.opening : daysOffWords.openTheDay}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          {daysOffWords.cancel}
         </Button>
       </div>
     </form>

@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ResourceSettingsType } from "@/lib/api-client/settings/fetch-people-settings";
 import { addResource } from "@/lib/api-client/settings/save-resource";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 export function AddResourceForm({
@@ -33,6 +34,7 @@ export function AddResourceForm({
   const nameRef = useRef<HTMLInputElement | null>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
+  const { peopleWords } = useDashboardWords().words;
   const form = useForm<AddResourceInputType, unknown, AddResourceType>({
     resolver: zodResolver(addResourceValidationSchema),
     defaultValues: { name: "" }, // person or place: unpicked, the owner says which
@@ -71,10 +73,10 @@ export function AddResourceForm({
         id="add-resource-title"
         className="text-base font-semibold tracking-tight text-foreground"
       >
-        Add a person or a place
+        {peopleWords.addTitle}
       </h3>
       <div className="flex flex-col gap-1.5 sm:max-w-sm">
-        <Label htmlFor="add-resource-name">Name</Label>
+        <Label htmlFor="add-resource-name">{peopleWords.name}</Label>
         <Input
           id="add-resource-name"
           {...nameField}
@@ -98,10 +100,10 @@ export function AddResourceForm({
         render={({ field, fieldState }) => (
           <ChoiceField
             name="add-resource-kind"
-            legend="A person or a place"
+            legend={peopleWords.personOrPlace}
             choices={[
-              { value: "person", label: "A person, who can be booked" },
-              { value: "place", label: "A place, a room or a chair a service needs" },
+              { value: "person", label: peopleWords.personChoice },
+              { value: "place", label: peopleWords.placeChoice },
             ]}
             value={field.value}
             onChange={(kind) => {
@@ -115,10 +117,10 @@ export function AddResourceForm({
       <SaveNotice notice={notice} />
       <div className="flex gap-2">
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Adding…" : "Add"}
+          {form.formState.isSubmitting ? peopleWords.adding : peopleWords.add}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          {peopleWords.cancel}
         </Button>
       </div>
     </form>

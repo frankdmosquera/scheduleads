@@ -23,39 +23,32 @@ import {
   type EmailSendingStateType,
 } from "@/lib/api-client/email-sending/fetch-email-sending";
 import { saveEmailSending } from "@/lib/api-client/email-sending/save-email-sending";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
+import type { SetupCardsWordsType } from "@/lib/dashboard-words/setup-cards-words";
 
 const emailSendingFields = [
-  {
-    name: "senderEmail",
-    label: "Emails come from",
-    placeholder: "bookings@yourbusiness.com",
-    type: "email",
-  },
-  {
-    name: "notifyEmail",
-    label: "Booking notifications go to",
-    placeholder: "you@yourbusiness.com",
-    type: "email",
-  },
-  {
-    name: "key",
-    label: "Resend key (send-only)",
-    placeholder: "Paste a new key, or leave empty to keep the saved one",
-    type: "password",
-  },
+  { name: "senderEmail", label: "senderLabel", placeholder: "senderPlaceholder", type: "email" },
+  { name: "notifyEmail", label: "notifyLabel", placeholder: "notifyPlaceholder", type: "email" },
+  { name: "key", label: "keyLabel", placeholder: "keyPlaceholder", type: "password" },
 ] as const;
 
-// "Key saved Oct 2", in the reader's own words for the date.
-const formatSavedOn = (iso: string) =>
-  new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(iso));
+// "Key saved Oct 2", in the dashboard's language for the date.
+const formatSavedOn = (iso: string, intlLocale: string) =>
+  new Intl.DateTimeFormat(intlLocale, { month: "short", day: "numeric" }).format(new Date(iso));
 
-function emailSendingStatusWords(state: EmailSendingStateType): string {
-  if (!state.senderEmail) return "Not set up. Booking emails are not sent yet.";
-  if (!state.keySavedAt) return `Sending from ${state.senderEmail} once a key is saved.`;
-  return `Sending from ${state.senderEmail}. Key saved ${formatSavedOn(state.keySavedAt)}.`;
+function emailSendingStatusWords(
+  state: EmailSendingStateType,
+  words: SetupCardsWordsType,
+  intlLocale: string
+): string {
+  if (!state.senderEmail) return words.notSetUp;
+  if (!state.keySavedAt) return words.sendingOnceKeySaved(state.senderEmail);
+  return words.sendingFrom(state.senderEmail, formatSavedOn(state.keySavedAt, intlLocale));
 }
 
 export function EmailSendingCard() {
+  const { words } = useDashboardWords();
+  const cardWords = words.setupCardsWords;
   const [result, setResult] = useState<EmailSendingResultType | null>(null);
 
   useEffect(() => {
@@ -71,14 +64,13 @@ export function EmailSendingCard() {
 
   return (
     <section className="mt-4 rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-md)]">
-      <h2 className="text-base font-semibold tracking-tight text-foreground">Email sending</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Booking emails go out from your own address, through your own Resend account. Nobody can
-        read the key once it is saved.
-      </p>
+      <h2 className="text-base font-semibold tracking-tight text-foreground">
+        {cardWords.emailSending}
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">{cardWords.emailSendingLede}</p>
       <div className="mt-6">
         {!result ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-sm text-muted-foreground">{cardWords.loading}</p>
         ) : result.state === "unreachable" ? (
           <CentredCardNotice>{result.message}</CentredCardNotice>
         ) : (
@@ -90,6 +82,8 @@ export function EmailSendingCard() {
 }
 
 function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
+  const { words } = useDashboardWords();
+  const cardWords = words.setupCardsWords;
   const [state, setState] = useState(initial);
   const [notice, setNotice] = useState<{ tone: "info" | "error"; text: string } | null>(null);
 
@@ -111,8 +105,8 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
       setNotice({
         tone: "info",
         text: saved.answer.keySavedAt
-          ? `Saved. A test email went to ${saved.answer.notifyEmail}.`
-          : "Saved. Paste a key to start sending.",
+          ? cardWords.savedTestSent(saved.answer.notifyEmail ?? "")
+          : cardWords.savedPasteAKey,
       });
       return;
     }
@@ -129,7 +123,9 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
       noValidate
       className="flex flex-col gap-4"
     >
-      <p className="text-sm text-foreground">{emailSendingStatusWords(state)}</p>
+      <p className="text-sm text-foreground">
+        {emailSendingStatusWords(state, cardWords, words.intlLocale)}
+      </p>
       {emailSendingFields.map((field) => (
         <Controller
           key={field.name}
@@ -140,9 +136,9 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
               {...input}
               value={input.value ?? ""}
               id={`email-sending-${field.name}`}
-              label={field.label}
+              label={cardWords[field.label]}
               type={field.type}
-              placeholder={field.placeholder}
+              placeholder={cardWords[field.placeholder]}
               autoComplete={field.type === "password" ? "new-password" : "email"}
               error={fieldState.error?.message}
             />
@@ -152,7 +148,7 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
       {notice ? <CentredCardNotice tone={notice.tone}>{notice.text}</CentredCardNotice> : null}
       <div>
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Saving and testing…" : "Save"}
+          {form.formState.isSubmitting ? cardWords.savingAndTesting : cardWords.save}
         </Button>
       </div>
     </form>

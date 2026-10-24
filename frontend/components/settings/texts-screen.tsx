@@ -7,18 +7,17 @@ import { CentredCardNotice } from "@/components/centred-card/centred-card-notice
 import { SettingsSection } from "@/components/settings/settings-section";
 import { TextsForm } from "@/components/settings/texts-form";
 import { fetchTexts } from "@/lib/api-client/settings/fetch-texts";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export function TextsScreen() {
+  const { words } = useDashboardWords();
   return (
-    <SettingsSection title="Texts" load={fetchTexts}>
+    <SettingsSection title={words.settingsFrameWords.texts} load={fetchTexts}>
       {({ canEdit, texts }) =>
         texts ? (
           <TextsForm texts={texts} canEdit={canEdit} />
         ) : (
-          <CentredCardNotice tone="info">
-            Texts are not set up for your business yet. The agency adds your texting number, then
-            you choose what goes here.
-          </CentredCardNotice>
+          <CentredCardNotice tone="info">{words.textsWords.notSetUp}</CentredCardNotice>
         )
       }
     </SettingsSection>

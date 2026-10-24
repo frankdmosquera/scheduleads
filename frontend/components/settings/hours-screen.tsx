@@ -13,10 +13,12 @@ import {
   fetchHoursSettings,
   type HoursSettingsType,
 } from "@/lib/api-client/settings/fetch-hours-settings";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export function HoursScreen() {
+  const { words } = useDashboardWords();
   return (
-    <SettingsSection title="Hours" load={fetchHoursSettings}>
+    <SettingsSection title={words.settingsFrameWords.hours} load={fetchHoursSettings}>
       {(settings) => <HoursSection settings={settings} />}
     </SettingsSection>
   );
@@ -25,23 +27,20 @@ export function HoursScreen() {
 function HoursSection({ settings }: { settings: HoursSettingsType }) {
   // Saved here too, so people's cards appear after the business's first save and copy its week.
   const [business, setBusiness] = useState(settings.business);
+  const { hoursWords } = useDashboardWords().words;
 
   return (
     <div className="flex flex-col gap-4">
       {!settings.canEdit ? (
-        <CentredCardNotice tone="info">
-          Your role cannot change the hours. You can see them here.
-        </CentredCardNotice>
+        <CentredCardNotice tone="info">{hoursWords.cannotChange}</CentredCardNotice>
       ) : null}
       <BusinessHoursCard initial={business} canEdit={settings.canEdit} onSaved={setBusiness} />
 
-      <h3 className="mt-4 text-sm font-semibold text-foreground">Each person</h3>
+      <h3 className="mt-4 text-sm font-semibold text-foreground">{hoursWords.eachPerson}</h3>
       {!business ? (
-        <p className="text-sm text-muted-foreground">
-          Set the business&apos;s hours first. Then each person can follow them or keep their own.
-        </p>
+        <p className="text-sm text-muted-foreground">{hoursWords.setBusinessHoursFirst}</p>
       ) : settings.people.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No people yet.</p>
+        <p className="text-sm text-muted-foreground">{hoursWords.noPeopleYet}</p>
       ) : (
         <div className="flex flex-col gap-2">
           {settings.people.map((person) => (

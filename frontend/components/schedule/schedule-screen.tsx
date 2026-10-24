@@ -23,11 +23,13 @@ import {
 } from "@/lib/api-client/schedule/fetch-schedule-week";
 import { removeTimeOff } from "@/lib/api-client/schedule/remove-time-off";
 import { calendarDayWords } from "@/lib/calendar-day-words";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
+import type { DashboardWordsType } from "@/lib/dashboard-words/dashboard-words-type";
 
 // "8:00 a.m." for a minute of the day.
-function clockWords(minuteOfDay: number): string {
-  if (minuteOfDay === 1440) return "midnight";
-  return new Intl.DateTimeFormat("en-CA", {
+function clockWords(minuteOfDay: number, words: DashboardWordsType): string {
+  if (minuteOfDay === 1440) return words.scheduleWords.midnight;
+  return new Intl.DateTimeFormat(words.intlLocale, {
     timeZone: "UTC",
     hour: "numeric",
     minute: "2-digit",
@@ -35,10 +37,10 @@ function clockWords(minuteOfDay: number): string {
 }
 
 // An item's time in the business's zone, its date too when it does not start on this day.
-function itemTime(iso: string, timezone: string, day: string): string {
+function itemTime(iso: string, timezone: string, day: string, intlLocale: string): string {
   const moment = new Date(iso);
-  const sameDay = new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(moment) === day; // YYYY-MM-DD
-  return new Intl.DateTimeFormat("en-CA", {
+  const sameDay = new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(moment) === day; // YYYY-MM-DD in any language
+  return new Intl.DateTimeFormat(intlLocale, {
     timeZone: timezone,
     ...(sameDay ? {} : { weekday: "short", month: "short", day: "numeric" }),
     hour: "numeric",
@@ -53,6 +55,7 @@ const KIND_STYLES: Record<ScheduleItemType["kind"], string> = {
 };
 
 export function ScheduleScreen() {
+  const { words } = useDashboardWords();
   const [asked, setAsked] = useState<{ resourceId?: string; weekOf?: string }>({});
   const [result, setResult] = useState<ScheduleWeekResultType | null>(null);
   const [attempt, setAttempt] = useState(0); // Try again asks once more
@@ -75,15 +78,12 @@ export function ScheduleScreen() {
 
   return (
     <div className="mx-auto w-full max-w-5xl">
-      <h1 className="text-xl font-semibold tracking-tight text-foreground">Calendar</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Each person&apos;s and place&apos;s week: bookings, time off and their Google busy times,
-        over the hours customers can book.
-      </p>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">{words.calendar}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">{words.scheduleWords.lede}</p>
 
       <div className="mt-6">
         {!result ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-sm text-muted-foreground">{words.scheduleWords.loading}</p>
         ) : result.state === "signed-out" || result.state === "refused" ? (
           <RefusalNotice refusal={result} />
         ) : result.state === "unreachable" ? (
@@ -96,7 +96,7 @@ export function ScheduleScreen() {
                 setAttempt((count) => count + 1);
               }}
             >
-              Try again
+              {words.tryAgain}
             </Button>
           </div>
         ) : (
@@ -120,13 +120,15 @@ function ScheduleWeek({
   onAsk: (next: { resourceId?: string; weekOf?: string }) => void;
   onRefresh: () => void;
 }) {
+  const { words } = useDashboardWords();
+  const scheduleWords = words.scheduleWords;
   const resourceId = week.resource.id;
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
         {week.resources.length > 1 ? (
           <label className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Calendar of</span>
+            <span className="text-muted-foreground">{scheduleWords.calendarOf}</span>
             <select
               value={resourceId}
               onChange={(event) => onAsk({ resourceId: event.target.value, weekOf: week.weekOf })}
@@ -135,7 +137,7 @@ function ScheduleWeek({
               {week.resources.map((one) => (
                 <option key={one.id} value={one.id}>
                   {one.name}
-                  {one.kind === "place" ? " (place)" : ""}
+                  {one.kind === "place" ? scheduleWords.placeSuffix : ""}
                 </option>
               ))}
             </select>
@@ -149,30 +151,27 @@ function ScheduleWeek({
             size="sm"
             onClick={() => onAsk({ resourceId, weekOf: addDays(week.weekOf, -7) })}
           >
-            Previous week
+            {scheduleWords.previousWeek}
           </Button>
           <Button variant="outline" size="sm" onClick={() => onAsk({ resourceId })}>
-            This week
+            {scheduleWords.thisWeek}
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => onAsk({ resourceId, weekOf: addDays(week.weekOf, 7) })}
           >
-            Next week
+            {scheduleWords.nextWeek}
           </Button>
         </div>
       </div>
 
       <p className="mt-3 text-sm text-muted-foreground">
-        Week of {calendarDayWords(week.weekOf)} &middot; times in {week.timezone}
+        {scheduleWords.weekOf(calendarDayWords(week.weekOf, words.intlLocale), week.timezone)}
       </p>
       {week.google === "unreadable" ? (
         <div className="mt-3">
-          <CentredCardNotice>
-            Google could not be read for this week, so its busy times are missing below. Everything
-            else is shown.
-          </CentredCardNotice>
+          <CentredCardNotice>{scheduleWords.googleUnreadable}</CentredCardNotice>
         </div>
       ) : null}
 
@@ -224,6 +223,8 @@ function ScheduleDay({
   canEdit: boolean;
   onChanged: () => void; // the week reads again
 }) {
+  const { words } = useDashboardWords();
+  const scheduleWords = words.scheduleWords;
   const [refusal, setRefusal] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
 
@@ -238,17 +239,20 @@ function ScheduleDay({
 
   return (
     <li className="min-w-0 rounded-lg border border-border bg-card p-3">
-      <h2 className="text-sm font-semibold text-foreground">{calendarDayWords(day.date)}</h2>
+      <h2 className="text-sm font-semibold text-foreground">
+        {calendarDayWords(day.date, words.intlLocale)}
+      </h2>
       <p className="mt-1 text-xs text-muted-foreground">
         {day.closed
-          ? "Closed"
+          ? scheduleWords.closed
           : day.standby
-            ? "On standby: not offered to customers"
+            ? scheduleWords.onStandby
             : day.hours.length === 0
-              ? "No bookable hours"
+              ? scheduleWords.noBookableHours
               : day.hours
                   .map(
-                    (window) => `${clockWords(window.startMinute)}–${clockWords(window.endMinute)}`
+                    (window) =>
+                      `${clockWords(window.startMinute, words)}–${clockWords(window.endMinute, words)}`
                   )
                   .join(", ")}
       </p>
@@ -260,8 +264,8 @@ function ScheduleDay({
               className={`rounded-md border px-2 py-1.5 text-xs ${KIND_STYLES[item.kind]}`}
             >
               <p className="font-medium text-foreground">
-                {itemTime(item.startsAt, timezone, day.date)}–
-                {itemTime(item.endsAt, timezone, day.date)}
+                {itemTime(item.startsAt, timezone, day.date, words.intlLocale)}–
+                {itemTime(item.endsAt, timezone, day.date, words.intlLocale)}
               </p>
               {item.kind === "booking" ? (
                 <p className="mt-0.5 text-foreground">
@@ -279,7 +283,7 @@ function ScheduleDay({
                 </p>
               ) : (
                 <p className="mt-0.5 text-muted-foreground">
-                  {item.kind === "time_off" ? "Time off" : "Busy in Google"}
+                  {item.kind === "time_off" ? scheduleWords.timeOff : scheduleWords.busyInGoogle}
                   {item.kind === "time_off" && canEdit ? (
                     <>
                       {" "}
@@ -290,7 +294,7 @@ function ScheduleDay({
                         disabled={removing !== null}
                         className="underline underline-offset-2"
                       >
-                        {removing === item.id ? "Removing…" : "Remove"}
+                        {removing === item.id ? scheduleWords.removing : scheduleWords.remove}
                       </button>
                     </>
                   ) : null}

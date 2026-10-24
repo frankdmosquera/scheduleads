@@ -22,6 +22,8 @@ import {
   type CalendarConnectionResultType,
 } from "@/lib/api-client/calendar/fetch-calendar-connection";
 import { startCalendarConnect } from "@/lib/api-client/calendar/start-calendar-connect";
+import type { CalendarSettingsWordsType } from "@/lib/dashboard-words/calendar-settings-words";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export type CalendarNoticeType = { tone: "info" | "error"; text: ReactNode };
 export type GoogleDisconnectOutcomeType = Extract<
@@ -29,55 +31,50 @@ export type GoogleDisconnectOutcomeType = Extract<
   { state: "ok" }
 >["atProvider"];
 
-// Keyed by the shared list, so an outcome renamed in the API fails this build.
-const OUTCOMES: Record<CalendarConnectOutcomeType, CalendarNoticeType> = {
-  connected: { tone: "info", text: "Your Google calendar is connected." },
-  denied: { tone: "info", text: "You cancelled at Google. Nothing was connected." },
-  expired: {
-    tone: "error",
-    text: "That took too long, or the link was already used. Press Connect again.",
-  },
-  missing_permission: {
-    tone: "error",
-    text: "Leave every box ticked at Google: seeing when you are busy, adding bookings, and the list of your calendars. Press Connect again.",
-  },
-  failed: {
-    tone: "error",
-    text: "Google did not answer properly. Nothing was saved. Try again in a minute.",
-  },
+// Which line to show: kept as the outcome, so it reads in the language the screen speaks now.
+type CalendarNoticeKeyType =
+  | { after: "connect"; outcome: CalendarConnectOutcomeType }
+  | { after: "disconnect"; outcome: GoogleDisconnectOutcomeType };
+
+const CONNECT_TONES: Record<CalendarConnectOutcomeType, CalendarNoticeType["tone"]> = {
+  connected: "info",
+  denied: "info",
+  expired: "error",
+  missing_permission: "error",
+  failed: "error",
 };
 
-const DISCONNECTED: Record<GoogleDisconnectOutcomeType, CalendarNoticeType> = {
-  handed_back: {
-    tone: "info",
-    text: "Disconnected. Google no longer gives this app access to your calendar.",
-  },
-  still_used: {
-    tone: "info",
-    text: "Disconnected here. Another business of yours still uses this Google account, so Google keeps allowing it.",
-  },
-  already_stopped: {
-    tone: "info",
-    text: "Disconnected. Google had already stopped accepting this connection.",
-  },
-  not_confirmed: {
-    tone: "error",
-    text: (
-      <>
-        Disconnected here, but Google did not confirm. Remove the app in{" "}
-        <a
-          className="underline underline-offset-2"
-          href="https://myaccount.google.com/connections"
-          target="_blank"
-          rel="noreferrer"
-        >
-          your Google account
-        </a>
-        .
-      </>
-    ),
-  },
-};
+function calendarNoticeOf(
+  key: CalendarNoticeKeyType,
+  words: CalendarSettingsWordsType
+): CalendarNoticeType {
+  if (key.after === "connect") {
+    return { tone: CONNECT_TONES[key.outcome], text: words.connectOutcome[key.outcome] };
+  }
+  const disconnected: Record<GoogleDisconnectOutcomeType, CalendarNoticeType> = {
+    handed_back: { tone: "info", text: words.handedBack },
+    still_used: { tone: "info", text: words.stillUsed },
+    already_stopped: { tone: "info", text: words.alreadyStopped },
+    not_confirmed: {
+      tone: "error",
+      text: (
+        <>
+          {words.notConfirmed}{" "}
+          <a
+            className="underline underline-offset-2"
+            href="https://myaccount.google.com/connections"
+            target="_blank"
+            rel="noreferrer"
+          >
+            {words.yourGoogleAccount}
+          </a>
+          .
+        </>
+      ),
+    },
+  };
+  return disconnected[key.outcome];
+}
 
 export function CalendarConnectionCard({
   onChanged,
@@ -86,12 +83,16 @@ export function CalendarConnectionCard({
   onChanged: () => void; // after a disconnect, so what sits under the card reads again
   children: ReactNode;
 }) {
+  const { words } = useDashboardWords();
+  const calendarWords = words.calendarSettingsWords;
   const [result, setResult] = useState<CalendarConnectionResultType | null>(null);
   // The card only mounts in the browser, after the dashboard loaded, so the address is there.
-  const [notice, setNotice] = useState<CalendarNoticeType | null>(() => {
+  const [notice, setNotice] = useState<CalendarNoticeKeyType | null>(() => {
     const outcome = new URL(window.location.href).searchParams.get("calendar");
-    return isCalendarConnectOutcome(outcome) ? OUTCOMES[outcome] : null; // any other word: nothing
+    // Any other word: nothing.
+    return isCalendarConnectOutcome(outcome) ? { after: "connect", outcome } : null;
   });
+  const shownNotice = notice ? calendarNoticeOf(notice, calendarWords) : null;
   const [refusal, setRefusal] = useState<string | null>(null);
   const [busy, setBusy] = useState<"connect" | "disconnect" | null>(null);
 
@@ -140,21 +141,21 @@ export function CalendarConnectionCard({
       setRefusal(done.message);
       return;
     }
-    setNotice(DISCONNECTED[done.atProvider]);
+    setNotice({ after: "disconnect", outcome: done.atProvider });
     reloadCalendarConnection();
     onChanged();
   }
 
   return (
     <section className="rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-md)]">
-      <h2 className="text-base font-semibold tracking-tight text-foreground">Calendar</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Your own calendar, so customers are never offered a time you are busy.
-      </p>
+      <h2 className="text-base font-semibold tracking-tight text-foreground">
+        {words.settingsFrameWords.calendar}
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">{calendarWords.lede}</p>
 
-      {notice ? (
+      {shownNotice ? (
         <div className="mt-6">
-          <CentredCardNotice tone={notice.tone}>{notice.text}</CentredCardNotice>
+          <CentredCardNotice tone={shownNotice.tone}>{shownNotice.text}</CentredCardNotice>
         </div>
       ) : null}
 
@@ -179,15 +180,19 @@ export function CalendarConnectionCard({
 }
 
 // "Last read 40 seconds ago", from the time the busy times were last read.
-function lastCheckedWords(lastCheckedAt: string | null): string {
-  if (!lastCheckedAt) return "Not read yet.";
+function lastCheckedWords(
+  lastCheckedAt: string | null,
+  words: CalendarSettingsWordsType,
+  intlLocale: string
+): string {
+  if (!lastCheckedAt) return words.notReadYet;
   const seconds = Math.round((new Date(lastCheckedAt).getTime() - Date.now()) / 1000);
   const size = Math.abs(seconds);
-  const words = new Intl.RelativeTimeFormat("en", { numeric: "always" });
-  if (size < 60) return `Last read ${words.format(seconds, "second")}.`;
-  if (size < 3600) return `Last read ${words.format(Math.round(seconds / 60), "minute")}.`;
-  if (size < 86400) return `Last read ${words.format(Math.round(seconds / 3600), "hour")}.`;
-  return `Last read ${words.format(Math.round(seconds / 86400), "day")}.`;
+  const relative = new Intl.RelativeTimeFormat(intlLocale, { numeric: "always" });
+  if (size < 60) return words.lastRead(relative.format(seconds, "second"));
+  if (size < 3600) return words.lastRead(relative.format(Math.round(seconds / 60), "minute"));
+  if (size < 86400) return words.lastRead(relative.format(Math.round(seconds / 3600), "hour"));
+  return words.lastRead(relative.format(Math.round(seconds / 86400), "day"));
 }
 
 function CalendarConnectionDetails({
@@ -203,14 +208,18 @@ function CalendarConnectionDetails({
   onDisconnect: () => void;
   onRetry: () => void;
 }) {
-  if (!result) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  const { words } = useDashboardWords();
+  const calendarWords = words.calendarSettingsWords;
+  if (!result) {
+    return <p className="text-sm text-muted-foreground">{words.settingsFrameWords.loading}</p>;
+  }
 
   if (result.state === "unreachable") {
     return (
       <div className="flex items-center justify-between gap-4">
         <CentredCardNotice>{result.message}</CentredCardNotice>
         <Button variant="outline" size="sm" onClick={onRetry}>
-          Try again
+          {words.tryAgain}
         </Button>
       </div>
     );
@@ -219,17 +228,12 @@ function CalendarConnectionDetails({
   const { person, connection } = result.answer;
 
   if (!person) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Your login is not linked to anyone on this business&apos;s calendar, so there is nothing to
-        connect yet.
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">{calendarWords.notLinked}</p>;
   }
 
   const renderDisconnectButton = (variant: "destructive" | "outline") => (
     <Button variant={variant} size="sm" onClick={onDisconnect} disabled={busy !== null}>
-      {busy === "disconnect" ? "Disconnecting…" : "Disconnect"}
+      {busy === "disconnect" ? calendarWords.disconnecting : calendarWords.disconnect}
     </Button>
   );
 
@@ -238,13 +242,11 @@ function CalendarConnectionDetails({
       <div className="flex items-center gap-4 rounded-lg border border-[var(--lost)] bg-[var(--lost-soft)] px-4 py-3 text-sm">
         <div className="min-w-0">
           <p className="font-medium text-foreground">Google Calendar · {connection.accountEmail}</p>
-          <p className="mt-1 text-[var(--lost)]">
-            Needs reconnecting. Google stopped accepting the saved permission.
-          </p>
+          <p className="mt-1 text-[var(--lost)]">{calendarWords.needsReconnecting}</p>
         </div>
         <div className="ml-auto flex shrink-0 gap-2">
           <Button size="sm" onClick={onConnect} disabled={busy !== null}>
-            {busy === "connect" ? "Opening Google…" : "Reconnect"}
+            {busy === "connect" ? calendarWords.openingGoogle : calendarWords.reconnect}
           </Button>
           {renderDisconnectButton("outline")}
         </div>
@@ -258,7 +260,8 @@ function CalendarConnectionDetails({
         <div className="min-w-0">
           <p className="font-medium text-foreground">Google Calendar · {connection.accountEmail}</p>
           <p className="mt-1 text-muted-foreground">
-            Connected. {lastCheckedWords(connection.lastCheckedAt)}
+            {calendarWords.connected}{" "}
+            {lastCheckedWords(connection.lastCheckedAt, calendarWords, words.intlLocale)}
           </p>
         </div>
         <div className="ml-auto shrink-0">{renderDisconnectButton("destructive")}</div>
@@ -268,11 +271,9 @@ function CalendarConnectionDetails({
 
   return (
     <div className="flex items-center justify-between gap-4">
-      <p className="text-sm text-muted-foreground">
-        Not connected. Your busy times are not read yet.
-      </p>
+      <p className="text-sm text-muted-foreground">{calendarWords.notConnected}</p>
       <Button onClick={onConnect} disabled={busy !== null}>
-        {busy === "connect" ? "Opening Google…" : "Connect"}
+        {busy === "connect" ? calendarWords.openingGoogle : calendarWords.connect}
       </Button>
     </div>
   );

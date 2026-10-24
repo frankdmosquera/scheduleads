@@ -11,6 +11,7 @@ import {
 } from "@/components/settings/day-windows-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 type DateErrorsType =
   | ({ message?: string } & Record<
@@ -32,6 +33,8 @@ export function OneOffDatesEditor({
   onChange: (dates: DateHoursType) => void;
   errors: DateErrorsType;
 }) {
+  const { hoursWords } = useDashboardWords().words;
+  const person = labelPrefix ?? null;
   const setEntry = (index: number, entry: DateHoursType[number]) =>
     onChange(dates.map((current, i) => (i === index ? entry : current)));
   // An error on the whole list (the same date twice) marks the date fields that repeat.
@@ -43,7 +46,7 @@ export function OneOffDatesEditor({
   return (
     <div className="flex flex-col gap-3">
       {dates.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No one-off dates.</p>
+        <p className="text-sm text-muted-foreground">{hoursWords.noOneOffDates}</p>
       ) : null}
       {dates.map((entry, index) => {
         const dateId = `${idBase}-${index}`;
@@ -62,7 +65,7 @@ export function OneOffDatesEditor({
               <Input
                 id={dateId}
                 type="date"
-                aria-label={`${labelPrefix ? `${labelPrefix}, o` : "O"}ne-off date ${index + 1}`}
+                aria-label={hoursWords.oneOffDateLabel(person, index + 1)}
                 value={entry.date}
                 onChange={(event) => setEntry(index, { ...entry, date: event.target.value })}
                 aria-invalid={dateError || repeated ? true : undefined}
@@ -79,16 +82,16 @@ export function OneOffDatesEditor({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  aria-label={`Remove ${labelPrefix ? `${labelPrefix}, ` : ""}one-off date ${index + 1}`}
+                  aria-label={hoursWords.removeOneOffDate(person, index + 1)}
                   onClick={() => onChange(dates.filter((_, i) => i !== index))}
                 >
-                  Remove date
+                  {hoursWords.removeDate}
                 </Button>
               </div>
             </div>
             <DayWindowsEditor
               idBase={`${dateId}-windows`}
-              label={`${labelPrefix ? `${labelPrefix}, ` : ""}${entry.date || `one-off date ${index + 1}`}`}
+              label={`${labelPrefix ? `${labelPrefix}, ` : ""}${entry.date || hoursWords.unnamedOneOffDate(index + 1)}`}
               windows={entry.windows}
               onChange={(windows) => setEntry(index, { ...entry, windows })}
               errors={errors?.[index]?.windows}
@@ -111,7 +114,7 @@ export function OneOffDatesEditor({
             onChange([...dates, { date: "", windows: [{ startMinute: 540, endMinute: 1020 }] }])
           }
         >
-          + Add a one-off date
+          {hoursWords.addOneOffDate}
         </Button>
       </div>
     </div>

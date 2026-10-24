@@ -26,6 +26,7 @@ import type {
 } from "@/lib/api-client/settings/fetch-services-settings";
 import { saveService, type SavedServiceType } from "@/lib/api-client/settings/save-service";
 import { saveServiceResources } from "@/lib/api-client/settings/save-service-resources";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 const NEW_SERVICE: DefaultValues<ServiceInputType> = {
@@ -118,6 +119,8 @@ export function ServiceForm({
   onSaved: (saved: ServiceSettingsType, outcome: ServiceSaveOutcomeType) => void;
   onCancel: () => void;
 }) {
+  const { words } = useDashboardWords();
+  const servicesWords = words.servicesWords;
   const formRef = useRef<HTMLFormElement>(null);
   const nameRef = useRef<HTMLInputElement | null>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
@@ -188,7 +191,7 @@ export function ServiceForm({
     }
     setNotice({
       tone: "error",
-      text: `${savedNow.name} is saved, but who does it is not: ${ticked.message}`,
+      text: servicesWords.ticksNotSaved(savedNow.name, ticked.message),
     });
   }
 
@@ -217,12 +220,12 @@ export function ServiceForm({
       className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-md)] md:p-6"
     >
       <h3 id={`${idBase}-title`} className="text-base font-semibold tracking-tight text-foreground">
-        {service ? `Change ${service.name}` : "Add a service"}
+        {service ? servicesWords.changeService(service.name) : servicesWords.addTitle}
       </h3>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${idBase}-name`}>Name</Label>
+          <Label htmlFor={`${idBase}-name`}>{servicesWords.name}</Label>
           <Input
             id={`${idBase}-name`}
             {...nameField}
@@ -241,7 +244,7 @@ export function ServiceForm({
           ) : null}
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${idBase}-description`}>Description (optional)</Label>
+          <Label htmlFor={`${idBase}-description`}>{servicesWords.descriptionOptional}</Label>
           <Input
             id={`${idBase}-description`}
             {...form.register("description", { onChange: () => setNotice(null) })}
@@ -264,7 +267,7 @@ export function ServiceForm({
           render={({ field, fieldState }) => (
             <MinutesField
               id={`${idBase}-length`}
-              label="Length, in minutes"
+              label={servicesWords.lengthInMinutes}
               value={field.value}
               onChange={edited(field.onChange)}
               error={fieldState.error?.message}
@@ -277,11 +280,11 @@ export function ServiceForm({
           render={({ field, fieldState }) => (
             <MinutesField
               id={`${idBase}-before`}
-              label="Free time before"
+              label={servicesWords.freeBefore}
               value={field.value}
               onChange={edited(field.onChange)}
               error={fieldState.error?.message}
-              hint="Kept clear, never booked; 0 for none."
+              hint={servicesWords.freeBeforeHint}
             />
           )}
         />
@@ -291,11 +294,11 @@ export function ServiceForm({
           render={({ field, fieldState }) => (
             <MinutesField
               id={`${idBase}-after`}
-              label="Free time after"
+              label={servicesWords.freeAfter}
               value={field.value}
               onChange={edited(field.onChange)}
               error={fieldState.error?.message}
-              hint="Travel or clean-up; 0 for none."
+              hint={servicesWords.freeAfterHint}
             />
           )}
         />
@@ -306,7 +309,9 @@ export function ServiceForm({
         control={form.control}
         render={({ field, fieldState }) => (
           <fieldset className="flex flex-col gap-2">
-            <legend className="text-sm font-medium text-foreground">Start times</legend>
+            <legend className="text-sm font-medium text-foreground">
+              {servicesWords.startTimes}
+            </legend>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
               <label className="flex items-center gap-2">
                 <input
@@ -316,7 +321,7 @@ export function ServiceForm({
                   onChange={() => edited(field.onChange)(null)}
                   className="accent-[var(--primary)]"
                 />
-                One after another, every service length
+                {servicesWords.oneAfterAnother}
               </label>
               <span className="flex items-center gap-2">
                 <label className="flex items-center gap-2">
@@ -327,14 +332,14 @@ export function ServiceForm({
                     onChange={() => edited(field.onChange)(field.value ?? Number.NaN)}
                     className="accent-[var(--primary)]"
                   />
-                  Every
+                  {servicesWords.every}
                 </label>
                 {/* Its own field beside the choice; typing a number picks "Every". */}
                 <Input
                   type="number"
                   min={1}
                   max={1440}
-                  aria-label="Start times every how many minutes"
+                  aria-label={servicesWords.everyHowManyMinutes}
                   value={field.value === null || Number.isNaN(field.value) ? "" : field.value}
                   onChange={(event) =>
                     edited(field.onChange)(
@@ -345,7 +350,7 @@ export function ServiceForm({
                   aria-describedby={fieldState.error ? `${idBase}-starts-error` : undefined}
                   className="h-8 w-20 bg-muted px-2"
                 />
-                minutes
+                {servicesWords.minutesWord}
               </span>
             </div>
             {fieldState.error ? (
@@ -363,10 +368,10 @@ export function ServiceForm({
         render={({ field, fieldState }) => (
           <ChoiceField
             name={`${idBase}-person-choice`}
-            legend="Who picks the person"
+            legend={servicesWords.whoPicksThePerson}
             choices={[
-              { value: "customer_picks", label: "The customer picks who does it" },
-              { value: "business_assigns", label: "We send whoever is free" },
+              { value: "customer_picks", label: servicesWords.customerPicks },
+              { value: "business_assigns", label: servicesWords.weSendWhoeverIsFree },
             ]}
             value={field.value}
             onChange={edited(field.onChange)}
@@ -376,10 +381,10 @@ export function ServiceForm({
       />
       <TicksField
         name={`${idBase}-people`}
-        legend="Who does it"
-        noneTicked="Nobody ticked: anyone can do it."
-        allTickedOff="Everyone ticked is off, so nobody is offered for it."
-        noneToTick="No people yet."
+        legend={servicesWords.whoDoesIt}
+        noneTicked={servicesWords.nobodyTicked}
+        allTickedOff={servicesWords.everyoneTickedOff}
+        noneToTick={servicesWords.noPeopleYet}
         choices={people.filter((resource) => resource.kind === "person")}
         value={ticks.peopleIds}
         onChange={(peopleIds) => editTicks({ ...ticks, peopleIds })}
@@ -387,10 +392,10 @@ export function ServiceForm({
       />
       <TicksField
         name={`${idBase}-places`}
-        legend="Places it needs"
-        noneTicked="No place ticked: no room needed."
-        allTickedOff="Every place ticked is off, so it cannot be booked."
-        noneToTick="No places yet."
+        legend={servicesWords.placesItNeeds}
+        noneTicked={servicesWords.noPlaceTicked}
+        allTickedOff={servicesWords.everyPlaceTickedOff}
+        noneToTick={servicesWords.noPlacesYet}
         choices={people.filter((resource) => resource.kind === "place")}
         value={ticks.placeIds}
         onChange={(placeIds) => editTicks({ ...ticks, placeIds })}
@@ -402,11 +407,11 @@ export function ServiceForm({
         render={({ field, fieldState }) => (
           <ChoiceField
             name={`${idBase}-address-mode`}
-            legend="The customer's address"
+            legend={servicesWords.customersAddress}
             choices={[
-              { value: "required", label: "Asked and required: we go to them" },
-              { value: "optional", label: "Asked, optional" },
-              { value: "not_asked", label: "Not asked" },
+              { value: "required", label: servicesWords.addressRequired },
+              { value: "optional", label: servicesWords.addressOptional },
+              { value: "not_asked", label: servicesWords.addressNotAsked },
             ]}
             value={field.value}
             onChange={edited(field.onChange)}
@@ -425,7 +430,7 @@ export function ServiceForm({
               onChange={(event) => edited(field.onChange)(event.target.checked)}
               className="size-4 accent-[var(--primary)]"
             />
-            Live: customers can book it. Off hides it; bookings already made stay.
+            {servicesWords.liveCheckbox}
           </label>
         )}
       />
@@ -433,10 +438,14 @@ export function ServiceForm({
       <SaveNotice notice={notice} />
       <div className="flex gap-2">
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Saving…" : service ? "Save service" : "Add service"}
+          {form.formState.isSubmitting
+            ? words.settingsFrameWords.saving
+            : service
+              ? servicesWords.saveService
+              : servicesWords.addService}
         </Button>
         <Button type="button" variant="outline" onClick={cancel}>
-          Cancel
+          {words.settingsFrameWords.cancel}
         </Button>
       </div>
     </form>

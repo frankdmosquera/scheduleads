@@ -9,19 +9,11 @@ import {
   DayWindowsEditor,
   type DayWindowsErrorsType,
 } from "@/components/settings/day-windows-editor";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
+import type { DayKeyType } from "@/lib/dashboard-words/hours-words";
 
-// The week in order, Monday first, with each day's key and name; the person rows read it too.
-export const WEEK_DAYS = [
-  ["mon", "Monday"],
-  ["tue", "Tuesday"],
-  ["wed", "Wednesday"],
-  ["thu", "Thursday"],
-  ["fri", "Friday"],
-  ["sat", "Saturday"],
-  ["sun", "Sunday"],
-] as const;
-
-type DayKeyType = (typeof WEEK_DAYS)[number][0];
+// The week in order, Monday first; each day's name is in the words. The person rows read it too.
+export const WEEK_DAYS: readonly DayKeyType[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
 export function WeekEditor({
   idBase,
@@ -36,6 +28,7 @@ export function WeekEditor({
   onChange: (week: WeeklyHoursType) => void;
   errors: Partial<Record<DayKeyType, DayWindowsErrorsType>> | undefined;
 }) {
+  const { hoursWords } = useDashboardWords().words;
   // A day with no windows is off, and is left out of the week rather than kept empty.
   const setDay = (day: DayKeyType, windows: WeeklyHoursType[DayKeyType] | null) => {
     const next = { ...week };
@@ -46,7 +39,8 @@ export function WeekEditor({
 
   return (
     <div className="flex flex-col divide-y divide-border">
-      {WEEK_DAYS.map(([day, name]) => {
+      {WEEK_DAYS.map((day) => {
+        const name = hoursWords.dayNames[day];
         const windows = week[day] ?? [];
         const open = windows.length > 0;
         const switchId = `${idBase}-${day}`;
@@ -78,7 +72,7 @@ export function WeekEditor({
                 errors={errors?.[day]}
               />
             ) : (
-              <span className="pt-1.5 text-sm text-muted-foreground">Closed</span>
+              <span className="pt-1.5 text-sm text-muted-foreground">{hoursWords.closed}</span>
             )}
           </div>
         );

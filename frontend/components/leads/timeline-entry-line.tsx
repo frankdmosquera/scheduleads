@@ -1,67 +1,42 @@
 // Frontend component: one line of a contact's timeline, in plain words. Every value is shown as
 // text, never as HTML.
 
+"use client";
+
 import type { TimelineEntryType } from "@/lib/api-client/leads/fetch-lead";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
+import type { DashboardWordsType } from "@/lib/dashboard-words/dashboard-words-type";
 import { formatLeadTime } from "@/lib/format-lead-time";
 
-const EMAIL_LINES: Record<string, string> = {
-  booking_confirmation: "Sent the booking confirmation by email",
-  booking_notification: "Told the business about the booking by email",
-  booking_person_notification: "Told the booked person about the booking by email",
-  booking_cancellation: "Sent the cancellation by email",
-  booking_cancellation_notification: "Told the business about the cancellation by email",
-  booking_move: "Sent the new time by email",
-  booking_move_notification: "Told the business about the new time by email",
-};
-
-const TEXT_LINES: Record<string, string> = {
-  booking_confirmation: "Texted the confirmation",
-  worker_added: "Texted the worker about the booking",
-  worker_moved: "Texted the worker about the new time",
-  worker_removed: "Texted the worker about the cancellation",
-};
-
-const OTHER_LINES: Record<string, string> = {
-  later_texts_yes: "Said yes to texts",
-  lead_added: "Added by hand",
-  stage_changed: "Stage changed",
-  email_received: "Email received",
-  note: "Note",
-  call: "Call",
-  task: "Task",
-};
-
-// "30 minutes", "2 hours", "1 day".
-function lengthOf(minutes: number): string {
-  const [count, unit] =
-    minutes % 1440 === 0
-      ? [minutes / 1440, "day"]
-      : minutes % 60 === 0
-        ? [minutes / 60, "hour"]
-        : [minutes, "minute"];
-  return `${count} ${unit}${count === 1 ? "" : "s"}`;
-}
-
-function lineOf(entry: TimelineEntryType, timeZone: string | null): string {
+function lineOf(
+  entry: TimelineEntryType,
+  timeZone: string | null,
+  words: DashboardWordsType
+): string {
+  const leadsWords = words.leadsWords;
   const time = (iso: string | null) =>
-    iso ? formatLeadTime(iso, timeZone) : "a time not recorded";
-  const service = (name: string | null) => name ?? "a booking";
+    iso ? formatLeadTime(iso, timeZone, words.intlLocale) : leadsWords.aTimeNotRecorded;
+  const service = (name: string | null) => name ?? leadsWords.aBooking;
 
   switch (entry.type) {
     case "booking_created":
-      return `Booked ${service(entry.serviceName)} for ${time(entry.startsAt)}`;
+      return leadsWords.booked(service(entry.serviceName), time(entry.startsAt));
     case "booking_moved":
-      return `Moved ${service(entry.serviceName)} from ${time(entry.fromStartsAt)} to ${time(entry.toStartsAt)}`;
+      return leadsWords.moved(
+        service(entry.serviceName),
+        time(entry.fromStartsAt),
+        time(entry.toStartsAt)
+      );
     case "booking_cancelled":
-      return `Cancelled ${service(entry.serviceName)}`;
+      return leadsWords.cancelledBooking(service(entry.serviceName));
     case "email_sent":
-      return (entry.kind && EMAIL_LINES[entry.kind]) || "Sent an email";
+      return (entry.kind && leadsWords.emailLines[entry.kind]) || leadsWords.sentAnEmail;
     case "sms_sent":
       if (entry.kind === "booking_reminder" && entry.minutesBefore !== null)
-        return `Texted a reminder ${lengthOf(entry.minutesBefore)} before`;
-      return (entry.kind && TEXT_LINES[entry.kind]) || "Sent a text";
+        return leadsWords.textedAReminder(entry.minutesBefore);
+      return (entry.kind && leadsWords.textLines[entry.kind]) || leadsWords.sentAText;
     case "other":
-      return OTHER_LINES[entry.activityType] ?? entry.activityType.replace(/_/g, " ");
+      return leadsWords.otherLines[entry.activityType] ?? entry.activityType.replace(/_/g, " ");
   }
 }
 
@@ -72,16 +47,17 @@ export function TimelineEntryLine({
   entry: TimelineEntryType;
   timeZone: string | null;
 }) {
+  const { words } = useDashboardWords();
   return (
     <li className="flex flex-col gap-0.5 border-l-2 border-border py-1 pl-4">
       <span className="text-sm text-foreground">
-        {lineOf(entry, timeZone)}
+        {lineOf(entry, timeZone, words)}
         {entry.actorName ? (
-          <span className="text-muted-foreground"> by {entry.actorName}</span>
+          <span className="text-muted-foreground">{words.leadsWords.byActor(entry.actorName)}</span>
         ) : null}
       </span>
       <span className="text-xs text-muted-foreground">
-        {formatLeadTime(entry.occurredAt, timeZone)}
+        {formatLeadTime(entry.occurredAt, timeZone, words.intlLocale)}
       </span>
     </li>
   );

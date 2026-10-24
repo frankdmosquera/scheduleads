@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ResourceSettingsType } from "@/lib/api-client/settings/fetch-people-settings";
 import { saveResource, type SavedResourceType } from "@/lib/api-client/settings/save-resource";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 export function ChangeResourceForm({
@@ -44,6 +45,7 @@ export function ChangeResourceForm({
   const nameRef = useRef<HTMLInputElement | null>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
+  const { peopleWords } = useDashboardWords().words;
   const form = useForm<SaveResourceInputType, unknown, SaveResourceType>({
     resolver: zodResolver(saveResourceValidationSchema),
     // A place sends no work email at all, so saving one never touches the column.
@@ -87,10 +89,10 @@ export function ChangeResourceForm({
       className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-md)] md:p-6"
     >
       <h3 id={`${idBase}-title`} className="text-base font-semibold tracking-tight text-foreground">
-        Change {resource.name}, a {kind}
+        {peopleWords.changeTitle(resource.name, kind)}
       </h3>
       <div className="flex flex-col gap-1.5 sm:max-w-sm">
-        <Label htmlFor={`${idBase}-name`}>Name</Label>
+        <Label htmlFor={`${idBase}-name`}>{peopleWords.name}</Label>
         <Input
           id={`${idBase}-name`}
           {...nameField}
@@ -110,7 +112,7 @@ export function ChangeResourceForm({
       </div>
       {resource.kind === "person" ? (
         <div className="flex flex-col gap-1.5 sm:max-w-sm">
-          <Label htmlFor={`${idBase}-work-email`}>Work email (optional)</Label>
+          <Label htmlFor={`${idBase}-work-email`}>{peopleWords.workEmail}</Label>
           <Input
             id={`${idBase}-work-email`}
             type="email"
@@ -129,8 +131,8 @@ export function ChangeResourceForm({
           ) : (
             <p id={`${idBase}-work-email-hint`} className="text-xs text-muted-foreground">
               {senderDomain
-                ? `At ${senderDomain}. Customers' replies reach them, and they get their own email for each new booking.`
-                : "The business has no sending address yet, so no work email can be saved."}
+                ? peopleWords.workEmailHint(senderDomain)
+                : peopleWords.noSendingAddress}
             </p>
           )}
         </div>
@@ -149,7 +151,7 @@ export function ChangeResourceForm({
               }}
               className="size-4 accent-[var(--primary)]"
             />
-            On: can be booked. Off stops new bookings; the ones already made stay.
+            {peopleWords.onOffLine}
           </label>
         )}
       />
@@ -157,10 +159,10 @@ export function ChangeResourceForm({
       <SaveNotice notice={notice} />
       <div className="flex gap-2">
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Saving…" : "Save"}
+          {form.formState.isSubmitting ? peopleWords.saving : peopleWords.save}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          {peopleWords.cancel}
         </Button>
       </div>
     </form>

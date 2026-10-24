@@ -93,14 +93,19 @@ blocking findings. `/complete` makes the final feature commit and merges on Fran
     400 for `fr`, 401 signed out, the value read back on `/me`), the pick rule, the code email's
     language. All suites, builds, lint and format pass.
 
-- [ ] **12j.2 Every screen in Spanish.** The words and dates of every signed-in screen.
+- [x] **12j.2 Every screen in Spanish.** The words and dates of every signed-in screen.
   - Every screen listed under In scope reads its words from `useDashboardWords()`; no English
     sentence stays written into a screen.
   - Dates and times through the words' `intlLocale`: `format-lead-time.ts`,
     `calendar-day-words.ts` and the screens that format their own (the schedule's week, a lead's
     timeline, closed days, notice).
-  - The shared helpers that write words for the dashboard take the language (for example
-    `apiNotRespondingMessage` becomes a word).
+  - The shared helpers that write words for the dashboard take the language (the date formatters).
+    The API calls' own message, `apiNotRespondingMessage`, moves to 12j.3 (changed in 12j.2's plan,
+    Frank's yes, 2026-10-24): it reaches a screen the way the API's refusals do, so it goes through
+    12j.3's one table instead of being translated twice.
+  - Each area's words in a file of its own under `frontend/lib/dashboard-words/` (leads, schedule,
+    hours, days off, people, services, booking form, texts, calendar, the Settings frame, the Setup
+    cards), each one type with its English and Spanish objects, joined into `DashboardWordsType`.
   - **Done when:** each screen opened in Spanish on http://localhost:3400 shows no English
     except the business's own words and the API's messages (12j.3); the same screens in English
     are unchanged; `npm run build --workspace=frontend` fails when a Spanish word is removed and

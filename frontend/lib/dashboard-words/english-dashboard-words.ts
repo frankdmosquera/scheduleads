@@ -1,6 +1,17 @@
 // Frontend: the dashboard's words in English (feature 12j).
 
 import type { DashboardWordsType } from "@/lib/dashboard-words/dashboard-words-type";
+import { englishLeadsWords } from "@/lib/dashboard-words/leads-words";
+import { englishScheduleWords } from "@/lib/dashboard-words/schedule-words";
+import { englishHoursWords } from "@/lib/dashboard-words/hours-words";
+import { englishDaysOffWords } from "@/lib/dashboard-words/days-off-words";
+import { englishPeopleWords } from "@/lib/dashboard-words/people-words";
+import { englishServicesWords } from "@/lib/dashboard-words/services-words";
+import { englishBookingFormWords } from "@/lib/dashboard-words/booking-form-words";
+import { englishTextsWords } from "@/lib/dashboard-words/texts-words";
+import { englishCalendarSettingsWords } from "@/lib/dashboard-words/calendar-settings-words";
+import { englishSettingsFrameWords } from "@/lib/dashboard-words/settings-frame-words";
+import { englishSetupCardsWords } from "@/lib/dashboard-words/setup-cards-words";
 
 export const englishDashboardWords: DashboardWordsType = {
   intlLocale: "en-CA",
@@ -54,4 +65,17 @@ export const englishDashboardWords: DashboardWordsType = {
   homeNote:
     "Every figure above came from one call to the API, scoped to this business by your session. Every lead is on the Leads screen.",
   setUpAClient: "Set up a client",
+  signInEnded: "Your sign-in has ended.",
+  signInAgain: "Sign in again",
+  leadsWords: englishLeadsWords,
+  scheduleWords: englishScheduleWords,
+  hoursWords: englishHoursWords,
+  daysOffWords: englishDaysOffWords,
+  peopleWords: englishPeopleWords,
+  servicesWords: englishServicesWords,
+  bookingFormWords: englishBookingFormWords,
+  textsWords: englishTextsWords,
+  calendarSettingsWords: englishCalendarSettingsWords,
+  settingsFrameWords: englishSettingsFrameWords,
+  setupCardsWords: englishSetupCardsWords,
 };

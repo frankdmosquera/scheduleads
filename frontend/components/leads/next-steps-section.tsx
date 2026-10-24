@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import type { LeadPageType } from "@/lib/api-client/leads/fetch-lead";
 import { addNextStep } from "@/lib/api-client/leads/add-next-step";
 import { finishNextStep } from "@/lib/api-client/leads/finish-next-step";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { formatLeadTime } from "@/lib/format-lead-time";
 
 export function NextStepsSection({
@@ -27,6 +28,8 @@ export function NextStepsSection({
   timeZone: string | null;
   onChanged: () => void;
 }) {
+  const { words } = useDashboardWords();
+  const leadsWords = words.leadsWords;
   const [what, setWhat] = useState("");
   const [due, setDue] = useState(""); // the owner's clock time, "2026-10-15T09:00"
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +42,8 @@ export function NextStepsSection({
       dueLocal: due,
       browserTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
-    if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? "Check the step.");
+    if (!parsed.success)
+      return setError(parsed.error.issues[0]?.message ?? leadsWords.checkTheStep);
     setBusy(true);
     setError(null);
     const saved = await addNextStep(leadId, parsed.data);
@@ -62,17 +66,17 @@ export function NextStepsSection({
   return (
     <div className="flex flex-col gap-4">
       {steps.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nothing owed.</p>
+        <p className="text-sm text-muted-foreground">{leadsWords.nothingOwed}</p>
       ) : (
         <ul className="flex flex-col gap-3 text-sm">
           {steps.map((step) => (
             <li key={step.id} className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="break-words text-foreground">
-                  {step.what ?? step.type.replace(/_/g, " ")}
+                  {step.what ?? leadsWords.nextStepTypeName(step.type)}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  due {formatLeadTime(step.dueAt, timeZone)}
+                  {leadsWords.dueAt(formatLeadTime(step.dueAt, timeZone, words.intlLocale))}
                 </div>
               </div>
               <Button
@@ -80,9 +84,9 @@ export function NextStepsSection({
                 variant="outline"
                 disabled={busy}
                 onClick={() => tickDone(step.id)}
-                aria-label={`Done: ${step.what ?? "this step"}`}
+                aria-label={leadsWords.doneLabel(step.what)}
               >
-                Done
+                {leadsWords.done}
               </Button>
             </li>
           ))}
@@ -94,16 +98,16 @@ export function NextStepsSection({
         noValidate
         className="flex flex-col gap-2 border-t border-border pt-4"
       >
-        <Label htmlFor={`next-step-what-${leadId}`}>Add a next step</Label>
+        <Label htmlFor={`next-step-what-${leadId}`}>{leadsWords.addANextStep}</Label>
         <Input
           id={`next-step-what-${leadId}`}
           value={what}
           onChange={(event) => setWhat(event.target.value)}
-          placeholder="Call back about the quote"
+          placeholder={leadsWords.nextStepPlaceholder}
           className="h-9 bg-muted"
         />
         <Label htmlFor={`next-step-due-${leadId}`} className="sr-only">
-          When it is due
+          {leadsWords.whenItIsDue}
         </Label>
         <Input
           id={`next-step-due-${leadId}`}
@@ -119,7 +123,7 @@ export function NextStepsSection({
         ) : null}
         <div>
           <Button type="submit" size="sm" disabled={busy}>
-            {busy ? "Saving…" : "Add"}
+            {busy ? leadsWords.saving : leadsWords.add}
           </Button>
         </div>
       </form>

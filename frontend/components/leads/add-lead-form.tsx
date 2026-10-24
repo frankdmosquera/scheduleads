@@ -19,14 +19,16 @@ import { CentredCardNotice } from "@/components/centred-card/centred-card-notice
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { addLead } from "@/lib/api-client/leads/add-lead";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 const addLeadFields = [
-  { name: "name", label: "Name", type: "text", autoComplete: "off" },
-  { name: "phone", label: "Phone", type: "tel", autoComplete: "off" },
-  { name: "email", label: "Email", type: "email", autoComplete: "off" },
-] as const;
+  { name: "name", label: "nameLabel", type: "text", autoComplete: "off" },
+  { name: "phone", label: "phoneLabel", type: "tel", autoComplete: "off" },
+  { name: "email", label: "emailLabel", type: "email", autoComplete: "off" },
+] as const; // each label names its word in words.leadsWords
 
 export function AddLeadForm({ onCancel }: { onCancel: () => void }) {
+  const leadsWords = useDashboardWords().words.leadsWords;
   const router = useRouter();
   const [refusal, setRefusal] = useState<string | null>(null);
 
@@ -57,7 +59,7 @@ export function AddLeadForm({ onCancel }: { onCancel: () => void }) {
       noValidate
       className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)]"
     >
-      <h2 className="text-sm font-semibold text-foreground">Add a lead</h2>
+      <h2 className="text-sm font-semibold text-foreground">{leadsWords.addALeadTitle}</h2>
       <div className="grid gap-4 md:grid-cols-3">
         {addLeadFields.map((field) => (
           <Controller
@@ -69,7 +71,7 @@ export function AddLeadForm({ onCancel }: { onCancel: () => void }) {
                 {...input}
                 value={input.value ?? ""}
                 id={`add-lead-${field.name}`}
-                label={field.label}
+                label={leadsWords[field.label]}
                 type={field.type}
                 autoComplete={field.autoComplete}
                 error={fieldState.error?.message}
@@ -79,7 +81,7 @@ export function AddLeadForm({ onCancel }: { onCancel: () => void }) {
         ))}
       </div>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="add-lead-details">What they want</Label>
+        <Label htmlFor="add-lead-details">{leadsWords.whatTheyWant}</Label>
         <textarea
           {...form.register("details")}
           id="add-lead-details"
@@ -97,10 +99,10 @@ export function AddLeadForm({ onCancel }: { onCancel: () => void }) {
       {refusal ? <CentredCardNotice tone="error">{refusal}</CentredCardNotice> : null}
       <div className="flex gap-2">
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Saving…" : "Save the lead"}
+          {form.formState.isSubmitting ? leadsWords.saving : leadsWords.saveTheLead}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          {leadsWords.cancel}
         </Button>
       </div>
     </form>

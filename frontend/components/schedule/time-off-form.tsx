@@ -11,6 +11,7 @@ import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-noti
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { saveTimeOff, type BookingInTheWayType } from "@/lib/api-client/schedule/save-time-off";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 type ChoiceType =
   { action: "cancel" } | { action: "move"; date: string; time: string; personId: string };
@@ -25,9 +26,9 @@ const minuteOf = (time: string): number | null => {
 // The span's own fields, each shown under its box.
 const shownFields = ["from.date", "from.minute", "to.date", "to.minute", "to"];
 
-// "Fri, Nov 20, 10:00 a.m." in the business's zone.
-const momentWords = (iso: string, timezone: string) =>
-  new Intl.DateTimeFormat("en-CA", {
+// "Fri, Nov 20, 10:00 a.m." in the business's zone, in the login's language.
+const momentWords = (iso: string, timezone: string, intlLocale: string) =>
+  new Intl.DateTimeFormat(intlLocale, {
     timeZone: timezone,
     weekday: "short",
     month: "short",
@@ -47,6 +48,8 @@ export function TimeOffForm({
   timezone: string;
   onSaved: () => void; // the week reads again, showing the time off
 }) {
+  const { words } = useDashboardWords();
+  const scheduleWords = words.scheduleWords;
   const [fromDate, setFromDate] = useState(firstDate);
   const [fromTime, setFromTime] = useState("");
   const [toDate, setToDate] = useState(firstDate);
@@ -79,7 +82,7 @@ export function TimeOffForm({
       if (one.started) continue; // offered no choice: its own notice says to start after it
       const choice = choices[one.id];
       if (!choice) {
-        setErrors({ [`booking-${one.id}`]: "Choose move or cancel." });
+        setErrors({ [`booking-${one.id}`]: scheduleWords.chooseMoveOrCancel });
         return;
       }
       if (choice.action === "cancel") {
@@ -88,7 +91,7 @@ export function TimeOffForm({
       }
       const startMinute = minuteOf(choice.time);
       if (startMinute === null) {
-        setErrors({ [`booking-${one.id}`]: "Pick the new time." });
+        setErrors({ [`booking-${one.id}`]: scheduleWords.pickTheNewTime });
         return;
       }
       bookings.push({
@@ -114,9 +117,7 @@ export function TimeOffForm({
       setChoices({});
       setNotice({
         tone: "info",
-        text: bookings.length
-          ? "Saved. The time off is in, and each customer hears what happened to their booking."
-          : "Saved. The time off is in.",
+        text: bookings.length ? scheduleWords.savedCustomersHear : scheduleWords.savedTimeOffIn,
       });
       onSaved();
       return;
@@ -149,15 +150,12 @@ export function TimeOffForm({
 
   return (
     <form onSubmit={save} className="rounded-lg border border-border bg-card p-4">
-      <h2 className="text-sm font-semibold text-foreground">Time off</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        An afternoon, a day or a week. Leave a time blank for the whole day. Bookings in that time
-        are listed here, to move or cancel in the same save.
-      </p>
+      <h2 className="text-sm font-semibold text-foreground">{scheduleWords.timeOff}</h2>
+      <p className="mt-1 text-xs text-muted-foreground">{scheduleWords.timeOffLede}</p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div className="grid grid-cols-2 gap-2">
           <label className="text-sm">
-            <span className="text-muted-foreground">From</span>
+            <span className="text-muted-foreground">{scheduleWords.from}</span>
             <Input
               type="date"
               value={fromDate}
@@ -170,7 +168,7 @@ export function TimeOffForm({
             {fieldError("from.date")}
           </label>
           <label className="text-sm">
-            <span className="text-muted-foreground">at</span>
+            <span className="text-muted-foreground">{scheduleWords.at}</span>
             <Input
               type="time"
               value={fromTime}
@@ -185,7 +183,7 @@ export function TimeOffForm({
         </div>
         <div className="grid grid-cols-2 gap-2">
           <label className="text-sm">
-            <span className="text-muted-foreground">To</span>
+            <span className="text-muted-foreground">{scheduleWords.to}</span>
             <Input
               type="date"
               value={toDate}
@@ -198,7 +196,7 @@ export function TimeOffForm({
             {fieldError("to.date") ?? fieldError("to")}
           </label>
           <label className="text-sm">
-            <span className="text-muted-foreground">at</span>
+            <span className="text-muted-foreground">{scheduleWords.at}</span>
             <Input
               type="time"
               value={toTime}
@@ -215,20 +213,19 @@ export function TimeOffForm({
 
       {inTheWay.length > 0 ? (
         <div className="mt-4 flex flex-col gap-3">
-          <h3 className="text-sm font-semibold text-foreground">Bookings in that time</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            {scheduleWords.bookingsInThatTime}
+          </h3>
           {inTheWay.map((one) => {
             const choice = choices[one.id];
             return (
               <fieldset key={one.id} className="rounded-md border border-border p-3 text-sm">
                 <legend className="px-1 font-medium text-foreground">
                   {one.customerName} &middot; {one.serviceName} &middot;{" "}
-                  {momentWords(one.startsAt, timezone)}
+                  {momentWords(one.startsAt, timezone, words.intlLocale)}
                 </legend>
                 {one.started ? (
-                  <CentredCardNotice>
-                    Already begun: it can be neither moved nor cancelled. Start the time off after
-                    it.
-                  </CentredCardNotice>
+                  <CentredCardNotice>{scheduleWords.alreadyBegun}</CentredCardNotice>
                 ) : (
                   <>
                     <div className="flex flex-wrap gap-4">
@@ -246,7 +243,7 @@ export function TimeOffForm({
                             })
                           }
                         />
-                        Move it
+                        {scheduleWords.moveIt}
                       </label>
                       <label className="flex items-center gap-2">
                         <input
@@ -255,14 +252,14 @@ export function TimeOffForm({
                           checked={choice?.action === "cancel"}
                           onChange={() => choose(one.id, { action: "cancel" })}
                         />
-                        Cancel it
+                        {scheduleWords.cancelIt}
                       </label>
                     </div>
                     {choice?.action === "move" ? (
                       <div className="mt-2 grid gap-2 sm:grid-cols-3">
                         <Input
                           type="date"
-                          aria-label="New day"
+                          aria-label={scheduleWords.newDay}
                           value={choice.date}
                           onChange={(event) =>
                             choose(one.id, { ...choice, date: event.target.value })
@@ -270,14 +267,14 @@ export function TimeOffForm({
                         />
                         <Input
                           type="time"
-                          aria-label="New time"
+                          aria-label={scheduleWords.newTime}
                           value={choice.time}
                           onChange={(event) =>
                             choose(one.id, { ...choice, time: event.target.value })
                           }
                         />
                         <select
-                          aria-label="Who does it"
+                          aria-label={scheduleWords.whoDoesIt}
                           value={choice.personId}
                           onChange={(event) =>
                             choose(one.id, { ...choice, personId: event.target.value })
@@ -303,7 +300,7 @@ export function TimeOffForm({
 
       <div className="mt-4">
         <Button type="submit" disabled={saving}>
-          {saving ? "Saving…" : "Save time off"}
+          {saving ? scheduleWords.saving : scheduleWords.saveTimeOff}
         </Button>
       </div>
       <SaveNotice notice={notice} />
