@@ -92,7 +92,7 @@ export const auth = betterAuth({
   trustedOrigins: [appOrigin], // the dashboard is always a different origin from the API
 
   // The email code routes the dashboard never calls. Each reads a customer's code row, so its
-  // "Too many attempts" would tell who is a customer (F-489); only sending a code and signing in
+  // "Too many attempts" would tell who is a customer; only sending a code and signing in
   // with it stay open.
   disabledPaths: [
     "/email-otp/check-verification-otp",

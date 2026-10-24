@@ -1,4 +1,4 @@
-// A refused sign-in code gets one answer, whoever the address belongs to (F-487): a customer's
+// A refused sign-in code gets one answer, whoever the address belongs to: a customer's
 // expired code and its fourth wrong try answer exactly as an unknown address does. Through the
 // real route, against the local seeded database, with Resend held: no real email is ever sent.
 
@@ -67,7 +67,7 @@ const tryWrongCode = async (email: string) => {
   return { status: response.status, body: await response.text(), headers };
 };
 
-// The email code routes the dashboard never calls, each able to read a customer's code (F-489).
+// The email code routes the dashboard never calls, each able to read a customer's code.
 const UNUSED_CODE_ROUTES = [
   ["/email-otp/check-verification-otp", { type: "sign-in", otp: "000000" }],
   ["/email-otp/verify-email", { otp: "000000" }],

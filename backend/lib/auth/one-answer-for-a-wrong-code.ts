@@ -1,4 +1,4 @@
-// Backend: gives every refused sign-in code the same answer (F-487). An unknown address never has
+// Backend: gives every refused sign-in code the same answer. An unknown address never has
 // a code row, so Better Auth only ever answers it 400 "Invalid OTP"; a customer's address would
 // also hear 400 "OTP expired" and, on the fourth try, 403 "Too many attempts", which tells anyone
 // typing wrong codes that the address is a customer. Rewritten on the finished answer, because a
