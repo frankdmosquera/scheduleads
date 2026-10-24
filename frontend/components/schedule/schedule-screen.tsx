@@ -61,27 +61,32 @@ export function ScheduleScreen() {
   const { words } = useDashboardWords();
   const [view, setView] = useState<CalendarViewType>("week");
   const [asked, setAsked] = useState<AskedType>({});
-  const [result, setResult] = useState<CalendarResultType | null>(null);
+  // The answer with what it was asked for, so the calendar on screen always matches its own days.
+  const [shown, setShown] = useState<{
+    asked: AskedType;
+    view: CalendarViewType;
+    result: CalendarResultType;
+  } | null>(null);
   const [attempt, setAttempt] = useState(0); // Try again, or a change saved: ask once more
 
   useEffect(() => {
     // `live` stops a late answer from updating a page the user already left.
     let live = true;
-    fetchCalendar(asked, view).then((next) => {
-      if (live) setResult(next);
+    fetchCalendar(asked, view).then((result) => {
+      if (live) setShown({ asked, view, result });
     });
     return () => {
       live = false;
     };
   }, [asked, view, attempt]);
 
-  // A month that needs weeks not yet read shows "loading" until they come; a Day inside the week shown does not.
+  // The calendar on screen stays, dimmed, until the next days come, so the page never jumps.
   const ask = (next: AskedType, nextView: CalendarViewType = view) => {
-    if (nextView === "month" || view === "month" || next.resourceId !== asked.resourceId)
-      setResult(null);
     setView(nextView);
     setAsked(next);
   };
+  const busy = shown !== null && (shown.asked !== asked || shown.view !== view);
+  const result = shown?.result ?? null;
 
   return (
     <div className="mx-auto w-full max-w-6xl">
@@ -99,7 +104,7 @@ export function ScheduleScreen() {
             <Button
               variant="outline"
               onClick={() => {
-                setResult(null);
+                setShown(null);
                 setAttempt((count) => count + 1);
               }}
             >
@@ -107,13 +112,15 @@ export function ScheduleScreen() {
             </Button>
           </div>
         ) : (
-          <ScheduleCalendar
-            weeks={result.weeks}
-            view={view}
-            date={asked.date}
-            onAsk={ask}
-            onRefresh={() => setAttempt((count) => count + 1)} // the same days again, in place
-          />
+          <div aria-busy={busy} className={busy ? "opacity-60 transition-opacity" : undefined}>
+            <ScheduleCalendar
+              weeks={result.weeks}
+              view={shown!.view}
+              date={shown!.asked.date}
+              onAsk={ask}
+              onRefresh={() => setAttempt((count) => count + 1)} // the same days again, in place
+            />
+          </div>
         )}
       </div>
     </div>
