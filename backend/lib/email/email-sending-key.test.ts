@@ -198,6 +198,7 @@ describe("a business's own Resend key", () => {
       website: null,
       brandColor: "#1d4ed8",
       timezone: null,
+      language: "en",
       apiKey: null,
     });
     expect(await findBusinessEmailDetails(randomUUID())).toBeNull();

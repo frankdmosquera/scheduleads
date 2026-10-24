@@ -13,6 +13,7 @@ import { EmailButton } from "./email-button.js";
 import { emailColors } from "./email-colors.js";
 import { EmailField } from "./email-field.js";
 import { EmailLayout } from "./email-layout.js";
+import { emailWordsOf, type EmailWordsType } from "./email-words.js";
 import type { RenderedEmailType } from "./rendered-email-type.js";
 
 // facts.startsAt is the new time. The page's address is its own argument, as the confirmation's.
@@ -21,13 +22,20 @@ export async function renderBookingMoved(
   movedFrom: Date,
   bookingPageUrl: string
 ): Promise<RenderedEmailType> {
-  const when = formatBookingTime(facts.startsAt, facts.business.timezone);
-  const was = formatBookingTime(movedFrom, facts.business.timezone);
+  const words = emailWordsOf[facts.language]; // the booking's: the customer booked in it
+  const when = formatBookingTime(facts.startsAt, facts.business.timezone, facts.language);
+  const was = formatBookingTime(movedFrom, facts.business.timezone, facts.language);
   const email = (
-    <BookingMovedEmail facts={facts} when={when} was={was} bookingPageUrl={bookingPageUrl} />
+    <BookingMovedEmail
+      facts={facts}
+      when={when}
+      was={was}
+      bookingPageUrl={bookingPageUrl}
+      words={words}
+    />
   );
   return {
-    subject: `Your booking with ${facts.business.name} has moved: ${when}`,
+    subject: words.movedSubject(facts.business.name, when),
     html: await render(email),
     text: await render(email, { plainText: true }),
   };
@@ -38,19 +46,22 @@ function BookingMovedEmail({
   when,
   was,
   bookingPageUrl,
+  words,
 }: {
   facts: BookingEmailFactsType;
   when: string;
   was: string;
   bookingPageUrl: string;
+  words: EmailWordsType;
 }) {
   const { business } = facts;
   const brand = business.brandColor ?? emailColors.ink;
   return (
     <EmailLayout
+      lang={facts.language}
       businessName={business.name}
       logo={business.logo}
-      preview={`Moved: ${facts.service}, ${when}`}
+      preview={words.movedPreview(facts.service, when)}
       footer={
         business.website ? (
           <Link href={business.website} style={{ color: emailColors.muted }}>
@@ -65,7 +76,7 @@ function BookingMovedEmail({
         as="h1"
         style={{ margin: "0 0 8px", fontSize: "22px", lineHeight: "30px", color: emailColors.ink }}
       >
-        Your booking has moved
+        {words.movedHeading}
       </Heading>
       <Text
         style={{
@@ -75,14 +86,14 @@ function BookingMovedEmail({
           color: emailColors.muted,
         }}
       >
-        {`Thanks, ${facts.customer.name}. ${business.name} has you at the new time.`}
+        {words.movedThanks(facts.customer.name, business.name)}
       </Text>
 
-      <EmailField label="What">{facts.service}</EmailField>
-      <EmailField label="New time">{when}</EmailField>
-      <EmailField label="Moved from">{was}</EmailField>
-      <EmailField label="With">{facts.personName}</EmailField>
-      {facts.location ? <EmailField label="Where">{facts.location}</EmailField> : null}
+      <EmailField label={words.what}>{facts.service}</EmailField>
+      <EmailField label={words.newTime}>{when}</EmailField>
+      <EmailField label={words.movedFrom}>{was}</EmailField>
+      <EmailField label={words.with}>{facts.personName}</EmailField>
+      {facts.location ? <EmailField label={words.where}>{facts.location}</EmailField> : null}
 
       <Text
         style={{
@@ -92,10 +103,10 @@ function BookingMovedEmail({
           color: emailColors.muted,
         }}
       >
-        Need to change it again?
+        {words.needToChangeAgain}
       </Text>
       <EmailButton href={bookingPageUrl} color={brand}>
-        Manage your booking
+        {words.manageBooking}
       </EmailButton>
 
       {business.phone ? (
@@ -108,7 +119,7 @@ function BookingMovedEmail({
             textAlign: "center",
           }}
         >
-          Or call us at{" "}
+          {words.callUsAt}{" "}
           <Link href={telHref(business.phone)} style={{ color: emailColors.ink }}>
             {business.phone}
           </Link>

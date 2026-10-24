@@ -8,7 +8,7 @@ every customer email; and the redirect after booking, a new contract every site 
 
 **Branch:** feature/12i-spanish-booking
 
-**Status:** 12i.1 done 2026-10-24; 12i.2 built 2026-10-24; 12i.3 next.
+**Status:** 12i.1 and 12i.2 done 2026-10-24; 12i.3 built 2026-10-24, in review; 0.2.0 waits for Frank's yes.
 
 ## Goal
 
@@ -93,7 +93,7 @@ P0 and P1 findings are fixed before the next step; P2 and P3 are recorded and ca
   its times alone and Back returns to the calendar; a big screen shows both side by side as before;
   the turn-taking has a saved test.
 
-- [ ] **12i.3 The booking keeps its language: emails and the customer's page.** "A Spanish
+- [x] **12i.3 The booking keeps its language: emails and the customer's page.** "A Spanish
   booking gets its confirmation in Spanish, and its cancel and move page is in Spanish; the owner's
   notification is in the business's language."
   - 12i.3.1 `booking.language` and `organization.language`, `"en"` or `"es"`, one migration,
@@ -192,6 +192,16 @@ email preview script. No browser test harness exists, so none is added.
   sends its language, so an English site of a Spanish business is answered in English (12i.3). The
   dashboard's booking preview (`/admin/booking-preview/<slug>`) gained Language and After Book
   switches, the laptop check's stand-in site.
+
+- 2026-10-24, 12i.3: the setting's words say what it does: "Your booking emails come in"
+  English or Español, with the line that customers get theirs in the language they booked in (the
+  plan's "Language of the customer emails" would have been wrong: customer emails follow the
+  booking). The admin client-setup form is unchanged: it sets no business-wide choice (the contact
+  rule is not on it either); the setup file takes `language`. Before a booking has loaded, the
+  customer page speaks the browser's language. Spanish days are lowercase inside email subjects.
+  Spanish has no short zone name, so times read "GMT-6" where English reads "MDT". Texts and the
+  text-reply email stay English (out of scope). Package `version` is 0.2.0; publishing waits for
+  Frank's yes (12i.3.5).
 
 ## Notes for the AI
 

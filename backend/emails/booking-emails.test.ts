@@ -18,7 +18,9 @@ const facts: BookingEmailFactsType = {
     website: "https://primopainters.com",
     brandColor: "#1d4ed8",
     timezone: "America/Edmonton",
+    language: "en",
   },
+  language: "en",
   service: "Exterior painting estimate",
   startsAt: new Date("2026-10-08T15:00:00Z"),
   personName: "Marco",
@@ -474,5 +476,59 @@ describe("a booking with no address (the address fix)", () => {
       expect(text).not.toMatch(/^(WHERE|ADDRESS)$/m);
       expect(html).toContain("Exterior painting estimate");
     }
+  });
+});
+
+describe("the booking emails in Spanish (feature 12i)", () => {
+  // A Spanish booking at an English-speaking business: the customer reads Spanish, the owner English.
+  const spanishBooking: BookingEmailFactsType = { ...facts, language: "es" };
+
+  test("writes the customer's three in the booking's language", async () => {
+    const booked = await renderBookingConfirmation(spanishBooking, bookingPage);
+    expect(booked.subject).toBe(
+      "Su reserva con Primo Painters está confirmada: jueves, 8 de octubre, 9:00 a.m. GMT-6"
+    );
+    expect(booked.html).toContain('lang="es"');
+    expect(booked.html).toContain("Su reserva está confirmada"); // the plain text shouts headings
+    expect(booked.text).toContain("Gestionar su reserva");
+    expect(booked.text).not.toContain("You're booked");
+
+    const moved = await renderBookingMoved(
+      spanishBooking,
+      new Date("2026-10-07T21:30:00Z"),
+      bookingPage
+    );
+    expect(moved.subject).toContain("Su reserva con Primo Painters cambió de hora");
+    expect(moved.text).toContain("Antes era");
+
+    const cancelled = await renderBookingCancelled(spanishBooking);
+    expect(cancelled.subject).toContain("Su reserva con Primo Painters fue cancelada");
+    expect(cancelled.text).toContain("Gracias por avisarnos, Jane Doe.");
+  });
+
+  test("writes the owner's three in the business's language, whatever the booking's", async () => {
+    const notified = await renderBookingNotification(spanishBooking);
+    expect(notified.subject).toBe(
+      "New booking: Exterior painting estimate, Thursday, October 8 at 9:00 a.m. MDT"
+    );
+    expect(notified.html).toContain('lang="en"');
+
+    const spanishBusiness: BookingEmailFactsType = {
+      ...facts,
+      business: { ...facts.business, language: "es" },
+    };
+    const owner = await renderBookingNotification(spanishBusiness);
+    expect(owner.subject).toContain("Nueva reserva: Exterior painting estimate, jueves");
+    expect(owner.text).toContain("En sus palabras");
+    // The customer of that Spanish business booked in English, so their own email is English.
+    expect((await renderBookingConfirmation(spanishBusiness, bookingPage)).subject).toContain(
+      "You're booked with Primo Painters"
+    );
+    expect((await renderBookingMovedNotification(spanishBusiness, new Date())).subject).toContain(
+      "Cambio de hora"
+    );
+    expect((await renderBookingCancelledNotification(spanishBusiness)).subject).toContain(
+      "Cancelada:"
+    );
   });
 });

@@ -13,6 +13,7 @@ import { EmailButton } from "./email-button.js";
 import { emailColors } from "./email-colors.js";
 import { EmailField } from "./email-field.js";
 import { EmailLayout } from "./email-layout.js";
+import { emailWordsOf, type EmailWordsType } from "./email-words.js";
 import type { RenderedEmailType } from "./rendered-email-type.js";
 
 // The page's address is its own argument, so no other email can carry it by mistake.
@@ -20,12 +21,18 @@ export async function renderBookingConfirmation(
   facts: BookingEmailFactsType,
   bookingPageUrl: string
 ): Promise<RenderedEmailType> {
-  const when = formatBookingTime(facts.startsAt, facts.business.timezone);
+  const words = emailWordsOf[facts.language]; // the booking's: the customer booked in it
+  const when = formatBookingTime(facts.startsAt, facts.business.timezone, facts.language);
   const email = (
-    <BookingConfirmationEmail facts={facts} when={when} bookingPageUrl={bookingPageUrl} />
+    <BookingConfirmationEmail
+      facts={facts}
+      when={when}
+      bookingPageUrl={bookingPageUrl}
+      words={words}
+    />
   );
   return {
-    subject: `You're booked with ${facts.business.name}: ${when}`,
+    subject: words.bookedSubject(facts.business.name, when),
     html: await render(email),
     text: await render(email, { plainText: true }),
   };
@@ -35,15 +42,18 @@ function BookingConfirmationEmail({
   facts,
   when,
   bookingPageUrl,
+  words,
 }: {
   facts: BookingEmailFactsType;
   when: string;
   bookingPageUrl: string;
+  words: EmailWordsType;
 }) {
   const { business } = facts;
   const brand = business.brandColor ?? emailColors.ink;
   return (
     <EmailLayout
+      lang={facts.language}
       businessName={business.name}
       logo={business.logo}
       preview={`${facts.service}, ${when}`}
@@ -61,7 +71,7 @@ function BookingConfirmationEmail({
         as="h1"
         style={{ margin: "0 0 8px", fontSize: "22px", lineHeight: "30px", color: emailColors.ink }}
       >
-        You&apos;re booked
+        {words.bookedHeading}
       </Heading>
       <Text
         style={{
@@ -71,13 +81,13 @@ function BookingConfirmationEmail({
           color: emailColors.muted,
         }}
       >
-        {`Thanks, ${facts.customer.name}. ${business.name} has you booked.`}
+        {words.bookedThanks(facts.customer.name, business.name)}
       </Text>
 
-      <EmailField label="What">{facts.service}</EmailField>
-      <EmailField label="When">{when}</EmailField>
-      <EmailField label="With">{facts.personName}</EmailField>
-      {facts.location ? <EmailField label="Where">{facts.location}</EmailField> : null}
+      <EmailField label={words.what}>{facts.service}</EmailField>
+      <EmailField label={words.when}>{when}</EmailField>
+      <EmailField label={words.with}>{facts.personName}</EmailField>
+      {facts.location ? <EmailField label={words.where}>{facts.location}</EmailField> : null}
 
       <Text
         style={{
@@ -87,10 +97,10 @@ function BookingConfirmationEmail({
           color: emailColors.muted,
         }}
       >
-        Need to change it?
+        {words.needToChange}
       </Text>
       <EmailButton href={bookingPageUrl} color={brand}>
-        Manage your booking
+        {words.manageBooking}
       </EmailButton>
 
       {business.phone ? (
@@ -103,7 +113,7 @@ function BookingConfirmationEmail({
             textAlign: "center",
           }}
         >
-          Or call us at{" "}
+          {words.callUsAt}{" "}
           <Link href={telHref(business.phone)} style={{ color: emailColors.ink }}>
             {business.phone}
           </Link>

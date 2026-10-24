@@ -18,6 +18,7 @@ export type BusinessEmailDetailsType = {
   website: string | null;
   brandColor: string | null;
   timezone: string | null; // from the business's bookable hours; null before it has any
+  language: "en" | "es"; // its owner's emails are written in it
   apiKey: string | null; // its own Resend key, or null when none is saved
 };
 
@@ -33,6 +34,7 @@ export async function findBusinessEmailDetails(
       phone: organization.phone,
       website: organization.website,
       brandColor: organization.brandColor,
+      language: organization.language,
       timezone: availabilityRule.timezone,
       credentials: emailSendingKey.credentials,
     })

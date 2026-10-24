@@ -93,6 +93,7 @@ export const publicBookingsRoutes = new Hono()
             details: body.details || null, // an empty box is no words
             answers: body.answers,
             laterTextsYes: body.laterTextsYes === true,
+            language: body.language ?? null, // left out: the business's
             source: "widget",
             actorUserId: null,
             now: new Date(),

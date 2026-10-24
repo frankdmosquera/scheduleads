@@ -8,6 +8,7 @@ import { Body, Container, Head, Html, Img, Preview, Section, Text } from "@react
 import { emailColors } from "./email-colors.js";
 
 export type EmailLayoutPropsType = {
+  lang: "en" | "es"; // the language the email is written in
   businessName: string;
   logo: string | null;
   preview: string; // the line an inbox shows beside the subject
@@ -16,6 +17,7 @@ export type EmailLayoutPropsType = {
 };
 
 export function EmailLayout({
+  lang,
   businessName,
   logo,
   preview,
@@ -23,7 +25,7 @@ export function EmailLayout({
   children,
 }: EmailLayoutPropsType) {
   return (
-    <Html lang="en">
+    <Html lang={lang}>
       <Head />
       <Preview>{preview}</Preview>
       <Body

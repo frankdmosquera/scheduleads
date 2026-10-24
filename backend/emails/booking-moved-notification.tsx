@@ -13,6 +13,7 @@ import { EmailButton } from "./email-button.js";
 import { emailColors } from "./email-colors.js";
 import { EmailField } from "./email-field.js";
 import { EmailLayout } from "./email-layout.js";
+import { emailWordsOf, type EmailWordsType } from "./email-words.js";
 import type { RenderedEmailType } from "./rendered-email-type.js";
 
 // facts.startsAt is the new time.
@@ -20,11 +21,12 @@ export async function renderBookingMovedNotification(
   facts: BookingEmailFactsType,
   movedFrom: Date
 ): Promise<RenderedEmailType> {
-  const when = formatBookingTime(facts.startsAt, facts.business.timezone);
-  const was = formatBookingTime(movedFrom, facts.business.timezone);
-  const email = <BookingMovedNotificationEmail facts={facts} when={when} was={was} />;
+  const words = emailWordsOf[facts.business.language]; // the owner's: the business's language
+  const when = formatBookingTime(facts.startsAt, facts.business.timezone, facts.business.language);
+  const was = formatBookingTime(movedFrom, facts.business.timezone, facts.business.language);
+  const email = <BookingMovedNotificationEmail facts={facts} when={when} was={was} words={words} />;
   return {
-    subject: `Moved: ${facts.service}, ${when}`,
+    subject: words.ownerMovedSubject(facts.service, when),
     html: await render(email),
     text: await render(email, { plainText: true }),
   };
@@ -34,30 +36,33 @@ function BookingMovedNotificationEmail({
   facts,
   when,
   was,
+  words,
 }: {
   facts: BookingEmailFactsType;
   when: string;
   was: string;
+  words: EmailWordsType;
 }) {
   const { business, customer } = facts;
   const brand = business.brandColor ?? emailColors.ink;
   const linkStyle = { color: brand, textDecoration: "none" };
   return (
     <EmailLayout
+      lang={facts.business.language}
       businessName={business.name}
       logo={business.logo}
       preview={[customer.name, customer.phone ?? customer.email].filter(Boolean).join(" - ")}
       footer={
         customer.email
-          ? `${customer.name} moved it from the link in their confirmation. Replying goes straight to ${customer.name}.`
-          : `${customer.name} moved it from the link in their confirmation.`
+          ? words.ownerMovedFooter(customer.name, true)
+          : words.ownerMovedFooter(customer.name, false)
       }
     >
       <Heading
         as="h1"
         style={{ margin: "0 0 20px", fontSize: "22px", lineHeight: "30px", color: emailColors.ink }}
       >
-        Booking moved
+        {words.ownerMovedHeading}
       </Heading>
       <Text
         style={{
@@ -67,36 +72,36 @@ function BookingMovedNotificationEmail({
           color: emailColors.muted,
         }}
       >
-        The old time is free again: the next customer can book it.
+        {words.oldTimeFree}
       </Text>
 
-      <EmailField label="What">{facts.service}</EmailField>
-      <EmailField label="New time">{when}</EmailField>
-      <EmailField label="Moved from">{was}</EmailField>
-      <EmailField label="With">{facts.personName}</EmailField>
+      <EmailField label={words.what}>{facts.service}</EmailField>
+      <EmailField label={words.newTime}>{when}</EmailField>
+      <EmailField label={words.movedFrom}>{was}</EmailField>
+      <EmailField label={words.with}>{facts.personName}</EmailField>
 
       <Hr style={{ borderColor: emailColors.line, margin: "20px 0" }} />
 
-      <EmailField label="Name">{customer.name}</EmailField>
+      <EmailField label={words.name}>{customer.name}</EmailField>
       {customer.phone ? (
-        <EmailField label="Phone">
+        <EmailField label={words.phone}>
           <Link href={telHref(customer.phone)} style={linkStyle}>
             {customer.phone}
           </Link>
         </EmailField>
       ) : null}
       {customer.email ? (
-        <EmailField label="Email">
+        <EmailField label={words.email}>
           <Link href={`mailto:${customer.email}`} style={linkStyle}>
             {customer.email}
           </Link>
         </EmailField>
       ) : null}
-      {facts.location ? <EmailField label="Address">{facts.location}</EmailField> : null}
+      {facts.location ? <EmailField label={words.address}>{facts.location}</EmailField> : null}
 
       {customer.phone ? (
         <EmailButton href={telHref(customer.phone)} color={brand}>
-          {`Call ${customer.name}`}
+          {words.call(customer.name)}
         </EmailButton>
       ) : null}
     </EmailLayout>

@@ -56,6 +56,8 @@ export type BookTimeInputType = {
   answers?: GivenAnswerType[]; // the business's own questions as the form showed them (feature 9)
   // The customer's tick for later texts (decision 13); the booking's own texts go either way.
   laterTextsYes?: boolean;
+  // The language the window spoke (feature 12i); null takes the business's, as an owner's booking does.
+  language?: "en" | "es" | null;
   source: "widget" | "hosted" | "manual";
   actorUserId: string | null; // the owner's login when source is manual, checked here
   now: Date;
@@ -188,6 +190,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
       personChoice: bookingLink.personChoice,
       addressMode: bookingLink.addressMode,
       contactRule: organization.contactRule,
+      businessLanguage: organization.language,
     })
     .from(bookingLink)
     .innerJoin(organization, eq(organization.id, bookingLink.organizationId))
@@ -293,6 +296,7 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
         // Never kept when not asked: a form opened before the address was switched off still books.
         location: service.addressMode === "not_asked" ? null : input.location,
         requestKey,
+        language: input.language ?? service.businessLanguage,
       });
       const held = await holdFirstFreeChoice(organizationId, choices, span, bookingId, tx);
       if (!held) throw new EveryChoiceTakenError();

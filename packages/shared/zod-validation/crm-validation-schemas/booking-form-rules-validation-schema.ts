@@ -1,9 +1,11 @@
 // Shared Zod schema: what the business's booking form requires, as the owner saves it on the
 // Booking form page (feature 12f): the contact rule, and whether the form asks the customer's yes
-// to later texts. That one is left out when the page did not show it, and then left as it is.
+// to later texts. That one is left out when the page did not show it, and then left as it is. And
+// the business's language (feature 12i): its owner's emails, and a booking that came with none.
 
 import { z } from "zod";
 
+import { bookingLanguageValidationSchema } from "../booking-links-validation-schemas/booking-language-validation-schema.js";
 import { contactRuleValidationSchema } from "./contact-rule-validation-schema.js";
 
 export const bookingFormRulesValidationSchema = z
@@ -12,6 +14,7 @@ export const bookingFormRulesValidationSchema = z
     askLaterTextsYes: z
       .boolean("Pick whether the form asks for the yes to later texts.")
       .optional(),
+    language: bookingLanguageValidationSchema.optional(), // left out: left as it is
   })
   .strict();
 

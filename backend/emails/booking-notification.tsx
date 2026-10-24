@@ -13,64 +13,75 @@ import { EmailButton } from "./email-button.js";
 import { emailColors } from "./email-colors.js";
 import { EmailField } from "./email-field.js";
 import { EmailLayout } from "./email-layout.js";
+import { emailWordsOf, type EmailWordsType } from "./email-words.js";
 import type { RenderedEmailType } from "./rendered-email-type.js";
 
 export async function renderBookingNotification(
   facts: BookingEmailFactsType
 ): Promise<RenderedEmailType> {
-  const when = formatBookingTime(facts.startsAt, facts.business.timezone);
-  const email = <BookingNotificationEmail facts={facts} when={when} />;
+  const words = emailWordsOf[facts.business.language]; // the owner's: the business's language
+  const when = formatBookingTime(facts.startsAt, facts.business.timezone, facts.business.language);
+  const email = <BookingNotificationEmail facts={facts} when={when} words={words} />;
   return {
-    subject: `New booking: ${facts.service}, ${when}`,
+    subject: words.newBookingSubject(facts.service, when),
     html: await render(email),
     text: await render(email, { plainText: true }),
   };
 }
 
-function BookingNotificationEmail({ facts, when }: { facts: BookingEmailFactsType; when: string }) {
+function BookingNotificationEmail({
+  facts,
+  when,
+  words,
+}: {
+  facts: BookingEmailFactsType;
+  when: string;
+  words: EmailWordsType;
+}) {
   const { business, customer } = facts;
   const brand = business.brandColor ?? emailColors.ink;
   const linkStyle = { color: brand, textDecoration: "none" };
   return (
     <EmailLayout
+      lang={facts.business.language}
       businessName={business.name}
       logo={business.logo}
       preview={[customer.name, customer.phone ?? customer.email].filter(Boolean).join(" - ")}
       footer={
         customer.email
-          ? `Booked on your website. Replying goes straight to ${customer.name}.`
-          : `Booked on your website. ${customer.name} gave no email, so call to reach them.`
+          ? words.bookedOnSiteReply(customer.name)
+          : words.bookedOnSiteNoEmail(customer.name)
       }
     >
       <Heading
         as="h1"
         style={{ margin: "0 0 20px", fontSize: "22px", lineHeight: "30px", color: emailColors.ink }}
       >
-        New booking
+        {words.newBookingHeading}
       </Heading>
 
-      <EmailField label="What">{facts.service}</EmailField>
-      <EmailField label="When">{when}</EmailField>
-      <EmailField label="Booked with">{facts.personName}</EmailField>
+      <EmailField label={words.what}>{facts.service}</EmailField>
+      <EmailField label={words.when}>{when}</EmailField>
+      <EmailField label={words.bookedWith}>{facts.personName}</EmailField>
 
       <Hr style={{ borderColor: emailColors.line, margin: "20px 0" }} />
 
-      <EmailField label="Name">{customer.name}</EmailField>
+      <EmailField label={words.name}>{customer.name}</EmailField>
       {customer.phone ? (
-        <EmailField label="Phone">
+        <EmailField label={words.phone}>
           <Link href={telHref(customer.phone)} style={linkStyle}>
             {customer.phone}
           </Link>
         </EmailField>
       ) : null}
       {customer.email ? (
-        <EmailField label="Email">
+        <EmailField label={words.email}>
           <Link href={`mailto:${customer.email}`} style={linkStyle}>
             {customer.email}
           </Link>
         </EmailField>
       ) : null}
-      {facts.location ? <EmailField label="Address">{facts.location}</EmailField> : null}
+      {facts.location ? <EmailField label={words.address}>{facts.location}</EmailField> : null}
 
       {customer.details ? (
         <>
@@ -84,7 +95,7 @@ function BookingNotificationEmail({ facts, when }: { facts: BookingEmailFactsTyp
               color: emailColors.muted,
             }}
           >
-            In their words
+            {words.inTheirWords}
           </Text>
           {/* One paragraph per blank line and a <br /> per line break, so their own lines survive
               in the HTML and in the plain-text twin alike. */}
@@ -142,7 +153,7 @@ function BookingNotificationEmail({ facts, when }: { facts: BookingEmailFactsTyp
 
       {customer.phone ? (
         <EmailButton href={telHref(customer.phone)} color={brand}>
-          {`Call ${customer.name}`}
+          {words.call(customer.name)}
         </EmailButton>
       ) : null}
     </EmailLayout>

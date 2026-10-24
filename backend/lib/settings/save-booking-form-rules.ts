@@ -1,5 +1,6 @@
 // Backend: saves what the business's booking form requires, from the owner's Booking form page
-// (feature 12f): its contact rule, and whether the form asks the customer's yes to later texts.
+// (feature 12f): its contact rule, whether the form asks the customer's yes to later texts, and its
+// language (feature 12i).
 
 import { eq } from "drizzle-orm";
 
@@ -10,12 +11,15 @@ import { db } from "../../database.js";
 import { findBookingForm, type BookingFormSettingsType } from "./find-booking-form.js";
 
 export type SaveBookingFormRulesResultType =
-  | { ok: true; rules: Pick<BookingFormSettingsType, "contactRule" | "askLaterTextsYes"> }
+  | {
+      ok: true;
+      rules: Pick<BookingFormSettingsType, "contactRule" | "askLaterTextsYes" | "language">;
+    }
   | { ok: false; reason: "no_text_settings" };
 
 export async function saveBookingFormRules(
   organizationId: string,
-  { contactRule, askLaterTextsYes }: BookingFormRulesType
+  { contactRule, askLaterTextsYes, language }: BookingFormRulesType
 ): Promise<SaveBookingFormRulesResultType> {
   return db.transaction(async (tx) => {
     // Left as it is when the page did not show the choice. A business with no text settings sends
@@ -30,11 +34,16 @@ export async function saveBookingFormRules(
         return { ok: false, reason: "no_text_settings" } as const;
     }
 
-    await tx.update(organization).set({ contactRule }).where(eq(organization.id, organizationId));
-    const { contactRule: rule, askLaterTextsYes: asking } = await findBookingForm(
-      tx,
-      organizationId
-    );
-    return { ok: true, rules: { contactRule: rule, askLaterTextsYes: asking } } as const;
+    await tx
+      .update(organization)
+      .set({ contactRule, ...(language ? { language } : {}) })
+      .where(eq(organization.id, organizationId));
+    const saved = await findBookingForm(tx, organizationId);
+    const rules = {
+      contactRule: saved.contactRule,
+      askLaterTextsYes: saved.askLaterTextsYes,
+      language: saved.language,
+    };
+    return { ok: true, rules } as const;
   });
 }

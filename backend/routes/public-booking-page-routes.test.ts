@@ -185,6 +185,7 @@ describe("the customer's booking page", () => {
         service: "Interior estimate",
         startsAt: primo.startsAt.toISOString(),
         when: formatBookingTime(primo.startsAt, "America/Edmonton"), // written by the API
+        language: "en", // the booking's own, kept from its window (feature 12i)
         // The appointment itself, not its 15 after.
         endsAt: new Date(primo.startsAt.getTime() + 60 * 60_000).toISOString(),
         timezone: "America/Edmonton",

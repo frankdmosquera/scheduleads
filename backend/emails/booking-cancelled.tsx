@@ -14,16 +14,20 @@ import { EmailButton } from "./email-button.js";
 import { emailColors } from "./email-colors.js";
 import { EmailField } from "./email-field.js";
 import { EmailLayout } from "./email-layout.js";
+import { emailWordsOf, type EmailWordsType } from "./email-words.js";
 import type { RenderedEmailType } from "./rendered-email-type.js";
 
 export async function renderBookingCancelled(
   facts: BookingEmailFactsType,
   byBusiness = false // the owner cancelled it, not the customer
 ): Promise<RenderedEmailType> {
-  const when = formatBookingTime(facts.startsAt, facts.business.timezone);
-  const email = <BookingCancelledEmail facts={facts} when={when} byBusiness={byBusiness} />;
+  const words = emailWordsOf[facts.language]; // the booking's: the customer booked in it
+  const when = formatBookingTime(facts.startsAt, facts.business.timezone, facts.language);
+  const email = (
+    <BookingCancelledEmail facts={facts} when={when} byBusiness={byBusiness} words={words} />
+  );
   return {
-    subject: `Your booking with ${facts.business.name} is cancelled: ${when}`,
+    subject: words.cancelledSubject(facts.business.name, when),
     html: await render(email),
     text: await render(email, { plainText: true }),
   };
@@ -33,18 +37,21 @@ function BookingCancelledEmail({
   facts,
   when,
   byBusiness,
+  words,
 }: {
   facts: BookingEmailFactsType;
   when: string;
   byBusiness: boolean;
+  words: EmailWordsType;
 }) {
   const { business } = facts;
   const brand = business.brandColor ?? emailColors.ink;
   return (
     <EmailLayout
+      lang={facts.language}
       businessName={business.name}
       logo={business.logo}
-      preview={`Cancelled: ${facts.service}, ${when}`}
+      preview={words.cancelledPreview(facts.service, when)}
       footer={
         business.website ? (
           <Link href={business.website} style={{ color: emailColors.muted }}>
@@ -59,7 +66,7 @@ function BookingCancelledEmail({
         as="h1"
         style={{ margin: "0 0 8px", fontSize: "22px", lineHeight: "30px", color: emailColors.ink }}
       >
-        Your booking is cancelled
+        {words.cancelledHeading}
       </Heading>
       <Text
         style={{
@@ -70,12 +77,12 @@ function BookingCancelledEmail({
         }}
       >
         {byBusiness
-          ? `${business.name} had to cancel your booking.`
-          : `Thanks for letting us know, ${facts.customer.name}.`}
+          ? words.cancelledByBusiness(business.name)
+          : words.cancelledThanks(facts.customer.name)}
       </Text>
 
-      <EmailField label="What">{facts.service}</EmailField>
-      <EmailField label="When it was">{when}</EmailField>
+      <EmailField label={words.what}>{facts.service}</EmailField>
+      <EmailField label={words.whenItWas}>{when}</EmailField>
 
       {business.phone ? (
         <>
@@ -87,10 +94,10 @@ function BookingCancelledEmail({
               color: emailColors.muted,
             }}
           >
-            {`Want another time? Call us at ${business.phone}.`}
+            {words.anotherTime(business.phone)}
           </Text>
           <EmailButton href={telHref(business.phone)} color={brand}>
-            {`Call ${business.name}`}
+            {words.call(business.name)}
           </EmailButton>
         </>
       ) : null}

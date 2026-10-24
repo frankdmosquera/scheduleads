@@ -31,6 +31,12 @@ export const organization = pgTable(
     contactRule: text("contactRule", { enum: ["email", "phone", "either"] })
       .notNull()
       .default("either"),
+
+    // The language of the owner's booking emails, and of a booking that came with none (the
+    // owner's own, an older window). A setting (feature 12i); every business before it is English.
+    language: text("language", { enum: ["en", "es"] })
+      .notNull()
+      .default("en"),
   },
   (table) => [
     check("organization_brand_color_check", sql`${table.brandColor} ~ '^#[0-9a-f]{6}$'`),
@@ -38,5 +44,6 @@ export const organization = pgTable(
       "organization_contact_rule_check",
       sql`${table.contactRule} in ('email', 'phone', 'either')`
     ),
+    check("organization_language_check", sql`${table.language} in ('en', 'es')`),
   ]
 );

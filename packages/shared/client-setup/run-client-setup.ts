@@ -125,7 +125,7 @@ async function findDifferences(
 
   // Set by the apply only while the business has no service; after that a different one is listed.
   const [business] = await tx
-    .select({ contactRule: organization.contactRule })
+    .select({ contactRule: organization.contactRule, language: organization.language })
     .from(organization)
     .where(eq(organization.id, organizationId));
   const [anyService] = await tx
@@ -134,6 +134,7 @@ async function findDifferences(
     .where(eq(bookingLink.organizationId, organizationId))
     .limit(1);
   if (anyService) differs("contactRule", business?.contactRule, setup.contactRule);
+  if (anyService && setup.language) differs("language", business?.language, setup.language);
 
   // Texts already there are the owner's: a file that says otherwise is listed, never applied.
   const [texts] = await tx
