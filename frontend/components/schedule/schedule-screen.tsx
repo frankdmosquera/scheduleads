@@ -203,7 +203,7 @@ function ScheduleCalendar({
             </span>
             <select
               value={resourceId}
-              onChange={(event) => onAsk({ resourceId: event.target.value, date })}
+              onChange={(event) => onAsk({ resourceId: event.target.value, date: shown })}
               className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-base font-medium sm:flex-none"
             >
               {first.resources.map((one) => (
@@ -290,7 +290,7 @@ function ScheduleCalendar({
           <Button variant="outline" size="sm" onClick={() => step(-1)}>
             {scheduleWords.previous}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => onAsk({ resourceId })}>
+          <Button variant="outline" size="sm" onClick={() => onAsk({ resourceId, date: today })}>
             {scheduleWords.today}
           </Button>
           <Button variant="outline" size="sm" onClick={() => step(1)}>

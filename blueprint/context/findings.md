@@ -420,29 +420,29 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** One test through `app.request("/api/auth/email-otp/send-verification-otp")` with `Accept-Language: es` for a seeded login with no pick, Resend faked as in `login-code-timing.test.ts`, asserting the faked call's subject is Spanish.
 **Resolution:** Fixed 2026-10-24 (12j.1 review fixes): `backend/lib/auth/login-code-timing.test.ts` gains "a login code's language": a throwaway login with no pick asks the real route for a code with `Accept-Language: es-CO,es;q=0.9` and the faked Resend gets "Su código de acceso: NNNNNN"; with no header, "Your sign-in code: NNNNNN". Proved able to fail: with `ctx?.headers?.get("accept-language")` replaced by null it got the English subject and failed. Closed 2026-10-24 by /audit independent current (576bdaf..0acd574): the test (`backend/lib/auth/login-code-timing.test.ts:62-108`) goes through the real Better Auth route, inserts and deletes its own throwaway login, and passed in this pass's `npm run test --workspace=backend` (92 files, 1075 tests). The hand-off is now covered; the repair adds no new risk.
 
-### F-471 [P2] fixed - On a Spanish Booking form, the ready-made question sets stay English: "Empezar con el conjunto de painting" fills in English questions
+### F-471 [P2] closed - On a Spanish Booking form, the ready-made question sets stay English: "Empezar con el conjunto de painting" fills in English questions
 
 **File:** frontend/lib/dashboard-words/booking-form-words.ts:102; frontend/components/settings/booking-questions-card.tsx:74-75, 131; backend/lib/settings/booking-question-sets.ts:13-27
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..0acd574; lenses: quality, security, performance, tests)
 **Why it matters:** The step's contract is no English on a signed-in screen except the business's own words and the API's messages (12j.3). The set names come from the product's own list in `booking-question-sets.ts` ("Painting", "Clinic"), not from the business and not from an API refusal, so a Spanish owner with no questions sees two buttons reading "Empezar con el conjunto de painting" and "Empezar con el conjunto de clinic". Pressing one fills the list with "Interior or exterior?", "How many rooms?" (or the clinic pair), which a Spanish business then saves and shows to its Spanish customers in the booking window. 12j.3 lists refusals, form errors and holiday names; these sets are in neither step.
 **Suggested fix:** Name each set in the words by its `trade` key (`presetName: Record<"painting" | "clinic", string>`, "pintura", "clínica") instead of the API's `name`, and give the sets their Spanish questions: either the route answers them in the login's language, or the frontend keeps one question list per language keyed by `trade`. Or record in the spec that the sets stay English until a later step.
-**Resolution:** Fixed 2026-10-24 (12j.2 review fixes, Frank's yes): each set in `backend/lib/settings/booking-question-sets.ts` carries its name and questions in English and Spanish; `booking-questions-card.tsx` names the button and fills the questions in the login's language. Seen on http://localhost:3400/settings/booking-form in Spanish: "Empezar con el conjunto de pintura" / "clínica", filling "¿Tiene alergias o alguna afección de la piel?" and "¿Es su primera visita?" (not saved). Settings route tests 45 pass.
+**Resolution:** Fixed 2026-10-24 (12j.2 review fixes, Frank's yes): each set in `backend/lib/settings/booking-question-sets.ts` carries its name and questions in English and Spanish; `booking-questions-card.tsx` names the button and fills the questions in the login's language. Seen on http://localhost:3400/settings/booking-form in Spanish: "Empezar con el conjunto de pintura" / "clínica", filling "¿Tiene alergias o alguna afección de la piel?" and "¿Es su primera visita?" (not saved). Settings route tests 45 pass. Closed 2026-10-24 by /audit independent current (576bdaf..6e24d7e): `booking-question-sets.ts` carries both languages and `booking-questions-card.tsx:75, 131` names and fills the sets from them, so a Spanish owner no longer sees "painting" or English questions. Which language the sets should follow is a separate point, F-481.
 
-### F-472 [P3] fixed - "Tiempo libre" names a person's time off on the Calendar, while "libre" on the same screen means free to book
+### F-472 [P3] closed - "Tiempo libre" names a person's time off on the Calendar, while "libre" on the same screen means free to book
 
 **File:** frontend/lib/dashboard-words/schedule-words.ts:124, 138, 150, 165-166, 174, 181; frontend/lib/dashboard-words/services-words.ts:121
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..0acd574; lenses: quality, security, performance, tests)
 **Why it matters:** To a Latin American reader "tiempo libre" is leisure, and "libre" reads as available. On the Calendar a block labelled "Tiempo libre" means the person cannot be booked, while the Book by hand lede on the same screen says "Cualquier hora en que esta persona esté libre", meaning bookable. Services uses "Tiempo libre antes" for a third thing, the buffer kept clear. An owner can read a person's blocked afternoon as open time.
 **Suggested fix:** Use one unambiguous word for time off, such as "Ausencia" (title, item label, "Guardar ausencia", "La ausencia quedó registrada") or "Tiempo no disponible", and keep "libre" for available.
-**Resolution:** Fixed 2026-10-24 (Frank picked "No disponible"): a person's time off is "No disponible" on the Calendar (block, legend, button, its saved lines and the lede); "libre" is left meaning only free to book. A reason for the time off (vacation, appointment) is a later addition.
+**Resolution:** Fixed 2026-10-24 (Frank picked "No disponible"): a person's time off is "No disponible" on the Calendar (block, legend, button, its saved lines and the lede); "libre" is left meaning only free to book. A reason for the time off (vacation, appointment) is a later addition. Closed 2026-10-24 by /audit independent current (576bdaf..6e24d7e): `schedule-words.ts:147, 173, 200-201, 209` name a person's time off "No disponible" / "horario no disponible", and the Calendar keeps "libre" for bookable only. The Services buffer still reads "Tiempo libre antes" (`services-words.ts:121-123`) on its own screen, with the hint "Se deja libre, nunca se reserva" saying what it means.
 
-### F-473 [P3] fixed - The off state of a person, place or service has several Spanish names across Settings
+### F-473 [P3] closed - The off state of a person, place or service has several Spanish names across Settings
 
 **File:** frontend/lib/dashboard-words/people-words.ts:115-116; frontend/lib/dashboard-words/settings-frame-words.ts:64; frontend/lib/dashboard-words/services-words.ts:114-115, 135, 139, 146-147
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..0acd574; lenses: quality, security, performance, tests)
 **Why it matters:** English uses one pair, On and Off. In Spanish, People shows a person as "No disponible", the same person in a service's ticks reads " (desactivado)" and "Todos los marcados están desactivados", and a service is "Oculto" in its badge but "Apagado lo oculta" in its checkbox. An owner matching a person turned off on People with the one marked in a service sees two different words. " (desactivado)" is also masculine after a place such as "la sala", which `people-words.ts` avoids on purpose ("Gender-free on purpose").
 **Suggested fix:** Pick one word per state and use it everywhere: for people and places "Disponible" / "No disponible" (ticks: " (no disponible)", "Todos los marcados no están disponibles"); for services "Activo" / "Oculto" ("Si lo desmarca, se oculta").
-**Resolution:** Fixed 2026-10-24: a person or place switched off is "Fuera de servicio" / "En servicio" (People, the Settings suffix, the service form's notes), gender-free and apart from the Calendar's "No disponible"; a service stays "Activo" / "Oculto" and the form's "Apagado" became "Oculto".
+**Resolution:** Fixed 2026-10-24: a person or place switched off is "Fuera de servicio" / "En servicio" (People, the Settings suffix, the service form's notes), gender-free and apart from the Calendar's "No disponible"; a service stays "Activo" / "Oculto" and the form's "Apagado" became "Oculto". Closed 2026-10-24 by /audit independent current (576bdaf..6e24d7e): people and places read "En servicio" / "Fuera de servicio" in `people-words.ts:115-116`, `settings-frame-words.ts:64` and `services-words.ts:135, 140`; services read "Activo" / "Oculto" (`services-words.ts:114-115, 147`); no "desactivado" or "Apagado" is left for these states.
 
 ### F-474 [P3] accepted - The default lead stages are stored in English, so a Spanish dashboard shows "New", "Contacted", "Booked", "Done"
 
@@ -452,10 +452,66 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Decide it in the spec: either the stage names are business data (shown as stored, said so under Out of scope), or a Spanish business gets Spanish stages when it is set up (the business's `language` choosing the names in `seed-pipeline-stages.ts`), or the dashboard names the four default stages through the words while their stored names are untouched.
 **Resolution:** Accepted 2026-10-24 by Frank ("sure" to moving it): moved to feature 14, where each business names, adds and reorders its own stages and boards, so translating the four defaults now would be undone there.
 
-### F-475 [P3] fixed - The sign-in page's email placeholder stays English in Spanish
+### F-475 [P3] closed - The sign-in page's email placeholder stays English in Spanish
 
 **File:** frontend/components/sign-in/sign-in-email-step.tsx:71
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..0acd574; lenses: quality, security, performance, tests)
 **Why it matters:** The sign-in pages are in scope for Spanish (12j.1), and the Setup card's same kind of placeholder was moved into the words ("usted@sunegocio.com", `setup-cards-words.ts`). The sign-in email box still reads "you@yourbusiness.com" when the page is in Spanish.
 **Suggested fix:** Add an `emailPlaceholder` word to `DashboardWordsType` (Spanish, for example "nombre@sunegocio.com") and read it here.
-**Resolution:** Fixed 2026-10-24: the sign-in email placeholder is a word, "usted@sunegocio.com" in Spanish, English unchanged.
+**Resolution:** Fixed 2026-10-24: the sign-in email placeholder is a word, "usted@sunegocio.com" in Spanish, English unchanged. Closed 2026-10-24 by /audit independent current (576bdaf..6e24d7e): `sign-in-email-step.tsx:71` reads `words.emailPlaceholder`, declared in `dashboard-words-type.ts:30` with both languages.
+
+### F-476 [P1] fixed - In the Month view, "Today" shows only the current week
+
+**File:** frontend/components/schedule/schedule-screen.tsx:45-49, 293, 206
+**Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..6e24d7e; lenses: quality, security, performance, tests)
+**Why it matters:** `fetchCalendar` asks for one week whenever `asked.date` is missing (`!asked.date ? [undefined]`), whatever the view. The Today button calls `onAsk({ resourceId })` with no date, so in the Month view it fetches one week; `ScheduleCalendar` then hands those seven days to `ScheduleMonthGrid` as `allDays`, and the month's heading sits over a single row. The calendar picker (line 206) passes the same missing date after Today, so changing person keeps the one-week month, and Book by hand in that view offers only that week's dates (`datesToBook`). Today is the most used button on a calendar.
+**Suggested fix:** Make a missing date in the Month view mean today in the business's zone: Today sends `todayInZone(timezone)` as the date (the zone is already on screen), or `fetchCalendar` fetches the current week first and then `weeksOfMonth` of its today, so the Month view always asks for its four to six weeks.
+**Resolution:** Fixed 2026-10-24: Today asks for today's date and the person picker for the date on screen, so a Month view always asks for the whole month. Seen on http://localhost:3400/calendar: Month, Next (November, 42 days), Today (October, 35 days), another person (October, 35 days).
+
+### F-477 [P2] open - On Days off in Spanish, a closed holiday goes back to its English name after any save
+
+**File:** backend/routes/settings-routes.ts:522, 579, 598; frontend/components/settings/days-off-screen.tsx:98, 135, 187
+**Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..6e24d7e; lenses: quality, security, performance, tests)
+**Why it matters:** Only GET `/settings/days-off` names closed holidays through `holidayPackage.nameOn` (lines 485-497). PUT `/settings/days-off`, POST `/close` and POST `/open` return `findDaysOff` as stored, with English names, and the screen merges `...answer.daysOff` over its state. So a Spanish owner who ticks a holiday, closes a day or opens one sees "Navidad" turn into "Christmas Day" until the page is reloaded. The list also keeps its old language after the language switch, since nothing reads it again. The route test checks the GET only.
+**Suggested fix:** Name the closed days in one place for all four answers (a helper in the routes, or `findDaysOff` taking the language), have the three save calls send `language` as the GET does, and add one test that a Spanish save answers "Navidad".
+**Resolution:**
+
+### F-478 [P2] open - Some dashboard refusals have no Spanish, and the completeness test cannot see them
+
+**File:** backend/routes/settings-routes.ts:604-609; backend/routes/schedule-routes.ts:347-352; backend/lib/email/check-email-sending-key.ts:30-60; backend/lib/email/save-email-sending.ts:61; packages/shared/helpers/spanish-messages.test.ts:28-30, 46-53
+**Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..6e24d7e; lenses: quality, security, performance, tests)
+**Why it matters:** The spec says the saved test collects every message in the backend's refusals so none ships untranslated. Its `refusalRule` matches only `refuse(code, "literal")` and `messageRule` only `message: "literal"`. Missed, and reachable from Spanish screens: "The business does not work that weekday: set that day's hours on Hours." and "They do not work that weekday: set their hours on Hours." (Days off, opening a day; a ternary inside `refuse`), "A booking in that time has already begun, so time off cannot cover it." and "There are bookings in that time. Choose for each one: move it or cancel it." (Calendar, time off; a ternary), and the email sending card's Resend reasons ("Resend refused this key.", the quota, sender and retry lines, some joined with `+`, and "The saved key can no longer be read. Paste it again."), written as `reason:`. None is in `spanish-messages.ts`, so each shows in English on a Spanish dashboard: never blank, as the contract allows, but the test's promise does not hold.
+**Suggested fix:** Add these messages to the table, and widen the test: also read backend `reason:` literals and every sentence literal inside a `refuse(` call (or every sentence literal under `backend/routes` and `backend/lib/email`, logs left out), writing the `+` joined reasons as one literal each.
+**Resolution:**
+
+### F-479 [P3] open - A few Spanish templates read wrong once their value is put in
+
+**File:** packages/shared/helpers/spanish-messages.ts:158-159, 207, 220; backend/routes/schedule-routes.ts:329; backend/lib/text/format-text-time.ts:6-17
+**Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..6e24d7e; lenses: quality, security, performance, tests)
+**Why it matters:** "Tick each of the {} once." becomes "Marque cada uno de los personas una sola vez." with "people" ("personas" is feminine). "Already off from {} to {}." becomes "Ya no está disponible de Mon Oct 26, 9:00am a Mon Oct 26, 5:00pm.": "Ya no está disponible" reads as "no longer available", and the times come from `formatTextTime`, fixed to `en-US`, so English day and month names sit inside the Spanish. "{} no está en la lista de festivos" puts the English holiday name in, since picks are saved in English.
+**Suggested fix:** Two exact keys for people and places ("Marque cada persona una sola vez.", "Marque cada lugar una sola vez."); "Ya hay un horario no disponible de {} a {}."; for the times, let the route send the two moments so the dashboard writes them in its locale, or accept English times there and say so in the spec.
+**Resolution:**
+
+### F-480 [P3] open - The Month view reads Google busy times four to six times and never shows them
+
+**File:** frontend/components/schedule/schedule-screen.tsx:44-55, 303; frontend/components/schedule/schedule-month-grid.tsx:52; backend/lib/schedule/find-schedule-week.ts:149-185
+**Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..6e24d7e; lenses: quality, security, performance, tests)
+**Why it matters:** Each Month view asks the week route four to six times in parallel, and each week reads the person's Google busy times (`getBusyTimes`), which the Month grid then filters out (`item.kind !== "google_busy"`). That is up to six Google calls per page turn for nothing shown, and when one fails the Month view still says "No se pudo leer Google para esta semana", about a week it does not name. The Day view also reads its whole week, Google included, on every one-day step. Not measured; the cost is Google's quota and the page's speed.
+**Suggested fix:** Let the week route skip Google when asked (a query flag) for the Month view, or hide the Google notice there; later, one month route.
+**Resolution:**
+
+### F-481 [P3] open - The ready-made booking questions follow the login's language, not the language the business's customers book in
+
+**File:** frontend/components/settings/booking-questions-card.tsx:75, 131; backend/lib/settings/find-booking-form.ts:17
+**Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..6e24d7e; lenses: quality, security, performance, tests)
+**Why it matters:** The questions are shown to customers in the booking window, in the business's own language (12i, `language` on the same Booking form settings). The card fills them in `useDashboardWords().language`, so a Spanish-reading member of an English business fills Spanish questions for English customers, and the reverse. The spec keeps the login's language and the business's language apart on purpose.
+**Suggested fix:** Fill the questions in `settings.language` (the business's) and keep only the button's set name in the login's language; or let Frank decide and record it in the spec.
+**Resolution:**
+
+### F-482 [P3] open - The comment for the first-issue refusal now sits above the holiday language helper
+
+**File:** backend/routes/settings-routes.ts:67-76
+**Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..6e24d7e; lenses: quality, security, performance, tests)
+**Why it matters:** `holidayLanguageOf` was put between "The first problem, with where it is..." and `refuseFirstIssue`, so the comment now describes the wrong function, against the project's rule that a comment sits beside the line it explains.
+**Suggested fix:** Move line 67 down, directly above `refuseFirstIssue`.
+**Resolution:**

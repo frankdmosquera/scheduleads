@@ -1,61 +1,70 @@
 # Independent Review
 
-**Status:** passed
-**Target commit:** 0acd574ef14f1d90e6b5e3fb974040ba8e50ca8f
+**Status:** changes-requested
+**Target commit:** 6e24d7e5b6d7fb5187e3fb9edd1520480d1cce62
 **Base commit:** 576bdaf322eb1e4934a701ccfb7db81b5b96536a
 **Base ref:** main
-**Spec hash:** 5a919b6778b3388412ee6f702adc309d01e459f7ff735733d049eca2866f6efb
+**Spec hash:** f32ceaf64418f57b12ff110bdd821d0731174af1d75d763eace5bb623829afec
 **Prepared by:** claude
 **Builder model:** claude-opus-5-5
 **Requested reviewer:** claude
 **Requested model:** claude-opus-5-5
 **Requested execution:** automatic
-**Requested at:** 2026-10-24T15:16:04Z
+**Requested at:** 2026-10-24T18:33:33Z
 **Workflow:** regular
 **Check required:** no
 **Reviewer adapter:** claude
 **Reviewer model:** claude-opus-5-5
 **Reviewer context:** fresh subagent
 **Actual execution:** automatic
-**Reviewed at:** 2026-10-24T15:22:19Z
+**Reviewed at:** 2026-10-24T18:41:26Z
 **Scope:** current
 **Lenses:** quality, security, performance, tests
-**Verdict:** passed
+**Verdict:** changes-requested
 **Check result:** not-required
+
+## Handoff
+
+Review the active spec and the complete `576bdaf322eb1e4934a701ccfb7db81b5b96536a..6e24d7e5b6d7fb5187e3fb9edd1520480d1cce62` delta in a fresh
+session or isolated subagent without the builder conversation. Run all Audit lenses from scratch.
+Run Check when required above. Do not edit product code, accept findings, or
+reuse the existing findings as the review scope.
 
 ## Commands
 
-- `npm run test --workspace=@scheduleads-app/shared`: pass (31 files, 209 tests)
-- `npm run test --workspace=backend`: pass (92 files, 1075 tests, against the local seeded `scheduleads_dev`)
+- `npm run test --workspace=@scheduleads-app/shared`: pass (32 files, 214 tests)
+- `npm run test --workspace=backend`: pass (92 files, 1077 tests, local Postgres)
 - `npm run test --workspace=@frankdmosquera/booking-component`: pass (18 files, 98 tests)
 - `npm run build --workspace=backend`: pass
-- `npm run build --workspace=frontend`: pass (compiled and type-checked)
+- `npm run build --workspace=frontend`: pass
 - `npm run lint --workspace=frontend`: pass
 - `npm run format:check`: pass
 
 ## Evidence
 
-- Freshness: `HEAD` is 0acd574ef14f1d90e6b5e3fb974040ba8e50ca8f, `git merge-base main HEAD` is 576bdaf322eb1e4934a701ccfb7db81b5b96536a, the spec's SHA-256 matches, and only `blueprint/context/review.md` differed from the target before this receipt.
-- 12j.2 (4bcce66..0acd574, 57 files) read in full: every screen's moved sentence compared with its word in `frontend/lib/dashboard-words/`; English words match the removed literals, including plurals (`lengthIn`, `reminderBefore`), the one-off date labels, the week's short day names and the closed-day bookings question. No changed condition, lost prop or broken key found.
-- Every word list is typed by its area's type and joined into `DashboardWordsType`, so a word missing from a Spanish object fails `next build`; the open-ended maps (`emailLines`, `textLines`, `otherLines`) fall back to a Spanish or raw line, never blank.
-- Dates and times go through `words.intlLocale` (`format-lead-time.ts`, `calendar-day-words.ts`, the schedule's clock and items, time off, closed days, holidays, email key date, relative "last read"), or through `language` into the shared `formatBookingTime`, whose map gives the same `en-CA` / `es-419`. Checked in Node: `es-419` writes "vie, 23 oct, 2:00 p.m." and "lun, 16 nov".
-- Hooks: `useDashboardWords` is called at the top of components only; helpers (`lineOf`, `rowState`, `reminderWords`, `calendarNoticeOf`, `lastCheckedWords`) take the words as an argument; lint's hook rules pass. Every word is rendered as React text; the one JSX notice (calendar `not_confirmed`) composes words as text around a fixed link.
-- Behaviour kept or improved on purpose: the calendar notice is now stored as its outcome, so it follows a language switch; the email key's date moved from the browser's locale to `intlLocale`; `savedTestSent` gets `""` instead of a printed `null`.
-- Security: no new route, input or trust boundary in 12j.2; no HTML injection path; no secret in the diff.
-- Performance: one formatter per call on lists bounded by the API (200 timeline lines, a week, a year of closed days); nothing new per keystroke.
-- F-469 and F-470 re-examined against the repair in 4bcce66 and closed (see the ledger).
+- Freshness checked before review: HEAD is 6e24d7e, `git merge-base main HEAD` is 576bdaf, the spec's SHA-256 matches, and only `blueprint/context/review.md` differed from the target.
+- Blocker F-476 (P1): `schedule-screen.tsx:45-49` fetches one week when no date is asked, and the Today button (line 293) asks no date, so the Month view after Today draws a single week under the month's heading.
+- F-477 (P2): only GET `/settings/days-off` names closed holidays in Spanish (`settings-routes.ts:485-497`); the PUT, close and open answers (lines 522, 579, 598) are English and replace the screen's list (`days-off-screen.tsx:98, 135, 187`).
+- F-478 (P2): a script over backend routes, lib and middleware listing sentence literals missing from `spanish-messages.ts` found dashboard refusals the completeness test's two patterns cannot reach (ternaries in `refuse`, `reason:` literals in the email key checks).
+- The custom fetch in `dashboard-api-client.ts` was read for Request, URL and string inputs, non-JSON and ok answers, admin paths, and its rebuilt headers (content-length dropped); no defect found. The provider's layout effect runs before any screen's passive effect, so first fetches use the right language.
+- `dashboard-form-resolver.ts` is used by every non-admin form that has a resolver; the admin client-setup form and the customer booking page still use their own, unchanged.
+- `calendar-dates.ts` (Monday, month weeks, zone placement, cut to the day) and `lanesOf` in `schedule-time-grid.tsx` were traced by hand; no date or lane defect found. The `live` flag drops a late calendar answer.
+- F-471, F-472, F-473 and F-475 re-examined against the new code and moved to closed; F-474 stays accepted.
 
 ## Findings
 
-- F-471 [P2] open: the Booking form's ready-made question sets stay English on a Spanish screen.
-- F-472 [P3] open: "Tiempo libre" for time off reads as available time.
-- F-473 [P3] open: the off state has several Spanish names across Settings.
-- F-474 [P3] open: default lead stages are stored and shown in English.
-- F-475 [P3] open: the sign-in email placeholder stays English.
-- F-469 [P2] closed, F-470 [P3] closed.
+- F-476 [P1] open: Month view after Today shows only the current week
+- F-477 [P2] open: closed holidays turn English after a Days off save
+- F-478 [P2] open: some dashboard refusals untranslated and missed by the completeness test
+- F-479 [P3] open: Spanish templates with English values or wrong agreement
+- F-480 [P3] open: Month view reads Google busy times 4-6 times for nothing shown
+- F-481 [P3] open: question presets follow the login's language, not the business's
+- F-482 [P3] open: misplaced comment in settings-routes.ts
+- F-471, F-472, F-473, F-475 closed by this pass
 
 ## Remaining risk
 
-- Check was not required and was not run: no screen was opened in a browser in this pass, so the Spanish layout (longer sentences in buttons and rows) and the "fails when a Spanish word is removed" proof rest on the builder's run and on reading the types.
-- The frontend has no test runner, so the word lists and screens are covered only by the type check and by hand.
-- 12j.3 is not built: API refusals, zod form errors, holiday, country and province names and `apiNotRespondingMessage` still show in English on Spanish screens, as the spec plans.
+- Check was not required and was not run; nothing was clicked on http://localhost:3400, so F-476 and F-477 rest on the code paths cited, not on a screen.
+- The frontend has no test runner: the custom fetch, the form resolver and the calendar's date and lane logic have no saved tests.
+- The completeness test reads code by pattern; messages built in other shapes than those named in F-478 may still be missed.
+- F-480's cost (Google calls per Month view) was not measured.
