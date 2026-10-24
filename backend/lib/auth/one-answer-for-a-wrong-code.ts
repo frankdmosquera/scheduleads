@@ -16,7 +16,8 @@ export async function oneAnswerForAWrongCode(answer: Response): Promise<Response
   // The code stays spent or locked as Better Auth decided; only the answer changes.
   const headers = new Headers(answer.headers);
   headers.delete("content-length");
-  return new Response(JSON.stringify({ code: "INVALID_OTP", message: "Invalid OTP" }), {
+  // Byte for byte Better Auth's own answer to an unknown address, key order included.
+  return new Response(JSON.stringify({ message: "Invalid OTP", code: "INVALID_OTP" }), {
     status: 400,
     headers,
   });

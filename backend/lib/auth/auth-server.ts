@@ -91,6 +91,19 @@ export const auth = betterAuth({
 
   trustedOrigins: [appOrigin], // the dashboard is always a different origin from the API
 
+  // The email code routes the dashboard never calls. Each reads a customer's code row, so its
+  // "Too many attempts" would tell who is a customer (F-489); only sending a code and signing in
+  // with it stay open.
+  disabledPaths: [
+    "/email-otp/check-verification-otp",
+    "/email-otp/verify-email",
+    "/email-otp/request-password-reset",
+    "/forget-password/email-otp",
+    "/email-otp/reset-password",
+    "/email-otp/request-email-change",
+    "/email-otp/change-email",
+  ],
+
   user: {
     additionalFields: {
       // The platform admin role (Frank). input: false: no sign-in or profile request can

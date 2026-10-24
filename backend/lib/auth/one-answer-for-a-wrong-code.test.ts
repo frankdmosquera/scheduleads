@@ -59,35 +59,59 @@ const post = (path: string, body: object) =>
   });
 const sendCode = (email: string) =>
   post("/email-otp/send-verification-otp", { email, type: "sign-in" });
-// Never a real code: the real one is six random digits, never this.
+// Never a real code: the real one is six random digits, never this. The whole answer, as a
+// visitor sees it, so a difference in any byte or header shows (the date aside).
 const tryWrongCode = async (email: string) => {
   const response = await post("/sign-in/email-otp", { email, otp: "000000" });
-  return { status: response.status, code: ((await response.json()) as { code?: string }).code };
+  const headers = [...response.headers].filter(([name]) => name !== "date").sort();
+  return { status: response.status, body: await response.text(), headers };
 };
 
-const unknownAnswer = { status: 400, code: "INVALID_OTP" };
+// The email code routes the dashboard never calls, each able to read a customer's code (F-489).
+const UNUSED_CODE_ROUTES = [
+  ["/email-otp/check-verification-otp", { type: "sign-in", otp: "000000" }],
+  ["/email-otp/verify-email", { otp: "000000" }],
+  ["/email-otp/request-password-reset", {}],
+  ["/forget-password/email-otp", {}],
+  ["/email-otp/reset-password", { otp: "000000", password: "not-used-0000" }],
+  ["/email-otp/request-email-change", { newEmail: "new@example.com" }],
+  ["/email-otp/change-email", { newEmail: "new@example.com", otp: "000000" }],
+] as const;
 
 describe("a refused sign-in code", () => {
-  test("an unknown address hears Invalid OTP on every try", async () => {
+  let unknownAnswer: Awaited<ReturnType<typeof tryWrongCode>>;
+
+  test("an unknown address hears Better Auth's Invalid OTP, the same on every try", async () => {
     expect((await sendCode(unknownEmail)).status).toBe(200);
-    for (let attempt = 0; attempt < 4; attempt++) {
+    unknownAnswer = await tryWrongCode(unknownEmail);
+    expect(unknownAnswer.status).toBe(400);
+    expect(JSON.parse(unknownAnswer.body)).toEqual({ message: "Invalid OTP", code: "INVALID_OTP" });
+    for (let attempt = 0; attempt < 3; attempt++) {
       expect(await tryWrongCode(unknownEmail)).toEqual(unknownAnswer);
     }
   });
 
-  test("a customer's fourth wrong try answers the same, not Too many attempts", async () => {
+  test("a customer's fourth wrong try answers exactly the same, not Too many attempts", async () => {
     expect((await sendCode(customer.email)).status).toBe(200);
     for (let attempt = 0; attempt < 4; attempt++) {
       expect(await tryWrongCode(customer.email)).toEqual(unknownAnswer);
     }
   });
 
-  test("a customer's expired code answers the same, not OTP expired", async () => {
+  test("a customer's expired code answers exactly the same, not OTP expired", async () => {
     expect((await sendCode(customer.email)).status).toBe(200);
     await db
       .update(verification)
       .set({ expiresAt: new Date(Date.now() - 60_000) })
       .where(codeRow(customer.email));
     expect(await tryWrongCode(customer.email)).toEqual(unknownAnswer);
+  });
+
+  test("the code routes the dashboard never calls are closed, a customer's code or not", async () => {
+    expect((await sendCode(customer.email)).status).toBe(200);
+    for (const [path, body] of UNUSED_CODE_ROUTES) {
+      const response = await post(path, { email: customer.email, ...body });
+      expect({ path, status: response.status }).toEqual({ path, status: 404 });
+    }
   });
 });

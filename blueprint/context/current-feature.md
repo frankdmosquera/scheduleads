@@ -9,7 +9,7 @@ refusal from Better Auth shows; step 2 adds one small API rule.
 
 **Branch:** fix/sign-in-errors-in-the-page-s-language
 
-**Fixes:** F-485, F-487, F-488
+**Fixes:** F-485, F-487, F-488, F-489
 
 ## The problem
 
@@ -45,7 +45,9 @@ account. The new sentences go in both word lists, so a missing one is a type err
 customer's address from an unknown one, because only a customer has a code to expire or lock.
 The API now answers all three the same (400 `INVALID_OTP`), so those two sentences are gone and
 the code step shows "That code is not right" for any refused code. The refusal is kept as a word
-key, so it follows a language switch (F-488).
+key, so it follows a language switch (F-488). The second review showed the rewritten answer's key order
+still differed from Better Auth's own, and that Better Auth's other email code routes answered the
+same question untouched (F-489): those seven routes, none called by the dashboard, are turned off.
 
 ## Build steps
 
@@ -59,6 +61,10 @@ key, so it follows a language switch (F-488).
   steps keep a word key. **Done when:** `one-answer-for-a-wrong-code.test.ts` shows a customer's
   fourth wrong try and expired code answering exactly as an unknown address; on the sign-in page
   five wrong tries all read "That code is not right", and a switch to Español changes it.
+- [x] 3. The answer is byte for byte Better Auth's own, and the email code routes the dashboard
+  never calls are off (`disabledPaths` in `auth-server.ts`). **Done when:** the test compares the
+  whole answer (status, body, headers) with an unknown address's, and each of the seven routes
+  answers 404 while a customer holds a code; breaking either fix fails the test.
 
 ## Verify
 
