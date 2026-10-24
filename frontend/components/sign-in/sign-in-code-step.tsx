@@ -26,7 +26,8 @@ export function SignInCodeStep({
 }) {
   const router = useRouter();
   const { words } = useDashboardWords();
-  const [refusal, setRefusal] = useState<string | null>(null);
+  // Which sentence, not the sentence itself, so it follows a language switch.
+  const [refusal, setRefusal] = useState<"codeNotRight" | "tooManyTries" | null>(null);
   const form = useForm({
     resolver: dashboardFormResolver(signInCodeValidationSchema),
     defaultValues: { code: "" },
@@ -37,17 +38,10 @@ export function SignInCodeStep({
     const { error } = await authClient.signIn.emailOtp({ email, otp: code });
 
     if (error) {
-      // The page's own words, never Better Auth's English "Invalid OTP". A wrong code and an
-      // unknown account get the same answer on purpose; don't guess which.
-      setRefusal(
-        error.status === 429
-          ? words.tooManyTries
-          : error.code === "OTP_EXPIRED"
-            ? words.codeExpired
-            : error.code === "TOO_MANY_ATTEMPTS"
-              ? words.codeTriedTooOften
-              : words.codeNotRight
-      );
+      // The page's own words, never Better Auth's English "Invalid OTP". The API answers a wrong,
+      // expired or overused code alike, for an unknown account too, so nobody learns who is a
+      // customer; 429 is the visitor's own request rate.
+      setRefusal(error.status === 429 ? "tooManyTries" : "codeNotRight");
       return;
     }
 
@@ -101,7 +95,7 @@ export function SignInCodeStep({
             />
           )}
         />
-        {refusal ? <CentredCardNotice>{refusal}</CentredCardNotice> : null}
+        {refusal ? <CentredCardNotice>{words[refusal]}</CentredCardNotice> : null}
         <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? words.checking : words.signIn}
         </Button>

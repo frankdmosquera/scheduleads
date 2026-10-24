@@ -3,13 +3,13 @@
 **Type:** Fix
 
 **Size:** light - one small piece of logic in three screens: which of the page's own sentences a
-refusal from Better Auth shows.
+refusal from Better Auth shows; step 2 adds one small API rule.
 
 **Status:** verified
 
 **Branch:** fix/sign-in-errors-in-the-page-s-language
 
-**Fixes:** F-485
+**Fixes:** F-485, F-487, F-488
 
 ## The problem
 
@@ -41,16 +41,27 @@ It must not break: a wrong code and an unknown account still get the same answer
 step's comment says why); the email step still says nothing about whether an address has an
 account. The new sentences go in both word lists, so a missing one is a type error.
 
+**Amended 2026-10-24, after the review (F-487):** the expired and too-many-tries sentences told a
+customer's address from an unknown one, because only a customer has a code to expire or lock.
+The API now answers all three the same (400 `INVALID_OTP`), so those two sentences are gone and
+the code step shows "That code is not right" for any refused code. The refusal is kept as a word
+key, so it follows a language switch (F-488).
+
 ## Build steps
 
 - [x] 1. The three screens show their own sentences, from `DashboardWordsType`'s sign-in words,
   for every Better Auth refusal. **Done when:** on http://localhost:3400/sign-in in Español, a
   wrong code shows "Ese código no es correcto. Pida uno nuevo." and in English "That code is not
   right. Request a new one.", never "Invalid OTP"; frontend build and lint pass.
+- [x] 2. A refused sign-in code gets one answer from the API, whoever the address belongs to: the
+  route rewrites Better Auth's `OTP_EXPIRED` and 403 `TOO_MANY_ATTEMPTS` to 400 `INVALID_OTP`
+  (`backend/lib/auth/one-answer-for-a-wrong-code.ts`, mounted in `backend/app.ts`); the sign-in
+  steps keep a word key. **Done when:** `one-answer-for-a-wrong-code.test.ts` shows a customer's
+  fourth wrong try and expired code answering exactly as an unknown address; on the sign-in page
+  five wrong tries all read "That code is not right", and a switch to Español changes it.
 
 ## Verify
 
 Sign out, switch the sign-in page to Español, request a code, type a wrong one: the card says
-"Ese código no es correcto. Pida uno nuevo." The expired and too-many-tries sentences are read in
-the code (Better Auth's codes are the package's own constants, `error-codes.mjs`); no frontend
-test runner exists, so no saved test.
+"Ese código no es correcto. Pida uno nuevo." The API rule has its saved test; the screens have none, because the frontend has no test
+runner.

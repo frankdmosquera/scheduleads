@@ -30,8 +30,6 @@ export const englishDashboardWords: DashboardWordsType = {
   loginCodeLabel: "Login code",
   checking: "Checking…",
   codeNotRight: "That code is not right. Request a new one.",
-  codeExpired: "That code has expired. Request a new one.",
-  codeTriedTooOften: "That code was tried too many times. Request a new one.",
   tooManyTries: "Too many tries. Wait a minute and try again.",
   signOut: "Sign out",
   oneMoment: "One moment",
