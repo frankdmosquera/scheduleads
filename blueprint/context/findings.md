@@ -404,14 +404,6 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Keep one formatter per language at module level (a `Record<BookingLanguageType, Intl.DateTimeFormat>` built lazily or up front), as the code did for English before.
 **Resolution:**
 
-### F-485 [P2] open - On the Spanish sign-in page, a wrong, expired or overused code shows Better Auth's English "Invalid OTP"
-
-**File:** frontend/components/sign-in/sign-in-code-step.tsx:41; frontend/components/sign-in/sign-in-email-step.tsx:44; frontend/components/dashboard/business-picker-screen.tsx:36, 66
-**Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..247d810; lenses: quality, security, performance, tests)
-**Why it matters:** The sign-in pages are in scope for Spanish (12j.1) and the spec says the API's refusals show in the login's language. Both sign-in steps and the business picker call `authClient` (Better Auth's own client), which does not go through `fetchInDashboardLanguage`, and they show `error.message` first, falling back to the Spanish words only when it is missing. Better Auth always sends one: its email OTP plugin answers "Invalid OTP", "OTP expired" and "Too many attempts" (`better-auth/dist/plugins/email-otp/error-codes.mjs:4-6`). So a Spanish owner who mistypes the code, the most common error on that page, reads "Invalid OTP" on an otherwise Spanish card. None of these strings is in `spanish-messages.ts`, and the completeness test cannot see them because they live in the package, not in the repo's code.
-**Suggested fix:** On the sign-in steps, show the page's own words for any refusal (`words.codeNotRight`, `words.codeNotSent`), since the code step already gives one answer for a wrong code and an unknown account on purpose; or run `error.message` through `inDashboardLanguage` and add Better Auth's few messages (Invalid OTP, OTP expired, Too many attempts, and its rate-limit line) to the table. Same for the picker's two `error.message` lines.
-**Resolution:**
-
 ### F-486 [P3] open - The Calendar's Day, Week and Month views were built on this branch but the spec does not record them
 
 **File:** blueprint/context/current-feature.md:29-36, 96-110; frontend/components/schedule/schedule-screen.tsx; frontend/components/schedule/schedule-time-grid.tsx; frontend/components/schedule/schedule-month-grid.tsx; frontend/lib/calendar-dates.ts

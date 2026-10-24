@@ -11,6 +11,7 @@ import { dashboardLanguageValidationSchema } from "@scheduleads-app/shared/zod-v
 
 import { db } from "./database.js";
 import { auth } from "./lib/auth/auth-server.js";
+import { oneAnswerForAWrongCode } from "./lib/auth/one-answer-for-a-wrong-code.js";
 import { refuse } from "./lib/errors/refuse.js";
 import { requireOrganizationMiddleware } from "./middleware/auth-middleware/require-organization-middleware.js";
 import { dashboardCorsMiddleware } from "./middleware/dashboard-middleware/dashboard-cors-middleware.js";
@@ -52,7 +53,11 @@ export const app = new Hono()
   // visitor. Twilio's signed replies under /texts and the dashboard are not limited.
   .use("/public/*", publicCorsMiddleware, publicRateLimitMiddleware)
 
-  // Better Auth owns every route under this path.
+  // Better Auth owns every route under this path. A refused sign-in code gets one answer, so it
+  // never tells who is a customer.
+  .post("/api/auth/sign-in/email-otp", async (c) =>
+    oneAnswerForAWrongCode(await auth.handler(c.req.raw))
+  )
   .on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw))
 
   // The dashboard's first call: who is signed in, which business, and what it paid for.

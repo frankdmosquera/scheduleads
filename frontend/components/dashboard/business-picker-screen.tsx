@@ -33,7 +33,7 @@ export function BusinessPickerScreen({ onPicked }: { onPicked: () => void }) {
         if (!live) return;
 
         if (error) {
-          setRefusal(error.message ?? words.businessesNotLoaded);
+          setRefusal(words.businessesNotLoaded); // never Better Auth's English message
           setOrganizations([]);
           return;
         }
@@ -63,7 +63,7 @@ export function BusinessPickerScreen({ onPicked }: { onPicked: () => void }) {
     setBusy(false);
 
     if (error) {
-      setRefusal(error.message ?? words.businessNotOpened);
+      setRefusal(words.businessNotOpened); // never Better Auth's English message
       return;
     }
 

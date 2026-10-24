@@ -24,7 +24,8 @@ export function SignInEmailStep({
   onSent: (email: string) => void;
 }) {
   const { language, words } = useDashboardWords();
-  const [refusal, setRefusal] = useState<string | null>(null);
+  // Which sentence, not the sentence itself, so it follows a language switch.
+  const [refusal, setRefusal] = useState<"codeNotSent" | "tooManyTries" | null>(null);
   // Checked here before sending; Better Auth checks the address again with its own rule.
   const form = useForm({
     resolver: dashboardFormResolver(signInEmailValidationSchema),
@@ -41,7 +42,8 @@ export function SignInEmailStep({
     );
 
     if (error) {
-      setRefusal(error.message ?? words.codeNotSent);
+      // The page's own words, never Better Auth's English message.
+      setRefusal(error.status === 429 ? "tooManyTries" : "codeNotSent");
       return;
     }
 
@@ -73,7 +75,7 @@ export function SignInEmailStep({
             />
           )}
         />
-        {refusal ? <CentredCardNotice>{refusal}</CentredCardNotice> : null}
+        {refusal ? <CentredCardNotice>{words[refusal]}</CentredCardNotice> : null}
         <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? words.sending : words.sendMeACode}
         </Button>

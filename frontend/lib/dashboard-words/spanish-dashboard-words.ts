@@ -36,6 +36,7 @@ export const spanishDashboardWords: DashboardWordsType = {
   loginCodeLabel: "Código de acceso",
   checking: "Revisando…",
   codeNotRight: "Ese código no es correcto. Pida uno nuevo.",
+  tooManyTries: "Demasiados intentos. Espere un minuto e inténtelo de nuevo.",
   signOut: "Cerrar sesión",
   oneMoment: "Un momento",
   loadingYourBusiness: "Cargando su negocio…",

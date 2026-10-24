@@ -27,6 +27,7 @@ export const spanishMessages: Record<string, string> = {
   "Your sign-in has ended. Sign in again.": "Su sesión ha terminado. Inicie sesión de nuevo.",
   "Enter the {} digit code from your email.": "Escriba el código de {} dígitos de su correo.",
   "Enter a valid email address.": "Escriba un correo válido.",
+  "Invalid OTP": "Ese código no es correcto.", // Better Auth's words, kept by the sign-in code route
 
   // The API and the client
   "The API is not responding. Check that it is running.":
