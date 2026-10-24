@@ -15,9 +15,18 @@ import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-noti
 import { Button } from "@/components/ui/button";
 import type { BookingFormSettingsType } from "@/lib/api-client/settings/fetch-booking-form";
 import { saveBookingFormRules } from "@/lib/api-client/settings/save-booking-form-rules";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
-export function BookingFormRulesCard({ settings }: { settings: BookingFormSettingsType }) {
+export function BookingFormRulesCard({
+  settings,
+  onLanguageSaved,
+}: {
+  settings: BookingFormSettingsType;
+  onLanguageSaved: (language: BookingFormSettingsType["language"]) => void;
+}) {
   const { canEdit } = settings;
+  const { words } = useDashboardWords();
+  const formWords = words.bookingFormWords;
   const [contactRule, setContactRule] = useState<ContactRuleType>(settings.contactRule);
   const [askLaterTextsYes, setAskLaterTextsYes] = useState(settings.askLaterTextsYes); // null: no text settings
   const [language, setLanguage] = useState(settings.language);
@@ -38,7 +47,8 @@ export function BookingFormRulesCard({ settings }: { settings: BookingFormSettin
       setContactRule(saved.answer.contactRule);
       setAskLaterTextsYes(saved.answer.askLaterTextsYes);
       setLanguage(saved.answer.language);
-      setNotice({ tone: "info", text: "Saved what the form requires and its language." });
+      onLanguageSaved(saved.answer.language);
+      setNotice({ tone: "info", text: formWords.rulesSaved });
       return;
     }
     setNotice({ tone: "error", text: saved.message });
@@ -53,26 +63,22 @@ export function BookingFormRulesCard({ settings }: { settings: BookingFormSettin
     >
       <div className="flex flex-col gap-1">
         <h3 id="rules-title" className="text-base font-semibold tracking-tight text-foreground">
-          What the form requires
+          {formWords.rulesTitle}
         </h3>
-        <p className="text-sm text-muted-foreground">
-          Every booking needs a name. Whether each service asks the address is set on Services.
-        </p>
+        <p className="text-sm text-muted-foreground">{formWords.rulesLede}</p>
       </div>
       {!canEdit ? (
-        <CentredCardNotice tone="info">
-          Your role cannot change the booking form. You can see it here.
-        </CentredCardNotice>
+        <CentredCardNotice tone="info">{formWords.cannotChange}</CentredCardNotice>
       ) : null}
 
       <fieldset disabled={!canEdit} className="flex flex-col gap-4">
         <ChoiceField
           name="contact-rule"
-          legend="A customer must leave"
+          legend={formWords.customerMustLeave}
           choices={[
-            { value: "either", label: "An email or a phone, either one" },
-            { value: "email", label: "An email" },
-            { value: "phone", label: "A phone" },
+            { value: "either", label: formWords.emailOrPhone },
+            { value: "email", label: formWords.anEmail },
+            { value: "phone", label: formWords.aPhone },
           ]}
           value={contactRule}
           onChange={(value) => {
@@ -83,10 +89,10 @@ export function BookingFormRulesCard({ settings }: { settings: BookingFormSettin
         {askLaterTextsYes !== null ? (
           <ChoiceField
             name="later-texts-yes"
-            legend="Ask the customer's yes to later texts (offers, reminders to book again)"
+            legend={formWords.askLaterTextsYes}
             choices={[
-              { value: true, label: "Yes, show the box" },
-              { value: false, label: "No" },
+              { value: true, label: formWords.yesShowTheBox },
+              { value: false, label: formWords.no },
             ]}
             value={askLaterTextsYes}
             onChange={(value) => {
@@ -95,14 +101,11 @@ export function BookingFormRulesCard({ settings }: { settings: BookingFormSettin
             }}
           />
         ) : (
-          <p className="text-sm text-muted-foreground">
-            The form can ask the customer&apos;s yes to later texts once texts are set up for this
-            business.
-          </p>
+          <p className="text-sm text-muted-foreground">{formWords.laterTextsOnceSetUp}</p>
         )}
         <ChoiceField
           name="business-language"
-          legend="Your booking emails come in"
+          legend={formWords.emailsComeIn}
           choices={[
             { value: "en", label: "English" },
             { value: "es", label: "Español" },
@@ -113,17 +116,14 @@ export function BookingFormRulesCard({ settings }: { settings: BookingFormSettin
             setLanguage(value);
           }}
         />
-        <p className="-mt-2 text-sm text-muted-foreground">
-          Customers get theirs in the language they booked in: a Spanish site&apos;s window books in
-          Spanish.
-        </p>
+        <p className="-mt-2 text-sm text-muted-foreground">{formWords.customersGetTheirs}</p>
       </fieldset>
 
       <SaveNotice notice={notice} />
       {canEdit ? (
         <div>
           <Button type="submit" disabled={saving}>
-            {saving ? "Saving…" : "Save"}
+            {saving ? words.settingsFrameWords.saving : words.settingsFrameWords.save}
           </Button>
         </div>
       ) : null}

@@ -4,6 +4,7 @@ import type { InferResponseType } from "hono/client";
 
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import { publicApiClient } from "@/lib/api-client/public-api-client";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 const bookingLinksRoute = publicApiClient.public[":slug"]["booking-links"];
 
@@ -20,7 +21,8 @@ export type BookingLinksResultType =
 // A business's active booking links, from the public route a client site will call too.
 export async function fetchBookingLinks(slug: string): Promise<BookingLinksResultType> {
   const response = await bookingLinksRoute.$get({ param: { slug } }).catch(() => null);
-  if (!response) return { state: "unreachable", message: apiNotRespondingMessage };
+  if (!response)
+    return { state: "unreachable", message: inDashboardLanguage(apiNotRespondingMessage) };
 
   if (response.status === 200) {
     const { bookingLinks } = await response.json();
@@ -33,6 +35,8 @@ export async function fetchBookingLinks(slug: string): Promise<BookingLinksResul
 
   return {
     state: "unreachable",
-    message: `The API answered with an unexpected status (${response.status}).`,
+    message: inDashboardLanguage(
+      `The API answered with an unexpected status (${response.status}).`
+    ),
   };
 }

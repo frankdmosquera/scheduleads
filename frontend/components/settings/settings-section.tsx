@@ -9,16 +9,21 @@ import { CentredCardNotice } from "@/components/centred-card/centred-card-notice
 import { RefusalNotice } from "@/components/centred-card/refusal-notice";
 import { Button } from "@/components/ui/button";
 import type { SettingsReadResultType } from "@/lib/api-client/settings/read-settings-response";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export function SettingsSection<Answer>({
   title,
   load,
+  readsAgainInEachLanguage = false,
   children,
 }: {
   title: string;
   load: () => Promise<SettingsReadResultType<Answer>>; // stable: a module function, never inline
+  readsAgainInEachLanguage?: boolean; // its answer carries words in the login's language
   children: (answer: Answer) => ReactNode;
 }) {
+  const { language, words } = useDashboardWords();
+  const answerLanguage = readsAgainInEachLanguage ? language : null;
   const [result, setResult] = useState<SettingsReadResultType<Answer> | null>(null);
   const [attempt, setAttempt] = useState(0); // Try again asks once more
 
@@ -31,7 +36,7 @@ export function SettingsSection<Answer>({
     return () => {
       live = false;
     };
-  }, [load, attempt]);
+  }, [load, attempt, answerLanguage]);
   const tryAgain = () => {
     setResult(null);
     setAttempt((count) => count + 1);
@@ -47,14 +52,14 @@ export function SettingsSection<Answer>({
       </h2>
       <div className="mt-3">
         {!result ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-sm text-muted-foreground">{words.settingsFrameWords.loading}</p>
         ) : result.state === "signed-out" || result.state === "refused" ? (
           <RefusalNotice refusal={result} />
         ) : result.state === "unreachable" ? (
           <div className="flex flex-col items-start gap-3">
             <CentredCardNotice>{result.message}</CentredCardNotice>
             <Button variant="outline" onClick={tryAgain}>
-              Try again
+              {words.tryAgain}
             </Button>
           </div>
         ) : (

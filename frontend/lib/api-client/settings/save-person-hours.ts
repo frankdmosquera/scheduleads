@@ -7,6 +7,7 @@ import type { PersonHoursType } from "@scheduleads-app/shared/zod-validation";
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import { hoursSettingsRoute } from "@/lib/api-client/settings/fetch-hours-settings";
 import { readSaveRefusal, type SaveResultType } from "@/lib/api-client/settings/read-save-refusal";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 const personRoute = hoursSettingsRoute.people[":personId"];
 
@@ -17,7 +18,7 @@ export async function savePersonHours(
   hours: PersonHoursType
 ): Promise<SaveResultType<SavedPersonHoursType>> {
   const response = await personRoute.$put({ param: { personId }, json: hours }).catch(() => null);
-  if (!response) return { state: "refused", message: apiNotRespondingMessage };
+  if (!response) return { state: "refused", message: inDashboardLanguage(apiNotRespondingMessage) };
   if (response.status === 200) return { state: "ok", answer: await response.json() };
   return readSaveRefusal(response);
 }

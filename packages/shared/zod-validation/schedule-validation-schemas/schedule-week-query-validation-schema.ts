@@ -15,6 +15,7 @@ export const scheduleWeekQueryValidationSchema = z
         return parsed.getUTCMonth() === month - 1 && parsed.getUTCDate() === day;
       }, "That date does not exist.")
       .optional(),
+    google: z.enum(["skip"]).optional(), // the Month view, which shows no Google busy times (12j)
   })
   .strict();
 

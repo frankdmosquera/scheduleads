@@ -2,7 +2,7 @@
 
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -11,8 +11,10 @@ import { signInEmailValidationSchema } from "@scheduleads-app/shared/zod-validat
 import { CentredCard } from "@/components/centred-card/centred-card";
 import { CentredCardField } from "@/components/centred-card/centred-card-field";
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
+import { LanguageSwitch } from "@/components/language-switch/language-switch";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export function SignInEmailStep({
   initialEmail,
@@ -21,20 +23,25 @@ export function SignInEmailStep({
   initialEmail: string;
   onSent: (email: string) => void;
 }) {
+  const { language, words } = useDashboardWords();
   const [refusal, setRefusal] = useState<string | null>(null);
   // Checked here before sending; Better Auth checks the address again with its own rule.
   const form = useForm({
-    resolver: zodResolver(signInEmailValidationSchema),
+    resolver: dashboardFormResolver(signInEmailValidationSchema),
     defaultValues: { email: initialEmail },
   });
 
   async function requestSignInCode({ email }: { email: string }) {
     setRefusal(null);
     // In development the code prints in the API's console; real email is feature 6.
-    const { error } = await authClient.emailOtp.sendVerificationOtp({ email, type: "sign-in" });
+    // The page's language goes with it, for the code's email when the login never picked one.
+    const { error } = await authClient.emailOtp.sendVerificationOtp(
+      { email, type: "sign-in" },
+      { headers: { "Accept-Language": language } }
+    );
 
     if (error) {
-      setRefusal(error.message ?? "That code could not be sent. Try again.");
+      setRefusal(error.message ?? words.codeNotSent);
       return;
     }
 
@@ -44,10 +51,7 @@ export function SignInEmailStep({
   }
 
   return (
-    <CentredCard
-      title="Sign in"
-      lede="Enter your email and we will send you a code. No password to remember."
-    >
+    <CentredCard title={words.signIn} lede={words.signInLede} footer={<LanguageSwitch />}>
       <form
         onSubmit={form.handleSubmit(requestSignInCode)}
         noValidate
@@ -60,18 +64,18 @@ export function SignInEmailStep({
             <CentredCardField
               {...field}
               id="email"
-              label="Email"
+              label={words.emailLabel}
               type="email"
               autoComplete="email"
               autoFocus
-              placeholder="you@yourbusiness.com"
+              placeholder={words.emailPlaceholder}
               error={fieldState.error?.message}
             />
           )}
         />
         {refusal ? <CentredCardNotice>{refusal}</CentredCardNotice> : null}
         <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Sending…" : "Send me a code"}
+          {form.formState.isSubmitting ? words.sending : words.sendMeACode}
         </Button>
       </form>
     </CentredCard>

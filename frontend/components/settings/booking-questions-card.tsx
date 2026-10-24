@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { BookingFormSettingsType } from "@/lib/api-client/settings/fetch-booking-form";
 import { saveBookingQuestions } from "@/lib/api-client/settings/save-booking-questions";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 // A row on the page: a saved question carries its id; `key` keeps React's rows apart while moving.
@@ -23,8 +24,16 @@ const rowsOf = (questions: BookingFormSettingsType["questions"]): QuestionRowTyp
   questions.map((question) => ({ key: question.id, ...question }));
 const labelId = (key: string) => `question-${key}`;
 
-export function BookingQuestionsCard({ settings }: { settings: BookingFormSettingsType }) {
+export function BookingQuestionsCard({
+  settings,
+  businessLanguage, // the ready-made questions are in it: what its customers read
+}: {
+  settings: BookingFormSettingsType;
+  businessLanguage: BookingFormSettingsType["language"];
+}) {
   const { canEdit, presets } = settings;
+  const { language, words } = useDashboardWords();
+  const formWords = words.bookingFormWords;
   const formRef = useRef<HTMLFormElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [rows, setRows] = useState(() => rowsOf(settings.questions));
@@ -59,17 +68,22 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
     const atEnd = by === -1 ? to === 0 : to === rows.length - 1;
     const control = (by === -1) !== atEnd ? "up" : "down";
     focusNext.current = `${rows[index].key}:${control}`;
-    edit(next, `Moved to position ${to + 1} of ${rows.length}.`);
+    edit(next, formWords.movedTo(to + 1, rows.length));
   };
   const remove = (index: number) => {
     const next = rows.filter((_, at) => at !== index);
     const neighbour = next[index] ?? next[index - 1];
     focusNext.current = neighbour ? `${neighbour.key}:remove` : "add";
-    edit(next, "Question removed.");
+    edit(next, formWords.questionRemoved);
   };
   const add = () => edit([...rows, { key: crypto.randomUUID(), label: "", required: false }]);
   const startFrom = (set: (typeof presets)[number]) =>
-    edit(set.questions.map((question) => ({ key: crypto.randomUUID(), ...question })));
+    edit(
+      set.questions[businessLanguage].map((question) => ({
+        key: crypto.randomUUID(),
+        ...question,
+      }))
+    );
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -80,7 +94,7 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
     setSaving(false);
     if (saved.state === "ok") {
       setRows(rowsOf(saved.answer.questions));
-      setNotice({ tone: "info", text: "Saved the questions." });
+      setNotice({ tone: "info", text: formWords.questionsSaved });
       return;
     }
     const at = saved.state === "field" ? /^questions\.(\d+)\.label$/.exec(saved.field) : null;
@@ -102,24 +116,19 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
     >
       <div className="flex flex-col gap-1">
         <h3 id="questions-title" className="text-base font-semibold tracking-tight text-foreground">
-          Your questions
+          {formWords.questionsTitle}
         </h3>
         <p className="text-sm text-muted-foreground">
-          Asked after the name, email, phone and address, in this order. At most{" "}
-          {BOOKING_QUESTIONS_MAX}. Changing or removing one never changes the answers already given.
+          {formWords.questionsLede(BOOKING_QUESTIONS_MAX)}
         </p>
       </div>
       {!canEdit ? (
-        <CentredCardNotice tone="info">
-          Your role cannot change the booking form. You can see it here.
-        </CentredCardNotice>
+        <CentredCardNotice tone="info">{formWords.cannotChange}</CentredCardNotice>
       ) : null}
 
       {rows.length === 0 ? (
         <div className="flex flex-col gap-2 text-sm">
-          <p className="text-muted-foreground">
-            No questions: the form asks only the standard ones.
-          </p>
+          <p className="text-muted-foreground">{formWords.noQuestions}</p>
           {canEdit ? (
             <div className="flex flex-wrap gap-2">
               {presets.map((set) => (
@@ -130,7 +139,7 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
                   size="sm"
                   onClick={() => startFrom(set)}
                 >
-                  Start from the {set.name.toLowerCase()} set
+                  {formWords.startFromSet(set.name[language])}
                 </Button>
               ))}
             </div>
@@ -147,7 +156,7 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
               >
                 <div className="flex flex-1 flex-col gap-1">
                   <label htmlFor={labelId(row.key)} className="sr-only">
-                    Question {index + 1}
+                    {formWords.questionNumber(index + 1)}
                   </label>
                   <Input
                     id={labelId(row.key)}
@@ -167,13 +176,13 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
                   <label className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
-                      aria-label={`Question ${index + 1} must be answered`}
+                      aria-label={formWords.mustBeAnsweredNumbered(index + 1)}
                       checked={row.required}
                       disabled={!canEdit}
                       onChange={(event) => change(index, { required: event.target.checked })}
                       className="size-4 accent-[var(--primary)]"
                     />
-                    Must be answered
+                    {formWords.mustBeAnswered}
                   </label>
                 </div>
                 {canEdit ? (
@@ -184,10 +193,10 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
                       size="sm"
                       disabled={index === 0}
                       data-focus={`${row.key}:up`}
-                      aria-label={`Move question ${index + 1} up`}
+                      aria-label={formWords.moveUp(index + 1)}
                       onClick={() => move(index, -1)}
                     >
-                      Up
+                      {formWords.up}
                     </Button>
                     <Button
                       type="button"
@@ -195,20 +204,20 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
                       size="sm"
                       disabled={index === rows.length - 1}
                       data-focus={`${row.key}:down`}
-                      aria-label={`Move question ${index + 1} down`}
+                      aria-label={formWords.moveDown(index + 1)}
                       onClick={() => move(index, 1)}
                     >
-                      Down
+                      {formWords.down}
                     </Button>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       data-focus={`${row.key}:remove`}
-                      aria-label={`Remove question ${index + 1}`}
+                      aria-label={formWords.removeNumbered(index + 1)}
                       onClick={() => remove(index)}
                     >
-                      Remove
+                      {words.settingsFrameWords.remove}
                     </Button>
                   </div>
                 ) : null}
@@ -231,10 +240,10 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
             data-focus="add"
             onClick={add}
           >
-            + Add a question
+            {formWords.addQuestion}
           </Button>
           <Button type="submit" disabled={saving}>
-            {saving ? "Saving…" : "Save questions"}
+            {saving ? words.settingsFrameWords.saving : formWords.saveQuestions}
           </Button>
         </div>
       ) : null}

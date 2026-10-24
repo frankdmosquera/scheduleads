@@ -12,9 +12,8 @@ import { ContactInitials } from "@/components/leads/contact-initials";
 import { RefusalNotice } from "@/components/centred-card/refusal-notice";
 import { Button } from "@/components/ui/button";
 import { fetchLeads, type LeadsListRowType } from "@/lib/api-client/leads/fetch-leads";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { formatLeadTime } from "@/lib/format-lead-time";
-
-const SOURCE_LABELS = { widget: "Website", hosted: "Booking page", manual: "Added by hand" };
 
 type ListStateType =
   | { state: "loading" }
@@ -24,6 +23,8 @@ type ListStateType =
   | { state: "ok"; leads: LeadsListRowType[]; nextAfter: string | null; timeZone: string | null };
 
 export function LeadsListScreen() {
+  const { words } = useDashboardWords();
+  const leadsWords = words.leadsWords;
   const [list, setList] = useState<ListStateType>({ state: "loading" });
   const [moreError, setMoreError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -52,8 +53,7 @@ export function LeadsListScreen() {
     setMoreError(null);
     const result = await fetchLeads(list.nextAfter);
     setLoadingMore(false);
-    if (result.state === "signed-out")
-      return setMoreError("Your sign-in has ended. Sign in again to see more.");
+    if (result.state === "signed-out") return setMoreError(leadsWords.signInEndedSeeMore);
     if (result.state !== "ok") return setMoreError(result.message);
     setList({
       ...list,
@@ -66,12 +66,10 @@ export function LeadsListScreen() {
     <div className="mx-auto w-full max-w-5xl">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">Leads</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Everyone who asked for something, and where each one stands.
-          </p>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">{words.leads}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{leadsWords.listLede}</p>
         </div>
-        {adding ? null : <Button onClick={() => setAdding(true)}>+ Add a lead</Button>}
+        {adding ? null : <Button onClick={() => setAdding(true)}>{leadsWords.addALead}</Button>}
       </div>
 
       {adding ? (
@@ -82,7 +80,7 @@ export function LeadsListScreen() {
 
       <div className="mt-6">
         {list.state === "loading" ? (
-          <p className="text-sm text-muted-foreground">Loading your leads…</p>
+          <p className="text-sm text-muted-foreground">{leadsWords.loadingYourLeads}</p>
         ) : list.state === "signed-out" || list.state === "refused" ? (
           <RefusalNotice refusal={list} />
         ) : list.state === "unreachable" ? (
@@ -95,12 +93,12 @@ export function LeadsListScreen() {
                 setReloads((n) => n + 1);
               }}
             >
-              Try again
+              {words.tryAgain}
             </Button>
           </div>
         ) : list.leads.length === 0 ? (
           <p className="rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground">
-            No leads yet. They appear here when someone books on your site, or when you add one.
+            {leadsWords.noLeadsYet}
           </p>
         ) : (
           <>
@@ -110,14 +108,12 @@ export function LeadsListScreen() {
               ))}
             </ul>
             {list.timeZone ? null : (
-              <p className="mt-3 text-xs text-muted-foreground">
-                Times are in your browser&apos;s time zone: this business has no bookable hours yet.
-              </p>
+              <p className="mt-3 text-xs text-muted-foreground">{leadsWords.browserTimeZoneNote}</p>
             )}
             {list.nextAfter ? (
               <div className="mt-4 flex flex-col items-center gap-2">
                 <Button variant="outline" onClick={showMore} disabled={loadingMore}>
-                  {loadingMore ? "Loading…" : "Show more"}
+                  {loadingMore ? leadsWords.loading : leadsWords.showMore}
                 </Button>
                 {moreError ? (
                   <p role="alert" className="text-sm text-lost">
@@ -135,9 +131,12 @@ export function LeadsListScreen() {
 
 // One lead: who, what they asked for, when, its stage and where it came from.
 function LeadsListRow({ row, timeZone }: { row: LeadsListRowType; timeZone: string | null }) {
+  const { words } = useDashboardWords();
+  const leadsWords = words.leadsWords;
+  const time = (iso: string) => formatLeadTime(iso, timeZone, words.intlLocale);
   const when = row.booking
-    ? `${formatLeadTime(row.booking.startsAt, timeZone)}${row.booking.status === "cancelled" ? ", cancelled" : ""}`
-    : `came in ${formatLeadTime(row.createdAt, timeZone)}`;
+    ? leadsWords.bookedFor(time(row.booking.startsAt), row.booking.status === "cancelled")
+    : leadsWords.cameInAt(time(row.createdAt));
 
   return (
     <li className="border-b border-border last:border-b-0">
@@ -149,7 +148,7 @@ function LeadsListRow({ row, timeZone }: { row: LeadsListRowType; timeZone: stri
         <div className="min-w-0">
           <div className="truncate text-sm font-medium text-foreground">{row.contact.name}</div>
           <div className="truncate text-xs text-muted-foreground">
-            {row.contact.phone ?? row.contact.email ?? "no phone or email"}
+            {row.contact.phone ?? row.contact.email ?? leadsWords.noPhoneOrEmail}
           </div>
         </div>
         <div className="hidden truncate text-sm text-foreground md:block">{row.what ?? "—"}</div>
@@ -158,7 +157,7 @@ function LeadsListRow({ row, timeZone }: { row: LeadsListRowType; timeZone: stri
           {row.stage.name}
         </span>
         <div className="hidden text-right text-xs text-muted-foreground md:block">
-          {SOURCE_LABELS[row.source]}
+          {leadsWords.sourceName[row.source]}
         </div>
       </Link>
     </li>

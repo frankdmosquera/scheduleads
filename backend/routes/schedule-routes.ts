@@ -126,6 +126,7 @@ export const scheduleRoutes = new Hono()
         resource: shown,
         timezone,
         weekOf,
+        readGoogle: query.google !== "skip",
       });
       const resources = canEdit
         ? everyone.some((one) => one.id === shown.id)

@@ -17,15 +17,16 @@ import {
   type HolidayChoiceType,
 } from "@/lib/api-client/settings/fetch-holiday-choices";
 import { saveHolidayPicks, type SavedDaysOffType } from "@/lib/api-client/settings/save-days-off";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 type FieldType = "holidayCountry" | "holidayRegion" | "closedHolidays";
 
 // "Mon, Oct 12, 2026"; two dates when the holiday falls twice in the year shown.
-const formatDates = (dates: string[]) =>
+const formatDates = (dates: string[], intlLocale: string, and: string) =>
   dates
     .map((date) =>
-      new Intl.DateTimeFormat("en-CA", {
+      new Intl.DateTimeFormat(intlLocale, {
         timeZone: "UTC",
         weekday: "short",
         month: "short",
@@ -33,7 +34,7 @@ const formatDates = (dates: string[]) =>
         year: "numeric",
       }).format(new Date(`${date}T12:00:00Z`))
     )
-    .join(" and ");
+    .join(and);
 
 const selectClass =
   "h-10 rounded-lg border border-input bg-muted px-3 text-sm aria-invalid:border-destructive disabled:opacity-60";
@@ -47,6 +48,10 @@ export function HolidayPicker({
   canEdit: boolean;
   onSaved: (answer: SavedDaysOffType) => void;
 }) {
+  // A language switch reads the countries and holidays again in the new one; the picks are English
+  // names, so they stay as they are.
+  const { language, words } = useDashboardWords();
+  const { daysOffWords } = words;
   const formRef = useRef<HTMLFormElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [country, setCountry] = useState(daysOff.holidayCountry);
@@ -76,7 +81,7 @@ export function HolidayPicker({
     return () => {
       current = false;
     };
-  }, [attempt]);
+  }, [attempt, language]);
 
   useEffect(() => {
     if (!country) return; // no country, no list to read
@@ -108,7 +113,7 @@ export function HolidayPicker({
     return () => {
       current = false;
     };
-  }, [country, region, attempt]);
+  }, [country, region, attempt, language]);
 
   const edited = () => {
     setNotice(null);
@@ -174,14 +179,7 @@ export function HolidayPicker({
     if (saved.state === "ok") {
       onSaved(saved.answer);
       const count = saved.answer.newlyClosed.length;
-      setNotice({
-        tone: "info",
-        text: `Saved the holidays.${
-          count
-            ? ` ${count === 1 ? "One booking stays" : `${count} bookings stay`} on a closed day, listed at the top.`
-            : ""
-        }`,
-      });
+      setNotice({ tone: "info", text: daysOffWords.savedTheHolidays(count) });
       return;
     }
     if (saved.state === "field" && saved.field in FIELD_IDS) {
@@ -213,8 +211,10 @@ export function HolidayPicker({
         className="mt-0.5 size-4 accent-[var(--primary)]"
       />
       <span>
-        <span className="text-foreground">{holiday.name}</span>{" "}
-        <span className="text-muted-foreground">{formatDates(holiday.dates)}</span>
+        <span className="text-foreground">{holiday.label}</span>{" "}
+        <span className="text-muted-foreground">
+          {formatDates(holiday.dates, words.intlLocale, daysOffWords.and)}
+        </span>
       </span>
     </label>
   );
@@ -229,17 +229,14 @@ export function HolidayPicker({
     >
       <div className="flex flex-col gap-1">
         <h3 id="holidays-title" className="text-base font-semibold tracking-tight text-foreground">
-          Holidays
+          {daysOffWords.holidays}
         </h3>
-        <p className="text-sm text-muted-foreground">
-          The statutory holidays where the business is. Ticked ones are closed for online booking
-          every year, until unticked; close any other day by hand.
-        </p>
+        <p className="text-sm text-muted-foreground">{daysOffWords.holidaysLede}</p>
       </div>
 
       <div className="flex flex-wrap gap-4">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={FIELD_IDS.holidayCountry}>Country</Label>
+          <Label htmlFor={FIELD_IDS.holidayCountry}>{daysOffWords.country}</Label>
           <select
             id={FIELD_IDS.holidayCountry}
             value={country ?? ""}
@@ -248,9 +245,9 @@ export function HolidayPicker({
             {...errorProps("holidayCountry")}
             className={selectClass}
           >
-            <option value="">No holidays</option>
+            <option value="">{daysOffWords.noHolidays}</option>
             {country && countries.length && !countries.some((place) => place.code === country) ? (
-              <option value={country}>{country}, no longer offered</option>
+              <option value={country}>{daysOffWords.countryNoLongerOffered(country)}</option>
             ) : null}
             {countries.map((place) => (
               <option key={place.code} value={place.code}>
@@ -262,7 +259,7 @@ export function HolidayPicker({
         </div>
         {country && ready && (ready.regions.length || region) ? (
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor={FIELD_IDS.holidayRegion}>Province or state</Label>
+            <Label htmlFor={FIELD_IDS.holidayRegion}>{daysOffWords.provinceOrState}</Label>
             <select
               id={FIELD_IDS.holidayRegion}
               value={region ?? ""}
@@ -271,9 +268,9 @@ export function HolidayPicker({
               {...errorProps("holidayRegion")}
               className={selectClass}
             >
-              <option value="">Country&apos;s holidays only</option>
+              <option value="">{daysOffWords.countrysHolidaysOnly}</option>
               {region && !ready.regions.some((place) => place.code === region) ? (
-                <option value={region}>{region}, no longer in the list</option>
+                <option value={region}>{daysOffWords.provinceNoLongerListed(region)}</option>
               ) : null}
               {ready.regions.map((place) => (
                 <option key={place.code} value={place.code}>
@@ -298,7 +295,7 @@ export function HolidayPicker({
               setAttempt((count) => count + 1);
             }}
           >
-            Try again
+            {daysOffWords.tryAgain}
           </Button>
         </div>
       ) : null}
@@ -307,18 +304,16 @@ export function HolidayPicker({
         <div role="group" aria-labelledby="holidays-title" className="flex flex-col gap-4 text-sm">
           {gone.length ? (
             <div className="flex flex-col gap-2">
-              <p className="font-medium text-foreground">No longer in the holiday list</p>
-              <p className="text-xs text-muted-foreground">
-                Picked before, these close nothing now. Untick them to save.
-              </p>
+              <p className="font-medium text-foreground">{daysOffWords.noLongerInTheList}</p>
+              <p className="text-xs text-muted-foreground">{daysOffWords.pickedBeforeUntick}</p>
               {gone.map((name, index) => keptBox(name, index === 0))}
             </div>
           ) : null}
           {notThisYear.length ? (
             <div className="flex flex-col gap-2">
-              <p className="font-medium text-foreground">Picked, not in the coming year</p>
+              <p className="font-medium text-foreground">{daysOffWords.pickedNotThisYear}</p>
               <p className="text-xs text-muted-foreground">
-                These close their day in the years they fall.
+                {daysOffWords.closeInTheYearsTheyFall}
               </p>
               {notThisYear.map((name) => keptBox(name, false))}
             </div>
@@ -326,10 +321,10 @@ export function HolidayPicker({
 
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-3">
-              <p className="font-medium text-foreground">Statutory holidays</p>
+              <p className="font-medium text-foreground">{daysOffWords.statutoryHolidays}</p>
               {canEdit && holidays.length ? (
                 <Button type="button" variant="outline" size="sm" onClick={closeThemAll}>
-                  Close them all
+                  {daysOffWords.closeThemAll}
                 </Button>
               ) : null}
             </div>
@@ -343,7 +338,7 @@ export function HolidayPicker({
       {canEdit ? (
         <div>
           <Button type="submit" disabled={saving}>
-            {saving ? "Saving…" : "Save holidays"}
+            {saving ? daysOffWords.saving : daysOffWords.saveHolidays}
           </Button>
         </div>
       ) : null}

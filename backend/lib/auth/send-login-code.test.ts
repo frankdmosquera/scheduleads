@@ -6,6 +6,7 @@ import { sendLoginCode } from "./send-login-code.js";
 
 type CallType = { headers: Headers; body: Record<string, unknown> };
 let calls: CallType[];
+const english = async () => "en" as const;
 
 beforeEach(() => {
   calls = [];
@@ -32,7 +33,12 @@ describe("a login code", () => {
       vi.spyOn(console, level as "log").mockImplementation(() => {})
     );
 
-    await sendLoginCode({ email: "owner@primopainters.com", otp: "482913", type: "sign-in" });
+    await sendLoginCode({
+      email: "owner@primopainters.com",
+      otp: "482913",
+      type: "sign-in",
+      languageOf: english,
+    });
 
     // Sent by email, the code never reaches a log line, where Railway would keep it.
     for (const line of lines.flatMap((spy) => spy.mock.calls.flat().map(String))) {
@@ -54,12 +60,50 @@ describe("a login code", () => {
     expect(key).not.toContain("482913");
   });
 
+  test("a Spanish login gets its code in Spanish", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_agency_key");
+    vi.stubEnv("LOGIN_EMAIL_FROM", "login@agentsweb.com");
+
+    await sendLoginCode({
+      email: "owner@ialaorden.com",
+      otp: "482913",
+      type: "sign-in",
+      languageOf: async () => "es",
+    });
+
+    const [call] = calls;
+    expect(call.body.subject).toBe("Su código de acceso: 482913");
+    expect(String(call.body.text)).toContain("Sirve durante 5 minutos.");
+    expect(String(call.body.html)).toContain("Si usted no lo pidió, ignore este correo.");
+  });
+
+  test("development prints the code without asking the language, so it shows at once", async () => {
+    vi.stubEnv("RESEND_API_KEY", "");
+    vi.stubEnv("LOGIN_EMAIL_FROM", "");
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const languageOf = vi.fn(async () => "es" as const);
+
+    await sendLoginCode({ email: "owner@example.com", otp: "111222", type: "sign-in", languageOf });
+
+    expect(languageOf).not.toHaveBeenCalled();
+  });
+
   test("the same code asked for twice carries the same key, so Resend sends it once", async () => {
     vi.stubEnv("RESEND_API_KEY", "re_agency_key");
     vi.stubEnv("LOGIN_EMAIL_FROM", "login@agentsweb.com");
 
-    await sendLoginCode({ email: "owner@primopainters.com", otp: "482913", type: "sign-in" });
-    await sendLoginCode({ email: "owner@primopainters.com", otp: "482913", type: "sign-in" });
+    await sendLoginCode({
+      email: "owner@primopainters.com",
+      otp: "482913",
+      type: "sign-in",
+      languageOf: english,
+    });
+    await sendLoginCode({
+      email: "owner@primopainters.com",
+      otp: "482913",
+      type: "sign-in",
+      languageOf: english,
+    });
 
     expect(calls[0].headers.get("Idempotency-Key")).toBe(calls[1].headers.get("Idempotency-Key"));
   });
@@ -69,7 +113,12 @@ describe("a login code", () => {
     vi.stubEnv("LOGIN_EMAIL_FROM", "");
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
 
-    await sendLoginCode({ email: "owner@example.com", otp: "111222", type: "sign-in" });
+    await sendLoginCode({
+      email: "owner@example.com",
+      otp: "111222",
+      type: "sign-in",
+      languageOf: english,
+    });
 
     expect(calls).toEqual([]);
     expect(String(log.mock.calls[0][0])).toContain("111222");
@@ -81,7 +130,12 @@ describe("a login code", () => {
     vi.stubEnv("LOGIN_EMAIL_FROM", "");
 
     await expect(
-      sendLoginCode({ email: "owner@example.com", otp: "111222", type: "sign-in" })
+      sendLoginCode({
+        email: "owner@example.com",
+        otp: "111222",
+        type: "sign-in",
+        languageOf: english,
+      })
     ).rejects.toThrow("RESEND_API_KEY and LOGIN_EMAIL_FROM must both be set in production");
     expect(calls).toEqual([]);
   });

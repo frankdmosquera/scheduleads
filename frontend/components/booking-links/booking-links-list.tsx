@@ -11,8 +11,10 @@ import {
   fetchBookingLinks,
   type BookingLinksResultType,
 } from "@/lib/api-client/booking-links/fetch-booking-links";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export function BookingLinksList({ businessSlug }: { businessSlug: string }) {
+  const { words } = useDashboardWords();
   const [result, setResult] = useState<BookingLinksResultType | null>(null);
 
   // Bump to ask again, on "Try again".
@@ -33,8 +35,10 @@ export function BookingLinksList({ businessSlug }: { businessSlug: string }) {
 
   return (
     <section className="mt-4 rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-md)]">
-      <h2 className="text-base font-semibold tracking-tight text-foreground">Booking links</h2>
-      <p className="mt-1 text-sm text-muted-foreground">What customers can book on your site.</p>
+      <h2 className="text-base font-semibold tracking-tight text-foreground">
+        {words.setupCardsWords.bookingLinks}
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">{words.setupCardsWords.bookingLinksLede}</p>
 
       <div className="mt-6">
         <BookingLinksListBody
@@ -56,8 +60,10 @@ function BookingLinksListBody({
   result: BookingLinksResultType | null;
   onRetry: () => void;
 }) {
+  const { words } = useDashboardWords();
+  const cardWords = words.setupCardsWords;
   if (!result) {
-    return <p className="text-sm text-muted-foreground">Loading your booking links…</p>;
+    return <p className="text-sm text-muted-foreground">{cardWords.loadingBookingLinks}</p>;
   }
 
   if (result.state === "unreachable") {
@@ -65,26 +71,18 @@ function BookingLinksListBody({
       <>
         <CentredCardNotice>{result.message}</CentredCardNotice>
         <Button className="mt-4" onClick={onRetry}>
-          Try again
+          {words.tryAgain}
         </Button>
       </>
     );
   }
 
   if (result.state === "not-bookable") {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Not open for online booking yet. Customers can&apos;t book on your site until it is.
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">{cardWords.notBookable}</p>;
   }
 
   if (result.bookingLinks.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        None switched on yet. Customers can&apos;t book online until one is.
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">{cardWords.noneSwitchedOn}</p>;
   }
 
   // In the order the public route gives them, by name.
@@ -94,7 +92,7 @@ function BookingLinksListBody({
         <li key={link.id} className="flex items-center justify-between gap-4 bg-card px-4 py-3">
           <span className="truncate text-foreground">{link.name}</span>
           <span className="flex-none font-mono text-muted-foreground">
-            {link.durationMinutes} min
+            {cardWords.minutes(link.durationMinutes)}
           </span>
         </li>
       ))}

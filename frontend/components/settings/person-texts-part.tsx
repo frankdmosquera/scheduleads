@@ -13,16 +13,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { PeopleSettingsType } from "@/lib/api-client/settings/fetch-people-settings";
 import { saveWorkerTexts } from "@/lib/api-client/settings/save-worker-texts";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export type WorkerTextsType = Omit<PeopleSettingsType["workerTexts"][number], "personId">;
 type SwitchType = "addedOn" | "movedOn" | "removedOn";
 
-const SWITCHES: { name: SwitchType; legend: string }[] = [
-  { name: "addedOn", legend: "A booking is added to their day" },
-  { name: "movedOn", legend: "Their booking moves to a new time" },
-  { name: "removedOn", legend: "A booking is taken off their day" },
+// Each choice with the word its question reads from.
+const SWITCHES: {
+  name: SwitchType;
+  legend: "addedToTheirDay" | "theirBookingMoves" | "takenOffTheirDay";
+}[] = [
+  { name: "addedOn", legend: "addedToTheirDay" },
+  { name: "movedOn", legend: "theirBookingMoves" },
+  { name: "removedOn", legend: "takenOffTheirDay" },
 ];
-const PICK = "Pick yes or no.";
 
 // True when a person with these texts can be texted at all: the business has a texting number and
 // at least one choice is yes.
@@ -43,6 +47,7 @@ export const PersonTextsPart = forwardRef<
     onSaved: (texts: WorkerTextsType | null) => void;
   }
 >(function PersonTextsPart({ personId, personName, texts, textsSetUp, onSaved }, ref) {
+  const { peopleWords } = useDashboardWords().words;
   const partRef = useRef<HTMLDivElement>(null);
   const [on, setOn] = useState(texts !== null);
   const [phone, setPhone] = useState(texts?.phone ?? "");
@@ -75,8 +80,9 @@ export const PersonTextsPart = forwardRef<
       // Everything missing is marked at once, before anything is sent.
       if (on) {
         const missing: Record<string, string> = {};
-        if (!phone.trim()) missing.phone = "Enter their phone.";
-        for (const { name } of SWITCHES) if (choices[name] === undefined) missing[name] = PICK;
+        if (!phone.trim()) missing.phone = peopleWords.enterTheirPhone;
+        for (const { name } of SWITCHES)
+          if (choices[name] === undefined) missing[name] = peopleWords.pickYesOrNo;
         if (Object.keys(missing).length) {
           setErrors(missing);
           setFocusRequest((count) => count + 1);
@@ -110,19 +116,17 @@ export const PersonTextsPart = forwardRef<
       className="flex flex-col gap-4 border-t border-border pt-4"
     >
       <h4 id={`${idBase}-title`} className="text-sm font-semibold text-foreground">
-        Texts to {personName} about their day
+        {peopleWords.textsTo(personName)}
       </h4>
       {!textsSetUp ? (
-        <p className="text-sm text-muted-foreground">
-          The business has no texting number yet, so no texts go until the agency sets one up.
-        </p>
+        <p className="text-sm text-muted-foreground">{peopleWords.noTextingNumber}</p>
       ) : null}
       <ChoiceField
         name={`${idBase}-on`}
-        legend="Texts"
+        legend={peopleWords.texts}
         choices={[
-          { value: false, label: "Off" },
-          { value: true, label: "On" },
+          { value: false, label: peopleWords.textsOff },
+          { value: true, label: peopleWords.textsOn },
         ]}
         value={on}
         onChange={(value) => {
@@ -133,7 +137,7 @@ export const PersonTextsPart = forwardRef<
       {on ? (
         <>
           <div className="flex flex-col gap-1.5 sm:max-w-sm">
-            <Label htmlFor={`${idBase}-phone`}>Their phone</Label>
+            <Label htmlFor={`${idBase}-phone`}>{peopleWords.theirPhone}</Label>
             <Input
               id={`${idBase}-phone`}
               type="tel"
@@ -156,10 +160,10 @@ export const PersonTextsPart = forwardRef<
             <ChoiceField
               key={name}
               name={`${idBase}-${name}`}
-              legend={legend}
+              legend={peopleWords[legend]}
               choices={[
-                { value: true, label: "Text them" },
-                { value: false, label: "No" },
+                { value: true, label: peopleWords.textThem },
+                { value: false, label: peopleWords.no },
               ]}
               value={choices[name]}
               onChange={(value) => {
@@ -170,7 +174,7 @@ export const PersonTextsPart = forwardRef<
             />
           ))}
           {allNo ? (
-            <p className="text-sm text-muted-foreground">Every choice is No, so no texts go.</p>
+            <p className="text-sm text-muted-foreground">{peopleWords.everyChoiceIsNo}</p>
           ) : null}
         </>
       ) : null}

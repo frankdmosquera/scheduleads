@@ -10,22 +10,26 @@ import type { ReactNode } from "react";
 import { SignOutLink } from "@/components/auth/sign-out-link";
 import { BusinessInitialMark } from "@/components/dashboard/business-initial-mark";
 import { useMe } from "@/components/dashboard/dashboard-gate";
+import { LanguageSwitch } from "@/components/language-switch/language-switch";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 const SCREENS = [
-  { href: "/leads", label: "Leads" },
-  { href: "/calendar", label: "Calendar" },
-  { href: "/settings", label: "Settings" },
-  { href: "/", label: "Setup" },
-];
+  { href: "/leads", word: "leads" },
+  { href: "/calendar", word: "calendar" },
+  { href: "/settings", word: "settings" },
+  { href: "/", word: "setup" },
+] as const;
 
 export function DashboardShell({ children }: { children: ReactNode }) {
   const me = useMe();
   const pathname = usePathname();
   const router = useRouter();
+  const { words } = useDashboardWords();
 
   return (
     <div className="flex min-h-screen flex-1 flex-col md:flex-row">
-      <aside className="flex flex-none flex-col gap-6 border-b border-border bg-card p-4 md:w-60 md:border-r md:border-b-0">
+      {/* On a desktop the column holds still at the window's height; only its links scroll. */}
+      <aside className="flex flex-none flex-col gap-6 border-b border-border bg-card p-4 md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0 md:pb-8">
         <div className="flex items-center gap-3">
           <BusinessInitialMark name={me.organization.name} />
           <div className="min-w-0">
@@ -36,7 +40,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex gap-1 md:flex-col" aria-label="Screens">
+        <div className="text-sm text-muted-foreground">
+          <LanguageSwitch />
+        </div>
+
+        <nav
+          className="flex gap-1 md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto"
+          aria-label={words.screensLabel}
+        >
           {SCREENS.map((screen) => {
             // "/" is only itself; every other screen also owns the pages under it.
             const current =
@@ -48,13 +59,13 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                 aria-current={current ? "page" : undefined}
                 className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:font-medium aria-[current=page]:text-foreground"
               >
-                {screen.label}
+                {words[screen.word]}
               </Link>
             );
           })}
         </nav>
 
-        <div className="text-sm text-muted-foreground md:mt-auto">
+        <div className="text-sm text-muted-foreground">
           <SignOutLink onSignedOut={() => router.push("/sign-in")} />
         </div>
       </aside>

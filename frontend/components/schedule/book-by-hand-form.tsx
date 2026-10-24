@@ -15,6 +15,7 @@ import {
   type ServiceSettingsType,
 } from "@/lib/api-client/settings/fetch-services-settings";
 import { calendarDayWords } from "@/lib/calendar-day-words";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export function BookByHandForm({
   personId,
@@ -25,6 +26,8 @@ export function BookByHandForm({
   dates: string[]; // the week shown, YYYY-MM-DD
   onBooked: () => void; // the week reads again, showing the booking
 }) {
+  const { words } = useDashboardWords();
+  const scheduleWords = words.scheduleWords;
   const [services, setServices] = useState<ServiceSettingsType[] | null>(null);
   const [serviceId, setServiceId] = useState("");
   const [date, setDate] = useState(dates[0]);
@@ -69,7 +72,7 @@ export function BookByHandForm({
     event.preventDefault();
     const [hours, minutes] = time.split(":").map(Number);
     if (!time || Number.isNaN(hours)) {
-      setErrors({ startMinute: "Pick a time." });
+      setErrors({ startMinute: scheduleWords.pickATime });
       return;
     }
     setSaving(true);
@@ -98,8 +101,8 @@ export function BookByHandForm({
       setNotice({
         tone: "info",
         text: reachable
-          ? "Booked. The customer hears as your settings say."
-          : "Booked. With no phone or email, the customer hears nothing from us.",
+          ? scheduleWords.bookedCustomerHears
+          : scheduleWords.bookedCustomerHearsNothing,
       });
       onBooked();
       return;
@@ -108,9 +111,10 @@ export function BookByHandForm({
     else setNotice({ tone: "error", text: saved.message });
   }
 
-  if (!services) return <p className="text-sm text-muted-foreground">Loading services…</p>;
+  if (!services)
+    return <p className="text-sm text-muted-foreground">{scheduleWords.loadingServices}</p>;
   if (services.length === 0) {
-    return <p className="text-sm text-muted-foreground">This person does no live service yet.</p>;
+    return <p className="text-sm text-muted-foreground">{scheduleWords.noLiveService}</p>;
   }
 
   const fieldError = (field: string) =>
@@ -122,13 +126,11 @@ export function BookByHandForm({
 
   return (
     <form onSubmit={save} className="rounded-lg border border-border bg-card p-4">
-      <h2 className="text-sm font-semibold text-foreground">Book by hand</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        A phone estimate or a walk-in. Any time this person is free, inside their hours or not.
-      </p>
+      <h2 className="text-sm font-semibold text-foreground">{scheduleWords.bookByHand}</h2>
+      <p className="mt-1 text-xs text-muted-foreground">{scheduleWords.bookByHandLede}</p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="text-sm">
-          <span className="text-muted-foreground">Service</span>
+          <span className="text-muted-foreground">{scheduleWords.service}</span>
           <select
             value={serviceId}
             onChange={(event) => {
@@ -139,7 +141,7 @@ export function BookByHandForm({
           >
             {services.map((one) => (
               <option key={one.id} value={one.id}>
-                {one.name} ({one.durationMinutes} min)
+                {one.name} ({scheduleWords.minutesLong(one.durationMinutes)})
               </option>
             ))}
           </select>
@@ -147,7 +149,7 @@ export function BookByHandForm({
         </label>
         <div className="grid grid-cols-2 gap-2">
           <label className="text-sm">
-            <span className="text-muted-foreground">Day</span>
+            <span className="text-muted-foreground">{scheduleWords.day}</span>
             <select
               value={date}
               onChange={(event) => {
@@ -158,14 +160,14 @@ export function BookByHandForm({
             >
               {dates.map((one) => (
                 <option key={one} value={one}>
-                  {calendarDayWords(one)}
+                  {calendarDayWords(one, words.intlLocale)}
                 </option>
               ))}
             </select>
             {fieldError("date")}
           </label>
           <label className="text-sm">
-            <span className="text-muted-foreground">Time</span>
+            <span className="text-muted-foreground">{scheduleWords.time}</span>
             <Input
               type="time"
               value={time}
@@ -180,7 +182,7 @@ export function BookByHandForm({
           </label>
         </div>
         <label className="text-sm">
-          <span className="text-muted-foreground">Customer&apos;s name</span>
+          <span className="text-muted-foreground">{scheduleWords.customersName}</span>
           <Input
             value={name}
             onChange={(event) => {
@@ -193,7 +195,7 @@ export function BookByHandForm({
           {fieldError("customer.name")}
         </label>
         <label className="text-sm">
-          <span className="text-muted-foreground">Phone (optional)</span>
+          <span className="text-muted-foreground">{scheduleWords.phoneOptional}</span>
           <Input
             type="tel"
             value={phone}
@@ -207,7 +209,7 @@ export function BookByHandForm({
           {fieldError("customer.phone")}
         </label>
         <label className="text-sm">
-          <span className="text-muted-foreground">Email (optional)</span>
+          <span className="text-muted-foreground">{scheduleWords.emailOptional}</span>
           <Input
             type="email"
             value={email}
@@ -222,7 +224,7 @@ export function BookByHandForm({
         </label>
         {service && service.addressMode !== "not_asked" ? (
           <label className="text-sm">
-            <span className="text-muted-foreground">Address (optional)</span>
+            <span className="text-muted-foreground">{scheduleWords.addressOptional}</span>
             <Input
               value={address}
               onChange={(event) => {
@@ -236,7 +238,7 @@ export function BookByHandForm({
           </label>
         ) : null}
         <label className="text-sm sm:col-span-2">
-          <span className="text-muted-foreground">Note (optional)</span>
+          <span className="text-muted-foreground">{scheduleWords.noteOptional}</span>
           <Input
             value={note}
             onChange={(event) => {
@@ -251,7 +253,7 @@ export function BookByHandForm({
       </div>
       <div className="mt-4">
         <Button type="submit" disabled={saving || !serviceId}>
-          {saving ? "Booking…" : "Book"}
+          {saving ? scheduleWords.booking : scheduleWords.book}
         </Button>
       </div>
       <SaveNotice notice={notice} />

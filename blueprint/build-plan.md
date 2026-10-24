@@ -386,7 +386,7 @@ without Frank touching the database.
   is in Spanish, and it gets the booking window only once the window speaks it
   (its item 12). Published as the package's next version. Numbered 12i so
   nothing after it renumbers
-- [ ] 12j. **Spanish dashboard** - the whole dashboard speaks Spanish as
+- [x] 12j. **Spanish dashboard** - the whole dashboard speaks Spanish as
   well as English: every screen's words, its dates, times and money, its form
   errors and the sign-in pages. Each login picks its own language, a setting
   (decision 30), so two people in one business can each read their own; it is

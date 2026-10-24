@@ -4,6 +4,7 @@ import type { InferResponseType } from "hono/client";
 
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import { dashboardApiClient } from "@/lib/api-client/dashboard-api-client";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 export type CalendarConnectionAnswerType = InferResponseType<
   typeof dashboardApiClient.calendar.connection.$get,
@@ -16,12 +17,15 @@ export type CalendarConnectionResultType =
 // The signed-in person and their calendar connection, for the dashboard card. Never tokens.
 export async function fetchCalendarConnection(): Promise<CalendarConnectionResultType> {
   const response = await dashboardApiClient.calendar.connection.$get().catch(() => null);
-  if (!response) return { state: "unreachable", message: apiNotRespondingMessage };
+  if (!response)
+    return { state: "unreachable", message: inDashboardLanguage(apiNotRespondingMessage) };
 
   if (response.status === 200) return { state: "ok", answer: await response.json() };
 
   return {
     state: "unreachable",
-    message: `The API answered with an unexpected status (${response.status}).`,
+    message: inDashboardLanguage(
+      `The API answered with an unexpected status (${response.status}).`
+    ),
   };
 }

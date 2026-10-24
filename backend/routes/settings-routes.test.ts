@@ -1165,6 +1165,69 @@ describe("the Days off settings", () => {
     expect(await badProvince.json()).toMatchObject({ field: "holidayRegion" });
   });
 
+  // Feature 12j: shown in the login's language, while a pick stays saved under its English name.
+  test("the holidays are named in the language asked, and a pick keeps its English name", async () => {
+    type ChoicesType = {
+      countries: { code: string; name: string }[];
+      holidays: { name: string; label: string; dates: string[] }[];
+    };
+    const colombia = (await (
+      await get("/settings/days-off/holidays?country=CO&language=es", helper.email)
+    ).json()) as ChoicesType;
+    expect(colombia.countries).toContainEqual({ code: "CA", name: "Canadá" });
+    expect(colombia.holidays).toContainEqual(
+      expect.objectContaining({ name: "Christmas Day", label: "Navidad" })
+    );
+    expect(colombia.holidays).toContainEqual(
+      expect.objectContaining({ name: "Battle of Boyacá", label: "Batalla de Boyacá" })
+    );
+    const english = (await (
+      await get("/settings/days-off/holidays?country=CO", helper.email)
+    ).json()) as ChoicesType;
+    expect(english.holidays).toContainEqual(
+      expect.objectContaining({ name: "Christmas Day", label: "Christmas Day" })
+    );
+    // The package has no Spanish for some of Canada's: those show in English.
+    const alberta = (await (
+      await get("/settings/days-off/holidays?country=CA&region=AB&language=es", helper.email)
+    ).json()) as ChoicesType;
+    expect(alberta.holidays).toContainEqual(
+      expect.objectContaining({ name: "Family Day", label: "Family Day" })
+    );
+
+    const french = await get("/settings/days-off/holidays?country=CO&language=fr", helper.email);
+    const frenchDays = await get("/settings/days-off?language=fr", helper.email);
+    expect([french.status, frenchDays.status]).toEqual([400, 400]);
+    expect(await french.json()).toMatchObject({ error: { message: "Use en or es." } });
+
+    // A closed holiday on the Days off list shows its Spanish name; the pick stays English.
+    const before = await businessRowOf(summit.organizationId);
+    // The save's own answer names them in the language asked too (F-477).
+    const picked = await put("/settings/days-off?language=es", summit.email, {
+      holidayCountry: "CA",
+      holidayRegion: "AB",
+      closedHolidays: ["Christmas Day"],
+    });
+    expect(picked.status).toBe(200);
+    const savedAnswer = (await picked.json()) as {
+      daysOff: { closedDays: { name: string | null }[] };
+    };
+    expect(savedAnswer.daysOff.closedDays.map((day) => day.name)).toContain("Navidad");
+    type DaysOffType = { closedHolidays: string[]; closedDays: { name: string | null }[] };
+    const spanish = (await (
+      await get("/settings/days-off?language=es", summit.email)
+    ).json()) as DaysOffType;
+    const plain = (await (await get("/settings/days-off", summit.email)).json()) as DaysOffType;
+    expect(spanish.closedHolidays).toEqual(["Christmas Day"]);
+    expect(spanish.closedDays.map((day) => day.name)).toContain("Navidad");
+    expect(plain.closedDays.map((day) => day.name)).toContain("Christmas Day");
+    await put("/settings/days-off", summit.email, {
+      holidayCountry: before.holidayCountry,
+      holidayRegion: before.holidayRegion,
+      closedHolidays: before.closedHolidays,
+    });
+  });
+
   test("a pick not in the province's list is refused on save", async () => {
     const picks = (closedHolidays: string[], holidayCountry = "CA", holidayRegion = "AB") => ({
       holidayCountry,

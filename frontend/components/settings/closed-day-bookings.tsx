@@ -12,6 +12,7 @@ import type { ListedBookingsType } from "@/components/settings/listed-bookings";
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
 import { Button } from "@/components/ui/button";
 import { cancelBookings } from "@/lib/api-client/bookings/cancel-bookings";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 const ALL = "all"; // never a booking's id, which is a UUID
 const MOST_AT_ONCE = 100; // the API's cap on one request; Cancel all sends a longer list in parts
@@ -28,6 +29,8 @@ export function ClosedDayBookings({
   const [asking, setAsking] = useState<string | null>(null); // a booking's id, or ALL
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
+  const { words, language } = useDashboardWords();
+  const { daysOffWords } = words;
   // An irreversible question starts on its safe answer, so Enter never cancels by surprise.
   const keepRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -60,12 +63,9 @@ export function ClosedDayBookings({
     setNotice({
       tone: started.length || refusal ? "error" : "info",
       text: [
-        count ? `Cancelled ${count === 1 ? "one booking" : `${count} bookings`}.` : "",
+        count ? daysOffWords.cancelledCount(count) : "",
         refusal ?? "",
-        ...started.map(
-          (booking) =>
-            `${booking.customerName}'s booking has already started, so it was not cancelled.`
-        ),
+        ...started.map((booking) => daysOffWords.alreadyStarted(booking.customerName)),
       ]
         .filter(Boolean)
         .join(" "),
@@ -74,16 +74,14 @@ export function ClosedDayBookings({
 
   // Who a cancel reaches: the email goes only to a customer who left one.
   const toldOne = (name: string, hasEmail: boolean) =>
-    hasEmail
-      ? `${name} gets the cancellation email.`
-      : `${name} left no email, so is not told: call them from their lead.`;
+    hasEmail ? daysOffWords.getsTheCancellationEmail(name) : daysOffWords.leftNoEmail(name);
   const notTold = bookings.filter((booking) => !booking.customerHasEmail).length;
 
   const question = (text: string, yes: string, bookingIds: string[]) => (
     <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-card p-3">
       <p className="text-sm text-foreground">{text}</p>
       <Button size="sm" variant="destructive" disabled={busy} onClick={() => cancel(bookingIds)}>
-        {busy ? "Cancelling…" : yes}
+        {busy ? daysOffWords.cancelling : yes}
       </Button>
       <Button
         ref={keepRef}
@@ -92,7 +90,7 @@ export function ClosedDayBookings({
         disabled={busy}
         onClick={() => setAsking(null)}
       >
-        Keep
+        {daysOffWords.keep}
       </Button>
     </div>
   );
@@ -105,27 +103,21 @@ export function ClosedDayBookings({
           tabIndex={-1}
           className="text-sm font-semibold text-foreground outline-none"
         >
-          Bookings on the day you closed
+          {daysOffWords.bookingsOnTheDayYouClosed}
         </h3>
         {bookings.length > 1 && asking !== ALL ? (
           <Button size="sm" variant="outline" className="ml-auto" onClick={() => setAsking(ALL)}>
-            Cancel all
+            {daysOffWords.cancelAll}
           </Button>
         ) : null}
       </div>
       {bookings.length ? (
-        <p className="mt-1 text-sm text-muted-foreground">
-          Still booked. Keep them, or cancel them: a customer who left an email is told.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{daysOffWords.stillBookedKeepOrCancel}</p>
       ) : null}
       {asking === ALL
         ? question(
-            `Cancel all ${bookings.length} bookings? Each customer with an email gets the cancellation email.${
-              notTold
-                ? ` ${notTold === 1 ? "One left" : `${notTold} left`} no email and ${notTold === 1 ? "is" : "are"} not told.`
-                : ""
-            }`,
-            "Cancel all",
+            daysOffWords.cancelAllQuestion(bookings.length, notTold),
+            daysOffWords.cancelAll,
             bookings.map((booking) => booking.bookingId)
           )
         : null}
@@ -141,25 +133,25 @@ export function ClosedDayBookings({
                 {booking.customerName}
               </Link>
               <span className="text-muted-foreground">
-                &middot; {booking.serviceName} with {booking.personName} &middot;{" "}
-                {formatBookingTime(new Date(booking.startsAt), list.timezone)}
+                &middot; {words.hoursWords.serviceWith(booking.serviceName, booking.personName)}{" "}
+                &middot; {formatBookingTime(new Date(booking.startsAt), list.timezone, language)}
               </span>
               {asking !== booking.bookingId ? (
                 <Button
                   size="sm"
                   variant="ghost"
                   className="ml-auto"
-                  aria-label={`Cancel ${booking.customerName}'s booking`}
+                  aria-label={daysOffWords.cancelBookingOf(booking.customerName)}
                   onClick={() => setAsking(booking.bookingId)}
                 >
-                  Cancel
+                  {daysOffWords.cancel}
                 </Button>
               ) : null}
             </div>
             {asking === booking.bookingId
               ? question(
-                  `Cancel ${booking.customerName}'s booking? ${toldOne(booking.customerName, booking.customerHasEmail)}`,
-                  "Cancel the booking",
+                  `${daysOffWords.cancelBookingQuestion(booking.customerName)} ${toldOne(booking.customerName, booking.customerHasEmail)}`,
+                  daysOffWords.cancelTheBooking,
                   [booking.bookingId]
                 )
               : null}

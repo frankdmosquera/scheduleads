@@ -3,6 +3,7 @@
 import type { InferResponseType } from "hono/client";
 
 import { dashboardApiClient } from "@/lib/api-client/dashboard-api-client";
+import { dashboardLanguage } from "@/lib/dashboard-words/message-language";
 import {
   readSettingsResponse,
   type SettingsReadResultType,
@@ -16,6 +17,9 @@ export type DaysOffSettingsType = InferResponseType<typeof daysOffRoute.$get, 20
 export type ClosedDaySettingsType = DaysOffSettingsType["closedDays"][number];
 
 export async function fetchDaysOff(): Promise<SettingsReadResultType<DaysOffSettingsType>> {
-  const response = await daysOffRoute.$get().catch(() => null);
+  // The closed holidays come named in the login's language.
+  const response = await daysOffRoute
+    .$get({ query: { language: dashboardLanguage() } })
+    .catch(() => null);
   return readSettingsResponse(response, "This business cannot change its days off here.");
 }

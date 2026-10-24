@@ -10,10 +10,12 @@ import { EmailSendingCard } from "@/components/email-sending/email-sending-card"
 import { BookingLinksList } from "@/components/booking-links/booking-links-list";
 import type { MeType } from "@/lib/api-client/dashboard/fetch-me";
 import { authClient } from "@/lib/auth-client";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { isPlatformAdmin } from "@/lib/is-platform-admin";
 
 export function DashboardHomeScreen({ me }: { me: MeType }) {
   const { data: session } = authClient.useSession();
+  const { words } = useDashboardWords();
 
   return (
     <div className="flex flex-col items-center">
@@ -30,20 +32,19 @@ export function DashboardHomeScreen({ me }: { me: MeType }) {
           </div>
 
           <dl className="mt-8 grid gap-px overflow-hidden rounded-lg border border-border bg-border text-sm">
-            <DashboardFactRow label="Signed in as" value={me.user.name || me.user.email} />
-            <DashboardFactRow label="Your role" value={me.role} />
-            <DashboardFactRow label="Address" value={me.organization.slug} mono />
-            <DashboardFactRow label="Plan" value={me.organization.plan} mono />
+            <DashboardFactRow label={words.signedInAs} value={me.user.name || me.user.email} />
+            <DashboardFactRow label={words.yourRole} value={words.roleName(me.role)} />
+            <DashboardFactRow label={words.address} value={me.organization.slug} mono />
+            <DashboardFactRow label={words.plan} value={me.organization.plan} mono />
             <DashboardFactRow
-              label="Included"
-              value={me.limits.modules.length > 0 ? me.limits.modules.join(", ") : "nothing"}
+              label={words.included}
+              value={
+                me.limits.modules.length > 0 ? me.limits.modules.join(", ") : words.nothingIncluded
+              }
             />
           </dl>
 
-          <p className="mt-6 text-sm leading-6 text-muted-foreground">
-            Every figure above came from one call to the API, scoped to this business by your
-            session. Every lead is on the Leads screen.
-          </p>
+          <p className="mt-6 text-sm leading-6 text-muted-foreground">{words.homeNote}</p>
         </div>
 
         <BookingLinksList businessSlug={me.organization.slug} />
@@ -55,7 +56,7 @@ export function DashboardHomeScreen({ me }: { me: MeType }) {
               href="/admin/client-setup"
               className="underline underline-offset-2 hover:text-foreground"
             >
-              Set up a client
+              {words.setUpAClient}
             </Link>
           </div>
         ) : null}

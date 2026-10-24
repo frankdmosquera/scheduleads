@@ -5,6 +5,7 @@ import type { InferResponseType } from "hono/client";
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import { dashboardApiClient } from "@/lib/api-client/dashboard-api-client";
 import { readSaveRefusal, type SaveResultType } from "@/lib/api-client/settings/read-save-refusal";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 const cancelBookingsRoute = dashboardApiClient.bookings.cancel;
 
@@ -15,7 +16,7 @@ export async function cancelBookings(
   bookingIds: string[]
 ): Promise<SaveResultType<CancelledBookingsType>> {
   const response = await cancelBookingsRoute.$post({ json: { bookingIds } }).catch(() => null);
-  if (!response) return { state: "refused", message: apiNotRespondingMessage };
+  if (!response) return { state: "refused", message: inDashboardLanguage(apiNotRespondingMessage) };
   if (response.status === 200) return { state: "ok", answer: await response.json() };
   return readSaveRefusal(response);
 }

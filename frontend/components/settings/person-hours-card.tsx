@@ -3,7 +3,7 @@
 
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
 import { useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import type { z } from "zod";
@@ -21,6 +21,8 @@ import { WEEK_DAYS, WeekEditor } from "@/components/settings/week-editor";
 import { Button } from "@/components/ui/button";
 import type { HoursSettingsType } from "@/lib/api-client/settings/fetch-hours-settings";
 import { savePersonHours } from "@/lib/api-client/settings/save-person-hours";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
+import type { HoursWordsType } from "@/lib/dashboard-words/hours-words";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 export function PersonHoursCard({
@@ -38,10 +40,11 @@ export function PersonHoursCard({
   const formRef = useRef<HTMLFormElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
+  const { hoursWords } = useDashboardWords().words;
   // Stays until the card is saved again or the page is left.
   const [outside, setOutside] = useState<ListedBookingsType | null>(null);
   const form = useForm<z.input<typeof personHoursValidationSchema>, unknown, PersonHoursType>({
-    resolver: zodResolver(personHoursValidationSchema),
+    resolver: dashboardFormResolver(personHoursValidationSchema),
     defaultValues: { weeklyHours: person.weeklyHours, dateHours: person.dateHours },
   });
 
@@ -61,14 +64,7 @@ export function PersonHoursCard({
       const { weeklyHours, dateHours } = saved.answer.person;
       form.reset({ weeklyHours, dateHours });
       setOutside({ bookings: saved.answer.outsideHours, timezone });
-      setNotice({
-        tone: "info",
-        text: `Saved. ${person.name} can be booked on these hours now.${
-          count
-            ? ` ${count === 1 ? "One booking now sits" : `${count} bookings now sit`} outside them, listed below.`
-            : ""
-        }`,
-      });
+      setNotice({ tone: "info", text: hoursWords.savedPersonHours(person.name, count) });
       return;
     }
     // A refusal must be seen, even if another row was opened while the save ran.
@@ -98,11 +94,11 @@ export function PersonHoursCard({
         </span>
         <h4 className="text-base font-semibold tracking-tight text-foreground">{person.name}</h4>
         <span className="text-sm text-muted-foreground">
-          {rowState(week ?? null, dates ?? [], outside?.bookings.length ?? 0)}
+          {rowState(hoursWords, week ?? null, dates ?? [], outside?.bookings.length ?? 0)}
         </span>
         {form.formState.isDirty ? (
           <span className="rounded-md bg-[var(--wait-soft)] px-2 py-0.5 text-xs font-medium text-foreground">
-            Not saved
+            {hoursWords.notSaved}
           </span>
         ) : null}
       </summary>
@@ -122,7 +118,7 @@ export function PersonHoursCard({
                 <div className="flex flex-col gap-3">
                   <div
                     role="radiogroup"
-                    aria-label={`${person.name}'s week`}
+                    aria-label={hoursWords.personWeek(person.name)}
                     className="flex flex-wrap gap-4 text-sm"
                   >
                     <label className="flex items-center gap-2">
@@ -133,7 +129,7 @@ export function PersonHoursCard({
                         onChange={() => edited(onChange)(null)}
                         className="accent-[var(--primary)]"
                       />
-                      Follows the business&apos;s week
+                      {hoursWords.followsBusinessWeek}
                     </label>
                     <label className="flex items-center gap-2">
                       <input
@@ -143,7 +139,7 @@ export function PersonHoursCard({
                         onChange={() => edited(onChange)(structuredClone(businessWeek))}
                         className="accent-[var(--primary)]"
                       />
-                      Own week
+                      {hoursWords.ownWeek}
                     </label>
                   </div>
                   {week !== null ? (
@@ -161,7 +157,7 @@ export function PersonHoursCard({
           />
           <div className="flex flex-col gap-2">
             <h5 className="text-sm font-semibold text-foreground">
-              {person.name}&apos;s one-off dates
+              {hoursWords.personOneOffDates(person.name)}
             </h5>
             <Controller
               name="dateHours"
@@ -179,15 +175,13 @@ export function PersonHoursCard({
           </div>
         </fieldset>
         <SaveNotice notice={notice} />
-        <ListedBookings
-          list={outside}
-          title="These bookings now sit outside your hours"
-          Heading="h5"
-        />
+        <ListedBookings list={outside} title={hoursWords.outsideYourHours} Heading="h5" />
         {canEdit ? (
           <div className="mt-4">
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Saving…" : `Save ${person.name}'s hours`}
+              {form.formState.isSubmitting
+                ? hoursWords.saving
+                : hoursWords.savePersonHours(person.name)}
             </Button>
           </div>
         ) : null}
@@ -198,19 +192,21 @@ export function PersonHoursCard({
 
 // The row's line: "Follows the business's week", or "Own week · Mon, Tue", then any one-off
 // dates, and the bookings the last save left outside, so a closed row still says they are there.
-function rowState(week: WeeklyHoursType | null, dates: unknown[], outsideCount: number): string {
+function rowState(
+  hoursWords: HoursWordsType,
+  week: WeeklyHoursType | null,
+  dates: unknown[],
+  outsideCount: number
+): string {
   const weekText = week
-    ? `Own week · ${
-        WEEK_DAYS.filter(([day]) => week[day]?.length)
-          .map(([, name]) => name.slice(0, 3))
-          .join(", ") || "no days"
-      }`
-    : "Follows the business's week";
+    ? hoursWords.ownWeekDays(
+        WEEK_DAYS.filter((day) => week[day]?.length)
+          .map((day) => hoursWords.dayShortNames[day])
+          .join(", ") || hoursWords.noDays
+      )
+    : hoursWords.followsBusinessWeek;
   const parts = [weekText];
-  if (dates.length)
-    parts.push(dates.length === 1 ? "1 one-off date" : `${dates.length} one-off dates`);
-  if (outsideCount) {
-    parts.push(outsideCount === 1 ? "1 booking outside" : `${outsideCount} bookings outside`);
-  }
+  if (dates.length) parts.push(hoursWords.oneOffDateCount(dates.length));
+  if (outsideCount) parts.push(hoursWords.bookingsOutside(outsideCount));
   return parts.join(" · ");
 }

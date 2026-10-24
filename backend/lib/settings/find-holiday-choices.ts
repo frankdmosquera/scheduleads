@@ -10,7 +10,11 @@ import { localDate } from "@scheduleads-app/shared/local-date";
 import { db } from "../../database.js";
 import { DAYS_OFF_AHEAD } from "../bookable-hours/apply-opening-rules.js";
 import { holidayChoices, type HolidayChoiceType } from "../bookable-hours/holiday-choices.js";
-import { holidayPackage, type HolidayPlaceType } from "../bookable-hours/holiday-package.js";
+import {
+  holidayPackage,
+  type HolidayLanguageType,
+  type HolidayPlaceType,
+} from "../bookable-hours/holiday-package.js";
 
 export type HolidayChoicesResultType =
   | {
@@ -26,9 +30,10 @@ export async function findHolidayChoices(
   organizationId: string,
   country: string | null,
   region: string | null,
-  now: Date
+  now: Date,
+  language: HolidayLanguageType = "en"
 ): Promise<HolidayChoicesResultType> {
-  const countries = holidayPackage.countries();
+  const countries = holidayPackage.countries(language);
   if (country === null) return { ok: true, countries, regions: [], holidays: [], today: "" };
 
   const regions = holidayPackage.regions(country);
@@ -46,6 +51,6 @@ export async function findHolidayChoices(
     )
     .limit(1);
   const today = localDate(now, row?.timezone ?? "UTC");
-  const holidays = holidayChoices(country, region, today, addDays(today, DAYS_OFF_AHEAD));
+  const holidays = holidayChoices(country, region, today, addDays(today, DAYS_OFF_AHEAD), language);
   return { ok: true, countries, regions, holidays, today };
 }

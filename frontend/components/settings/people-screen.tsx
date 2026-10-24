@@ -24,10 +24,12 @@ import {
   type PeopleSettingsType,
   type ResourceSettingsType,
 } from "@/lib/api-client/settings/fetch-people-settings";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export function PeopleScreen() {
+  const { words } = useDashboardWords();
   return (
-    <SettingsSection title="People" load={fetchPeopleSettings}>
+    <SettingsSection title={words.settingsFrameWords.people} load={fetchPeopleSettings}>
       {(settings) => <PeopleList settings={settings} />}
     </SettingsSection>
   );
@@ -39,6 +41,7 @@ const byName = (a: ResourceSettingsType, b: ResourceSettingsType) => a.name.loca
 
 function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   const [people, setPeople] = useState(settings.people);
+  const { peopleWords } = useDashboardWords().words;
   const textsPart = useRef<PersonTextsPartHandleType>(null); // the open card's texts
   const [workerTexts, setWorkerTexts] = useState(
     () =>
@@ -87,21 +90,15 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
     setNotice({
       tone: "info",
       text: resource.active
-        ? `Saved. ${resource.name} is on.`
-        : `Saved. ${resource.name} is off: no new bookings.${
-            upcoming.length
-              ? ` ${upcoming.length === 1 ? "One booking stays" : `${upcoming.length} bookings stay`}, listed below.`
-              : ""
-          }`,
+        ? peopleWords.savedOn(resource.name)
+        : peopleWords.savedOff(resource.name, upcoming.length),
     });
   };
 
   return (
     <div className="flex flex-col gap-3">
       {!settings.canEdit ? (
-        <CentredCardNotice tone="info">
-          Your role cannot change the people and places. You can see them here.
-        </CentredCardNotice>
+        <CentredCardNotice tone="info">{peopleWords.cannotChange}</CentredCardNotice>
       ) : open === "new" ? (
         <AddResourceForm
           onSaved={(added) => saved(added, [])}
@@ -110,14 +107,14 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
       ) : (
         <div>
           <Button id={ADD_BUTTON_ID} variant="outline" onClick={() => openForm("new")}>
-            + Add a person or a place
+            {peopleWords.addButton}
           </Button>
         </div>
       )}
       <SaveNotice notice={notice} />
       <ListedBookings
         list={held?.list ?? null}
-        title={held ? `${held.name}'s upcoming bookings` : ""}
+        title={held ? peopleWords.upcomingBookingsOf(held.name) : ""}
         Heading="h3"
       />
 
@@ -155,7 +152,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
             >
               <span className="font-medium text-foreground">{resource.name}</span>
               <span className="text-sm text-muted-foreground">
-                {resource.kind === "person" ? "Person" : "Place"}
+                {resource.kind === "person" ? peopleWords.person : peopleWords.place}
               </span>
               <span
                 className={
@@ -164,10 +161,10 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                     : "rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
                 }
               >
-                {resource.active ? "On" : "Off"}
+                {resource.active ? peopleWords.on : peopleWords.off}
               </span>
               {textsCanGo(workerTexts.get(resource.id), settings.textsSetUp) ? (
-                <span className="text-xs text-muted-foreground">Gets texts</span>
+                <span className="text-xs text-muted-foreground">{peopleWords.getsTexts}</span>
               ) : null}
               {settings.canEdit ? (
                 <Button
@@ -175,10 +172,10 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                   variant="ghost"
                   size="sm"
                   className="ml-auto"
-                  aria-label={`Change ${resource.name}`}
+                  aria-label={peopleWords.changeOf(resource.name)}
                   onClick={() => openForm(resource.id)}
                 >
-                  Change
+                  {peopleWords.change}
                 </Button>
               ) : null}
             </li>

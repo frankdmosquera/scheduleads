@@ -12,12 +12,14 @@ import { CentredCardNotice } from "@/components/centred-card/centred-card-notice
 import { SignOutLink } from "@/components/auth/sign-out-link";
 import { BusinessInitialMark } from "@/components/dashboard/business-initial-mark";
 import { authClient } from "@/lib/auth-client";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { isPlatformAdmin } from "@/lib/is-platform-admin";
 
 export type BusinessChoiceType = { id: string; name: string; slug: string };
 
 export function BusinessPickerScreen({ onPicked }: { onPicked: () => void }) {
   const router = useRouter();
+  const { words } = useDashboardWords();
   const [organizations, setOrganizations] = useState<BusinessChoiceType[] | null>(null);
   const [noBusiness, setNoBusiness] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export function BusinessPickerScreen({ onPicked }: { onPicked: () => void }) {
         if (!live) return;
 
         if (error) {
-          setRefusal(error.message ?? "Could not load your businesses.");
+          setRefusal(error.message ?? words.businessesNotLoaded);
           setOrganizations([]);
           return;
         }
@@ -52,7 +54,7 @@ export function BusinessPickerScreen({ onPicked }: { onPicked: () => void }) {
     return () => {
       live = false;
     };
-  }, [router]);
+  }, [router, words]);
 
   async function chooseBusiness(organizationId: string) {
     setRefusal(null);
@@ -61,7 +63,7 @@ export function BusinessPickerScreen({ onPicked }: { onPicked: () => void }) {
     setBusy(false);
 
     if (error) {
-      setRefusal(error.message ?? "That business could not be opened.");
+      setRefusal(error.message ?? words.businessNotOpened);
       return;
     }
 
@@ -70,8 +72,8 @@ export function BusinessPickerScreen({ onPicked }: { onPicked: () => void }) {
 
   if (!organizations) {
     return (
-      <CentredCard title="One moment">
-        <p className="text-sm text-muted-foreground">Looking up your businesses…</p>
+      <CentredCard title={words.oneMoment}>
+        <p className="text-sm text-muted-foreground">{words.lookingUpBusinesses}</p>
       </CentredCard>
     );
   }
@@ -79,19 +81,19 @@ export function BusinessPickerScreen({ onPicked }: { onPicked: () => void }) {
   if (noBusiness) {
     return (
       <CentredCard
-        title="Your login has no business yet"
-        lede="The agency sets up your business for you. Get in touch with them and it will be here the next time you sign in."
+        title={words.noBusinessYet}
+        lede={words.noBusinessYetLede}
         footer={<SignOutLink />}
       >
-        <p className="text-sm text-muted-foreground">There is nothing to show until then.</p>
+        <p className="text-sm text-muted-foreground">{words.nothingUntilThen}</p>
       </CentredCard>
     );
   }
 
   return (
     <CentredCard
-      title="Which business?"
-      lede="You belong to more than one, so we will not guess. Pick the one you are working in."
+      title={words.whichBusiness}
+      lede={words.whichBusinessLede}
       footer={<SignOutLink />}
     >
       <div className="flex flex-col gap-2">

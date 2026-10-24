@@ -16,6 +16,7 @@ import { db } from "../../database.js";
 import { seedPipelineStages } from "../crm/seed-pipeline-stages.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 import { VISITOR_ADDRESS_HEADER } from "../rate-limit/visitor-address-header.js";
+import { loginLanguageOf } from "./login-language-of.js";
 import { sendLoginCode } from "./send-login-code.js";
 
 if (!process.env.BETTER_AUTH_SECRET) {
@@ -96,6 +97,9 @@ export const auth = betterAuth({
       // set it (one that tries gets a 400). Only the platform admin can, through the admin
       // plugin's /admin/set-role, or by hand in the database.
       role: { type: "string", required: false, input: false },
+      // The dashboard's language for this login (feature 12j), carried by the session. input:
+      // false for the same reason: only PUT /me/language writes it.
+      language: { type: "string", required: false, input: false },
     },
   },
 
@@ -156,8 +160,11 @@ export const auth = betterAuth({
       storeOTP: "hashed",
       // Not awaited: a known address must answer as fast as an unknown one, or the wait for
       // the email would tell anyone who is a customer. A failure is logged, never shown.
-      async sendVerificationOTP({ email, otp, type }) {
-        sendLoginCode({ email, otp, type }).catch((error: unknown) => {
+      // The sign-in page says its language in Accept-Language, for a login that never picked one.
+      async sendVerificationOTP({ email, otp, type }, ctx) {
+        const acceptLanguage = ctx?.headers?.get("accept-language") ?? null;
+        const languageOf = () => loginLanguageOf(email, acceptLanguage);
+        sendLoginCode({ email, otp, type, languageOf }).catch((error: unknown) => {
           console.warn(`[auth] a login code was not sent: ${safeErrorReason(error)}`);
         });
       },

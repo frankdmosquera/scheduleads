@@ -3,6 +3,7 @@
 
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import type { RefusalType } from "@/lib/api-client/refusal-type";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 export type SettingsReadResultType<Answer> =
   | { state: "ok"; answer: Answer }
@@ -14,16 +15,22 @@ export async function readSettingsResponse<Answer>(
   response: { status: number; json: () => Promise<unknown> } | null,
   refusedMessage: string // when a 403 carries no message of its own
 ): Promise<SettingsReadResultType<Answer>> {
-  if (!response) return { state: "unreachable", message: apiNotRespondingMessage };
+  if (!response)
+    return { state: "unreachable", message: inDashboardLanguage(apiNotRespondingMessage) };
   if (response.status === 200) return { state: "ok", answer: (await response.json()) as Answer };
   // From the middleware, which the route's type does not list: an ended sign-in, or a refusal.
   if (response.status === 401) return { state: "signed-out" };
   if (response.status === 403) {
     const body = (await response.json().catch(() => ({}))) as RefusalType;
-    return { state: "refused", message: body.error?.message ?? refusedMessage };
+    return {
+      state: "refused",
+      message: body.error?.message ?? inDashboardLanguage(refusedMessage),
+    };
   }
   return {
     state: "unreachable",
-    message: `The API answered with an unexpected status (${response.status}).`,
+    message: inDashboardLanguage(
+      `The API answered with an unexpected status (${response.status}).`
+    ),
   };
 }

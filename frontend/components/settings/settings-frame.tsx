@@ -7,29 +7,32 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-const SECTIONS = [
-  { href: "/settings/hours", label: "Hours" },
-  { href: "/settings/services", label: "Services" },
-  { href: "/settings/people", label: "People" },
-  { href: "/settings/days-off", label: "Days off" },
-  { href: "/settings/booking-form", label: "Booking form" },
-  { href: "/settings/texts", label: "Texts" },
-  { href: "/settings/calendar", label: "Calendar" },
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
+import type { SettingsFrameWordsType } from "@/lib/dashboard-words/settings-frame-words";
+
+const SECTIONS: { href: string; label: keyof SettingsFrameWordsType }[] = [
+  { href: "/settings/hours", label: "hours" },
+  { href: "/settings/services", label: "services" },
+  { href: "/settings/people", label: "people" },
+  { href: "/settings/days-off", label: "daysOff" },
+  { href: "/settings/booking-form", label: "bookingForm" },
+  { href: "/settings/texts", label: "texts" },
+  { href: "/settings/calendar", label: "calendar" },
 ];
 
 export function SettingsFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { words } = useDashboardWords();
+  const frameWords = words.settingsFrameWords;
 
   return (
     <div className="mx-auto w-full max-w-5xl">
-      <h1 className="text-xl font-semibold tracking-tight text-foreground">Settings</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        What you change yourself. Nobody at the agency needs to touch anything for this.
-      </p>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">{words.settings}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">{frameWords.lede}</p>
 
       <div className="mt-8 grid items-start gap-6 md:grid-cols-[140px_minmax(0,1fr)]">
         <nav
-          aria-label="Settings sections"
+          aria-label={frameWords.sectionsLabel}
           className="flex flex-wrap gap-1 md:sticky md:top-6 md:flex-col"
         >
           {SECTIONS.map((section) => (
@@ -39,7 +42,7 @@ export function SettingsFrame({ children }: { children: ReactNode }) {
               aria-current={pathname.startsWith(section.href) ? "page" : undefined}
               className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground aria-[current=page]:bg-[var(--accent-soft)] aria-[current=page]:font-medium aria-[current=page]:text-primary"
             >
-              {section.label}
+              {frameWords[section.label]}
             </Link>
           ))}
         </nav>

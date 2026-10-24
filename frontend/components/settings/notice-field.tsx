@@ -6,11 +6,12 @@ import { useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 const UNITS = [
-  { key: "minutes", label: "minutes", minutes: 1 },
-  { key: "hours", label: "hours", minutes: 60 },
-  { key: "days", label: "days", minutes: 1440 },
+  { key: "minutes", minutes: 1 },
+  { key: "hours", minutes: 60 },
+  { key: "days", minutes: 1440 },
 ] as const;
 
 type UnitType = (typeof UNITS)[number];
@@ -32,13 +33,14 @@ export function NoticeField({
   onChange: (minutes: number) => void;
   error?: string;
 }) {
+  const { hoursWords } = useDashboardWords().words;
   const [unit, setUnit] = useState<UnitType>(() => unitOf(minutes));
   const amount = Number.isNaN(minutes) ? "" : minutes / unit.minutes;
   const errorId = `${id}-error`;
 
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>Least notice you accept</Label>
+      <Label htmlFor={id}>{hoursWords.leastNotice}</Label>
       <div className="flex gap-2">
         <Input
           id={id}
@@ -55,7 +57,7 @@ export function NoticeField({
           className="h-10 min-w-0 flex-1 bg-muted px-3"
         />
         <select
-          aria-label="Notice unit"
+          aria-label={hoursWords.noticeUnit}
           value={unit.key}
           onChange={(event) => {
             const next = UNITS.find((one) => one.key === event.target.value) ?? UNITS[0];
@@ -67,7 +69,7 @@ export function NoticeField({
         >
           {UNITS.map((one) => (
             <option key={one.key} value={one.key}>
-              {one.label}
+              {hoursWords.noticeUnits[one.key]}
             </option>
           ))}
         </select>

@@ -7,6 +7,7 @@ import type { SaveServiceResourcesInputType } from "@scheduleads-app/shared/zod-
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import { servicesSettingsRoute } from "@/lib/api-client/settings/fetch-services-settings";
 import { readSaveRefusal, type SaveResultType } from "@/lib/api-client/settings/read-save-refusal";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 
 export type SavedServiceResourcesType = InferResponseType<
   (typeof servicesSettingsRoute)[":serviceId"]["resources"]["$put"],
@@ -20,7 +21,7 @@ export async function saveServiceResources(
   const response = await servicesSettingsRoute[":serviceId"].resources
     .$put({ param: { serviceId }, json: ticks })
     .catch(() => null);
-  if (!response) return { state: "refused", message: apiNotRespondingMessage };
+  if (!response) return { state: "refused", message: inDashboardLanguage(apiNotRespondingMessage) };
   if (response.status === 200) return { state: "ok", answer: await response.json() };
   return readSaveRefusal(response);
 }

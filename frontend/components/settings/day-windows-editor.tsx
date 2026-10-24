@@ -7,6 +7,7 @@ import type { TimeWindowType } from "@scheduleads-app/shared/zod-validation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 const MINUTES_IN_A_DAY = 1440;
 
@@ -54,6 +55,7 @@ export function DayWindowsEditor({
   onChange: (windows: TimeWindowType[]) => void;
   errors: DayWindowsErrorsType;
 }) {
+  const { hoursWords } = useDashboardWords().words;
   const added = nextWindow(windows);
   // An error on the whole day (two windows overlap, a date with none) marks every field of the day,
   // so a refused save can focus one and a screen reader hears why.
@@ -84,7 +86,7 @@ export function DayWindowsEditor({
               <Input
                 type="time"
                 step={300}
-                aria-label={`${label}, window ${index + 1}, from`}
+                aria-label={hoursWords.windowFrom(label, index + 1)}
                 value={toTimeValue(window.startMinute)}
                 onChange={(event) => setTime(index, "startMinute", event.target.value)}
                 aria-invalid={invalid}
@@ -97,7 +99,7 @@ export function DayWindowsEditor({
               <Input
                 type="time"
                 step={300}
-                aria-label={`${label}, window ${index + 1}, until`}
+                aria-label={hoursWords.windowUntil(label, index + 1)}
                 value={toTimeValue(window.endMinute)}
                 onChange={(event) => setTime(index, "endMinute", event.target.value)}
                 aria-invalid={invalid}
@@ -108,7 +110,7 @@ export function DayWindowsEditor({
                 type="button"
                 variant="ghost"
                 size="icon-xs"
-                aria-label={`Remove ${label}, window ${index + 1}`}
+                aria-label={hoursWords.removeWindow(label, index + 1)}
                 onClick={() => onChange(windows.filter((_, i) => i !== index))}
               >
                 &times;
@@ -128,7 +130,7 @@ export function DayWindowsEditor({
           variant="outline"
           size="icon-sm"
           disabled={!added}
-          aria-label={`Add a window to ${label}`}
+          aria-label={hoursWords.addWindow(label)}
           aria-invalid={dayError && windows.length === 0 ? true : undefined}
           aria-describedby={dayError && windows.length === 0 ? dayErrorId : undefined}
           onClick={() => added && onChange([...windows, added])}

@@ -4,6 +4,7 @@
 export * from "./auth-validation-schemas/email-address-validation-schema.js";
 export * from "./auth-validation-schemas/sign-in-email-validation-schema.js";
 export * from "./auth-validation-schemas/sign-in-code-validation-schema.js";
+export * from "./auth-validation-schemas/dashboard-language-validation-schema.js";
 export * from "./organization-validation-schemas/business-name-validation-schema.js";
 export * from "./organization-validation-schemas/organization-slug-validation-schema.js";
 export * from "./organization-validation-schemas/business-email-details-validation-schema.js";

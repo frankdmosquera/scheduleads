@@ -4,6 +4,7 @@ import type { EmailSendingInputType } from "@scheduleads-app/shared/zod-validati
 
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import type { RefusalType } from "@/lib/api-client/refusal-type";
+import { inDashboardLanguage } from "@/lib/dashboard-words/message-language";
 import {
   emailSendingRoute,
   type EmailSendingStateType,
@@ -19,12 +20,13 @@ export async function saveEmailSending(
   input: EmailSendingInputType
 ): Promise<SaveEmailSendingResultType> {
   const response = await emailSendingRoute.$put({ json: input }).catch(() => null);
-  if (!response) return { state: "refused", message: apiNotRespondingMessage };
+  if (!response) return { state: "refused", message: inDashboardLanguage(apiNotRespondingMessage) };
   if (response.status === 200) return { state: "ok", answer: await response.json() };
 
   const body = (await response.json().catch(() => ({}))) as RefusalType;
   const message =
-    body.error?.message ?? `The API answered with an unexpected status (${response.status}).`;
+    body.error?.message ??
+    inDashboardLanguage(`The API answered with an unexpected status (${response.status}).`);
   if (body.error?.code === "key_refused") return { state: "field", field: "key", message };
   if (body.error?.code === "sender_refused")
     return { state: "field", field: "senderEmail", message };

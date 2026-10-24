@@ -6,6 +6,7 @@
 import Link from "next/link";
 
 import type { ServicesSettingsType } from "@/lib/api-client/settings/fetch-services-settings";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 type TickableType = ServicesSettingsType["people"][number];
 
@@ -30,6 +31,7 @@ export function TicksField({
   onChange: (ids: string[]) => void;
   error?: string;
 }) {
+  const { words } = useDashboardWords();
   const ticked = choices.filter((choice) => value.includes(choice.id));
   const hint = !ticked.length
     ? noneTicked
@@ -53,7 +55,7 @@ export function TicksField({
         <p className="text-sm text-muted-foreground">
           {noneToTick}{" "}
           <Link href="/settings/people" className="text-primary underline underline-offset-2">
-            Add them on People
+            {words.settingsFrameWords.addThemOnPeople}
           </Link>
           .
         </p>
@@ -71,7 +73,7 @@ export function TicksField({
               />
               <span className={choice.active ? undefined : "text-muted-foreground"}>
                 {choice.name}
-                {choice.active ? null : " (off)"}
+                {choice.active ? null : words.settingsFrameWords.off}
               </span>
             </label>
           ))}
