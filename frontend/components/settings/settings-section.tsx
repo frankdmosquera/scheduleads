@@ -14,13 +14,16 @@ import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provide
 export function SettingsSection<Answer>({
   title,
   load,
+  readsAgainInEachLanguage = false,
   children,
 }: {
   title: string;
   load: () => Promise<SettingsReadResultType<Answer>>; // stable: a module function, never inline
+  readsAgainInEachLanguage?: boolean; // its answer carries words in the login's language
   children: (answer: Answer) => ReactNode;
 }) {
-  const { words } = useDashboardWords();
+  const { language, words } = useDashboardWords();
+  const answerLanguage = readsAgainInEachLanguage ? language : null;
   const [result, setResult] = useState<SettingsReadResultType<Answer> | null>(null);
   const [attempt, setAttempt] = useState(0); // Try again asks once more
 
@@ -33,7 +36,7 @@ export function SettingsSection<Answer>({
     return () => {
       live = false;
     };
-  }, [load, attempt]);
+  }, [load, attempt, answerLanguage]);
   const tryAgain = () => {
     setResult(null);
     setAttempt((count) => count + 1);

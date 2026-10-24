@@ -1202,12 +1202,17 @@ describe("the Days off settings", () => {
 
     // A closed holiday on the Days off list shows its Spanish name; the pick stays English.
     const before = await businessRowOf(summit.organizationId);
-    const picked = await put("/settings/days-off", summit.email, {
+    // The save's own answer names them in the language asked too (F-477).
+    const picked = await put("/settings/days-off?language=es", summit.email, {
       holidayCountry: "CA",
       holidayRegion: "AB",
       closedHolidays: ["Christmas Day"],
     });
     expect(picked.status).toBe(200);
+    const savedAnswer = (await picked.json()) as {
+      daysOff: { closedDays: { name: string | null }[] };
+    };
+    expect(savedAnswer.daysOff.closedDays.map((day) => day.name)).toContain("Navidad");
     type DaysOffType = { closedHolidays: string[]; closedDays: { name: string | null }[] };
     const spanish = (await (
       await get("/settings/days-off?language=es", summit.email)

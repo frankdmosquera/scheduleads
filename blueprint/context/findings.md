@@ -468,13 +468,13 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Make a missing date in the Month view mean today in the business's zone: Today sends `todayInZone(timezone)` as the date (the zone is already on screen), or `fetchCalendar` fetches the current week first and then `weeksOfMonth` of its today, so the Month view always asks for its four to six weeks.
 **Resolution:** Fixed 2026-10-24: Today asks for today's date and the person picker for the date on screen, so a Month view always asks for the whole month. Seen on http://localhost:3400/calendar: Month, Next (November, 42 days), Today (October, 35 days), another person (October, 35 days).
 
-### F-477 [P2] open - On Days off in Spanish, a closed holiday goes back to its English name after any save
+### F-477 [P2] fixed - On Days off in Spanish, a closed holiday goes back to its English name after any save
 
 **File:** backend/routes/settings-routes.ts:522, 579, 598; frontend/components/settings/days-off-screen.tsx:98, 135, 187
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..6e24d7e; lenses: quality, security, performance, tests)
 **Why it matters:** Only GET `/settings/days-off` names closed holidays through `holidayPackage.nameOn` (lines 485-497). PUT `/settings/days-off`, POST `/close` and POST `/open` return `findDaysOff` as stored, with English names, and the screen merges `...answer.daysOff` over its state. So a Spanish owner who ticks a holiday, closes a day or opens one sees "Navidad" turn into "Christmas Day" until the page is reloaded. The list also keeps its old language after the language switch, since nothing reads it again. The route test checks the GET only.
 **Suggested fix:** Name the closed days in one place for all four answers (a helper in the routes, or `findDaysOff` taking the language), have the three save calls send `language` as the GET does, and add one test that a Spanish save answers "Navidad".
-**Resolution:**
+**Resolution:** Fixed 2026-10-24 (Frank's yes): PUT /settings/days-off, POST close and POST open take `language` and name their closed holidays with the same `namedIn` as the GET; the client sends the login's language. Days off reads itself again on a language switch (`readsAgainInEachLanguage`) and the list takes the new answer. Test: the save's answer reads Navidad. Seen on the laptop: Navidad, Christmas Day, Navidad across two switches.
 
 ### F-478 [P2] open - Some dashboard refusals have no Spanish, and the completeness test cannot see them
 

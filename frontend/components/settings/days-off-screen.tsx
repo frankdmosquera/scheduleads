@@ -27,7 +27,11 @@ import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provide
 export function DaysOffScreen() {
   const { words } = useDashboardWords();
   return (
-    <SettingsSection title={words.settingsFrameWords.daysOff} load={fetchDaysOff}>
+    <SettingsSection
+      title={words.settingsFrameWords.daysOff}
+      load={fetchDaysOff}
+      readsAgainInEachLanguage // the holiday names
+    >
       {(settings) => <ClosedDaysList settings={settings} />}
     </SettingsSection>
   );
@@ -49,6 +53,12 @@ const formatDayName = (date: string, intlLocale: string) =>
 
 function ClosedDaysList({ settings }: { settings: DaysOffSettingsType }) {
   const [daysOff, setDaysOff] = useState(settings);
+  // Read again in another language: the new answer replaces the list (React's prop-change pattern).
+  const [readAnswer, setReadAnswer] = useState(settings);
+  if (settings !== readAnswer) {
+    setReadAnswer(settings);
+    setDaysOff(settings);
+  }
   const { words } = useDashboardWords();
   const { daysOffWords } = words;
   const dayName = (date: string) => formatDayName(date, words.intlLocale);

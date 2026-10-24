@@ -73,6 +73,32 @@ const holidayLanguageOf = (language: unknown): HolidayLanguageType | null =>
       ? "es"
       : null;
 
+// A Days off answer with its closed holidays named in the language asked; the picks stay English.
+const namedIn = <
+  DaysOff extends {
+    holidayCountry: string | null;
+    holidayRegion: string | null;
+    closedDays: { date: string; name: string | null }[];
+  },
+>(
+  daysOff: DaysOff,
+  language: HolidayLanguageType
+): DaysOff => ({
+  ...daysOff,
+  closedDays: daysOff.closedDays.map((day) => ({
+    ...day,
+    name:
+      day.name &&
+      holidayPackage.nameOn(
+        daysOff.holidayCountry,
+        daysOff.holidayRegion,
+        day.name,
+        day.date,
+        language
+      ),
+  })),
+});
+
 const refuseFirstIssue = (c: Context, error: ZodError) => {
   const issue = error.issues[0];
   return c.json(
@@ -482,20 +508,7 @@ export const settingsRoutes = new Hono()
         findDaysOff(db, organizationId, new Date()),
         hasBusinessPermission(c.req.raw.headers, organizationId, CHANGE_BUSINESS),
       ]);
-      // A closed holiday shows under its name in the login's language; the picks stay English.
-      const closedDays = daysOff.closedDays.map((day) => ({
-        ...day,
-        name:
-          day.name &&
-          holidayPackage.nameOn(
-            daysOff.holidayCountry,
-            daysOff.holidayRegion,
-            day.name,
-            day.date,
-            language
-          ),
-      }));
-      return c.json({ canEdit, ...daysOff, closedDays }, 200);
+      return c.json({ canEdit, ...namedIn(daysOff, language) }, 200);
     }
   )
 
@@ -507,6 +520,10 @@ export const settingsRoutes = new Hono()
     requireKnownSubscriptionMiddleware,
     requireModuleMiddleware("booking"),
     requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("query", (value, c) => {
+      const language = holidayLanguageOf(value.language);
+      return language ? { language } : c.json(refuse("bad_request", "Use en or es."), 400);
+    }),
     validator("json", (value, c) => {
       const parsed = holidayPicksValidationSchema.safeParse(value);
       return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
@@ -519,7 +536,11 @@ export const settingsRoutes = new Hono()
         return c.json({ ...refuse("bad_request", refusal.message), field: refusal.field }, 400);
       const saved = await saveHolidayPicks(organizationId, picks, new Date());
       if (!saved.ok) return c.json(NO_BUSINESS_HOURS, 409);
-      return c.json({ daysOff: saved.daysOff, newlyClosed: saved.newlyClosed }, 200);
+      const { language } = c.req.valid("query");
+      return c.json(
+        { daysOff: namedIn(saved.daysOff, language), newlyClosed: saved.newlyClosed },
+        200
+      );
     }
   )
 
@@ -565,6 +586,10 @@ export const settingsRoutes = new Hono()
     requireKnownSubscriptionMiddleware,
     requireModuleMiddleware("booking"),
     requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("query", (value, c) => {
+      const language = holidayLanguageOf(value.language);
+      return language ? { language } : c.json(refuse("bad_request", "Use en or es."), 400);
+    }),
     validator("json", (value, c) => {
       const parsed = closeDayValidationSchema.safeParse(value);
       return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
@@ -576,7 +601,11 @@ export const settingsRoutes = new Hono()
         new Date()
       );
       if (!closed.ok) return c.json(NO_BUSINESS_HOURS, 409);
-      return c.json({ daysOff: closed.daysOff, newlyClosed: closed.newlyClosed }, 200);
+      const { language } = c.req.valid("query");
+      return c.json(
+        { daysOff: namedIn(closed.daysOff, language), newlyClosed: closed.newlyClosed },
+        200
+      );
     }
   )
 
@@ -588,6 +617,10 @@ export const settingsRoutes = new Hono()
     requireKnownSubscriptionMiddleware,
     requireModuleMiddleware("booking"),
     requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("query", (value, c) => {
+      const language = holidayLanguageOf(value.language);
+      return language ? { language } : c.json(refuse("bad_request", "Use en or es."), 400);
+    }),
     validator("json", (value, c) => {
       const parsed = openClosedDayValidationSchema.safeParse(value);
       return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
@@ -595,7 +628,8 @@ export const settingsRoutes = new Hono()
     async (c) => {
       const opening = c.req.valid("json");
       const opened = await openClosedDay(c.get("organization").organizationId, opening, new Date());
-      if (opened.ok) return c.json({ daysOff: opened.daysOff }, 200);
+      if (opened.ok)
+        return c.json({ daysOff: namedIn(opened.daysOff, c.req.valid("query").language) }, 200);
       if (opened.reason === "no_person") return c.json(refuse("not_found", "No person here."), 404);
       if (opened.reason === "no_business_hours") return c.json(NO_BUSINESS_HOURS, 409);
       if (opened.reason === "not_closed")
