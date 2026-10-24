@@ -476,42 +476,42 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Name the closed days in one place for all four answers (a helper in the routes, or `findDaysOff` taking the language), have the three save calls send `language` as the GET does, and add one test that a Spanish save answers "Navidad".
 **Resolution:** Fixed 2026-10-24 (Frank's yes): PUT /settings/days-off, POST close and POST open take `language` and name their closed holidays with the same `namedIn` as the GET; the client sends the login's language. Days off reads itself again on a language switch (`readsAgainInEachLanguage`) and the list takes the new answer. Test: the save's answer reads Navidad. Seen on the laptop: Navidad, Christmas Day, Navidad across two switches.
 
-### F-478 [P2] open - Some dashboard refusals have no Spanish, and the completeness test cannot see them
+### F-478 [P2] fixed - Some dashboard refusals have no Spanish, and the completeness test cannot see them
 
 **File:** backend/routes/settings-routes.ts:604-609; backend/routes/schedule-routes.ts:347-352; backend/lib/email/check-email-sending-key.ts:30-60; backend/lib/email/save-email-sending.ts:61; packages/shared/helpers/spanish-messages.test.ts:28-30, 46-53
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..6e24d7e; lenses: quality, security, performance, tests)
 **Why it matters:** The spec says the saved test collects every message in the backend's refusals so none ships untranslated. Its `refusalRule` matches only `refuse(code, "literal")` and `messageRule` only `message: "literal"`. Missed, and reachable from Spanish screens: "The business does not work that weekday: set that day's hours on Hours." and "They do not work that weekday: set their hours on Hours." (Days off, opening a day; a ternary inside `refuse`), "A booking in that time has already begun, so time off cannot cover it." and "There are bookings in that time. Choose for each one: move it or cancel it." (Calendar, time off; a ternary), and the email sending card's Resend reasons ("Resend refused this key.", the quota, sender and retry lines, some joined with `+`, and "The saved key can no longer be read. Paste it again."), written as `reason:`. None is in `spanish-messages.ts`, so each shows in English on a Spanish dashboard: never blank, as the contract allows, but the test's promise does not hold.
 **Suggested fix:** Add these messages to the table, and widen the test: also read backend `reason:` literals and every sentence literal inside a `refuse(` call (or every sentence literal under `backend/routes` and `backend/lib/email`, logs left out), writing the `+` joined reasons as one literal each.
-**Resolution:**
+**Resolution:** Fixed 2026-10-24 (Frank: fix them all, then come back): Spanish for the open-a-day and time-off choices, the six email key reasons, the saved-key line, the six "Check the ... and try again." fallbacks and "That is not a valid question.". The completeness test now also reads a choice inside refuse(), a reason written in pieces (sentences only, never a reason code), a backend fallback after ??, and lib/email.
 
-### F-479 [P3] open - A few Spanish templates read wrong once their value is put in
+### F-479 [P3] fixed - A few Spanish templates read wrong once their value is put in
 
 **File:** packages/shared/helpers/spanish-messages.ts:158-159, 207, 220; backend/routes/schedule-routes.ts:329; backend/lib/text/format-text-time.ts:6-17
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..6e24d7e; lenses: quality, security, performance, tests)
 **Why it matters:** "Tick each of the {} once." becomes "Marque cada uno de los personas una sola vez." with "people" ("personas" is feminine). "Already off from {} to {}." becomes "Ya no está disponible de Mon Oct 26, 9:00am a Mon Oct 26, 5:00pm.": "Ya no está disponible" reads as "no longer available", and the times come from `formatTextTime`, fixed to `en-US`, so English day and month names sit inside the Spanish. "{} no está en la lista de festivos" puts the English holiday name in, since picks are saved in English.
 **Suggested fix:** Two exact keys for people and places ("Marque cada persona una sola vez.", "Marque cada lugar una sola vez."); "Ya hay un horario no disponible de {} a {}."; for the times, let the route send the two moments so the dashboard writes them in its locale, or accept English times there and say so in the spec.
-**Resolution:**
+**Resolution:** Fixed 2026-10-24 (Frank: fix them all, then come back): "Cada uno se marca una sola vez."; "Ya hay un horario no disponible de {} a {}: quite primero...", with a text's time inside written in Spanish ("lun 26 oct, 9:00 a. m."), tested. A holiday name inside "{} no está en la lista" stays English: it is a pick the list no longer has, so there is no Spanish to give.
 
-### F-480 [P3] open - The Month view reads Google busy times four to six times and never shows them
+### F-480 [P3] fixed - The Month view reads Google busy times four to six times and never shows them
 
 **File:** frontend/components/schedule/schedule-screen.tsx:44-55, 303; frontend/components/schedule/schedule-month-grid.tsx:52; backend/lib/schedule/find-schedule-week.ts:149-185
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..6e24d7e; lenses: quality, security, performance, tests)
 **Why it matters:** Each Month view asks the week route four to six times in parallel, and each week reads the person's Google busy times (`getBusyTimes`), which the Month grid then filters out (`item.kind !== "google_busy"`). That is up to six Google calls per page turn for nothing shown, and when one fails the Month view still says "No se pudo leer Google para esta semana", about a week it does not name. The Day view also reads its whole week, Google included, on every one-day step. Not measured; the cost is Google's quota and the page's speed.
 **Suggested fix:** Let the week route skip Google when asked (a query flag) for the Month view, or hide the Google notice there; later, one month route.
-**Resolution:**
+**Resolution:** Fixed 2026-10-24 (Frank: fix them all, then come back): the week route takes google=skip and then reads no busy times (google: "skipped"); the Month view sends it, so its 4 to 6 weeks never ask Google and its notice cannot show. Tested: no Google call, 400 for any other value. Seen on the laptop: every Month request carries google=skip.
 
-### F-481 [P3] open - The ready-made booking questions follow the login's language, not the language the business's customers book in
+### F-481 [P3] fixed - The ready-made booking questions follow the login's language, not the language the business's customers book in
 
 **File:** frontend/components/settings/booking-questions-card.tsx:75, 131; backend/lib/settings/find-booking-form.ts:17
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..6e24d7e; lenses: quality, security, performance, tests)
 **Why it matters:** The questions are shown to customers in the booking window, in the business's own language (12i, `language` on the same Booking form settings). The card fills them in `useDashboardWords().language`, so a Spanish-reading member of an English business fills Spanish questions for English customers, and the reverse. The spec keeps the login's language and the business's language apart on purpose.
 **Suggested fix:** Fill the questions in `settings.language` (the business's) and keep only the button's set name in the login's language; or let Frank decide and record it in the spec.
-**Resolution:**
+**Resolution:** Fixed 2026-10-24 (Frank: fix them all, then come back): the ready-made questions fill in the business's language (the Booking form's setting, what its customers read); the buttons' names stay in the reader's language.
 
-### F-482 [P3] open - The comment for the first-issue refusal now sits above the holiday language helper
+### F-482 [P3] fixed - The comment for the first-issue refusal now sits above the holiday language helper
 
 **File:** backend/routes/settings-routes.ts:67-76
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..6e24d7e; lenses: quality, security, performance, tests)
 **Why it matters:** `holidayLanguageOf` was put between "The first problem, with where it is..." and `refuseFirstIssue`, so the comment now describes the wrong function, against the project's rule that a comment sits beside the line it explains.
 **Suggested fix:** Move line 67 down, directly above `refuseFirstIssue`.
-**Resolution:**
+**Resolution:** Fixed 2026-10-24 (Frank: fix them all, then come back): the comment is back above refuseFirstIssue.

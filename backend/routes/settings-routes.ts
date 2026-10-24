@@ -64,7 +64,6 @@ const NAME_TAKEN = {
   field: "name",
 };
 
-// The first problem, with where it is ("weeklyHours.mon.1"), so the form can show it in place.
 // The language the Days off routes name holidays in (feature 12j): en when not given, en or es only.
 const holidayLanguageOf = (language: unknown): HolidayLanguageType | null =>
   language === undefined || language === "" || language === "en"
@@ -99,6 +98,7 @@ const namedIn = <
   })),
 });
 
+// The first problem, with where it is ("weeklyHours.mon.1"), so the form can show it in place.
 const refuseFirstIssue = (c: Context, error: ZodError) => {
   const issue = error.issues[0];
   return c.json(

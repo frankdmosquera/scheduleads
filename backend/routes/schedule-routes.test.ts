@@ -381,6 +381,25 @@ describe("the Calendar page's week (feature 12b)", () => {
     ]);
   });
 
+  // Feature 12j: the Month view shows no Google busy times, so it asks Google for none.
+  test("a week asked without Google reads no busy times, and says so", async () => {
+    let googleAsked = 0;
+    freeBusyAnswer = () => {
+      googleAsked++;
+      return json({ error: { code: 500 } }, 500);
+    };
+    const week = await (
+      await weekOf(summit.email, `?resourceId=${summit.personId}&weekOf=2026-09-14&google=skip`)
+    ).json();
+    expect(week.google).toBe("skipped");
+    expect(googleAsked).toBe(0);
+    expect(dayOf(week.days, "2026-09-15").items).toMatchObject([{ kind: "booking" }]);
+    expect(dayOf(week.days, "2026-09-16").items).toEqual([]); // Wednesday's Google block not read
+
+    const bad = await weekOf(summit.email, `?resourceId=${summit.personId}&google=yes`);
+    expect(bad.status).toBe(400);
+  });
+
   test("a member sees only their own calendar, and another business's resource is 404", async () => {
     const own = await weekOf(helper.email, "?weekOf=2026-09-14");
     expect(own.status).toBe(200);

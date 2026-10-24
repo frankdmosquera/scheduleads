@@ -72,7 +72,12 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
   };
   const add = () => edit([...rows, { key: crypto.randomUUID(), label: "", required: false }]);
   const startFrom = (set: (typeof presets)[number]) =>
-    edit(set.questions[language].map((question) => ({ key: crypto.randomUUID(), ...question })));
+    edit(
+      set.questions[settings.language].map((question) => ({
+        key: crypto.randomUUID(),
+        ...question,
+      }))
+    );
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

@@ -23,10 +23,12 @@ export type ScheduleWeekResultType =
 export async function fetchScheduleWeek(asked: {
   resourceId?: string;
   weekOf?: string;
+  withoutGoogle?: boolean; // the Month view: no Google busy times asked for
 }): Promise<ScheduleWeekResultType> {
   const query = {
     ...(asked.resourceId ? { resourceId: asked.resourceId } : {}),
     ...(asked.weekOf ? { weekOf: asked.weekOf } : {}),
+    ...(asked.withoutGoogle ? { google: "skip" as const } : {}),
   };
   const response = await scheduleRoute.$get({ query }).catch(() => null);
   if (!response)

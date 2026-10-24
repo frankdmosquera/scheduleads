@@ -48,7 +48,9 @@ async function fetchCalendar(
       ? weeksOfMonth(asked.date)
       : [mondayOf(asked.date)];
   const answers = await Promise.all(
-    mondays.map((weekOf) => fetchScheduleWeek({ resourceId: asked.resourceId, weekOf }))
+    mondays.map((weekOf) =>
+      fetchScheduleWeek({ resourceId: asked.resourceId, weekOf, withoutGoogle: view === "month" })
+    )
   );
   for (const answer of answers) if (answer.state !== "ok") return answer;
   return {

@@ -29,6 +29,18 @@ const literal = String.raw`("(?:[^"\\]|\\.)*"|\x60(?:[^\x60\\]|\\.)*\x60)`;
 const refusalRule = new RegExp(String.raw`refuse\(\s*[^,()]+,\s*` + literal, "g");
 const messageRule = new RegExp(String.raw`message:\s*` + literal, "g");
 const fallbackRule = new RegExp(String.raw`\?\?\s*` + literal, "g");
+// A choice inside refuse(): refuse("code", condition ? "one" : "other").
+const choiceRule = new RegExp(
+  String.raw`refuse\(\s*"[a-z_]+",\s*[^?"\x60]*\?\s*` + literal + String.raw`\s*:\s*` + literal,
+  "g"
+);
+// A refusal's reason, joined when the code writes it in pieces: reason: "one " + "two".
+const piecesRule = new RegExp(
+  String.raw`reason:\s*(` + literal + String.raw`(?:\s*\+\s*` + literal + String.raw`)*)`,
+  "g"
+);
+const joined = (pieces: string) =>
+  [...pieces.matchAll(new RegExp(literal, "g"))].map((piece) => piece[1].slice(1, -1)).join("");
 const anyLiteral = new RegExp(literal, "g");
 const isSentence = (text: string) => /^[A-Z¿]/.test(text) && / /.test(text) && /[.?!]$/.test(text);
 
@@ -44,12 +56,17 @@ function messagesInCode(): Map<string, string> {
   };
   const backend = codeFilesUnder(
     join(repo, "backend"),
-    (path) => !/[\\/](emails|scripts|email)[\\/]/.test(path) && !/login-code-words/.test(path)
+    (path) => !/[\\/](emails|scripts)[\\/]/.test(path) && !/login-code-words/.test(path)
   );
   for (const file of backend) {
     const code = readFileSync(file, "utf8");
     for (const rule of [refusalRule, messageRule])
       for (const m of code.matchAll(rule)) add(m[1], file);
+    for (const m of code.matchAll(fallbackRule)) if (isSentence(m[1].slice(1, -1))) add(m[1], file);
+    for (const m of code.matchAll(choiceRule)) [m[1], m[2]].forEach((one) => add(one, file));
+    for (const m of code.matchAll(piecesRule)) {
+      if (isSentence(joined(m[1]))) add(`"${joined(m[1])}"`, file); // a sentence, not a reason code
+    }
   }
   for (const file of codeFilesUnder(
     join(repo, "packages", "shared", "zod-validation"),
@@ -95,6 +112,14 @@ describe("the Spanish for the dashboard's messages", () => {
       "La API respondió con un estado inesperado (502)."
     );
     expect(spanishMessageOf("Tick at most 500 people.")).toBe("Marque como máximo 500 personas.");
+    // A text's time inside the message reads in Spanish too.
+    expect(
+      spanishMessageOf(
+        "Already off from Mon Oct 26, 9:00am to Mon Oct 26, 5:00pm. Remove that time off first, or pick a time around it."
+      )
+    ).toBe(
+      "Ya hay un horario no disponible de lun 26 oct, 9:00 a. m. a lun 26 oct, 5:00 p. m.: quite primero ese horario, o elija una hora fuera de él."
+    );
     expect(spanishMessageOf("Christmas Day is not in the holiday list: untick it.")).toBe(
       "Christmas Day no está en la lista de festivos: desmárquelo."
     );

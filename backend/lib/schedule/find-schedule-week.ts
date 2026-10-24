@@ -51,7 +51,7 @@ export type ScheduleDayType = {
 export type ScheduleWeekType = {
   weekOf: string; // the Monday
   days: ScheduleDayType[];
-  google: "read" | "not_connected" | "unreadable";
+  google: "read" | "not_connected" | "unreadable" | "skipped";
 };
 
 const DAY_MS = 86_400_000;
@@ -61,11 +61,13 @@ export async function findScheduleWeek({
   resource: shown, // one of the business's own, checked by the caller
   timezone,
   weekOf,
+  readGoogle = true,
 }: {
   organizationId: string;
   resource: { id: string; kind: string };
   timezone: string;
   weekOf: string; // the Monday, YYYY-MM-DD in the business's zone
+  readGoogle?: boolean; // false: the caller shows no Google busy times, so none are read
 }): Promise<ScheduleWeekType> {
   const dates = Array.from({ length: 7 }, (_, n) => addDays(weekOf, n));
   const [year, month, day] = weekOf.split("-").map(Number);
@@ -146,8 +148,8 @@ export async function findScheduleWeek({
       })),
   ];
 
-  let google: ScheduleWeekType["google"] = "not_connected";
-  if (shown.kind === "person") {
+  let google: ScheduleWeekType["google"] = readGoogle ? "not_connected" : "skipped";
+  if (readGoogle && shown.kind === "person") {
     const [connection] = await db
       .select({ id: calendarConnection.id })
       .from(calendarConnection)

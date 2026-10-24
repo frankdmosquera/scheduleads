@@ -4,6 +4,14 @@
 // spanish-messages.test.ts fails on any message in the code that has no Spanish.
 
 export const spanishMessages: Record<string, string> = {
+  // A rule's check with no message of its own
+  "Check the address and try again.": "Revise la dirección e inténtelo de nuevo.",
+  "Check the form and try again.": "Revise el formulario e inténtelo de nuevo.",
+  "Check the list and try again.": "Revise la lista e inténtelo de nuevo.",
+  "Check the card and try again.": "Revise la tarjeta e inténtelo de nuevo.",
+  "Check the step and try again.": "Revise el paso e inténtelo de nuevo.",
+  "That is not a valid question.": "Esa no es una pregunta válida.",
+
   // Sign-in, the business, the plan
   "Use en or es.": "Use en o es.",
   "Too many tries. Please wait a minute and try again.":
@@ -156,7 +164,7 @@ export const spanishMessages: Record<string, string> = {
   "That person or place is not one of this business's.":
     "Esa persona o ese lugar no es de este negocio.",
   "Already off from {} to {}. Remove that time off first, or pick a time around it.":
-    "Ya no está disponible de {} a {}. Quite primero ese horario, o elija una hora fuera de él.",
+    "Ya hay un horario no disponible de {} a {}: quite primero ese horario, o elija una hora fuera de él.",
   "That person does not do this service. Pick someone who does.":
     "Esa persona no hace este servicio. Elija a alguien que lo haga.",
   "That new time is inside the time off itself. Pick a time outside it.":
@@ -186,6 +194,15 @@ export const spanishMessages: Record<string, string> = {
   "Pick a booking to cancel.": "Elija una reserva para cancelar.",
   "Cancel at most 100 bookings at once.": "Cancele como máximo 100 reservas a la vez.",
   "The same booking is listed twice.": "La misma reserva aparece dos veces.",
+
+  "The business does not work that weekday: set that day's hours on Hours.":
+    "El negocio no trabaja ese día de la semana: defina el horario de ese día en Horario.",
+  "They do not work that weekday: set their hours on Hours.":
+    "Esa persona no trabaja ese día de la semana: defina su horario en Horario.",
+  "A booking in that time has already begun, so time off cannot cover it.":
+    "Una reserva en ese tiempo ya comenzó, así que el horario no disponible no puede cubrirla.",
+  "There are bookings in that time. Choose for each one: move it or cancel it.":
+    "Hay reservas en ese tiempo. Elija para cada una: moverla o cancelarla.",
 
   // Settings: hours and days off
   "Set the business's hours first.": "Primero defina el horario del negocio.",
@@ -217,7 +234,7 @@ export const spanishMessages: Record<string, string> = {
   "Tick only this business's people.": "Marque solo personas de este negocio.",
   "Tick only this business's places.": "Marque solo lugares de este negocio.",
   "Tick at most 500 {}.": "Marque como máximo 500 {}.",
-  "Tick each of the {} once.": "Marque cada uno de los {} una sola vez.",
+  "Tick each of the {} once.": "Cada uno se marca una sola vez.",
   "Use whole minutes.": "Use minutos enteros.",
   "A service takes at least a minute.": "Un servicio dura al menos un minuto.",
   "A service fits in one day: 1440 minutes at most.":
@@ -288,6 +305,17 @@ export const spanishMessages: Record<string, string> = {
     "Escriba la dirección desde la que salen los correos, para poder probar la clave.",
   "That is not a Resend key. It starts with re_.":
     "Esa no es una clave de Resend. Empieza con re_.",
+  "Resend refused this key.": "Resend rechazó esta clave.",
+  "This Resend account has reached its sending limit. Raise it in Resend, or wait for it to reset.":
+    "Esta cuenta de Resend llegó a su límite de envíos. Súbalo en Resend, o espere a que se reinicie.",
+  "Resend would not send from this address. Check that its domain is verified in the same Resend account, and that the key may send from it.":
+    "Resend no quiso enviar desde esta dirección. Revise que su dominio esté verificado en la misma cuenta de Resend, y que la clave pueda enviar desde ella.",
+  "Resend would not accept this sender address. Check it is a real address at the business's domain.":
+    "Resend no aceptó esta dirección de envío. Revise que sea una dirección real del dominio del negocio.",
+  "Resend could not send the test email just now. Try again shortly.":
+    "Resend no pudo enviar el correo de prueba en este momento. Inténtelo de nuevo en breve.",
+  "The saved key can no longer be read. Paste it again.":
+    "La clave guardada ya no se puede leer. Péguela de nuevo.",
 };
 
 // Values a message carries that are English words of the code's own, not the business's.
@@ -297,6 +325,41 @@ const spanishValues: Record<string, string> = {
   booking: "reservas",
   crm: "CRM",
 };
+
+const englishDays: Record<string, string> = {
+  Mon: "lun",
+  Tue: "mar",
+  Wed: "mié",
+  Thu: "jue",
+  Fri: "vie",
+  Sat: "sáb",
+  Sun: "dom",
+};
+const englishMonths: Record<string, string> = {
+  Jan: "ene",
+  Feb: "feb",
+  Mar: "mar",
+  Apr: "abr",
+  May: "may",
+  Jun: "jun",
+  Jul: "jul",
+  Aug: "ago",
+  Sep: "sept",
+  Oct: "oct",
+  Nov: "nov",
+  Dec: "dic",
+};
+const textTime =
+  /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{1,2}), (\d{1,2}:\d{2})(am|pm)$/;
+
+// A value in Spanish: the code's own words, or a text's time ("lun 26 oct, 9:00 a. m."); a name as it is.
+function spanishValueOf(value: string): string {
+  if (spanishValues[value]) return spanishValues[value];
+  const time = value.match(textTime);
+  if (!time) return value;
+  const [, day, month, date, clock, half] = time;
+  return `${englishDays[day]} ${date} ${englishMonths[month]}, ${clock} ${half === "am" ? "a. m." : "p. m."}`;
+}
 
 // "{}" templates as patterns, longest first, so a longer message wins over a shorter one.
 const templates = Object.keys(spanishMessages)
@@ -320,10 +383,7 @@ export function spanishMessageOf(english: string): string | undefined {
     const match = english.match(pattern);
     if (!match) continue;
     let value = 0;
-    return spanish.replace(/\{\}/g, () => {
-      const said = match[++value] ?? "";
-      return spanishValues[said] ?? said;
-    });
+    return spanish.replace(/\{\}/g, () => spanishValueOf(match[++value] ?? ""));
   }
   return undefined;
 }
