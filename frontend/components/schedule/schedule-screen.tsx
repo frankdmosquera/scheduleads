@@ -190,12 +190,14 @@ function ScheduleCalendar({
     <div>
       <div className="flex flex-wrap items-center gap-3">
         {first.resources.length > 1 ? (
-          <label className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{scheduleWords.calendarOf}</span>
+          <label className="flex w-full items-center gap-2 sm:w-auto">
+            <span className="text-sm whitespace-nowrap text-muted-foreground">
+              {scheduleWords.calendarOf}
+            </span>
             <select
               value={resourceId}
               onChange={(event) => onAsk({ resourceId: event.target.value, date })}
-              className="rounded-md border border-border bg-background px-2 py-1.5 text-base font-medium"
+              className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-base font-medium sm:flex-none"
             >
               {first.resources.map((one) => (
                 <option key={one.id} value={one.id}>

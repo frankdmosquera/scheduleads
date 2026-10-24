@@ -79,6 +79,13 @@ function lanesOf(spans: { start: number; end: number }[]): { lane: number; lanes
   return placed;
 }
 
+// "Thu" for a calendar date, over its day number in a week's header.
+function weekdayWords(date: string, intlLocale: string): string {
+  return new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "short" }).format(
+    new Date(`${date}T12:00:00Z`)
+  );
+}
+
 // "9 a.m." for an hour down the grid's side.
 function hourWords(hour: number, intlLocale: string): string {
   return new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", hour: "numeric" }).format(
@@ -124,25 +131,42 @@ export function ScheduleTimeGrid({
           {refusal}
         </p>
       ) : null}
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      {/* Scrolls inside its own box, so the days stay pinned on top and the hours on the left. */}
+      <div className="max-h-[70vh] overflow-auto rounded-lg border border-border bg-card [--day-col:5.5rem] [--time-col:2.75rem] sm:[--day-col:6.5rem] sm:[--time-col:4rem]">
         <div
           className="grid"
           style={{
-            gridTemplateColumns: `4rem repeat(${days.length}, minmax(${days.length > 1 ? "6.5rem" : "12rem"}, 1fr))`,
+            gridTemplateColumns: `var(--time-col) repeat(${days.length}, minmax(${days.length > 1 ? "var(--day-col)" : "12rem"}, 1fr))`,
           }}
         >
-          <div className="border-b border-border" />
+          <div className="sticky top-0 left-0 z-30 border-b border-border bg-card" />
           {days.map((day) => (
             <div
               key={day.date}
-              className={`border-b border-l border-border px-2 py-2 ${day.date === today ? "bg-[var(--accent-soft)]" : ""}`}
+              className={`sticky top-0 z-20 border-b border-l border-border px-2 py-2 bg-card`}
             >
-              <h2
-                aria-current={day.date === today ? "date" : undefined}
-                className="text-sm font-semibold text-foreground aria-[current=date]:text-[var(--primary)]"
-              >
-                {calendarDayWords(day.date, words.intlLocale)}
-              </h2>
+              {days.length > 1 ? (
+                // A week: "Fri 23" on one line, today's number circled.
+                <h2
+                  aria-label={calendarDayWords(day.date, words.intlLocale)}
+                  aria-current={day.date === today ? "date" : undefined}
+                  className="group flex items-center gap-1 whitespace-nowrap"
+                >
+                  <span className="text-xs font-medium text-muted-foreground group-aria-[current=date]:text-[var(--primary)]">
+                    {weekdayWords(day.date, words.intlLocale)}
+                  </span>
+                  <span className="flex size-7 items-center justify-center rounded-full text-sm font-semibold text-foreground group-aria-[current=date]:bg-[var(--primary)] group-aria-[current=date]:text-[var(--primary-foreground)]">
+                    {Number(day.date.slice(8))}
+                  </span>
+                </h2>
+              ) : (
+                <h2
+                  aria-current={day.date === today ? "date" : undefined}
+                  className="text-sm font-semibold text-foreground aria-[current=date]:text-[var(--primary)]"
+                >
+                  {calendarDayWords(day.date, words.intlLocale)}
+                </h2>
+              )}
               {day.closed || day.standby || day.hours.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
                   {day.closed
@@ -155,11 +179,11 @@ export function ScheduleTimeGrid({
             </div>
           ))}
 
-          <div className="relative" style={{ height }}>
+          <div className="sticky left-0 z-10 bg-card" style={{ height }}>
             {hours.map((hour) => (
               <span
                 key={hour}
-                className="absolute right-2 -translate-y-1/2 whitespace-nowrap text-[11px] text-muted-foreground first:translate-y-0"
+                className="absolute right-1 -translate-y-1/2 text-[10px] whitespace-nowrap text-muted-foreground first:translate-y-0 sm:right-2 sm:text-[11px]"
                 style={{ top: top(hour * 60) }}
               >
                 {hourWords(hour, words.intlLocale)}
