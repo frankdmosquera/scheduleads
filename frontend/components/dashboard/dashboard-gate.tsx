@@ -14,6 +14,7 @@ import { BusinessPickerScreen } from "@/components/dashboard/business-picker-scr
 import { DashboardSignedOutScreen } from "@/components/dashboard/dashboard-signed-out-screen";
 import { Button } from "@/components/ui/button";
 import { fetchMe, type MeResultType, type MeType } from "@/lib/api-client/dashboard/fetch-me";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 const MeContext = createContext<MeType | null>(null);
 
@@ -25,6 +26,7 @@ export function useMe(): MeType {
 }
 
 export function DashboardGate({ children }: { children: ReactNode }) {
+  const { words, showLoginLanguage } = useDashboardWords();
   const [result, setResult] = useState<MeResultType | null>(null);
 
   // Bump to ask /me again: after picking a business, or on "Try again".
@@ -36,18 +38,20 @@ export function DashboardGate({ children }: { children: ReactNode }) {
     let live = true;
 
     fetchMe().then((next) => {
-      if (live) setResult(next);
+      if (!live) return;
+      setResult(next);
+      if (next.state === "ok") showLoginLanguage(next.me.user.language); // the login's own pick
     });
 
     return () => {
       live = false;
     };
-  }, [reloads]);
+  }, [reloads, showLoginLanguage]);
 
   if (!result) {
     return (
-      <CentredCard title="One moment">
-        <p className="text-sm text-muted-foreground">Loading your business…</p>
+      <CentredCard title={words.oneMoment}>
+        <p className="text-sm text-muted-foreground">{words.loadingYourBusiness}</p>
       </CentredCard>
     );
   }
@@ -62,23 +66,21 @@ export function DashboardGate({ children }: { children: ReactNode }) {
     case "plan-refused":
       return (
         <CentredCard
-          title="This account needs attention"
-          lede="Your business is on a plan this dashboard does not recognise, so there is nothing safe to show you."
+          title={words.needsAttention}
+          lede={words.planNotRecognisedLede}
           footer={<SignOutLink />}
         >
           <CentredCardNotice>{result.message}</CentredCardNotice>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Nothing is lost. Get in touch and we will put the account back on the right plan.
-          </p>
+          <p className="mt-4 text-sm text-muted-foreground">{words.nothingLost}</p>
         </CentredCard>
       );
 
     case "unreachable":
       return (
-        <CentredCard title="Cannot reach the API">
+        <CentredCard title={words.cannotReachTheApi}>
           <CentredCardNotice>{result.message}</CentredCardNotice>
           <Button className="mt-4 w-full" size="lg" onClick={reloadDashboard}>
-            Try again
+            {words.tryAgain}
           </Button>
         </CentredCard>
       );

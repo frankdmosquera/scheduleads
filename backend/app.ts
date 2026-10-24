@@ -2,9 +2,16 @@
 // PublicAppType, the public routes alone.
 // One chain, so AppType carries every route. Importing this starts nothing; server.ts does.
 
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { validator } from "hono/validator";
 
+import { user as userTable } from "@scheduleads-app/shared/db";
+import { dashboardLanguageValidationSchema } from "@scheduleads-app/shared/zod-validation";
+
+import { db } from "./database.js";
 import { auth } from "./lib/auth/auth-server.js";
+import { refuse } from "./lib/errors/refuse.js";
 import { requireOrganizationMiddleware } from "./middleware/auth-middleware/require-organization-middleware.js";
 import { dashboardCorsMiddleware } from "./middleware/dashboard-middleware/dashboard-cors-middleware.js";
 import { dashboardCsrfMiddleware } from "./middleware/dashboard-middleware/dashboard-csrf-middleware.js";
@@ -26,6 +33,7 @@ export const app = new Hono()
   // Every dashboard route mounts both; the ones that change something also check the origin.
   .use("/api/auth/*", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
   .use("/me", dashboardCorsMiddleware, dashboardNoStoreMiddleware)
+  .use("/me/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
   .use("/calendar/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
   .use("/admin/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
   .use("/bookings/*", dashboardCorsMiddleware, dashboardCsrfMiddleware, dashboardNoStoreMiddleware)
@@ -57,7 +65,7 @@ export const app = new Hono()
     const subscription = c.get("subscription");
 
     return c.json({
-      user: { id: user.id, email: user.email, name: user.name },
+      user: { id: user.id, email: user.email, name: user.name, language: user.language },
       organization: {
         id: activeOrganization.organizationId,
         name: details.name,
@@ -68,6 +76,25 @@ export const app = new Hono()
       limits: subscription.limits,
     });
   })
+
+  // The signed-in login picks its own dashboard language (feature 12j). Whose login comes from the
+  // session alone; no plan is needed to change it.
+  .put(
+    "/me/language",
+    requireOrganizationMiddleware,
+    validator("json", (value, c) => {
+      const parsed = dashboardLanguageValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : c.json(refuse("bad_request", "Use en or es."), 400);
+    }),
+    async (c) => {
+      const { language } = c.req.valid("json");
+      await db
+        .update(userTable)
+        .set({ language, updatedAt: new Date() })
+        .where(eq(userTable.id, c.get("user").id));
+      return c.json({ language }, 200);
+    }
+  )
 
   .route("/admin", adminRoutes)
   .route("/bookings", bookingsRoutes)

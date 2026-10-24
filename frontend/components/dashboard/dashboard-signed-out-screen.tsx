@@ -7,17 +7,19 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { CentredCard } from "@/components/centred-card/centred-card";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export function DashboardSignedOutScreen() {
   const router = useRouter();
+  const { words } = useDashboardWords();
 
   useEffect(() => {
     router.replace("/sign-in");
   }, [router]);
 
   return (
-    <CentredCard title="Taking you to sign in">
-      <p className="text-sm text-muted-foreground">One moment…</p>
+    <CentredCard title={words.takingYouToSignIn}>
+      <p className="text-sm text-muted-foreground">{words.oneMomentEllipsis}</p>
     </CentredCard>
   );
 }

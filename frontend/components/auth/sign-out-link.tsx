@@ -6,9 +6,11 @@
 import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export function SignOutLink({ onSignedOut }: { onSignedOut?: () => void }) {
   const router = useRouter();
+  const { words, forgetLoginLanguage } = useDashboardWords();
 
   return (
     <button
@@ -16,12 +18,13 @@ export function SignOutLink({ onSignedOut }: { onSignedOut?: () => void }) {
       className="underline underline-offset-2 hover:text-foreground"
       onClick={async () => {
         await authClient.signOut();
+        forgetLoginLanguage(); // the next screens follow the browser again
         if (onSignedOut) onSignedOut();
         else router.push("/sign-in");
         router.refresh();
       }}
     >
-      Sign out
+      {words.signOut}
     </button>
   );
 }

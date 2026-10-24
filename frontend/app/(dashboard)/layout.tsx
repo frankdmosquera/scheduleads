@@ -7,11 +7,14 @@ import type { ReactNode } from "react";
 
 import { DashboardGate } from "@/components/dashboard/dashboard-gate";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { DashboardLanguageFrame } from "@/lib/dashboard-words/dashboard-language-frame";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <DashboardGate>
-      <DashboardShell>{children}</DashboardShell>
-    </DashboardGate>
+    <DashboardLanguageFrame>
+      <DashboardGate>
+        <DashboardShell>{children}</DashboardShell>
+      </DashboardGate>
+    </DashboardLanguageFrame>
   );
 }

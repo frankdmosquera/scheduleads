@@ -2,6 +2,8 @@
 
 import { createMiddleware } from "hono/factory";
 
+import type { DashboardLanguageType } from "@scheduleads-app/shared/pick-dashboard-language";
+
 import { auth } from "../../lib/auth/auth-server.js";
 import {
   getOrganizationFromSession,
@@ -14,6 +16,7 @@ export type SessionUserType = {
   id: string;
   email: string;
   name: string;
+  language: DashboardLanguageType | null; // the dashboard language it picked (feature 12j); null for none
 };
 
 // Adds `user` and `organization` to Hono's context, so c.set / c.get are type-checked.
@@ -48,7 +51,13 @@ export const requireOrganizationMiddleware = createMiddleware(async (c, next) =>
     id: session.user.id,
     email: session.user.email,
     name: session.user.name ?? "", // accounts made by email code have no name
+    language: dashboardLanguageOf(session.user.language),
   });
   c.set("organization", activeOrganization);
   await next();
 });
+
+// The session carries it as a plain string; anything but en or es reads as not picked.
+function dashboardLanguageOf(value: unknown): DashboardLanguageType | null {
+  return value === "en" || value === "es" ? value : null;
+}

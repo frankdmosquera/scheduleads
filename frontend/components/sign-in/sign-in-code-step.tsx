@@ -12,8 +12,10 @@ import { OTP_LENGTH, signInCodeValidationSchema } from "@scheduleads-app/shared/
 import { CentredCard } from "@/components/centred-card/centred-card";
 import { CentredCardField } from "@/components/centred-card/centred-card-field";
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
+import { LanguageSwitch } from "@/components/language-switch/language-switch";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
+import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 export function SignInCodeStep({
   email,
@@ -23,6 +25,7 @@ export function SignInCodeStep({
   onDifferentEmail: () => void;
 }) {
   const router = useRouter();
+  const { words } = useDashboardWords();
   const [refusal, setRefusal] = useState<string | null>(null);
   const form = useForm({
     resolver: zodResolver(signInCodeValidationSchema),
@@ -35,7 +38,7 @@ export function SignInCodeStep({
 
     if (error) {
       // A wrong code and an unknown account get the same answer on purpose; don't guess which.
-      setRefusal(error.message ?? "That code is not right. Request a new one.");
+      setRefusal(error.message ?? words.codeNotRight);
       return;
     }
 
@@ -46,21 +49,24 @@ export function SignInCodeStep({
 
   return (
     <CentredCard
-      title="Check your email"
+      title={words.checkYourEmail}
       lede={
         <>
-          A {OTP_LENGTH} digit code is on its way to{" "}
+          {words.codeOnItsWay(OTP_LENGTH)}{" "}
           <span className="font-medium text-foreground">{email}</span>.
         </>
       }
       footer={
-        <button
-          type="button"
-          className="underline underline-offset-2 hover:text-foreground"
-          onClick={onDifferentEmail}
-        >
-          Use a different email
-        </button>
+        <div className="flex flex-col items-center gap-3">
+          <button
+            type="button"
+            className="underline underline-offset-2 hover:text-foreground"
+            onClick={onDifferentEmail}
+          >
+            {words.useADifferentEmail}
+          </button>
+          <LanguageSwitch />
+        </div>
       }
     >
       <form
@@ -75,7 +81,7 @@ export function SignInCodeStep({
             <CentredCardField
               {...field}
               id="code"
-              label="Login code"
+              label={words.loginCodeLabel}
               inputMode="numeric"
               autoComplete="one-time-code"
               autoFocus
@@ -88,7 +94,7 @@ export function SignInCodeStep({
         />
         {refusal ? <CentredCardNotice>{refusal}</CentredCardNotice> : null}
         <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Checking…" : "Sign in"}
+          {form.formState.isSubmitting ? words.checking : words.signIn}
         </Button>
       </form>
     </CentredCard>

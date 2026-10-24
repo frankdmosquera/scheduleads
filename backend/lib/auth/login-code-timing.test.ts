@@ -29,11 +29,12 @@ describe("a login code", () => {
   test("a known address is answered before its email is sent", async () => {
     vi.stubEnv("RESEND_API_KEY", "re_agency_key");
     vi.stubEnv("LOGIN_EMAIL_FROM", "login@agentsweb.com");
-    let resendAsked = false;
+    let resendAsked = () => {};
+    const askedResend = new Promise<void>((resolve) => (resendAsked = resolve));
     let letResendAnswer = () => {};
     const resendAnswered = new Promise<void>((resolve) => (letResendAnswer = resolve));
     vi.stubGlobal("fetch", async () => {
-      resendAsked = true;
+      resendAsked();
       await resendAnswered; // Resend is slow: it answers only when the test lets it
       return new Response(JSON.stringify({ id: "email-789" }), {
         status: 200,
@@ -48,8 +49,8 @@ describe("a login code", () => {
       body: JSON.stringify({ email: "owner@example.com", type: "sign-in" }),
     });
 
-    expect(response.status).toBe(200);
-    expect(resendAsked).toBe(true); // the email was started...
-    letResendAnswer(); // ...and the answer came while Resend still had not answered
+    expect(response.status).toBe(200); // answered while Resend still had not answered...
+    await askedResend; // ...and the email really went on to be sent, after the login's language
+    letResendAnswer();
   });
 });

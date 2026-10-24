@@ -83,6 +83,10 @@
     "./backups": {
       "types": "./dist/backups/restore-target.d.ts",
       "default": "./dist/backups/restore-target.js"
+    },
+    "./pick-dashboard-language": {
+      "types": "./dist/helpers/pick-dashboard-language.d.ts",
+      "default": "./dist/helpers/pick-dashboard-language.js"
     }
   },
   "scripts": {

@@ -225,6 +225,13 @@
       "when": 1792813271286,
       "tag": "0031_booking_language",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792837143591,
+      "tag": "0032_user_language",
+      "breakpoints": true
     }
   ]
 }
