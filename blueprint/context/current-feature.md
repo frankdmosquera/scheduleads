@@ -8,7 +8,7 @@ every customer email; and the redirect after booking, a new contract every site 
 
 **Branch:** feature/12i-spanish-booking
 
-**Status:** 12i.1 and 12i.2 done 2026-10-24; 12i.3 built 2026-10-24, in review; 0.2.0 waits for Frank's yes.
+**Status:** verified
 
 ## Goal
 
