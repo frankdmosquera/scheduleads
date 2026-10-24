@@ -127,8 +127,10 @@ P0 and P1 findings are fixed before the next step; P2 and P3 are recorded and ca
   screen; with `redirectTo`, the browser goes to that address (a function is called with `BookedType`
   to build it), and the window shows its done screen while the page leaves (amended in 12i.1: a
   form left on screen while the browser leaves could be pressed again). The address is the site's own code,
-  so the package does not restrict it. A thrown `onBooked` or `redirectTo` is caught and logged, and
-  the window falls back to its done screen; the booking is never retried.
+  so the package does not restrict it. Both are caught and logged: a thrown `redirectTo` keeps the
+  visitor on the done screen, a thrown `onBooked` still sends them on (F-458, 2026-10-24: a broken
+  count must not cost the thank-you page). `onBooked` runs just before the page leaves, so what it
+  sends must go at once (`navigator.sendBeacon`). The booking is never retried.
 - **API**: `GET /public/:slug/booking-links/:bookingLinkId/times?...&language=es` and
   `POST /public/:slug/bookings` with `"language": "es"`: only `when` changes; the stable shapes and
   error answers do not. A value other than `en` or `es` is a 400 like any other invalid field.

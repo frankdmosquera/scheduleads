@@ -3,6 +3,7 @@
 
 "use client";
 
+import { capitalized } from "@scheduleads-app/shared/booking-time";
 import { useEffect, useRef } from "react";
 
 import type { BookingStartTimeType } from "../../../api-client/booking-api-types.js";
@@ -34,7 +35,7 @@ export function DayTimesView({
 
   return (
     <div className="sa-times">
-      <div className="sa-times-h">{dayName}</div>
+      <div className="sa-times-h">{capitalized(dayName)}</div>
       <div className="sa-times-list">
         {times.map(({ startsAt, time }) => {
           return startsAt === pickedTime ? (

@@ -274,6 +274,15 @@ describe("a booking is made", () => {
     expect(body.booking.when).toMatch(/ de /);
   });
 
+  test("refuses a language other than English or Spanish, like any other bad field", async () => {
+    const [startsAt] = await freeTimes(clinic.ana);
+    const response = await post(bookingsPath, { ...form(startsAt), language: "fr" });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: { code: "bad_request", message: "Use en or es." },
+    });
+  });
+
   test("201 with the booking's times, service and person, and none of the customer's details", async () => {
     const [startsAt] = await freeTimes(clinic.ana);
     const response = await post(bookingsPath, form(startsAt));

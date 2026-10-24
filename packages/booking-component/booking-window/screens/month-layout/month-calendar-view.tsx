@@ -2,6 +2,8 @@
 // be picked; the others are shown but cannot. Today carries a dot.
 
 import type { BookableMonthsType } from "../../month-calendar/bookable-months.js";
+import { capitalized } from "@scheduleads-app/shared/booking-time";
+
 import { formatDayName } from "../../month-calendar/format-day-name.js";
 import { formatMonthName } from "../../month-calendar/format-month-name.js";
 import { monthGrid } from "../../month-calendar/month-grid.js";
@@ -38,7 +40,7 @@ export function MonthCalendarView({
           &#8249;
         </button>
         <span className="sa-mtitle" aria-live="polite">
-          {formatMonthName(month, words.language)}
+          {capitalized(formatMonthName(month, words.language))}
         </span>
         <button
           type="button"
@@ -73,7 +75,7 @@ export function MonthCalendarView({
                 data-free={freeDays.has(date) ? "yes" : undefined}
                 disabled={!freeDays.has(date)}
                 aria-pressed={freeDays.has(date) ? date === pickedDate : undefined}
-                aria-label={formatDayName(date, words.language)}
+                aria-label={capitalized(formatDayName(date, words.language))}
                 onClick={() => onPickDate(date)}
               >
                 {Number(date.slice(8))}

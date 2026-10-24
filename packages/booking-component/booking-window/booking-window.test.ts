@@ -1,6 +1,14 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  configure,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { hc } from "hono/client";
 import { createElement } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -17,6 +25,9 @@ const englishWindow = {
   onBooked: undefined,
   goTo() {},
 };
+
+// Two jsdom window files run side by side; a cold first run can take longer than a second.
+configure({ asyncUtilTimeout: 3000 });
 
 // jsdom has no <dialog> behaviour: open and close are enough here.
 beforeAll(() => {

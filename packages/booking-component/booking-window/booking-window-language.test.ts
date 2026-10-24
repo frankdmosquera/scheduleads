@@ -1,6 +1,14 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  configure,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { hc } from "hono/client";
 import { createElement } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -12,6 +20,9 @@ import type { BookingWordsType } from "../words/booking-words-type.js";
 import { englishWords } from "../words/english-words.js";
 import { spanishWords } from "../words/spanish-words.js";
 import { BookingWindow } from "./booking-window.js";
+
+// Two jsdom window files run side by side; a cold first run can take longer than a second.
+configure({ asyncUtilTimeout: 3000 });
 
 // jsdom has no <dialog> behaviour: open and close are enough here.
 beforeAll(() => {
@@ -40,9 +51,15 @@ const madeBooking = {
   person: { id: "ana", name: "Ana" },
 };
 
+type FakeApiSetupType = {
+  listed?: boolean; // the service list has the service (else it is empty: nothing to book)
+  customerPicks?: boolean; // the customer picks who does it, from Ana
+  timeTaken?: boolean; // Book answers that the time was taken meanwhile
+};
+
 // A fake API for one business with one service, writing its times in whichever language it is
 // asked; it records every times question and every Book.
-function fakeApi() {
+function fakeApi(setup: FakeApiSetupType = {}) {
   const timesAsked: string[] = [];
   const posted: Record<string, unknown>[] = [];
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -52,7 +69,9 @@ function fakeApi() {
       const url = new URL(request.url);
       if (request.method === "POST") {
         posted.push(await request.clone().json());
-        return json({ booking: madeBooking }, 201);
+        return setup.timeTaken
+          ? json({ error: { code: "time_taken", message: "That time was just taken." } }, 409)
+          : json({ booking: madeBooking }, 201);
       }
       if (url.pathname.endsWith("/times")) {
         timesAsked.push(url.search);
@@ -60,7 +79,7 @@ function fakeApi() {
         const time = spanish ? "10:00 a. m." : "10:00 a.m.";
         return json({
           timezone: "America/Edmonton",
-          people: [],
+          people: setup.customerPicks ? [{ id: "ana", name: "Ana" }] : [],
           startTimes: [madeBooking.startsAt],
           localStartTimes: [
             { startsAt: madeBooking.startsAt, date: "2026-10-14", time, when: madeBooking.when },
@@ -79,7 +98,7 @@ function fakeApi() {
             bufferAfterMinutes: 0,
             addressMode: "not_asked",
             layout: "month",
-            personChoice: "business_assigns",
+            personChoice: setup.customerPicks ? "customer_picks" : "business_assigns",
           },
           availability: { timezone: "America/Edmonton", horizonDays: 120 },
         });
@@ -92,7 +111,9 @@ function fakeApi() {
           contactRule: "either",
           questions: [],
         },
-        bookingLinks: [],
+        bookingLinks: setup.listed
+          ? [{ id: "facial", name: "Hydra Spa Facial", durationMinutes: 60, description: null }]
+          : [],
       });
     },
   });
@@ -100,6 +121,8 @@ function fakeApi() {
 }
 
 type WindowSetupType = {
+  api?: FakeApiSetupType;
+  bookingId?: string; // left out: the window opens on the facial
   words?: BookingWordsType;
   afterBooking?: AfterBookingType;
   onBooked?: (booked: BookedType) => void;
@@ -107,12 +130,12 @@ type WindowSetupType = {
 };
 
 function openWindow(setup: WindowSetupType = {}) {
-  const api = fakeApi();
+  const api = fakeApi(setup.api);
   render(
     createElement(BookingWindow, {
       apiClient: api.apiClient,
       slug: "clinic-dev",
-      bookingId: "facial",
+      bookingId: "bookingId" in setup ? setup.bookingId : "facial",
       words: setup.words ?? englishWords,
       afterBooking: setup.afterBooking ?? "stay",
       onBooked: setup.onBooked,
@@ -145,6 +168,8 @@ describe("the booking window's language", () => {
     expect(screen.getByText("Octubre de 2026")).toBeDefined();
     expect(screen.getByRole("button", { name: "Miércoles, 14 de octubre" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Cerrar" })).toBeDefined();
+    // The window says its own language, whatever the page around it speaks.
+    expect(document.querySelector("dialog")?.getAttribute("lang")).toBe("es");
     await waitFor(() => expect(timesAsked.length).toBeGreaterThan(0));
     expect(timesAsked.every((search) => search.includes("language=es"))).toBe(true);
 
@@ -167,6 +192,8 @@ describe("the booking window's language", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Reservar" })));
 
     expect(screen.getByText("Escriba su nombre.")).toBeDefined();
+    // Inside a sentence the day stays lowercase, as Spanish writes it.
+    expect(screen.getByText(/10:00 a\. m\., miércoles, 14 de octubre/)).toBeDefined();
     expect(screen.getByText("Escriba un correo electrónico válido.")).toBeDefined();
     expect(screen.queryByText("Enter a name.")).toBeNull();
     expect(posted).toHaveLength(0);
@@ -179,6 +206,41 @@ describe("the booking window's language", () => {
     await bookTheOneTime(englishWords);
     expect(timesAsked.some((search) => search.includes("language"))).toBe(false);
     expect(posted[0]?.language).toBe("en");
+  });
+});
+
+describe("every screen in Spanish", () => {
+  it("loads, lists the services and names the person choice in Spanish", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-09T18:00:00.000Z"));
+    openWindow({
+      words: spanishWords,
+      bookingId: undefined,
+      api: { listed: true, customerPicks: true },
+    });
+    expect(screen.getByText("Cargando…")).toBeDefined();
+    expect(
+      await screen.findByRole("heading", { name: "Reserve con Riverbend Clinic" })
+    ).toBeDefined();
+    expect(screen.getByText("Elija qué desea reservar.")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: /Hydra Spa Facial/ }));
+    expect(await screen.findByText("¿Con quién desea su cita?")).toBeDefined();
+    expect(screen.getByRole("radio", { name: "Cualquiera disponible" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Volver a los servicios" })).toBeDefined();
+  });
+
+  it("says nothing can be booked in Spanish", async () => {
+    openWindow({ words: spanishWords, bookingId: undefined });
+    expect(await screen.findByText("En este momento no se puede reservar en línea.")).toBeDefined();
+    expect(screen.getByRole("heading", { name: "Reserve con Riverbend Clinic" })).toBeDefined();
+  });
+
+  it("says a time taken meanwhile in Spanish, not in the API's English", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-09T18:00:00.000Z"));
+    openWindow({ words: spanishWords, api: { timeTaken: true } });
+    await bookTheOneTime(spanishWords);
+    expect((await screen.findByRole("alert")).textContent).toBe(spanishWords.timeTaken);
   });
 });
 
@@ -222,6 +284,22 @@ describe("after a booking", () => {
     });
     await bookTheOneTime(englishWords);
     await waitFor(() => expect(goTo).toHaveBeenCalledWith(`/gracias?at=${madeBooking.startsAt}`));
+  });
+
+  it("still goes to the thank-you page when the site's onBooked throws", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-09T18:00:00.000Z"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const goTo = vi.fn();
+    openWindow({
+      afterBooking: { redirectTo: "/gracias" },
+      onBooked: () => {
+        throw new Error("the site's count failed");
+      },
+      goTo,
+    });
+    await bookTheOneTime(englishWords);
+    await waitFor(() => expect(goTo).toHaveBeenCalledWith("/gracias"));
   });
 
   it("keeps its own confirmation when the site's code throws, and books only once", async () => {

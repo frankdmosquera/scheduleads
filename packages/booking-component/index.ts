@@ -26,6 +26,9 @@
 //     afterBooking={{ redirectTo: "/gracias" }} onBooked={(booked) => countIt(booked)}>
 //
 // redirectTo may also be a function of the booking, to put its time in the page's address.
+// onBooked runs just before the browser leaves for that page: anything it sends must go at once
+// (navigator.sendBeacon), since a fetch it starts may be cut off. If it throws, the visitor still
+// goes to the page.
 //
 // Then any number of buttons inside it. With no bookingId the window opens on the business's
 // services; with a service's bookingId it opens straight on that service:

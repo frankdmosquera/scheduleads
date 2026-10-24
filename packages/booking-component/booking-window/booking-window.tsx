@@ -159,7 +159,8 @@ export function BookingWindow({
 
   // After a 201: the site hears of it, then the visitor stays on the confirmation or goes to the
   // site's page. The confirmation shows either way, so nothing waits on a blank form while the
-  // browser leaves; a site's code that throws only costs the redirect, never the booking.
+  // browser leaves. A throwing onBooked still sends the visitor on (a broken count must not cost
+  // the thank-you page); a throwing redirectTo leaves them on the confirmation. Never a second booking.
   const booked = (booking: BookingMadeType) => {
     const made: BookedType = {
       bookingId: booking.id,
@@ -186,6 +187,7 @@ export function BookingWindow({
       <dialog
         ref={dialogRef}
         className="sa-dialog"
+        lang={words.language}
         aria-labelledby={titleId}
         onClose={() => {
           latestLoad.current++;
