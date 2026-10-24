@@ -404,18 +404,58 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Keep one formatter per language at module level (a `Record<BookingLanguageType, Intl.DateTimeFormat>` built lazily or up front), as the code did for English before.
 **Resolution:**
 
-### F-469 [P2] fixed - After "Sign in again" from a dashboard screen, the sign-in page's language switch tries to save to the login that has ended
+### F-469 [P2] closed - After "Sign in again" from a dashboard screen, the sign-in page's language switch tries to save to the login that has ended
 
 **File:** frontend/lib/dashboard-words/dashboard-words-provider.tsx:69, 77; frontend/components/language-switch/language-switch.tsx:27; frontend/components/centred-card/refusal-notice.tsx:17; frontend/components/dashboard/dashboard-gate.tsx:60
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..fe03a61; lenses: quality, security, performance, tests)
 **Why it matters:** The provider lives in the root layout and counts a login as signed in while `loginLanguage !== undefined`. Only `SignOutLink` calls `forgetLoginLanguage`. When a sign-in ends on its own, a screen shows `RefusalNotice`, whose "Sign in again" is a client-side `Link` to `/sign-in`, so the provider keeps the old login's language and `signedIn: true`. On the sign-in page the switch then calls `PUT /me/language`, gets 401, and says "Your language could not be saved" instead of keeping the pick in the browser, as the spec's "Signed out, it is kept in the browser" requires. The page also shows the ended login's language rather than the sign-in pick or the browser's, and sends that as the code email's `Accept-Language`. The gate's `signed-out` result (after "Try again" or a business pick) has the same gap. A reload clears it. Code-path evidence; not seen in a browser.
 **Suggested fix:** Forget the login's language whenever the screen knows the login is gone: call `forgetLoginLanguage()` when the sign-in page mounts (it is only reached signed out) and in the gate's `signed-out` case, or have `DashboardSignedOutScreen` do it before it redirects.
-**Resolution:** Fixed 2026-10-24 (12j.1 review fixes): the sign-in page forgets the last login's language when it opens (`frontend/app/sign-in/page.tsx`), and the gate forgets it on a signed-out answer (`dashboard-gate.tsx`). Reproduced first on http://localhost:3400 (session ended in the dev database, Sign in again, English gave PUT /me/language 401 and "No se pudo guardar su idioma"); after the fix the same path switches the page to English, saves `en` in the browser and sends no PUT.
+**Resolution:** Fixed 2026-10-24 (12j.1 review fixes): the sign-in page forgets the last login's language when it opens (`frontend/app/sign-in/page.tsx`), and the gate forgets it on a signed-out answer (`dashboard-gate.tsx`). Reproduced first on http://localhost:3400 (session ended in the dev database, Sign in again, English gave PUT /me/language 401 and "No se pudo guardar su idioma"); after the fix the same path switches the page to English, saves `en` in the browser and sends no PUT. Closed 2026-10-24 by /audit independent current (576bdaf..0acd574): re-read `frontend/app/sign-in/page.tsx:18-20` and `frontend/components/dashboard/dashboard-gate.tsx:44`; `forgetLoginLanguage` is a stable `useCallback` in `dashboard-words-provider.tsx:69`, so neither effect loops, and the gate's next `ok` answer sets the login's pick again after a sign-in. The original path is gone and the repair adds no new one.
 
-### F-470 [P3] fixed - No saved test carries the sign-in page's Accept-Language through Better Auth to the code email's language
+### F-470 [P3] closed - No saved test carries the sign-in page's Accept-Language through Better Auth to the code email's language
 
 **File:** backend/lib/auth/auth-server.ts:164-166; backend/app-me.test.ts:177-194; backend/lib/auth/send-login-code.test.ts:63-77
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..fe03a61; lenses: quality, security, performance, tests)
 **Why it matters:** The tests prove `loginLanguageOf` (pick, else header, else English) and `sendLoginCode` with a stubbed `languageOf`, but the one line that joins them, `ctx?.headers?.get("accept-language")`, is untested. Better Auth 1.7.5 passes the endpoint context as an optional second argument (`ctx?: GenericEndpointContext`); if an upgrade stopped passing it, or the header name drifted, a Spanish login that never picked would get its code in English and every suite would still pass. The step's Done when asks for a check of exactly this hand-off.
 **Suggested fix:** One test through `app.request("/api/auth/email-otp/send-verification-otp")` with `Accept-Language: es` for a seeded login with no pick, Resend faked as in `login-code-timing.test.ts`, asserting the faked call's subject is Spanish.
-**Resolution:** Fixed 2026-10-24 (12j.1 review fixes): `backend/lib/auth/login-code-timing.test.ts` gains "a login code's language": a throwaway login with no pick asks the real route for a code with `Accept-Language: es-CO,es;q=0.9` and the faked Resend gets "Su código de acceso: NNNNNN"; with no header, "Your sign-in code: NNNNNN". Proved able to fail: with `ctx?.headers?.get("accept-language")` replaced by null it got the English subject and failed.
+**Resolution:** Fixed 2026-10-24 (12j.1 review fixes): `backend/lib/auth/login-code-timing.test.ts` gains "a login code's language": a throwaway login with no pick asks the real route for a code with `Accept-Language: es-CO,es;q=0.9` and the faked Resend gets "Su código de acceso: NNNNNN"; with no header, "Your sign-in code: NNNNNN". Proved able to fail: with `ctx?.headers?.get("accept-language")` replaced by null it got the English subject and failed. Closed 2026-10-24 by /audit independent current (576bdaf..0acd574): the test (`backend/lib/auth/login-code-timing.test.ts:62-108`) goes through the real Better Auth route, inserts and deletes its own throwaway login, and passed in this pass's `npm run test --workspace=backend` (92 files, 1075 tests). The hand-off is now covered; the repair adds no new risk.
+
+### F-471 [P2] fixed - On a Spanish Booking form, the ready-made question sets stay English: "Empezar con el conjunto de painting" fills in English questions
+
+**File:** frontend/lib/dashboard-words/booking-form-words.ts:102; frontend/components/settings/booking-questions-card.tsx:74-75, 131; backend/lib/settings/booking-question-sets.ts:13-27
+**Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..0acd574; lenses: quality, security, performance, tests)
+**Why it matters:** The step's contract is no English on a signed-in screen except the business's own words and the API's messages (12j.3). The set names come from the product's own list in `booking-question-sets.ts` ("Painting", "Clinic"), not from the business and not from an API refusal, so a Spanish owner with no questions sees two buttons reading "Empezar con el conjunto de painting" and "Empezar con el conjunto de clinic". Pressing one fills the list with "Interior or exterior?", "How many rooms?" (or the clinic pair), which a Spanish business then saves and shows to its Spanish customers in the booking window. 12j.3 lists refusals, form errors and holiday names; these sets are in neither step.
+**Suggested fix:** Name each set in the words by its `trade` key (`presetName: Record<"painting" | "clinic", string>`, "pintura", "clínica") instead of the API's `name`, and give the sets their Spanish questions: either the route answers them in the login's language, or the frontend keeps one question list per language keyed by `trade`. Or record in the spec that the sets stay English until a later step.
+**Resolution:** Fixed 2026-10-24 (12j.2 review fixes, Frank's yes): each set in `backend/lib/settings/booking-question-sets.ts` carries its name and questions in English and Spanish; `booking-questions-card.tsx` names the button and fills the questions in the login's language. Seen on http://localhost:3400/settings/booking-form in Spanish: "Empezar con el conjunto de pintura" / "clínica", filling "¿Tiene alergias o alguna afección de la piel?" and "¿Es su primera visita?" (not saved). Settings route tests 45 pass.
+
+### F-472 [P3] open - "Tiempo libre" names a person's time off on the Calendar, while "libre" on the same screen means free to book
+
+**File:** frontend/lib/dashboard-words/schedule-words.ts:124, 138, 150, 165-166, 174, 181; frontend/lib/dashboard-words/services-words.ts:121
+**Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..0acd574; lenses: quality, security, performance, tests)
+**Why it matters:** To a Latin American reader "tiempo libre" is leisure, and "libre" reads as available. On the Calendar a block labelled "Tiempo libre" means the person cannot be booked, while the Book by hand lede on the same screen says "Cualquier hora en que esta persona esté libre", meaning bookable. Services uses "Tiempo libre antes" for a third thing, the buffer kept clear. An owner can read a person's blocked afternoon as open time.
+**Suggested fix:** Use one unambiguous word for time off, such as "Ausencia" (title, item label, "Guardar ausencia", "La ausencia quedó registrada") or "Tiempo no disponible", and keep "libre" for available.
+**Resolution:**
+
+### F-473 [P3] open - The off state of a person, place or service has several Spanish names across Settings
+
+**File:** frontend/lib/dashboard-words/people-words.ts:115-116; frontend/lib/dashboard-words/settings-frame-words.ts:64; frontend/lib/dashboard-words/services-words.ts:114-115, 135, 139, 146-147
+**Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..0acd574; lenses: quality, security, performance, tests)
+**Why it matters:** English uses one pair, On and Off. In Spanish, People shows a person as "No disponible", the same person in a service's ticks reads " (desactivado)" and "Todos los marcados están desactivados", and a service is "Oculto" in its badge but "Apagado lo oculta" in its checkbox. An owner matching a person turned off on People with the one marked in a service sees two different words. " (desactivado)" is also masculine after a place such as "la sala", which `people-words.ts` avoids on purpose ("Gender-free on purpose").
+**Suggested fix:** Pick one word per state and use it everywhere: for people and places "Disponible" / "No disponible" (ticks: " (no disponible)", "Todos los marcados no están disponibles"); for services "Activo" / "Oculto" ("Si lo desmarca, se oculta").
+**Resolution:**
+
+### F-474 [P3] open - The default lead stages are stored in English, so a Spanish dashboard shows "New", "Contacted", "Booked", "Done"
+
+**File:** packages/shared/crm/default-pipeline-stages.ts:4; backend/lib/crm/seed-pipeline-stages.ts:25; frontend/components/leads/leads-list-screen.tsx:157; frontend/components/leads/lead-page-screen.tsx:139, 218
+**Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..0acd574; lenses: quality, security, performance, tests)
+**Why it matters:** Every business gets its stages from `DEFAULT_PIPELINE_STAGES`, written in English, and the leads list, a lead's page and its other requests show `stage.name` as stored. The business never typed them, so they are not "words a business typed itself" under Out of scope, and neither 12j.2 nor 12j.3 names them. A Spanish owner's leads list reads "New" and "Booked" beside Spanish words.
+**Suggested fix:** Decide it in the spec: either the stage names are business data (shown as stored, said so under Out of scope), or a Spanish business gets Spanish stages when it is set up (the business's `language` choosing the names in `seed-pipeline-stages.ts`), or the dashboard names the four default stages through the words while their stored names are untouched.
+**Resolution:**
+
+### F-475 [P3] open - The sign-in page's email placeholder stays English in Spanish
+
+**File:** frontend/components/sign-in/sign-in-email-step.tsx:71
+**Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..0acd574; lenses: quality, security, performance, tests)
+**Why it matters:** The sign-in pages are in scope for Spanish (12j.1), and the Setup card's same kind of placeholder was moved into the words ("usted@sunegocio.com", `setup-cards-words.ts`). The sign-in email box still reads "you@yourbusiness.com" when the page is in Spanish.
+**Suggested fix:** Add an `emailPlaceholder` word to `DashboardWordsType` (Spanish, for example "nombre@sunegocio.com") and read it here.
+**Resolution:**

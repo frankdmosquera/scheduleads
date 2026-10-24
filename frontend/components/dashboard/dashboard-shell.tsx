@@ -28,7 +28,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-1 flex-col md:flex-row">
-      <aside className="flex flex-none flex-col gap-6 border-b border-border bg-card p-4 md:w-60 md:border-r md:border-b-0">
+      {/* On a desktop the column holds still at the window's height; only its links scroll. */}
+      <aside className="flex flex-none flex-col gap-6 border-b border-border bg-card p-4 md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0 md:pb-8">
         <div className="flex items-center gap-3">
           <BusinessInitialMark name={me.organization.name} />
           <div className="min-w-0">
@@ -39,7 +40,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex gap-1 md:flex-col" aria-label={words.screensLabel}>
+        <div className="text-sm text-muted-foreground">
+          <LanguageSwitch />
+        </div>
+
+        <nav
+          className="flex gap-1 md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto"
+          aria-label={words.screensLabel}
+        >
           {SCREENS.map((screen) => {
             // "/" is only itself; every other screen also owns the pages under it.
             const current =
@@ -57,8 +65,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <div className="flex flex-col items-start gap-3 text-sm text-muted-foreground md:mt-auto">
-          <LanguageSwitch />
+        <div className="text-sm text-muted-foreground">
           <SignOutLink onSignedOut={() => router.push("/sign-in")} />
         </div>
       </aside>

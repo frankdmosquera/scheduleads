@@ -26,7 +26,7 @@ const labelId = (key: string) => `question-${key}`;
 
 export function BookingQuestionsCard({ settings }: { settings: BookingFormSettingsType }) {
   const { canEdit, presets } = settings;
-  const { words } = useDashboardWords();
+  const { language, words } = useDashboardWords();
   const formWords = words.bookingFormWords;
   const formRef = useRef<HTMLFormElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
@@ -72,7 +72,7 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
   };
   const add = () => edit([...rows, { key: crypto.randomUUID(), label: "", required: false }]);
   const startFrom = (set: (typeof presets)[number]) =>
-    edit(set.questions.map((question) => ({ key: crypto.randomUUID(), ...question })));
+    edit(set.questions[language].map((question) => ({ key: crypto.randomUUID(), ...question })));
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -128,7 +128,7 @@ export function BookingQuestionsCard({ settings }: { settings: BookingFormSettin
                   size="sm"
                   onClick={() => startFrom(set)}
                 >
-                  {formWords.startFromSet(set.name)}
+                  {formWords.startFromSet(set.name[language])}
                 </Button>
               ))}
             </div>

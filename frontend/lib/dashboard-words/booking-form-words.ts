@@ -22,7 +22,7 @@ export type BookingFormWordsType = {
   questionsTitle: string;
   questionsLede(most: number): string;
   noQuestions: string;
-  startFromSet(setName: string): string; // the set's name as the API gives it
+  startFromSet(setName: string): string; // the set's name, in the login's language
   questionNumber(position: number): string;
   mustBeAnsweredNumbered(position: number): string;
   mustBeAnswered: string;
