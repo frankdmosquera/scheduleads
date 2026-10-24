@@ -27,6 +27,7 @@ export type DashboardWordsType = {
   signIn: string;
   signInLede: string;
   emailLabel: string;
+  emailPlaceholder: string;
   sending: string;
   sendMeACode: string;
   codeNotSent: string;

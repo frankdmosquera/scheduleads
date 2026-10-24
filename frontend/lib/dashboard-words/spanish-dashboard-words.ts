@@ -26,6 +26,7 @@ export const spanishDashboardWords: DashboardWordsType = {
   signIn: "Iniciar sesión",
   signInLede: "Escriba su correo y le enviaremos un código. Sin contraseñas que recordar.",
   emailLabel: "Correo",
+  emailPlaceholder: "usted@sunegocio.com",
   sending: "Enviando…",
   sendMeACode: "Enviarme un código",
   codeNotSent: "No se pudo enviar el código. Inténtelo de nuevo.",

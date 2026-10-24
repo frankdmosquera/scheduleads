@@ -428,21 +428,21 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Name each set in the words by its `trade` key (`presetName: Record<"painting" | "clinic", string>`, "pintura", "clínica") instead of the API's `name`, and give the sets their Spanish questions: either the route answers them in the login's language, or the frontend keeps one question list per language keyed by `trade`. Or record in the spec that the sets stay English until a later step.
 **Resolution:** Fixed 2026-10-24 (12j.2 review fixes, Frank's yes): each set in `backend/lib/settings/booking-question-sets.ts` carries its name and questions in English and Spanish; `booking-questions-card.tsx` names the button and fills the questions in the login's language. Seen on http://localhost:3400/settings/booking-form in Spanish: "Empezar con el conjunto de pintura" / "clínica", filling "¿Tiene alergias o alguna afección de la piel?" and "¿Es su primera visita?" (not saved). Settings route tests 45 pass.
 
-### F-472 [P3] open - "Tiempo libre" names a person's time off on the Calendar, while "libre" on the same screen means free to book
+### F-472 [P3] fixed - "Tiempo libre" names a person's time off on the Calendar, while "libre" on the same screen means free to book
 
 **File:** frontend/lib/dashboard-words/schedule-words.ts:124, 138, 150, 165-166, 174, 181; frontend/lib/dashboard-words/services-words.ts:121
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..0acd574; lenses: quality, security, performance, tests)
 **Why it matters:** To a Latin American reader "tiempo libre" is leisure, and "libre" reads as available. On the Calendar a block labelled "Tiempo libre" means the person cannot be booked, while the Book by hand lede on the same screen says "Cualquier hora en que esta persona esté libre", meaning bookable. Services uses "Tiempo libre antes" for a third thing, the buffer kept clear. An owner can read a person's blocked afternoon as open time.
 **Suggested fix:** Use one unambiguous word for time off, such as "Ausencia" (title, item label, "Guardar ausencia", "La ausencia quedó registrada") or "Tiempo no disponible", and keep "libre" for available.
-**Resolution:**
+**Resolution:** Fixed 2026-10-24 (Frank picked "No disponible"): a person's time off is "No disponible" on the Calendar (block, legend, button, its saved lines and the lede); "libre" is left meaning only free to book. A reason for the time off (vacation, appointment) is a later addition.
 
-### F-473 [P3] open - The off state of a person, place or service has several Spanish names across Settings
+### F-473 [P3] fixed - The off state of a person, place or service has several Spanish names across Settings
 
 **File:** frontend/lib/dashboard-words/people-words.ts:115-116; frontend/lib/dashboard-words/settings-frame-words.ts:64; frontend/lib/dashboard-words/services-words.ts:114-115, 135, 139, 146-147
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..0acd574; lenses: quality, security, performance, tests)
 **Why it matters:** English uses one pair, On and Off. In Spanish, People shows a person as "No disponible", the same person in a service's ticks reads " (desactivado)" and "Todos los marcados están desactivados", and a service is "Oculto" in its badge but "Apagado lo oculta" in its checkbox. An owner matching a person turned off on People with the one marked in a service sees two different words. " (desactivado)" is also masculine after a place such as "la sala", which `people-words.ts` avoids on purpose ("Gender-free on purpose").
 **Suggested fix:** Pick one word per state and use it everywhere: for people and places "Disponible" / "No disponible" (ticks: " (no disponible)", "Todos los marcados no están disponibles"); for services "Activo" / "Oculto" ("Si lo desmarca, se oculta").
-**Resolution:**
+**Resolution:** Fixed 2026-10-24: a person or place switched off is "Fuera de servicio" / "En servicio" (People, the Settings suffix, the service form's notes), gender-free and apart from the Calendar's "No disponible"; a service stays "Activo" / "Oculto" and the form's "Apagado" became "Oculto".
 
 ### F-474 [P3] open - The default lead stages are stored in English, so a Spanish dashboard shows "New", "Contacted", "Booked", "Done"
 
@@ -452,10 +452,10 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Suggested fix:** Decide it in the spec: either the stage names are business data (shown as stored, said so under Out of scope), or a Spanish business gets Spanish stages when it is set up (the business's `language` choosing the names in `seed-pipeline-stages.ts`), or the dashboard names the four default stages through the words while their stored names are untouched.
 **Resolution:**
 
-### F-475 [P3] open - The sign-in page's email placeholder stays English in Spanish
+### F-475 [P3] fixed - The sign-in page's email placeholder stays English in Spanish
 
 **File:** frontend/components/sign-in/sign-in-email-step.tsx:71
 **Found:** 2026-10-24 by /audit independent current (scope: 576bdaf..0acd574; lenses: quality, security, performance, tests)
 **Why it matters:** The sign-in pages are in scope for Spanish (12j.1), and the Setup card's same kind of placeholder was moved into the words ("usted@sunegocio.com", `setup-cards-words.ts`). The sign-in email box still reads "you@yourbusiness.com" when the page is in Spanish.
 **Suggested fix:** Add an `emailPlaceholder` word to `DashboardWordsType` (Spanish, for example "nombre@sunegocio.com") and read it here.
-**Resolution:**
+**Resolution:** Fixed 2026-10-24: the sign-in email placeholder is a word, "usted@sunegocio.com" in Spanish, English unchanged.

@@ -61,5 +61,5 @@ export const spanishSettingsFrameWords: SettingsFrameWordsType = {
   change: "Cambiar",
   remove: "Quitar",
   addThemOnPeople: "Agréguelos en Personas",
-  off: " (desactivado)",
+  off: " (fuera de servicio)",
 };

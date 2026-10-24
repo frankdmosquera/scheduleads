@@ -20,6 +20,7 @@ export const englishDashboardWords: DashboardWordsType = {
   signIn: "Sign in",
   signInLede: "Enter your email and we will send you a code. No password to remember.",
   emailLabel: "Email",
+  emailPlaceholder: "you@yourbusiness.com",
   sending: "Sending…",
   sendMeACode: "Send me a code",
   codeNotSent: "That code could not be sent. Try again.",

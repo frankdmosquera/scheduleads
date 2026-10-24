@@ -102,9 +102,9 @@ export const englishPeopleWords: PeopleWordsType = {
 export const spanishPeopleWords: PeopleWordsType = {
   cannotChange: "Su rol no puede cambiar las personas y los lugares. Puede verlos aquí.",
   addButton: "+ Agregar una persona o un lugar",
-  savedOn: (name) => `Guardado. ${name} está disponible.`,
+  savedOn: (name) => `Guardado. ${name} está en servicio.`,
   savedOff: (name, count) =>
-    `Guardado. ${name} no está disponible: no hay reservas nuevas.${
+    `Guardado. ${name} está fuera de servicio: no hay reservas nuevas.${
       count
         ? ` ${count === 1 ? "Una reserva se mantiene" : `${count} reservas se mantienen`}; se muestran abajo.`
         : ""
@@ -112,8 +112,8 @@ export const spanishPeopleWords: PeopleWordsType = {
   upcomingBookingsOf: (name) => `Próximas reservas de ${name}`,
   person: "Persona",
   place: "Lugar",
-  on: "Disponible",
-  off: "No disponible",
+  on: "En servicio",
+  off: "Fuera de servicio",
   getsTexts: "Recibe mensajes",
   changeOf: (name) => `Cambiar ${name}`,
   change: "Cambiar",
@@ -132,7 +132,7 @@ export const spanishPeopleWords: PeopleWordsType = {
   noSendingAddress:
     "El negocio todavía no tiene una dirección de envío, así que no se puede guardar un correo de trabajo.",
   onOffLine:
-    "Disponible: se puede reservar. Si no está disponible, no hay reservas nuevas; las ya hechas se mantienen.",
+    "En servicio: se puede reservar. Fuera de servicio, no hay reservas nuevas; las ya hechas se mantienen.",
   saving: "Guardando…",
   save: "Guardar",
   textsTo: (name) => `Mensajes de texto a ${name} sobre su día`,

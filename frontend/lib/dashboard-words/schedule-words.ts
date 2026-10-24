@@ -144,7 +144,7 @@ export const englishScheduleWords: ScheduleWordsType = {
 };
 
 export const spanishScheduleWords: ScheduleWordsType = {
-  lede: "La semana de cada persona y de cada lugar: reservas, tiempo libre y sus horas ocupadas en Google, sobre las horas en que los clientes pueden reservar.",
+  lede: "La semana de cada persona y de cada lugar: reservas, horas no disponibles y sus horas ocupadas en Google, sobre las horas en que los clientes pueden reservar.",
   loading: "Cargando…",
   calendarOf: "Calendario de",
   placeSuffix: " (lugar)",
@@ -170,7 +170,7 @@ export const spanishScheduleWords: ScheduleWordsType = {
   closed: "Cerrado",
   onStandby: "En espera: no se ofrece a los clientes",
   noBookableHours: "Sin horas para reservar",
-  timeOff: "Tiempo libre",
+  timeOff: "No disponible",
   busyInGoogle: "Ocupado en Google",
   removing: "Quitando…",
   remove: "Quitar",
@@ -197,8 +197,8 @@ export const spanishScheduleWords: ScheduleWordsType = {
   chooseMoveOrCancel: "Elija mover o cancelar.",
   pickTheNewTime: "Elija la nueva hora.",
   savedCustomersHear:
-    "Guardado. El tiempo libre quedó registrado, y cada cliente recibe aviso de lo que pasó con su reserva.",
-  savedTimeOffIn: "Guardado. El tiempo libre quedó registrado.",
+    "Guardado. El horario no disponible quedó registrado, y cada cliente recibe aviso de lo que pasó con su reserva.",
+  savedTimeOffIn: "Guardado. El horario no disponible quedó registrado.",
   timeOffLede:
     "Una tarde, un día o una semana. Deje la hora en blanco para el día completo. Las reservas en ese tiempo aparecen aquí, para moverlas o cancelarlas al guardar.",
   from: "Desde",
@@ -206,12 +206,12 @@ export const spanishScheduleWords: ScheduleWordsType = {
   to: "Hasta",
   bookingsInThatTime: "Reservas en ese tiempo",
   alreadyBegun:
-    "Ya comenzó: no se puede mover ni cancelar. Empiece el tiempo libre después de esta reserva.",
+    "Ya comenzó: no se puede mover ni cancelar. Empiece el horario no disponible después de esta reserva.",
   moveIt: "Moverla",
   cancelIt: "Cancelarla",
   newDay: "Nuevo día",
   newTime: "Nueva hora",
   whoDoesIt: "Quién la hace",
   saving: "Guardando…",
-  saveTimeOff: "Guardar tiempo libre",
+  saveTimeOff: "Guardar",
 };

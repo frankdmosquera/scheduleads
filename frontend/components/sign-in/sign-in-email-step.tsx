@@ -68,7 +68,7 @@ export function SignInEmailStep({
               type="email"
               autoComplete="email"
               autoFocus
-              placeholder="you@yourbusiness.com"
+              placeholder={words.emailPlaceholder}
               error={fieldState.error?.message}
             />
           )}
