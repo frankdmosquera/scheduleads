@@ -403,6 +403,8 @@ export function ServiceForm({
         noneTicked={servicesWords.noPlaceTicked}
         allTickedOff={servicesWords.everyPlaceTickedOff}
         noneToTick={servicesWords.noPlacesYet}
+        linkLabel={words.settingsFrameWords.addThemOnPlaces}
+        linkHref="/settings/places"
         choices={people.filter((resource) => resource.kind === "place")}
         value={ticks.placeIds}
         onChange={(placeIds) => editTicks({ ...ticks, placeIds })}

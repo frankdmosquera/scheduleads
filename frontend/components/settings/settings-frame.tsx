@@ -14,6 +14,7 @@ const SECTIONS: { href: string; label: keyof SettingsFrameWordsType }[] = [
   { href: "/settings/hours", label: "hours" },
   { href: "/settings/services", label: "services" },
   { href: "/settings/people", label: "people" },
+  { href: "/settings/places", label: "places" },
   { href: "/settings/days-off", label: "daysOff" },
   { href: "/settings/booking-form", label: "bookingForm" },
   { href: "/settings/texts", label: "texts" },

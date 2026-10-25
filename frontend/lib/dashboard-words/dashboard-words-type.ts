@@ -9,6 +9,7 @@ import type { ScheduleWordsType } from "@/lib/dashboard-words/schedule-words";
 import type { HoursWordsType } from "@/lib/dashboard-words/hours-words";
 import type { DaysOffWordsType } from "@/lib/dashboard-words/days-off-words";
 import type { PeopleWordsType } from "@/lib/dashboard-words/people-words";
+import type { PlacesWordsType } from "@/lib/dashboard-words/places-words";
 import type { ServicesWordsType } from "@/lib/dashboard-words/services-words";
 import type { BookingFormWordsType } from "@/lib/dashboard-words/booking-form-words";
 import type { TextsWordsType } from "@/lib/dashboard-words/texts-words";
@@ -82,6 +83,7 @@ export type DashboardWordsType = {
   hoursWords: HoursWordsType;
   daysOffWords: DaysOffWordsType;
   peopleWords: PeopleWordsType;
+  placesWords: PlacesWordsType;
   servicesWords: ServicesWordsType;
   bookingFormWords: BookingFormWordsType;
   textsWords: TextsWordsType;

@@ -6,6 +6,7 @@ import { spanishScheduleWords } from "@/lib/dashboard-words/schedule-words";
 import { spanishHoursWords } from "@/lib/dashboard-words/hours-words";
 import { spanishDaysOffWords } from "@/lib/dashboard-words/days-off-words";
 import { spanishPeopleWords } from "@/lib/dashboard-words/people-words";
+import { spanishPlacesWords } from "@/lib/dashboard-words/places-words";
 import { spanishServicesWords } from "@/lib/dashboard-words/services-words";
 import { spanishBookingFormWords } from "@/lib/dashboard-words/booking-form-words";
 import { spanishTextsWords } from "@/lib/dashboard-words/texts-words";
@@ -81,6 +82,7 @@ export const spanishDashboardWords: DashboardWordsType = {
   hoursWords: spanishHoursWords,
   daysOffWords: spanishDaysOffWords,
   peopleWords: spanishPeopleWords,
+  placesWords: spanishPlacesWords,
   servicesWords: spanishServicesWords,
   bookingFormWords: spanishBookingFormWords,
   textsWords: spanishTextsWords,

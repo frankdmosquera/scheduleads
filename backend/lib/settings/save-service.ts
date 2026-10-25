@@ -97,8 +97,9 @@ export async function saveService(
           now
         )
       : [];
-    const listed = new Set(outside.map((booking) => booking.bookingId));
-    const both = [...outside, ...pastWindow.filter((booking) => !listed.has(booking.bookingId))];
+    // Listed once each, in time order, as every Settings list is.
+    const listed = new Set([...outside, ...pastWindow].map((booking) => booking.bookingId));
+    const both = upcoming.filter((booking) => listed.has(booking.bookingId));
     return { service: answer, outsideHours: both.map(listedBookingOf) };
   });
 }

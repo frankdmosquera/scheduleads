@@ -43,6 +43,7 @@ export const spanishMessages: Record<string, string> = {
   "This business cannot change its hours here.": "Este negocio no puede cambiar su horario aquí.",
   "This business cannot change its people here.":
     "Este negocio no puede cambiar sus personas aquí.",
+  "This business cannot change its places here.": "Este negocio no puede cambiar sus lugares aquí.",
   "This business cannot change its services here.":
     "Este negocio no puede cambiar sus servicios aquí.",
   "This business cannot change its texts here.":
@@ -256,6 +257,9 @@ export const spanishMessages: Record<string, string> = {
   // Settings: people
   "No person here.": "No hay ninguna persona aquí.",
   "No person or place here.": "No hay ninguna persona ni lugar aquí.",
+  "No place here.": "No hay ningún lugar aquí.",
+  "A person's services are what they can do: tick them on People.":
+    "Los servicios de una persona son lo que sabe hacer: márquelos en Personas.",
   "Another person or place here already has that name.":
     "Otra persona o lugar de este negocio ya tiene ese nombre.",
   "Someone has to stay on: turn another person on first.":

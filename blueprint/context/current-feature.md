@@ -96,13 +96,14 @@ The new migrations go on live by hand through the tunnel before the merge deploy
   while the same time stays offered for a service without one, a one-off date applies, closed days
   still close, and a save lists the bookings outside; on the laptop "Interior estimate" set to
   afternoons offers no mornings in the booking preview.
-- [ ] 12k.3 **People and Places pages, the person's card whole.** Places gets its own page and Add;
+- [x] 12k.3 **People and Places pages, the person's card whole.** Places gets its own page and Add;
   a place's card ticks its services (`PUT /settings/places/:resourceId/services`). A person's card
   holds their hours, "Can do" and "Booked by customers for"; Hours keeps the business's week only.
   The words above, in both languages. **Done when:** the route's tests prove a place's ticks are the
   same rows as the service's "Places it needs"; on the laptop Riverbend Clinic (dev) shows six
   people and five places on two pages, a person's hours save from their card, and every new word
-  reads in Spanish.
+  reads in Spanish. (Built: People shows seven, the six practitioners and the business's own first
+  person; places are added and changed through the same `/settings/people` routes as before.)
 
 ## Files / areas
 

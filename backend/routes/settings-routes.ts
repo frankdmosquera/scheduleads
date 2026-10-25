@@ -18,6 +18,7 @@ import {
   openClosedDayValidationSchema,
   personHoursValidationSchema,
   savePersonSkillsValidationSchema,
+  savePlaceServicesValidationSchema,
   saveResourceValidationSchema,
   saveServiceResourcesValidationSchema,
   serviceValidationSchema,
@@ -39,6 +40,7 @@ import { findHolidayChoices } from "../lib/settings/find-holiday-choices.js";
 import { holidayPackage, type HolidayLanguageType } from "../lib/bookable-hours/holiday-package.js";
 import { findHoursSettings } from "../lib/settings/find-hours-settings.js";
 import { findPeopleSettings } from "../lib/settings/find-people-settings.js";
+import { findPlacesSettings } from "../lib/settings/find-places-settings.js";
 import { findServicesSettings } from "../lib/settings/find-services-settings.js";
 import { openClosedDay } from "../lib/settings/open-closed-day.js";
 import { refuseHolidayPicks } from "../lib/settings/refuse-holiday-picks.js";
@@ -50,6 +52,7 @@ import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
 import { saveHolidayPicks } from "../lib/settings/save-holiday-picks.js";
 import { savePersonHours } from "../lib/settings/save-person-hours.js";
 import { savePersonSkills } from "../lib/settings/save-person-skills.js";
+import { savePlaceServices } from "../lib/settings/save-place-services.js";
 import { saveResource } from "../lib/settings/save-resource.js";
 import { saveService } from "../lib/settings/save-service.js";
 import { saveServiceHours } from "../lib/settings/save-service-hours.js";
@@ -114,7 +117,7 @@ const refuseFirstIssue = (c: Context, error: ZodError) => {
 };
 
 export const settingsRoutes = new Hono()
-  // The Hours section: the business's hours (null before the first save) and every active person's.
+  // The Hours section: the business's hours, null before the first save.
   .get(
     "/hours",
     requireOrganizationMiddleware,
@@ -287,7 +290,7 @@ export const settingsRoutes = new Hono()
     }
   )
 
-  // The People page: every person and place of the business, on or off.
+  // The People page: every person of the business, on or off, with what they can do and their hours.
   .get(
     "/people",
     requireOrganizationMiddleware,
@@ -303,6 +306,58 @@ export const settingsRoutes = new Hono()
     }
   )
 
+  // The Places page: every place of the business, on or off, with the services that need each.
+  .get(
+    "/places",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    async (c) => {
+      const { organizationId } = c.get("organization");
+      const [settings, canEdit] = await Promise.all([
+        findPlacesSettings(organizationId),
+        hasBusinessPermission(c.req.raw.headers, organizationId, CHANGE_BUSINESS),
+      ]);
+      return c.json({ canEdit, ...settings }, 200);
+    }
+  )
+
+  // The services that need a place: the ticks replace the ones before, and are the same rows as
+  // each service's "Places it needs". Another business's place or an unknown id: the same 404; a
+  // person's services are their skills, ticked on People.
+  .put(
+    "/places/:resourceId/services",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = savePlaceServicesValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const saved = await savePlaceServices(
+        c.get("organization").organizationId,
+        c.req.param("resourceId"),
+        c.req.valid("json")
+      );
+      if (!saved.ok && saved.reason === "not_found")
+        return c.json(refuse("not_found", "No place here."), 404);
+      if (!saved.ok && saved.reason === "not_a_place")
+        return c.json(
+          refuse("bad_request", "A person's services are what they can do: tick them on People."),
+          400
+        );
+      if (!saved.ok)
+        return c.json(
+          { ...refuse("bad_request", "Tick only this business's services."), field: "serviceIds" },
+          400
+        );
+      return c.json({ serviceIds: saved.serviceIds }, 200);
+    }
+  )
+
+  // Adds a person or a place: People adds people, Places adds places.
   .post(
     "/people",
     requireOrganizationMiddleware,

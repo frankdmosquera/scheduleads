@@ -6,6 +6,7 @@ import { englishScheduleWords } from "@/lib/dashboard-words/schedule-words";
 import { englishHoursWords } from "@/lib/dashboard-words/hours-words";
 import { englishDaysOffWords } from "@/lib/dashboard-words/days-off-words";
 import { englishPeopleWords } from "@/lib/dashboard-words/people-words";
+import { englishPlacesWords } from "@/lib/dashboard-words/places-words";
 import { englishServicesWords } from "@/lib/dashboard-words/services-words";
 import { englishBookingFormWords } from "@/lib/dashboard-words/booking-form-words";
 import { englishTextsWords } from "@/lib/dashboard-words/texts-words";
@@ -74,6 +75,7 @@ export const englishDashboardWords: DashboardWordsType = {
   hoursWords: englishHoursWords,
   daysOffWords: englishDaysOffWords,
   peopleWords: englishPeopleWords,
+  placesWords: englishPlacesWords,
   servicesWords: englishServicesWords,
   bookingFormWords: englishBookingFormWords,
   textsWords: englishTextsWords,

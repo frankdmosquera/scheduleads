@@ -1,16 +1,20 @@
-// Frontend component: the People page of Settings (feature 12d): every person and place, on or
-// off, and one form at a time to add or change one. Turning one off lists the bookings they hold.
-// A person's worker texts (feature 12g) and what they can do (feature 12k) are part of their card,
-// saved by its one Save.
+// Frontend component: the People page of Settings (feature 12d): every person, on or off, and one
+// form at a time to add or change one. Turning one off lists the bookings they hold. A person's
+// worker texts (feature 12g) and what they can do (feature 12k) are part of their card, saved by its
+// one Save; their bookable hours sit under it with their own Save (feature 12k). Places have their
+// own page.
 
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 
+import type { PersonHoursType } from "@scheduleads-app/shared/zod-validation";
+
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { AddResourceForm } from "@/components/settings/add-resource-form";
 import { ChangeResourceForm } from "@/components/settings/change-resource-form";
 import { ListedBookings, type ListedBookingsType } from "@/components/settings/listed-bookings";
+import { PersonHoursCard } from "@/components/settings/person-hours-card";
 import {
   PersonSkillsPart,
   type PersonSkillsPartHandleType,
@@ -47,7 +51,7 @@ const byName = (a: ResourceSettingsType, b: ResourceSettingsType) => a.name.loca
 
 function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   const [people, setPeople] = useState(settings.people);
-  const { peopleWords } = useDashboardWords().words;
+  const { peopleWords, hoursWords } = useDashboardWords().words;
   const textsPart = useRef<PersonTextsPartHandleType>(null); // the open card's texts
   const skillsPart = useRef<PersonSkillsPartHandleType>(null); // the open card's skills
   const [skills, setSkills] = useState(
@@ -61,6 +65,22 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   const skillsSaved = (personId: string, saved: PersonSkillsType, left: string[]) => {
     setSkills((map) => new Map(map).set(personId, saved));
     nobodyOn.current = left;
+  };
+  const [hours, setHours] = useState(
+    () =>
+      new Map<string, PersonHoursType>(
+        settings.hours.map(({ personId, ...personHours }) => [personId, personHours])
+      )
+  );
+  const hoursSaved = (personId: string, saved: PersonHoursType) =>
+    setHours((map) => new Map(map).set(personId, saved));
+  // The live services a person is on for, as customers see them.
+  const bookedFor = (resource: ResourceSettingsType) => {
+    const onFor = resource.active ? (skills.get(resource.id)?.onFor ?? []) : [];
+    const names = settings.services
+      .filter((service) => service.active && onFor.includes(service.id))
+      .map((service) => service.name);
+    return names.length ? peopleWords.bookedFor(names) : peopleWords.notBooked;
   };
   const [workerTexts, setWorkerTexts] = useState(
     () =>
@@ -124,6 +144,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
         <CentredCardNotice tone="info">{peopleWords.cannotChange}</CentredCardNotice>
       ) : open === "new" ? (
         <AddResourceForm
+          kind="person"
           onSaved={(added) => saved(added, [])}
           onCancel={() => close(ADD_BUTTON_ID)}
         />
@@ -144,41 +165,50 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
       <ul className="flex flex-col gap-2">
         {people.map((resource) =>
           open === resource.id ? (
-            <li key={resource.id}>
+            <li key={resource.id} className="flex flex-col gap-2">
               <ChangeResourceForm
                 resource={resource}
                 senderDomain={settings.senderDomain}
                 onSaved={(answer) => saved(answer.resource, answer.upcomingBookings)}
                 onCancel={() => close(changeButtonId(resource.id))}
-                beforeSave={
-                  resource.kind === "person"
-                    ? async () =>
-                        ((await skillsPart.current?.save()) ?? true) &&
-                        ((await textsPart.current?.save()) ?? true)
-                    : undefined
+                beforeSave={async () =>
+                  ((await skillsPart.current?.save()) ?? true) &&
+                  ((await textsPart.current?.save()) ?? true)
                 }
               >
-                {resource.kind === "person" ? (
-                  <PersonSkillsPart
-                    ref={skillsPart}
-                    personId={resource.id}
-                    personName={resource.name}
-                    services={settings.services}
-                    skills={skills.get(resource.id) ?? { serviceIds: [], onFor: [] }}
-                    onSaved={(saved, left) => skillsSaved(resource.id, saved, left)}
-                  />
-                ) : null}
-                {resource.kind === "person" ? (
-                  <PersonTextsPart
-                    ref={textsPart}
-                    personId={resource.id}
-                    personName={resource.name}
-                    texts={workerTexts.get(resource.id) ?? null}
-                    textsSetUp={settings.textsSetUp}
-                    onSaved={(texts) => textsSaved(resource.id, texts)}
-                  />
-                ) : null}
+                <PersonSkillsPart
+                  ref={skillsPart}
+                  personId={resource.id}
+                  personName={resource.name}
+                  services={settings.services}
+                  skills={skills.get(resource.id) ?? { serviceIds: [], onFor: [] }}
+                  onSaved={(saved, left) => skillsSaved(resource.id, saved, left)}
+                />
+                <PersonTextsPart
+                  ref={textsPart}
+                  personId={resource.id}
+                  personName={resource.name}
+                  texts={workerTexts.get(resource.id) ?? null}
+                  textsSetUp={settings.textsSetUp}
+                  onSaved={(texts) => textsSaved(resource.id, texts)}
+                />
               </ChangeResourceForm>
+              {/* Their bookable hours: an off person has none to change until they are on. */}
+              {!resource.active ? null : settings.businessWeek && settings.timezone ? (
+                <PersonHoursCard
+                  person={{
+                    id: resource.id,
+                    name: resource.name,
+                    ...(hours.get(resource.id) ?? { weeklyHours: null, dateHours: [] }),
+                  }}
+                  businessWeek={settings.businessWeek}
+                  timezone={settings.timezone}
+                  canEdit={settings.canEdit}
+                  onSaved={(saved) => hoursSaved(resource.id, saved)}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">{hoursWords.setBusinessHoursFirst}</p>
+              )}
             </li>
           ) : (
             <li
@@ -186,9 +216,6 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
               className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-card px-4 py-3 md:px-6"
             >
               <span className="font-medium text-foreground">{resource.name}</span>
-              <span className="text-sm text-muted-foreground">
-                {resource.kind === "person" ? peopleWords.person : peopleWords.place}
-              </span>
               <span
                 className={
                   resource.active
@@ -198,6 +225,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
               >
                 {resource.active ? peopleWords.on : peopleWords.off}
               </span>
+              <span className="text-sm text-muted-foreground">{bookedFor(resource)}</span>
               {textsCanGo(workerTexts.get(resource.id), settings.textsSetUp) ? (
                 <span className="text-xs text-muted-foreground">{peopleWords.getsTexts}</span>
               ) : null}

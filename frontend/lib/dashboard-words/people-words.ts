@@ -1,6 +1,7 @@
-// Frontend: the words of Settings, People: the people and places, adding and changing one, their
-// texts (feature 12j), in English and Spanish ("usted"). One type, one object per language, so a
-// word left out of either is a type error. A person's or place's name is shown as typed.
+// Frontend: the words of Settings, People: the people, adding and changing one, their texts
+// (feature 12j), in English and Spanish ("usted"). The add and change forms are the Places page's
+// too. One type, one object per language, so a word left out of either is a type error. A person's
+// or place's name is shown as typed.
 
 export type PeopleWordsType = {
   cannotChange: string;
@@ -8,9 +9,9 @@ export type PeopleWordsType = {
   savedOn(name: string): string;
   savedOff(name: string, stayingCount: number): string;
   upcomingBookingsOf(name: string): string;
-  person: string;
-  place: string;
   on: string;
+  bookedFor(services: string[]): string; // the live services they are on for
+  notBooked: string;
   off: string;
   getsTexts: string;
   changeOf(name: string): string;
@@ -18,10 +19,7 @@ export type PeopleWordsType = {
   cancel: string;
   name: string;
   // Adding one
-  addTitle: string;
-  personOrPlace: string;
-  personChoice: string;
-  placeChoice: string;
+  addTitle(kind: "person" | "place"): string;
   adding: string;
   add: string;
   // Changing one
@@ -55,27 +53,24 @@ export type PeopleWordsType = {
 };
 
 export const englishPeopleWords: PeopleWordsType = {
-  cannotChange: "Your role cannot change the people and places. You can see them here.",
-  addButton: "+ Add a person or a place",
+  cannotChange: "Your role cannot change the people. You can see them here.",
+  addButton: "+ Add a person",
   savedOn: (name) => `Saved. ${name} is on.`,
   savedOff: (name, count) =>
     `Saved. ${name} is off: no new bookings.${
       count ? ` ${count === 1 ? "One booking stays" : `${count} bookings stay`}, listed below.` : ""
     }`,
   upcomingBookingsOf: (name) => `${name}'s upcoming bookings`,
-  person: "Person",
-  place: "Place",
   on: "On",
+  bookedFor: (services) => `Booked by customers for: ${services.join(", ")}`,
+  notBooked: "Not booked by customers",
   off: "Off",
   getsTexts: "Gets texts",
   changeOf: (name) => `Change ${name}`,
   change: "Change",
   cancel: "Cancel",
   name: "Name",
-  addTitle: "Add a person or a place",
-  personOrPlace: "A person or a place",
-  personChoice: "A person, who can be booked",
-  placeChoice: "A place, a room or a chair a service needs",
+  addTitle: (kind) => (kind === "person" ? "Add a person" : "Add a place"),
   adding: "Adding…",
   add: "Add",
   changeTitle: (name, kind) => `Change ${name}, a ${kind}`,
@@ -112,8 +107,8 @@ export const englishPeopleWords: PeopleWordsType = {
 
 // Gender-free on purpose: a name may be anyone's, and a place may be "la sala" or "el sillón".
 export const spanishPeopleWords: PeopleWordsType = {
-  cannotChange: "Su rol no puede cambiar las personas y los lugares. Puede verlos aquí.",
-  addButton: "+ Agregar una persona o un lugar",
+  cannotChange: "Su rol no puede cambiar las personas. Puede verlas aquí.",
+  addButton: "+ Agregar una persona",
   savedOn: (name) => `Guardado. ${name} está en servicio.`,
   savedOff: (name, count) =>
     `Guardado. ${name} está fuera de servicio: no hay reservas nuevas.${
@@ -122,19 +117,16 @@ export const spanishPeopleWords: PeopleWordsType = {
         : ""
     }`,
   upcomingBookingsOf: (name) => `Próximas reservas de ${name}`,
-  person: "Persona",
-  place: "Lugar",
   on: "En servicio",
+  bookedFor: (services) => `Reservable por los clientes para: ${services.join(", ")}`,
+  notBooked: "No reservable por los clientes",
   off: "Fuera de servicio",
   getsTexts: "Recibe mensajes",
   changeOf: (name) => `Cambiar ${name}`,
   change: "Cambiar",
   cancel: "Cancelar",
   name: "Nombre",
-  addTitle: "Agregar una persona o un lugar",
-  personOrPlace: "Una persona o un lugar",
-  personChoice: "Una persona, con quien se puede reservar",
-  placeChoice: "Un lugar: una sala o una silla que un servicio necesita",
+  addTitle: (kind) => (kind === "person" ? "Agregar una persona" : "Agregar un lugar"),
   adding: "Agregando…",
   add: "Agregar",
   changeTitle: (name, kind) => `Cambiar ${name}, ${kind === "person" ? "una persona" : "un lugar"}`,

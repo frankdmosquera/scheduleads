@@ -1,6 +1,6 @@
-// Backend: when a service runs (feature 12k), resolved like a person's hours: its own week or the
-// business's, with its one-off dates. null when it has no row of its own (it runs whenever the
-// business is open, so nothing narrows) or the business has no hours yet.
+// Backend: when a service runs (feature 12k), resolved like a person's hours: its own week, or all
+// day when it runs whenever the business is open, with only its own one-off dates. null when it has
+// no row of its own (nothing narrows) or the business has no hours yet.
 
 import { and, eq, isNull } from "drizzle-orm";
 

@@ -18,6 +18,7 @@ export function TicksField({
   allTickedOff,
   noneToTick,
   linkLabel,
+  linkHref = "/settings/people",
   note,
   states,
   choices,
@@ -31,6 +32,7 @@ export function TicksField({
   allTickedOff: string; // what it means when every one ticked is off
   noneToTick: string;
   linkLabel?: string; // the link after noneToTick; "Add them on People" when left out
+  linkHref?: string; // where it goes; People when left out
   note?: string; // under the legend
   states?: { on: string; off: string }; // said after each name: ticked or not
   choices: TickableType[];
@@ -70,7 +72,7 @@ export function TicksField({
       {choices.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           {noneToTick}{" "}
-          <Link href="/settings/people" className="text-primary underline underline-offset-2">
+          <Link href={linkHref} className="text-primary underline underline-offset-2">
             {linkLabel ?? words.settingsFrameWords.addThemOnPeople}
           </Link>
           .
