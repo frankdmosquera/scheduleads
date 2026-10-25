@@ -16,10 +16,7 @@ import { AddResourceForm } from "@/components/settings/add-resource-form";
 import { ChangeResourceForm } from "@/components/settings/change-resource-form";
 import { ListedBookings, type ListedBookingsType } from "@/components/settings/listed-bookings";
 import { ownHoursLine } from "@/components/settings/own-hours-fields";
-import {
-  PersonHoursPart,
-  type PersonHoursPartHandleType,
-} from "@/components/settings/person-hours-part";
+import { OwnHoursPart, type OwnHoursPartHandleType } from "@/components/settings/own-hours-part";
 import {
   PersonSkillsPart,
   type PersonSkillsPartHandleType,
@@ -34,6 +31,7 @@ import {
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { Button } from "@/components/ui/button";
+import { savePersonHours } from "@/lib/api-client/settings/save-person-hours";
 import {
   fetchPeopleSettings,
   type PeopleSettingsType,
@@ -62,7 +60,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   const { peopleWords, hoursWords } = useDashboardWords().words;
   const skillsPart = useRef<PersonSkillsPartHandleType>(null); // the open card's parts
   const textsPart = useRef<PersonTextsPartHandleType>(null);
-  const hoursPart = useRef<PersonHoursPartHandleType>(null);
+  const hoursPart = useRef<OwnHoursPartHandleType>(null);
   const [skills, setSkills] = useState(
     () =>
       new Map<string, PersonSkillsType>(
@@ -265,12 +263,28 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                   onSaved={(saved, left) => skillsSaved(resource.id, saved, left)}
                 />
                 {hasHours(resource) && settings.businessWeek ? (
-                  <PersonHoursPart
+                  <OwnHoursPart
                     ref={hoursPart}
-                    personId={resource.id}
-                    personName={resource.name}
+                    idBase={`person-hours-${resource.id}`}
+                    name={resource.name}
+                    title={peopleWords.bookableHours}
+                    words={{
+                      follows: hoursWords.followsBusinessWeek,
+                      own: hoursWords.ownWeek,
+                      weekLabel: hoursWords.personWeek,
+                      datesTitle: hoursWords.personOneOffDates,
+                    }}
                     hours={hours.get(resource.id) ?? NO_OWN_HOURS}
                     businessWeek={settings.businessWeek}
+                    save={async (next) => {
+                      const saved = await savePersonHours(resource.id, next);
+                      if (saved.state !== "ok") return saved;
+                      const { weeklyHours, dateHours } = saved.answer.person;
+                      return {
+                        state: "ok",
+                        answer: { weeklyHours, dateHours, outsideHours: saved.answer.outsideHours },
+                      };
+                    }}
                     onSaved={(saved, outside) => hoursSaved(resource.id, saved, outside)}
                   />
                 ) : null}

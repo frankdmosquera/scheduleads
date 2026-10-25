@@ -1,7 +1,7 @@
-// Frontend component: a person's bookable hours, a part of their card on the People page (feature
-// 12a): whenever the business is open, or their own week, and their days that are different. The
-// card's one Save calls `check()` before saving anything and `save()` in its turn, so hours are
-// never saved or dropped on their own.
+// Frontend component: own hours as a part of a card on Settings: a person's bookable hours on
+// People (feature 12a) and when a service runs on Services (feature 12k). Whenever the business is
+// open, or its own week, and its days that are different. The card's one Save calls `check()`
+// before saving anything and `save()` in its turn, so hours are never saved or dropped on their own.
 
 "use client";
 
@@ -16,34 +16,40 @@ import {
 
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import type { ListedBookingsType } from "@/components/settings/listed-bookings";
-import { OwnHoursFields, type OwnHoursFormType } from "@/components/settings/own-hours-fields";
-import { savePersonHours } from "@/lib/api-client/settings/save-person-hours";
+import {
+  OwnHoursFields,
+  type OwnHoursFieldsWordsType,
+  type OwnHoursFormType,
+} from "@/components/settings/own-hours-fields";
+import type { SaveResultType } from "@/lib/api-client/settings/read-save-refusal";
 import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
-import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
-export type PersonHoursPartHandleType = {
+export type OwnHoursPartHandleType = {
   check: () => Promise<boolean>; // false when the form shows a mistake, marked and focused
   save: () => Promise<boolean>; // true when saved, or nothing changed; false when refused
 };
 
-export const PersonHoursPart = forwardRef<
-  PersonHoursPartHandleType,
+export type SavedOwnHoursType = PersonHoursType & { outsideHours: ListedBookingsType["bookings"] };
+
+export const OwnHoursPart = forwardRef<
+  OwnHoursPartHandleType,
   {
-    personId: string;
-    personName: string;
+    idBase: string;
+    name: string; // whose hours, for the fields' words
+    title: string;
+    words: OwnHoursFieldsWordsType;
     hours: PersonHoursType; // no own row: whenever the business is open, no days that differ
-    businessWeek: WeeklyHoursType; // copied in when they start their own week
+    businessWeek: WeeklyHoursType; // copied in when it starts its own week
+    save: (hours: PersonHoursType) => Promise<SaveResultType<SavedOwnHoursType>>;
     onSaved: (hours: PersonHoursType, outsideHours: ListedBookingsType["bookings"]) => void;
   }
->(function PersonHoursPart({ personId, personName, hours, businessWeek, onSaved }, ref) {
-  const { peopleWords, hoursWords } = useDashboardWords().words;
+>(function OwnHoursPart({ idBase, name, title, words, hours, businessWeek, save, onSaved }, ref) {
   const partRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const form = useForm<OwnHoursFormType, unknown, PersonHoursType>({
     resolver: dashboardFormResolver(personHoursValidationSchema),
     defaultValues: { weeklyHours: hours.weeklyHours, dateHours: hours.dateHours },
   });
-  const idBase = `person-hours-${personId}`;
   // Read while drawing, so the form keeps it current (react-hook-form tracks only what is read).
   const edited = form.formState.isDirty;
   const focusFirstInvalid = () =>
@@ -64,11 +70,11 @@ export const PersonHoursPart = forwardRef<
       let result = true;
       await form.handleSubmit(
         async (values) => {
-          const saved = await savePersonHours(personId, values);
+          const saved = await save(values);
           if (saved.state === "ok") {
-            const { weeklyHours, dateHours } = saved.answer.person;
+            const { weeklyHours, dateHours, outsideHours } = saved.answer;
             form.reset({ weeklyHours, dateHours });
-            onSaved({ weeklyHours, dateHours }, saved.answer.outsideHours);
+            onSaved({ weeklyHours, dateHours }, outsideHours);
             return;
           }
           result = false;
@@ -96,19 +102,14 @@ export const PersonHoursPart = forwardRef<
       className="flex flex-col gap-3 border-t border-border pt-4"
     >
       <h4 id={`${idBase}-title`} className="text-sm font-semibold text-foreground">
-        {peopleWords.bookableHours}
+        {title}
       </h4>
       <OwnHoursFields
         control={form.control}
         errors={form.formState.errors}
         idBase={idBase}
-        name={personName}
-        words={{
-          follows: hoursWords.followsBusinessWeek,
-          own: hoursWords.ownWeek,
-          weekLabel: hoursWords.personWeek,
-          datesTitle: hoursWords.personOneOffDates,
-        }}
+        name={name}
+        words={words}
         businessWeek={businessWeek}
         onEdit={() => setFailed(null)}
       />

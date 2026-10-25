@@ -41,14 +41,12 @@ export type HoursWordsType = {
   noticeUnit: string;
   noticeUnits: { minutes: string; hours: string; days: string };
   // A person's row
-  notSaved: string;
   personWeek(name: string): string;
   followsBusinessWeek: string;
   ownWeek: string;
   ownWeekDays(days: string): string; // the days open, as "Mon, Tue"
   noDays: string;
   oneOffDateCount(count: number): string;
-  bookingsOutside(count: number): string;
   personOneOffDates(name: string): string;
   // The bookings a save lists
   stillBookedCallThem: string;
@@ -111,14 +109,12 @@ export const englishHoursWords: HoursWordsType = {
   leastNotice: "Least notice you accept",
   noticeUnit: "Notice unit",
   noticeUnits: { minutes: "minutes", hours: "hours", days: "days" },
-  notSaved: "Not saved",
   personWeek: (name) => `${name}'s week`,
   followsBusinessWeek: "Bookable whenever the business is open",
   ownWeek: "Own bookable hours",
   ownWeekDays: (days) => `Own bookable hours · ${days}`,
   noDays: "no days",
   oneOffDateCount: (count) => (count === 1 ? "1 one-off date" : `${count} one-off dates`),
-  bookingsOutside: (count) => (count === 1 ? "1 booking outside" : `${count} bookings outside`),
   personOneOffDates: (name) => `Days that are different for ${name}`,
   stillBookedCallThem: "Still booked. Open a booking to call the customer.",
   serviceWith: (service, person) => `${service} with ${person}`,
@@ -180,14 +176,12 @@ export const spanishHoursWords: HoursWordsType = {
   leastNotice: "Aviso mínimo que acepta",
   noticeUnit: "Unidad del aviso",
   noticeUnits: { minutes: "minutos", hours: "horas", days: "días" },
-  notSaved: "Sin guardar",
   personWeek: (name) => `Semana de ${name}`,
   followsBusinessWeek: "Reservable siempre que el negocio está abierto",
   ownWeek: "Horario propio para reservar",
   ownWeekDays: (days) => `Horario propio para reservar · ${days}`,
   noDays: "ningún día",
   oneOffDateCount: (count) => (count === 1 ? "1 fecha especial" : `${count} fechas especiales`),
-  bookingsOutside: (count) => (count === 1 ? "1 reserva fuera" : `${count} reservas fuera`),
   personOneOffDates: (name) => `Días distintos para ${name}`,
   stillBookedCallThem: "Siguen reservadas. Abra una reserva para llamar al cliente.",
   serviceWith: (service, person) => `${service} con ${person}`,
