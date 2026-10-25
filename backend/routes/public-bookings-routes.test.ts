@@ -626,14 +626,24 @@ describe("the yes to later texts (feature 9, decision 13)", () => {
     );
     const bookingsBefore = await db.$count(booking, eq(booking.organizationId, painter.id));
     await db.delete(bookingLinkResource).where(samOn); // Sam can still do it, but is off
+    // The next free time, read but left in the list: nothing is booked, so the tests after keep it.
+    const offForm = (email: string, change: Record<string, unknown> = {}) => ({
+      bookingLinkId: painter.quote,
+      startsAt: painterTimes[0],
+      personId: painter.sam,
+      requestKey: id(),
+      customer: { name: "Jane Doe", email, phone: "(403) 555-0148" },
+      location: "12 Elm Street",
+      ...change,
+    });
     try {
       const forSam = await post(
         `/public/${painter.slug}/bookings`,
-        painterForm(`off-${tag}@example.com`)
+        offForm(`off-${tag}@example.com`)
       );
       const forAnyone = await post(
         `/public/${painter.slug}/bookings`,
-        painterForm(`off-any-${tag}@example.com`, { personId: undefined }) // anyone
+        offForm(`off-any-${tag}@example.com`, { personId: undefined }) // anyone
       );
       expect([forSam.status, forAnyone.status]).toEqual([404, 409]);
       expect(await db.$count(booking, eq(booking.organizationId, painter.id))).toBe(bookingsBefore);
