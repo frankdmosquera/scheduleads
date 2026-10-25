@@ -1,8 +1,9 @@
-// Frontend component: the People page of Settings (feature 12d): every person, on or off, and one
-// form at a time to add or change one. Turning one off lists the bookings they hold. A person's
-// worker texts (feature 12g) and what they can do (feature 12k) are part of their card, saved by its
-// one Save; their bookable hours sit under it with their own Save (feature 12k). Places have their
-// own page.
+// Frontend component: the People page of Settings (feature 12d): every person, on or off, one box
+// each, and one card open at a time to add or change one. A person's card holds everything about
+// them: what they can do (feature 12k), their bookable hours, their worker texts (feature 12g),
+// all saved by its one Save. Turning one off lists the bookings they hold; new hours list the
+// bookings now outside them. A login that may not change the business sees the card read-only.
+// Places have their own page.
 
 "use client";
 
@@ -14,7 +15,11 @@ import { CentredCardNotice } from "@/components/centred-card/centred-card-notice
 import { AddResourceForm } from "@/components/settings/add-resource-form";
 import { ChangeResourceForm } from "@/components/settings/change-resource-form";
 import { ListedBookings, type ListedBookingsType } from "@/components/settings/listed-bookings";
-import { PersonHoursCard } from "@/components/settings/person-hours-card";
+import { ownHoursLine } from "@/components/settings/own-hours-fields";
+import {
+  PersonHoursPart,
+  type PersonHoursPartHandleType,
+} from "@/components/settings/person-hours-part";
 import {
   PersonSkillsPart,
   type PersonSkillsPartHandleType,
@@ -48,20 +53,26 @@ export function PeopleScreen() {
 const ADD_BUTTON_ID = "add-resource";
 const changeButtonId = (resourceId: string) => `change-resource-${resourceId}`;
 const byName = (a: ResourceSettingsType, b: ResourceSettingsType) => a.name.localeCompare(b.name);
+const NO_OWN_HOURS: PersonHoursType = { weeklyHours: null, dateHours: [] };
+
+type HeldType = { title: string; list: ListedBookingsType }; // a list of bookings to call about
 
 function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   const [people, setPeople] = useState(settings.people);
   const { peopleWords, hoursWords } = useDashboardWords().words;
-  const textsPart = useRef<PersonTextsPartHandleType>(null); // the open card's texts
-  const skillsPart = useRef<PersonSkillsPartHandleType>(null); // the open card's skills
+  const skillsPart = useRef<PersonSkillsPartHandleType>(null); // the open card's parts
+  const textsPart = useRef<PersonTextsPartHandleType>(null);
+  const hoursPart = useRef<PersonHoursPartHandleType>(null);
   const [skills, setSkills] = useState(
     () =>
       new Map<string, PersonSkillsType>(
         settings.skills.map(({ personId, ...personSkills }) => [personId, personSkills])
       )
   );
-  // Services a skills save left with nobody on, said with the save's notice.
+  // Said with the save's notice: services a skills save left with nobody on, and the bookings an
+  // hours save left outside.
   const nobodyOn = useRef<string[]>([]);
+  const nowOutside = useRef<ListedBookingsType["bookings"]>([]);
   const skillsSaved = (personId: string, saved: PersonSkillsType, left: string[]) => {
     setSkills((map) => new Map(map).set(personId, saved));
     nobodyOn.current = left;
@@ -72,25 +83,26 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
         settings.hours.map(({ personId, ...personHours }) => [personId, personHours])
       )
   );
-  const hoursSaved = (personId: string, saved: PersonHoursType) =>
+  const hoursSaved = (
+    personId: string,
+    saved: PersonHoursType,
+    outside: ListedBookingsType["bookings"]
+  ) => {
     setHours((map) => new Map(map).set(personId, saved));
-  // Their bookable hours, always under their row or card, so opening or closing the card never drops
-  // hours not saved yet; read-only for whoever may not change them. An off person has none to change,
-  // and nobody has any before the business's own hours (said once, above the list).
-  const hoursCardOf = (resource: ResourceSettingsType) =>
-    resource.active && settings.businessWeek && settings.timezone ? (
-      <PersonHoursCard
-        person={{
-          id: resource.id,
-          name: resource.name,
-          ...(hours.get(resource.id) ?? { weeklyHours: null, dateHours: [] }),
-        }}
-        businessWeek={settings.businessWeek}
-        timezone={settings.timezone}
-        canEdit={settings.canEdit}
-        onSaved={(saved) => hoursSaved(resource.id, saved)}
-      />
-    ) : null;
+    nowOutside.current = outside;
+  };
+  // Their hours are theirs to change only while they are on, and only once the business has its own.
+  const hasHours = (resource: ResourceSettingsType) =>
+    resource.active && !!settings.businessWeek && !!settings.timezone;
+  const hoursLine = (resource: ResourceSettingsType) => {
+    const own = hours.get(resource.id) ?? NO_OWN_HOURS;
+    return ownHoursLine(
+      hoursWords,
+      { follows: hoursWords.followsBusinessWeek, ownDays: hoursWords.ownWeekDays },
+      own.weeklyHours,
+      own.dateHours
+    );
+  };
   // The live services a person is on for, as customers see them.
   const bookedFor = (resource: ResourceSettingsType) => {
     const onFor = resource.active ? (skills.get(resource.id)?.onFor ?? []) : [];
@@ -112,11 +124,11 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
       else next.delete(personId);
       return next;
     });
-  const [open, setOpen] = useState<string | "new" | null>(null); // which form is open
+  const [open, setOpen] = useState<string | "new" | null>(null); // which card is open
   const [notice, setNotice] = useState<SaveNoticeType>(null);
-  // Stays until the next save or the page is left, so the owner can call each customer.
-  const [held, setHeld] = useState<{ name: string; list: ListedBookingsType } | null>(null);
-  // Where the keyboard goes once a form closes: back to the button that opened it, never the top.
+  // Stay until the next save or the page is left, so the owner can call each customer.
+  const [held, setHeld] = useState<HeldType[]>([]);
+  // Where the keyboard goes once a card closes: back to the button that opened it, never the top.
   const returnFocus = useRef<string | null>(null);
   useEffect(() => {
     if (open !== null || !returnFocus.current) return;
@@ -130,28 +142,48 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   const openForm = (which: string | "new") => {
     setNotice(null);
     nobodyOn.current = [];
+    nowOutside.current = [];
     setOpen(which);
   };
+
+  // One Save: every part checks its own fields before anything is sent, then each part saves in
+  // its turn; the card itself (name, email, on or off) saves last.
+  const beforeSave = async () =>
+    ((await hoursPart.current?.check()) ?? true) &&
+    ((await skillsPart.current?.save()) ?? true) &&
+    ((await textsPart.current?.save()) ?? true) &&
+    ((await hoursPart.current?.save()) ?? true);
 
   const saved = (resource: ResourceSettingsType, upcoming: ListedBookingsType["bookings"]) => {
     setPeople((list) =>
       [...list.filter((existing) => existing.id !== resource.id), resource].sort(byName)
     );
     close(changeButtonId(resource.id));
+    const outside = nowOutside.current;
+    const left = nobodyOn.current;
+    nowOutside.current = [];
+    nobodyOn.current = [];
     // Bookings carry the business's zone; a business with none yet has no bookings to list.
+    const timezone = settings.timezone;
     setHeld(
-      upcoming.length && settings.timezone
-        ? { name: resource.name, list: { bookings: upcoming, timezone: settings.timezone } }
-        : null
+      timezone
+        ? [
+            { title: peopleWords.upcomingBookingsOf(resource.name), bookings: upcoming },
+            { title: peopleWords.outsideHoursOf(resource.name), bookings: outside },
+          ]
+            .filter((one) => one.bookings.length)
+            .map(({ title, bookings }) => ({ title, list: { bookings, timezone } }))
+        : []
     );
     const savedText = resource.active
       ? peopleWords.savedOn(resource.name)
       : peopleWords.savedOff(resource.name, upcoming.length);
-    const left = nobodyOn.current;
-    nobodyOn.current = [];
     setNotice({
       tone: "info",
-      text: left.length ? `${savedText} ${peopleWords.nobodyOffers(left)}` : savedText,
+      text:
+        savedText +
+        (outside.length ? peopleWords.nowOutsideHours(outside.length) : "") +
+        (left.length ? ` ${peopleWords.nobodyOffers(left)}` : ""),
     });
   };
 
@@ -176,25 +208,21 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
         <p className="text-sm text-muted-foreground">{hoursWords.setBusinessHoursFirst}</p>
       )}
       <SaveNotice notice={notice} />
-      <ListedBookings
-        list={held?.list ?? null}
-        title={held ? peopleWords.upcomingBookingsOf(held.name) : ""}
-        Heading="h3"
-      />
+      {held.map((one) => (
+        <ListedBookings key={one.title} list={one.list} title={one.title} Heading="h3" />
+      ))}
 
       <ul className="flex flex-col gap-2">
         {people.map((resource) =>
           open === resource.id ? (
-            <li key={resource.id} className="flex flex-col gap-2">
+            <li key={resource.id}>
               <ChangeResourceForm
                 resource={resource}
                 senderDomain={settings.senderDomain}
+                canEdit={settings.canEdit}
                 onSaved={(answer) => saved(answer.resource, answer.upcomingBookings)}
                 onCancel={() => close(changeButtonId(resource.id))}
-                beforeSave={async () =>
-                  ((await skillsPart.current?.save()) ?? true) &&
-                  ((await textsPart.current?.save()) ?? true)
-                }
+                beforeSave={beforeSave}
               >
                 <PersonSkillsPart
                   ref={skillsPart}
@@ -204,6 +232,16 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                   skills={skills.get(resource.id) ?? { serviceIds: [], onFor: [] }}
                   onSaved={(saved, left) => skillsSaved(resource.id, saved, left)}
                 />
+                {hasHours(resource) && settings.businessWeek ? (
+                  <PersonHoursPart
+                    ref={hoursPart}
+                    personId={resource.id}
+                    personName={resource.name}
+                    hours={hours.get(resource.id) ?? NO_OWN_HOURS}
+                    businessWeek={settings.businessWeek}
+                    onSaved={(saved, outside) => hoursSaved(resource.id, saved, outside)}
+                  />
+                ) : null}
                 <PersonTextsPart
                   ref={textsPart}
                   personId={resource.id}
@@ -213,39 +251,43 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                   onSaved={(texts) => textsSaved(resource.id, texts)}
                 />
               </ChangeResourceForm>
-              {hoursCardOf(resource)}
             </li>
           ) : (
-            <li key={resource.id} className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-card px-4 py-3 md:px-6">
-                <span className="font-medium text-foreground">{resource.name}</span>
-                <span
-                  className={
-                    resource.active
-                      ? "rounded-md bg-[var(--accent-soft)] px-2 py-0.5 text-xs font-medium text-primary"
-                      : "rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
-                  }
-                >
-                  {resource.active ? peopleWords.on : peopleWords.off}
-                </span>
-                <span className="text-sm text-muted-foreground">{bookedFor(resource)}</span>
-                {textsCanGo(workerTexts.get(resource.id), settings.textsSetUp) ? (
-                  <span className="text-xs text-muted-foreground">{peopleWords.getsTexts}</span>
-                ) : null}
-                {settings.canEdit ? (
-                  <Button
-                    id={changeButtonId(resource.id)}
-                    variant="ghost"
-                    size="sm"
-                    className="ml-auto"
-                    aria-label={peopleWords.changeOf(resource.name)}
-                    onClick={() => openForm(resource.id)}
-                  >
-                    {peopleWords.change}
-                  </Button>
-                ) : null}
-              </div>
-              {hoursCardOf(resource)}
+            <li
+              key={resource.id}
+              className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-card px-4 py-3 md:px-6"
+            >
+              <span className="font-medium text-foreground">{resource.name}</span>
+              <span
+                className={
+                  resource.active
+                    ? "rounded-md bg-[var(--accent-soft)] px-2 py-0.5 text-xs font-medium text-primary"
+                    : "rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                }
+              >
+                {resource.active ? peopleWords.on : peopleWords.off}
+              </span>
+              <span className="text-sm text-muted-foreground">{bookedFor(resource)}</span>
+              {hasHours(resource) ? (
+                <span className="text-sm text-muted-foreground">{hoursLine(resource)}</span>
+              ) : null}
+              {textsCanGo(workerTexts.get(resource.id), settings.textsSetUp) ? (
+                <span className="text-xs text-muted-foreground">{peopleWords.getsTexts}</span>
+              ) : null}
+              <Button
+                id={changeButtonId(resource.id)}
+                variant="ghost"
+                size="sm"
+                className="ml-auto"
+                aria-label={
+                  settings.canEdit
+                    ? peopleWords.changeOf(resource.name)
+                    : peopleWords.seeOf(resource.name)
+                }
+                onClick={() => openForm(resource.id)}
+              >
+                {settings.canEdit ? peopleWords.change : peopleWords.see}
+              </Button>
             </li>
           )
         )}
