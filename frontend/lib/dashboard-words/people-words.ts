@@ -34,6 +34,11 @@ export type PeopleWordsType = {
   save: string;
   // A person's texts
   textsTo(name: string): string;
+  canDoTitle(name: string): string;
+  canDoHint: string;
+  noServicesYet: string;
+  hiddenService: string; // after a hidden service's name
+  nobodyOffers(services: string[]): string; // services a save left with nobody on
   noTextingNumber: string;
   texts: string;
   textsOff: string;
@@ -82,6 +87,13 @@ export const englishPeopleWords: PeopleWordsType = {
   saving: "Saving…",
   save: "Save",
   textsTo: (name) => `Texts to ${name} about their day`,
+  canDoTitle: (name) => `What ${name} can do`,
+  canDoHint:
+    "A service ticked here lists them on it, offering it. Turn them off there when they are not taking it.",
+  noServicesYet: "No services yet: add them on Services.",
+  hiddenService: " (hidden)",
+  nobodyOffers: (services) =>
+    `Nobody offers ${services.join(", ")} now: customers cannot book ${services.length === 1 ? "it" : "them"}.`,
   noTextingNumber:
     "The business has no texting number yet, so no texts go until the agency sets one up.",
   texts: "Texts",
@@ -136,6 +148,13 @@ export const spanishPeopleWords: PeopleWordsType = {
   saving: "Guardando…",
   save: "Guardar",
   textsTo: (name) => `Mensajes de texto a ${name} sobre su día`,
+  canDoTitle: (name) => `Lo que ${name} sabe hacer`,
+  canDoHint:
+    "Un servicio marcado aquí lo muestra en ese servicio, ofreciéndolo. Desactívelo allí cuando no lo esté atendiendo.",
+  noServicesYet: "Todavía no hay servicios: agréguelos en Servicios.",
+  hiddenService: " (oculto)",
+  nobodyOffers: (services) =>
+    `Nadie ofrece ${services.join(", ")} ahora: los clientes no ${services.length === 1 ? "lo" : "los"} pueden reservar.`,
   noTextingNumber:
     "El negocio todavía no tiene un número para mensajes de texto, así que no se envía ninguno hasta que la agencia lo configure.",
   texts: "Mensajes de texto",

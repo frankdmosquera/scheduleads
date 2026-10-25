@@ -17,6 +17,7 @@ import {
   holidayPicksValidationSchema,
   openClosedDayValidationSchema,
   personHoursValidationSchema,
+  savePersonSkillsValidationSchema,
   saveResourceValidationSchema,
   saveServiceResourcesValidationSchema,
   serviceValidationSchema,
@@ -48,6 +49,7 @@ import { saveWorkerTexts } from "../lib/settings/save-worker-texts.js";
 import { saveBusinessHours } from "../lib/settings/save-business-hours.js";
 import { saveHolidayPicks } from "../lib/settings/save-holiday-picks.js";
 import { savePersonHours } from "../lib/settings/save-person-hours.js";
+import { savePersonSkills } from "../lib/settings/save-person-skills.js";
 import { saveResource } from "../lib/settings/save-resource.js";
 import { saveService } from "../lib/settings/save-service.js";
 import { saveServiceResources } from "../lib/settings/save-service-resources.js";
@@ -328,6 +330,38 @@ export const settingsRoutes = new Hono()
           409
         );
       return c.json({ resource: saved.resource, upcomingBookings: saved.upcomingBookings }, 200);
+    }
+  )
+
+  // What a person can do: the ticked services replace the ones before. A new one turns them on for
+  // it, an unticked one off; the answer names the services left with nobody on. Another business's
+  // person or an unknown id: the same 404; a place has no skills.
+  .put(
+    "/people/:resourceId/skills",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = savePersonSkillsValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const saved = await savePersonSkills(
+        c.get("organization").organizationId,
+        c.req.param("resourceId"),
+        c.req.valid("json")
+      );
+      if (!saved.ok && saved.reason === "not_found")
+        return c.json(refuse("not_found", "No person here."), 404);
+      if (!saved.ok && saved.reason === "not_a_person")
+        return c.json(refuse("bad_request", "A place has no skills: only people do."), 400);
+      if (!saved.ok)
+        return c.json(
+          { ...refuse("bad_request", "Tick only this business's services."), field: "serviceIds" },
+          400
+        );
+      return c.json({ ...saved.skills, nobodyOn: saved.nobodyOn }, 200);
     }
   )
 

@@ -35,6 +35,7 @@ const { CalendarUnavailableError } = await import("../calendar/calendar-unavaila
 const { CalendarReconnectNeededError } =
   await import("../calendar/calendar-reconnect-needed-error.js");
 const { saveCalendarConnection } = await import("../calendar/save-calendar-connection.js");
+const { giveSkillsAsTicked } = await import("./give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const MONDAY = "2026-10-05";
@@ -99,6 +100,7 @@ async function makeClinic(name: string) {
     { organizationId: business, bookingLinkId: facial, resourceId: mei },
     { organizationId: business, bookingLinkId: peel, resourceId: room3 },
   ]);
+  await giveSkillsAsTicked(business);
   return { business, ana, mei, room3, facial, peel };
 }
 

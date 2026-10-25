@@ -41,6 +41,7 @@ const { localDate } = await import("@scheduleads-app/shared/local-date");
 const { jobClock } = await import("./job-clock.js");
 const { jobSchema } = await import("./job-schema.js");
 const { workDueJobs } = await import("./work-due-jobs.js");
+const { giveSkillsAsTicked } = await import("../scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
@@ -120,6 +121,7 @@ async function makeBusiness(
     { organizationId: business, bookingLinkId: estimate, resourceId: marco },
     { organizationId: business, bookingLinkId: estimate, resourceId: pedro },
   ]);
+  await giveSkillsAsTicked(business);
   const fromNumber = freshNumber();
   if (texts !== null) {
     await db.insert(textSettings).values({

@@ -14,6 +14,7 @@ import {
   bookingLinkResource,
   bookingQuestion,
   organization,
+  personSkill,
   resource,
   standbyDate,
   textSettings,
@@ -125,6 +126,7 @@ export async function applyBusinessShape(
   const resourceIdsByName = new Map<string, string>(
     firstPerson.names.map((name) => [nameKeyOf(name), firstPerson.id])
   );
+  const personIds = new Set([firstPerson.id]); // who a service naming nobody goes to (feature 12k)
   for (const person of shape.people) {
     const { id: resourceId, made } = await ensureResource(
       tx,
@@ -133,6 +135,7 @@ export async function applyBusinessShape(
       person.kind
     );
     resourceIdsByName.set(nameKeyOf(person.name), resourceId);
+    if (person.kind === "person") personIds.add(resourceId);
     if (made) peopleMade++;
 
     // A date already there stays.
@@ -261,10 +264,17 @@ export async function applyBusinessShape(
       return { organizationId, bookingLinkId, resourceId };
     });
     // Ticks only on a service made now: an existing one's ticks are the owner's, on Settings (12d).
-    if (existingLink || !ticks.length) continue;
+    if (existingLink) continue;
+    // A ticked person can do it and is on for it; naming nobody gives every person the file lists,
+    // and the first person, the skill, on (feature 12k: nobody on would mean nobody).
+    const tickedPeople = ticks.filter((tick) => personIds.has(tick.resourceId));
+    const doers = tickedPeople.length
+      ? tickedPeople
+      : [...personIds].map((resourceId) => ({ organizationId, bookingLinkId, resourceId }));
+    await tx.insert(personSkill).values(doers).onConflictDoNothing();
     const madeTicks = await tx
       .insert(bookingLinkResource)
-      .values(ticks)
+      .values([...ticks.filter((tick) => !personIds.has(tick.resourceId)), ...doers])
       .onConflictDoNothing()
       .returning({ resourceId: bookingLinkResource.resourceId });
     ticksMade += madeTicks.length;

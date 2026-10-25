@@ -37,6 +37,7 @@ const { jobTasks } = await import("../jobs/job-tasks.js");
 const { writeBookingEvent } = await import("./write-booking-event.js");
 const { saveCalendarConnection } = await import("./save-calendar-connection.js");
 const { CalendarReconnectNeededError } = await import("./calendar-reconnect-needed-error.js");
+const { giveSkillsAsTicked } = await import("../scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
@@ -87,6 +88,7 @@ async function makeClinic(name: string) {
   await db
     .insert(bookingLinkResource)
     .values({ organizationId: business, bookingLinkId: estimate, resourceId: ana });
+  await giveSkillsAsTicked(business);
   return { business, ana, estimate };
 }
 

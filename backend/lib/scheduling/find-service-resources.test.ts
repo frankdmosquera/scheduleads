@@ -1,6 +1,6 @@
 // Who may be offered for a service, against the local database. Every business here is a
-// throwaway carrying this run's tag, removed after (its services, people, places and ticks go
-// with it).
+// throwaway carrying this run's tag, removed after (its services, people, places, skills and ticks
+// go with it). A person row on a service means on for it; person_skill says who can do it (12k).
 
 import { randomUUID } from "node:crypto";
 
@@ -19,25 +19,27 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the who-does-what reading 
 
 // Imported after the env is loaded: they read it the moment they load.
 const { db } = await import("../../database.js");
-const { bookingLink, bookingLinkResource, organization, resource } =
+const { bookingLink, bookingLinkResource, organization, personSkill, resource } =
   await import("@scheduleads-app/shared/db");
 const { findServiceResources } = await import("./find-service-resources.js");
 
 const tag = randomUUID().slice(0, 8);
 
 // A clinic of its own, shaped like Face and Body: people (one already inactive), rooms (one
-// inactive), and services ticked the clinic's way. No test depends on another having run.
+// inactive), and services ticked the clinic's way. Kim is on for the facial without being able to
+// do it; Ana can do the laser but is off for it. No test depends on another having run.
 async function makeClinic(name: string) {
   const business = randomUUID();
   await db.insert(organization).values({ id: business, name, slug: `test-offer-${name}-${tag}` });
   const id = () => randomUUID();
-  const people = { sofia: id(), ana: id(), mei: id(), gone: id() };
+  const people = { sofia: id(), ana: id(), mei: id(), gone: id(), kim: id() };
   const rooms = { room3: id(), room5: id(), closed: id() };
   await db.insert(resource).values([
     { id: people.sofia, organizationId: business, name: "Sofia", kind: "person" },
     { id: people.ana, organizationId: business, name: "Ana", kind: "person" },
     { id: people.mei, organizationId: business, name: "Mei", kind: "person" },
     { id: people.gone, organizationId: business, name: "Gone", kind: "person", active: false },
+    { id: people.kim, organizationId: business, name: "Kim", kind: "person" },
     { id: rooms.room3, organizationId: business, name: "Room 3", kind: "place" },
     { id: rooms.room5, organizationId: business, name: "Room 5", kind: "place" },
     { id: rooms.closed, organizationId: business, name: "Room 6", kind: "place", active: false },
@@ -62,6 +64,7 @@ async function makeClinic(name: string) {
     [services.facial, people.ana],
     [services.facial, people.mei],
     [services.facial, people.gone],
+    [services.facial, people.kim],
     [services.facial, rooms.room3],
     [services.facial, rooms.closed],
     [services.peel, rooms.room3],
@@ -70,6 +73,21 @@ async function makeClinic(name: string) {
   ];
   await db.insert(bookingLinkResource).values(
     ticks.map(([bookingLinkId, resourceId]) => ({
+      organizationId: business,
+      bookingLinkId,
+      resourceId,
+    }))
+  );
+  const skills: [string, string][] = [
+    [services.facial, people.sofia],
+    [services.facial, people.ana],
+    [services.facial, people.mei],
+    [services.facial, people.gone],
+    [services.laser, people.mei],
+    [services.laser, people.ana],
+  ];
+  await db.insert(personSkill).values(
+    skills.map(([bookingLinkId, resourceId]) => ({
       organizationId: business,
       bookingLinkId,
       resourceId,
@@ -87,20 +105,25 @@ afterAll(async () => {
 });
 
 describe("findServiceResources", () => {
-  test("nobody ticked: every active person, by name, and no room check", async () => {
-    const { business, people, services } = await makeClinic("nobody");
+  test("nobody on: nobody, never anyone, and no room check", async () => {
+    const { business, services } = await makeClinic("nobody");
     expect(await findServiceResources(business, services.estimate)).toEqual({
-      peopleIds: [people.ana, people.mei, people.sofia],
+      peopleIds: [],
       placeIds: null,
     });
   });
 
-  test("people ticked: only those, inactive ones left out; places ticked: only the active ones", async () => {
+  test("people on and able: only those, by name, inactive ones and one who cannot do it left out; places: only the active ones", async () => {
     const { business, people, rooms, services } = await makeClinic("ticked");
     expect(await findServiceResources(business, services.facial)).toEqual({
       peopleIds: [people.ana, people.mei, people.sofia],
       placeIds: [rooms.room3],
     });
+  });
+
+  test("able but off: never offered", async () => {
+    const { business, people, services } = await makeClinic("off");
+    expect((await findServiceResources(business, services.laser))!.peopleIds).toEqual([people.mei]);
   });
 
   test("a person never shows as a place, nor a place as a person", async () => {

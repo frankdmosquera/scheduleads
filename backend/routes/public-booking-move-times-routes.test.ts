@@ -39,6 +39,8 @@ const { saveCalendarConnection } = await import("../lib/calendar/save-calendar-c
 const { addDays } = await import("@scheduleads-app/shared/add-days");
 const { localDate } = await import("@scheduleads-app/shared/local-date");
 const { localTimeToMoment } = await import("../lib/local-time/local-time-to-moment.js");
+const { giveSkillsAsTicked } =
+  await import("../lib/scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const ZONE = "America/Edmonton";
@@ -106,6 +108,7 @@ async function makeClinic(name: string) {
     { organizationId: business, bookingLinkId: facial, resourceId: mei },
     { organizationId: business, bookingLinkId: facial, resourceId: room },
   ]);
+  await giveSkillsAsTicked(business);
   const clinic = { business, ana, mei, room, facial };
   const janesBooking = await book(clinic, ana, 9, "Jane Doe");
   const bobsBooking = await book(clinic, mei, 13, "Bob Smith");

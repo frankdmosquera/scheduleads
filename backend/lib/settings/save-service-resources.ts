@@ -1,10 +1,15 @@
-// Backend: who does a service, from the owner's Services page (feature 12d): the ticked people and
-// places replace the ones before, all at once. A turned-off one may stay ticked; the booking side
-// never offers it.
+// Backend: who does a service, from the owner's Services page (feature 12d): the people on for it
+// and the places it needs replace the ones before, all at once. A person is on only if they can do
+// it (feature 12k). A turned-off one may stay on; the booking side never offers it.
 
 import { and, eq, inArray } from "drizzle-orm";
 
-import { bookingLink, bookingLinkResource, resource } from "@scheduleads-app/shared/db";
+import {
+  bookingLink,
+  bookingLinkResource,
+  personSkill,
+  resource,
+} from "@scheduleads-app/shared/db";
 import type { SaveServiceResourcesType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
@@ -33,7 +38,7 @@ export async function saveServiceResources(
     const ids = [...ticks.peopleIds, ...ticks.placeIds];
     const found = ids.length
       ? await tx
-          .select({ id: resource.id, kind: resource.kind })
+          .select({ id: resource.id, kind: resource.kind, name: resource.name })
           .from(resource)
           .where(and(eq(resource.organizationId, organizationId), inArray(resource.id, ids)))
       : [];
@@ -44,6 +49,30 @@ export async function saveServiceResources(
         reason: "bad_tick",
         field: "peopleIds",
         message: "Tick only this business's people.",
+      } as const;
+    }
+    // On only while they can do it: the skill is ticked on their card, never here.
+    const able = new Set(
+      (
+        await tx
+          .select({ id: personSkill.resourceId })
+          .from(personSkill)
+          .where(
+            and(
+              eq(personSkill.organizationId, organizationId),
+              eq(personSkill.bookingLinkId, serviceId)
+            )
+          )
+      ).map((row) => row.id)
+    );
+    const unable = ticks.peopleIds.find((id) => !able.has(id));
+    if (unable) {
+      const name = found.find((row) => row.id === unable)!.name;
+      return {
+        ok: false,
+        reason: "bad_tick",
+        field: "peopleIds",
+        message: `${name} cannot do this service yet: tick it on their card on People.`,
       } as const;
     }
     if (ticks.placeIds.some((id) => kindOf.get(id) !== "place")) {

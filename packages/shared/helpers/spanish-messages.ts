@@ -234,6 +234,12 @@ export const spanishMessages: Record<string, string> = {
   "No service here.": "No hay ningún servicio aquí.",
   "Tick only this business's people.": "Marque solo personas de este negocio.",
   "Tick only this business's places.": "Marque solo lugares de este negocio.",
+  "Tick only this business's services.": "Marque solo servicios de este negocio.",
+  "Tick at most 500 services.": "Marque como máximo 500 servicios.",
+  "Tick each of the services once.": "Cada servicio se marca una sola vez.",
+  "{} cannot do this service yet: tick it on their card on People.":
+    "{} todavía no sabe hacer este servicio: márquelo en su tarjeta en Personas.",
+  "A place has no skills: only people do.": "Un lugar no tiene habilidades: solo las personas.",
   "Tick at most 500 {}.": "Marque como máximo 500 {}.",
   "Tick each of the {} once.": "Cada uno se marca una sola vez.",
   "Use whole minutes.": "Use minutos enteros.",

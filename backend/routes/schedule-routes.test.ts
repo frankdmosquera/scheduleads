@@ -45,6 +45,8 @@ const {
   standbyDate,
   user,
 } = await import("@scheduleads-app/shared/db");
+const { giveSkillsAsTicked } =
+  await import("../lib/scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const makeTenant = (letter: string) => ({
@@ -213,6 +215,7 @@ beforeAll(async () => {
     addressMode: "not_asked",
     personChoice: "customer_picks",
   });
+  await giveSkillsAsTicked(summit.organizationId);
   const [contactId, leadId] = [randomUUID(), randomUUID()];
   await db
     .insert(contact)
@@ -1049,6 +1052,7 @@ describe("time off (feature 12b)", () => {
         resourceId,
       }))
     );
+    await giveSkillsAsTicked(summit.organizationId);
     const ana = await bookOn(day, 600, "Ana", fittingId); // 10 am
     const ben = await bookOn(day, 660, "Ben", fittingId); // 11 am
     expect((await bookingOf(ana)).placeId).toBe(roomA);

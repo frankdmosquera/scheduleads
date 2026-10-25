@@ -6,7 +6,7 @@
 skills, a new rule replacing "nobody ticked means anyone", a data carry-over), a service's own
 hours (one more layer in the free-time math), and the People and Places pages rebuilt around them.
 
-**Status:** not started
+**Status:** in progress
 
 **Branch:** feature/12k-people-places-and-skills
 
@@ -75,7 +75,7 @@ The new migrations go on live by hand through the tunnel before the merge deploy
 
 ## Build steps
 
-- [ ] 12k.1 **Skills on the person, the switch on the service.** Migration 0033: table
+- [x] 12k.1 **Skills on the person, the switch on the service.** Migration 0033: table
   `person_skill`, the carry-over. The free-time and booking rules read "on" people only, and
   nobody on means not bookable. `PUT /settings/people/:resourceId/skills`; the service's
   `PUT .../resources` refuses a person without the skill. On People, each person's card gets

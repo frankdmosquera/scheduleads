@@ -1,6 +1,7 @@
 // Frontend component: the People page of Settings (feature 12d): every person and place, on or
 // off, and one form at a time to add or change one. Turning one off lists the bookings they hold.
-// A person's worker texts (feature 12g) are part of their card, saved by its one Save.
+// A person's worker texts (feature 12g) and what they can do (feature 12k) are part of their card,
+// saved by its one Save.
 
 "use client";
 
@@ -10,6 +11,11 @@ import { CentredCardNotice } from "@/components/centred-card/centred-card-notice
 import { AddResourceForm } from "@/components/settings/add-resource-form";
 import { ChangeResourceForm } from "@/components/settings/change-resource-form";
 import { ListedBookings, type ListedBookingsType } from "@/components/settings/listed-bookings";
+import {
+  PersonSkillsPart,
+  type PersonSkillsPartHandleType,
+  type PersonSkillsType,
+} from "@/components/settings/person-skills-part";
 import {
   PersonTextsPart,
   textsCanGo,
@@ -43,6 +49,19 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   const [people, setPeople] = useState(settings.people);
   const { peopleWords } = useDashboardWords().words;
   const textsPart = useRef<PersonTextsPartHandleType>(null); // the open card's texts
+  const skillsPart = useRef<PersonSkillsPartHandleType>(null); // the open card's skills
+  const [skills, setSkills] = useState(
+    () =>
+      new Map<string, PersonSkillsType>(
+        settings.skills.map(({ personId, ...personSkills }) => [personId, personSkills])
+      )
+  );
+  // Services a skills save left with nobody on, said with the save's notice.
+  const nobodyOn = useRef<string[]>([]);
+  const skillsSaved = (personId: string, saved: PersonSkillsType, left: string[]) => {
+    setSkills((map) => new Map(map).set(personId, saved));
+    nobodyOn.current = left;
+  };
   const [workerTexts, setWorkerTexts] = useState(
     () =>
       new Map<string, WorkerTextsType>(
@@ -73,6 +92,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   };
   const openForm = (which: string | "new") => {
     setNotice(null);
+    nobodyOn.current = [];
     setOpen(which);
   };
 
@@ -87,11 +107,14 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
         ? { name: resource.name, list: { bookings: upcoming, timezone: settings.timezone } }
         : null
     );
+    const savedText = resource.active
+      ? peopleWords.savedOn(resource.name)
+      : peopleWords.savedOff(resource.name, upcoming.length);
+    const left = nobodyOn.current;
+    nobodyOn.current = [];
     setNotice({
       tone: "info",
-      text: resource.active
-        ? peopleWords.savedOn(resource.name)
-        : peopleWords.savedOff(resource.name, upcoming.length),
+      text: left.length ? `${savedText} ${peopleWords.nobodyOffers(left)}` : savedText,
     });
   };
 
@@ -129,10 +152,22 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                 onCancel={() => close(changeButtonId(resource.id))}
                 beforeSave={
                   resource.kind === "person"
-                    ? async () => (await textsPart.current?.save()) ?? true
+                    ? async () =>
+                        ((await skillsPart.current?.save()) ?? true) &&
+                        ((await textsPart.current?.save()) ?? true)
                     : undefined
                 }
               >
+                {resource.kind === "person" ? (
+                  <PersonSkillsPart
+                    ref={skillsPart}
+                    personId={resource.id}
+                    personName={resource.name}
+                    services={settings.services}
+                    skills={skills.get(resource.id) ?? { serviceIds: [], onFor: [] }}
+                    onSaved={(saved, left) => skillsSaved(resource.id, saved, left)}
+                  />
+                ) : null}
                 {resource.kind === "person" ? (
                   <PersonTextsPart
                     ref={textsPart}

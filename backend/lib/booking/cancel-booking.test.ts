@@ -33,6 +33,7 @@ const {
 const { bookTime } = await import("./book-time.js");
 const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { cancelBooking } = await import("./cancel-booking.js");
+const { giveSkillsAsTicked } = await import("../scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const NOW = new Date("2026-10-02T14:00:00Z");
@@ -83,6 +84,7 @@ async function makeBooking(name: string) {
   await db
     .insert(bookingLinkResource)
     .values({ organizationId: business, bookingLinkId: estimate, resourceId: marco });
+  await giveSkillsAsTicked(business);
   const result = await bookTime({
     organizationId: business,
     bookingLinkId: estimate,

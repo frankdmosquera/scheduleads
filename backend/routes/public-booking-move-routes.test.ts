@@ -38,6 +38,8 @@ const { makeBookingPageToken } = await import("../lib/booking/booking-page-token
 const { addDays } = await import("@scheduleads-app/shared/add-days");
 const { localDate } = await import("@scheduleads-app/shared/local-date");
 const { localTimeToMoment } = await import("../lib/local-time/local-time-to-moment.js");
+const { giveSkillsAsTicked } =
+  await import("../lib/scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const ZONE = "America/Edmonton";
@@ -104,6 +106,7 @@ async function makeClinic(name: string, { withRoom = false } = {}) {
       { organizationId: business, bookingLinkId: facial, resourceId: mei },
       ...(withRoom ? [{ organizationId: business, bookingLinkId: facial, resourceId: room }] : []),
     ]);
+  await giveSkillsAsTicked(business);
   const clinic = { business, slug, ana, mei, room, facial };
   return { ...clinic, janesBooking: await book(clinic, ana, 9) };
 }

@@ -43,6 +43,7 @@ const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { holdFirstFreeChoice } = await import("./hold-first-free-choice.js");
 const { holdTime } = await import("../scheduling/hold-time.js");
 const { saveCalendarConnection } = await import("../calendar/save-calendar-connection.js");
+const { giveSkillsAsTicked } = await import("../scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const fridayMorning = new Date("2026-10-02T14:00:00Z"); // 8:00 in Edmonton (UTC-6)
@@ -111,6 +112,7 @@ async function makeClinic(name: string) {
     { organizationId: business, bookingLinkId: massage, resourceId: room3 },
     { organizationId: business, bookingLinkId: massage, resourceId: room4 },
   ]);
+  await giveSkillsAsTicked(business);
   return { business, newStage, ana, mei, room3, room4, facial, massage };
 }
 

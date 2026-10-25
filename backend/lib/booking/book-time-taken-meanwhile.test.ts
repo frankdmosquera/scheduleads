@@ -33,6 +33,7 @@ const {
 const { bookTime } = await import("./book-time.js");
 const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { holdTime } = await import("../scheduling/hold-time.js");
+const { giveSkillsAsTicked } = await import("../scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
@@ -83,6 +84,7 @@ describe("booking a time", () => {
       { organizationId: business, bookingLinkId: facial, resourceId: ana },
       { organizationId: business, bookingLinkId: facial, resourceId: mei },
     ]);
+    await giveSkillsAsTicked(business);
     // Someone took Ana at 9:00; the check above does not see it, the database does.
     await holdTime(business, {
       resourceIds: [ana],

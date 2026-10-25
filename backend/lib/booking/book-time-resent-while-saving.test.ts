@@ -55,6 +55,7 @@ const {
 } = await import("@scheduleads-app/shared/db");
 const { bookTime } = await import("./book-time.js");
 const { workDueJobs } = await import("../jobs/work-due-jobs.js");
+const { giveSkillsAsTicked } = await import("../scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
@@ -105,6 +106,7 @@ describe("booking a time", () => {
     await db
       .insert(bookingLinkResource)
       .values({ organizationId: business, bookingLinkId: estimate, resourceId: pedro });
+    await giveSkillsAsTicked(business);
 
     const form = {
       organizationId: business,

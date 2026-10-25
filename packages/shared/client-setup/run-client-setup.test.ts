@@ -13,6 +13,7 @@ import {
   availabilityRule,
   bookingLink,
   bookingLinkResource,
+  personSkill,
   bookingQuestion,
   organization,
   resource,
@@ -106,6 +107,7 @@ async function countRows(organizationId: string) {
       bookingLinkResource,
       eq(bookingLinkResource.organizationId, organizationId)
     ),
+    skills: await db.$count(personSkill, eq(personSkill.organizationId, organizationId)),
     workerTexts: await db.$count(
       workerTextSettings,
       eq(workerTextSettings.organizationId, organizationId)
@@ -182,6 +184,7 @@ describe("runClientSetup", () => {
       resources: 1,
       services: 0,
       ticks: 0,
+      skills: 0,
       workerTexts: 0,
     });
   });
@@ -201,7 +204,8 @@ describe("runClientSetup", () => {
       hours: 2,
       resources: 3,
       services: 2,
-      ticks: 1,
+      ticks: 5, // Room A, and both people on both services: neither names a person (feature 12k)
+      skills: 4,
       workerTexts: 1,
     });
 
@@ -212,7 +216,8 @@ describe("runClientSetup", () => {
       hours: 2,
       resources: 3,
       services: 2,
-      ticks: 1,
+      ticks: 5,
+      skills: 4,
       workerTexts: 1,
     });
   });
@@ -251,9 +256,15 @@ describe("runClientSetup", () => {
       .select({ id: bookingLink.id })
       .from(bookingLink)
       .where(and(eq(bookingLink.organizationId, business.id), eq(bookingLink.slug, "phone-call")));
+    // Ana switched off for Phone call on Settings: she stays off.
     await db
-      .insert(bookingLinkResource)
-      .values({ organizationId: business.id, bookingLinkId: phoneCall!.id, resourceId: ana!.id });
+      .delete(bookingLinkResource)
+      .where(
+        and(
+          eq(bookingLinkResource.bookingLinkId, phoneCall!.id),
+          eq(bookingLinkResource.resourceId, ana!.id)
+        )
+      );
     // Room A unticked from Video call on Settings: it stays off.
     const [videoCall] = await db.select({ id: bookingLink.id }).from(bookingLink).where(byHand);
     await db
@@ -275,8 +286,8 @@ describe("runClientSetup", () => {
       '"Video call", addressMode: saved "required", file "not_asked"',
       expect.stringMatching(/^"Ana", weeklyHours: saved {"tue"/),
       expect.stringMatching(/^"Ana", worker texts: saved {"addedOn":true,"movedOn":false/),
-      '"Video call", in the file, not ticked here: Room A',
-      '"Phone call", ticked by hand: Ana',
+      `"Video call", in the file, not ticked here: Ana, Room A, Setup Test ${business.slug}`,
+      '"Phone call", in the file, not ticked here: Ana',
     ]);
     const [kept] = await db.select().from(bookingLink).where(byHand);
     expect(kept?.durationMinutes).toBe(45);

@@ -35,6 +35,7 @@ const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { jobNames } = await import("../jobs/job-names.js");
 const { jobTasks } = await import("../jobs/job-tasks.js");
 const { saveCalendarConnection } = await import("./save-calendar-connection.js");
+const { giveSkillsAsTicked } = await import("../scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const NOW = new Date("2026-10-02T14:00:00Z");
@@ -85,6 +86,7 @@ async function makeBusiness(name: string) {
   await db
     .insert(bookingLinkResource)
     .values({ organizationId: business, bookingLinkId: estimate, resourceId: ana });
+  await giveSkillsAsTicked(business);
   return { business, ana, estimate };
 }
 

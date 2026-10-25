@@ -21,6 +21,7 @@ export type SettingsFrameWordsType = {
   change: string;
   remove: string;
   addThemOnPeople: string; // a link, followed by a full stop
+  tickItOnPeople: string; // a link, followed by a full stop
   off: string; // after a turned-off person or place, with its own leading space
 };
 
@@ -41,6 +42,7 @@ export const englishSettingsFrameWords: SettingsFrameWordsType = {
   change: "Change",
   remove: "Remove",
   addThemOnPeople: "Add them on People",
+  tickItOnPeople: "Tick it on their card on People",
   off: " (off)",
 };
 
@@ -61,5 +63,6 @@ export const spanishSettingsFrameWords: SettingsFrameWordsType = {
   change: "Cambiar",
   remove: "Quitar",
   addThemOnPeople: "Agréguelos en Personas",
+  tickItOnPeople: "Márquelo en su tarjeta en Personas",
   off: " (fuera de servicio)",
 };

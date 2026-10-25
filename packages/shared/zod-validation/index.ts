@@ -26,6 +26,7 @@ export * from "./booking-links-validation-schemas/move-booking-validation-schema
 export * from "./booking-links-validation-schemas/cancel-bookings-validation-schema.js";
 export * from "./booking-links-validation-schemas/service-validation-schema.js";
 export * from "./booking-links-validation-schemas/save-service-resources-validation-schema.js";
+export * from "./booking-links-validation-schemas/save-person-skills-validation-schema.js";
 export * from "./resource-validation-schemas/resource-name-validation-schema.js";
 export * from "./resource-validation-schemas/add-resource-validation-schema.js";
 export * from "./resource-validation-schemas/save-resource-validation-schema.js";

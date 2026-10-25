@@ -45,6 +45,8 @@ const {
   user,
   workerTextSettings,
 } = await import("@scheduleads-app/shared/db");
+const { giveSkillsAsTicked } =
+  await import("../lib/scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const makeTenant = (letter: string) => ({
@@ -249,6 +251,7 @@ beforeAll(async () => {
     addressMode: "not_asked",
     personChoice: "customer_picks",
   });
+  await giveSkillsAsTicked(booked.organizationId);
   for (const email of [
     summit.email,
     other.email,
@@ -703,13 +706,18 @@ describe("who does what", () => {
     ).service.id;
   const ticksOf = async (serviceId: string) => {
     const read = (await (await get("/settings/services", summit.email)).json()) as {
-      services: ({ id: string } & TicksType)[];
+      services: ({ id: string; ablePeopleIds: string[] } & TicksType)[];
     };
     const service = read.services.find((row) => row.id === serviceId)!;
-    return { peopleIds: service.peopleIds, placeIds: service.placeIds };
+    return {
+      peopleIds: service.peopleIds,
+      placeIds: service.placeIds,
+      able: service.ablePeopleIds,
+    };
   };
+  const skillsPath = (personId: string) => `/settings/people/${personId}/skills`;
 
-  test("a save replaces the ticks, and the booking side offers only who is ticked", async () => {
+  test("can do is ticked on the card, on is set on the service, and only who can do it and is on is offered", async () => {
     const serviceId = await addService("Colour consultation");
     const marco = (await (
       await post("/settings/people", summit.email, { name: "Marco", kind: "person" })
@@ -717,37 +725,84 @@ describe("who does what", () => {
     const marcoId = marco.resource.id;
     const ticksPath = `/settings/services/${serviceId}/resources`;
 
-    // Only Marco and Room 1: only Marco is offered, and Room 1 is needed.
+    // A new service: nobody can do it, so nobody is on and nobody is offered.
+    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [], placeIds: [], able: [] });
+    expect(await findServiceResources(summit.organizationId, serviceId)).toEqual({
+      peopleIds: [],
+      placeIds: null,
+    });
+
+    // Marco cannot be put on before he can do it.
+    const unable = await put(ticksPath, summit.email, { peopleIds: [marcoId], placeIds: [] });
+    expect(unable.status).toBe(400);
+    expect(await unable.json()).toMatchObject({
+      error: { message: "Marco cannot do this service yet: tick it on their card on People." },
+      field: "peopleIds",
+    });
+
+    // Ticked on his card, he can do it and is on for it.
+    const skilled = await put(skillsPath(marcoId), summit.email, { serviceIds: [serviceId] });
+    expect(skilled.status).toBe(200);
+    expect(await skilled.json()).toEqual({
+      serviceIds: [serviceId],
+      onFor: [serviceId],
+      nobodyOn: [],
+    });
+    expect(await ticksOf(serviceId)).toEqual({
+      peopleIds: [marcoId],
+      placeIds: [],
+      able: [marcoId],
+    });
+
+    // On the service: Marco and Room 1. Only Marco is offered, and Room 1 is needed.
     const first = await put(ticksPath, summit.email, {
       peopleIds: [marcoId],
       placeIds: [summitPlaceId],
     });
     expect(first.status).toBe(200);
-    expect(await first.json()).toEqual({ peopleIds: [marcoId], placeIds: [summitPlaceId] });
-    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [marcoId], placeIds: [summitPlaceId] });
+    expect(await first.json()).toEqual({
+      peopleIds: [marcoId],
+      placeIds: [summitPlaceId],
+      ablePeopleIds: [marcoId],
+    });
     expect(await findServiceResources(summit.organizationId, serviceId)).toEqual({
       peopleIds: [marcoId],
       placeIds: [summitPlaceId],
     });
 
-    // The next save replaces them, it never adds to them.
+    // Juan can do it too; the next save replaces who is on, it never adds to them.
+    await put(skillsPath(summit.personId), summit.email, { serviceIds: [serviceId] });
     await put(ticksPath, summit.email, { peopleIds: [summit.personId], placeIds: [] });
-    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [summit.personId], placeIds: [] });
+    expect(await ticksOf(serviceId)).toEqual({
+      peopleIds: [summit.personId],
+      placeIds: [],
+      able: [summit.personId, marcoId],
+    });
     expect(await findServiceResources(summit.organizationId, serviceId)).toEqual({
       peopleIds: [summit.personId],
       placeIds: null,
     });
 
-    // Nobody ticked: anyone on is offered again.
+    // Nobody on: nobody is offered, never anyone, though both can do it.
     await put(ticksPath, summit.email, { peopleIds: [], placeIds: [] });
-    const anyone = await findServiceResources(summit.organizationId, serviceId);
-    expect(anyone?.peopleIds).toEqual(expect.arrayContaining([summit.personId, marcoId]));
-    expect(anyone?.placeIds).toBeNull();
+    expect((await findServiceResources(summit.organizationId, serviceId))?.peopleIds).toEqual([]);
+
+    // Unticking the only one on from his card turns him off, and the answer names the service.
+    await put(ticksPath, summit.email, { peopleIds: [summit.personId], placeIds: [] });
+    const left = await put(skillsPath(summit.personId), summit.email, { serviceIds: [] });
+    expect(await left.json()).toEqual({
+      serviceIds: [],
+      onFor: [],
+      nobodyOn: ["Colour consultation"],
+    });
+    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [], placeIds: [], able: [marcoId] });
+    expect((await findServiceResources(summit.organizationId, serviceId))?.peopleIds).toEqual([]);
   });
 
   test("a place in the people, or another business's person, is refused and nothing changes", async () => {
     const serviceId = await addService("Deck stain");
     const ticksPath = `/settings/services/${serviceId}/resources`;
+    await put(skillsPath(summit.personId), summit.email, { serviceIds: [serviceId] });
     await put(ticksPath, summit.email, { peopleIds: [summit.personId], placeIds: [] });
 
     const refusals = [
@@ -762,7 +817,8 @@ describe("who does what", () => {
       expect(refused.status).toBe(400);
       expect(await refused.json()).toMatchObject({ error: { code: "bad_request" }, field });
     }
-    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [summit.personId], placeIds: [] });
+    const unchanged = { peopleIds: [summit.personId], placeIds: [], able: [summit.personId] };
+    expect(await ticksOf(serviceId)).toEqual(unchanged);
 
     // Another business's service: the 404; a member who may not change the business: the 403.
     const theirs = (await (
@@ -776,7 +832,22 @@ describe("who does what", () => {
     );
     expect(foreign.status).toBe(404);
     expect((await put(ticksPath, helper.email, empty)).status).toBe(403);
-    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [summit.personId], placeIds: [] });
+    expect(await ticksOf(serviceId)).toEqual(unchanged);
+
+    // On a card: a place has no skills, another business's service or a service twice is a 400,
+    // another business's person the 404, a member the 403; nothing changes.
+    const skillRefusals = [
+      [skillsPath(summitPlaceId), { serviceIds: [serviceId] }, 400],
+      [skillsPath(summit.personId), { serviceIds: [theirs.service.id] }, 400],
+      [skillsPath(summit.personId), { serviceIds: [serviceId, serviceId] }, 400],
+      [skillsPath(other.personId), { serviceIds: [] }, 404],
+    ] as const;
+    for (const [path, body, status] of skillRefusals) {
+      expect((await put(path, summit.email, body)).status).toBe(status);
+    }
+    const memberSave = await put(skillsPath(summit.personId), helper.email, { serviceIds: [] });
+    expect(memberSave.status).toBe(403);
+    expect(await ticksOf(serviceId)).toEqual(unchanged);
   });
 });
 

@@ -260,7 +260,7 @@ const ACCOUNTS = [
       // Riverbend keeps asking the address, as before the setting existed (the address fix).
       // Face and Body's own treatments and lengths (face-and-body/data/servicesData.ts).
       // Massages and the wrap leave 15 minutes after, to turn the room over. Ticked like Face and
-      // Body; the peel ticks no one, so anyone can do it.
+      // Body; the peel names no one, so every practitioner can do it and is on for it.
       services: [
         {
           name: "Deep Cleansing Facial",

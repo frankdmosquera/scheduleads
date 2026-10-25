@@ -1,5 +1,6 @@
-// Frontend component: one list of ticks on a service's form (feature 12d): the people who do it, or
-// the places it needs. A turned-off one can stay ticked, shown as off; it is never offered.
+// Frontend component: one list of ticks on a service's form (feature 12d): the people who can do it,
+// each ticked when offering it now (feature 12k), or the places it needs. A turned-off one can stay
+// ticked, shown as off; it is never offered.
 
 "use client";
 
@@ -16,6 +17,9 @@ export function TicksField({
   noneTicked,
   allTickedOff,
   noneToTick,
+  linkLabel,
+  note,
+  states,
   choices,
   value,
   onChange,
@@ -26,6 +30,9 @@ export function TicksField({
   noneTicked: string; // what nobody ticked means
   allTickedOff: string; // what it means when every one ticked is off
   noneToTick: string;
+  linkLabel?: string; // the link after noneToTick; "Add them on People" when left out
+  note?: string; // under the legend
+  states?: { on: string; off: string }; // said after each name: ticked or not
   choices: TickableType[];
   value: string[];
   onChange: (ids: string[]) => void;
@@ -45,17 +52,26 @@ export function TicksField({
     <div
       role="group"
       aria-labelledby={`${name}-legend`}
-      aria-describedby={error ? `${name}-error` : hint ? `${name}-hint` : undefined}
+      aria-describedby={
+        [error ? `${name}-error` : hint ? `${name}-hint` : null, note ? `${name}-note` : null]
+          .filter(Boolean)
+          .join(" ") || undefined
+      }
       className="flex flex-col gap-2"
     >
       <p id={`${name}-legend`} className="text-sm font-medium text-foreground">
         {legend}
       </p>
+      {note ? (
+        <p id={`${name}-note`} className="text-xs text-muted-foreground">
+          {note}
+        </p>
+      ) : null}
       {choices.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           {noneToTick}{" "}
           <Link href="/settings/people" className="text-primary underline underline-offset-2">
-            {words.settingsFrameWords.addThemOnPeople}
+            {linkLabel ?? words.settingsFrameWords.addThemOnPeople}
           </Link>
           .
         </p>
@@ -75,6 +91,11 @@ export function TicksField({
                 {choice.name}
                 {choice.active ? null : words.settingsFrameWords.off}
               </span>
+              {states ? (
+                <span className="text-xs text-muted-foreground">
+                  {value.includes(choice.id) ? states.on : states.off}
+                </span>
+              ) : null}
             </label>
           ))}
         </div>

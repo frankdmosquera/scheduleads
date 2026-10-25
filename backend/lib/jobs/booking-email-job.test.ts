@@ -36,6 +36,7 @@ const { moveBooking } = await import("../booking/move-booking.js");
 const { jobClock } = await import("./job-clock.js");
 const { jobSchema } = await import("./job-schema.js");
 const { workDueJobs } = await import("./work-due-jobs.js");
+const { giveSkillsAsTicked } = await import("../scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
@@ -100,6 +101,7 @@ async function makeBusiness(name: string) {
   await db
     .insert(bookingLinkResource)
     .values({ organizationId: business, bookingLinkId: estimate, resourceId: marco });
+  await giveSkillsAsTicked(business);
   return { business, marco, estimate };
 }
 

@@ -135,8 +135,10 @@ and a second resource can hold the same time as the first.
   - **Who does what** is built here: which person can do which service
     (skills) and which place a service needs (rooms). A time shows only when
     someone has the skill, is bookable, is free, and the room the service
-    needs is free. Nobody ticked for a service means anyone can do it; no
-    room ticked means no room check. Item 12 is where the owner ticks them.
+    needs is free. Nobody ticked for a service meant anyone could do it,
+    until 12k: since then a person's skills are ticked on their card and
+    nobody on means nobody. No room ticked means no room check. Item 12 is
+    where the owner ticks them.
   - **The customer picks a person or "any available"**; the rule for how
     "any available" picks is decided here.
   - **Free time** is bookable hours minus busy: bookings, time off, and

@@ -34,9 +34,12 @@ export type ServicesWordsType = {
   customerPicks: string;
   weSendWhoeverIsFree: string;
   whoDoesIt: string;
+  whoDoesItNote: string;
+  nobodyCanDoIt: string;
+  offeringIt: string;
+  notOfferingIt: string;
   nobodyTicked: string;
   everyoneTickedOff: string;
-  noPeopleYet: string;
   placesItNeeds: string;
   noPlaceTicked: string;
   everyPlaceTickedOff: string;
@@ -82,9 +85,12 @@ export const englishServicesWords: ServicesWordsType = {
   customerPicks: "The customer picks who does it",
   weSendWhoeverIsFree: "We send whoever is free",
   whoDoesIt: "Who does it",
-  nobodyTicked: "Nobody ticked: anyone can do it.",
+  whoDoesItNote: "Only the people who can do it are listed. Ticked: offering it now.",
+  nobodyCanDoIt: "Nobody can do this service yet.",
+  offeringIt: "On",
+  notOfferingIt: "Off",
+  nobodyTicked: "Nobody is on: customers cannot book it.",
   everyoneTickedOff: "Everyone ticked is off, so nobody is offered for it.",
-  noPeopleYet: "No people yet.",
   placesItNeeds: "Places it needs",
   noPlaceTicked: "No place ticked: no room needed.",
   everyPlaceTickedOff: "Every place ticked is off, so it cannot be booked.",
@@ -131,9 +137,12 @@ export const spanishServicesWords: ServicesWordsType = {
   customerPicks: "El cliente elige quién lo hace",
   weSendWhoeverIsFree: "Enviamos a quien esté libre",
   whoDoesIt: "Quién lo hace",
-  nobodyTicked: "Nadie marcado: cualquiera puede hacerlo.",
+  whoDoesItNote: "Solo aparece quien sabe hacerlo. Marcado: lo ofrece ahora.",
+  nobodyCanDoIt: "Nadie sabe hacer este servicio todavía.",
+  offeringIt: "Activo",
+  notOfferingIt: "Inactivo",
+  nobodyTicked: "Nadie lo ofrece: los clientes no pueden reservarlo.",
   everyoneTickedOff: "Todos los marcados están fuera de servicio, así que no se ofrece a nadie.",
-  noPeopleYet: "Todavía no hay personas.",
   placesItNeeds: "Lugares que necesita",
   noPlaceTicked: "Ningún lugar marcado: no necesita sala.",
   everyPlaceTickedOff:

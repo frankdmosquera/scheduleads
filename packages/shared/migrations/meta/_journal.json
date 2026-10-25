@@ -232,6 +232,13 @@
       "when": 1792837143591,
       "tag": "0032_user_language",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792887904450,
+      "tag": "0033_person_skill",
+      "breakpoints": true
     }
   ]
 }

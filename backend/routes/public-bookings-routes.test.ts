@@ -43,6 +43,8 @@ const {
 const { localDate } = await import("@scheduleads-app/shared/local-date");
 const { workDueJobs } = await import("../lib/jobs/work-due-jobs.js");
 const { addDays } = await import("@scheduleads-app/shared/add-days");
+const { giveSkillsAsTicked } =
+  await import("../lib/scheduling/give-skills-as-ticked.test-support.js");
 
 const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3400";
 const tag = randomUUID().slice(0, 8);
@@ -193,6 +195,7 @@ beforeAll(async () => {
     bookingLinkId: clinic.estimate,
     resourceId: clinic.ana,
   });
+  await giveSkillsAsTicked(clinic.id);
 
   for (const business of [shop, bare, painter]) {
     await db
@@ -235,6 +238,7 @@ beforeAll(async () => {
       bookingLinkId: business.quote,
       resourceId: business.sam,
     });
+    await giveSkillsAsTicked(business.id);
   }
   await db.insert(pipelineStage).values([
     { id: id(), organizationId: shop.id, name: "New", position: 0 },

@@ -1,5 +1,5 @@
-// Shared Zod schema: who does a service, as the owner ticks it on Settings (feature 12d). Nobody
-// ticked means anyone can do it; no place ticked means no room is needed.
+// Shared Zod schema: who does a service, as the owner sets it on Settings (feature 12d): the people
+// on for it, each able to do it (feature 12k), and the places it needs; no place means no room.
 
 import { z } from "zod";
 
