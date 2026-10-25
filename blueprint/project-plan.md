@@ -587,7 +587,9 @@ same day. Numbered on from the open questions, one sequence.
     and after. **Set per person:** the week of bookable hours and one-off
     dates.
 26. **Who does what** is skills and rooms, checked at booking (item 5) and
-    ticked in settings (item 12). Nobody ticked means anyone can do it.
+    ticked in settings (item 12). A person offers a service only while it is
+    ticked on their card and switched on for it; nobody on means customers
+    cannot book it (feature 12k).
 27. **One commitments table**, where the database refuses overlaps per
     person or place. No double booking, the owner included.
 28. **Every person and place has a calendar in the app** (item 12b), where

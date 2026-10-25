@@ -1,11 +1,12 @@
-// Frontend component: the form that adds a person or a place on the People page (feature 12d). The
-// kind is picked here, once (decision 4); a new person follows the business's week.
+// Frontend component: the form that adds a person on the People page or a place on the Places page
+// (features 12d and 12k). The kind is the page's, and never changes (decision 4); a new person
+// follows the business's week.
 
 "use client";
 
 import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
 import { useEffect, useRef, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 
 import {
   addResourceValidationSchema,
@@ -13,7 +14,6 @@ import {
   type AddResourceType,
 } from "@scheduleads-app/shared/zod-validation";
 
-import { ChoiceField } from "@/components/settings/choice-field";
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +24,11 @@ import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provide
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 export function AddResourceForm({
+  kind,
   onSaved,
   onCancel,
 }: {
+  kind: AddResourceType["kind"];
   onSaved: (added: ResourceSettingsType) => void;
   onCancel: () => void;
 }) {
@@ -37,7 +39,7 @@ export function AddResourceForm({
   const { peopleWords } = useDashboardWords().words;
   const form = useForm<AddResourceInputType, unknown, AddResourceType>({
     resolver: dashboardFormResolver(addResourceValidationSchema),
-    defaultValues: { name: "" }, // person or place: unpicked, the owner says which
+    defaultValues: { name: "", kind },
   });
 
   useEffect(() => nameRef.current?.focus(), []); // the form opens where the owner will type
@@ -73,7 +75,7 @@ export function AddResourceForm({
         id="add-resource-title"
         className="text-base font-semibold tracking-tight text-foreground"
       >
-        {peopleWords.addTitle}
+        {peopleWords.addTitle(kind)}
       </h3>
       <div className="flex flex-col gap-1.5 sm:max-w-sm">
         <Label htmlFor="add-resource-name">{peopleWords.name}</Label>
@@ -94,26 +96,6 @@ export function AddResourceForm({
           </p>
         ) : null}
       </div>
-      <Controller
-        name="kind"
-        control={form.control}
-        render={({ field, fieldState }) => (
-          <ChoiceField
-            name="add-resource-kind"
-            legend={peopleWords.personOrPlace}
-            choices={[
-              { value: "person", label: peopleWords.personChoice },
-              { value: "place", label: peopleWords.placeChoice },
-            ]}
-            value={field.value}
-            onChange={(kind) => {
-              setNotice(null);
-              field.onChange(kind);
-            }}
-            error={fieldState.error?.message}
-          />
-        )}
-      />
       <SaveNotice notice={notice} />
       <div className="flex gap-2">
         <Button type="submit" disabled={form.formState.isSubmitting}>

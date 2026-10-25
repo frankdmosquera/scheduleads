@@ -34,9 +34,20 @@ export type ServicesWordsType = {
   customerPicks: string;
   weSendWhoeverIsFree: string;
   whoDoesIt: string;
+  runsWhenOpen: string;
+  runsOwnWeek: string;
+  runsOwnWeekDays(days: string): string; // the days it runs, as "Mon, Tue"
+  whenItRuns(name: string): string;
+  itsOneOffDates(name: string): string;
+  saveWhenItRuns(name: string): string;
+  savedWhenItRuns(name: string, outsideCount: number): string;
+  outsideItsHours: string;
+  whoDoesItNote: string;
+  nobodyCanDoIt: string;
+  offeringIt: string;
+  notOfferingIt: string;
   nobodyTicked: string;
   everyoneTickedOff: string;
-  noPeopleYet: string;
   placesItNeeds: string;
   noPlaceTicked: string;
   everyPlaceTickedOff: string;
@@ -82,9 +93,25 @@ export const englishServicesWords: ServicesWordsType = {
   customerPicks: "The customer picks who does it",
   weSendWhoeverIsFree: "We send whoever is free",
   whoDoesIt: "Who does it",
-  nobodyTicked: "Nobody ticked: anyone can do it.",
+  runsWhenOpen: "Runs whenever the business is open",
+  runsOwnWeek: "Runs on its own week",
+  runsOwnWeekDays: (days) => `Runs on its own week · ${days}`,
+  whenItRuns: (name) => `When ${name} runs`,
+  itsOneOffDates: (name) => `Days that are different for ${name}`,
+  saveWhenItRuns: (name) => `Save when ${name} runs`,
+  savedWhenItRuns: (name, count) =>
+    `Saved. ${name} runs on these hours now.${
+      count
+        ? ` ${count === 1 ? "One booking now sits" : `${count} bookings now sit`} outside them, listed below.`
+        : ""
+    }`,
+  outsideItsHours: "These bookings now sit outside its hours",
+  whoDoesItNote: "Only the people who can do it are listed. Ticked: offering it now.",
+  nobodyCanDoIt: "Nobody can do this service yet.",
+  offeringIt: "On",
+  notOfferingIt: "Off",
+  nobodyTicked: "Nobody is on: customers cannot book it.",
   everyoneTickedOff: "Everyone ticked is off, so nobody is offered for it.",
-  noPeopleYet: "No people yet.",
   placesItNeeds: "Places it needs",
   noPlaceTicked: "No place ticked: no room needed.",
   everyPlaceTickedOff: "Every place ticked is off, so it cannot be booked.",
@@ -131,9 +158,25 @@ export const spanishServicesWords: ServicesWordsType = {
   customerPicks: "El cliente elige quién lo hace",
   weSendWhoeverIsFree: "Enviamos a quien esté libre",
   whoDoesIt: "Quién lo hace",
-  nobodyTicked: "Nadie marcado: cualquiera puede hacerlo.",
+  runsWhenOpen: "Se ofrece siempre que el negocio está abierto",
+  runsOwnWeek: "Se ofrece en su propia semana",
+  runsOwnWeekDays: (days) => `Se ofrece en su propia semana · ${days}`,
+  whenItRuns: (name) => `Cuándo se ofrece ${name}`,
+  itsOneOffDates: (name) => `Días distintos para ${name}`,
+  saveWhenItRuns: (name) => `Guardar cuándo se ofrece ${name}`,
+  savedWhenItRuns: (name, count) =>
+    `Guardado. ${name} se ofrece en este horario ahora.${
+      count
+        ? ` ${count === 1 ? "Una reserva queda" : `${count} reservas quedan`} fuera de él, en la lista de abajo.`
+        : ""
+    }`,
+  outsideItsHours: "Estas reservas quedan ahora fuera de su horario",
+  whoDoesItNote: "Solo aparece quien sabe hacerlo. Marcado: lo ofrece ahora.",
+  nobodyCanDoIt: "Nadie sabe hacer este servicio todavía.",
+  offeringIt: "Activo",
+  notOfferingIt: "Inactivo",
+  nobodyTicked: "Nadie lo ofrece: los clientes no pueden reservarlo.",
   everyoneTickedOff: "Todos los marcados están fuera de servicio, así que no se ofrece a nadie.",
-  noPeopleYet: "Todavía no hay personas.",
   placesItNeeds: "Lugares que necesita",
   noPlaceTicked: "Ningún lugar marcado: no necesita sala.",
   everyPlaceTickedOff:

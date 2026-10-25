@@ -43,6 +43,8 @@ const {
 const { localDate } = await import("@scheduleads-app/shared/local-date");
 const { workDueJobs } = await import("../lib/jobs/work-due-jobs.js");
 const { addDays } = await import("@scheduleads-app/shared/add-days");
+const { giveSkillsAsTicked } =
+  await import("../lib/scheduling/give-skills-as-ticked.test-support.js");
 
 const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3400";
 const tag = randomUUID().slice(0, 8);
@@ -193,6 +195,7 @@ beforeAll(async () => {
     bookingLinkId: clinic.estimate,
     resourceId: clinic.ana,
   });
+  await giveSkillsAsTicked(clinic.id);
 
   for (const business of [shop, bare, painter]) {
     await db
@@ -235,6 +238,7 @@ beforeAll(async () => {
       bookingLinkId: business.quote,
       resourceId: business.sam,
     });
+    await giveSkillsAsTicked(business.id);
   }
   await db.insert(pipelineStage).values([
     { id: id(), organizationId: shop.id, name: "New", position: 0 },
@@ -613,6 +617,43 @@ describe("the yes to later texts (feature 9, decision 13)", () => {
       phone: "+14035550148",
       words,
     });
+  });
+
+  test("with nobody on for the service, no booking is taken, for him or for anyone (feature 12k)", async () => {
+    const samOn = and(
+      eq(bookingLinkResource.bookingLinkId, painter.quote),
+      eq(bookingLinkResource.resourceId, painter.sam)
+    );
+    const bookingsBefore = await db.$count(booking, eq(booking.organizationId, painter.id));
+    await db.delete(bookingLinkResource).where(samOn); // Sam can still do it, but is off
+    // The next free time, read but left in the list: nothing is booked, so the tests after keep it.
+    const offForm = (email: string, change: Record<string, unknown> = {}) => ({
+      bookingLinkId: painter.quote,
+      startsAt: painterTimes[0],
+      personId: painter.sam,
+      requestKey: id(),
+      customer: { name: "Jane Doe", email, phone: "(403) 555-0148" },
+      location: "12 Elm Street",
+      ...change,
+    });
+    try {
+      const forSam = await post(
+        `/public/${painter.slug}/bookings`,
+        offForm(`off-${tag}@example.com`)
+      );
+      const forAnyone = await post(
+        `/public/${painter.slug}/bookings`,
+        offForm(`off-any-${tag}@example.com`, { personId: undefined }) // anyone
+      );
+      expect([forSam.status, forAnyone.status]).toEqual([404, 409]);
+      expect(await db.$count(booking, eq(booking.organizationId, painter.id))).toBe(bookingsBefore);
+    } finally {
+      await db.insert(bookingLinkResource).values({
+        organizationId: painter.id,
+        bookingLinkId: painter.quote,
+        resourceId: painter.sam,
+      });
+    }
   });
 
   test("a booking without a tick leaves an earlier yes as it was", async () => {

@@ -26,10 +26,13 @@ const {
   bookingLinkResource,
   calendarConnection,
   organization,
+  personSkill,
   resource,
 } = await import("@scheduleads-app/shared/db");
 const { localDate } = await import("@scheduleads-app/shared/local-date");
 const { addDays } = await import("@scheduleads-app/shared/add-days");
+const { giveSkillsAsTicked } =
+  await import("../lib/scheduling/give-skills-as-ticked.test-support.js");
 
 const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3400";
 
@@ -148,6 +151,7 @@ beforeAll(async () => {
     bookingLinkId: unreadable.linkId,
     resourceId: unreadable.personId,
   });
+  await giveSkillsAsTicked(unreadable.id);
 });
 
 afterAll(async () => {
@@ -521,7 +525,7 @@ describe("who picks the person (feature 9, decision 3)", () => {
   const today = localDate(new Date(), "America/Edmonton");
   const week = `from=${addDays(today, 7)}&to=${addDays(today, 13)}`;
   // A clinic of its own where the customer picks: Ana and Bea do facials but Bea has left
-  // (inactive); Cy does what nobody is ticked for, as everyone active does.
+  // (inactive); Cy can do massage, but nobody is on for it (feature 12k).
   const picks = {
     id: randomUUID(),
     slug: `test-picks-${tag}-dev`,
@@ -573,6 +577,11 @@ describe("who picks the person (feature 9, decision 3)", () => {
         resourceId,
       }))
     );
+    await db.insert(personSkill).values([
+      { organizationId: picks.id, bookingLinkId: picks.facial, resourceId: picks.ana },
+      { organizationId: picks.id, bookingLinkId: picks.facial, resourceId: picks.bea },
+      { organizationId: picks.id, bookingLinkId: picks.massage, resourceId: picks.cy },
+    ]);
   });
 
   afterAll(async () => {
@@ -608,10 +617,12 @@ describe("who picks the person (feature 9, decision 3)", () => {
     ).toEqual(["Ana"]);
   });
 
-  test("nobody ticked means everyone active", async () => {
-    expect(
-      await peopleOf(`/public/${picks.slug}/booking-links/${picks.massage}/times?${week}`)
-    ).toEqual(["Ana", "Cy"]);
+  test("nobody on means nobody, and no times, even when someone can do it", async () => {
+    const body = await (
+      await get(`/public/${picks.slug}/booking-links/${picks.massage}/times?${week}`)
+    ).json();
+    expect(body.people).toEqual([]);
+    expect(body.startTimes).toEqual([]);
   });
 
   test("a service the business assigns lists nobody, and still has times", async () => {

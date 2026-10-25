@@ -411,3 +411,21 @@ Carried by Frank, 2026-10-22 (10b.2.4): both are about what the Calendar page sa
 **Why it matters:** Commits ec5f6f0, 81749cb and 06c05ec ("From Frank's walk of 12j") replace the Calendar's week list with a Day, Week and Month time grid (about 700 lines), add `google=skip` to the week route for the Month view, and move Book by hand and Time off behind buttons. The spec, which `/complete` archives as the record of feature 12j, mentions only "the schedule" being translated: there is no step, In scope line, Done when or Data / contracts entry for the views or the new query value. F-476 and F-480 were real defects in this unlisted work, found only by review. Anyone reading the archive later will not find where the Calendar's grid came from or what it was checked against.
 **Suggested fix:** Before `/complete`, add the views to the spec as an amendment to 12j.2 (or a note under Build steps): what they show, `google=skip` under Data / contracts, and how they were checked (the Month, Next, Today walk recorded in F-476).
 **Resolution:**
+
+### F-498 [P3] unverified - A change of the business's time zone never lists the bookings it moves outside a service's own window
+
+**File:** backend/lib/settings/save-business-hours.ts:66-69
+**Found:** 2026-10-25 by /audit independent (re-review of 12k.2 at 1eef929; lens: quality)
+**Why it matters:** A service's window is clock time in the business's zone. A save of the business's hours that changes the zone lists the bookings that no longer fit the people's hours, but never reads `service_hours`, so a 2:00 booking of an afternoons-only service that becomes 11:00 in the new zone, still inside the person's hours, is not listed though customers could no longer book that time. Reasoned from the code, not reproduced. Since F-493 the business's week and one-off dates no longer reach a service window, so only the zone can. Rare, and no booking is changed, so only the notice is incomplete.
+**Suggested fix:** Run each service's window through the same before and after check when the zone changes, or record in the spec that a zone change lists only the people's hours.
+**Resolution:**
+Rechecked 2026-10-25 by /audit independent (review of 12k.3 at 398cfb1): save-business-hours.ts is unchanged since 1eef929 and still never reads `service_hours`; still reasoned, not reproduced. Stays unverified.
+
+### F-503 [P3] fixed - The overview's plan fingerprint was not recomputed after b273b0e changed the project plan's decision 26
+
+**File:** blueprint/context/project-overview.md:3
+**Found:** 2026-10-25 by /audit independent (final review of 12k at 735afbb; lens: quality)
+**Why it matters:** The marker `996777de…` is `/overview`'s hash of the plans in their checked-out CRLF form at 0da782d (recomputed here by the contract: project-plan bytes, a zero byte, build-plan with `- [x]` normalized). b273b0e then rewrote decision 26 in project-plan.md, and the same computation over the checked-out files at 735afbb gives `be1b829e…` (`21af3cbc…` on LF blobs), so every `/status` now reports overview drift and a later real plan change will look the same, which is what F-455 repaired at 22a. The overview's text needs no change: it never carried decision 26's old "anyone" line (its only who-does-what mentions are lines 64, 92 and 265).
+**Suggested fix:** Recompute the marker over the checked-out plans by `/overview`'s contract (or rerun `/overview`), at `/complete` once 12k is ticked, since ticking does not change the normalized hash.
+**Resolution:** Fixed 2026-10-25 at /complete: the marker is recomputed by /overview's contract over the checked-out CRLF form of both plans, with 12k ticked: `be1b829e1f2aa70643b5ebfa16810c16878757015340c4a5c7e88cc743114ea3` (the same computation reproduces the old `996777de…` on the plans before b273b0e).
+Still open 2026-10-25 by /audit independent (final review of 12k at 58c8bf5): 58c8bf5 touches neither plan nor the overview, project-overview.md:3 still reads `996777de…`, and the same computation over the checked-out plans still gives `be1b829e…`. For `/complete`, by its own contract.

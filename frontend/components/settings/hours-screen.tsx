@@ -1,5 +1,5 @@
-// Frontend component: the Hours page of Settings (feature 12a): the business's hours, then each
-// person's.
+// Frontend component: the Hours page of Settings (feature 12a): the business's hours. Each person's
+// are on their card on People.
 
 "use client";
 
@@ -7,7 +7,6 @@ import { useState } from "react";
 
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { BusinessHoursCard } from "@/components/settings/business-hours-card";
-import { PersonHoursCard } from "@/components/settings/person-hours-card";
 import { SettingsSection } from "@/components/settings/settings-section";
 import {
   fetchHoursSettings,
@@ -25,35 +24,15 @@ export function HoursScreen() {
 }
 
 function HoursSection({ settings }: { settings: HoursSettingsType }) {
-  // Saved here too, so people's cards appear after the business's first save and copy its week.
+  // Saved here too, so the card says the zone and the lede of what was saved.
   const [business, setBusiness] = useState(settings.business);
   const { hoursWords } = useDashboardWords().words;
-
   return (
     <div className="flex flex-col gap-4">
       {!settings.canEdit ? (
         <CentredCardNotice tone="info">{hoursWords.cannotChange}</CentredCardNotice>
       ) : null}
       <BusinessHoursCard initial={business} canEdit={settings.canEdit} onSaved={setBusiness} />
-
-      <h3 className="mt-4 text-sm font-semibold text-foreground">{hoursWords.eachPerson}</h3>
-      {!business ? (
-        <p className="text-sm text-muted-foreground">{hoursWords.setBusinessHoursFirst}</p>
-      ) : settings.people.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{hoursWords.noPeopleYet}</p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {settings.people.map((person) => (
-            <PersonHoursCard
-              key={person.id}
-              person={person}
-              businessWeek={business.weeklyHours}
-              timezone={business.timezone}
-              canEdit={settings.canEdit}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

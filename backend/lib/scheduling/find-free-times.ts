@@ -1,7 +1,8 @@
 // Backend: the start times a customer can book for a service, with one picked person or "any
 // available", over a range of the business's dates. Gathers who can do it and who is on standby,
-// each person's bookable hours, bookings, time off and Google busy time, and the rooms, then puts
-// each person through apply-free-times-rules.ts. Worked out on every request, never stored.
+// each person's bookable hours, when the service runs, bookings, time off and Google busy time, and
+// the rooms, then puts each person through apply-free-times-rules.ts. Worked out on every request,
+// never stored.
 
 import { and, asc, eq, inArray } from "drizzle-orm";
 
@@ -11,6 +12,7 @@ import { localDate } from "@scheduleads-app/shared/local-date";
 
 import { db } from "../../database.js";
 import { resolveBookableHours } from "../bookable-hours/resolve-bookable-hours.js";
+import { resolveServiceHours } from "../bookable-hours/resolve-service-hours.js";
 import { CalendarUnavailableError } from "../calendar/calendar-unavailable-error.js";
 import type { BusyBlockType } from "../calendar/calendar-provider.js";
 import { getBusyTimes } from "../calendar/get-busy-times.js";
@@ -70,7 +72,10 @@ export async function findFreeTimes(input: FindFreeTimesInputType): Promise<Free
   const offered = await findServiceResources(organizationId, bookingLinkId, {
     serviceMayBeOff: ignoreBooking !== undefined,
   });
-  const businessHours = await resolveBookableHours(organizationId, null, now);
+  const [businessHours, serviceHours] = await Promise.all([
+    resolveBookableHours(organizationId, null, now),
+    resolveServiceHours(organizationId, bookingLinkId, now), // when the service runs (feature 12k)
+  ]);
   if (!offered || !businessHours) return null;
   if (personId !== null && !offered.peopleIds.includes(personId)) return null;
 
@@ -161,6 +166,7 @@ export async function findFreeTimes(input: FindFreeTimesInputType): Promise<Free
 
     return applyFreeTimesRules({
       hours,
+      serviceHours,
       service,
       busy: [...busyOf(id), ...googleBusy],
       standbyDates: standbyOf(id),

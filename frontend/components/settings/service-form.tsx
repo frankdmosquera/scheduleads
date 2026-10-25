@@ -384,8 +384,15 @@ export function ServiceForm({
         legend={servicesWords.whoDoesIt}
         noneTicked={servicesWords.nobodyTicked}
         allTickedOff={servicesWords.everyoneTickedOff}
-        noneToTick={servicesWords.noPeopleYet}
-        choices={people.filter((resource) => resource.kind === "person")}
+        noneToTick={servicesWords.nobodyCanDoIt}
+        linkLabel={words.settingsFrameWords.tickItOnPeople}
+        note={servicesWords.whoDoesItNote}
+        states={{ on: servicesWords.offeringIt, off: servicesWords.notOfferingIt }}
+        // Only who can do it may be on: their skills are ticked on their card (feature 12k).
+        choices={people.filter(
+          (resource) =>
+            resource.kind === "person" && (service?.ablePeopleIds ?? []).includes(resource.id)
+        )}
         value={ticks.peopleIds}
         onChange={(peopleIds) => editTicks({ ...ticks, peopleIds })}
         error={ticksError?.field === "peopleIds" ? ticksError.message : undefined}
@@ -396,6 +403,8 @@ export function ServiceForm({
         noneTicked={servicesWords.noPlaceTicked}
         allTickedOff={servicesWords.everyPlaceTickedOff}
         noneToTick={servicesWords.noPlacesYet}
+        linkLabel={words.settingsFrameWords.addThemOnPlaces}
+        linkHref="/settings/places"
         choices={people.filter((resource) => resource.kind === "place")}
         value={ticks.placeIds}
         onChange={(placeIds) => editTicks({ ...ticks, placeIds })}

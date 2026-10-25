@@ -7,9 +7,7 @@ export type DayKeyType = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
 export type HoursWordsType = {
   cannotChange: string;
-  eachPerson: string;
   setBusinessHoursFirst: string;
-  noPeopleYet: string;
   // The business's card
   whenYouTakeBookings: string;
   businessLede: string;
@@ -61,10 +59,8 @@ export type HoursWordsType = {
 
 export const englishHoursWords: HoursWordsType = {
   cannotChange: "Your role cannot change the hours. You can see them here.",
-  eachPerson: "Each person",
   setBusinessHoursFirst:
-    "Set the business's hours first. Then each person can follow them or keep their own.",
-  noPeopleYet: "No people yet.",
+    "Set the business's hours on Hours first. Then each person can follow them or keep their own.",
   whenYouTakeBookings: "When you take bookings",
   businessLede:
     "The hours customers can book online. Everyone follows this week unless their own card says otherwise.",
@@ -113,7 +109,7 @@ export const englishHoursWords: HoursWordsType = {
   removeOneOffDate: (person, date) => `Remove ${person ? `${person}, ` : ""}one-off date ${date}`,
   unnamedOneOffDate: (date) => `one-off date ${date}`,
   removeDate: "Remove date",
-  addOneOffDate: "+ Add a one-off date",
+  addOneOffDate: "+ A day that's different",
   leastNotice: "Least notice you accept",
   noticeUnit: "Notice unit",
   noticeUnits: { minutes: "minutes", hours: "hours", days: "days" },
@@ -125,13 +121,13 @@ export const englishHoursWords: HoursWordsType = {
     }`,
   notSaved: "Not saved",
   personWeek: (name) => `${name}'s week`,
-  followsBusinessWeek: "Follows the business's week",
-  ownWeek: "Own week",
-  ownWeekDays: (days) => `Own week · ${days}`,
+  followsBusinessWeek: "Bookable whenever the business is open",
+  ownWeek: "Own bookable hours",
+  ownWeekDays: (days) => `Own bookable hours · ${days}`,
   noDays: "no days",
   oneOffDateCount: (count) => (count === 1 ? "1 one-off date" : `${count} one-off dates`),
   bookingsOutside: (count) => (count === 1 ? "1 booking outside" : `${count} bookings outside`),
-  personOneOffDates: (name) => `${name}'s one-off dates`,
+  personOneOffDates: (name) => `Days that are different for ${name}`,
   savePersonHours: (name) => `Save ${name}'s hours`,
   stillBookedCallThem: "Still booked. Open a booking to call the customer.",
   serviceWith: (service, person) => `${service} with ${person}`,
@@ -139,10 +135,8 @@ export const englishHoursWords: HoursWordsType = {
 
 export const spanishHoursWords: HoursWordsType = {
   cannotChange: "Su rol no puede cambiar el horario. Puede verlo aquí.",
-  eachPerson: "Cada persona",
   setBusinessHoursFirst:
-    "Primero fije el horario del negocio. Luego cada persona puede seguirlo o tener el suyo.",
-  noPeopleYet: "Todavía no hay personas.",
+    "Primero fije el horario del negocio en Horario. Luego cada persona puede seguirlo o tener el suyo.",
   whenYouTakeBookings: "Cuándo recibe reservas",
   businessLede:
     "Las horas en que los clientes pueden reservar en línea. Todos siguen esta semana, salvo que su propia tarjeta diga otra cosa.",
@@ -191,7 +185,7 @@ export const spanishHoursWords: HoursWordsType = {
   removeOneOffDate: (person, date) => `Quitar ${person ? `${person}, ` : ""}fecha especial ${date}`,
   unnamedOneOffDate: (date) => `fecha especial ${date}`,
   removeDate: "Quitar fecha",
-  addOneOffDate: "+ Agregar una fecha especial",
+  addOneOffDate: "+ Un día distinto",
   leastNotice: "Aviso mínimo que acepta",
   noticeUnit: "Unidad del aviso",
   noticeUnits: { minutes: "minutos", hours: "horas", days: "días" },
@@ -203,13 +197,13 @@ export const spanishHoursWords: HoursWordsType = {
     }`,
   notSaved: "Sin guardar",
   personWeek: (name) => `Semana de ${name}`,
-  followsBusinessWeek: "Sigue la semana del negocio",
-  ownWeek: "Semana propia",
-  ownWeekDays: (days) => `Semana propia · ${days}`,
+  followsBusinessWeek: "Reservable siempre que el negocio está abierto",
+  ownWeek: "Horario propio para reservar",
+  ownWeekDays: (days) => `Horario propio para reservar · ${days}`,
   noDays: "ningún día",
   oneOffDateCount: (count) => (count === 1 ? "1 fecha especial" : `${count} fechas especiales`),
   bookingsOutside: (count) => (count === 1 ? "1 reserva fuera" : `${count} reservas fuera`),
-  personOneOffDates: (name) => `Fechas especiales de ${name}`,
+  personOneOffDates: (name) => `Días distintos para ${name}`,
   savePersonHours: (name) => `Guardar el horario de ${name}`,
   stillBookedCallThem: "Siguen reservadas. Abra una reserva para llamar al cliente.",
   serviceWith: (service, person) => `${service} con ${person}`,

@@ -27,6 +27,7 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the settings route tests")
 // Imported after the env is loaded: they read it the moment they load.
 const { app } = await import("../app.js");
 const { findServiceResources } = await import("../lib/scheduling/find-service-resources.js");
+const { findFreeTimes } = await import("../lib/scheduling/find-free-times.js");
 const { jobSchema } = await import("../lib/jobs/job-schema.js");
 const { db } = await import("../database.js");
 const { appOrigin } = await import("../lib/auth/auth-server.js");
@@ -41,10 +42,13 @@ const {
   organization,
   pipelineStage,
   resource,
+  serviceHours,
   textSettings,
   user,
   workerTextSettings,
 } = await import("@scheduleads-app/shared/db");
+const { giveSkillsAsTicked } =
+  await import("../lib/scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const makeTenant = (letter: string) => ({
@@ -249,6 +253,7 @@ beforeAll(async () => {
     addressMode: "not_asked",
     personChoice: "customer_picks",
   });
+  await giveSkillsAsTicked(booked.organizationId);
   for (const email of [
     summit.email,
     other.email,
@@ -332,9 +337,14 @@ describe("the Hours settings", () => {
   });
 
   test("the first save makes the business's row and later saves keep its closed days and holidays", async () => {
-    expect(await (await get("/settings/hours", fresh.email)).json()).toMatchObject({
+    expect(await (await get("/settings/hours", fresh.email)).json()).toEqual({
+      canEdit: true,
       business: null,
-      people: [{ id: fresh.personId, name: "Juan", weeklyHours: null, dateHours: [] }],
+    });
+    // A person's hours are on their card on People, beside the business's week.
+    expect(await (await get("/settings/people", fresh.email)).json()).toMatchObject({
+      businessWeek: null,
+      hours: [{ personId: fresh.personId, weeklyHours: null, dateHours: [] }],
     });
 
     // The first save makes the row, with no closed days and no holidays; windows are stored in order.
@@ -415,10 +425,10 @@ describe("the Hours settings", () => {
       dateHours: oneOff,
     });
     expect(back.status).toBe(200);
-    const read = (await (await get("/settings/hours", summit.email)).json()) as {
-      people: { id: string; weeklyHours: unknown; dateHours: unknown }[];
+    const read = (await (await get("/settings/people", summit.email)).json()) as {
+      hours: { personId: string; weeklyHours: unknown; dateHours: unknown }[];
     };
-    expect(read.people.find((person) => person.id === summit.personId)).toMatchObject({
+    expect(read.hours.find((person) => person.personId === summit.personId)).toMatchObject({
       weeklyHours: null,
       dateHours: oneOff,
     });
@@ -658,10 +668,12 @@ describe("the People settings", () => {
       serviceMayBeOff: true,
     });
     expect(offered?.peopleIds).not.toContain(bookedAnaId);
-    const hours = (await (await get("/settings/hours", booked.email)).json()) as {
-      people: { id: string }[];
-    };
-    expect(hours.people.map((person) => person.id)).not.toContain(bookedAnaId);
+    // An off person keeps their hours, but they cannot be changed until they are on again.
+    const offHours = await put(`/settings/hours/people/${bookedAnaId}`, booked.email, {
+      weeklyHours: null,
+      dateHours: [],
+    });
+    expect(offHours.status).toBe(404);
 
     // On again: offered again, and nothing is listed.
     const on = await put(`/settings/people/${bookedAnaId}`, booked.email, {
@@ -703,13 +715,18 @@ describe("who does what", () => {
     ).service.id;
   const ticksOf = async (serviceId: string) => {
     const read = (await (await get("/settings/services", summit.email)).json()) as {
-      services: ({ id: string } & TicksType)[];
+      services: ({ id: string; ablePeopleIds: string[] } & TicksType)[];
     };
     const service = read.services.find((row) => row.id === serviceId)!;
-    return { peopleIds: service.peopleIds, placeIds: service.placeIds };
+    return {
+      peopleIds: service.peopleIds,
+      placeIds: service.placeIds,
+      able: service.ablePeopleIds,
+    };
   };
+  const skillsPath = (personId: string) => `/settings/people/${personId}/skills`;
 
-  test("a save replaces the ticks, and the booking side offers only who is ticked", async () => {
+  test("can do is ticked on the card, on is set on the service, and only who can do it and is on is offered", async () => {
     const serviceId = await addService("Colour consultation");
     const marco = (await (
       await post("/settings/people", summit.email, { name: "Marco", kind: "person" })
@@ -717,37 +734,84 @@ describe("who does what", () => {
     const marcoId = marco.resource.id;
     const ticksPath = `/settings/services/${serviceId}/resources`;
 
-    // Only Marco and Room 1: only Marco is offered, and Room 1 is needed.
+    // A new service: nobody can do it, so nobody is on and nobody is offered.
+    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [], placeIds: [], able: [] });
+    expect(await findServiceResources(summit.organizationId, serviceId)).toEqual({
+      peopleIds: [],
+      placeIds: null,
+    });
+
+    // Marco cannot be put on before he can do it.
+    const unable = await put(ticksPath, summit.email, { peopleIds: [marcoId], placeIds: [] });
+    expect(unable.status).toBe(400);
+    expect(await unable.json()).toMatchObject({
+      error: { message: "Marco cannot do this service yet: tick it on their card on People." },
+      field: "peopleIds",
+    });
+
+    // Ticked on his card, he can do it and is on for it.
+    const skilled = await put(skillsPath(marcoId), summit.email, { serviceIds: [serviceId] });
+    expect(skilled.status).toBe(200);
+    expect(await skilled.json()).toEqual({
+      serviceIds: [serviceId],
+      onFor: [serviceId],
+      nobodyOn: [],
+    });
+    expect(await ticksOf(serviceId)).toEqual({
+      peopleIds: [marcoId],
+      placeIds: [],
+      able: [marcoId],
+    });
+
+    // On the service: Marco and Room 1. Only Marco is offered, and Room 1 is needed.
     const first = await put(ticksPath, summit.email, {
       peopleIds: [marcoId],
       placeIds: [summitPlaceId],
     });
     expect(first.status).toBe(200);
-    expect(await first.json()).toEqual({ peopleIds: [marcoId], placeIds: [summitPlaceId] });
-    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [marcoId], placeIds: [summitPlaceId] });
+    expect(await first.json()).toEqual({
+      peopleIds: [marcoId],
+      placeIds: [summitPlaceId],
+      ablePeopleIds: [marcoId],
+    });
     expect(await findServiceResources(summit.organizationId, serviceId)).toEqual({
       peopleIds: [marcoId],
       placeIds: [summitPlaceId],
     });
 
-    // The next save replaces them, it never adds to them.
+    // Juan can do it too; the next save replaces who is on, it never adds to them.
+    await put(skillsPath(summit.personId), summit.email, { serviceIds: [serviceId] });
     await put(ticksPath, summit.email, { peopleIds: [summit.personId], placeIds: [] });
-    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [summit.personId], placeIds: [] });
+    expect(await ticksOf(serviceId)).toEqual({
+      peopleIds: [summit.personId],
+      placeIds: [],
+      able: [summit.personId, marcoId],
+    });
     expect(await findServiceResources(summit.organizationId, serviceId)).toEqual({
       peopleIds: [summit.personId],
       placeIds: null,
     });
 
-    // Nobody ticked: anyone on is offered again.
+    // Nobody on: nobody is offered, never anyone, though both can do it.
     await put(ticksPath, summit.email, { peopleIds: [], placeIds: [] });
-    const anyone = await findServiceResources(summit.organizationId, serviceId);
-    expect(anyone?.peopleIds).toEqual(expect.arrayContaining([summit.personId, marcoId]));
-    expect(anyone?.placeIds).toBeNull();
+    expect((await findServiceResources(summit.organizationId, serviceId))?.peopleIds).toEqual([]);
+
+    // Unticking the only one on from his card turns him off, and the answer names the service.
+    await put(ticksPath, summit.email, { peopleIds: [summit.personId], placeIds: [] });
+    const left = await put(skillsPath(summit.personId), summit.email, { serviceIds: [] });
+    expect(await left.json()).toEqual({
+      serviceIds: [],
+      onFor: [],
+      nobodyOn: ["Colour consultation"],
+    });
+    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [], placeIds: [], able: [marcoId] });
+    expect((await findServiceResources(summit.organizationId, serviceId))?.peopleIds).toEqual([]);
   });
 
   test("a place in the people, or another business's person, is refused and nothing changes", async () => {
     const serviceId = await addService("Deck stain");
     const ticksPath = `/settings/services/${serviceId}/resources`;
+    await put(skillsPath(summit.personId), summit.email, { serviceIds: [serviceId] });
     await put(ticksPath, summit.email, { peopleIds: [summit.personId], placeIds: [] });
 
     const refusals = [
@@ -762,7 +826,8 @@ describe("who does what", () => {
       expect(refused.status).toBe(400);
       expect(await refused.json()).toMatchObject({ error: { code: "bad_request" }, field });
     }
-    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [summit.personId], placeIds: [] });
+    const unchanged = { peopleIds: [summit.personId], placeIds: [], able: [summit.personId] };
+    expect(await ticksOf(serviceId)).toEqual(unchanged);
 
     // Another business's service: the 404; a member who may not change the business: the 403.
     const theirs = (await (
@@ -776,7 +841,123 @@ describe("who does what", () => {
     );
     expect(foreign.status).toBe(404);
     expect((await put(ticksPath, helper.email, empty)).status).toBe(403);
-    expect(await ticksOf(serviceId)).toEqual({ peopleIds: [summit.personId], placeIds: [] });
+    expect(await ticksOf(serviceId)).toEqual(unchanged);
+
+    // On a card: a place has no skills, another business's service or a service twice is a 400,
+    // another business's person the 404, a member the 403; nothing changes.
+    const skillRefusals = [
+      [skillsPath(summitPlaceId), { serviceIds: [serviceId] }, 400],
+      [skillsPath(summit.personId), { serviceIds: [theirs.service.id] }, 400],
+      [skillsPath(summit.personId), { serviceIds: [serviceId, serviceId] }, 400],
+      [skillsPath(other.personId), { serviceIds: [] }, 404],
+    ] as const;
+    for (const [path, body, status] of skillRefusals) {
+      expect((await put(path, summit.email, body)).status).toBe(status);
+    }
+    const memberSave = await put(skillsPath(summit.personId), helper.email, { serviceIds: [] });
+    expect(memberSave.status).toBe(403);
+    expect(await ticksOf(serviceId)).toEqual(unchanged);
+  });
+});
+
+describe("a place's services (feature 12k)", () => {
+  const placesOf = async (tenant: { email: string }) =>
+    (await (await get("/settings/places", tenant.email)).json()) as {
+      places: { id: string; kind: string }[];
+      placeServices: { placeId: string; serviceIds: string[] }[];
+    };
+  const roomServices = async () =>
+    (await placesOf(summit)).placeServices.find((row) => row.placeId === summitPlaceId)!.serviceIds;
+  const servicesPath = (placeId: string) => `/settings/places/${placeId}/services`;
+  const placeIdsOf = async (serviceId: string) =>
+    (
+      (await (await get("/settings/services", summit.email)).json()) as {
+        services: ({ id: string } & TicksType)[];
+      }
+    ).services.find((row) => row.id === serviceId)!.placeIds;
+  const juanSkills = async () =>
+    (
+      (await (await get("/settings/people", summit.email)).json()) as {
+        skills: { personId: string; serviceIds: string[] }[];
+      }
+    ).skills.find((row) => row.personId === summit.personId)!.serviceIds;
+
+  test("People lists only people and Places only places", async () => {
+    const people = (await (await get("/settings/people", summit.email)).json()) as {
+      people: { id: string; kind: string }[];
+    };
+    expect(people.people.map((row) => row.kind)).not.toContain("place");
+    expect(people.people.map((row) => row.id)).toContain(summit.personId);
+    const { places } = await placesOf(summit);
+    expect(places.map((row) => row.kind)).not.toContain("person");
+    expect(places.map((row) => row.id)).toContain(summitPlaceId);
+  });
+
+  test("a place's ticks are the same rows as the service's Places it needs", async () => {
+    const service = (await (
+      await post("/settings/services", summit.email, { ...cabinet, name: "Spray booth job" })
+    ).json()) as SavedServiceType;
+    const serviceId = service.service.id;
+    await put(`/settings/people/${summit.personId}/skills`, summit.email, {
+      serviceIds: [...(await juanSkills()), serviceId],
+    });
+    const before = await roomServices();
+
+    // Ticked on Room 1's card: the service needs Room 1, and Juan stays on for it.
+    const ticked = await put(servicesPath(summitPlaceId), summit.email, {
+      serviceIds: [...before, serviceId],
+    });
+    expect(ticked.status).toBe(200);
+    expect(((await ticked.json()) as { serviceIds: string[] }).serviceIds).toContain(serviceId);
+    expect(await placeIdsOf(serviceId)).toEqual([summitPlaceId]);
+    expect(await findServiceResources(summit.organizationId, serviceId)).toEqual({
+      peopleIds: [summit.personId],
+      placeIds: [summitPlaceId],
+    });
+
+    // Unticked on the service's page: gone from Room 1's card too.
+    await put(`/settings/services/${serviceId}/resources`, summit.email, {
+      peopleIds: [summit.personId],
+      placeIds: [],
+    });
+    expect(await roomServices()).toEqual(before);
+
+    // Ticked there again, unticked on the card: the service needs no place, Juan is still on.
+    await put(`/settings/services/${serviceId}/resources`, summit.email, {
+      peopleIds: [summit.personId],
+      placeIds: [summitPlaceId],
+    });
+    expect(await roomServices()).toContain(serviceId);
+    await put(servicesPath(summitPlaceId), summit.email, { serviceIds: before });
+    expect(await placeIdsOf(serviceId)).toEqual([]);
+    expect(await findServiceResources(summit.organizationId, serviceId)).toEqual({
+      peopleIds: [summit.personId],
+      placeIds: null,
+    });
+  });
+
+  test("a person, another business's place or service, or a member is refused and nothing changes", async () => {
+    const before = await roomServices();
+    const theirs = (await (
+      await post("/settings/services", other.email, { ...cabinet, name: "Their booth" })
+    ).json()) as SavedServiceType;
+    const refusals = [
+      [servicesPath(summit.personId), { serviceIds: [] }, 400], // a person: their skills, on People
+      [servicesPath(other.personId), { serviceIds: [] }, 404], // another business's
+      [servicesPath(randomUUID()), { serviceIds: [] }, 404],
+      [servicesPath(summitPlaceId), { serviceIds: [theirs.service.id] }, 400],
+      [servicesPath(summitPlaceId), { serviceIds: [randomUUID()] }, 400],
+    ] as const;
+    for (const [path, body, status] of refusals) {
+      expect((await put(path, summit.email, body)).status).toBe(status);
+    }
+    const foreign = await put(servicesPath(summitPlaceId), summit.email, {
+      serviceIds: [theirs.service.id],
+    });
+    expect(await foreign.json()).toMatchObject({ field: "serviceIds" });
+    const member = await put(servicesPath(summitPlaceId), helper.email, { serviceIds: [] });
+    expect(member.status).toBe(403);
+    expect(await roomServices()).toEqual(before);
   });
 });
 
@@ -910,6 +1091,223 @@ describe("a service's new length", () => {
     const same = await estimateAt(90);
     expect(((await same.json()) as SavedWithListType).outsideHours).toEqual([]);
     await estimateAt(60);
+  });
+});
+
+describe("when a service runs (feature 12k)", () => {
+  const afternoons = { tue: [{ startMinute: 780, endMinute: 1020 }] }; // Tuesday from 1:00
+  type SavedServiceHoursType = {
+    hours: { serviceId: string; weeklyHours: unknown; dateHours: unknown };
+    outsideHours: { bookingId: string }[];
+  };
+  const minuteOf = (iso: string) => {
+    const [hour, minute] = new Date(iso)
+      .toLocaleTimeString("en-GB", { timeZone: "America/Edmonton", hour12: false })
+      .split(":")
+      .map(Number);
+    return hour * 60 + minute;
+  };
+
+  test("its own week narrows the times, lists the bookings left outside, and changes none", async () => {
+    // A service of its own on Booked, done by Rita alone, so no other test moves its times.
+    const saved = (await (
+      await post("/settings/services", booked.email, { ...cabinet, name: "Colour match" })
+    ).json()) as SavedServiceType;
+    const serviceId = saved.service.id;
+    const rita = (await (
+      await post("/settings/people", booked.email, { name: "Rita", kind: "person" })
+    ).json()) as SavedResourceType;
+    await put(`/settings/people/${rita.resource.id}/skills`, booked.email, {
+      serviceIds: [serviceId],
+    });
+    const tuesdayTimes = async () =>
+      (
+        await findFreeTimes({
+          organizationId: booked.organizationId,
+          bookingLinkId: serviceId,
+          personId: null,
+          fromDate: tuesday,
+          toDate: tuesday,
+          now: new Date(),
+        })
+      )?.startTimes ?? [];
+    const before = await tuesdayTimes();
+    expect(before.some((time) => minuteOf(time) < 780)).toBe(true); // mornings offered
+
+    // Kim is booked with Rita at 10:00 on that Tuesday.
+    const [contactId, leadId, bookingId] = [randomUUID(), randomUUID(), randomUUID()];
+    await db
+      .insert(contact)
+      .values({ id: contactId, organizationId: booked.organizationId, name: "Kim" });
+    await db.insert(lead).values({
+      id: leadId,
+      organizationId: booked.organizationId,
+      contactId,
+      stageId: bookedStageId,
+      source: "widget",
+    });
+    await db.insert(booking).values({
+      id: bookingId,
+      organizationId: booked.organizationId,
+      leadId,
+      bookingLinkId: serviceId,
+      personId: rita.resource.id,
+      startsAt: onTuesday(600),
+      endsAt: onTuesday(660),
+      status: "confirmed",
+    });
+    const withKim = await tuesdayTimes();
+
+    const hoursPath = `/settings/services/${serviceId}/hours`;
+    const narrowed = await put(hoursPath, booked.email, { weeklyHours: afternoons, dateHours: [] });
+    expect(narrowed.status).toBe(200);
+    const answer = (await narrowed.json()) as SavedServiceHoursType;
+    expect(answer.hours).toEqual({ serviceId, weeklyHours: afternoons, dateHours: [] });
+    expect(answer.outsideHours.map((row) => row.bookingId)).toEqual([bookingId]);
+    const [still] = await db.select().from(booking).where(eq(booking.id, bookingId));
+    expect(still.startsAt).toEqual(onTuesday(600));
+
+    // Only afternoon times are left, now counted from 1:00.
+    const after = await tuesdayTimes();
+    expect(after.length).toBeGreaterThan(0);
+    expect(after.every((time) => minuteOf(time) >= 780)).toBe(true);
+
+    // A one-off date, 9:00 to 10:00 that Tuesday, replaces its afternoons that day only.
+    const oneOff = { date: tuesday, windows: [{ startMinute: 540, endMinute: 600 }] };
+    await put(hoursPath, booked.email, { weeklyHours: afternoons, dateHours: [oneOff] });
+    const thatDay = await tuesdayTimes();
+    expect(thatDay.length).toBeGreaterThan(0);
+    expect(thatDay.every((time) => minuteOf(time) >= 540 && minuteOf(time) < 600)).toBe(true);
+
+    // Back to whenever the business is open: the row goes, nothing is listed, the mornings return.
+    const back = await put(hoursPath, booked.email, { weeklyHours: null, dateHours: [] });
+    expect(((await back.json()) as SavedServiceHoursType).outsideHours).toEqual([]);
+    expect(await db.$count(serviceHours, eq(serviceHours.bookingLinkId, serviceId))).toBe(0);
+    expect(await tuesdayTimes()).toEqual(withKim);
+  });
+
+  test("another business's service is the 404, a member the 403, no business hours the 409", async () => {
+    const body = { weeklyHours: afternoons, dateHours: [] };
+    expect((await put(`/settings/services/${estimateId}/hours`, summit.email, body)).status).toBe(
+      404
+    );
+    const summitService = (await (
+      await post("/settings/services", summit.email, { ...cabinet, name: "Trim" })
+    ).json()) as SavedServiceType;
+    const summitPath = `/settings/services/${summitService.service.id}/hours`;
+    expect((await put(summitPath, helper.email, body)).status).toBe(403);
+    const otherService = (await (
+      await post("/settings/services", other.email, { ...cabinet, name: "First" })
+    ).json()) as SavedServiceType;
+    expect(
+      (await put(`/settings/services/${otherService.service.id}/hours`, other.email, body)).status
+    ).toBe(409);
+    expect(
+      await db.$count(serviceHours, eq(serviceHours.organizationId, summit.organizationId))
+    ).toBe(0);
+  });
+
+  test("whenever open narrows nothing on an ordinary day, a one-off date saved or not", async () => {
+    // Rosa keeps her own Saturday, 10:00 to 2:00, though the business is open only Mon and Tue.
+    const saved = (await (
+      await post("/settings/services", booked.email, { ...cabinet, name: "Gloss" })
+    ).json()) as SavedServiceType;
+    const serviceId = saved.service.id;
+    const rosa = (await (
+      await post("/settings/people", booked.email, { name: "Rosa", kind: "person" })
+    ).json()) as SavedResourceType;
+    await put(`/settings/people/${rosa.resource.id}/skills`, booked.email, {
+      serviceIds: [serviceId],
+    });
+    await put(`/settings/hours/people/${rosa.resource.id}`, booked.email, {
+      weeklyHours: { sat: [{ startMinute: 600, endMinute: 840 }] },
+      dateHours: [],
+    });
+    let saturday = addDays(tuesday, 1);
+    while (new Date(`${saturday}T12:00:00Z`).getUTCDay() !== 6) saturday = addDays(saturday, 1);
+    const saturdayTimes = async () =>
+      (
+        await findFreeTimes({
+          organizationId: booked.organizationId,
+          bookingLinkId: serviceId,
+          personId: null,
+          fromDate: saturday,
+          toDate: saturday,
+          now: new Date(),
+        })
+      )?.startTimes ?? [];
+    const before = await saturdayTimes();
+    expect(before.length).toBeGreaterThan(0);
+
+    // Whenever open, with a one-off date on the Tuesday: her Saturday is untouched.
+    const hoursPath = `/settings/services/${serviceId}/hours`;
+    const oneOff = { date: tuesday, windows: [{ startMinute: 540, endMinute: 600 }] };
+    const withDate = await put(hoursPath, booked.email, { weeklyHours: null, dateHours: [oneOff] });
+    expect(((await withDate.json()) as SavedServiceHoursType).outsideHours).toEqual([]);
+    expect(await saturdayTimes()).toEqual(before);
+
+    // Lee is booked with her that Saturday at 10:00; a Tuesday-only week leaves him outside.
+    const [contactId, leadId, bookingId] = [randomUUID(), randomUUID(), randomUUID()];
+    const organizationId = booked.organizationId;
+    await db.insert(contact).values({ id: contactId, organizationId, name: "Lee" });
+    await db
+      .insert(lead)
+      .values({ id: leadId, organizationId, contactId, stageId: bookedStageId, source: "widget" });
+    const saturdayAt = (minute: number) => localTimeToMoment(saturday, minute, "America/Edmonton")!;
+    await db.insert(booking).values({
+      id: bookingId,
+      organizationId,
+      leadId,
+      bookingLinkId: serviceId,
+      personId: rosa.resource.id,
+      startsAt: saturdayAt(600),
+      endsAt: saturdayAt(660),
+      status: "confirmed",
+    });
+    const tuesdays = await put(hoursPath, booked.email, {
+      weeklyHours: { tue: [{ startMinute: 540, endMinute: 1020 }] },
+      dateHours: [],
+    });
+    const listed = ((await tuesdays.json()) as SavedServiceHoursType).outsideHours;
+    expect(listed.map((row) => row.bookingId)).toEqual([bookingId]);
+    expect(await saturdayTimes()).toEqual([]);
+  });
+
+  test("a longer length lists a booking it pushes past the service's own window", async () => {
+    const saved = (await (
+      await post("/settings/services", booked.email, { ...cabinet, name: "Touch-up" })
+    ).json()) as SavedServiceType;
+    const serviceId = saved.service.id;
+    // It runs Tuesday 1:00 to 2:00; the business is open until 3:00, so only its window can refuse.
+    await put(`/settings/services/${serviceId}/hours`, booked.email, {
+      weeklyHours: { tue: [{ startMinute: 780, endMinute: 840 }] },
+      dateHours: [],
+    });
+    const [contactId, leadId, bookingId] = [randomUUID(), randomUUID(), randomUUID()];
+    const organizationId = booked.organizationId;
+    await db.insert(contact).values({ id: contactId, organizationId, name: "Noor" });
+    await db
+      .insert(lead)
+      .values({ id: leadId, organizationId, contactId, stageId: bookedStageId, source: "widget" });
+    await db.insert(booking).values({
+      id: bookingId,
+      organizationId,
+      leadId,
+      bookingLinkId: serviceId,
+      personId: booked.personId,
+      startsAt: onTuesday(780),
+      endsAt: onTuesday(780 + cabinet.durationMinutes),
+      status: "confirmed",
+    });
+    const longer = await put(`/settings/services/${serviceId}`, booked.email, {
+      ...cabinet,
+      name: "Touch-up",
+      durationMinutes: 90,
+    });
+    expect(longer.status).toBe(200);
+    const listed = ((await longer.json()) as { outsideHours: { bookingId: string }[] })
+      .outsideHours;
+    expect(listed.map((row) => row.bookingId)).toEqual([bookingId]);
   });
 });
 

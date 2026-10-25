@@ -36,6 +36,8 @@ const { addDays } = await import("@scheduleads-app/shared/add-days");
 const { localDate } = await import("@scheduleads-app/shared/local-date");
 const { localTimeToMoment } = await import("../lib/local-time/local-time-to-moment.js");
 const { booking } = await import("@scheduleads-app/shared/db");
+const { giveSkillsAsTicked } =
+  await import("../lib/scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const dashboardOrigin = process.env.APP_ORIGIN ?? "http://localhost:3400";
@@ -98,6 +100,7 @@ async function makeBusiness(name: string, businessName: string, timezone = "Amer
   await db
     .insert(bookingLinkResource)
     .values({ organizationId: business, bookingLinkId: estimate, resourceId: marco });
+  await giveSkillsAsTicked(business);
 
   const made = { business, marco, estimate, timezone, slug: `test-page-${name}-${tag}-dev` };
   const first = await bookFor(made, 540);

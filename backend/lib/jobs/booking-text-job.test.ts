@@ -45,6 +45,7 @@ const { jobSchema } = await import("./job-schema.js");
 const { workDueJobs } = await import("./work-due-jobs.js");
 const { enqueueJob } = await import("./enqueue-job.js");
 const { jobNames } = await import("./job-names.js");
+const { giveSkillsAsTicked } = await import("../scheduling/give-skills-as-ticked.test-support.js");
 
 const tag = randomUUID().slice(0, 8);
 const NINE = new Date("2026-10-05T15:00:00Z"); // Monday 9:00 in Edmonton
@@ -108,6 +109,7 @@ async function makeBusiness(name: string, settings: Record<string, unknown> = {}
   await db
     .insert(bookingLinkResource)
     .values({ organizationId: business, bookingLinkId: estimate, resourceId: marco });
+  await giveSkillsAsTicked(business);
   const fromNumber = `+1587${randomInt(200, 1000)}${String(randomInt(0, 10_000)).padStart(4, "0")}`;
   if (settings !== null) {
     await db.insert(textSettings).values({

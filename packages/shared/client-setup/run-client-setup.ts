@@ -248,7 +248,18 @@ async function findDifferences(
           eq(bookingLinkResource.bookingLinkId, saved.id)
         )
       );
-    const inFile = new Set((service.ticked ?? []).map(nameKeyOf));
+    // Naming no person means every person the file lists, and the first person (feature 12k).
+    const filePeople = [
+      firstPerson.businessName,
+      ...setup.people.filter((person) => person.kind === "person").map((person) => person.name),
+    ];
+    const named = service.ticked ?? [];
+    const meant = named.some((name) =>
+      filePeople.some((person) => nameKeyOf(person) === nameKeyOf(name))
+    )
+      ? named
+      : [...named, ...filePeople];
+    const inFile = new Set(meant.map(nameKeyOf));
     const tickedInFile = (row: { id: string; name: string }) =>
       inFile.has(nameKeyOf(row.name)) ||
       (row.id === firstPerson.id && inFile.has(nameKeyOf(firstPerson.businessName)));
@@ -258,7 +269,7 @@ async function findDifferences(
     const tickedHere = new Set(ticked.map((row) => nameKeyOf(row.name)));
     if (ticked.some((row) => row.id === firstPerson.id))
       tickedHere.add(nameKeyOf(firstPerson.businessName));
-    const removed = (service.ticked ?? []).filter((name) => !tickedHere.has(nameKeyOf(name)));
+    const removed = meant.filter((name) => !tickedHere.has(nameKeyOf(name)));
     if (removed.length)
       differences.push(
         `"${service.name}", in the file, not ticked here: ${removed.sort().join(", ")}`

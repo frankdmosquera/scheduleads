@@ -317,3 +317,58 @@ describe("the Simulate page's cases", () => {
     ]);
   });
 });
+
+// Feature 12k: a service can run in its own window, which narrows the person's hours.
+describe("when the service runs", () => {
+  const hour = (h: number) => `2026-10-05T${String(h + 6).padStart(2, "0")}:00:00.000Z`; // Edmonton
+
+  test("a time outside the service's window is never offered, one inside it is", () => {
+    const hourly = { ...facial, durationMinutes: 60 };
+    const person = hours({ weeklyHours: { mon: [window(9, 17)] } });
+    // The person 9 to 5, the service 1 to 5: only the afternoon.
+    expect(
+      freeTimes({
+        service: hourly,
+        hours: person,
+        serviceHours: hours({ weeklyHours: { mon: [window(13, 18)] } }),
+      })
+    ).toEqual([hour(13), hour(14), hour(15), hour(16)]);
+    // Without a window of its own, the same morning times stay offered.
+    expect(freeTimes({ service: hourly, hours: person })).toContain(hour(9));
+    expect(freeTimes({ service: hourly, hours: person, serviceHours: null })).toContain(hour(9));
+  });
+
+  test("it narrows, never widens: a service running all day leaves the person's own hours", () => {
+    const hourly = { ...facial, durationMinutes: 60 };
+    expect(
+      freeTimes({
+        service: hourly,
+        hours: hours({ weeklyHours: { mon: [window(9, 11)] } }),
+        serviceHours: hours({ weeklyHours: { mon: [window(7, 20)] } }),
+      })
+    ).toEqual([hour(9), hour(10)]);
+  });
+
+  test("the service's one-off date replaces its week that day; a closed day still closes", () => {
+    const hourly = { ...facial, durationMinutes: 60 };
+    const person = hours({ weeklyHours: { mon: [window(9, 17)] } });
+    const runs = hours({
+      weeklyHours: { mon: [window(13, 17)] },
+      dateHours: [{ date: MONDAY, windows: [window(9, 10)] }],
+    });
+    expect(freeTimes({ service: hourly, hours: person, serviceHours: runs })).toEqual([hour(9)]);
+    expect(
+      freeTimes({
+        service: hourly,
+        hours: hours({ weeklyHours: { mon: [window(9, 17)] }, closedDates: [MONDAY] }),
+        serviceHours: runs,
+      })
+    ).toEqual([]);
+  });
+
+  test("a service that does not run that weekday offers nothing that day", () => {
+    expect(freeTimes({ serviceHours: hours({ weeklyHours: { tue: [window(9, 17)] } }) })).toEqual(
+      []
+    );
+  });
+});

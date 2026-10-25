@@ -1,4 +1,4 @@
-// Backend: saves one person's hours from their card on the owner's Hours section (feature 12a), and
+// Backend: saves one person's hours from their card on the People page (feature 12a), and
 // lists their upcoming bookings the new hours leave outside. No booking is changed.
 
 import { randomUUID } from "node:crypto";
@@ -10,14 +10,17 @@ import type { PersonHoursType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
 import { businessHoursOf } from "./business-hours-of.js";
-import type { PersonHoursSettingsType } from "./find-hours-settings.js";
 import { findUpcomingBookings } from "./find-upcoming-bookings.js";
 import { outsideHoursOf } from "./outside-hours-of.js";
 import type { ListedBookingType } from "./listed-booking.js";
 import { sortedHours } from "./sorted-hours.js";
 
 export type SavePersonHoursResultType =
-  | { ok: true; person: PersonHoursSettingsType; outsideHours: ListedBookingType[] }
+  | {
+      ok: true;
+      person: { id: string; name: string } & PersonHoursType;
+      outsideHours: ListedBookingType[];
+    }
   | { ok: false; reason: "no_person" | "no_business_hours" };
 
 // Makes or updates the person's row; back on the business's week it keeps their one-off dates.

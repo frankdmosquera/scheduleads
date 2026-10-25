@@ -45,13 +45,11 @@ export function BookByHandForm({
     let live = true;
     fetchServicesSettings().then((result) => {
       if (!live) return;
-      // The live services this person does: ticked, or nobody ticked, which means anyone.
+      // The live services this person is on for: nobody on means nobody (feature 12k).
       const theirs =
         result.state === "ok"
           ? result.answer.services.filter(
-              (service) =>
-                service.active &&
-                (service.peopleIds.length === 0 || service.peopleIds.includes(personId))
+              (service) => service.active && service.peopleIds.includes(personId)
             )
           : [];
       setServices(theirs);

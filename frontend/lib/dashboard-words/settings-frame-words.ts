@@ -9,6 +9,7 @@ export type SettingsFrameWordsType = {
   hours: string;
   services: string;
   people: string;
+  places: string;
   daysOff: string;
   bookingForm: string;
   texts: string;
@@ -21,6 +22,8 @@ export type SettingsFrameWordsType = {
   change: string;
   remove: string;
   addThemOnPeople: string; // a link, followed by a full stop
+  addThemOnPlaces: string; // a link, followed by a full stop
+  tickItOnPeople: string; // a link, followed by a full stop
   off: string; // after a turned-off person or place, with its own leading space
 };
 
@@ -30,6 +33,7 @@ export const englishSettingsFrameWords: SettingsFrameWordsType = {
   hours: "Hours",
   services: "Services",
   people: "People",
+  places: "Places",
   daysOff: "Days off",
   bookingForm: "Booking form",
   texts: "Texts",
@@ -41,6 +45,8 @@ export const englishSettingsFrameWords: SettingsFrameWordsType = {
   change: "Change",
   remove: "Remove",
   addThemOnPeople: "Add them on People",
+  addThemOnPlaces: "Add them on Places",
+  tickItOnPeople: "Tick it on their card on People",
   off: " (off)",
 };
 
@@ -50,6 +56,7 @@ export const spanishSettingsFrameWords: SettingsFrameWordsType = {
   hours: "Horario",
   services: "Servicios",
   people: "Personas",
+  places: "Lugares",
   daysOff: "Días libres",
   bookingForm: "Formulario de reserva",
   texts: "Mensajes de texto",
@@ -61,5 +68,7 @@ export const spanishSettingsFrameWords: SettingsFrameWordsType = {
   change: "Cambiar",
   remove: "Quitar",
   addThemOnPeople: "Agréguelos en Personas",
+  addThemOnPlaces: "Agréguelos en Lugares",
+  tickItOnPeople: "Márquelo en su tarjeta en Personas",
   off: " (fuera de servicio)",
 };

@@ -4,11 +4,12 @@
 
 import { and, eq, isNull } from "drizzle-orm";
 
-import { availabilityRule, bookingLink } from "@scheduleads-app/shared/db";
+import { availabilityRule, bookingLink, serviceHours } from "@scheduleads-app/shared/db";
 import type { ServiceType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
 import { applyLengthChangeRules } from "../bookable-hours/apply-length-change-rules.js";
+import { ALL_DAY_WEEK } from "../bookable-hours/all-day-week.js";
 import { businessHoursOf } from "./business-hours-of.js";
 import { findPeopleHours } from "./find-people-hours.js";
 import { findServiceTicks } from "./find-service-ticks.js";
@@ -68,6 +69,37 @@ export async function saveService(
       upcoming,
       now
     );
-    return { service: answer, outsideHours: outside.map(listedBookingOf) };
+    // Its own window too (feature 12k), read as a person's row keyed by the service, so a booking
+    // the new length pushes past it is listed; whenever open narrows nothing but its one-off dates.
+    const [window] = await tx
+      .select({ weeklyHours: serviceHours.weeklyHours, dateHours: serviceHours.dateHours })
+      .from(serviceHours)
+      .where(
+        and(
+          eq(serviceHours.organizationId, organizationId),
+          eq(serviceHours.bookingLinkId, serviceId)
+        )
+      );
+    const pastWindow = window
+      ? applyLengthChangeRules(
+          {
+            ...hours,
+            people: new Map([
+              [
+                serviceId,
+                { weeklyHours: window.weeklyHours ?? ALL_DAY_WEEK, dateHours: window.dateHours },
+              ],
+            ]),
+          },
+          serviceId,
+          service.durationMinutes,
+          upcoming.map((booking) => ({ ...booking, personId: serviceId })),
+          now
+        )
+      : [];
+    // Listed once each, in time order, as every Settings list is.
+    const listed = new Set([...outside, ...pastWindow].map((booking) => booking.bookingId));
+    const both = upcoming.filter((booking) => listed.has(booking.bookingId));
+    return { service: answer, outsideHours: both.map(listedBookingOf) };
   });
 }

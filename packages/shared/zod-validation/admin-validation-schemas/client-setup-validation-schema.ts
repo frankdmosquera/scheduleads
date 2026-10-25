@@ -56,7 +56,7 @@ export const setupServiceValidationSchema = z
     bufferBeforeMinutes: serviceBufferValidationSchema.optional(),
     bufferAfterMinutes: serviceBufferValidationSchema.optional(),
     slotIntervalMinutes: serviceStartEveryValidationSchema.optional(), // minutes between start times; missing = every service length
-    ticked: z.array(nameValidationSchema).optional(), // who does what, by name; missing = anyone
+    ticked: z.array(nameValidationSchema).optional(), // who does what, by name; no person = every person listed (feature 12k)
   })
   .strict();
 

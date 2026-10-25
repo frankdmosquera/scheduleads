@@ -43,6 +43,7 @@ export const spanishMessages: Record<string, string> = {
   "This business cannot change its hours here.": "Este negocio no puede cambiar su horario aquí.",
   "This business cannot change its people here.":
     "Este negocio no puede cambiar sus personas aquí.",
+  "This business cannot change its places here.": "Este negocio no puede cambiar sus lugares aquí.",
   "This business cannot change its services here.":
     "Este negocio no puede cambiar sus servicios aquí.",
   "This business cannot change its texts here.":
@@ -234,6 +235,12 @@ export const spanishMessages: Record<string, string> = {
   "No service here.": "No hay ningún servicio aquí.",
   "Tick only this business's people.": "Marque solo personas de este negocio.",
   "Tick only this business's places.": "Marque solo lugares de este negocio.",
+  "Tick only this business's services.": "Marque solo servicios de este negocio.",
+  "Tick at most 500 services.": "Marque como máximo 500 servicios.",
+  "Tick each of the services once.": "Cada servicio se marca una sola vez.",
+  "{} cannot do this service yet: tick it on their card on People.":
+    "{} todavía no sabe hacer este servicio: márquelo en su tarjeta en Personas.",
+  "A place has no skills: only people do.": "Un lugar no tiene habilidades: solo las personas.",
   "Tick at most 500 {}.": "Marque como máximo 500 {}.",
   "Tick each of the {} once.": "Cada uno se marca una sola vez.",
   "Use whole minutes.": "Use minutos enteros.",
@@ -250,6 +257,9 @@ export const spanishMessages: Record<string, string> = {
   // Settings: people
   "No person here.": "No hay ninguna persona aquí.",
   "No person or place here.": "No hay ninguna persona ni lugar aquí.",
+  "No place here.": "No hay ningún lugar aquí.",
+  "A person's services are what they can do: tick them on People.":
+    "Los servicios de una persona son lo que sabe hacer: márquelos en Personas.",
   "Another person or place here already has that name.":
     "Otra persona o lugar de este negocio ya tiene ese nombre.",
   "Someone has to stay on: turn another person on first.":

@@ -1,10 +1,15 @@
-// Backend: who may be offered for a service, read by the free-time check (5c). The ticked people
-// who are active, or every active person when nobody is ticked; the ticked places that are active,
-// or no room check when no place is ticked. Ticked but all inactive means nobody, never anyone.
+// Backend: who may be offered for a service, read by the free-time check (5c). The people on for it
+// who can do it and are active (feature 12k: nobody on means nobody, never anyone); the ticked
+// places that are active, or no room check when no place is ticked.
 
 import { and, asc, eq } from "drizzle-orm";
 
-import { bookingLink, bookingLinkResource, resource } from "@scheduleads-app/shared/db";
+import {
+  bookingLink,
+  bookingLinkResource,
+  personSkill,
+  resource,
+} from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
@@ -36,13 +41,26 @@ export async function findServiceResources(
     if (!service) return null; // missing, inactive, or another business's
 
     const ticked = await db
-      .select({ id: resource.id, kind: resource.kind, active: resource.active })
+      .select({
+        id: resource.id,
+        kind: resource.kind,
+        active: resource.active,
+        canDo: personSkill.resourceId, // null for a place, and for a person without the skill
+      })
       .from(bookingLinkResource)
       .innerJoin(
         resource,
         and(
           eq(resource.organizationId, bookingLinkResource.organizationId),
           eq(resource.id, bookingLinkResource.resourceId)
+        )
+      )
+      .leftJoin(
+        personSkill,
+        and(
+          eq(personSkill.organizationId, bookingLinkResource.organizationId),
+          eq(personSkill.resourceId, bookingLinkResource.resourceId),
+          eq(personSkill.bookingLinkId, bookingLinkResource.bookingLinkId)
         )
       )
       .where(
@@ -53,28 +71,14 @@ export async function findServiceResources(
       )
       .orderBy(asc(resource.name), asc(resource.id));
 
-    const tickedPeople = ticked.filter((row) => row.kind === "person");
+    const peopleIds = ticked
+      .filter((row) => row.kind === "person" && row.active && row.canDo !== null)
+      .map((row) => row.id);
     const tickedPlaces = ticked.filter((row) => row.kind === "place");
-    const activeIds = (rows: typeof ticked) =>
-      rows.filter((row) => row.active).map((row) => row.id);
-
-    const peopleIds = tickedPeople.length
-      ? activeIds(tickedPeople)
-      : (
-          await db
-            .select({ id: resource.id })
-            .from(resource)
-            .where(
-              and(
-                eq(resource.organizationId, organizationId),
-                eq(resource.kind, "person"),
-                eq(resource.active, true)
-              )
-            )
-            .orderBy(asc(resource.name), asc(resource.id))
-        ).map((row) => row.id);
-
-    return { peopleIds, placeIds: tickedPlaces.length ? activeIds(tickedPlaces) : null };
+    const placeIds = tickedPlaces.length
+      ? tickedPlaces.filter((row) => row.active).map((row) => row.id)
+      : null;
+    return { peopleIds, placeIds };
   } catch (error) {
     throw new Error(`Reading who does what failed: ${safeErrorReason(error)}`);
   }

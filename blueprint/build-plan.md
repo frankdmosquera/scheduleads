@@ -135,8 +135,10 @@ and a second resource can hold the same time as the first.
   - **Who does what** is built here: which person can do which service
     (skills) and which place a service needs (rooms). A time shows only when
     someone has the skill, is bookable, is free, and the room the service
-    needs is free. Nobody ticked for a service means anyone can do it; no
-    room ticked means no room check. Item 12 is where the owner ticks them.
+    needs is free. Nobody ticked for a service meant anyone could do it,
+    until 12k: since then a person's skills are ticked on their card and
+    nobody on means nobody. No room ticked means no room check. Item 12 is
+    where the owner ticks them.
   - **The customer picks a person or "any available"**; the rule for how
     "any available" picks is decided here.
   - **Free time** is bookable hours minus busy: bookings, time off, and
@@ -396,6 +398,17 @@ without Frank touching the database.
   way 12i did for the window. Added by Frank on 2026-10-24: the Latin
   American businesses (IA a la Orden first) run their day in Spanish. Numbered
   12j so nothing after it renumbers
+- [x] 12k. **People, places and skills** - a person's skills are ticked on
+  their own card, and a service's "Who does it" lists only the people with
+  that skill, each with an on/off switch for offering it now, and a service
+  can run in its own window (haircuts in the afternoon). A person's card
+  also holds their bookable hours (moved from Hours) and says what customers
+  book them for; places get their own page and show the services they serve.
+  Today's ticks carry over, so nothing bookable changes. Skills no service
+  uses (painting, crew lead), "Scheduled by you", stay with item 19. Added by
+  Frank on 2026-10-25 from his walk of Summit Painting (dev): skills were
+  hidden on the service side, and people and places shared one page.
+  Numbered 12k so nothing after it renumbers
 
 ## Phase 5. The first paying client
 

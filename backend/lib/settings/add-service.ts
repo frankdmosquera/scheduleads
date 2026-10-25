@@ -42,7 +42,7 @@ export async function addService(
       .values({ id: randomUUID(), organizationId, slug, layout: "month", ...service })
       .onConflictDoNothing()
       .returning(serviceSettingsColumns);
-    if (added) return { ...added, peopleIds: [], placeIds: [] }; // nobody ticked yet
+    if (added) return { ...added, peopleIds: [], placeIds: [], ablePeopleIds: [] }; // nobody can do it yet
   }
   throw new Error(`Could not find a free slug for "${base}" in ${ATTEMPTS} tries.`);
 }
