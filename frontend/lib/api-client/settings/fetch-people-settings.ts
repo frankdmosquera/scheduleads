@@ -10,7 +10,8 @@ import {
 
 export const peopleSettingsRoute = dashboardApiClient.settings.people;
 
-// Every person and place, on or off, the business's time zone, and whether this login may change them.
+// Every person, on or off, with what each can do and their hours, the business's time zone and week,
+// and whether this login may change them.
 export type PeopleSettingsType = InferResponseType<typeof peopleSettingsRoute.$get, 200>;
 export type ResourceSettingsType = PeopleSettingsType["people"][number];
 
