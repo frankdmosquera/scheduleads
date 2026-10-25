@@ -89,6 +89,19 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
           : servicesWords.savedHidden(service.name)) + listed,
     });
   };
+  // When a service runs, always under its row or form, so opening or closing the form never drops
+  // hours not saved yet or the bookings its last save listed; read-only for whoever may not change it.
+  const hoursCardOf = (service: ServiceSettingsType) =>
+    settings.businessWeek && settings.timezone ? (
+      <ServiceHoursCard
+        service={service}
+        hours={hoursOf.get(service.id) ?? { weeklyHours: null, dateHours: [] }}
+        businessWeek={settings.businessWeek}
+        timezone={settings.timezone}
+        canEdit={settings.canEdit}
+        onSaved={(hours) => setHoursOf((map) => new Map(map).set(service.id, hours))}
+      />
+    ) : null;
   const openForm = (which: string | "new") => {
     setNotice(null);
     setOpen(which);
@@ -132,47 +145,38 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
                   onSaved={saved}
                   onCancel={() => close(changeButtonId(service.id))}
                 />
-                {settings.businessWeek && settings.timezone ? (
-                  <ServiceHoursCard
-                    service={service}
-                    hours={hoursOf.get(service.id) ?? { weeklyHours: null, dateHours: [] }}
-                    businessWeek={settings.businessWeek}
-                    timezone={settings.timezone}
-                    canEdit={settings.canEdit}
-                    onSaved={(hours) => setHoursOf((map) => new Map(map).set(service.id, hours))}
-                  />
-                ) : null}
+                {hoursCardOf(service)}
               </li>
             ) : (
-              <li
-                key={service.id}
-                className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-card px-4 py-3 md:px-6"
-              >
-                <span className="font-medium text-foreground">{service.name}</span>
-                <span className="text-sm text-muted-foreground">
-                  {servicesWords.minutes(service.durationMinutes)}
-                </span>
-                <span
-                  className={
-                    service.active
-                      ? "rounded-md bg-[var(--accent-soft)] px-2 py-0.5 text-xs font-medium text-primary"
-                      : "rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
-                  }
-                >
-                  {service.active ? servicesWords.live : servicesWords.hidden}
-                </span>
-                {settings.canEdit ? (
-                  <Button
-                    id={changeButtonId(service.id)}
-                    variant="ghost"
-                    size="sm"
-                    className="ml-auto"
-                    aria-label={servicesWords.changeService(service.name)}
-                    onClick={() => openForm(service.id)}
+              <li key={service.id} className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-card px-4 py-3 md:px-6">
+                  <span className="font-medium text-foreground">{service.name}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {servicesWords.minutes(service.durationMinutes)}
+                  </span>
+                  <span
+                    className={
+                      service.active
+                        ? "rounded-md bg-[var(--accent-soft)] px-2 py-0.5 text-xs font-medium text-primary"
+                        : "rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                    }
                   >
-                    {words.settingsFrameWords.change}
-                  </Button>
-                ) : null}
+                    {service.active ? servicesWords.live : servicesWords.hidden}
+                  </span>
+                  {settings.canEdit ? (
+                    <Button
+                      id={changeButtonId(service.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto"
+                      aria-label={servicesWords.changeService(service.name)}
+                      onClick={() => openForm(service.id)}
+                    >
+                      {words.settingsFrameWords.change}
+                    </Button>
+                  ) : null}
+                </div>
+                {hoursCardOf(service)}
               </li>
             )
           )}

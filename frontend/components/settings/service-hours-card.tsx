@@ -1,5 +1,6 @@
-// Frontend component: when one service runs, under its form on the Services page (feature 12k):
-// the shared own-hours card, in a service's words. Its own week narrows who does it, never widens.
+// Frontend component: when one service runs, under its row or form on the Services page (feature
+// 12k): the shared own-hours card, in a service's words. Its own week narrows who does it, never
+// widens.
 
 "use client";
 
