@@ -105,7 +105,12 @@ export function AddResourceForm({
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? peopleWords.adding : peopleWords.add}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={form.formState.isSubmitting}
+          onClick={onCancel}
+        >
           {peopleWords.cancel}
         </Button>
       </div>

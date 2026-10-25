@@ -537,7 +537,13 @@ export function ServiceForm({
                 : servicesWords.addService}
           </Button>
         ) : null}
-        <Button ref={closeRef} type="button" variant="outline" onClick={cancel}>
+        <Button
+          ref={closeRef}
+          type="button"
+          variant="outline"
+          disabled={form.formState.isSubmitting}
+          onClick={cancel}
+        >
           {canEdit ? words.settingsFrameWords.cancel : servicesWords.close}
         </Button>
       </div>

@@ -60,11 +60,12 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
   const [held, setHeld] = useState<{ title: string; list: ListedBookingsType }[]>([]);
   // Where the keyboard goes once a form closes: back to the button that opened it, never the top.
   const returnFocus = useRef<string | null>(null);
+  // It waits for the closed card's Save to end, as a disabled button takes no focus (F-515).
   useEffect(() => {
-    if (open !== null || !returnFocus.current) return;
+    if (open !== null || saving || !returnFocus.current) return;
     document.getElementById(returnFocus.current)?.focus();
     returnFocus.current = null;
-  }, [open]);
+  }, [open, saving]);
   // A Save that ends after another card was opened leaves that card open (F-512).
   const close = (focusId: string, card?: string) => {
     returnFocus.current = focusId;

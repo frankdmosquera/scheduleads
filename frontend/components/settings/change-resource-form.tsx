@@ -177,7 +177,13 @@ export function ChangeResourceForm({
             {form.formState.isSubmitting ? peopleWords.saving : peopleWords.save}
           </Button>
         ) : null}
-        <Button ref={closeRef} type="button" variant="outline" onClick={onCancel}>
+        <Button
+          ref={closeRef}
+          type="button"
+          variant="outline"
+          disabled={form.formState.isSubmitting}
+          onClick={onCancel}
+        >
           {canEdit ? peopleWords.cancel : peopleWords.close}
         </Button>
       </div>

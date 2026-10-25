@@ -135,11 +135,12 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   const [held, setHeld] = useState<HeldType[]>([]);
   // Where the keyboard goes once a card closes: back to the button that opened it, never the top.
   const returnFocus = useRef<string | null>(null);
+  // It waits for the closed card's Save to end, as a disabled button takes no focus (F-515).
   useEffect(() => {
-    if (open !== null || !returnFocus.current) return;
+    if (open !== null || saving || !returnFocus.current) return;
     document.getElementById(returnFocus.current)?.focus();
     returnFocus.current = null;
-  }, [open]);
+  }, [open, saving]);
   const close = (focusId: string) => {
     returnFocus.current = focusId;
     setOpen(null);
