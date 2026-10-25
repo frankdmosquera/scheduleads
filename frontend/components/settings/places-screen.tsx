@@ -47,6 +47,14 @@ function PlacesList({ settings }: { settings: PlacesSettingsType }) {
         settings.placeServices.map(({ placeId, serviceIds }) => [placeId, serviceIds])
       )
   );
+  // The services that need a place, as its row says them.
+  const neededBy = (placeId: string) => {
+    const ids = needs.get(placeId) ?? [];
+    const names = settings.services
+      .filter((service) => ids.includes(service.id))
+      .map((service) => `${service.name}${service.active ? "" : peopleWords.hiddenService}`);
+    return names.length ? placesWords.neededBy(names) : placesWords.neededByNone;
+  };
   const [open, setOpen] = useState<string | "new" | null>(null); // which form is open
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   // Stays until the next save or the page is left, so the owner can call each customer.
@@ -149,6 +157,7 @@ function PlacesList({ settings }: { settings: PlacesSettingsType }) {
               >
                 {place.active ? peopleWords.on : peopleWords.off}
               </span>
+              <span className="text-sm text-muted-foreground">{neededBy(place.id)}</span>
               {settings.canEdit ? (
                 <Button
                   id={changeButtonId(place.id)}

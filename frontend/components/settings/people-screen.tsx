@@ -74,6 +74,24 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   );
   const hoursSaved = (personId: string, saved: PersonHoursType) =>
     setHours((map) => new Map(map).set(personId, saved));
+  // Their bookable hours: on their card for whoever may change them, under their row read-only for
+  // the rest. An off person has none to change until they are on.
+  const hoursCardOf = (resource: ResourceSettingsType) =>
+    !resource.active ? null : settings.businessWeek && settings.timezone ? (
+      <PersonHoursCard
+        person={{
+          id: resource.id,
+          name: resource.name,
+          ...(hours.get(resource.id) ?? { weeklyHours: null, dateHours: [] }),
+        }}
+        businessWeek={settings.businessWeek}
+        timezone={settings.timezone}
+        canEdit={settings.canEdit}
+        onSaved={(saved) => hoursSaved(resource.id, saved)}
+      />
+    ) : (
+      <p className="text-sm text-muted-foreground">{hoursWords.setBusinessHoursFirst}</p>
+    );
   // The live services a person is on for, as customers see them.
   const bookedFor = (resource: ResourceSettingsType) => {
     const onFor = resource.active ? (skills.get(resource.id)?.onFor ?? []) : [];
@@ -193,54 +211,39 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                   onSaved={(texts) => textsSaved(resource.id, texts)}
                 />
               </ChangeResourceForm>
-              {/* Their bookable hours: an off person has none to change until they are on. */}
-              {!resource.active ? null : settings.businessWeek && settings.timezone ? (
-                <PersonHoursCard
-                  person={{
-                    id: resource.id,
-                    name: resource.name,
-                    ...(hours.get(resource.id) ?? { weeklyHours: null, dateHours: [] }),
-                  }}
-                  businessWeek={settings.businessWeek}
-                  timezone={settings.timezone}
-                  canEdit={settings.canEdit}
-                  onSaved={(saved) => hoursSaved(resource.id, saved)}
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground">{hoursWords.setBusinessHoursFirst}</p>
-              )}
+              {hoursCardOf(resource)}
             </li>
           ) : (
-            <li
-              key={resource.id}
-              className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-card px-4 py-3 md:px-6"
-            >
-              <span className="font-medium text-foreground">{resource.name}</span>
-              <span
-                className={
-                  resource.active
-                    ? "rounded-md bg-[var(--accent-soft)] px-2 py-0.5 text-xs font-medium text-primary"
-                    : "rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
-                }
-              >
-                {resource.active ? peopleWords.on : peopleWords.off}
-              </span>
-              <span className="text-sm text-muted-foreground">{bookedFor(resource)}</span>
-              {textsCanGo(workerTexts.get(resource.id), settings.textsSetUp) ? (
-                <span className="text-xs text-muted-foreground">{peopleWords.getsTexts}</span>
-              ) : null}
-              {settings.canEdit ? (
-                <Button
-                  id={changeButtonId(resource.id)}
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto"
-                  aria-label={peopleWords.changeOf(resource.name)}
-                  onClick={() => openForm(resource.id)}
+            <li key={resource.id} className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-card px-4 py-3 md:px-6">
+                <span className="font-medium text-foreground">{resource.name}</span>
+                <span
+                  className={
+                    resource.active
+                      ? "rounded-md bg-[var(--accent-soft)] px-2 py-0.5 text-xs font-medium text-primary"
+                      : "rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                  }
                 >
-                  {peopleWords.change}
-                </Button>
-              ) : null}
+                  {resource.active ? peopleWords.on : peopleWords.off}
+                </span>
+                <span className="text-sm text-muted-foreground">{bookedFor(resource)}</span>
+                {textsCanGo(workerTexts.get(resource.id), settings.textsSetUp) ? (
+                  <span className="text-xs text-muted-foreground">{peopleWords.getsTexts}</span>
+                ) : null}
+                {settings.canEdit ? (
+                  <Button
+                    id={changeButtonId(resource.id)}
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto"
+                    aria-label={peopleWords.changeOf(resource.name)}
+                    onClick={() => openForm(resource.id)}
+                  >
+                    {peopleWords.change}
+                  </Button>
+                ) : null}
+              </div>
+              {settings.canEdit ? null : hoursCardOf(resource)}
             </li>
           )
         )}

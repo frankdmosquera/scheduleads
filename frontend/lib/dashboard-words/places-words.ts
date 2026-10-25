@@ -8,6 +8,8 @@ export type PlacesWordsType = {
   addButton: string;
   needsTitle(name: string): string;
   needsHint: string;
+  neededBy(services: string[]): string; // on a place's row
+  neededByNone: string;
 };
 
 export const englishPlacesWords: PlacesWordsType = {
@@ -15,6 +17,8 @@ export const englishPlacesWords: PlacesWordsType = {
   cannotChange: "Your role cannot change the places. You can see them here.",
   addButton: "+ Add a place",
   needsTitle: (name) => `Services that need ${name}`,
+  neededBy: (services) => `Needed by: ${services.join(", ")}`,
+  neededByNone: "No service needs it",
   needsHint:
     'A service ticked here is booked only while this place is free. It is the same tick as "Places it needs" on the service.',
 };
@@ -25,6 +29,8 @@ export const spanishPlacesWords: PlacesWordsType = {
   cannotChange: "Su rol no puede cambiar los lugares. Puede verlos aquí.",
   addButton: "+ Agregar un lugar",
   needsTitle: (name) => `Servicios que necesitan ${name}`,
+  neededBy: (services) => `Se usa para: ${services.join(", ")}`,
+  neededByNone: "No se usa para ningún servicio",
   needsHint:
     'Un servicio marcado aquí se reserva solo mientras este lugar está libre. Es la misma marca que "Lugares que necesita" en el servicio.',
 };
