@@ -67,6 +67,7 @@ export const PersonHoursPart = forwardRef<
           const saved = await savePersonHours(personId, values);
           if (saved.state === "ok") {
             const { weeklyHours, dateHours } = saved.answer.person;
+            form.reset({ weeklyHours, dateHours });
             onSaved({ weeklyHours, dateHours }, saved.answer.outsideHours);
             return;
           }

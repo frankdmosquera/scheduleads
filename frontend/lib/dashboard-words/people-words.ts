@@ -146,7 +146,7 @@ export const spanishPeopleWords: PeopleWordsType = {
   bookableHours: "Horario para reservar",
   outsideHoursOf: (name) => `Reservas que ahora quedan fuera del horario de ${name}`,
   nowOutsideHours: (count) =>
-    ` ${count === 1 ? "Una reserva queda" : `${count} reservas quedan`} fuera de su horario; se muestran abajo.`,
+    ` ${count === 1 ? "Una reserva queda fuera de su horario; se muestra abajo." : `${count} reservas quedan fuera de su horario; se muestran abajo.`}`,
   name: "Nombre",
   addTitle: (kind) => (kind === "person" ? "Agregar una persona" : "Agregar un lugar"),
   adding: "Agregando…",

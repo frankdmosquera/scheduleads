@@ -150,9 +150,31 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   // its turn; the card itself (name, email, on or off) saves last.
   const beforeSave = async () =>
     ((await hoursPart.current?.check()) ?? true) &&
+    (textsPart.current?.check() ?? true) &&
     ((await skillsPart.current?.save()) ?? true) &&
     ((await textsPart.current?.save()) ?? true) &&
     ((await hoursPart.current?.save()) ?? true);
+
+  // Cancel after a refusal: the parts saved before it stay saved, so the page still lists the
+  // bookings their new hours left outside and says which services nobody offers now.
+  const cancelled = (resource: ResourceSettingsType) => {
+    close(changeButtonId(resource.id));
+    const outside = nowOutside.current;
+    const left = nobodyOn.current;
+    nowOutside.current = [];
+    nobodyOn.current = [];
+    const timezone = settings.timezone;
+    if (outside.length && timezone) {
+      setHeld([
+        { title: peopleWords.outsideHoursOf(resource.name), list: { bookings: outside, timezone } },
+      ]);
+    }
+    const said = [
+      outside.length ? peopleWords.nowOutsideHours(outside.length).trim() : "",
+      left.length ? peopleWords.nobodyOffers(left) : "",
+    ].filter(Boolean);
+    if (said.length) setNotice({ tone: "info", text: said.join(" ") });
+  };
 
   const saved = (resource: ResourceSettingsType, upcoming: ListedBookingsType["bookings"]) => {
     setPeople((list) =>
@@ -221,7 +243,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                 senderDomain={settings.senderDomain}
                 canEdit={settings.canEdit}
                 onSaved={(answer) => saved(answer.resource, answer.upcomingBookings)}
-                onCancel={() => close(changeButtonId(resource.id))}
+                onCancel={() => cancelled(resource)}
                 beforeSave={beforeSave}
               >
                 <PersonSkillsPart
