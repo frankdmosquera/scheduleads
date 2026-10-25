@@ -27,6 +27,7 @@ import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
 export type OwnHoursPartHandleType = {
   check: () => Promise<boolean>; // false when the form shows a mistake, marked and focused
   save: () => Promise<boolean>; // true when saved, or nothing changed; false when refused
+  edited: () => boolean; // changed since it opened or last saved
 };
 
 export type SavedOwnHoursType = PersonHoursType & { outsideHours: ListedBookingsType["bookings"] };
@@ -59,6 +60,7 @@ export const OwnHoursPart = forwardRef<
     );
 
   useImperativeHandle(ref, () => ({
+    edited: () => edited,
     async check() {
       if (!edited) return true;
       const valid = await form.trigger();

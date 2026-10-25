@@ -12,6 +12,7 @@ export type ServicesWordsType = {
   savedHidden(service: string): string;
   heldTitle(service: string): string;
   savedButHoursNot(service: string): string;
+  savedButTicksAndHoursNot(service: string): string;
   nowOutsideItsHours(count: number): string; // follows a saved message, with its own leading space
   heldOutsideTitle(service: string): string;
   noServicesYet: string;
@@ -75,6 +76,8 @@ export const englishServicesWords: ServicesWordsType = {
   savedHidden: (service) => `Saved. ${service} is hidden; bookings already made stay.`,
   heldTitle: (service) => `${service}: bookings that no longer fit`,
   savedButHoursNot: (service) => `Saved, but when ${service} runs was not.`,
+  savedButTicksAndHoursNot: (service) =>
+    `Saved, but who does ${service} and when it runs were not.`,
   nowOutsideItsHours: (count) =>
     ` ${count === 1 ? "One booking now sits" : `${count} bookings now sit`} outside its hours; still booked, listed below.`,
   heldOutsideTitle: (service) => `${service}: bookings now outside its hours`,
@@ -139,6 +142,8 @@ export const spanishServicesWords: ServicesWordsType = {
     `Guardado. ${service} está oculto; las reservas ya hechas se mantienen.`,
   heldTitle: (service) => `${service}: reservas que ya no caben`,
   savedButHoursNot: (service) => `Guardado, pero no se guardó cuándo se ofrece ${service}.`,
+  savedButTicksAndHoursNot: (service) =>
+    `Guardado, pero no se guardó quién hace ${service} ni cuándo se ofrece.`,
   nowOutsideItsHours: (count) =>
     ` ${count === 1 ? "Una reserva queda" : `${count} reservas quedan`} fuera de su horario; siguen reservadas, en la lista de abajo.`,
   heldOutsideTitle: (service) => `${service}: reservas ahora fuera de su horario`,

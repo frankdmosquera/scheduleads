@@ -94,7 +94,7 @@ function MinutesField({
 type TicksType = { peopleIds: string[]; placeIds: string[] };
 // How a save ended: what of the card was not saved, if anything, and the bookings to call about.
 export type ServiceSaveOutcomeType = {
-  unsaved: "ticks" | "hours" | null;
+  unsaved: "ticks" | "ticks-and-hours" | "hours" | null;
   noLongerFit: SavedServiceType["outsideHours"]; // at a new length
   outsideItsHours: ListedBookingsType["bookings"]; // after new hours
 };
@@ -207,7 +207,8 @@ export function ServiceForm({
     ) {
       const ticked = await saveServiceResources(savedNow.id, ticks);
       if (ticked.state !== "ok") {
-        unsaved.current = "ticks";
+        // The hours come after who does it, so edited hours were not sent either.
+        unsaved.current = hoursNow?.edited() ? "ticks-and-hours" : "ticks";
         if (ticked.state === "field") {
           setTicksError({ field: ticked.field, message: ticked.message });
           focusFirstInvalid();

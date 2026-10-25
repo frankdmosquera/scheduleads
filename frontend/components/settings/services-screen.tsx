@@ -63,19 +63,21 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
     document.getElementById(returnFocus.current)?.focus();
     returnFocus.current = null;
   }, [open]);
-  const close = (focusId: string) => {
+  // A Save that ends after another card was opened leaves that card open (F-512).
+  const close = (focusId: string, card?: string) => {
     returnFocus.current = focusId;
-    setOpen(null);
+    setOpen((now) => (card === undefined || now === card ? null : now));
   };
 
   const saved = (
+    card: string, // the card that saved: the service's id, or "new"
     service: ServiceSettingsType,
     { unsaved, noLongerFit, outsideItsHours }: ServiceSaveOutcomeType
   ) => {
     setServices((list) =>
       [...list.filter((existing) => existing.id !== service.id), service].sort(byName)
     );
-    close(changeButtonId(service.id));
+    close(changeButtonId(service.id), card);
     // Bookings carry the business's zone; a business with none yet has no bookings to list.
     const timezone = settings.timezone;
     setHeld(
@@ -92,10 +94,11 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
       (noLongerFit.length ? servicesWords.noLongerFit(noLongerFit.length) : "") +
       (outsideItsHours.length ? servicesWords.nowOutsideItsHours(outsideItsHours.length) : "");
     if (unsaved) {
-      const notSaved =
-        unsaved === "ticks"
-          ? servicesWords.savedButTicksNot(service.name)
-          : servicesWords.savedButHoursNot(service.name);
+      const notSaved = {
+        ticks: servicesWords.savedButTicksNot,
+        "ticks-and-hours": servicesWords.savedButTicksAndHoursNot,
+        hours: servicesWords.savedButHoursNot,
+      }[unsaved](service.name);
       setNotice({ tone: "error", text: notSaved + listed });
       return;
     }
@@ -134,7 +137,7 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
           hours={null}
           businessWeek={settings.businessWeek}
           onHoursSaved={() => {}}
-          onSaved={saved}
+          onSaved={(service, outcome) => saved("new", service, outcome)}
           onCancel={() => close(ADD_BUTTON_ID)}
         />
       ) : (
@@ -162,7 +165,7 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
                   hours={hasHours ? (hoursOf.get(service.id) ?? NO_OWN_HOURS) : null}
                   businessWeek={settings.businessWeek}
                   onHoursSaved={(hours) => setHoursOf((map) => new Map(map).set(service.id, hours))}
-                  onSaved={saved}
+                  onSaved={(savedService, outcome) => saved(service.id, savedService, outcome)}
                   onCancel={() => close(changeButtonId(service.id))}
                   canEdit={settings.canEdit}
                 />
