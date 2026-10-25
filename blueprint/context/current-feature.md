@@ -26,7 +26,9 @@ side, a person's hours sat on another page, and people and places shared one pag
 ## In scope
 
 - **Skills on the person.** A person's card on People lists every service with a tick: "Can do".
-  Saving replaces that person's skills. A place has no skills.
+  Saving replaces that person's skills. A newly ticked skill also switches them on for that
+  service, so hiring someone is one tick; the service's page switches them off (Frank, 2026-10-25,
+  after the 12k.1 review). A place has no skills.
 - **The switch on the service.** A service's "Who does it" lists only the people who can do it,
   each with On / Off ("offering it now"). A person without the skill is not listed; a line says
   how to give it ("Tick it on their card on People"). Places it needs are unchanged.
