@@ -41,7 +41,6 @@ export type HoursWordsType = {
   noticeUnit: string;
   noticeUnits: { minutes: string; hours: string; days: string };
   // A person's row
-  savedPersonHours(name: string, outsideCount: number): string;
   notSaved: string;
   personWeek(name: string): string;
   followsBusinessWeek: string;
@@ -51,7 +50,6 @@ export type HoursWordsType = {
   oneOffDateCount(count: number): string;
   bookingsOutside(count: number): string;
   personOneOffDates(name: string): string;
-  savePersonHours(name: string): string;
   // The bookings a save lists
   stillBookedCallThem: string;
   serviceWith(service: string, person: string): string;
@@ -113,12 +111,6 @@ export const englishHoursWords: HoursWordsType = {
   leastNotice: "Least notice you accept",
   noticeUnit: "Notice unit",
   noticeUnits: { minutes: "minutes", hours: "hours", days: "days" },
-  savedPersonHours: (name, count) =>
-    `Saved. ${name} can be booked on these hours now.${
-      count
-        ? ` ${count === 1 ? "One booking now sits" : `${count} bookings now sit`} outside them, listed below.`
-        : ""
-    }`,
   notSaved: "Not saved",
   personWeek: (name) => `${name}'s week`,
   followsBusinessWeek: "Bookable whenever the business is open",
@@ -128,7 +120,6 @@ export const englishHoursWords: HoursWordsType = {
   oneOffDateCount: (count) => (count === 1 ? "1 one-off date" : `${count} one-off dates`),
   bookingsOutside: (count) => (count === 1 ? "1 booking outside" : `${count} bookings outside`),
   personOneOffDates: (name) => `Days that are different for ${name}`,
-  savePersonHours: (name) => `Save ${name}'s hours`,
   stillBookedCallThem: "Still booked. Open a booking to call the customer.",
   serviceWith: (service, person) => `${service} with ${person}`,
 };
@@ -189,12 +180,6 @@ export const spanishHoursWords: HoursWordsType = {
   leastNotice: "Aviso mínimo que acepta",
   noticeUnit: "Unidad del aviso",
   noticeUnits: { minutes: "minutos", hours: "horas", days: "días" },
-  savedPersonHours: (name, count) =>
-    `Guardado. Ya se puede reservar con ${name} en este horario.${
-      count
-        ? ` ${count === 1 ? "Una reserva queda" : `${count} reservas quedan`} fuera de él; se muestran abajo.`
-        : ""
-    }`,
   notSaved: "Sin guardar",
   personWeek: (name) => `Semana de ${name}`,
   followsBusinessWeek: "Reservable siempre que el negocio está abierto",
@@ -204,7 +189,6 @@ export const spanishHoursWords: HoursWordsType = {
   oneOffDateCount: (count) => (count === 1 ? "1 fecha especial" : `${count} fechas especiales`),
   bookingsOutside: (count) => (count === 1 ? "1 reserva fuera" : `${count} reservas fuera`),
   personOneOffDates: (name) => `Días distintos para ${name}`,
-  savePersonHours: (name) => `Guardar el horario de ${name}`,
   stillBookedCallThem: "Siguen reservadas. Abra una reserva para llamar al cliente.",
   serviceWith: (service, person) => `${service} con ${person}`,
 };

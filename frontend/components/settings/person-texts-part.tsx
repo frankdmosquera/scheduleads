@@ -34,6 +34,7 @@ export const textsCanGo = (texts: WorkerTextsType | null | undefined, textsSetUp
   textsSetUp && !!texts && (texts.addedOn || texts.movedOn || texts.removedOn);
 
 export type PersonTextsPartHandleType = {
+  check: () => boolean; // false when something is missing, marked and focused
   save: () => Promise<boolean>; // true when saved, or nothing changed; false when refused
 };
 
@@ -74,21 +75,24 @@ export const PersonTextsPart = forwardRef<
     (!on ||
       (phone === texts?.phone && SWITCHES.every(({ name }) => choices[name] === texts?.[name])));
 
+  // Everything missing is marked at once, before anything is sent.
+  const check = () => {
+    if (unchanged || !on) return true;
+    const missing: Record<string, string> = {};
+    if (!phone.trim()) missing.phone = peopleWords.enterTheirPhone;
+    for (const { name } of SWITCHES)
+      if (choices[name] === undefined) missing[name] = peopleWords.pickYesOrNo;
+    if (!Object.keys(missing).length) return true;
+    setErrors(missing);
+    setFocusRequest((count) => count + 1);
+    return false;
+  };
+
   useImperativeHandle(ref, () => ({
+    check,
     async save() {
       if (unchanged) return true;
-      // Everything missing is marked at once, before anything is sent.
-      if (on) {
-        const missing: Record<string, string> = {};
-        if (!phone.trim()) missing.phone = peopleWords.enterTheirPhone;
-        for (const { name } of SWITCHES)
-          if (choices[name] === undefined) missing[name] = peopleWords.pickYesOrNo;
-        if (Object.keys(missing).length) {
-          setErrors(missing);
-          setFocusRequest((count) => count + 1);
-          return false;
-        }
-      }
+      if (!check()) return false;
       const saved = await saveWorkerTexts(personId, {
         texts: on ? ({ phone, ...choices } as WorkerTextsType) : null,
       });

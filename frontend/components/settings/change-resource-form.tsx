@@ -1,7 +1,8 @@
 // Frontend component: the form that renames a person or place, or turns one off or on, on the People
 // page (feature 12d). Off never touches a booking; the page lists the ones they still hold. A person
-// also has an optional work email at the business's own domain, and their texts below, saved by the
-// same Save.
+// also has an optional work email at the business's own domain, and the parts of their card below
+// (what they can do, their hours, their texts), saved by the same Save. A login that may not change
+// the business sees it read-only, with Close.
 
 "use client";
 
@@ -30,6 +31,7 @@ export function ChangeResourceForm({
   onSaved,
   onCancel,
   beforeSave,
+  canEdit = true,
   children,
 }: {
   resource: ResourceSettingsType;
@@ -39,10 +41,13 @@ export function ChangeResourceForm({
   // A part of the card saved by the same Save, first: false when it was refused, and nothing more
   // is saved, so the card stays open on its errors.
   beforeSave?: () => Promise<boolean>;
+  // false: a login that may not change the business sees the card read-only, with Close.
+  canEdit?: boolean;
   children?: ReactNode;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const nameRef = useRef<HTMLInputElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const focusFirstInvalid = useFocusFirstInvalid(formRef);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   const { peopleWords } = useDashboardWords().words;
@@ -56,7 +61,8 @@ export function ChangeResourceForm({
   });
   const idBase = `resource-${resource.id}`;
 
-  useEffect(() => nameRef.current?.focus(), []); // the form opens where the owner will type
+  // The form opens where the owner will type; read-only, on its Close.
+  useEffect(() => (canEdit ? nameRef.current : closeRef.current)?.focus(), [canEdit]);
 
   async function save(values: SaveResourceType) {
     if (beforeSave && !(await beforeSave())) return;
@@ -89,80 +95,86 @@ export function ChangeResourceForm({
       className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-md)] md:p-6"
     >
       <h3 id={`${idBase}-title`} className="text-base font-semibold tracking-tight text-foreground">
-        {peopleWords.changeTitle(resource.name, kind)}
+        {canEdit
+          ? peopleWords.changeTitle(resource.name, kind)
+          : peopleWords.seeTitle(resource.name, kind)}
       </h3>
-      <div className="flex flex-col gap-1.5 sm:max-w-sm">
-        <Label htmlFor={`${idBase}-name`}>{peopleWords.name}</Label>
-        <Input
-          id={`${idBase}-name`}
-          {...nameField}
-          ref={(element) => {
-            nameFieldRef(element);
-            nameRef.current = element;
-          }}
-          aria-invalid={nameError ? true : undefined}
-          aria-describedby={nameError ? `${idBase}-name-error` : undefined}
-          className="h-10 bg-muted px-3"
-        />
-        {nameError ? (
-          <p id={`${idBase}-name-error`} className="text-xs text-destructive">
-            {nameError}
-          </p>
-        ) : null}
-      </div>
-      {resource.kind === "person" ? (
+      <fieldset disabled={!canEdit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5 sm:max-w-sm">
-          <Label htmlFor={`${idBase}-work-email`}>{peopleWords.workEmail}</Label>
+          <Label htmlFor={`${idBase}-name`}>{peopleWords.name}</Label>
           <Input
-            id={`${idBase}-work-email`}
-            type="email"
-            disabled={!senderDomain}
-            {...form.register("workEmail", { onChange: () => setNotice(null) })}
-            aria-invalid={workEmailError ? true : undefined}
-            aria-describedby={
-              workEmailError ? `${idBase}-work-email-error` : `${idBase}-work-email-hint`
-            }
+            id={`${idBase}-name`}
+            {...nameField}
+            ref={(element) => {
+              nameFieldRef(element);
+              nameRef.current = element;
+            }}
+            aria-invalid={nameError ? true : undefined}
+            aria-describedby={nameError ? `${idBase}-name-error` : undefined}
             className="h-10 bg-muted px-3"
           />
-          {workEmailError ? (
-            <p id={`${idBase}-work-email-error`} className="text-xs text-destructive">
-              {workEmailError}
+          {nameError ? (
+            <p id={`${idBase}-name-error`} className="text-xs text-destructive">
+              {nameError}
             </p>
-          ) : (
-            <p id={`${idBase}-work-email-hint`} className="text-xs text-muted-foreground">
-              {senderDomain
-                ? peopleWords.workEmailHint(senderDomain)
-                : peopleWords.noSendingAddress}
-            </p>
-          )}
+          ) : null}
         </div>
-      ) : null}
-      <Controller
-        name="active"
-        control={form.control}
-        render={({ field }) => (
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={field.value}
-              onChange={(event) => {
-                setNotice(null);
-                field.onChange(event.target.checked);
-              }}
-              className="size-4 accent-[var(--primary)]"
+        {resource.kind === "person" ? (
+          <div className="flex flex-col gap-1.5 sm:max-w-sm">
+            <Label htmlFor={`${idBase}-work-email`}>{peopleWords.workEmail}</Label>
+            <Input
+              id={`${idBase}-work-email`}
+              type="email"
+              disabled={!senderDomain}
+              {...form.register("workEmail", { onChange: () => setNotice(null) })}
+              aria-invalid={workEmailError ? true : undefined}
+              aria-describedby={
+                workEmailError ? `${idBase}-work-email-error` : `${idBase}-work-email-hint`
+              }
+              className="h-10 bg-muted px-3"
             />
-            {peopleWords.onOffLine}
-          </label>
-        )}
-      />
-      {children}
+            {workEmailError ? (
+              <p id={`${idBase}-work-email-error`} className="text-xs text-destructive">
+                {workEmailError}
+              </p>
+            ) : (
+              <p id={`${idBase}-work-email-hint`} className="text-xs text-muted-foreground">
+                {senderDomain
+                  ? peopleWords.workEmailHint(senderDomain)
+                  : peopleWords.noSendingAddress}
+              </p>
+            )}
+          </div>
+        ) : null}
+        <Controller
+          name="active"
+          control={form.control}
+          render={({ field }) => (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={field.value}
+                onChange={(event) => {
+                  setNotice(null);
+                  field.onChange(event.target.checked);
+                }}
+                className="size-4 accent-[var(--primary)]"
+              />
+              {peopleWords.onOffLine}
+            </label>
+          )}
+        />
+        {children}
+      </fieldset>
       <SaveNotice notice={notice} />
       <div className="flex gap-2">
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? peopleWords.saving : peopleWords.save}
-        </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          {peopleWords.cancel}
+        {canEdit ? (
+          <Button type="submit" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? peopleWords.saving : peopleWords.save}
+          </Button>
+        ) : null}
+        <Button ref={closeRef} type="button" variant="outline" onClick={onCancel}>
+          {canEdit ? peopleWords.cancel : peopleWords.close}
         </Button>
       </div>
     </form>

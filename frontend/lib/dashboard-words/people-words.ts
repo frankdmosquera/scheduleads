@@ -16,7 +16,13 @@ export type PeopleWordsType = {
   getsTexts: string;
   changeOf(name: string): string;
   change: string;
+  seeOf(name: string): string; // for a login that may only look
+  see: string;
   cancel: string;
+  close: string;
+  bookableHours: string; // their hours, a part of their card
+  outsideHoursOf(name: string): string;
+  nowOutsideHours(count: number): string; // follows a saved message, with its own leading space
   name: string;
   // Adding one
   addTitle(kind: "person" | "place"): string;
@@ -24,6 +30,7 @@ export type PeopleWordsType = {
   add: string;
   // Changing one
   changeTitle(name: string, kind: "person" | "place"): string;
+  seeTitle(name: string, kind: "person" | "place"): string;
   workEmail: string;
   workEmailHint(domain: string): string;
   noSendingAddress: string;
@@ -68,12 +75,20 @@ export const englishPeopleWords: PeopleWordsType = {
   getsTexts: "Gets texts",
   changeOf: (name) => `Change ${name}`,
   change: "Change",
+  seeOf: (name) => `See ${name}`,
+  see: "See",
   cancel: "Cancel",
+  close: "Close",
+  bookableHours: "Bookable hours",
+  outsideHoursOf: (name) => `Bookings now outside ${name}'s hours`,
+  nowOutsideHours: (count) =>
+    ` ${count === 1 ? "One booking now sits" : `${count} bookings now sit`} outside their hours, listed below.`,
   name: "Name",
   addTitle: (kind) => (kind === "person" ? "Add a person" : "Add a place"),
   adding: "Adding…",
   add: "Add",
   changeTitle: (name, kind) => `Change ${name}, a ${kind}`,
+  seeTitle: (name, kind) => `${name}, a ${kind}`,
   workEmail: "Work email (optional)",
   workEmailHint: (domain) =>
     `At ${domain}. Customers' replies reach them, and they get their own email for each new booking.`,
@@ -124,12 +139,20 @@ export const spanishPeopleWords: PeopleWordsType = {
   getsTexts: "Recibe mensajes",
   changeOf: (name) => `Cambiar ${name}`,
   change: "Cambiar",
+  seeOf: (name) => `Ver ${name}`,
+  see: "Ver",
   cancel: "Cancelar",
+  close: "Cerrar",
+  bookableHours: "Horario para reservar",
+  outsideHoursOf: (name) => `Reservas que ahora quedan fuera del horario de ${name}`,
+  nowOutsideHours: (count) =>
+    ` ${count === 1 ? "Una reserva queda fuera de su horario; se muestra abajo." : `${count} reservas quedan fuera de su horario; se muestran abajo.`}`,
   name: "Nombre",
   addTitle: (kind) => (kind === "person" ? "Agregar una persona" : "Agregar un lugar"),
   adding: "Agregando…",
   add: "Agregar",
   changeTitle: (name, kind) => `Cambiar ${name}, ${kind === "person" ? "una persona" : "un lugar"}`,
+  seeTitle: (name, kind) => `${name}, ${kind === "person" ? "una persona" : "un lugar"}`,
   workEmail: "Correo de trabajo (opcional)",
   workEmailHint: (domain) =>
     `En ${domain}. Le llegan las respuestas de los clientes y recibe su propio correo por cada reserva nueva.`,
