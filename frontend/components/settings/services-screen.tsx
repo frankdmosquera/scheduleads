@@ -53,6 +53,8 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
       )
   );
   const [open, setOpen] = useState<string | "new" | null>(null); // which form is open
+  // While a card saves, no other opens: its answer, a refusal included, is always seen (F-514).
+  const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   // Stays until the next save or the page is left, so the owner can call each customer.
   const [held, setHeld] = useState<{ title: string; list: ListedBookingsType }[]>([]);
@@ -139,10 +141,16 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
           onHoursSaved={() => {}}
           onSaved={(service, outcome) => saved("new", service, outcome)}
           onCancel={() => close(ADD_BUTTON_ID)}
+          onSavingChange={setSaving}
         />
       ) : (
         <div>
-          <Button id={ADD_BUTTON_ID} variant="outline" onClick={() => openForm("new")}>
+          <Button
+            id={ADD_BUTTON_ID}
+            variant="outline"
+            disabled={saving}
+            onClick={() => openForm("new")}
+          >
             {servicesWords.addAService}
           </Button>
         </div>
@@ -168,6 +176,7 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
                   onSaved={(savedService, outcome) => saved(service.id, savedService, outcome)}
                   onCancel={() => close(changeButtonId(service.id))}
                   canEdit={settings.canEdit}
+                  onSavingChange={setSaving}
                 />
               </li>
             ) : (
@@ -191,6 +200,7 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
                     variant="ghost"
                     size="sm"
                     className="ml-auto"
+                    disabled={saving}
                     aria-label={
                       settings.canEdit
                         ? servicesWords.changeService(service.name)

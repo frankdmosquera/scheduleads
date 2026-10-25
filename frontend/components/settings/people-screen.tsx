@@ -61,6 +61,8 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   const skillsPart = useRef<PersonSkillsPartHandleType>(null); // the open card's parts
   const textsPart = useRef<PersonTextsPartHandleType>(null);
   const hoursPart = useRef<OwnHoursPartHandleType>(null);
+  // While a card saves, no other opens: its answer, a refusal included, is always seen (F-511).
+  const [saving, setSaving] = useState(false);
   const [skills, setSkills] = useState(
     () =>
       new Map<string, PersonSkillsType>(
@@ -226,10 +228,16 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
           kind="person"
           onSaved={(added) => saved(added, [])}
           onCancel={() => close(ADD_BUTTON_ID)}
+          onSavingChange={setSaving}
         />
       ) : (
         <div>
-          <Button id={ADD_BUTTON_ID} variant="outline" onClick={() => openForm("new")}>
+          <Button
+            id={ADD_BUTTON_ID}
+            variant="outline"
+            disabled={saving}
+            onClick={() => openForm("new")}
+          >
             {peopleWords.addButton}
           </Button>
         </div>
@@ -253,6 +261,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                 onSaved={(answer) => saved(answer.resource, answer.upcomingBookings)}
                 onCancel={() => cancelled(resource)}
                 beforeSave={beforeSave}
+                onSavingChange={setSaving}
               >
                 <PersonSkillsPart
                   ref={skillsPart}
@@ -325,6 +334,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                 variant="ghost"
                 size="sm"
                 className="ml-auto"
+                disabled={saving}
                 aria-label={
                   settings.canEdit
                     ? peopleWords.changeOf(resource.name)

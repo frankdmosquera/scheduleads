@@ -33,6 +33,7 @@ import { saveService, type SavedServiceType } from "@/lib/api-client/settings/sa
 import { saveServiceHours } from "@/lib/api-client/settings/save-service-hours";
 import { saveServiceResources } from "@/lib/api-client/settings/save-service-resources";
 import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
+import { useReportSaving } from "@/lib/use-report-saving";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 const NEW_SERVICE: DefaultValues<ServiceInputType> = {
@@ -124,6 +125,7 @@ export function ServiceForm({
   onSaved,
   onCancel,
   canEdit = true,
+  onSavingChange,
 }: {
   service: ServiceSettingsType | null; // null: a new one
   people: ServicesSettingsType["people"]; // every person and place, to tick
@@ -135,6 +137,7 @@ export function ServiceForm({
   onCancel: () => void;
   // false: a login that may not change the business sees the card read-only, with Close.
   canEdit?: boolean;
+  onSavingChange?: (saving: boolean) => void; // while true, the page opens no other card
 }) {
   const { words } = useDashboardWords();
   const servicesWords = words.servicesWords;
@@ -170,6 +173,7 @@ export function ServiceForm({
 
   // The form opens where the owner will type; read-only, on its Close.
   useEffect(() => (canEdit ? nameRef.current : closeRef.current)?.focus(), [canEdit]);
+  useReportSaving(form.formState.isSubmitting, onSavingChange);
 
   // The failed message clears on the next edit.
   const edited =
