@@ -11,6 +11,7 @@ import {
   applyBookableHoursRules,
   type ResolvedBookableHoursType,
 } from "./apply-bookable-hours-rules.js";
+import { ALL_DAY_WEEK } from "./all-day-week.js";
 import { businessHoursInputOf } from "./business-hours-input-of.js";
 
 export async function resolveServiceHours(
@@ -39,5 +40,12 @@ export async function resolveServiceHours(
     .limit(1);
   if (!businessRow) return null;
 
-  return applyBookableHoursRules(businessHoursInputOf(businessRow), row, now);
+  // Whenever open narrows nothing on an ordinary day, as with no row; only its own one-off dates do,
+  // never the business's (they already reach whoever follows the business's week).
+  const week = row.weeklyHours ?? ALL_DAY_WEEK;
+  return applyBookableHoursRules(
+    businessHoursInputOf(businessRow),
+    { weeklyHours: week, dateHours: row.dateHours },
+    now
+  );
 }

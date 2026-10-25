@@ -1091,6 +1091,109 @@ describe("when a service runs (feature 12k)", () => {
       await db.$count(serviceHours, eq(serviceHours.organizationId, summit.organizationId))
     ).toBe(0);
   });
+
+  test("whenever open narrows nothing on an ordinary day, a one-off date saved or not", async () => {
+    // Rosa keeps her own Saturday, 10:00 to 2:00, though the business is open only Mon and Tue.
+    const saved = (await (
+      await post("/settings/services", booked.email, { ...cabinet, name: "Gloss" })
+    ).json()) as SavedServiceType;
+    const serviceId = saved.service.id;
+    const rosa = (await (
+      await post("/settings/people", booked.email, { name: "Rosa", kind: "person" })
+    ).json()) as SavedResourceType;
+    await put(`/settings/people/${rosa.resource.id}/skills`, booked.email, {
+      serviceIds: [serviceId],
+    });
+    await put(`/settings/hours/people/${rosa.resource.id}`, booked.email, {
+      weeklyHours: { sat: [{ startMinute: 600, endMinute: 840 }] },
+      dateHours: [],
+    });
+    let saturday = addDays(tuesday, 1);
+    while (new Date(`${saturday}T12:00:00Z`).getUTCDay() !== 6) saturday = addDays(saturday, 1);
+    const saturdayTimes = async () =>
+      (
+        await findFreeTimes({
+          organizationId: booked.organizationId,
+          bookingLinkId: serviceId,
+          personId: null,
+          fromDate: saturday,
+          toDate: saturday,
+          now: new Date(),
+        })
+      )?.startTimes ?? [];
+    const before = await saturdayTimes();
+    expect(before.length).toBeGreaterThan(0);
+
+    // Whenever open, with a one-off date on the Tuesday: her Saturday is untouched.
+    const hoursPath = `/settings/services/${serviceId}/hours`;
+    const oneOff = { date: tuesday, windows: [{ startMinute: 540, endMinute: 600 }] };
+    const withDate = await put(hoursPath, booked.email, { weeklyHours: null, dateHours: [oneOff] });
+    expect(((await withDate.json()) as SavedServiceHoursType).outsideHours).toEqual([]);
+    expect(await saturdayTimes()).toEqual(before);
+
+    // Lee is booked with her that Saturday at 10:00; a Tuesday-only week leaves him outside.
+    const [contactId, leadId, bookingId] = [randomUUID(), randomUUID(), randomUUID()];
+    const organizationId = booked.organizationId;
+    await db.insert(contact).values({ id: contactId, organizationId, name: "Lee" });
+    await db
+      .insert(lead)
+      .values({ id: leadId, organizationId, contactId, stageId: bookedStageId, source: "widget" });
+    const saturdayAt = (minute: number) => localTimeToMoment(saturday, minute, "America/Edmonton")!;
+    await db.insert(booking).values({
+      id: bookingId,
+      organizationId,
+      leadId,
+      bookingLinkId: serviceId,
+      personId: rosa.resource.id,
+      startsAt: saturdayAt(600),
+      endsAt: saturdayAt(660),
+      status: "confirmed",
+    });
+    const tuesdays = await put(hoursPath, booked.email, {
+      weeklyHours: { tue: [{ startMinute: 540, endMinute: 1020 }] },
+      dateHours: [],
+    });
+    const listed = ((await tuesdays.json()) as SavedServiceHoursType).outsideHours;
+    expect(listed.map((row) => row.bookingId)).toEqual([bookingId]);
+    expect(await saturdayTimes()).toEqual([]);
+  });
+
+  test("a longer length lists a booking it pushes past the service's own window", async () => {
+    const saved = (await (
+      await post("/settings/services", booked.email, { ...cabinet, name: "Touch-up" })
+    ).json()) as SavedServiceType;
+    const serviceId = saved.service.id;
+    // It runs Tuesday 1:00 to 2:00; the business is open until 3:00, so only its window can refuse.
+    await put(`/settings/services/${serviceId}/hours`, booked.email, {
+      weeklyHours: { tue: [{ startMinute: 780, endMinute: 840 }] },
+      dateHours: [],
+    });
+    const [contactId, leadId, bookingId] = [randomUUID(), randomUUID(), randomUUID()];
+    const organizationId = booked.organizationId;
+    await db.insert(contact).values({ id: contactId, organizationId, name: "Noor" });
+    await db
+      .insert(lead)
+      .values({ id: leadId, organizationId, contactId, stageId: bookedStageId, source: "widget" });
+    await db.insert(booking).values({
+      id: bookingId,
+      organizationId,
+      leadId,
+      bookingLinkId: serviceId,
+      personId: booked.personId,
+      startsAt: onTuesday(780),
+      endsAt: onTuesday(780 + cabinet.durationMinutes),
+      status: "confirmed",
+    });
+    const longer = await put(`/settings/services/${serviceId}`, booked.email, {
+      ...cabinet,
+      name: "Touch-up",
+      durationMinutes: 90,
+    });
+    expect(longer.status).toBe(200);
+    const listed = ((await longer.json()) as { outsideHours: { bookingId: string }[] })
+      .outsideHours;
+    expect(listed.map((row) => row.bookingId)).toEqual([bookingId]);
+  });
 });
 
 describe("the Days off settings", () => {

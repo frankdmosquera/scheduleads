@@ -5,9 +5,14 @@
 import { and, eq, isNull } from "drizzle-orm";
 
 import { availabilityRule, bookingLink, serviceHours } from "@scheduleads-app/shared/db";
-import type { PersonHoursType } from "@scheduleads-app/shared/zod-validation";
+import type {
+  DateHoursType,
+  PersonHoursType,
+  WeeklyHoursType,
+} from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
+import { ALL_DAY_WEEK } from "../bookable-hours/all-day-week.js";
 import { businessHoursOf } from "./business-hours-of.js";
 import { findUpcomingBookings } from "./find-upcoming-bookings.js";
 import { outsideHoursOf } from "./outside-hours-of.js";
@@ -87,11 +92,22 @@ export async function saveServiceHours(
     }
 
     // Each booking is checked as the service's (personId only picks the row; its person's name
-    // still lists it). No old row: it ran whenever the business was open.
+    // still lists it). Whenever open, or no old row, narrows nothing but its own one-off dates, as
+    // the free times read it.
     const business = businessHoursOf(businessRow);
     const asTheService = upcoming.map((booking) => ({ ...booking, personId: serviceId }));
-    const before = { ...business, people: new Map(oldRow ? [[serviceId, oldRow]] : []) };
-    const after = { ...business, people: new Map([[serviceId, { weeklyHours, dateHours }]]) };
+    const window = (row: { weeklyHours: WeeklyHoursType | null; dateHours: DateHoursType }) => ({
+      weeklyHours: row.weeklyHours ?? ALL_DAY_WEEK,
+      dateHours: row.dateHours,
+    });
+    const before = {
+      ...business,
+      people: new Map([[serviceId, window(oldRow ?? { weeklyHours: null, dateHours: [] })]]),
+    };
+    const after = {
+      ...business,
+      people: new Map([[serviceId, window({ weeklyHours, dateHours })]]),
+    };
     return {
       ok: true,
       hours: { serviceId, weeklyHours, dateHours },
