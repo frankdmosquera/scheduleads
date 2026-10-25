@@ -89,7 +89,12 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
     outside: ListedBookingsType["bookings"]
   ) => {
     setHours((map) => new Map(map).set(personId, saved));
-    nowOutside.current = outside;
+    // A second save in the same card adds to the list: each lists only what it newly left outside.
+    const listed = new Set(nowOutside.current.map((booking) => booking.bookingId));
+    nowOutside.current = [
+      ...nowOutside.current,
+      ...outside.filter((booking) => !listed.has(booking.bookingId)),
+    ];
   };
   // Their hours are theirs to change only while they are on, and only once the business has its own.
   const hasHours = (resource: ResourceSettingsType) =>
@@ -140,9 +145,9 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
     setOpen(null);
   };
   const openForm = (which: string | "new") => {
-    setNotice(null);
-    nobodyOn.current = [];
-    nowOutside.current = [];
+    // A card left open after a refusal still says what its saved parts did.
+    const leaving = people.find((resource) => resource.id === open);
+    if (!leaving || !reportUnfinished(leaving)) setNotice(null);
     setOpen(which);
   };
 
@@ -155,10 +160,10 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
     ((await textsPart.current?.save()) ?? true) &&
     ((await hoursPart.current?.save()) ?? true);
 
-  // Cancel after a refusal: the parts saved before it stay saved, so the page still lists the
-  // bookings their new hours left outside and says which services nobody offers now.
-  const cancelled = (resource: ResourceSettingsType) => {
-    close(changeButtonId(resource.id));
+  // A card closed without its whole Save (Cancel, or another card opened after a refusal): the
+  // parts saved before the refusal stay saved, so the page still lists the bookings their new hours
+  // left outside and says which services nobody offers now. True when it said something.
+  const reportUnfinished = (resource: ResourceSettingsType) => {
     const outside = nowOutside.current;
     const left = nobodyOn.current;
     nowOutside.current = [];
@@ -174,6 +179,11 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
       left.length ? peopleWords.nobodyOffers(left) : "",
     ].filter(Boolean);
     if (said.length) setNotice({ tone: "info", text: said.join(" ") });
+    return said.length > 0;
+  };
+  const cancelled = (resource: ResourceSettingsType) => {
+    close(changeButtonId(resource.id));
+    reportUnfinished(resource);
   };
 
   const saved = (resource: ResourceSettingsType, upcoming: ListedBookingsType["bookings"]) => {
