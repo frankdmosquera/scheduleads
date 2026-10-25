@@ -74,10 +74,11 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   );
   const hoursSaved = (personId: string, saved: PersonHoursType) =>
     setHours((map) => new Map(map).set(personId, saved));
-  // Their bookable hours: on their card for whoever may change them, under their row read-only for
-  // the rest. An off person has none to change until they are on.
+  // Their bookable hours, always under their row or card, so opening or closing the card never drops
+  // hours not saved yet; read-only for whoever may not change them. An off person has none to change,
+  // and nobody has any before the business's own hours (said once, above the list).
   const hoursCardOf = (resource: ResourceSettingsType) =>
-    !resource.active ? null : settings.businessWeek && settings.timezone ? (
+    resource.active && settings.businessWeek && settings.timezone ? (
       <PersonHoursCard
         person={{
           id: resource.id,
@@ -89,9 +90,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
         canEdit={settings.canEdit}
         onSaved={(saved) => hoursSaved(resource.id, saved)}
       />
-    ) : (
-      <p className="text-sm text-muted-foreground">{hoursWords.setBusinessHoursFirst}</p>
-    );
+    ) : null;
   // The live services a person is on for, as customers see them.
   const bookedFor = (resource: ResourceSettingsType) => {
     const onFor = resource.active ? (skills.get(resource.id)?.onFor ?? []) : [];
@@ -173,6 +172,9 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
           </Button>
         </div>
       )}
+      {settings.businessWeek ? null : (
+        <p className="text-sm text-muted-foreground">{hoursWords.setBusinessHoursFirst}</p>
+      )}
       <SaveNotice notice={notice} />
       <ListedBookings
         list={held?.list ?? null}
@@ -243,7 +245,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                   </Button>
                 ) : null}
               </div>
-              {settings.canEdit ? null : hoursCardOf(resource)}
+              {hoursCardOf(resource)}
             </li>
           )
         )}
