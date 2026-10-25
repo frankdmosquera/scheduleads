@@ -6,7 +6,7 @@
 skills, a new rule replacing "nobody ticked means anyone", a data carry-over), a service's own
 hours (one more layer in the free-time math), and the People and Places pages rebuilt around them.
 
-**Status:** in progress
+**Status:** verified
 
 **Branch:** feature/12k-people-places-and-skills
 
