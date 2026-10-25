@@ -6,7 +6,7 @@
 service's hours move into its card and save with its one Save; the saves and their rules already
 exist and do not change.
 
-**Status:** built
+**Status:** verified
 
 **Branch:** fix/one-card-per-service-on-services
 
