@@ -29,7 +29,9 @@ export async function savePersonSkills(
       .select({ kind: resource.kind })
       .from(resource)
       .where(and(eq(resource.organizationId, organizationId), eq(resource.id, personId)))
-      .for("update");
+      // Not "update": a tick or a booking for them takes a key share on this row while holding
+      // the service, and would wait on us while we wait on the service.
+      .for("no key update");
     if (!person) return { ok: false, reason: "not_found" } as const;
     if (person.kind !== "person") return { ok: false, reason: "not_a_person" } as const;
 

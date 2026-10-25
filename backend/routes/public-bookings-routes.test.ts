@@ -619,6 +619,33 @@ describe("the yes to later texts (feature 9, decision 13)", () => {
     });
   });
 
+  test("with nobody on for the service, no booking is taken, for him or for anyone (feature 12k)", async () => {
+    const samOn = and(
+      eq(bookingLinkResource.bookingLinkId, painter.quote),
+      eq(bookingLinkResource.resourceId, painter.sam)
+    );
+    const bookingsBefore = await db.$count(booking, eq(booking.organizationId, painter.id));
+    await db.delete(bookingLinkResource).where(samOn); // Sam can still do it, but is off
+    try {
+      const forSam = await post(
+        `/public/${painter.slug}/bookings`,
+        painterForm(`off-${tag}@example.com`)
+      );
+      const forAnyone = await post(
+        `/public/${painter.slug}/bookings`,
+        painterForm(`off-any-${tag}@example.com`, { personId: undefined }) // anyone
+      );
+      expect([forSam.status, forAnyone.status]).toEqual([404, 409]);
+      expect(await db.$count(booking, eq(booking.organizationId, painter.id))).toBe(bookingsBefore);
+    } finally {
+      await db.insert(bookingLinkResource).values({
+        organizationId: painter.id,
+        bookingLinkId: painter.quote,
+        resourceId: painter.sam,
+      });
+    }
+  });
+
   test("a booking without a tick leaves an earlier yes as it was", async () => {
     const email = `kept-${tag}@example.com`;
     const first = await post(
