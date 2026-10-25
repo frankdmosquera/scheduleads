@@ -52,6 +52,7 @@ import { savePersonHours } from "../lib/settings/save-person-hours.js";
 import { savePersonSkills } from "../lib/settings/save-person-skills.js";
 import { saveResource } from "../lib/settings/save-resource.js";
 import { saveService } from "../lib/settings/save-service.js";
+import { saveServiceHours } from "../lib/settings/save-service-hours.js";
 import { saveServiceResources } from "../lib/settings/save-service-resources.js";
 import { requireOrganizationMiddleware } from "../middleware/auth-middleware/require-organization-middleware.js";
 import { requirePermissionMiddleware } from "../middleware/auth-middleware/require-permission-middleware.js";
@@ -230,6 +231,33 @@ export const settingsRoutes = new Hono()
       );
       if (!saved) return c.json(refuse("not_found", "No service here."), 404);
       return c.json(saved, 200);
+    }
+  )
+
+  // When a service runs: its own week, or null for whenever the business is open, and its one-off
+  // dates. The answer lists its upcoming bookings the new hours leave outside; none is changed.
+  // Another business's service or an unknown id: the same 404.
+  .put(
+    "/services/:serviceId/hours",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = personHoursValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const saved = await saveServiceHours(
+        c.get("organization").organizationId,
+        c.req.param("serviceId"),
+        c.req.valid("json"),
+        new Date()
+      );
+      if (!saved.ok && saved.reason === "no_service")
+        return c.json(refuse("not_found", "No service here."), 404);
+      if (!saved.ok) return c.json(NO_BUSINESS_HOURS, 409);
+      return c.json({ hours: saved.hours, outsideHours: saved.outsideHours }, 200);
     }
   )
 

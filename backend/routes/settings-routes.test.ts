@@ -27,6 +27,7 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the settings route tests")
 // Imported after the env is loaded: they read it the moment they load.
 const { app } = await import("../app.js");
 const { findServiceResources } = await import("../lib/scheduling/find-service-resources.js");
+const { findFreeTimes } = await import("../lib/scheduling/find-free-times.js");
 const { jobSchema } = await import("../lib/jobs/job-schema.js");
 const { db } = await import("../database.js");
 const { appOrigin } = await import("../lib/auth/auth-server.js");
@@ -41,6 +42,7 @@ const {
   organization,
   pipelineStage,
   resource,
+  serviceHours,
   textSettings,
   user,
   workerTextSettings,
@@ -981,6 +983,113 @@ describe("a service's new length", () => {
     const same = await estimateAt(90);
     expect(((await same.json()) as SavedWithListType).outsideHours).toEqual([]);
     await estimateAt(60);
+  });
+});
+
+describe("when a service runs (feature 12k)", () => {
+  const afternoons = { tue: [{ startMinute: 780, endMinute: 1020 }] }; // Tuesday from 1:00
+  type SavedServiceHoursType = {
+    hours: { serviceId: string; weeklyHours: unknown; dateHours: unknown };
+    outsideHours: { bookingId: string }[];
+  };
+  const minuteOf = (iso: string) => {
+    const [hour, minute] = new Date(iso)
+      .toLocaleTimeString("en-GB", { timeZone: "America/Edmonton", hour12: false })
+      .split(":")
+      .map(Number);
+    return hour * 60 + minute;
+  };
+
+  test("its own week narrows the times, lists the bookings left outside, and changes none", async () => {
+    // A service of its own on Booked, done by Rita alone, so no other test moves its times.
+    const saved = (await (
+      await post("/settings/services", booked.email, { ...cabinet, name: "Colour match" })
+    ).json()) as SavedServiceType;
+    const serviceId = saved.service.id;
+    const rita = (await (
+      await post("/settings/people", booked.email, { name: "Rita", kind: "person" })
+    ).json()) as SavedResourceType;
+    await put(`/settings/people/${rita.resource.id}/skills`, booked.email, {
+      serviceIds: [serviceId],
+    });
+    const tuesdayTimes = async () =>
+      (
+        await findFreeTimes({
+          organizationId: booked.organizationId,
+          bookingLinkId: serviceId,
+          personId: null,
+          fromDate: tuesday,
+          toDate: tuesday,
+          now: new Date(),
+        })
+      )?.startTimes ?? [];
+    const before = await tuesdayTimes();
+    expect(before.some((time) => minuteOf(time) < 780)).toBe(true); // mornings offered
+
+    // Kim is booked with Rita at 10:00 on that Tuesday.
+    const [contactId, leadId, bookingId] = [randomUUID(), randomUUID(), randomUUID()];
+    await db
+      .insert(contact)
+      .values({ id: contactId, organizationId: booked.organizationId, name: "Kim" });
+    await db.insert(lead).values({
+      id: leadId,
+      organizationId: booked.organizationId,
+      contactId,
+      stageId: bookedStageId,
+      source: "widget",
+    });
+    await db.insert(booking).values({
+      id: bookingId,
+      organizationId: booked.organizationId,
+      leadId,
+      bookingLinkId: serviceId,
+      personId: rita.resource.id,
+      startsAt: onTuesday(600),
+      endsAt: onTuesday(660),
+      status: "confirmed",
+    });
+    const withKim = await tuesdayTimes();
+
+    const hoursPath = `/settings/services/${serviceId}/hours`;
+    const narrowed = await put(hoursPath, booked.email, { weeklyHours: afternoons, dateHours: [] });
+    expect(narrowed.status).toBe(200);
+    const answer = (await narrowed.json()) as SavedServiceHoursType;
+    expect(answer.hours).toEqual({ serviceId, weeklyHours: afternoons, dateHours: [] });
+    expect(answer.outsideHours.map((row) => row.bookingId)).toEqual([bookingId]);
+    const [still] = await db.select().from(booking).where(eq(booking.id, bookingId));
+    expect(still.startsAt).toEqual(onTuesday(600));
+
+    // Only afternoon times are left, now counted from 1:00.
+    const after = await tuesdayTimes();
+    expect(after.length).toBeGreaterThan(0);
+    expect(after.every((time) => minuteOf(time) >= 780)).toBe(true);
+
+    // Back to whenever the business is open: the row goes, nothing is listed, the mornings return.
+    const back = await put(hoursPath, booked.email, { weeklyHours: null, dateHours: [] });
+    expect(((await back.json()) as SavedServiceHoursType).outsideHours).toEqual([]);
+    expect(await db.$count(serviceHours, eq(serviceHours.bookingLinkId, serviceId))).toBe(0);
+    expect(await tuesdayTimes()).toEqual(withKim);
+  });
+
+  test("another business's service is the 404, a member the 403, no business hours the 409", async () => {
+    const body = { weeklyHours: afternoons, dateHours: [] };
+    expect((await put(`/settings/services/${estimateId}/hours`, summit.email, body)).status).toBe(
+      404
+    );
+    const summitService = (await (
+      await post("/settings/services", summit.email, { ...cabinet, name: "Trim" })
+    ).json()) as SavedServiceType;
+    const summitPath = `/settings/services/${summitService.service.id}/hours`;
+    expect((await put(summitPath, helper.email, body)).status).toBe(403);
+    const otherService = (await (
+      await post("/settings/services", other.email, { ...cabinet, name: "First" })
+    ).json()) as SavedServiceType;
+    expect(
+      (await put(`/settings/services/${otherService.service.id}/hours`, other.email, body)).status
+    ).toBe(409);
+    expect(
+      await db.$count(serviceHours, eq(serviceHours.organizationId, summit.organizationId))
+    ).toBe(0);
   });
 });
 

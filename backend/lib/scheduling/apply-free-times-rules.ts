@@ -5,6 +5,7 @@ import { addDays } from "@scheduleads-app/shared/add-days";
 import { localDate } from "@scheduleads-app/shared/local-date";
 
 import type { ResolvedBookableHoursType } from "../bookable-hours/apply-bookable-hours-rules.js";
+import { overlapWindows } from "../bookable-hours/overlap-windows.js";
 import { windowsOnDate } from "../bookable-hours/windows-on-date.js";
 import type { BusyBlockType } from "../calendar/calendar-provider.js";
 import { localTimeToMoment } from "../local-time/local-time-to-moment.js";
@@ -21,6 +22,9 @@ export type FreeTimesServiceType = {
 
 export type FreeTimesInputType = {
   hours: ResolvedBookableHoursType; // the person's, from resolveBookableHours
+  // When the service runs (feature 12k): narrows the person's windows on each date; null or left
+  // out, it runs whenever the business is open, so nothing narrows.
+  serviceHours?: ResolvedBookableHoursType | null;
   service: FreeTimesServiceType;
   busy: BusyBlockType[]; // bookings, time off and Google, in any order
   standbyDates: string[]; // YYYY-MM-DD, hidden from customers on these dates
@@ -46,7 +50,9 @@ export function applyFreeTimesRules(input: FreeTimesInputType): Date[] {
   for (let date = firstDate; date <= lastDate; date = addDays(date, 1)) {
     if (closed.has(date) || standby.has(date)) continue;
 
-    const windows = windowsOnDate(hours, date);
+    const windows = input.serviceHours
+      ? overlapWindows(windowsOnDate(hours, date), windowsOnDate(input.serviceHours, date))
+      : windowsOnDate(hours, date);
 
     for (const window of windows) {
       // The window's end as a real moment, so the spring change cannot stretch an appointment past

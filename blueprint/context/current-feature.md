@@ -87,7 +87,9 @@ The new migrations go on live by hand through the tunnel before the merge deploy
   keeps every service's offered people and free times identical on the seeded businesses, and
   removing a skill turns the person off; on http://localhost:3400 Peter gets "Interior estimate"
   on his card, appears under it on Services, and switched on is offered in the booking preview.
-- [ ] 12k.2 **A service's own hours.** `availability_rule` gains a service's row (migration 0034).
+- [x] 12k.2 **A service's own hours.** A table `service_hours` (migration 0034; amended while building:
+  `availability_rule` finds the business's row as the one with no person in 26 places, so a service
+  row there would be read as the business's).
   Free times intersect the service's window with the person's hours.
   `PUT /settings/services/:serviceId/hours` answers the bookings now outside it. The service form
   gets "Runs". **Done when:** the tests prove a time outside the service's window is never offered
@@ -104,7 +106,7 @@ The new migrations go on live by hand through the tunnel before the merge deploy
 
 ## Files / areas
 
-- `packages/shared/db/`: new `scheduling-tables/person-skill-table.ts`; `availability-rule-table.ts`
+- `packages/shared/db/`: new `scheduling-tables/person-skill-table.ts` and `service-hours-table.ts`
   (12k.2); migrations 0033 and 0034; `zod-validation` for the new bodies.
 - `backend/lib/scheduling/find-service-resources.ts` (on people only, no "anyone"),
   `find-free-times.ts`, `backend/lib/bookable-hours/` (the service window, 12k.2),
@@ -126,9 +128,9 @@ The new migrations go on live by hand through the tunnel before the merge deploy
 - `booking_link_resource` keeps its rows: a person row now means "on", and is allowed only while
   the person has the skill (the save checks it; removing a skill deletes the "on" row in the same
   transaction). Place rows are unchanged.
-- `availability_rule` (12k.2): a nullable `bookingLinkId`; a row is the business's (both null), a
-  person's (`resourceId`) or a service's (`bookingLinkId`), never both; one row per service.
-  `weeklyHours` null means "whenever the business is open".
+- `service_hours` (12k.2): one row per service, its business and service by composite key, a deleted
+  service takes it; `weeklyHours` null means "whenever the business is open", `dateHours` its
+  one-off dates. No row: it runs whenever the business is open; saving that removes the row.
 - `PUT /settings/people/:resourceId/skills` `{ serviceIds: string[] }`: 200 with the person's skills
   and the services left with nobody on; 400 for a service not the business's or a place; 404 for
   a person not the business's. Owner and admin only (`CHANGE_BUSINESS`), like every Settings save.

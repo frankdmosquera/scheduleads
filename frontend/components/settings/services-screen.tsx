@@ -9,6 +9,7 @@ import { CentredCardNotice } from "@/components/centred-card/centred-card-notice
 import { ListedBookings, type ListedBookingsType } from "@/components/settings/listed-bookings";
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
 import { ServiceForm, type ServiceSaveOutcomeType } from "@/components/settings/service-form";
+import { ServiceHoursCard } from "@/components/settings/service-hours-card";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +36,16 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
   const { words } = useDashboardWords();
   const servicesWords = words.servicesWords;
   const [services, setServices] = useState(settings.services);
+  // When each service runs (feature 12k); one not listed runs whenever the business is open.
+  const [hoursOf, setHoursOf] = useState(
+    () =>
+      new Map(
+        settings.serviceHours.map(({ serviceId, weeklyHours, dateHours }) => [
+          serviceId,
+          { weeklyHours, dateHours },
+        ])
+      )
+  );
   const [open, setOpen] = useState<string | "new" | null>(null); // which form is open
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   // Stays until the next save or the page is left, so the owner can call each customer.
@@ -114,13 +125,23 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
         <ul className="flex flex-col gap-2">
           {services.map((service) =>
             open === service.id ? (
-              <li key={service.id}>
+              <li key={service.id} className="flex flex-col gap-2">
                 <ServiceForm
                   service={service}
                   people={settings.people}
                   onSaved={saved}
                   onCancel={() => close(changeButtonId(service.id))}
                 />
+                {settings.businessWeek && settings.timezone ? (
+                  <ServiceHoursCard
+                    service={service}
+                    hours={hoursOf.get(service.id) ?? { weeklyHours: null, dateHours: [] }}
+                    businessWeek={settings.businessWeek}
+                    timezone={settings.timezone}
+                    canEdit={settings.canEdit}
+                    onSaved={(hours) => setHoursOf((map) => new Map(map).set(service.id, hours))}
+                  />
+                ) : null}
               </li>
             ) : (
               <li

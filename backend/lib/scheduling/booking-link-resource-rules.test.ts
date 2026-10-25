@@ -114,7 +114,7 @@ describe("who-does-what rules in the database", () => {
     expect(await ticksOf(facial)).toHaveLength(0);
   });
 
-  // Deleting the only one ticked would leave nobody ticked, which reads as anyone.
+  // A delete must never quietly change who is offered or which room a service needs.
   test("a ticked person or room cannot be deleted until unticked", async () => {
     const { business, facial, ana, room } = await makeBusiness("person-kept");
     await db
