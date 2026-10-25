@@ -5,7 +5,7 @@
 **Size:** light - one dependency moved to its patched release, no code change; proved by the
 builds, the suites and a walk through the dashboard.
 
-**Status:** built
+**Status:** verified
 
 **Branch:** fix/next-security-upgrade
 
