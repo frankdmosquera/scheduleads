@@ -21,16 +21,19 @@ import { Label } from "@/components/ui/label";
 import type { ResourceSettingsType } from "@/lib/api-client/settings/fetch-people-settings";
 import { addResource } from "@/lib/api-client/settings/save-resource";
 import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
+import { useReportSaving } from "@/lib/use-report-saving";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 export function AddResourceForm({
   kind,
   onSaved,
   onCancel,
+  onSavingChange,
 }: {
   kind: AddResourceType["kind"];
   onSaved: (added: ResourceSettingsType) => void;
   onCancel: () => void;
+  onSavingChange?: (saving: boolean) => void; // while true, the page opens no other card
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const nameRef = useRef<HTMLInputElement | null>(null);
@@ -43,6 +46,7 @@ export function AddResourceForm({
   });
 
   useEffect(() => nameRef.current?.focus(), []); // the form opens where the owner will type
+  useReportSaving(form.formState.isSubmitting, onSavingChange);
 
   async function save(values: AddResourceType) {
     const saved = await addResource(values);
@@ -101,7 +105,12 @@ export function AddResourceForm({
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? peopleWords.adding : peopleWords.add}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={form.formState.isSubmitting}
+          onClick={onCancel}
+        >
           {peopleWords.cancel}
         </Button>
       </div>

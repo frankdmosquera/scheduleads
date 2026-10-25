@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import type { ResourceSettingsType } from "@/lib/api-client/settings/fetch-people-settings";
 import { saveResource, type SavedResourceType } from "@/lib/api-client/settings/save-resource";
 import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
+import { useReportSaving } from "@/lib/use-report-saving";
 import { useFocusFirstInvalid } from "@/lib/use-focus-first-invalid";
 
 export function ChangeResourceForm({
@@ -32,6 +33,7 @@ export function ChangeResourceForm({
   onCancel,
   beforeSave,
   canEdit = true,
+  onSavingChange,
   children,
 }: {
   resource: ResourceSettingsType;
@@ -43,6 +45,7 @@ export function ChangeResourceForm({
   beforeSave?: () => Promise<boolean>;
   // false: a login that may not change the business sees the card read-only, with Close.
   canEdit?: boolean;
+  onSavingChange?: (saving: boolean) => void; // while true, the page opens no other card
   children?: ReactNode;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -63,6 +66,7 @@ export function ChangeResourceForm({
 
   // The form opens where the owner will type; read-only, on its Close.
   useEffect(() => (canEdit ? nameRef.current : closeRef.current)?.focus(), [canEdit]);
+  useReportSaving(form.formState.isSubmitting, onSavingChange);
 
   async function save(values: SaveResourceType) {
     if (beforeSave && !(await beforeSave())) return;
@@ -173,7 +177,13 @@ export function ChangeResourceForm({
             {form.formState.isSubmitting ? peopleWords.saving : peopleWords.save}
           </Button>
         ) : null}
-        <Button ref={closeRef} type="button" variant="outline" onClick={onCancel}>
+        <Button
+          ref={closeRef}
+          type="button"
+          variant="outline"
+          disabled={form.formState.isSubmitting}
+          onClick={onCancel}
+        >
           {canEdit ? peopleWords.cancel : peopleWords.close}
         </Button>
       </div>

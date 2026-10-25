@@ -1,15 +1,20 @@
 // Frontend component: the Services page of Settings (feature 12d): every service, live or hidden,
-// and one form at a time to add or change one. A new length lists the bookings it no longer fits.
+// one box each, and one card open at a time to add or change one. A service's card holds when it
+// runs too (feature 12k), saved by its one Save. A new length lists the bookings it no longer fits,
+// new hours the bookings now outside them. A login that may not change the business sees the card
+// read-only.
 
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 
+import type { PersonHoursType } from "@scheduleads-app/shared/zod-validation";
+
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
 import { ListedBookings, type ListedBookingsType } from "@/components/settings/listed-bookings";
+import { ownHoursLine } from "@/components/settings/own-hours-fields";
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
 import { ServiceForm, type ServiceSaveOutcomeType } from "@/components/settings/service-form";
-import { ServiceHoursCard } from "@/components/settings/service-hours-card";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,10 +36,11 @@ export function ServicesScreen() {
 const ADD_BUTTON_ID = "add-service";
 const changeButtonId = (serviceId: string) => `change-service-${serviceId}`;
 const byName = (a: ServiceSettingsType, b: ServiceSettingsType) => a.name.localeCompare(b.name);
+const NO_OWN_HOURS: PersonHoursType = { weeklyHours: null, dateHours: [] };
 
 function ServicesList({ settings }: { settings: ServicesSettingsType }) {
   const { words } = useDashboardWords();
-  const servicesWords = words.servicesWords;
+  const { servicesWords, hoursWords } = words;
   const [services, setServices] = useState(settings.services);
   // When each service runs (feature 12k); one not listed runs whenever the business is open.
   const [hoursOf, setHoursOf] = useState(
@@ -47,38 +53,56 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
       )
   );
   const [open, setOpen] = useState<string | "new" | null>(null); // which form is open
+  // While a card saves, no other opens: its answer, a refusal included, is always seen (F-514).
+  const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   // Stays until the next save or the page is left, so the owner can call each customer.
-  const [held, setHeld] = useState<{ name: string; list: ListedBookingsType } | null>(null);
+  const [held, setHeld] = useState<{ title: string; list: ListedBookingsType }[]>([]);
   // Where the keyboard goes once a form closes: back to the button that opened it, never the top.
   const returnFocus = useRef<string | null>(null);
+  // It waits for the closed card's Save to end, as a disabled button takes no focus (F-515).
   useEffect(() => {
-    if (open !== null || !returnFocus.current) return;
+    if (open !== null || saving || !returnFocus.current) return;
     document.getElementById(returnFocus.current)?.focus();
     returnFocus.current = null;
-  }, [open]);
-  const close = (focusId: string) => {
+  }, [open, saving]);
+  // A Save that ends after another card was opened leaves that card open (F-512).
+  const close = (focusId: string, card?: string) => {
     returnFocus.current = focusId;
-    setOpen(null);
+    setOpen((now) => (card === undefined || now === card ? null : now));
   };
 
   const saved = (
+    card: string, // the card that saved: the service's id, or "new"
     service: ServiceSettingsType,
-    { ticksSaved, outsideHours }: ServiceSaveOutcomeType
+    { unsaved, noLongerFit, outsideItsHours }: ServiceSaveOutcomeType
   ) => {
     setServices((list) =>
       [...list.filter((existing) => existing.id !== service.id), service].sort(byName)
     );
-    close(changeButtonId(service.id));
+    close(changeButtonId(service.id), card);
     // Bookings carry the business's zone; a business with none yet has no bookings to list.
+    const timezone = settings.timezone;
     setHeld(
-      outsideHours.length && settings.timezone
-        ? { name: service.name, list: { bookings: outsideHours, timezone: settings.timezone } }
-        : null
+      timezone
+        ? [
+            { title: servicesWords.heldTitle(service.name), bookings: noLongerFit },
+            { title: servicesWords.heldOutsideTitle(service.name), bookings: outsideItsHours },
+          ]
+            .filter(({ bookings }) => bookings.length)
+            .map(({ title, bookings }) => ({ title, list: { bookings, timezone } }))
+        : []
     );
-    const listed = outsideHours.length ? servicesWords.noLongerFit(outsideHours.length) : "";
-    if (!ticksSaved) {
-      setNotice({ tone: "error", text: servicesWords.savedButTicksNot(service.name) + listed });
+    const listed =
+      (noLongerFit.length ? servicesWords.noLongerFit(noLongerFit.length) : "") +
+      (outsideItsHours.length ? servicesWords.nowOutsideItsHours(outsideItsHours.length) : "");
+    if (unsaved) {
+      const notSaved = {
+        ticks: servicesWords.savedButTicksNot,
+        "ticks-and-hours": servicesWords.savedButTicksAndHoursNot,
+        hours: servicesWords.savedButHoursNot,
+      }[unsaved](service.name);
+      setNotice({ tone: "error", text: notSaved + listed });
       return;
     }
     setNotice({
@@ -89,19 +113,17 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
           : servicesWords.savedHidden(service.name)) + listed,
     });
   };
-  // When a service runs, always under its row or form, so opening or closing the form never drops
-  // hours not saved yet or the bookings its last save listed; read-only for whoever may not change it.
-  const hoursCardOf = (service: ServiceSettingsType) =>
-    settings.businessWeek && settings.timezone ? (
-      <ServiceHoursCard
-        service={service}
-        hours={hoursOf.get(service.id) ?? { weeklyHours: null, dateHours: [] }}
-        businessWeek={settings.businessWeek}
-        timezone={settings.timezone}
-        canEdit={settings.canEdit}
-        onSaved={(hours) => setHoursOf((map) => new Map(map).set(service.id, hours))}
-      />
-    ) : null;
+  // When it runs, once the business has hours of its own.
+  const hasHours = !!settings.businessWeek && !!settings.timezone;
+  const hoursLine = (service: ServiceSettingsType) => {
+    const own = hoursOf.get(service.id) ?? NO_OWN_HOURS;
+    return ownHoursLine(
+      hoursWords,
+      { follows: servicesWords.runsWhenOpen, ownDays: servicesWords.runsOwnWeekDays },
+      own.weeklyHours,
+      own.dateHours
+    );
+  };
   const openForm = (which: string | "new") => {
     setNotice(null);
     setOpen(which);
@@ -115,22 +137,29 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
         <ServiceForm
           service={null}
           people={settings.people}
-          onSaved={saved}
+          hours={null}
+          businessWeek={settings.businessWeek}
+          onHoursSaved={() => {}}
+          onSaved={(service, outcome) => saved("new", service, outcome)}
           onCancel={() => close(ADD_BUTTON_ID)}
+          onSavingChange={setSaving}
         />
       ) : (
         <div>
-          <Button id={ADD_BUTTON_ID} variant="outline" onClick={() => openForm("new")}>
+          <Button
+            id={ADD_BUTTON_ID}
+            variant="outline"
+            disabled={saving}
+            onClick={() => openForm("new")}
+          >
             {servicesWords.addAService}
           </Button>
         </div>
       )}
       <SaveNotice notice={notice} />
-      <ListedBookings
-        list={held?.list ?? null}
-        title={held ? servicesWords.heldTitle(held.name) : ""}
-        Heading="h3"
-      />
+      {held.map(({ title, list }) => (
+        <ListedBookings key={title} list={list} title={title} Heading="h3" />
+      ))}
 
       {services.length === 0 ? (
         <p className="text-sm text-muted-foreground">{servicesWords.noServicesYet}</p>
@@ -138,17 +167,21 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
         <ul className="flex flex-col gap-2">
           {services.map((service) =>
             open === service.id ? (
-              <li key={service.id} className="flex flex-col gap-2">
+              <li key={service.id}>
                 <ServiceForm
                   service={service}
                   people={settings.people}
-                  onSaved={saved}
+                  hours={hasHours ? (hoursOf.get(service.id) ?? NO_OWN_HOURS) : null}
+                  businessWeek={settings.businessWeek}
+                  onHoursSaved={(hours) => setHoursOf((map) => new Map(map).set(service.id, hours))}
+                  onSaved={(savedService, outcome) => saved(service.id, savedService, outcome)}
                   onCancel={() => close(changeButtonId(service.id))}
+                  canEdit={settings.canEdit}
+                  onSavingChange={setSaving}
                 />
-                {hoursCardOf(service)}
               </li>
             ) : (
-              <li key={service.id} className="flex flex-col gap-2">
+              <li key={service.id}>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-card px-4 py-3 md:px-6">
                   <span className="font-medium text-foreground">{service.name}</span>
                   <span className="text-sm text-muted-foreground">
@@ -163,20 +196,27 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
                   >
                     {service.active ? servicesWords.live : servicesWords.hidden}
                   </span>
-                  {settings.canEdit ? (
-                    <Button
-                      id={changeButtonId(service.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="ml-auto"
-                      aria-label={servicesWords.changeService(service.name)}
-                      onClick={() => openForm(service.id)}
-                    >
-                      {words.settingsFrameWords.change}
-                    </Button>
+                  <Button
+                    id={changeButtonId(service.id)}
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto"
+                    disabled={saving}
+                    aria-label={
+                      settings.canEdit
+                        ? servicesWords.changeService(service.name)
+                        : servicesWords.seeService(service.name)
+                    }
+                    onClick={() => openForm(service.id)}
+                  >
+                    {settings.canEdit ? words.settingsFrameWords.change : servicesWords.see}
+                  </Button>
+                  {hasHours ? (
+                    <span className="basis-full text-sm text-muted-foreground">
+                      {hoursLine(service)}
+                    </span>
                   ) : null}
                 </div>
-                {hoursCardOf(service)}
               </li>
             )
           )}

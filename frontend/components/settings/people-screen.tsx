@@ -16,10 +16,7 @@ import { AddResourceForm } from "@/components/settings/add-resource-form";
 import { ChangeResourceForm } from "@/components/settings/change-resource-form";
 import { ListedBookings, type ListedBookingsType } from "@/components/settings/listed-bookings";
 import { ownHoursLine } from "@/components/settings/own-hours-fields";
-import {
-  PersonHoursPart,
-  type PersonHoursPartHandleType,
-} from "@/components/settings/person-hours-part";
+import { OwnHoursPart, type OwnHoursPartHandleType } from "@/components/settings/own-hours-part";
 import {
   PersonSkillsPart,
   type PersonSkillsPartHandleType,
@@ -34,6 +31,7 @@ import {
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { Button } from "@/components/ui/button";
+import { savePersonHours } from "@/lib/api-client/settings/save-person-hours";
 import {
   fetchPeopleSettings,
   type PeopleSettingsType,
@@ -62,7 +60,9 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   const { peopleWords, hoursWords } = useDashboardWords().words;
   const skillsPart = useRef<PersonSkillsPartHandleType>(null); // the open card's parts
   const textsPart = useRef<PersonTextsPartHandleType>(null);
-  const hoursPart = useRef<PersonHoursPartHandleType>(null);
+  const hoursPart = useRef<OwnHoursPartHandleType>(null);
+  // While a card saves, no other opens: its answer, a refusal included, is always seen (F-511).
+  const [saving, setSaving] = useState(false);
   const [skills, setSkills] = useState(
     () =>
       new Map<string, PersonSkillsType>(
@@ -135,11 +135,12 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
   const [held, setHeld] = useState<HeldType[]>([]);
   // Where the keyboard goes once a card closes: back to the button that opened it, never the top.
   const returnFocus = useRef<string | null>(null);
+  // It waits for the closed card's Save to end, as a disabled button takes no focus (F-515).
   useEffect(() => {
-    if (open !== null || !returnFocus.current) return;
+    if (open !== null || saving || !returnFocus.current) return;
     document.getElementById(returnFocus.current)?.focus();
     returnFocus.current = null;
-  }, [open]);
+  }, [open, saving]);
   const close = (focusId: string) => {
     returnFocus.current = focusId;
     setOpen(null);
@@ -228,10 +229,16 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
           kind="person"
           onSaved={(added) => saved(added, [])}
           onCancel={() => close(ADD_BUTTON_ID)}
+          onSavingChange={setSaving}
         />
       ) : (
         <div>
-          <Button id={ADD_BUTTON_ID} variant="outline" onClick={() => openForm("new")}>
+          <Button
+            id={ADD_BUTTON_ID}
+            variant="outline"
+            disabled={saving}
+            onClick={() => openForm("new")}
+          >
             {peopleWords.addButton}
           </Button>
         </div>
@@ -255,6 +262,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                 onSaved={(answer) => saved(answer.resource, answer.upcomingBookings)}
                 onCancel={() => cancelled(resource)}
                 beforeSave={beforeSave}
+                onSavingChange={setSaving}
               >
                 <PersonSkillsPart
                   ref={skillsPart}
@@ -265,12 +273,28 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                   onSaved={(saved, left) => skillsSaved(resource.id, saved, left)}
                 />
                 {hasHours(resource) && settings.businessWeek ? (
-                  <PersonHoursPart
+                  <OwnHoursPart
                     ref={hoursPart}
-                    personId={resource.id}
-                    personName={resource.name}
+                    idBase={`person-hours-${resource.id}`}
+                    name={resource.name}
+                    title={peopleWords.bookableHours}
+                    words={{
+                      follows: hoursWords.followsBusinessWeek,
+                      own: hoursWords.ownWeek,
+                      weekLabel: hoursWords.personWeek,
+                      datesTitle: hoursWords.personOneOffDates,
+                    }}
                     hours={hours.get(resource.id) ?? NO_OWN_HOURS}
                     businessWeek={settings.businessWeek}
+                    save={async (next) => {
+                      const saved = await savePersonHours(resource.id, next);
+                      if (saved.state !== "ok") return saved;
+                      const { weeklyHours, dateHours } = saved.answer.person;
+                      return {
+                        state: "ok",
+                        answer: { weeklyHours, dateHours, outsideHours: saved.answer.outsideHours },
+                      };
+                    }}
                     onSaved={(saved, outside) => hoursSaved(resource.id, saved, outside)}
                   />
                 ) : null}
@@ -311,6 +335,7 @@ function PeopleList({ settings }: { settings: PeopleSettingsType }) {
                 variant="ghost"
                 size="sm"
                 className="ml-auto"
+                disabled={saving}
                 aria-label={
                   settings.canEdit
                     ? peopleWords.changeOf(resource.name)

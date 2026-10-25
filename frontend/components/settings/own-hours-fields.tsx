@@ -1,10 +1,10 @@
 // Frontend component: the fields of one row of own hours: following the business's week or keeping
-// its own, and its own one-off dates. A service's "Runs" card and a person's card on People share
-// it; each brings its form, its words and its save.
+// its own, and its own one-off dates. A person's card on People and a service's card on Services
+// share it, through own-hours-part.tsx.
 
 "use client";
 
-import { Controller, useWatch, type Control, type FieldErrors } from "react-hook-form";
+import { Controller, type Control, type FieldErrors } from "react-hook-form";
 import type { z } from "zod";
 
 import type {
@@ -119,13 +119,12 @@ export function OwnHoursFields({
 }
 
 // The one-line summary of own hours: "Bookable whenever the business is open", or "Own bookable
-// hours · Mon, Tue", then any one-off dates and the bookings the last save left outside.
+// hours · Mon, Tue", then any one-off dates.
 export function ownHoursLine(
   hoursWords: HoursWordsType,
   words: { follows: string; ownDays(days: string): string },
   week: WeeklyHoursType | null,
-  dates: unknown[],
-  outsideCount = 0
+  dates: unknown[]
 ): string {
   const weekText = week
     ? words.ownDays(
@@ -136,12 +135,5 @@ export function ownHoursLine(
     : words.follows;
   const parts = [weekText];
   if (dates.length) parts.push(hoursWords.oneOffDateCount(dates.length));
-  if (outsideCount) parts.push(hoursWords.bookingsOutside(outsideCount));
   return parts.join(" · ");
-}
-
-// The fields' own hours, as the summary line reads them while they are being edited.
-export function useOwnHoursWatch(control: Control<OwnHoursFormType>) {
-  const [week, dates] = useWatch({ control, name: ["weeklyHours", "dateHours"] });
-  return { week: week ?? null, dates: dates ?? [] };
 }

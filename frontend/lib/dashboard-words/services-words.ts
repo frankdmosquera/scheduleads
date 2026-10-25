@@ -11,11 +11,18 @@ export type ServicesWordsType = {
   savedLive(service: string): string;
   savedHidden(service: string): string;
   heldTitle(service: string): string;
+  savedButHoursNot(service: string): string;
+  savedButTicksAndHoursNot(service: string): string;
+  nowOutsideItsHours(count: number): string; // follows a saved message, with its own leading space
+  heldOutsideTitle(service: string): string;
   noServicesYet: string;
   minutes(count: number): string;
   live: string;
   hidden: string;
   changeService(service: string): string; // the change button's label, and the form's title
+  see: string; // for a login that may only look
+  seeService(service: string): string; // the see button's label, and the read-only card's title
+  close: string;
   // The form
   addTitle: string;
   name: string;
@@ -39,9 +46,6 @@ export type ServicesWordsType = {
   runsOwnWeekDays(days: string): string; // the days it runs, as "Mon, Tue"
   whenItRuns(name: string): string;
   itsOneOffDates(name: string): string;
-  saveWhenItRuns(name: string): string;
-  savedWhenItRuns(name: string, outsideCount: number): string;
-  outsideItsHours: string;
   whoDoesItNote: string;
   nobodyCanDoIt: string;
   offeringIt: string;
@@ -71,11 +75,20 @@ export const englishServicesWords: ServicesWordsType = {
   savedLive: (service) => `Saved. Customers can book ${service} now.`,
   savedHidden: (service) => `Saved. ${service} is hidden; bookings already made stay.`,
   heldTitle: (service) => `${service}: bookings that no longer fit`,
+  savedButHoursNot: (service) => `Saved, but when ${service} runs was not.`,
+  savedButTicksAndHoursNot: (service) =>
+    `Saved, but who does ${service} and when it runs were not.`,
+  nowOutsideItsHours: (count) =>
+    ` ${count === 1 ? "One booking now sits" : `${count} bookings now sit`} outside its hours; still booked, listed below.`,
+  heldOutsideTitle: (service) => `${service}: bookings now outside its hours`,
   noServicesYet: "No services yet.",
   minutes: (count) => `${count} min`,
   live: "Live",
   hidden: "Hidden",
   changeService: (service) => `Change ${service}`,
+  see: "See",
+  seeService: (service) => `See ${service}`,
+  close: "Close",
   addTitle: "Add a service",
   name: "Name",
   descriptionOptional: "Description (optional)",
@@ -98,14 +111,6 @@ export const englishServicesWords: ServicesWordsType = {
   runsOwnWeekDays: (days) => `Runs on its own week · ${days}`,
   whenItRuns: (name) => `When ${name} runs`,
   itsOneOffDates: (name) => `Days that are different for ${name}`,
-  saveWhenItRuns: (name) => `Save when ${name} runs`,
-  savedWhenItRuns: (name, count) =>
-    `Saved. ${name} runs on these hours now.${
-      count
-        ? ` ${count === 1 ? "One booking now sits" : `${count} bookings now sit`} outside them, listed below.`
-        : ""
-    }`,
-  outsideItsHours: "These bookings now sit outside its hours",
   whoDoesItNote: "Only the people who can do it are listed. Ticked: offering it now.",
   nobodyCanDoIt: "Nobody can do this service yet.",
   offeringIt: "On",
@@ -136,11 +141,20 @@ export const spanishServicesWords: ServicesWordsType = {
   savedHidden: (service) =>
     `Guardado. ${service} está oculto; las reservas ya hechas se mantienen.`,
   heldTitle: (service) => `${service}: reservas que ya no caben`,
+  savedButHoursNot: (service) => `Guardado, pero no se guardó cuándo se ofrece ${service}.`,
+  savedButTicksAndHoursNot: (service) =>
+    `Guardado, pero no se guardó quién hace ${service} ni cuándo se ofrece.`,
+  nowOutsideItsHours: (count) =>
+    ` ${count === 1 ? "Una reserva queda" : `${count} reservas quedan`} fuera de su horario; siguen reservadas, en la lista de abajo.`,
+  heldOutsideTitle: (service) => `${service}: reservas ahora fuera de su horario`,
   noServicesYet: "Todavía no hay servicios.",
   minutes: (count) => `${count} min`,
   live: "Activo",
   hidden: "Oculto",
   changeService: (service) => `Cambiar ${service}`,
+  see: "Ver",
+  seeService: (service) => `Ver ${service}`,
+  close: "Cerrar",
   addTitle: "Agregar un servicio",
   name: "Nombre",
   descriptionOptional: "Descripción (opcional)",
@@ -163,14 +177,6 @@ export const spanishServicesWords: ServicesWordsType = {
   runsOwnWeekDays: (days) => `Se ofrece en su propia semana · ${days}`,
   whenItRuns: (name) => `Cuándo se ofrece ${name}`,
   itsOneOffDates: (name) => `Días distintos para ${name}`,
-  saveWhenItRuns: (name) => `Guardar cuándo se ofrece ${name}`,
-  savedWhenItRuns: (name, count) =>
-    `Guardado. ${name} se ofrece en este horario ahora.${
-      count
-        ? ` ${count === 1 ? "Una reserva queda" : `${count} reservas quedan`} fuera de él, en la lista de abajo.`
-        : ""
-    }`,
-  outsideItsHours: "Estas reservas quedan ahora fuera de su horario",
   whoDoesItNote: "Solo aparece quien sabe hacerlo. Marcado: lo ofrece ahora.",
   nobodyCanDoIt: "Nadie sabe hacer este servicio todavía.",
   offeringIt: "Activo",
