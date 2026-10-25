@@ -398,7 +398,7 @@ without Frank touching the database.
   way 12i did for the window. Added by Frank on 2026-10-24: the Latin
   American businesses (IA a la Orden first) run their day in Spanish. Numbered
   12j so nothing after it renumbers
-- [ ] 12k. **People, places and skills** - a person's skills are ticked on
+- [x] 12k. **People, places and skills** - a person's skills are ticked on
   their own card, and a service's "Who does it" lists only the people with
   that skill, each with an on/off switch for offering it now, and a service
   can run in its own window (haircuts in the afternoon). A person's card
