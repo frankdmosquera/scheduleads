@@ -463,6 +463,13 @@ Exit: four organizations, four live sites, zero rented booking.
   First, before any client connects a calendar: Google's consent screen
   published (a privacy page on booking-crm.com, the name owners see there,
   then Publish), or Google drops the connection every 7 days (10b decision 6)
+- [ ] 17b. **Face and Body live** - split from 17 by Frank on 2026-10-26, so 17 could close
+  while this waits on her answers (email, hours and notice, staff and rooms, deposits, Google
+  calendar) and on IA a la Orden taking real bookings. Her business made on the live app and
+  `client-setups/face-and-body.ts` applied with `--live`; `scripts/checkBookingLinks.mjs` in
+  her repo passes against the live API; her domain in `WIDGET_ORIGINS` on Railway; her site
+  launched (her item 13, with its Next.js security update); one real booking; her Cal.com
+  account closed and its API key revoked
 - [ ] 18. **The Latam Painters** - after its own site is finished. First
   find out whose Calendly has been receiving its bookings. It needs a
   siteConfig before it can be a tenant

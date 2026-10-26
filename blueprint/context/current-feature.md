@@ -2,10 +2,11 @@
 
 **From build-plan:** feature 17
 
-**Size:** heavy - three separate risks: her catalogue and hours as a live business's data, a
-second repo swapping its booking provider, and the switch away from Cal.com.
+**Size:** heavy - separate risks: her catalogue and hours as a business's data, and a second
+repo swapping its booking provider. The live switch, planned as step 3, moved to item 17b
+(Frank, 2026-10-26): it waits on her answers and on IA a la Orden, and kept this feature open.
 
-**Status:** in progress
+**Status:** verified
 
 **Branch:** feature/17-face-and-body (here); `feature/11-booking-integration` in `face-and-body`
 for step 17.2
@@ -33,12 +34,12 @@ the site uses "until it lands", and only that file and `components/booking/` tou
   replaces `scripts/createCalcomEventTypes.mjs`: it compares every bookable treatment on the site
   with her booking links in the API and fails on a missing one. Her own plan's item 11 is
   reworded to Booking CRM and closed with this step, in her repo's own records.
-- **Ready to go live (17.3).** The live half, prepared and checked but switched only on Frank's
-  yes on the day: her business made on the live app, the setup file applied with `--live`, her
-  site's address added to the API's `WIDGET_ORIGINS` on Railway, and a written go-live list for
-  the day her site launches (Cal.com closed after the first real booking through ours).
-
 ## Out of scope
+
+- **Going live** (planned as step 17.3): its own item, 17b, in the build plan, with the go-live
+  list: her business on the live app, the setup applied with `--live`, the live check script,
+  her domain in `WIDGET_ORIGINS` on Railway, her launch, one real booking, then her Cal.com
+  account closed and its API key revoked (F-525).
 
 - **Launching her site.** It has never been deployed: its own item 13 (deployment readiness,
   domain, Vercel) is open. This feature makes it book through us; launching it is that item's
@@ -125,14 +126,6 @@ and push, its own plan line and `current-feature.md`, and merging there is Frank
   opens it on her services, `/book?treatment=<slug>` opens on that treatment, a test booking
   lands as a lead in her CRM at http://localhost:3400/leads (then cancelled), an Enquire button
   still goes to `/contact`, and the console shows no errors.
-- [ ] 3. **Ready to go live.** Only on Frank's yes on the day, each live action named before it
-  runs: make her business on the live app (https://app.booking-crm.com/admin/client-setup), dry
-  run then apply the setup file with `--live`, and run the check script against the live API.
-  Her site's address joins `WIDGET_ORIGINS` on Railway once her domain is known (her item 13).
-  Write the go-live list into her repo's records for launch day: deploy with `NODE_AUTH_TOKEN` in
-  Vercel, one real booking, then close her Cal.com account and revoke its API key, still in her `.env.local` (F-525). **Done when:** the live dry run has
-  nothing to add, the live check script passes, and the go-live list is in her repo.
-
 ## Files / areas
 
 - Here: `packages/shared/client-setups/face-and-body.ts` (new). No code change expected; the
@@ -165,7 +158,7 @@ and push, its own plan line and `current-feature.md`, and merging there is Frank
 - 17.2: her repo has no test runner; the check script is the saved, repeatable check, run
   against the local API, and the build, lint and the browser walk prove the rest. A test booking
   is made and cancelled on the local database only.
-- 17.3: the live dry run and the live check script; no booking is made on live.
+- 17b: the live dry run and the live check script; no booking is made on live.
 
 ## Notes for the AI
 
@@ -174,7 +167,7 @@ and push, its own plan line and `current-feature.md`, and merging there is Frank
 - 37 bookable, not the plan's 45: the catalogue holds 40 treatments today and three are priced at
   consultation. Say so in the log.
 - Never touch `design/copy-my-picks` or its uncommitted change; never stop anything on 3000/3001.
-- Ask before the package install in 17.2 and before every live action in 17.3.
+- Ask before the package install in 17.2 and before every live action in 17b.
 
 ## Open questions
 
@@ -182,11 +175,11 @@ and push, its own plan line and `current-feature.md`, and merging there is Frank
   47 lines, on `design/copy-my-picks`): is someone still working on it? 17.2 cannot branch off
   her `main` cleanly until it is committed, stashed by its owner, or dropped. Blocks 17.2 only.
 - **Her practitioners and rooms, and which treatments each does.** Facts from her, asked at
-  onboarding; added to the setup file before 17.3. Blocks nothing in 17.1 or 17.2.
+  onboarding; added to the setup file before 17b. Blocks nothing in 17.1 or 17.2.
 - **Her hours and notice, confirmed by her** (F-519, F-520). Her week comes from one Instagram
   post that Google disagrees with on six days, and the two hours' notice is a starting point.
-  Asked at onboarding; must be answered before 17.3, and changed in Settings or the setup file.
+  Asked at onboarding; must be answered before 17b, and changed in Settings or the setup file.
 - **Deposits** (project plan question 16) and **her Google calendar**: asked at onboarding. A
-  yes to either adds work before 17.3 (a payment item; publishing Google's consent screen).
+  yes to either adds work before 17b (a payment item; publishing Google's consent screen).
 - **Go-live order.** The plan holds real clients until IA a la Orden has taken real bookings
-  (Frank, 2026-10-23). 17.3 waits on that, and on her site's own launch (her item 13).
+  (Frank, 2026-10-23). 17b waits on that, and on her site's own launch (her item 13).

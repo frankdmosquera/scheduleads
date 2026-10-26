@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash 32fbadc41e9e5b91275032ab27114a0454171fc1263b48641f3bbd1756fc76ca -->
+<!-- blueprint:source-hash e46c40bcd51fb2f6757bb461911d54f03182f3e3711f191158b9269c37747a60 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
