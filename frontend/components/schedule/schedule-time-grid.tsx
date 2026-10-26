@@ -230,7 +230,7 @@ export function ScheduleTimeGrid({
                           ? `${item.booking.customerName} · ${item.booking.serviceName}`
                           : item.kind === "time_off"
                             ? scheduleWords.timeOff
-                            : scheduleWords.busyInGoogle
+                            : scheduleWords.busy
                       }`}
                       className={`absolute overflow-hidden rounded-md border px-1.5 py-1 text-[11px] leading-tight ${KIND_STYLES[item.kind]}`}
                       style={{
@@ -253,7 +253,7 @@ export function ScheduleTimeGrid({
                         ) : item.kind === "time_off" ? (
                           scheduleWords.timeOff
                         ) : (
-                          scheduleWords.busyInGoogle
+                          scheduleWords.busy
                         )}
                       </p>
                       {item.kind === "booking" ? (

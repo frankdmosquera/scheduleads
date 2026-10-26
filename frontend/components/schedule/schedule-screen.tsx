@@ -346,7 +346,7 @@ function ScheduleCalendar({
         </span>
         <span className="flex items-center gap-1.5">
           <span aria-hidden className={`size-3 rounded-sm border ${KIND_STYLES.google_busy}`} />
-          {scheduleWords.busyInGoogle}
+          {scheduleWords.busy}
         </span>
       </div>
     </div>
