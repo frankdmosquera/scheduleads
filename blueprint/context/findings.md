@@ -462,3 +462,51 @@ Still open 2026-10-25 by /audit independent (final review of 12k at 58c8bf5): 58
 **Why it matters:** The seven days match `siteConfig.hours` exactly (checked minute by minute). But `siteConfig.ts` says those hours come from one Instagram post of 22 Jul 2026, that her Google Business Profile disagrees on six days, and that they await her confirmation. The setup file's comment carries that; the spec, which is what goes live in 17.3, does not, and its Open questions ask her about people, rooms, deposits and her calendar but not her hours. Once live, these hours decide what customers can book.
 **Suggested fix:** Add "her opening hours, to confirm (one Instagram post; Google disagrees)" to the spec's Open questions, as a must-answer before 17.3.
 **Resolution:** fixed on feature/17-face-and-body: the spec says her week is from one Instagram post awaiting her confirmation, and Open questions lists her hours and notice as a must-answer before 17.3.
+
+### F-521 [P2] fixed - A booking-links request that never answers leaves every treatment Book button on her site dead for the rest of the visit
+
+**File:** ../face-and-body/components/booking/BookingHost.tsx:93-107 (feature/11-booking-integration at 3b278ea)
+**Found:** 2026-10-26 by independent review of step 17.2 (scope: face-and-body main..3b278ea and 94a011e; lenses: quality, security, performance, tests)
+**Why it matters:** The click listener cancels the anchor's navigation first, then waits on the slug-to-id request before opening anything. That request is a bare `fetch` with no time limit (every call inside the package goes through `fetchWithTimeLimit`, which also sends `credentials: "omit"`), and `ids.current` keeps the pending promise, so later clicks wait on the same one. Checked on http://localhost:3402/other-treatments with that one request stubbed to never settle: two treatment clicks opened nothing and did not navigate; with the network restored a third click still opened nothing. A slow mobile connection gives the same silence on the first click. Book now (empty `data-booking`) is not affected, since it skips the request.
+**Suggested fix:** Give the request a time limit (`AbortSignal.timeout`, the package's own limit) and `credentials: "omit"`, and on any failure clear the cache and open her list, so a Book click always opens something.
+**Resolution:** fixed in face-and-body 367fa39: the lookup sends no credentials and gives up after five seconds; a failure opens her list that time and is tried again on the next click.
+
+### F-522 [P2] fixed - On a phone, the menu's Book now opens the window but leaves the menu sheet open underneath, and the first Escape closes the hidden sheet instead of the window
+
+**File:** ../face-and-body/components/layout/MobileNav.tsx:236-243; ../face-and-body/components/booking/BookingHost.tsx:111-123
+**Found:** 2026-10-26 by independent review of step 17.2 (scope: face-and-body main..3b278ea and 94a011e; lenses: quality, security, performance, tests)
+**Why it matters:** Checked at 390 px on http://localhost:3402/ with a real click: menu, then Book now. The booking window opens, but the sheet keeps `data-open` (a MutationObserver saw no change on it at all), so closing the window lands the visitor back in the menu. Escape goes to Base UI's sheet first: the first press closed the sheet behind the window, the second closed the window. The cause is not pinned down (the capture listener's `preventDefault` runs before `SheetClose`'s handler; Base UI's `DialogClose` should still close, yet does not here). The comment beside it says BookingHost opens the window, implying the sheet closes as before. This is the main Book path on a phone.
+**Suggested fix:** Close the sheet explicitly when its Book now is pressed (for example `setOpen(false)` in an `onClick` on that `SheetClose`), then recheck that one Escape closes the window and that closing the window returns to the page, not the menu.
+**Resolution:** fixed in face-and-body 367fa39: BookingHost listens in the bubble phase, so the menu's SheetClose closes the sheet first. Checked at 375px: Book now in the phone menu opens the window and the menu is gone. Escape could not be checked in the builder's pane (its key presses do not reach a page dialog).
+
+### F-523 [P3] fixed - A failed list answer is kept for the whole visit, and a second Book click during the first one's wait is dropped
+
+**File:** ../face-and-body/components/booking/BookingHost.tsx:93-107
+**Found:** 2026-10-26 by independent review of step 17.2 (scope: face-and-body main..3b278ea and 94a011e; lenses: quality, security, performance, tests)
+**Why it matters:** Only a thrown error clears the cache. A 4xx or 5xx (or a body without `bookingLinks`) becomes an empty map kept for the visit: checked with one 503 on the first click, then with the API healthy the next treatment click (`microneedling-abdomen`) opened her whole list, not that treatment. Two clicks while the first request is pending both wait on the same promise and the provider's open-once rule keeps the first: clicking 90 min then 75 min opened 90 min. Also, unlike the package, the host does not strip a trailing slash from `apiUrl`, so `NEXT_PUBLIC_BOOKING_API_URL=http://localhost:3401/` asks for `//public/...`, which would silently turn every treatment into her list. None of this breaks booking (a window always opens), but each failure is silent.
+**Suggested fix:** Cache only a successful list (reset `ids.current` when `!response.ok`), open on the id of the latest click rather than each click's own, and trim the trailing slash as the package does.
+**Resolution:** fixed in face-and-body 367fa39: a failed answer is no longer kept (it throws, so the next click asks again); when clicks overlap the last one wins; a trailing slash on apiUrl is trimmed.
+
+### F-524 [P3] fixed - BookingHost's header says the catalogue never crosses into the browser, but it ships in the mobile menu's bundle
+
+**File:** ../face-and-body/components/booking/BookingHost.tsx:17-24; ../face-and-body/components/layout/MobileNav.tsx:1,27; ../face-and-body/lib/bookingConfig.ts:1
+**Found:** 2026-10-26 by independent review of step 17.2 (scope: face-and-body main..3b278ea and 94a011e; lenses: quality, security, performance, tests)
+**Why it matters:** `MobileNav` is a client component and imports `BookLink`, which imports `bookingTrigger` from `bookingConfig.ts`, which imports `servicesData`. After `npm run build`, `.next/static/chunks/14hql1cycxpkx.js` (85 KB) holds her treatments' descriptions. The chain is the same on `main`, so this is not a regression, but the new comment states the opposite, and the props-only design of `BookingHost` rests on it. Nothing secret is exposed; it is page weight on every page.
+**Suggested fix:** Correct the comment, or let the menu's Book now (which names no treatment) render its anchor without importing `bookingConfig`, for example from a general Book link in a module that does not load the catalogue.
+**Resolution:** fixed in face-and-body 367fa39: BookingHost's header now says this file imports nothing from bookingConfig and names MobileNav as the way the catalogue still reaches the browser, which predates this step.
+
+### F-525 [P3] open - Her live Cal.com API key stays in `.env.local` with nothing left to read it, and sits in the Turbopack caches
+
+**File:** ../face-and-body/.env.local:21-27 (gitignored, not committed)
+**Found:** 2026-10-26 by independent review of step 17.2 (scope: face-and-body main..3b278ea and 94a011e; lenses: quality, security, performance, tests)
+**Why it matters:** The step deleted `createCalcomEventTypes.mjs`, the key's only reader, but the key (a live one) and its comment naming the deleted script remain. Her `AGENTS.md` (Environment) says a variable no code reads does not belong in `.env.local`, because Turbopack copies the environment into `.next/cache`; the key's name is found in five `.sst` files under `.next/cache` and `.next/dev/cache`. The spec's "no calcom remains" covers code and `package.json`, so this was outside it, but this is the step that made the key dead.
+**Suggested fix:** Remove the key and its comment from `.env.local`, delete `.next` to clear the cached copies, and add revoking the key to the 17.3 go-live list for the day her Cal.com account closes.
+**Resolution:** carried to step 17.3's go-live list: revoke the key in her Cal.com account and remove its line from her .env.local (Frank's call, a secret in his sister's account).
+
+### F-526 [P3] fixed - Her `AGENTS.md` does not say how to install, run or check the site now
+
+**File:** ../face-and-body/AGENTS.md:209-214, 233-247
+**Found:** 2026-10-26 by independent review of step 17.2 (scope: face-and-body main..3b278ea and 94a011e; lenses: quality, security, performance, tests)
+**Why it matters:** Commands still lists only `npm run dev` on http://localhost:3000, while the spec runs her site on 3402 and never on 3000/3001 (her `dev` script has no port, so it takes 3000 unless `-p 3402` is passed, as the new `.claude/launch.json` entry does). It does not list `node scripts/checkBookingLinks.mjs [--api <url>]`, the step's saved check, nor that `npm install` now needs `NODE_AUTH_TOKEN` because of the committed `.npmrc` (on Vercel too, which 17.3 relies on). Environment says the project reads five variables and lists them; `NEXT_PUBLIC_BOOKING_API_URL` is a sixth, local only. The next session in her repo reads this file first. Also minor: the check script crashes with a stack trace when `--api` is given no value.
+**Suggested fix:** Add the port, the check script command, the token for installs, and `NEXT_PUBLIC_BOOKING_API_URL` (local only; missing means live) to her `AGENTS.md`; make a valueless `--api` print its usage.
+**Resolution:** fixed in face-and-body 367fa39: her AGENTS.md gives the 3402 port from scheduleads-app's preview config, the NODE_AUTH_TOKEN install, the check script command, and six variables with NEXT_PUBLIC_BOOKING_API_URL; the check script refuses --api without an address.

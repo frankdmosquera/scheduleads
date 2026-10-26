@@ -130,7 +130,7 @@ and push, its own plan line and `current-feature.md`, and merging there is Frank
   run then apply the setup file with `--live`, and run the check script against the live API.
   Her site's address joins `WIDGET_ORIGINS` on Railway once her domain is known (her item 13).
   Write the go-live list into her repo's records for launch day: deploy with `NODE_AUTH_TOKEN` in
-  Vercel, one real booking, then close her Cal.com account. **Done when:** the live dry run has
+  Vercel, one real booking, then close her Cal.com account and revoke its API key, still in her `.env.local` (F-525). **Done when:** the live dry run has
   nothing to add, the live check script passes, and the go-live list is in her repo.
 
 ## Files / areas
