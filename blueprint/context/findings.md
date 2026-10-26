@@ -431,13 +431,13 @@ Rechecked 2026-10-25 by /audit independent (review of 12k.3 at 398cfb1): save-bu
 **Resolution:** Fixed 2026-10-25 at /complete: the marker is recomputed by /overview's contract over the checked-out CRLF form of both plans, with 12k ticked: `be1b829e1f2aa70643b5ebfa16810c16878757015340c4a5c7e88cc743114ea3` (the same computation reproduces the old `996777de…` on the plans before b273b0e).
 Still open 2026-10-25 by /audit independent (final review of 12k at 58c8bf5): 58c8bf5 touches neither plan nor the overview, project-overview.md:3 still reads `996777de…`, and the same computation over the checked-out plans still gives `be1b829e…`. For `/complete`, by its own contract.
 
-### F-516 [P3] open - The skills carry-over test runs migration 0033's insert over every business in the database, so a sibling test file deleting its own business mid-run fails it
+### F-516 [P3] fixed - The skills carry-over test runs migration 0033's insert over every business in the database, so a sibling test file deleting its own business mid-run fails it
 
 **File:** backend/lib/scheduling/skills-carry-over.test.ts:97
 **Found:** 2026-10-26 by /audit independent (review of fix/npm-audit-warnings at 2a42e92; lens: tests)
 **Why it matters:** The test replays the carry-over statements unscoped (`INSERT INTO "person_skill" ... SELECT ... FROM "booking_link_resource"` with no organization filter) while Vitest runs the other backend files in parallel against the same `scheduleads_dev`. When another file's business is deleted between the SELECT and the foreign key check, the insert fails with `person_skill_organizationId_organization_id_fk` (23503). Seen once in this review's first `npm run test --workspace=backend` (1 failed, 1097 passed; the missing organization was not the test's own); the file passed alone and the whole suite passed 1098/1098 on the rerun. Not caused by this fix's lockfile change: the test and the migration predate the base commit (807203b), and nothing in the delta touches scheduling or Vitest's file parallelism. A red suite that passes on rerun teaches people to rerun instead of read.
 **Suggested fix:** Scope the replayed statements to the test's own business (append an `organizationId` filter in the test before running them), or run this file on its own (for example a `describe.sequential` file isolated through Vitest's `poolMatchGlobs`/`fileParallelism` for it), so other files' rows never enter its transaction.
-**Resolution:**
+**Resolution:** fixed on fix/flaky-skills-carry-over-test: the test scopes each replayed statement to its own business (its top-level FROM table's organizationId) and fails loudly if a statement cannot be scoped; the backend suite passed 1098/1098 five runs in a row, and dropping the first statement still fails the test.
 
 ### F-517 [P3] open - The spec says "no new package, no major version", but the lockfile adds three packages and moves one a major version, all inside the shadcn CLI chain
 
