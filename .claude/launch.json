@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--workspace=frontend"],
       "port": 3400
+    },
+    {
+      "name": "face-and-body-site",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "../face-and-body", "--", "-p", "3402"],
+      "port": 3402
     }
   ]
 }

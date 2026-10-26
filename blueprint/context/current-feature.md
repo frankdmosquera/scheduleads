@@ -90,7 +90,7 @@ and push, its own plan line and `current-feature.md`, and merging there is Frank
   again. **Done when:** the second dry run has nothing to add; Settings shows her 37 services and
   her week at http://localhost:3400; `GET http://localhost:3401/public/face-and-body-wellness-centre/booking-links`
   answers 37 links; the shared and backend suites pass.
-- [ ] 2. **Her site books with our window.** In `face-and-body`, on
+- [x] 2. **Her site books with our window.** In `face-and-body`, on
   `feature/11-booking-integration` off its `main` (only once the uncommitted
   `components/theme/DesignPicker.tsx` change on `design/copy-my-picks` is settled; see Open
   questions): with Frank's yes, install `@frankdmosquera/booking-component` 0.2.0 (the `.npmrc`
@@ -106,8 +106,14 @@ and push, its own plan line and `current-feature.md`, and merging there is Frank
   wraps the site once in `BookingProvider` (language `en`, `afterBooking: "stay"`: she has no
   thank-you page) and opens the window from her existing Book controls by booking id; the
   Enquire controls stay on `/contact`. `/book` and `/book?treatment=<slug>` still work: the page
-  opens the window on that treatment, or on her services. The window's look: `--sa-*` tokens in
-  `globals.css`, from her theme's own colours, fonts and radius. `scripts/checkBookingLinks.mjs`
+  opens the window on that treatment, or on her services. The window keeps its standard look
+  (Frank, 2026-10-26: her colours and logo come later, for every business). Amended while
+  building: the window opens a service by its id in Booking CRM, not its slug, and the id differs
+  per database, so her site keeps slugs and reads her slug-to-id list once on the first Book click
+  (option A, Frank's yes); letting the API take a slug is noted for later. The uncommitted
+  DesignPicker change was stashed (nobody was working on it). The footer's Book now, which went
+  to `/contact`, goes to `/book`, and `/book` no longer promises a reminder Booking CRM does not
+  send yet. `scripts/checkBookingLinks.mjs`
   replaces `createCalcomEventTypes.mjs`: it reads her catalogue and `GET
   <api>/public/face-and-body-wellness-centre/booking-links`, prints any treatment with no link and any link with
   no treatment, and exits 1 on a missing link. Her plan's item 11 is reworded ("Booking CRM
