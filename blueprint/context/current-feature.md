@@ -29,8 +29,8 @@ the site uses "until it lands", and only that file and `components/booking/` tou
   Applied to the local `scheduleads_dev` through the existing `client:setup` command.
 - **Her site books with our window (17.2), in the `face-and-body` repo.** Our package in, Cal.com
   out: `BookingProvider` once around the site, each treatment's Book button opens the window on
-  that treatment, the header's Book now opens it on her services, the look comes from her
-  theme through the `--sa-*` tokens, `/book` keeps working as an address. A check script
+  that treatment, the header's Book now opens it on her services, the window keeps its
+  standard look (her colours later, for every business), `/book` keeps working as an address. A check script
   replaces `scripts/createCalcomEventTypes.mjs`: it compares every bookable treatment on the site
   with her booking links in the API and fails on a missing one. Her own plan's item 11 is
   reworded to Booking CRM and closed with this step, in her repo's own records.
@@ -82,7 +82,7 @@ and push, its own plan line and `current-feature.md`, and merging there is Frank
   midnight (Mon 16:00-20:00, Tue 10:00-13:00, Wed 09:00-12:00, Thu 12:00-15:30, Fri 14:00-18:00,
   Sat 07:00-11:30, Sun closed; from one Instagram post, awaiting her confirmation);
   `timezone: "America/Edmonton"`; `minimumNoticeMinutes: 120` (a starting point: Cal.com's
-  default for a new event type, since nothing records her own notice; confirmed with her) and
+  default for a new event type, since nothing records her own notice; to be confirmed with her) and
   `horizonDays: 365` (Cal.com's default is no limit; a year is the most Settings allows); all of
   them hers to change in Settings; `closedDates: []`; `people: []`;
   37 services, each `name` exactly as on her site, `durationMinutes` from `durationMin`,
@@ -132,8 +132,10 @@ and push, its own plan line and `current-feature.md`, and merging there is Frank
   setup command, schema and booking routes exist since features 10 and 12k.
 - `face-and-body`: `package.json`, `.npmrc` (new), `lib/bookingConfig.ts`,
   `components/booking/` (`BookingEmbed.tsx`, `BookingPopup.tsx`, `Booker.tsx`, `BookLink.tsx`),
-  `app/book/page.tsx`, `app/layout.tsx`, `app/globals.css`, `scripts/checkBookingLinks.mjs`
-  (new), `scripts/createCalcomEventTypes.mjs` (deleted), its `blueprint/build-plan.md` item 11.
+  `components/booking/BookingHost.tsx` (new; `BookingEmbed.tsx` and `BookingPopup.tsx` deleted),
+  `components/layout/MobileNav.tsx`, `data/nav.ts`, `data/servicesData.ts`, `app/book/page.tsx`,
+  `app/layout.tsx`, `scripts/checkBookingLinks.mjs` (new), `scripts/createCalcomEventTypes.mjs`
+  (deleted), its `AGENTS.md`, `blueprint/build-plan.md` item 11 and `current-feature.md`.
 - Local only, never committed: this repo's root `.env` `WIDGET_ORIGINS`.
 
 ## Data / contracts
