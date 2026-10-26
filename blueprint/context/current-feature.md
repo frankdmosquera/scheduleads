@@ -5,7 +5,7 @@
 **Size:** light - one label in two languages; proved by the frontend build, lint and the Calendar's
 week view.
 
-**Status:** built
+**Status:** verified
 
 **Branch:** fix/busy-label
 
