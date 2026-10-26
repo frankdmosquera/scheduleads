@@ -6,7 +6,7 @@
 `package.json` already allows, no code change; proved by the builds, the suites and a walk
 through the dashboard.
 
-**Status:** built
+**Status:** verified
 
 **Branch:** fix/npm-audit-warnings
 
