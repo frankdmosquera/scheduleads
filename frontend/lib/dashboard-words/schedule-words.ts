@@ -29,7 +29,7 @@ export type ScheduleWordsType = {
   onStandby: string;
   noBookableHours: string;
   timeOff: string;
-  busyInGoogle: string;
+  busy: string;
   removing: string;
   remove: string;
   // Booking by hand
@@ -99,7 +99,7 @@ export const englishScheduleWords: ScheduleWordsType = {
   onStandby: "On standby: not offered to customers",
   noBookableHours: "No bookable hours",
   timeOff: "Time off",
-  busyInGoogle: "Busy in Google",
+  busy: "Busy",
   removing: "Removing…",
   remove: "Remove",
   pickATime: "Pick a time.",
@@ -171,7 +171,7 @@ export const spanishScheduleWords: ScheduleWordsType = {
   onStandby: "En espera: no se ofrece a los clientes",
   noBookableHours: "Sin horas para reservar",
   timeOff: "No disponible",
-  busyInGoogle: "Ocupado en Google",
+  busy: "Ocupado",
   removing: "Quitando…",
   remove: "Quitar",
   pickATime: "Elija una hora.",
