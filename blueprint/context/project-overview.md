@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash 32fbadc41e9e5b91275032ab27114a0454171fc1263b48641f3bbd1756fc76ca -->
+<!-- blueprint:source-hash 8b0c310dcfdc5919dbbab323f1fd3faa3a3fa66877d2ca85a24518ef82d4ab15 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -100,7 +100,8 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 14. **Pipeline board** - drag and drop between stages the business names.
 15. **Email from the CRM** - sends logged on the timeline; BCC capture.
 16. **Quotes** - line items, a total, a tokenized accept link.
-17. **Face and Body** - Cal.com out; 45 services, practitioners, rooms.
+17. **Face and Body** - Cal.com out; her 37 bookable services as booking links.
+17b. **Face and Body live** - her staff and rooms, the live setup, her launch, Cal.com closed.
 18. **The Latam Painters** - after its site and siteConfig exist.
 19. **Crew and job scheduling** - jobs of daily visits, crews as saved lists.
 20. **Reports**. 21. **Connect to the Agent app** (WhatsApp lives there). 21b. **RCS**. 22. **Google OAuth verification** (22a calendar, before 13, done; 22b Gmail; 22c Google verifies the calendar scopes)

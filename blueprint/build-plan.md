@@ -455,14 +455,23 @@ the customer accepts from the link.
 
 Exit: four organizations, four live sites, zero rented booking.
 
-- [ ] 17. **Face and Body** - Cal.com comes out from behind the seam its
-  decisions file built for this. Its 45 services become booking links, its
-  practitioners become resources, and its treatment rooms become places
-  that the services needing them are ticked to. Ask at onboarding whether
+- [x] 17. **Face and Body** - Cal.com comes out from behind the seam its
+  decisions file built for this. Its bookable services become booking links
+  (37: her catalogue holds 40, three priced at consultation); its
+  practitioners and treatment rooms move to 17b, once she names them. Ask at onboarding whether
   the clinic keeps a Google calendar and whether it takes deposits.
   First, before any client connects a calendar: Google's consent screen
   published (a privacy page on booking-crm.com, the name owners see there,
   then Publish), or Google drops the connection every 7 days (10b decision 6)
+- [ ] 17b. **Face and Body live** - split from 17 by Frank on 2026-10-26, so 17 could close
+  while this waits on her answers (email, hours and notice, staff and rooms, deposits, Google
+  calendar) and on IA a la Orden taking real bookings. Her practitioners become people and her
+  treatment rooms places, ticked to the services that need them, in
+  `client-setups/face-and-body.ts`; her business made on the live app and that file applied
+  with `--live`; `scripts/checkBookingLinks.mjs` in
+  her repo passes against the live API; her domain in `WIDGET_ORIGINS` on Railway; her site
+  launched (her item 13, with its Next.js security update); one real booking; her Cal.com
+  account closed and its API key revoked
 - [ ] 18. **The Latam Painters** - after its own site is finished. First
   find out whose Calendly has been receiving its bookings. It needs a
   siteConfig before it can be a tenant

@@ -438,3 +438,11 @@ Still open 2026-10-25 by /audit independent (final review of 12k at 58c8bf5): 58
 **Why it matters:** Comparing the two lockfiles: `@shadcn/registry` 0.2.0 (with its own `cn` 0.2.6), `type-fest` 4.41.0 and nested copies of `content-type` 2.1.0 and `obug` 3.0.0 are added; `cosmiconfig` 9.0.2 and shadcn's private `zod` 3.25.76 are removed; `content-disposition` moves 1.1.0 to 2.0.1 because `express` 5.3.0 asks for `^2.0.1`; `why-is-node-running` steps back 3.2.2 to 3.2.1 because `vitest` 5.0.5 pins it exactly. All of it follows from `shadcn` 4.21.0 to 4.22.1, `express` 5.2.1 to 5.3.0 and `vitest` 5.0.2 to 5.0.5, nothing the live API imports, and no `package.json` changed, so the change is sound. The statement is true for direct dependencies only, and Frank reads the record rather than the lockfile; `shadcn` sits in the frontend's `dependencies`, so its new packages also install on Vercel.
 **Suggested fix:** Say "no new direct package and no major version of one; the shadcn CLI pulls in @shadcn/registry and type-fest and moves content-disposition to 2.x" in the spec and the build log entry at `/complete`.
 **Resolution:**
+
+### F-529 [P3] open - The spec's Open questions still ask whether someone is working on the DesignPicker change, which step 2 answered and stashed
+
+**File:** blueprint/context/current-feature.md:176-178
+**Found:** 2026-10-26 by the second final independent review of feature 17 (scope: current, main..eb2a6a3 and face-and-body main..3396aa1; lenses: quality, security, performance, tests)
+**Why it matters:** Step 2 (line 115) and her repo's own `current-feature.md` record that the uncommitted `DesignPicker.tsx` change was stashed because nobody was working on it, and `git stash list` in face-and-body holds it ("DesignPicker work in progress, stashed for feature 11 on 2026-10-26"). The Open questions section still asks "is someone still working on it?" and says 17.2 "cannot branch off her main cleanly until" it is settled, so the archived spec shows a question as open that the feature closed, and does not say where the work now sits.
+**Suggested fix:** Mark the question answered in the spec: stashed on 2026-10-26 on `design/copy-my-picks` (nobody was working on it), found with `git stash list` in face-and-body.
+**Resolution:**
