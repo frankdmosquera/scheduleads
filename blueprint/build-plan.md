@@ -455,7 +455,7 @@ the customer accepts from the link.
 
 Exit: four organizations, four live sites, zero rented booking.
 
-- [ ] 17. **Face and Body** - Cal.com comes out from behind the seam its
+- [x] 17. **Face and Body** - Cal.com comes out from behind the seam its
   decisions file built for this. Its bookable services become booking links
   (37: her catalogue holds 40, three priced at consultation); its
   practitioners and treatment rooms move to 17b, once she names them. Ask at onboarding whether
