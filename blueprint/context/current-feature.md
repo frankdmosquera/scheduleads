@@ -5,7 +5,7 @@
 **Size:** light - one test's setup scoped to its own business, and one note added to the plan;
 proved by the test and the whole backend suite run repeatedly.
 
-**Status:** built
+**Status:** verified
 
 **Branch:** fix/flaky-skills-carry-over-test
 
