@@ -1,9 +1,9 @@
 // Face and Body Wellness Centre, Frank's sister's clinic in Calgary (feature 17). Made once on
 // 2026-10-26 from her site: the treatments from face-and-body/data/servicesData.ts (the 37 with a
 // price; the 3 priced at consultation stay Enquire there), the week and time zone from
-// data/siteConfig.ts. Names are hers exactly, so each booking link's slug is her site's slug;
-// face-and-body/scripts/checkBookingLinks.mjs keeps the two equal. Every value is hers to change
-// in Settings. Her practitioners and rooms are added here once she names them.
+// data/siteConfig.ts. Names are hers exactly; the two Relaxation Massage lengths make a different
+// slug than her site's, so her site carries their bookingId (step 17.2). Every value is hers to
+// change in Settings. Her practitioners and rooms are added here once she names them.
 // Apply: npm run client:setup --workspace=@scheduleads-app/shared -- client-setups/face-and-body.ts --apply
 
 import type { ClientSetupInputType } from "@scheduleads-app/shared/zod-validation";
@@ -24,7 +24,7 @@ export default {
       sat: [{ startMinute: 420, endMinute: 690 }], // 07:00 to 11:30
     }, // Sunday closed. From her Instagram post of 22 Jul 2026, awaiting her confirmation.
     timezone: "America/Edmonton",
-    minimumNoticeMinutes: 120, // Cal.com's default notice, which her event types never changed
+    minimumNoticeMinutes: 120, // a starting point, Cal.com's default for a new event type; ask her
     horizonDays: 365, // Cal.com's default is no limit; a year is the longest Settings allows
     closedDates: [],
   },

@@ -79,9 +79,11 @@ and push, its own plan line and `current-feature.md`, and merging there is Frank
   today (its event types set no booking fields, so Cal.com's own: a name and an email, so
   `"email"` and no questions); `hours.weeklyHours` from `siteConfig.hours` in minutes from
   midnight (Mon 16:00-20:00, Tue 10:00-13:00, Wed 09:00-12:00, Thu 12:00-15:30, Fri 14:00-18:00,
-  Sat 07:00-11:30, Sun closed); `timezone: "America/Edmonton"`; `minimumNoticeMinutes: 120` and
-  `horizonDays` from Cal.com's defaults, which her event types never changed (checked against
-  the schema's limits; all of them hers to change in Settings); `closedDates: []`; `people: []`;
+  Sat 07:00-11:30, Sun closed; from one Instagram post, awaiting her confirmation);
+  `timezone: "America/Edmonton"`; `minimumNoticeMinutes: 120` (a starting point: Cal.com's
+  default for a new event type, since nothing records her own notice; confirmed with her) and
+  `horizonDays: 365` (Cal.com's default is no limit; a year is the most Settings allows); all of
+  them hers to change in Settings; `closedDates: []`; `people: []`;
   37 services, each `name` exactly as on her site, `durationMinutes` from `durationMin`,
   `description` from hers, `addressMode: "not_asked"` (she works at the clinic). Make the
   business on http://localhost:3400/admin/client-setup, then dry run, `--apply`, and dry run
@@ -97,7 +99,10 @@ and push, its own plan line and `current-feature.md`, and merging there is Frank
   to `BOOKING_SLUG = "face-and-body-wellness-centre"` and `BOOKING_API_URL`, the live address
   `https://api.booking-crm.com` unless `NEXT_PUBLIC_BOOKING_API_URL` is set (local only; a
   missing variable on Vercel still books live, the trap the file's own comment describes);
-  `buildBookables` keeps `bookingId ?? slug` as each treatment's booking id. `components/booking/`
+  `buildBookables` keeps `bookingId ?? slug` as each treatment's booking id, and her catalogue
+  sets `bookingId` on the two whose names make another slug here: "Relaxation Massage, 75 min"
+  (`relaxation-massage-75-min`) and "Relaxation Massage, 90 min" (`relaxation-massage-90-min`)
+  (F-518). `components/booking/`
   wraps the site once in `BookingProvider` (language `en`, `afterBooking: "stay"`: she has no
   thank-you page) and opens the window from her existing Book controls by booking id; the
   Enquire controls stay on `/contact`. `/book` and `/book?treatment=<slug>` still work: the page
@@ -136,8 +141,8 @@ and push, its own plan line and `current-feature.md`, and merging there is Frank
 
 - **One booking id per treatment.** The site's `bookingId ?? slug` must equal the booking link's
   slug, which Booking CRM makes from the service name (`toSlug`, `-2` when taken). Names are
-  copied exactly, so each matches its site slug; any that does not gets its `bookingId` set on
-  the site. `checkBookingLinks.mjs` is the contract's guard from then on, including a service
+  copied exactly; 35 of the 37 then match their site slug, and the two Relaxation Massage
+  lengths get their `bookingId` set on the site (17.2). `checkBookingLinks.mjs` is the contract's guard from then on, including a service
   added later on either side.
 - **Public routes only.** The site calls `GET /public/face-and-body-wellness-centre/...` and posts bookings, no
   credentials, allowed by `WIDGET_ORIGINS` (`public-cors-middleware.ts`). No login reaches her
@@ -172,6 +177,9 @@ and push, its own plan line and `current-feature.md`, and merging there is Frank
   her `main` cleanly until it is committed, stashed by its owner, or dropped. Blocks 17.2 only.
 - **Her practitioners and rooms, and which treatments each does.** Facts from her, asked at
   onboarding; added to the setup file before 17.3. Blocks nothing in 17.1 or 17.2.
+- **Her hours and notice, confirmed by her** (F-519, F-520). Her week comes from one Instagram
+  post that Google disagrees with on six days, and the two hours' notice is a starting point.
+  Asked at onboarding; must be answered before 17.3, and changed in Settings or the setup file.
 - **Deposits** (project plan question 16) and **her Google calendar**: asked at onboarding. A
   yes to either adds work before 17.3 (a payment item; publishing Google's consent screen).
 - **Go-live order.** The plan holds real clients until IA a la Orden has taken real bookings
