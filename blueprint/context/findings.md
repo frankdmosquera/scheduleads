@@ -495,13 +495,13 @@ Still open 2026-10-25 by /audit independent (final review of 12k at 58c8bf5): 58
 **Suggested fix:** Correct the comment, or let the menu's Book now (which names no treatment) render its anchor without importing `bookingConfig`, for example from a general Book link in a module that does not load the catalogue.
 **Resolution:** fixed in face-and-body 367fa39: BookingHost's header now says this file imports nothing from bookingConfig and names MobileNav as the way the catalogue still reaches the browser, which predates this step.
 
-### F-525 [P3] open - Her live Cal.com API key stays in `.env.local` with nothing left to read it, and sits in the Turbopack caches
+### F-525 [P3] accepted - Her live Cal.com API key stays in `.env.local` with nothing left to read it, and sits in the Turbopack caches
 
 **File:** ../face-and-body/.env.local:21-27 (gitignored, not committed)
 **Found:** 2026-10-26 by independent review of step 17.2 (scope: face-and-body main..3b278ea and 94a011e; lenses: quality, security, performance, tests)
 **Why it matters:** The step deleted `createCalcomEventTypes.mjs`, the key's only reader, but the key (a live one) and its comment naming the deleted script remain. Her `AGENTS.md` (Environment) says a variable no code reads does not belong in `.env.local`, because Turbopack copies the environment into `.next/cache`; the key's name is found in five `.sst` files under `.next/cache` and `.next/dev/cache`. The spec's "no calcom remains" covers code and `package.json`, so this was outside it, but this is the step that made the key dead.
 **Suggested fix:** Remove the key and its comment from `.env.local`, delete `.next` to clear the cached copies, and add revoking the key to the 17.3 go-live list for the day her Cal.com account closes.
-**Resolution:** carried to step 17.3's go-live list: revoke the key in her Cal.com account and remove its line from her .env.local (Frank's call, a secret in his sister's account).
+**Resolution:** accepted by Frank, 2026-10-26: keep the key in her .env.local for now, so it never has to be pasted back if needed. Revoking it in her Cal.com account stays on step 17.3's go-live list.
 
 ### F-526 [P3] fixed - Her `AGENTS.md` does not say how to install, run or check the site now
 
