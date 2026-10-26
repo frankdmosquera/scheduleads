@@ -430,3 +430,19 @@ Rechecked 2026-10-25 by /audit independent (review of 12k.3 at 398cfb1): save-bu
 **Suggested fix:** Recompute the marker over the checked-out plans by `/overview`'s contract (or rerun `/overview`), at `/complete` once 12k is ticked, since ticking does not change the normalized hash.
 **Resolution:** Fixed 2026-10-25 at /complete: the marker is recomputed by /overview's contract over the checked-out CRLF form of both plans, with 12k ticked: `be1b829e1f2aa70643b5ebfa16810c16878757015340c4a5c7e88cc743114ea3` (the same computation reproduces the old `996777de…` on the plans before b273b0e).
 Still open 2026-10-25 by /audit independent (final review of 12k at 58c8bf5): 58c8bf5 touches neither plan nor the overview, project-overview.md:3 still reads `996777de…`, and the same computation over the checked-out plans still gives `be1b829e…`. For `/complete`, by its own contract.
+
+### F-516 [P3] open - The skills carry-over test runs migration 0033's insert over every business in the database, so a sibling test file deleting its own business mid-run fails it
+
+**File:** backend/lib/scheduling/skills-carry-over.test.ts:97
+**Found:** 2026-10-26 by /audit independent (review of fix/npm-audit-warnings at 2a42e92; lens: tests)
+**Why it matters:** The test replays the carry-over statements unscoped (`INSERT INTO "person_skill" ... SELECT ... FROM "booking_link_resource"` with no organization filter) while Vitest runs the other backend files in parallel against the same `scheduleads_dev`. When another file's business is deleted between the SELECT and the foreign key check, the insert fails with `person_skill_organizationId_organization_id_fk` (23503). Seen once in this review's first `npm run test --workspace=backend` (1 failed, 1097 passed; the missing organization was not the test's own); the file passed alone and the whole suite passed 1098/1098 on the rerun. Not caused by this fix's lockfile change: the test and the migration predate the base commit (807203b), and nothing in the delta touches scheduling or Vitest's file parallelism. A red suite that passes on rerun teaches people to rerun instead of read.
+**Suggested fix:** Scope the replayed statements to the test's own business (append an `organizationId` filter in the test before running them), or run this file on its own (for example a `describe.sequential` file isolated through Vitest's `poolMatchGlobs`/`fileParallelism` for it), so other files' rows never enter its transaction.
+**Resolution:**
+
+### F-517 [P3] open - The spec says "no new package, no major version", but the lockfile adds three packages and moves one a major version, all inside the shadcn CLI chain
+
+**File:** blueprint/context/current-feature.md:29
+**Found:** 2026-10-26 by /audit independent (review of fix/npm-audit-warnings at 2a42e92; lens: quality)
+**Why it matters:** Comparing the two lockfiles: `@shadcn/registry` 0.2.0 (with its own `cn` 0.2.6), `type-fest` 4.41.0 and nested copies of `content-type` 2.1.0 and `obug` 3.0.0 are added; `cosmiconfig` 9.0.2 and shadcn's private `zod` 3.25.76 are removed; `content-disposition` moves 1.1.0 to 2.0.1 because `express` 5.3.0 asks for `^2.0.1`; `why-is-node-running` steps back 3.2.2 to 3.2.1 because `vitest` 5.0.5 pins it exactly. All of it follows from `shadcn` 4.21.0 to 4.22.1, `express` 5.2.1 to 5.3.0 and `vitest` 5.0.2 to 5.0.5, nothing the live API imports, and no `package.json` changed, so the change is sound. The statement is true for direct dependencies only, and Frank reads the record rather than the lockfile; `shadcn` sits in the frontend's `dependencies`, so its new packages also install on Vercel.
+**Suggested fix:** Say "no new direct package and no major version of one; the shadcn CLI pulls in @shadcn/registry and type-fest and moves content-disposition to 2.x" in the spec and the build log entry at `/complete`.
+**Resolution:**
