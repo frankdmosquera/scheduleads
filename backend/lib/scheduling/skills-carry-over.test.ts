@@ -27,13 +27,23 @@ const migration = readFileSync(
   new URL("../../../packages/shared/migrations/0033_person_skill.sql", import.meta.url),
   "utf8"
 );
+const business = randomUUID();
+
+// Scoped to this test's business, so other test files running in parallel never enter the
+// transaction (F-516). Every join inside already matches on organizationId, so nothing proved changes.
+const onlyThisBusiness = (statement: string) => {
+  const outer = /^FROM "(\w+)"/m.exec(statement)?.[1];
+  if (!outer || !/^WHERE /m.test(statement)) throw new Error(`cannot scope: ${statement}`);
+  return statement.replace(/^WHERE /m, `WHERE "${outer}"."organizationId" = '${business}' AND `);
+};
+
 const carryOver = migration
   .slice(migration.indexOf("-- The carry-over"))
   .split("--> statement-breakpoint")
   .map((statement) => statement.trim())
-  .filter(Boolean);
+  .filter(Boolean)
+  .map(onlyThisBusiness);
 
-const business = randomUUID();
 const id = () => randomUUID();
 const people = { ana: id(), mei: id(), gone: id() };
 const room = id();

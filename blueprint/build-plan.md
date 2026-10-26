@@ -568,7 +568,11 @@ Nothing above depends on these. Each gets a phase when something does.
   included, no texts included; a business that wants texts pays from the
   first one. Not offered: a business plugging in its own Twilio account.
   Needs the missing **reminder by email** (today only confirmations, moves
-  and cancellations are emailed), which is also the free fallback
+  and cancellations are emailed), which is also the free fallback. Added
+  Oct 25 (Frank): workers' texts about their day (12g) go by WhatsApp too,
+  SMS only as a paid option; email also costs at volume, so every channel
+  is a pick, and turning on a paid one first asks a "make sure"
+  confirmation showing what it costs
 - Photo attachments on a lead
 - Orders in the CRM (Frank, Oct 18): the CRM holds orders as well as
   bookings (ordered, paid, picked up), the store module kept for later on
