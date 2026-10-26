@@ -361,8 +361,8 @@ Order, every time:
 2. tick the box in `blueprint/context/current-feature.md`
 3. write the step's entry in `buildlogs/logs/scheduleads/` (its file, its state
    in `roadmap.json`, the feature's Log), then commit that folder to buildlogs'
-   `main`, as the guide says; it is pushed about once a day, never per step
-   (Frank, 2026-10-09)
+   `main`, as the guide says; it is pushed once per feature, never per step
+   (Frank, 2026-10-25; it was about once a day)
 4. commit the step here and push it (see Git above)
 5. only then report the step in chat
 
