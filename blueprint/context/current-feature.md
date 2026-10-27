@@ -7,7 +7,7 @@ command's three refusals).
 
 **Branch:** `feature/25c-a-client-site-installs-the-booking-window-without-a-token`
 
-**Status:** verified (25c.1 built Oct 27; plan yes Oct 27, IA a la Orden on its open branch, option A)
+**Status:** verified
 
 ## Goal
 
