@@ -526,6 +526,11 @@ business's name. A domain Resend still refuses (403) gets the email once more fr
 `booking-crm.com`. To give a client their own sender: add the domain in Resend (manual setup, no
 tracking) and its records in Vercel. On the laptop no booking email is sent.
 
+**Client sites (25b)** may call their own business's public booking routes because of the
+business's Website field (https, with and without `www`), read by slug and kept for a minute;
+another business's routes stay refused. `WIDGET_ORIGINS` is only for the laptop's dev sites, so
+a new client needs no Railway change or redeploy.
+
 **Railway starts the API with `node backend/dist/server.js`, never through npm** (F-176,
 2026-10-21): npm does not pass Railway's stop signal on, so a deploy would cut the API off
 mid-job instead of letting it finish. The start command, the draining time (30 seconds, overlap
