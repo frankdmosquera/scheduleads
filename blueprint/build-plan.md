@@ -585,7 +585,12 @@ Nothing above depends on these. Each gets a phase when something does.
   default, as Calendly and Cal.com do) and **pay extra** per text at cost
   plus a margin. Colombia and the rest of Latin America: WhatsApp and email
   included, no texts included; a business that wants texts pays from the
-  first one. Not offered: a business plugging in its own Twilio account.
+  first one. Texts go through the agency's Twilio by default; a business
+  may plug in its own Twilio later, only when one asks, on the same plan
+  (it skips only the text margin, paying Twilio itself; the plan pays for
+  the system), and nothing is built for it until then (Frank, Oct 27,
+  replacing Oct 19's "not offered"). WhatsApp is always the business's own
+  number, through the Agent app, counted and capped like texts.
   Needs the missing **reminder by email** (today only confirmations, moves
   and cancellations are emailed), which is also the free fallback. Added
   Oct 25 (Frank): workers' texts about their day (12g) go by WhatsApp too,

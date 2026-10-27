@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash b15df03831d6a422fd49f7355fea09d900598a8ce39fae032494e7394513a550 -->
+<!-- blueprint:source-hash 6a8739f5b44fc76d45812f2f43a2bce1ad457702d15ffe0538e35347a90f6950 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -189,7 +189,7 @@ business uses a composite FK on `(organizationId, id)`.
 - **Better Auth** - `organization`, `emailOTP`, `admin` plugins.
 - **Resend + React Email** - confirmations, `.ics`, later CRM email.
 - **Google Calendar API** - free/busy and writing each booking.
-- **Twilio** - SMS from item 8, SMS only; WhatsApp is the Agent app's (item 21).
+- **Twilio** - SMS from item 8, SMS only, the agency's account (a business's own later, on request); WhatsApp is the Agent app's (item 21).
 - Installed at the feature that needs them: TanStack Query (CRM lists),
   dnd-kit (board), shadcn charts (reports). No state manager yet.
 
