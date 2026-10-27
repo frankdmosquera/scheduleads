@@ -84,6 +84,8 @@ export async function sendMoveEmails(
         from,
         fallbackFrom,
         to: [customerEmail],
+        // Reply reaches the booked person, else the business; never the sending address.
+        replyTo: context.personWorkEmail ?? setup.notifyEmail,
         attachments: [
           {
             filename: "invite.ics",

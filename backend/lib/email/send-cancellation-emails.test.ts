@@ -219,6 +219,7 @@ describe("a cancelled booking's emails", () => {
     const [toJane, toPrimo] = calls;
     expect(toJane.headers.get("Authorization")).toBe("Bearer re_agency_test_key");
     expect(toJane.headers.get("Idempotency-Key")).toBe(`booking-cancelled/${bookingId}`);
+    expect(toJane.body.reply_to).toBe("office@primopainters.com"); // Reply reaches the business
     expect(toJane.body).toMatchObject({
       from: '"Primo Painters" <bookings@primopainters.com>',
       to: [jane.email],

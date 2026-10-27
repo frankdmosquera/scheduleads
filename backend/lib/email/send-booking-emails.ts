@@ -52,7 +52,7 @@ export async function sendBookingEmails(
         from,
         fallbackFrom,
         to: [to],
-        replyTo: recipients.customerReplyTo ?? undefined, // Reply writes to the booked person
+        replyTo: recipients.customerReplyTo, // Reply reaches the booked person, else the business
         attachments: [
           {
             filename: "invite.ics",
