@@ -2,7 +2,7 @@
 
 **Type:** Fix
 **Size:** light - one line of copy in two languages, no logic.
-**Status:** built
+**Status:** verified
 **Branch:** fix/check-spam-line-on-the-booked-screen
 
 ## The problem
