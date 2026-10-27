@@ -1,6 +1,7 @@
 {
   "name": "@frankdmosquera/booking-component",
-  "version": "0.2.1",
+  "version": "0.2.2",
+  "private": true,
   "description": "The booking window every client site installs and builds into its own files.",
   "repository": {
     "type": "git",
@@ -19,13 +20,11 @@
     "dist",
     "booking-component.css"
   ],
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "scripts": {
     "prebuild": "tsc -p ../shared/tsconfig.build.json && npm run build:types --workspace=backend",
     "build": "tsc -p tsconfig.json && tsdown && node check-dist-imports.mjs",
-    "prepublishOnly": "npm run build",
+    "prepack": "npm run build",
+    "pack:site": "node pack-into-site.mjs",
     "pretest": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest"

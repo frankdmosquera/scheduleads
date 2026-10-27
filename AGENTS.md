@@ -623,7 +623,7 @@ consumes it as TypeScript source. The frontend's hooks also run
 `npm run build:types --workspace=backend`, which writes the API's route types
 for the typed client, so a type error anywhere `backend/app.ts` reaches stops
 `npm run dev --workspace=frontend` and the frontend build too. Then they
-build `packages/booking-component`, published as
+build `packages/booking-component`, packed as
 `@frankdmosquera/booking-component` (the booking window every client site
 installs and builds into its own files, never an embed; features 9 and 10).
 Its build type-checks the package with its tests, bundles it with `tsdown`
@@ -633,22 +633,16 @@ but `react`, `react-dom`, `hono` and `zod`: anything else would not install
 outside this repo. Its tests build it first.
 
 - Booking component build: `npm run build --workspace=@frankdmosquera/booking-component`
-- Publish it (a new `version` in its `package.json` first; publishing is Frank's yes each time):
-  `NODE_AUTH_TOKEN=$(gh auth token) npm publish --workspace=@frankdmosquera/booking-component --userconfig packages/booking-component/publish.npmrc`
-  in Git Bash. `prepublishOnly` runs the whole build and its checks first. It goes to GitHub
-  Packages, private to the account and linked to this repo; `gh` needs the `write:packages`
-  scope (`gh auth refresh -h github.com -s write:packages`, once: press Enter in the terminal
-  before authorizing in the browser, or `gh` never hears the approval and the scope stays
-  missing; check with `gh auth status`). The token is never written to a file. Not
-  published yet: the first publish is when a site first needs it from GitHub (10.2's
-  amendment).
-- Install it in a site in another repo: an `.npmrc` beside the site's `package.json` with
-  `@frankdmosquera:registry=https://npm.pkg.github.com` and
-  `//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}` (no secret, so it is committed), the
-  token (a personal access token, classic, with `read:packages`: GitHub's npm registry takes
-  no other kind) in the shell and in the host's build settings, then
-  `npm install @frankdmosquera/booking-component`. The rest (the CSS, the `--sa-*` tokens,
-  wrapping the layout in `BookingProvider`) is in the package's `index.ts` header.
+- Put it into a site in another repo (a new `version` in its `package.json` first):
+  `npm run pack:site --workspace=@frankdmosquera/booking-component -- ../face-and-body`.
+  `npm pack` runs the whole build and its checks first (`prepack`); the file goes into the
+  site's `vendor/`, older ones there are removed, and `npm install` in the site writes
+  `"file:vendor/<file>"` into its `package.json` and lockfile. The site then needs no
+  registry, `.npmrc` or token, on the laptop or on Vercel (feature 25c). It refuses a folder
+  that does not use the window and a different build under a version the site already has;
+  it never commits: the site's commit is the site's own. The package is `private`, so
+  `npm publish` refuses it. The rest (the CSS, the `--sa-*` tokens, wrapping the layout in
+  `BookingProvider`) is in the package's `index.ts` header.
 
 Unit tests run on Vitest, a dev dependency of the workspace that holds the
 code under test. Test files sit beside the code as `*.test.ts` and are
