@@ -584,7 +584,7 @@ booking with no one at the agency involved.
     in Booking CRM packs a new version and copies it into a site. Face and
     Body and IA a la Orden move over, and their Vercel token goes. Why: every
     new client site needed Frank's GitHub token in Vercel
-  - [ ] 25d. **A service shows its price** (Frank, Oct 27, built now, as 25a
+  - [x] 25d. **A service shows its price** (Frank, Oct 27, built now, as 25a
     to 25c were) - each service may carry a price (an amount, "starts
     from"), in the business's one currency, set in Settings > Services and
     the setup file, and shown on the booking window's card, its details and
