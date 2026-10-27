@@ -3,7 +3,7 @@
 **From build-plan:** feature 25b
 
 **Size:** light - one piece of logic (which site may call which business's booking routes); no data change, no screen.
-**Status:** built
+**Status:** verified
 **Branch:** feature/25b-a-client-s-site-can-book-once-its-business-has-a-website
 
 ## Goal
