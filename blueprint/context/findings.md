@@ -447,14 +447,6 @@ Still open 2026-10-25 by /audit independent (final review of 12k at 58c8bf5): 58
 **Suggested fix:** Mark the question answered in the spec: stashed on 2026-10-26 on `design/copy-my-picks` (nobody was working on it), found with `git stash list` in face-and-body.
 **Resolution:**
 
-### F-530 [P3] fixed - The package goes to 0.2.1 but the lockfile still records the workspace at 0.2.0
-
-**File:** package-lock.json:15990; packages/booking-component/package.json:3
-**Found:** 2026-10-27 by /audit independent current (scope: 62e87d7..20d0bec; lenses: quality, security, performance, tests)
-**Why it matters:** 8904a15 bumps `@frankdmosquera/booking-component` to 0.2.1 without the root lockfile, whose `packages/booking-component` entry still says 0.2.0. Nothing breaks now: publishing reads `package.json`, and a scratch workspace with the same mismatch passed `npm ci` (npm 11.19.0) without touching the lock. But the next `npm install` on any machine rewrites that line, so an unrelated later commit carries this release's version change. The 0.2.0 bump (296314a) lagged the same way until the npm audit fix (787ef0d) picked it up.
-**Suggested fix:** Update the lockfile with the bump (`npm install --package-lock-only` from the root, which needs no new package) in this fix's commit, and do it with every version bump.
-**Resolution:** fixed 2026-10-27 in 25c (c2e0d1c): the root lockfile records the workspace at 0.2.2, in the same commit as the bump; the 25c independent review (ab4bdd1) saw it repaired.
-
 ### F-532 [P2] open - The card says emails come from a saved sender's domain even when Resend will refuse that domain and every email goes from booking-crm.com
 
 **File:** backend/lib/email/resolve-business-sender.ts:36-46; backend/lib/email/find-email-sending-state.ts:30
@@ -577,18 +569,18 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Suggested fix:** Keep one map of every business's slug to its Website domain, loaded in one query and refreshed at most once a minute (the business count is small), and answer the CORS rule from it alone: an unknown slug then costs no query, the cap and the clear go away, and a changed Website still works within a minute. Keep "a failed refresh allows nothing beyond the fixed list" (or keeps the last good map, if that is decided).
 **Resolution:**
 
-### F-548 [P3] fixed - pack:site refuses a folder that does not use the window only after a full build and pack
+### F-550 [P3] open - pack:site reads every entry in the site's vendor/ in full and crashes on a subfolder there
 
-**File:** packages/booking-component/pack-into-site.mjs:37-58
-**Found:** 2026-10-27 by /audit independent current (scope: a0f2f86..ab4bdd1; lenses: quality, security, performance, tests)
-**Why it matters:** The spec orders the command as "1. refuses a folder whose package.json does not list the window; 2. runs npm pack". The script runs `npm pack` (prepack, so the shared build, the backend route types, tsc, tsdown and the import check) first and only then asks `decidePackIntoSite` about the folder. Run against a throwaway folder whose package.json lists only `next`, it printed `npm notice filename: frankdmosquera-booking-component-0.2.2.tgz` before "Not installed ... does not list @frankdmosquera/booking-component". Nothing is written to the wrong folder, so the guard holds; a mistyped folder just costs a full build before the refusal, and the code no longer matches the spec's order.
-**Suggested fix:** Read the site's package.json and refuse before `npm pack` (the folder rule needs no bytes); keep the same-version check after the pack. Or amend the spec's order to say the folder is checked after the pack.
-**Resolution:** fixed 2026-10-27: pack-into-site.mjs asks `refuseNotASite` before `npm pack`, so a folder that does not use the window is refused with no build (a throwaway folder listing only `next`: the refusal printed in under a second, no `npm notice filename`); `decidePackIntoSite` keeps the same rule, still covered by its test.
+**File:** packages/booking-component/pack-into-site.mjs:55-60
+**Found:** 2026-10-27 by /audit independent current (fresh subagent; scope: a0f2f86..cb587fc; lenses: quality, security, performance, tests)
+**Why it matters:** The command hands `decidePackIntoSite` the bytes of every name `readdirSync(vendorFolder)` returns, although only `frankdmosquera-booking-component-*.tgz` files are ever compared or removed. `vendor/` is a common folder name for other vendored code; a subfolder there makes `readFileSync` throw. Run against a throwaway folder whose package.json lists the window and whose `vendor/` holds only an empty `sub/` folder, it built and packed, then stopped with `EISDIR: illegal operation on a directory` and a stack trace instead of a "Not installed" line. Nothing is written to the site, so no harm beyond a confusing stop after a full build; large unrelated files there are also read for nothing.
+**Suggested fix:** Filter the names with the packed-file pattern before reading their bytes (or skip entries that are not files), so vendor/ may hold anything else.
+**Resolution:**
 
-### F-549 [P3] fixed - Older packed files are deleted before the site's npm install has succeeded
+### F-551 [P3] open - The spec still lists where IA a la Orden's move is committed as an open question, and does not say the move landed in another session's 12c commit
 
-**File:** packages/booking-component/pack-into-site.mjs:62-64
-**Found:** 2026-10-27 by /audit independent current (scope: a0f2f86..ab4bdd1; lenses: quality, security, performance, tests)
-**Why it matters:** The command copies the new file, removes every older `frankdmosquera-booking-component-*.tgz` from the site's `vendor/`, and only then runs `npm install ./vendor/<file>`. If that install fails (no network for hono or zod, a peer conflict), the site's package.json and lockfile still name the old `file:vendor/...-0.2.1.tgz`, which is now gone, so the site's next `npm ci` fails until the command is rerun or the file is restored from git. Recoverable (rerunning finishes the job, and git still holds the old file), but the order leaves the site broken in between.
-**Suggested fix:** Run the `npm install` first and remove the older files only after it succeeds.
-**Resolution:** fixed 2026-10-27: pack-into-site.mjs runs the site's `npm install` first and removes older packed files only after it succeeds, so a failed install leaves the old file the site still names.
+**File:** blueprint/context/current-feature.md:131-137, 49-52
+**Found:** 2026-10-27 by /audit independent current (fresh subagent; scope: a0f2f86..cb587fc; lenses: quality, security, performance, tests)
+**Why it matters:** The spec is `verified` and its step says IA a la Orden moved "where the open question says", but Open questions still offers (A) and (B) with no answer. In agency-site-app the move went onto its open branch (option A), split across a1b73d0, the other session's `feat: 12c a call can say what it is about` (the `.npmrc` removal, package.json, lockfile and vendor file), and 15c714d (the AGENTS.md line), where the spec planned one commit. The build log's step 25c.1 records the split, but the archived spec will show a question as open that the feature closed, and a later rollback of 12c in that repo would also undo the window move with nothing in this repo pointing at it.
+**Suggested fix:** Mark the question answered in the spec: option A, on `feature/12c-our-own-cards-on-real-times`, content in a1b73d0 plus 15c714d, both unpushed, so the move goes online when that branch merges.
+**Resolution:**

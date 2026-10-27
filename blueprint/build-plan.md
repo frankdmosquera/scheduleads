@@ -575,7 +575,7 @@ booking with no one at the agency involved.
     `WIDGET_ORIGINS` stays only for the laptop's dev sites. A site calling
     another business's routes is still refused. Why: every new client meant
     editing Railway and waiting for a redeploy
-  - [ ] 25c. **A client site installs the booking window without a token**
+  - [x] 25c. **A client site installs the booking window without a token**
     (Frank, Oct 27, built now, as 25a and 25b were) - the built booking
     window is packed into one file committed into each site's own repo, and
     the site installs it from there, so Vercel needs no `NODE_AUTH_TOKEN` and
