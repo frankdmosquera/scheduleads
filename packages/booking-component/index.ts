@@ -1,15 +1,12 @@
 // Booking component: what a host site imports. Everything else in the package is its own.
 //
-// A site in any repo installs it from GitHub Packages, where it is private to the account. Beside
-// the site's package.json, an .npmrc (it holds no secret, so it is committed):
+// A site in any repo installs it from a packed file committed in its own vendor/ folder, so no
+// registry, no token and nothing public. From this repo's root, put this version into a site:
 //
-//   @frankdmosquera:registry=https://npm.pkg.github.com
-//   //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+//   npm run pack:site --workspace=@frankdmosquera/booking-component -- ../face-and-body
 //
-// NODE_AUTH_TOKEN is a GitHub personal access token (classic) with read:packages, the only kind
-// GitHub's npm registry takes: set in the shell for an install, and in the host's build settings
-// (Vercel's environment variables), never in a file. Then
-// `npm install @frankdmosquera/booking-component`, which needs react and react-dom 19 in the site.
+// It needs react and react-dom 19 in the site. A new window for a site is a new version here
+// first: the command refuses a different build under a version the site already has.
 //
 // Wrap the page (or the layout) once, with the API's address and the business's slug:
 //
