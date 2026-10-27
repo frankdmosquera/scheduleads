@@ -12,11 +12,11 @@ const widgetBooking = {
 };
 
 describe("who hears about a booking", () => {
-  test("without a work email the emails are what they were", () => {
+  test("without a work email the customer's Reply reaches the business, never the sender", () => {
     expect(findBookingEmailRecipients(widgetBooking)).toEqual({
       customer: "jane@example.com",
       business: "office@primopainters.com",
-      customerReplyTo: null,
+      customerReplyTo: "office@primopainters.com",
       person: null,
     });
   });

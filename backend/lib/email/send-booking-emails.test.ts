@@ -213,7 +213,7 @@ describe("a booking's emails", () => {
       to: [jane.email],
       subject: "You're booked with Primo Painters: Monday, October 5 at 9:00 a.m. MDT",
     });
-    expect(confirmation.body.reply_to).toBeUndefined();
+    expect(confirmation.body.reply_to).toBe("office@primopainters.com"); // the business, never bookings@
     const [invite] = confirmation.body.attachments as Record<string, unknown>[];
     expect(invite).toMatchObject({
       filename: "invite.ics",

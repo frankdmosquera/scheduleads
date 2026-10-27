@@ -13,7 +13,7 @@ export type BookingEmailRecipientsInputType = {
 export type BookingEmailRecipientsType = {
   customer: string | null; // the confirmation's address, or null: none is sent
   business: string | null; // the notification's address, or null: none is sent
-  customerReplyTo: string | null; // where the customer's Reply goes; null: the sending address
+  customerReplyTo: string; // where the customer's Reply goes: never the sending address, which no one reads
   person: string | null; // the booked person's own notification, or null: none is sent
 };
 
@@ -26,7 +26,7 @@ export function findBookingEmailRecipients(
   return {
     customer: input.customerEmail,
     business: input.source === "manual" ? null : input.notifyEmail,
-    customerReplyTo: workEmail,
+    customerReplyTo: workEmail ?? input.notifyEmail, // the booked person, else the business
     person: workEmail && !sameAsBusiness ? workEmail : null,
   };
 }

@@ -527,3 +527,27 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, 7abbf56..6e76
 **Why it matters:** After the F-531 repair the only proof that a domain belongs to a business is that it equals the business's website, and nothing in code, comment or test pins that the website is platform-admin only (today it is: only provision-client and the client-setup script write it). F-531's suggested fix also asked to refuse `booking-crm.com`; the repair does not. If a business's website is ever on `booking-crm.com` (a hosted page at item 24 used as the website, or an admin typo), that domain shows the signing record, so the owner may save `support@booking-crm.com` or any other platform address and send as it. At item 25, if owners can edit their website, the F-531 hole reopens through the website: setting another client's site makes that client's domain the sender. Latent today; no current path for an owner.
 **Suggested fix:** In the resolver and on save, never treat `booking-crm.com` or its subdomains as a business's own domain, with a test; and state at the website field (and in item 25's plan) that it is the sending-domain proof, so self-serve must verify it before it can send.
 **Resolution:**
+
+### F-541 [P3] open - The customer's Reply rule is written in three places, and the helper still says who hears is "decided in this one place"
+
+**File:** backend/lib/email/find-booking-email-recipients.ts:1-4,29; backend/lib/email/send-move-emails.ts:87-88; backend/lib/email/send-cancellation-emails.ts:68-69
+**Found:** 2026-10-27 by /audit independent current (scope: b54d3a7..2fb28ee; lenses: quality, security, performance, tests)
+**Why it matters:** The fix's one rule (work email, else notification address, never the sender) lives as `workEmail ?? input.notifyEmail` in the recipients helper and again as `context.personWorkEmail ?? setup.notifyEmail` inline in the move and cancellation senders. The helper's header still says who hears about a booking is "decided in this one place". The spec chose this shape, so it is not a defect today; but the next change to the rule (for example the idea of replies relayed through the app, or a business-chosen reply address) has to find three copies, and missing one brings back exactly the "Reply reaches nobody" bug this fix closes, in one email only.
+**Suggested fix:** One small exported function (for example `customerReplyToOf(personWorkEmail, notifyEmail)` beside the recipients helper) used by all three senders, and the helper's header worded to match.
+**Resolution:**
+
+### F-542 [P3] open - A move's email takes its Reply from the booking's current person, while the rest of that email is built from the move's own saved entry
+
+**File:** backend/lib/email/send-move-emails.ts:42-43,70,88
+**Found:** 2026-10-27 by /audit independent current (scope: b54d3a7..2fb28ee; lenses: quality, security, performance, tests)
+**Why it matters:** `sendMoveEmails` deliberately reads move N's times and person from its timeline entry "even after a later move ... so a retry sends the very same email and Resend accepts the key again". The new `replyTo` instead reads `context.personWorkEmail`, the work email of whoever holds the booking when the job runs. If a second move to another person lands before move 1's job sends (or between a Resend-accepted send and a job retry), the customer's "moved to Marco" email replies to Ana, and a retry carries a different `reply_to` under the same idempotency key, which Resend refuses for 24 hours. Same for an owner editing the person's work email or the notification address between attempts. Rare (two moves in a job's window, or a partial failure plus an edit); the confirmation already had the work-email variant of the retry case before this fix.
+**Suggested fix:** For the move, read the work email of the move's `toPersonId` (the code already looks that person up for the name), so the Reply matches the email it sits on; accept the notification-address drift, or note it in the comment.
+**Resolution:**
+
+### F-543 [P3] open - The cancellation test covers only the notification-address Reply, and no test shows the owner's login email as the fallback Reply
+
+**File:** backend/lib/email/send-cancellation-emails.test.ts:222; backend/lib/email/send-move-emails.test.ts:360-373
+**Found:** 2026-10-27 by /audit independent current (scope: b54d3a7..2fb28ee; lenses: quality, security, performance, tests)
+**Why it matters:** The spec's Done when asks the confirmation, move and cancellation tests to assert the customer's Reply, "work email when there is one, else the notification address". Confirmation (send-booking-emails.test.ts:216,282) and move (227,372) assert both branches; cancellation asserts only the notification-address branch, so its inline `context.personWorkEmail ?? setup.notifyEmail` could lose the work-email half without a failing test. The spec's rule also names the owner's login email as the notification address when none is saved; no Reply assertion covers that path (it rests on the context's `business.notifyEmail ?? business.ownerEmail`, tested only for who receives notices).
+**Suggested fix:** Add a cancellation test with the booked person's work email set, mirroring the new move test; optionally one confirmation assertion on a business with no saved notification address. Resolves with F-541 if the rule moves into one tested function.
+**Resolution:**

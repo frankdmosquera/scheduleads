@@ -224,6 +224,7 @@ describe("a moved booking's emails", () => {
     const [toJane, toPrimo] = calls;
     expect(toJane.headers.get("Authorization")).toBe("Bearer re_agency_test_key");
     expect(toJane.headers.get("Idempotency-Key")).toBe(`booking-moved/${bookingId}/1`);
+    expect(toJane.body.reply_to).toBe("office@primopainters.com"); // Reply reaches the business
     expect(toJane.body).toMatchObject({
       from: '"Primo Painters" <bookings@primopainters.com>',
       to: [jane.email],
@@ -354,6 +355,21 @@ describe("a moved booking's emails", () => {
       .from(booking)
       .where(eq(booking.id, bookingId));
     expect(moved).toEqual({ startsAt: TEN, sequence: 1 });
+  });
+
+  test("the customer's Reply on a move reaches the booked person when they have a work email", async () => {
+    const business = await makeBusiness("reply-to-person");
+    await db
+      .update(resource)
+      .set({ workEmail: "marco@primopainters.com" })
+      .where(eq(resource.id, business.marco));
+    const bookingId = await book(business);
+    calls.length = 0;
+
+    await move(bookingId, TEN);
+
+    const toJane = calls.find((call) => (call.body.to as string[]).includes(jane.email));
+    expect(toJane?.body.reply_to).toBe("marco@primopainters.com");
   });
 
   test("a business with nowhere for its notices moves and sends nothing, and logs it", async () => {
