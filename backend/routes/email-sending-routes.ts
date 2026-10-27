@@ -1,13 +1,12 @@
 // Backend: the owner's "Email sending" card. The business always comes from the session, never
-// from the request; only a role that may change the business may save. No answer ever carries
-// the business's Resend key (decision 6).
+// from the request; only a role that may change the business may save. Its emails go through
+// the agency's key (feature 25a), so the card holds only the two addresses.
 
 import { Hono } from "hono";
 import { validator } from "hono/validator";
 
 import { emailSendingValidationSchema } from "@scheduleads-app/shared/zod-validation";
 
-import { emailRefusalCode } from "../lib/email/email-refusal-code.js";
 import { findEmailSendingState } from "../lib/email/find-email-sending-state.js";
 import { saveEmailSending } from "../lib/email/save-email-sending.js";
 import { refuse } from "../lib/errors/refuse.js";
@@ -17,7 +16,7 @@ import { requireKnownSubscriptionMiddleware } from "../middleware/subscription-m
 import { requireModuleMiddleware } from "../middleware/subscription-middleware/require-module-middleware.js";
 
 export const emailSendingRoutes = new Hono()
-  // The card: the two addresses and when the key was saved.
+  // The card: the two saved addresses, and the sender and notice address in use now.
   .get(
     "/",
     requireOrganizationMiddleware,
@@ -29,7 +28,7 @@ export const emailSendingRoutes = new Hono()
     }
   )
 
-  // Saving the card: a test email first whenever a key is there (decision 9).
+  // Saving the card: the two addresses, either left empty.
   .put(
     "/",
     requireOrganizationMiddleware,
@@ -46,12 +45,7 @@ export const emailSendingRoutes = new Hono()
     }),
     async (c) => {
       const input = c.req.valid("json");
-      const result = await saveEmailSending(c.get("organization").organizationId, {
-        senderEmail: input.senderEmail,
-        notifyEmail: input.notifyEmail,
-        key: input.key || null,
-      });
-      if (!result.ok) return c.json(refuse(emailRefusalCode[result.about], result.reason), 422);
-      return c.json(result.state, 200);
+      const state = await saveEmailSending(c.get("organization").organizationId, input);
+      return c.json(state, 200);
     }
   );

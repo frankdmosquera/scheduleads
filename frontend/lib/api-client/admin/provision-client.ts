@@ -15,7 +15,7 @@ export type ProvisionClientResultType =
   | { state: "ok"; answer: ProvisionedClientType }
   | {
       state: "field";
-      field: "clientEmail" | "businessName" | "emailSendingKey" | "senderEmail";
+      field: "clientEmail" | "businessName";
       message: string;
     }
   | { state: "refused"; message: string };
@@ -36,10 +36,5 @@ export async function provisionClient(
 
   if (body.error?.code === "email_taken") return { state: "field", field: "clientEmail", message };
   if (body.error?.code === "slug_taken") return { state: "field", field: "businessName", message };
-  if (body.error?.code === "key_refused") {
-    return { state: "field", field: "emailSendingKey", message };
-  }
-  if (body.error?.code === "sender_refused")
-    return { state: "field", field: "senderEmail", message };
   return { state: "refused", message };
 }

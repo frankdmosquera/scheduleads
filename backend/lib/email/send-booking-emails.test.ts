@@ -17,6 +17,19 @@ try {
 
 assertLocalDevDatabase(process.env.DATABASE_URL, "run the booking email tests");
 
+// The agency's key, faked: the real one in the root .env never reaches a test's output (25a).
+process.env.RESEND_API_KEY = "re_agency_test_key";
+
+// Public DNS, faked: which domains show Resend's signing record, and one that cannot be read.
+const signingRecords = new Set<string>();
+let unreadableDomain = "";
+vi.mock("./has-resend-signing-record.js", () => ({
+  hasResendSigningRecord: async (domain: string) => {
+    if (domain === unreadableDomain) throw new Error("DNS is not answering");
+    return signingRecords.has(domain);
+  },
+}));
+
 // Imported after the env is loaded: they read it the moment they load.
 const { app } = await import("../../app.js");
 const { db } = await import("../../database.js");
@@ -26,14 +39,12 @@ const {
   booking,
   bookingLink,
   bookingLinkResource,
-  emailSendingKey,
   member,
   organization,
   pipelineStage,
   resource,
   user,
 } = await import("@scheduleads-app/shared/db");
-const { encryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { bookTime } = await import("../booking/book-time.js");
 const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { sendBookingEmails } = await import("./send-booking-emails.js");
@@ -65,8 +76,8 @@ async function makeBusiness(
   {
     senderEmail = "bookings@primopainters.com",
     notifyEmail = "office@primopainters.com",
-    key = true,
-  }: { senderEmail?: string | null; notifyEmail?: string | null; key?: boolean } = {}
+    website = "https://primopainters.com",
+  }: { senderEmail?: string | null; notifyEmail?: string | null; website?: string } = {}
 ) {
   const id = () => randomUUID();
   const business = id();
@@ -77,14 +88,8 @@ async function makeBusiness(
     senderEmail,
     notifyEmail,
     phone: "(403) 555-0100",
-    website: "https://primopainters.com",
+    website,
   });
-  if (key) {
-    await db.insert(emailSendingKey).values({
-      organizationId: business,
-      credentials: encryptCredentials("re_primo_send_key", readTokenKey(), business),
-    });
-  }
   await db.insert(availabilityRule).values({
     id: id(),
     organizationId: business,
@@ -200,7 +205,7 @@ describe("a booking's emails", () => {
 
     expect(calls).toHaveLength(2);
     const [confirmation, notification] = calls;
-    expect(confirmation.headers.get("Authorization")).toBe("Bearer re_primo_send_key"); // the business's own
+    expect(confirmation.headers.get("Authorization")).toBe("Bearer re_agency_test_key"); // the agency's, for every business (25a)
     expect(confirmation.headers.get("Idempotency-Key")).toBe(`booking-confirmation/${bookingId}`);
     expect(confirmation.body).toMatchObject({
       from: '"Primo Painters" <bookings@primopainters.com>',
@@ -370,25 +375,74 @@ ${notification.body.text}`).not.toContain("/b/");
     expect(await timelineOf(business)).toEqual([]);
   });
 
-  test("a business missing its addresses or its key sends nothing and logs it", async () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    const cases = [
-      { name: "no-sender", setup: { senderEmail: null }, missing: "sender address" },
-      { name: "no-notify", setup: { notifyEmail: null }, missing: "notification address" },
-      { name: "no-key", setup: { key: false }, missing: "Resend key" },
-    ];
-    for (const { name, setup, missing } of cases) {
-      log.mockClear();
-      const business = await makeBusiness(name, setup);
-      const bookingId = await book(business);
+  test("a business with no saved addresses sends from booking-crm.com in its name, notices to its owner", async () => {
+    const business = await makeBusiness("nothing-saved", { senderEmail: null, notifyEmail: null });
+    await makeOwner(business, "nothing-saved");
+    await book(business);
 
-      expect(calls).toEqual([]);
-      expect(await timelineOf(business)).toEqual([]);
-      const lines = log.mock.calls.map((call) => String(call[0]));
-      expect(lines).toContain(
-        `[email] booking ${bookingId}: nothing sent, the business has no ${missing}`
-      );
+    expect(calls).toHaveLength(2);
+    for (const call of calls) {
+      expect(call.body.from).toBe('"Primo Painters" <bookings@booking-crm.com>');
     }
+    expect(calls[1].body.to).toEqual([`owner-nothing-saved-${tag}@example.com`]);
+  });
+
+  test("with no saved sender, a website domain set up in Resend sends from bookings@ that domain", async () => {
+    const business = await makeBusiness("website-domain", {
+      senderEmail: null,
+      website: "https://www.primo-website.ca/contact",
+    });
+    signingRecords.add("primo-website.ca");
+    await book(business);
+
+    expect(calls[0].body.from).toBe('"Primo Painters" <bookings@primo-website.ca>');
+  });
+
+  test("Resend refusing the business's own domain sends that email once more from booking-crm.com", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {}); // the SDK's own line outside production
+    answer = () => json({ id: "email-x" });
+    let refused = 0;
+    const realAnswer = answer;
+    answer = () => {
+      const last = calls[calls.length - 1];
+      if (String(last.body.from).includes("@primopainters.com")) {
+        refused += 1;
+        return json({ name: "validation_error", statusCode: 403, message: "not verified" }, 403);
+      }
+      return realAnswer();
+    };
+    const business = await makeBusiness("refused-domain");
+    const bookingId = await book(business);
+
+    expect(refused).toBe(2); // the confirmation and the notice, each once
+    const sent = calls.filter((call) => !String(call.body.from).includes("@primopainters.com"));
+    expect(sent.map((call) => call.body.from)).toEqual([
+      '"Primo Painters" <bookings@booking-crm.com>',
+      '"Primo Painters" <bookings@booking-crm.com>',
+    ]);
+    expect(sent.map((call) => call.headers.get("Idempotency-Key"))).toEqual([
+      `booking-confirmation/${bookingId}/agency`,
+      `booking-notification/${bookingId}/agency`,
+    ]);
+    expect(await timelineOf(business)).toHaveLength(2);
+    const lines = log.mock.calls.map((call) => String(call[0]));
+    expect(lines).toContain(
+      `[email] booking_confirmation refused from its own domain, sent from the agency's instead (booking-confirmation/${bookingId})`
+    );
+    for (const line of lines) expect(line).not.toContain("primopainters.com");
+  });
+
+  test("a business with no notification address and no owner sends nothing and logs it", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const business = await makeBusiness("no-notify", { notifyEmail: null });
+    const bookingId = await book(business);
+
+    expect(calls).toEqual([]);
+    expect(await timelineOf(business)).toEqual([]);
+    expect(log.mock.calls.map((call) => String(call[0]))).toContain(
+      `[email] booking ${bookingId}: nothing sent, the business has no notification address`
+    );
   });
 
   test("a business with no time zone sends nothing and logs it", async () => {
@@ -445,7 +499,7 @@ ${notification.body.text}`).not.toContain("/b/");
 
     const sent = await makeBusiness("private-sent");
     await book(sent);
-    const notSetUp = await makeBusiness("private-not-set-up", { key: false });
+    const notSetUp = await makeBusiness("private-not-set-up", { notifyEmail: null });
     await book(notSetUp);
     answer = () => json({ name: "application_error", statusCode: 500, message: jane.email }, 500);
     const failing = await makeBusiness("private-failing");
@@ -471,10 +525,10 @@ ${notification.body.text}`).not.toContain("/b/");
   // Vitest fails the run on an unhandled rejection, so a send that could escape would fail here.
   test("a send that fails before Resend keeps the booking and logs one line per email, never crashing", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const business = await makeBusiness("unreadable-key", { key: false });
-    await db.insert(emailSendingKey).values({
-      organizationId: business.business,
-      credentials: encryptCredentials("re_primo_send_key", readTokenKey(), randomUUID()), // locked for another business
+    unreadableDomain = "unreadable-primo.ca";
+    const business = await makeBusiness("unreadable-domain", {
+      senderEmail: null,
+      website: "https://unreadable-primo.ca",
     });
     const bookingId = await book(business);
 
@@ -491,7 +545,7 @@ ${notification.body.text}`).not.toContain("/b/");
     for (const line of lines) {
       expect(line).toContain("booking_email");
       expect(line).toContain(`for booking ${bookingId}`);
-      for (const detail of ["Jane", jane.email, jane.phone, jane.location, "re_primo"]) {
+      for (const detail of ["Jane", jane.email, jane.phone, jane.location, "re_agency"]) {
         expect(line).not.toContain(detail);
       }
     }

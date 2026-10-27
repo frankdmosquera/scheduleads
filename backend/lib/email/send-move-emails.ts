@@ -37,7 +37,7 @@ export async function sendMoveEmails(
     logNothingSent(bookingId, setup.missing);
     return [];
   }
-  const { facts, apiKey, from } = setup;
+  const { facts, apiKey, from, fallbackFrom } = setup;
 
   // The move itself, from its own timeline entry: its times and person, even after a later move,
   // and its moment, so a retry sends the very same email and Resend accepts the key again.
@@ -82,6 +82,7 @@ export async function sendMoveEmails(
         apiKey,
         kind: "booking_move",
         from,
+        fallbackFrom,
         to: [customerEmail],
         attachments: [
           {
@@ -114,6 +115,7 @@ export async function sendMoveEmails(
       apiKey,
       kind: "booking_move_notification",
       from,
+      fallbackFrom,
       to: [setup.notifyEmail],
       replyTo: customerEmail ?? undefined, // pressing Reply writes to the customer
       idempotencyKey: `booking-moved-notification/${bookingId}/${sequence}`,

@@ -25,17 +25,8 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the admin route tests");
 const { app } = await import("../app.js");
 const { db } = await import("../database.js");
 const { appOrigin, auth } = await import("../lib/auth/auth-server.js");
-const {
-  clientSetupClaim,
-  emailSendingKey,
-  invitation,
-  member,
-  organization,
-  pipelineStage,
-  resource,
-  user,
-} = await import("@scheduleads-app/shared/db");
-const { decryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
+const { clientSetupClaim, invitation, member, organization, pipelineStage, resource, user } =
+  await import("@scheduleads-app/shared/db");
 
 const tag = randomUUID().slice(0, 8);
 const email = (name: string) => `admin-${name}-${tag}@example.com`;
@@ -472,18 +463,17 @@ describe("POST /admin/clients", () => {
 
 describe("the business's email details at setup (feature 6)", () => {
   const resendCalls: { headers: Headers; body: Record<string, unknown> }[] = [];
-  let resendAnswer: () => Response = () => new Response("{}");
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
   beforeAll(() => {
-    // Only the key's test email reaches out; it never leaves the machine.
+    // Nothing should reach out at setup (25a); anything that did is caught here, never sent.
     vi.stubGlobal("fetch", async (_url: RequestInfo | URL, init?: RequestInit) => {
       resendCalls.push({
         headers: new Headers(init?.headers),
         body: JSON.parse(String(init?.body)),
       });
-      return resendAnswer();
+      return new Response("{}");
     });
   });
 
@@ -534,12 +524,6 @@ describe("the business's email details at setup (feature 6)", () => {
       { senderEmail: "bookings" },
       "Enter a valid email address.",
     ],
-    [
-      "a key without a sender to test it from",
-      "unsent-key",
-      { emailSendingKey: "re_business_key_123" },
-      "Enter the address emails come from, so the key can be tested.",
-    ],
   ])("%s is refused with 400 and makes nothing", async (_name, name, change, message) => {
     const response = await setUp({ ...client(name), ...change }, platformAdmin.email);
 
@@ -548,65 +532,15 @@ describe("the business's email details at setup (feature 6)", () => {
     expect(await loginsWith(email(name))).toHaveLength(0);
   });
 
-  test("a key whose test email went is stored locked, and never comes back in an answer or a log line", async () => {
-    resendAnswer = () => json({ id: "email-1" });
+  test("a client is set up with no key and no test email: the agency's key sends later (25a)", async () => {
     resendCalls.length = 0;
-    const spies = ["log", "info", "warn", "error"].map((level) =>
-      vi.spyOn(console, level as "log").mockImplementation(() => {})
-    );
-
     const response = await setUp(
-      {
-        ...client("keyed"),
-        senderEmail: "bookings@example.com",
-        emailSendingKey: "re_business_key_123",
-      },
+      { ...client("no-key"), senderEmail: "bookings@example.com" },
       platformAdmin.email
     );
-    const text = await response.text();
-    const lines = spies.flatMap((spy) => spy.mock.calls.flat().map(String));
-    for (const spy of spies) spy.mockRestore();
 
     expect(response.status).toBe(201);
-    expect(text).not.toContain("re_business_key_123");
-    for (const line of lines) expect(line).not.toContain("re_business_key_123");
-    expect(resendCalls).toHaveLength(1);
-    expect(resendCalls[0].headers.get("Authorization")).toBe("Bearer re_business_key_123");
-    expect(resendCalls[0].body).toMatchObject({
-      from: `"${businessName("keyed")}" <bookings@example.com>`,
-      to: [email("keyed")],
-    });
-    const [business] = await businessesWith(slugOf("keyed"));
-    const [stored] = await db
-      .select()
-      .from(emailSendingKey)
-      .where(eq(emailSendingKey.organizationId, business.id));
-    expect(stored.credentials).not.toContain("re_business_key_123");
-    expect(decryptCredentials(stored.credentials, readTokenKey(), business.id)).toBe(
-      "re_business_key_123"
-    );
-  });
-
-  test("a key whose test email is refused answers 422 with the reason and makes nothing", async () => {
-    resendAnswer = () => json({ name: "invalid_api_key", statusCode: 401, message: "no" }, 401);
-    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    const response = await setUp(
-      {
-        ...client("refused-key"),
-        senderEmail: "bookings@example.com",
-        emailSendingKey: "re_wrong_key_123",
-      },
-      platformAdmin.email
-    );
-    quiet.mockRestore();
-
-    expect(response.status).toBe(422);
-    expect(await response.json()).toEqual({
-      error: { code: "key_refused", message: "Resend refused this key." },
-    });
-    expect(await loginsWith(email("refused-key"))).toHaveLength(0);
-    expect(await businessesWith(slugOf("refused-key"))).toHaveLength(0);
+    expect(resendCalls).toHaveLength(0);
   });
 });
 

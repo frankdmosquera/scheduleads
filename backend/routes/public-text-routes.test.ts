@@ -18,12 +18,14 @@ try {
 
 assertLocalDevDatabase(process.env.DATABASE_URL, "run the text reply route tests");
 
+// The agency's key, faked: the real one in the root .env never reaches a test's output (25a).
+process.env.RESEND_API_KEY = "re_agency_test_key";
+
 // Imported after the env is loaded: they read it the moment they load.
 const { app } = await import("../app.js");
 const { db } = await import("../database.js");
-const { contact, emailSendingKey, lead, organization, pipelineStage, textReply, textSettings } =
+const { contact, lead, organization, pipelineStage, textReply, textSettings } =
   await import("@scheduleads-app/shared/db");
-const { encryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { apiOrigin } = await import("../lib/auth/auth-server.js");
 const { jobSchema } = await import("../lib/jobs/job-schema.js");
 const { workDueJobs } = await import("../lib/jobs/work-due-jobs.js");
@@ -48,10 +50,6 @@ async function makeBusiness(name: string, settings: Record<string, unknown> = {}
     slug: `test-textreply-${name}-${tag}-dev`,
     senderEmail: "bookings@summitpainting.com",
     notifyEmail: "office@summitpainting.com",
-  });
-  await db.insert(emailSendingKey).values({
-    organizationId: business,
-    credentials: encryptCredentials("re_summit_send_key", readTokenKey(), business),
   });
   const stage = randomUUID();
   await db

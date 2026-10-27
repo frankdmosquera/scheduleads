@@ -8,7 +8,6 @@ export * from "./auth-validation-schemas/dashboard-language-validation-schema.js
 export * from "./organization-validation-schemas/business-name-validation-schema.js";
 export * from "./organization-validation-schemas/organization-slug-validation-schema.js";
 export * from "./organization-validation-schemas/business-email-details-validation-schema.js";
-export * from "./organization-validation-schemas/email-sending-key-validation-schema.js";
 export * from "./organization-validation-schemas/email-sending-validation-schema.js";
 export * from "./admin-validation-schemas/provision-client-validation-schema.js";
 export * from "./admin-validation-schemas/client-setup-validation-schema.js";

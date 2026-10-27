@@ -18,14 +18,12 @@ export type SetupCardsWordsType = {
   senderPlaceholder: string;
   notifyLabel: string;
   notifyPlaceholder: string;
-  keyLabel: string;
-  keyPlaceholder: string;
-  notSetUp: string;
-  sendingOnceKeySaved(sender: string): string;
-  sendingFrom(sender: string, keySavedOn: string): string; // the date as "Oct 2"
-  savedTestSent(notifyEmail: string): string;
-  savedPasteAKey: string;
-  savingAndTesting: string;
+  sendingFromOwnDomain(sender: string): string;
+  sendingFromAgencyDomain(sender: string): string; // until the business's own domain is added
+  noticesGoTo(notifyEmail: string): string;
+  noticesGoNowhere: string;
+  saved: string;
+  saving: string;
   save: string;
 };
 
@@ -39,19 +37,18 @@ export const englishSetupCardsWords: SetupCardsWordsType = {
   minutes: (count) => `${count} min`,
   emailSending: "Email sending",
   emailSendingLede:
-    "Booking emails go out from your own address, through your own Resend account. Nobody can read the key once it is saved.",
+    "Booking emails go out in your business's name. Leave a field empty and it is picked for you.",
   senderLabel: "Emails come from",
-  senderPlaceholder: "bookings@yourbusiness.com",
+  senderPlaceholder: "Picked for you",
   notifyLabel: "Booking notifications go to",
-  notifyPlaceholder: "you@yourbusiness.com",
-  keyLabel: "Resend key (send-only)",
-  keyPlaceholder: "Paste a new key, or leave empty to keep the saved one",
-  notSetUp: "Not set up. Booking emails are not sent yet.",
-  sendingOnceKeySaved: (sender) => `Sending from ${sender} once a key is saved.`,
-  sendingFrom: (sender, keySavedOn) => `Sending from ${sender}. Key saved ${keySavedOn}.`,
-  savedTestSent: (notifyEmail) => `Saved. A test email went to ${notifyEmail}.`,
-  savedPasteAKey: "Saved. Paste a key to start sending.",
-  savingAndTesting: "Saving and testing…",
+  notifyPlaceholder: "Your login email",
+  sendingFromOwnDomain: (sender) => `Booking emails come from ${sender}.`,
+  sendingFromAgencyDomain: (sender) =>
+    `Booking emails come from ${sender} until your own domain is added.`,
+  noticesGoTo: (notifyEmail) => `New booking notices go to ${notifyEmail}.`,
+  noticesGoNowhere: "New booking notices have nowhere to go yet. Add an address.",
+  saved: "Saved.",
+  saving: "Saving…",
   save: "Save",
 };
 
@@ -67,18 +64,18 @@ export const spanishSetupCardsWords: SetupCardsWordsType = {
   minutes: (count) => `${count} min`,
   emailSending: "Envío de correos",
   emailSendingLede:
-    "Los correos de reservas salen desde su propia dirección, a través de su propia cuenta de Resend. Nadie puede leer la clave una vez guardada.",
+    "Los correos de reservas salen a nombre de su negocio. Si deja un campo vacío, se elige por usted.",
   senderLabel: "Los correos salen de",
-  senderPlaceholder: "reservas@sunegocio.com",
+  senderPlaceholder: "Se elige por usted",
   notifyLabel: "Los avisos de reservas van a",
-  notifyPlaceholder: "usted@sunegocio.com",
-  keyLabel: "Clave de Resend (solo envío)",
-  keyPlaceholder: "Pegue una clave nueva, o déjelo vacío para mantener la guardada",
-  notSetUp: "Sin configurar. Todavía no se envían correos de reservas.",
-  sendingOnceKeySaved: (sender) => `Se enviará desde ${sender} cuando se guarde una clave.`,
-  sendingFrom: (sender, keySavedOn) => `Enviando desde ${sender}. Clave guardada el ${keySavedOn}.`,
-  savedTestSent: (notifyEmail) => `Guardado. Se envió un correo de prueba a ${notifyEmail}.`,
-  savedPasteAKey: "Guardado. Pegue una clave para empezar a enviar.",
-  savingAndTesting: "Guardando y probando…",
+  notifyPlaceholder: "Su correo de inicio de sesión",
+  sendingFromOwnDomain: (sender) => `Los correos de reservas salen de ${sender}.`,
+  sendingFromAgencyDomain: (sender) =>
+    `Los correos de reservas salen de ${sender} hasta que se agregue su propio dominio.`,
+  noticesGoTo: (notifyEmail) => `Los avisos de reservas nuevas van a ${notifyEmail}.`,
+  noticesGoNowhere:
+    "Los avisos de reservas nuevas todavía no tienen adónde ir. Agregue una dirección.",
+  saved: "Guardado.",
+  saving: "Guardando…",
   save: "Guardar",
 };

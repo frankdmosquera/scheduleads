@@ -17,6 +17,9 @@ try {
 
 assertLocalDevDatabase(process.env.DATABASE_URL, "run the booking email tests");
 
+// The agency's key, faked: the real one in the root .env never reaches a test's output (25a).
+process.env.RESEND_API_KEY = "re_agency_test_key";
+
 // Imported after the env is loaded: they read it the moment they load.
 const { db } = await import("../../database.js");
 const {
@@ -25,14 +28,12 @@ const {
   booking,
   bookingLink,
   bookingLinkResource,
-  emailSendingKey,
   member,
   organization,
   pipelineStage,
   resource,
   user,
 } = await import("@scheduleads-app/shared/db");
-const { encryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { bookTime } = await import("../booking/book-time.js");
 const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { cancelBooking } = await import("../booking/cancel-booking.js");
@@ -63,8 +64,7 @@ async function makeBusiness(
   {
     senderEmail = "bookings@primopainters.com",
     notifyEmail = "office@primopainters.com",
-    key = true,
-  }: { senderEmail?: string | null; notifyEmail?: string | null; key?: boolean } = {}
+  }: { senderEmail?: string | null; notifyEmail?: string | null } = {}
 ) {
   const id = () => randomUUID();
   const business = id();
@@ -77,12 +77,6 @@ async function makeBusiness(
     phone: "(403) 555-0100",
     website: "https://primopainters.com",
   });
-  if (key) {
-    await db.insert(emailSendingKey).values({
-      organizationId: business,
-      credentials: encryptCredentials("re_primo_send_key", readTokenKey(), business),
-    });
-  }
   await db.insert(availabilityRule).values({
     id: id(),
     organizationId: business,
@@ -218,7 +212,7 @@ describe("a cancelled booking's emails", () => {
 
     expect(calls).toHaveLength(2);
     const [toJane, toPrimo] = calls;
-    expect(toJane.headers.get("Authorization")).toBe("Bearer re_primo_send_key");
+    expect(toJane.headers.get("Authorization")).toBe("Bearer re_agency_test_key");
     expect(toJane.headers.get("Idempotency-Key")).toBe(`booking-cancelled/${bookingId}`);
     expect(toJane.body).toMatchObject({
       from: '"Primo Painters" <bookings@primopainters.com>',
@@ -352,9 +346,9 @@ describe("a cancelled booking's emails", () => {
     expect(await cancellationEntriesOf(business)).toEqual([]);
   });
 
-  test("a business without its addresses or key cancels and sends nothing, and logs it", async () => {
+  test("a business with nowhere for its notices cancels and sends nothing, and logs it", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    const business = await makeBusiness("no-key", { key: false });
+    const business = await makeBusiness("no-notify", { notifyEmail: null });
     const bookingId = await book(business);
     log.mockClear();
 
@@ -362,7 +356,7 @@ describe("a cancelled booking's emails", () => {
 
     expect(calls).toEqual([]);
     expect(log.mock.calls.map((call) => String(call[0]))).toContain(
-      `[email] booking ${bookingId}: nothing sent, the business has no Resend key`
+      `[email] booking ${bookingId}: nothing sent, the business has no notification address`
     );
   });
 

@@ -1,7 +1,6 @@
 // Backend: sets up a client, their login and their business, with the client as its business
 // owner and first person, and the details the business's emails need. The platform admin who
-// asks is never made a member. A key for the business's own Resend (decision 6) is proved with
-// a test email before anything is made, so a wrong key never leaves a half-made business.
+// asks is never made a member. Its emails go through the agency's key (feature 25a).
 
 import { randomUUID } from "node:crypto";
 
@@ -13,11 +12,6 @@ import type { ProvisionClientInputType } from "@scheduleads-app/shared/zod-valid
 
 import { db } from "../../database.js";
 import { auth } from "../auth/auth-server.js";
-import {
-  checkEmailSendingKey,
-  type EmailRefusalAboutType,
-} from "../email/check-email-sending-key.js";
-import { storeEmailSendingKey } from "../email/store-email-sending-key.js";
 import { safeErrorReason } from "../errors/safe-error-reason.js";
 
 export type ProvisionClientResultType =
@@ -26,8 +20,7 @@ export type ProvisionClientResultType =
       organization: { id: string; name: string; slug: string };
       client: { id: string; name: string; email: string };
     }
-  | { ok: false; code: "bad_request" | "email_taken" | "slug_taken" | "setup_in_progress" }
-  | { ok: false; code: "email_refused"; reason: string; about: EmailRefusalAboutType };
+  | { ok: false; code: "bad_request" | "email_taken" | "slug_taken" | "setup_in_progress" };
 
 type LoginType = { id: string; name: string; email: string };
 
@@ -106,18 +99,6 @@ async function setUp(
     website: input.website || null,
     brandColor: input.brandColor || null,
   };
-  const apiKey = input.emailSendingKey || null;
-  if (apiKey && details.senderEmail) {
-    const checked = await checkEmailSendingKey({
-      apiKey,
-      businessName: input.businessName,
-      senderEmail: details.senderEmail,
-      notifyEmail: details.notifyEmail,
-    });
-    if (!checked.ok) {
-      return { ok: false, code: "email_refused", reason: checked.reason, about: checked.about };
-    }
-  }
 
   // Better Auth's two server-side creates skip their own permission checks when they carry
   // no request headers: it treats them as the server acting for this user. That is what
@@ -134,7 +115,6 @@ async function setUp(
       body: { name: input.businessName, slug, userId: client.id },
     });
     await db.update(organization).set(details).where(eq(organization.id, created.id));
-    if (apiKey) await storeEmailSendingKey(created.id, apiKey);
 
     return {
       ok: true,

@@ -23,9 +23,6 @@ export type RefusalCodeType =
   | "already_started" // booking: it has started, so the customer can no longer change it themselves
   | "already_cancelled" // booking: it was cancelled, so there is nothing to move
   | "too_many_tries" // public routes: over a visitor's or a contact's limit; try again after Retry-After
-  | "key_refused" // email: a business's own Resend key failed its test email; nothing was kept
-  | "sender_refused" // email: Resend would not send from the business's address; nothing was kept
-  | "email_test_failed" // email: the test email could not go (a limit, Resend trouble); nothing was kept
   | "no_business_hours" // settings: a person's hours saved before the business has any
   | "last_person" // settings: turning off the only person still on
   | "name_taken" // settings: another person or place of the business has that name

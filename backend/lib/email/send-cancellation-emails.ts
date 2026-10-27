@@ -33,7 +33,7 @@ export async function sendCancellationEmails(
     logNothingSent(bookingId, setup.missing);
     return [];
   }
-  const { facts, apiKey, from } = setup;
+  const { facts, apiKey, from, fallbackFrom } = setup;
 
   // The moment of the cancel, from its own timeline entry: a retry then sends the very same
   // invite, and Resend refuses a key it already used with a different email. A login on it means
@@ -63,6 +63,7 @@ export async function sendCancellationEmails(
         apiKey,
         kind: "booking_cancellation",
         from,
+        fallbackFrom,
         to: [customerEmail],
         attachments: [
           {
@@ -96,6 +97,7 @@ export async function sendCancellationEmails(
       apiKey,
       kind: "booking_cancellation_notification",
       from,
+      fallbackFrom,
       to: [setup.notifyEmail],
       replyTo: customerEmail ?? undefined, // pressing Reply writes to the customer
       idempotencyKey: `booking-cancelled-notification/${bookingId}`,

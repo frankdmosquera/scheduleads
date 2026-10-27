@@ -1,7 +1,7 @@
 // Backend: everything a booking's emails need, read inside its own business: the booking, the
 // customer, the facts the templates show, and the business's sending setup, or what it still
-// lacks (feature 6, decision 4: no sender, no email). The confirmation, the move and the
-// cancellation all read it here.
+// lacks (feature 25a: only a time zone and somewhere for its notices). The confirmation, the
+// move and the cancellation all read it here.
 
 import { and, eq } from "drizzle-orm";
 
@@ -10,15 +10,17 @@ import { booking, bookingLink, contact, lead, resource } from "@scheduleads-app/
 import { db } from "../../database.js";
 import type { BookingEmailFactsType } from "../../emails/booking-email-facts-type.js";
 import { findBusinessEmailDetails } from "./find-business-email-details.js";
-import { formatSender } from "./format-sender.js";
+import { readAgencyBookingKey } from "./read-agency-booking-key.js";
+import { resolveBusinessSender } from "./resolve-business-sender.js";
 
 export type BookingEmailSetupType =
   | {
       ready: true;
-      apiKey: string;
+      apiKey: string | null; // the agency's; null on the laptop, where nothing is sent
       senderEmail: string;
       notifyEmail: string;
       from: string; // "Primo Painters" <bookings@primopainters.com>
+      fallbackFrom: string | null; // the agency's address, for when Resend refuses its own domain
       facts: BookingEmailFactsType;
     }
   | { ready: false; missing: string[] }; // in words for the log line: "sender address", ...
@@ -100,25 +102,30 @@ export async function findBookingEmailContext(
     customerEmail: row.customerEmail,
     personWorkEmail: row.personWorkEmail,
   };
-  const { senderEmail, notifyEmail, apiKey, timezone } = business;
-  if (!senderEmail || !notifyEmail || !apiKey || !timezone) {
-    const missing = [
-      !senderEmail && "sender address",
-      !notifyEmail && "notification address",
-      !apiKey && "Resend key",
-      !timezone && "time zone",
-    ].filter((what): what is string => Boolean(what));
+  // Notices go to its saved address, else its owner (feature 25a).
+  const notifyEmail = business.notifyEmail ?? business.ownerEmail;
+  const { timezone } = business;
+  if (!notifyEmail || !timezone) {
+    const missing = [!notifyEmail && "notification address", !timezone && "time zone"].filter(
+      (what): what is string => Boolean(what)
+    );
     return { ...context, setup: { ready: false, missing } };
   }
+  const sender = await resolveBusinessSender({
+    name: business.name,
+    savedSender: business.senderEmail,
+    website: business.website,
+  });
 
   return {
     ...context,
     setup: {
       ready: true,
-      apiKey,
-      senderEmail,
+      apiKey: readAgencyBookingKey(),
+      senderEmail: sender.senderEmail,
       notifyEmail,
-      from: formatSender(business.name, senderEmail),
+      from: sender.from,
+      fallbackFrom: sender.fallbackFrom,
       facts: {
         business: {
           name: business.name,

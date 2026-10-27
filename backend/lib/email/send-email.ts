@@ -10,6 +10,9 @@ export type SendEmailInputType = {
   apiKey: string | null; // null only in development without a key: nothing is sent
   kind: string; // for the log line only: "login_code", "booking_confirmation", ...
   from: string; // "Primo Painters <bookings@primopainters.com>"
+  // Sent from once more when Resend refuses `from`'s domain (403): the agency's own address in the
+  // business's name (feature 25a). Absent for login codes.
+  fallbackFrom?: string | null;
   to: string[];
   replyTo?: string;
   subject: string;
@@ -25,6 +28,23 @@ export async function sendEmail(
   input: SendEmailInputType,
   { timeoutMs = 10_000 }: { timeoutMs?: number } = {}
 ): Promise<string | null> {
+  try {
+    return await sendOnce(input, timeoutMs);
+  } catch (error) {
+    const refusedDomain = error instanceof SendEmailError && error.status === 403;
+    if (!refusedDomain || !input.fallbackFrom) throw error;
+    console.log(
+      `[email] ${input.kind} refused from its own domain, sent from the agency's instead (${input.idempotencyKey})`
+    );
+    // Its own key: Resend refuses a key it already saw with a different email.
+    return sendOnce(
+      { ...input, from: input.fallbackFrom, idempotencyKey: `${input.idempotencyKey}/agency` },
+      timeoutMs
+    );
+  }
+}
+
+async function sendOnce(input: SendEmailInputType, timeoutMs: number): Promise<string | null> {
   if (!input.apiKey) {
     if (process.env.NODE_ENV === "production") {
       throw new SendEmailError(

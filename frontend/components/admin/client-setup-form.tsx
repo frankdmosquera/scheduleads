@@ -32,7 +32,6 @@ const emptyForm: ProvisionClientInputType = {
   phone: "",
   website: "",
   brandColor: "",
-  emailSendingKey: "",
 };
 
 const clientDetailFields = [
@@ -52,13 +51,13 @@ const clientDetailFields = [
   },
 ] as const;
 
-// What the business's emails need (feature 6). All optional: no email goes until the two
-// addresses are set, and the key only when you set up the client's Resend yourself.
+// What the business's emails need (feature 6). All optional: empty, the sender is picked from
+// the website once its domain is in Resend, else booking-crm.com (feature 25a).
 const clientEmailFields = [
   {
     name: "senderEmail",
     label: "Emails come from",
-    placeholder: "bookings@primopainters.com",
+    placeholder: "Empty: picked for them",
     autoComplete: "off",
     type: "email",
   },
@@ -78,13 +77,6 @@ const clientEmailFields = [
     type: "url",
   },
   { name: "brandColor", label: "Brand colour", placeholder: "#1d4ed8", autoComplete: "off" },
-  {
-    name: "emailSendingKey",
-    label: "Their Resend key (send-only)",
-    placeholder: "Only if you set up their Resend",
-    autoComplete: "off",
-    type: "password",
-  },
 ] as const;
 
 // Sign out always, and the way back when the platform admin has a dashboard to go back to.
@@ -155,7 +147,8 @@ export function ClientSetupForm({ hasBusiness }: { hasBusiness: boolean }) {
               <div className="mt-2 border-t pt-4">
                 <h2 className="text-sm font-medium">Their emails</h2>
                 <p className="text-xs text-muted-foreground">
-                  Optional now. Booking emails go out only once both addresses are set.
+                  All optional. Booking emails go out from day one; the client can change these
+                  later.
                 </p>
               </div>
             ) : null}
