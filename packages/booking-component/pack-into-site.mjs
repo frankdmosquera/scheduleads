@@ -19,7 +19,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { decidePackIntoSite } from "./decide-pack-into-site.ts";
+import { decidePackIntoSite, refuseNotASite } from "./decide-pack-into-site.ts";
 
 const siteArgument = process.argv[2];
 if (!siteArgument) {
@@ -30,6 +30,12 @@ if (!siteArgument) {
 }
 const siteFolder = resolve(process.env.INIT_CWD ?? process.cwd(), siteArgument); // from where it was typed
 const readIfThere = (path) => (existsSync(path) ? readFileSync(path) : null);
+const sitePackageJson = readIfThere(join(siteFolder, "package.json"))?.toString("utf8") ?? null;
+const notASite = refuseNotASite(sitePackageJson);
+if (notASite) {
+  console.error(`Not installed in ${siteFolder}: ${notASite}`);
+  process.exit(1);
+}
 
 const { version } = JSON.parse(readFileSync(join(import.meta.dirname, "package.json"), "utf8"));
 const packedName = `frankdmosquera-booking-component-${version}.tgz`;
@@ -43,7 +49,7 @@ rmSync(packFolder, { recursive: true });
 
 const vendorFolder = join(siteFolder, "vendor");
 const decision = decidePackIntoSite({
-  sitePackageJson: readIfThere(join(siteFolder, "package.json"))?.toString("utf8") ?? null,
+  sitePackageJson,
   packedName,
   packedBytes,
   vendorFiles: existsSync(vendorFolder)
@@ -60,8 +66,8 @@ if (decision.kind === "refuse") {
 
 mkdirSync(vendorFolder, { recursive: true });
 if (decision.copy) writeFileSync(join(vendorFolder, packedName), packedBytes);
-for (const name of decision.remove) rmSync(join(vendorFolder, name));
 execSync(`npm install "./vendor/${packedName}"`, { cwd: siteFolder, stdio: "inherit" });
+for (const name of decision.remove) rmSync(join(vendorFolder, name)); // only once the site no longer names them
 
 console.log(
   `\nBooking window ${version} is in ${siteFolder}\\vendor (${decision.copy ? "copied" : "already there"}` +

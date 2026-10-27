@@ -447,13 +447,13 @@ Still open 2026-10-25 by /audit independent (final review of 12k at 58c8bf5): 58
 **Suggested fix:** Mark the question answered in the spec: stashed on 2026-10-26 on `design/copy-my-picks` (nobody was working on it), found with `git stash list` in face-and-body.
 **Resolution:**
 
-### F-530 [P3] open - The package goes to 0.2.1 but the lockfile still records the workspace at 0.2.0
+### F-530 [P3] fixed - The package goes to 0.2.1 but the lockfile still records the workspace at 0.2.0
 
 **File:** package-lock.json:15990; packages/booking-component/package.json:3
 **Found:** 2026-10-27 by /audit independent current (scope: 62e87d7..20d0bec; lenses: quality, security, performance, tests)
 **Why it matters:** 8904a15 bumps `@frankdmosquera/booking-component` to 0.2.1 without the root lockfile, whose `packages/booking-component` entry still says 0.2.0. Nothing breaks now: publishing reads `package.json`, and a scratch workspace with the same mismatch passed `npm ci` (npm 11.19.0) without touching the lock. But the next `npm install` on any machine rewrites that line, so an unrelated later commit carries this release's version change. The 0.2.0 bump (296314a) lagged the same way until the npm audit fix (787ef0d) picked it up.
 **Suggested fix:** Update the lockfile with the bump (`npm install --package-lock-only` from the root, which needs no new package) in this fix's commit, and do it with every version bump.
-**Resolution:**
+**Resolution:** fixed 2026-10-27 in 25c (c2e0d1c): the root lockfile records the workspace at 0.2.2, in the same commit as the bump; the 25c independent review (ab4bdd1) saw it repaired.
 
 ### F-532 [P2] open - The card says emails come from a saved sender's domain even when Resend will refuse that domain and every email goes from booking-crm.com
 
@@ -576,3 +576,19 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** `publicCorsMiddleware` runs before `publicRateLimitMiddleware`, and Hono's cors (4.13.14) answers `OPTIONS` itself without calling `next()`, so preflights are never limited; GETs and POSTs also pay the lookup before the limiter counts them. Any request carrying `Origin: https://<anything>` to `/public/<novel-slug>/x` misses the cache (the slug space is effectively endless) and runs one indexed query, so the per-visitor limiter no longer stops a flood from reaching the database. Once 1000 such slugs are kept the whole map is cleared, which also drops every real business's entry and sends their busy sites back to the database. Concurrent first calls for one slug each query too (no in-flight sharing), and during a database outage every such request retries the query and logs a warning. Each query is cheap (unique index on `organization.slug`, `LIMIT 1`), so this is load amplification, not a break; the memory part of the original risk is closed in F-544.
 **Suggested fix:** Keep one map of every business's slug to its Website domain, loaded in one query and refreshed at most once a minute (the business count is small), and answer the CORS rule from it alone: an unknown slug then costs no query, the cap and the clear go away, and a changed Website still works within a minute. Keep "a failed refresh allows nothing beyond the fixed list" (or keeps the last good map, if that is decided).
 **Resolution:**
+
+### F-548 [P3] fixed - pack:site refuses a folder that does not use the window only after a full build and pack
+
+**File:** packages/booking-component/pack-into-site.mjs:37-58
+**Found:** 2026-10-27 by /audit independent current (scope: a0f2f86..ab4bdd1; lenses: quality, security, performance, tests)
+**Why it matters:** The spec orders the command as "1. refuses a folder whose package.json does not list the window; 2. runs npm pack". The script runs `npm pack` (prepack, so the shared build, the backend route types, tsc, tsdown and the import check) first and only then asks `decidePackIntoSite` about the folder. Run against a throwaway folder whose package.json lists only `next`, it printed `npm notice filename: frankdmosquera-booking-component-0.2.2.tgz` before "Not installed ... does not list @frankdmosquera/booking-component". Nothing is written to the wrong folder, so the guard holds; a mistyped folder just costs a full build before the refusal, and the code no longer matches the spec's order.
+**Suggested fix:** Read the site's package.json and refuse before `npm pack` (the folder rule needs no bytes); keep the same-version check after the pack. Or amend the spec's order to say the folder is checked after the pack.
+**Resolution:** fixed 2026-10-27: pack-into-site.mjs asks `refuseNotASite` before `npm pack`, so a folder that does not use the window is refused with no build (a throwaway folder listing only `next`: the refusal printed in under a second, no `npm notice filename`); `decidePackIntoSite` keeps the same rule, still covered by its test.
+
+### F-549 [P3] fixed - Older packed files are deleted before the site's npm install has succeeded
+
+**File:** packages/booking-component/pack-into-site.mjs:62-64
+**Found:** 2026-10-27 by /audit independent current (scope: a0f2f86..ab4bdd1; lenses: quality, security, performance, tests)
+**Why it matters:** The command copies the new file, removes every older `frankdmosquera-booking-component-*.tgz` from the site's `vendor/`, and only then runs `npm install ./vendor/<file>`. If that install fails (no network for hono or zod, a peer conflict), the site's package.json and lockfile still name the old `file:vendor/...-0.2.1.tgz`, which is now gone, so the site's next `npm ci` fails until the command is rerun or the file is restored from git. Recoverable (rerunning finishes the job, and git still holds the old file), but the order leaves the site broken in between.
+**Suggested fix:** Run the `npm install` first and remove the older files only after it succeeds.
+**Resolution:** fixed 2026-10-27: pack-into-site.mjs runs the site's `npm install` first and removes older packed files only after it succeeds, so a failed install leaves the old file the site still names.

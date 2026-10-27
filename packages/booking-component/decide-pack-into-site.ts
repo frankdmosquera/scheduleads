@@ -13,12 +13,8 @@ export function decidePackIntoSite(input: {
   packedBytes: Uint8Array;
   vendorFiles: { name: string; bytes: Uint8Array }[]; // what the site's vendor/ holds today
 }): PackIntoSiteDecisionType {
-  if (!usesBookingWindow(input.sitePackageJson)) {
-    return {
-      kind: "refuse",
-      reason: `this folder's package.json does not list ${packageName}, so it is not a site that uses the booking window`,
-    };
-  }
+  const notASite = refuseNotASite(input.sitePackageJson);
+  if (notASite) return { kind: "refuse", reason: notASite };
 
   const packedFiles = input.vendorFiles.filter((file) => packedFilePattern.test(file.name));
   const sameName = packedFiles.find((file) => file.name === input.packedName);
@@ -35,6 +31,12 @@ export function decidePackIntoSite(input: {
     copy: !sameName,
     remove: packedFiles.filter((file) => file.name !== input.packedName).map((file) => file.name),
   };
+}
+
+// Asked again before packing, so a wrong folder is refused before the build runs.
+export function refuseNotASite(sitePackageJson: string | null): string | null {
+  if (usesBookingWindow(sitePackageJson)) return null;
+  return `this folder's package.json does not list ${packageName}, so it is not a site that uses the booking window`;
 }
 
 function usesBookingWindow(packageJson: string | null): boolean {
