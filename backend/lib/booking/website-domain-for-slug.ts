@@ -12,6 +12,8 @@ import { db } from "../../database.js";
 import { websiteDomain } from "../email/website-domain.js";
 
 const MINUTE_MS = 60 * 1000;
+// Unknown addresses are kept too, so the map is capped: past it, it starts over (F-544).
+const MOST_KEPT = 1000;
 const kept = new Map<string, { domain: string | null; until: number }>();
 
 // Throws when the database cannot be read; the caller then allows nothing beyond its fixed list.
@@ -25,6 +27,7 @@ export async function websiteDomainForSlug(slug: string, now = Date.now()): Prom
     .where(eq(organization.slug, slug))
     .limit(1);
   const domain = websiteDomain(row?.website ?? null);
+  if (kept.size >= MOST_KEPT) kept.clear();
   kept.set(slug, { domain, until: now + MINUTE_MS });
   return domain;
 }

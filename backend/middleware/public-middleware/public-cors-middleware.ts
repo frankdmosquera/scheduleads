@@ -28,6 +28,8 @@ export const publicCorsMiddleware = cors({
   // Any other site gets no Allow-Origin, so its browser blocks the read.
   origin: async (origin, c) => {
     if (fixedOrigins.includes(origin)) return origin;
+    // A Website is always https: anything else never costs a lookup (F-544).
+    if (!origin.startsWith("https://")) return null;
     const slug = businessSlugOf(c.req.path);
     if (!slug) return null;
     try {
