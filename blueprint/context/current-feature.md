@@ -3,7 +3,7 @@
 **From build-plan:** feature 25a
 
 **Size:** light - one real piece of logic (which sender and key an email uses, with one fallback); the rest is removing the key from forms.
-**Status:** built
+**Status:** verified
 **Branch:** feature/25a-booking-email-works-by-default
 
 ## Goal
