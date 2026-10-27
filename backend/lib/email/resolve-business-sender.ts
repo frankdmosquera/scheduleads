@@ -1,10 +1,13 @@
-// Backend: which address a business's emails come from (feature 25a). In order: its own saved
-// sender; else bookings@ the domain of its website, when that domain is set up in Resend; else
-// bookings@booking-crm.com. Always in the business's name. The first two carry a fallback, the
-// agency's address, for when Resend still refuses their domain.
+// Backend: which address a business's emails come from (feature 25a). Only ever its website's
+// domain, and only once that domain is set up in Resend (F-531: an owner can never send as
+// another business's domain through the agency's key): its own saved sender when it is at that
+// domain, else bookings@ that domain. Otherwise bookings@booking-crm.com. Always in the business's
+// name. An own-domain sender carries a fallback, the agency's address, for when Resend still
+// refuses the domain.
 
-import { hasResendSigningRecord } from "./has-resend-signing-record.js";
 import { formatSender } from "./format-sender.js";
+import { hasResendSigningRecord } from "./has-resend-signing-record.js";
+import { websiteDomain } from "./website-domain.js";
 
 const AGENCY_SENDER = "bookings@booking-crm.com";
 
@@ -15,33 +18,20 @@ export type BusinessSenderType = {
   ownDomain: string | null; // the business's own sending domain, or null when it has none yet
 };
 
-// "https://www.primopainters.ca/contact" gives "primopainters.ca"; anything unreadable gives null.
-function websiteDomain(website: string | null): string | null {
-  if (!website) return null;
-  try {
-    const url = new URL(/^https?:\/\//i.test(website) ? website : `https://${website}`);
-    const host = url.hostname.toLowerCase().replace(/^www\./, "");
-    return host.includes(".") ? host : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function resolveBusinessSender(input: {
   name: string;
   savedSender: string | null;
   website: string | null;
 }): Promise<BusinessSenderType> {
   const domain = websiteDomain(input.website);
-  const own =
-    input.savedSender ||
-    (domain && (await hasResendSigningRecord(domain)) ? `bookings@${domain}` : null);
-  if (own) {
+  if (domain && (await hasResendSigningRecord(domain))) {
+    const saved = input.savedSender?.toLowerCase() ?? null;
+    const own = saved && saved.endsWith(`@${domain}`) ? saved : `bookings@${domain}`;
     return {
       senderEmail: own,
       from: formatSender(input.name, own),
       fallbackFrom: formatSender(input.name, AGENCY_SENDER),
-      ownDomain: own.slice(own.lastIndexOf("@") + 1).toLowerCase(),
+      ownDomain: domain,
     };
   }
   return {

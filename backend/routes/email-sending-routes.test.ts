@@ -23,6 +23,11 @@ delete process.env.LOGIN_EMAIL_FROM;
 assertLocalDevDatabase(process.env.DATABASE_URL, "run the email sending route tests");
 
 // Imported after the env is loaded: they read it the moment they load.
+// Public DNS, faked: these domains show Resend's signing record (25a, F-531).
+vi.mock("../lib/email/has-resend-signing-record.js", () => ({
+  hasResendSigningRecord: async (domain: string) => ["primopainters.com"].includes(domain),
+}));
+
 const { app } = await import("../app.js");
 const { db } = await import("../database.js");
 const { appOrigin } = await import("../lib/auth/auth-server.js");
@@ -106,6 +111,7 @@ beforeAll(async () => {
       id: t.organizationId,
       name: `Primo ${t.slug}`,
       slug: t.slug,
+      website: t === primo ? "https://primopainters.com" : null,
     })),
     {
       id: noBooking.organizationId,
@@ -192,6 +198,30 @@ describe("the Email sending card", () => {
     expect(resendCalls).toHaveLength(0);
   });
 
+  test("a sender away from the website's own domain is refused under its field, and nothing changes (F-531)", async () => {
+    await saveCard(addresses, primo.email);
+    const response = await saveCard(
+      { ...addresses, senderEmail: "bookings@someone-else.com" },
+      primo.email
+    );
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "sender_not_own_domain",
+        message: "Use an address at primopainters.com, your website's own domain.",
+      },
+    });
+    expect((await (await getCard(primo.email)).json()).senderEmail).toBe(addresses.senderEmail);
+  });
+
+  test("a business with no website can save no sender of its own", async () => {
+    const response = await saveCard(addresses, other.email);
+
+    expect(response.status).toBe(422);
+    expect((await response.json()).error.code).toBe("sender_not_own_domain");
+  });
+
   test("emptying both goes back to the picked sender and the owner's email", async () => {
     await saveCard(addresses, primo.email);
     const response = await saveCard({ senderEmail: "", notifyEmail: "" }, primo.email);
@@ -199,8 +229,8 @@ describe("the Email sending card", () => {
     expect(await response.json()).toEqual({
       senderEmail: null,
       notifyEmail: null,
-      sendingFrom: "bookings@booking-crm.com",
-      fromOwnDomain: false,
+      sendingFrom: "bookings@primopainters.com", // its website's domain is in Resend
+      fromOwnDomain: true,
       noticesTo: primo.email,
     });
   });

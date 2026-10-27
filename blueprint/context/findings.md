@@ -454,3 +454,51 @@ Still open 2026-10-25 by /audit independent (final review of 12k at 58c8bf5): 58
 **Why it matters:** 8904a15 bumps `@frankdmosquera/booking-component` to 0.2.1 without the root lockfile, whose `packages/booking-component` entry still says 0.2.0. Nothing breaks now: publishing reads `package.json`, and a scratch workspace with the same mismatch passed `npm ci` (npm 11.19.0) without touching the lock. But the next `npm install` on any machine rewrites that line, so an unrelated later commit carries this release's version change. The 0.2.0 bump (296314a) lagged the same way until the npm audit fix (787ef0d) picked it up.
 **Suggested fix:** Update the lockfile with the bump (`npm install --package-lock-only` from the root, which needs no new package) in this fix's commit, and do it with every version bump.
 **Resolution:**
+
+### F-531 [P1] fixed - Any business owner can make the agency's one key send its booking emails from another client's domain or from booking-crm.com
+
+**File:** backend/lib/email/resolve-business-sender.ts:36-38; packages/shared/zod-validation/organization-validation-schemas/email-sending-validation-schema.ts:12; backend/lib/email/save-email-sending.ts:23
+**Found:** 2026-10-27 by /audit independent current (scope: 7abbf56..3ae2eca; lenses: quality, security, performance, tests)
+**Why it matters:** Before 25a a saved sender only worked with the business's own Resend key, so Resend itself kept each business to the domains in its own account. Now every business sends through the agency's key, which the spec wants set to "All domains", and rule 1 trusts the saved sender as is: the card's PUT (any role with `organization: ["update"]`) accepts any well-formed address, and `resolveBusinessSender` returns it with no check that its domain belongs to this business. So the owner of business A can save `bookings@<business B's domain>` or `anything@booking-crm.com`, then book on A's own public page with any recipient address, and the agency key sends a DKIM-signed email from B's domain (or the platform's), with A's business name, service names and details in it. The same unchecked domain also becomes A's `ownDomain`, so A's work emails may be saved at B's domain. The website (rule 2) is set only by the platform admin, so the hole is the owner-editable saved sender. It is a cross-tenant trust break today and opens to anyone with self-serve signup (item 25).
+**Suggested fix:** Honour a saved sender only when its domain equals the business's website domain (admin-set) and is not `booking-crm.com`; otherwise ignore it in the resolver and refuse it on save with a field message. Or make the sender field platform-admin only. Add a test that a saved sender at another domain is not used.
+**Resolution:** fixed 2026-10-27 on feature/25a: the resolver now uses only the business's website domain, and only once it shows Resend's signing record: a saved sender is honoured only at that domain, else bookings@ that domain, else booking-crm.com (resolve-business-sender.ts, website-domain.ts). Saving the card refuses a sender not at the website's domain, or any sender while there is no website, with sender_not_own_domain under the field (save-email-sending.ts, email-sending-routes.ts). The work-email domain follows the same rule. Tests: resolve-business-sender.test.ts (another domain never used), email-sending-routes.test.ts (refused under its field, nothing changes; no website, no sender), settings-routes.test.ts (work emails at the website's domain).
+
+### F-532 [P2] fixed - The card says emails come from a saved sender's domain even when Resend will refuse that domain and every email goes from booking-crm.com
+
+**File:** backend/lib/email/resolve-business-sender.ts:36-46; backend/lib/email/find-email-sending-state.ts:30
+**Found:** 2026-10-27 by /audit independent current (scope: 7abbf56..3ae2eca; lenses: quality, security, performance, tests)
+**Why it matters:** The spec's contract is that the card "never says one thing and the email does another". For a saved sender the resolver does no DNS look and always reports `ownDomain`, so `fromOwnDomain` is true and the card reads "Booking emails come from hola@ialaorden.com" for any saved address, a gmail.com one included. If that domain is not in the agency's Resend (the businesses that used their own Resend accounts until now are the likely case), Resend answers 403 on every email and each one goes from `bookings@booking-crm.com` after a wasted call, while the card keeps naming the business's domain. The email-sending route test asserts `fromOwnDomain: true` for a saved sender with no signing-record check.
+**Suggested fix:** Apply the signing-record check to the saved sender's domain too (or to the website domain the F-531 fix ties it to), and fall to `booking-crm.com` with `fromOwnDomain: false` when it is absent; cover it in the resolver and card tests.
+**Resolution:** fixed 2026-10-27 with F-531: a saved sender is used only when its website domain shows Resend's signing record, the same check the card reads, so the card and the email agree. Test: resolve-business-sender.test.ts (a saved sender whose domain is not in Resend goes from booking-crm.com).
+
+### F-533 [P3] open - `.env.example` still says each business's booking emails go through its own Resend account
+
+**File:** .env.example:80-86
+**Found:** 2026-10-27 by /audit independent current (scope: 7abbf56..3ae2eca; lenses: quality, security, performance, tests)
+**Why it matters:** The spec's In scope lists `.env.example` among the docs to change ("the agency key now carries every business's booking emails"), but the delta does not touch it. Its comment above `RESEND_API_KEY` still reads that booking emails use "the business's own Resend account instead, with a key stored in the database, never here", and does not say that outside production no booking email is sent even with the key set. Whoever sets up Railway or a new laptop from it is told the opposite of what the code now does. `AGENTS.md` was updated.
+**Suggested fix:** Rewrite that comment to match `AGENTS.md`'s new 25a paragraph: the agency key sends login codes and every business's booking emails; a domain is added in Resend (and its records in Vercel) to send from it; on the laptop booking emails are only logged.
+**Resolution:**
+
+### F-534 [P3] open - The fallback's log line names the booking, not the business, and says "sent" before the second send is tried
+
+**File:** backend/lib/email/send-email.ts:36-38
+**Found:** 2026-10-27 by /audit independent current (scope: 7abbf56..3ae2eca; lenses: quality, security, performance, tests)
+**Why it matters:** The spec says the fallback is "logged as one line naming the business, never the addresses". The line carries the email kind and the idempotency key (`booking-confirmation/<bookingId>`, or `text-reply/<messageSid>`), so no address leaks, but it never names the business, which is what tells the agency whose domain needs fixing in Resend. It is also written before the fallback send, so a 403 that is not about the domain (Resend's `invalid_api_key` is also a 403) logs "sent from the agency's instead" and then fails a second time.
+**Suggested fix:** Pass the organization id into the send input for the log only, and word the line as "refused from its own domain, trying the agency's" (or log after the second send returns).
+**Resolution:**
+
+### F-535 [P3] open - The signing-record DNS lookup has no time limit and runs inside save-resource's database transaction
+
+**File:** backend/lib/settings/save-resource.ts:35,66-76; backend/lib/email/has-resend-signing-record.ts:16
+**Found:** 2026-10-27 by /audit independent current (scope: 7abbf56..3ae2eca; lenses: quality, security, performance, tests)
+**Why it matters:** `resolveTxt` uses the resolver's default timeouts and retries, so an unanswering name server can hold the call for several seconds. The lookup now sits on the dashboard's card GET, the people settings read and every booking email, and in `saveResource` it runs inside `db.transaction`, keeping a transaction (and a pooled connection) open across a network call whenever a work email changes. The one-hour cache makes it rare; the delay is unverified at runtime.
+**Suggested fix:** Resolve the sender before opening the transaction in `saveResource`, and give the lookup a short limit (a `Resolver` with `timeout` and `tries`, or a race against a few seconds) that counts as "not set up".
+**Resolution:**
+
+### F-536 [P3] open - The work-email rule's new website-domain path and the text reply's fallback have no test, and one test fakes a DNS failure the real lookup cannot produce
+
+**File:** backend/lib/settings/save-resource.ts:66-76; backend/lib/text/pass-on-reply.ts:93-114; backend/lib/email/send-booking-emails.test.ts:526-531
+**Found:** 2026-10-27 by /audit independent current (scope: 7abbf56..3ae2eca; lenses: quality, security, performance, tests)
+**Why it matters:** `saveResource` and `findPeopleSettings` now take the business's domain from the website when no sender is saved, but no settings test makes a business with a website and a signing record and saves a work email at it (or is refused without one). `passOnReply` gained `fallbackFrom` and the agency key with no test of either. The "fails before Resend" test now makes the mocked `hasResendSigningRecord` throw, but the real function catches every error and returns false, so the test proves a path that cannot happen in production rather than a real failure before Resend.
+**Suggested fix:** Add one settings route test for the website-domain work email (accepted with the record, `no_sending_address` without), one text-reply test where a 403 resends from `booking-crm.com`, and make the before-Resend test fail somewhere real (for example a render that throws).
+**Resolution:**

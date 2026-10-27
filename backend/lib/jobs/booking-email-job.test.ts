@@ -20,6 +20,11 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the booking email job test
 // The agency's key, faked: the real one in the root .env never reaches a test's output (25a).
 process.env.RESEND_API_KEY = "re_agency_test_key";
 
+// Public DNS, faked: these domains show Resend's signing record (25a, F-531).
+vi.mock("../email/has-resend-signing-record.js", () => ({
+  hasResendSigningRecord: async (domain: string) => ["primopainters.com"].includes(domain),
+}));
+
 // Imported after the env is loaded: they read it the moment they load.
 const { db } = await import("../../database.js");
 const {
@@ -66,6 +71,7 @@ async function makeBusiness(name: string) {
     slug: `test-emailjob-${name}-${tag}-dev`,
     senderEmail: "bookings@primopainters.com",
     notifyEmail: "office@primopainters.com",
+    website: "https://primopainters.com",
   });
   await db.insert(availabilityRule).values({
     id: id(),

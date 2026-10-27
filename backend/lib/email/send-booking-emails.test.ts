@@ -175,6 +175,7 @@ const decoded = (attachment: unknown) =>
   Buffer.from(String((attachment as { content: string }).content), "base64").toString("utf8");
 
 beforeEach(() => {
+  signingRecords.add("primopainters.com"); // the usual business's own domain, set up in Resend
   calls = [];
   let next = 0;
   answer = () => json({ id: `email-${++next}` });
@@ -376,7 +377,11 @@ ${notification.body.text}`).not.toContain("/b/");
   });
 
   test("a business with no saved addresses sends from booking-crm.com in its name, notices to its owner", async () => {
-    const business = await makeBusiness("nothing-saved", { senderEmail: null, notifyEmail: null });
+    const business = await makeBusiness("nothing-saved", {
+      senderEmail: null,
+      notifyEmail: null,
+      website: "https://not-in-resend-yet.ca",
+    });
     await makeOwner(business, "nothing-saved");
     await book(business);
 

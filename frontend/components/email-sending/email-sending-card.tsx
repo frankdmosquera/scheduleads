@@ -98,6 +98,10 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
       setNotice({ tone: "info", text: cardWords.saved });
       return;
     }
+    if (saved.state === "field") {
+      form.setError(saved.field, { message: saved.message }, { shouldFocus: true });
+      return;
+    }
     setNotice({ tone: "error", text: saved.message });
   }
 

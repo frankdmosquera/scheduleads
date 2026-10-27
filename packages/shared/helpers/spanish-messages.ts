@@ -266,6 +266,10 @@ export const spanishMessages: Record<string, string> = {
     "Alguien tiene que quedar en servicio: primero ponga a otra persona en servicio.",
   "A place has no work email.": "Un lugar no tiene correo de trabajo.",
   "Use an address at {}, the business's own.": "Use una dirección en {}, la del propio negocio.",
+  "Use an address at {}, your website's own domain.":
+    "Use una dirección en {}, el dominio de su propio sitio web.",
+  "Leave this empty for now: your website is not set up for your own address yet.":
+    "Déjelo vacío por ahora: su sitio web todavía no está listo para su propia dirección.",
   "Set the business's sending address first.": "Primero defina la dirección de envío del negocio.",
   "A place gets no texts: only people do.":
     "Un lugar no recibe mensajes de texto: solo las personas.",

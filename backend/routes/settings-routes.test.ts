@@ -25,6 +25,12 @@ delete process.env.LOGIN_EMAIL_FROM;
 assertLocalDevDatabase(process.env.DATABASE_URL, "run the settings route tests");
 
 // Imported after the env is loaded: they read it the moment they load.
+// Public DNS, faked: these domains show Resend's signing record (25a, F-531).
+vi.mock("../lib/email/has-resend-signing-record.js", () => ({
+  hasResendSigningRecord: async (domain: string) =>
+    ["summit-painting.test", "summit.test"].includes(domain),
+}));
+
 const { app } = await import("../app.js");
 const { findServiceResources } = await import("../lib/scheduling/find-service-resources.js");
 const { findFreeTimes } = await import("../lib/scheduling/find-free-times.js");
@@ -969,7 +975,7 @@ describe("a person's work email", () => {
   test("a work email at another domain is refused, and one at the business's is kept", async () => {
     await db
       .update(organization)
-      .set({ senderEmail: "Bookings@Summit-Painting.test" })
+      .set({ website: "https://summit-painting.test" })
       .where(eq(organization.id, summit.organizationId));
     const read = (await (await get("/settings/people", summit.email)).json()) as {
       senderDomain: string | null;
@@ -1008,10 +1014,10 @@ describe("a person's work email", () => {
       "name",
     ]);
     expect(services.people.every((person) => !("workEmail" in person))).toBe(true);
-    // The sending address moves to another domain: Juan keeps his, and a rename still saves.
+    // The website, so the sending domain, moves to another domain: Juan keeps his, and a rename still saves.
     await db
       .update(organization)
-      .set({ senderEmail: "hello@summit.test" })
+      .set({ website: "https://summit.test" })
       .where(eq(organization.id, summit.organizationId));
     const renamed = await put(`/settings/people/${summit.personId}`, summit.email, {
       name: "Juan P.",
@@ -1027,7 +1033,7 @@ describe("a person's work email", () => {
     expect(moved.status).toBe(400); // a new one must be at the new domain
     await db
       .update(organization)
-      .set({ senderEmail: "Bookings@Summit-Painting.test" })
+      .set({ website: "https://summit-painting.test" })
       .where(eq(organization.id, summit.organizationId));
     await put(`/settings/people/${summit.personId}`, summit.email, juan(null));
     expect(await workEmailOf(summit.personId)).toBeNull();

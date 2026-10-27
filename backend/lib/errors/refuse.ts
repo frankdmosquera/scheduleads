@@ -27,6 +27,7 @@ export type RefusalCodeType =
   | "last_person" // settings: turning off the only person still on
   | "name_taken" // settings: another person or place of the business has that name
   | "no_sending_address" // settings: a work email saved before the business has a sending address
+  | "sender_not_own_domain" // email card: a sender not at the business's own website domain (F-531)
   | "not_closed" // settings: opening a day that is not closed for whoever it opens for
   | "no_usual_hours" // settings: opening a day on a weekday nobody it opens for works
   | "no_text_settings"; // settings: the yes to later texts asked before the business has text settings

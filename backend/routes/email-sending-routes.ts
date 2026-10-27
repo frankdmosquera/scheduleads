@@ -45,7 +45,8 @@ export const emailSendingRoutes = new Hono()
     }),
     async (c) => {
       const input = c.req.valid("json");
-      const state = await saveEmailSending(c.get("organization").organizationId, input);
-      return c.json(state, 200);
+      const result = await saveEmailSending(c.get("organization").organizationId, input);
+      if (!result.ok) return c.json(refuse("sender_not_own_domain", result.reason), 422);
+      return c.json(result.state, 200);
     }
   );

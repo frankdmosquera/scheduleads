@@ -20,7 +20,9 @@ beforeEach(() => {
 });
 
 describe("the sender a business's emails use", () => {
-  test("its own saved sender is kept, with the agency's address as the fallback, and no DNS look", async () => {
+  test("its own saved sender at its website's domain is kept, with the agency's address as the fallback", async () => {
+    signingRecords.add("ialaorden.com");
+
     expect(
       await resolveBusinessSender({
         name: "IA a la Orden",
@@ -33,7 +35,30 @@ describe("the sender a business's emails use", () => {
       fallbackFrom: '"IA a la Orden" <bookings@booking-crm.com>',
       ownDomain: "ialaorden.com",
     });
-    expect(looked).toEqual([]);
+  });
+
+  test("a saved sender at another domain is never used: only the website's domain sends (F-531)", async () => {
+    signingRecords.add("primopainters.ca");
+    signingRecords.add("someone-else.com");
+
+    const sender = await resolveBusinessSender({
+      name: "Primo Painters",
+      savedSender: "bookings@someone-else.com",
+      website: "https://primopainters.ca",
+    });
+
+    expect(sender.senderEmail).toBe("bookings@primopainters.ca");
+  });
+
+  test("a saved sender whose domain is not set up in Resend goes from booking-crm.com, as the card says (F-532)", async () => {
+    const sender = await resolveBusinessSender({
+      name: "Face and Body",
+      savedSender: "bookings@faceandbody.ca",
+      website: "https://faceandbody.ca",
+    });
+
+    expect(sender.senderEmail).toBe("bookings@booking-crm.com");
+    expect(sender.ownDomain).toBeNull();
   });
 
   test("with no saved sender, a website whose domain is in Resend gives bookings@ that domain", async () => {

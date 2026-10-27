@@ -21,6 +21,11 @@ assertLocalDevDatabase(process.env.DATABASE_URL, "run the text reply route tests
 // The agency's key, faked: the real one in the root .env never reaches a test's output (25a).
 process.env.RESEND_API_KEY = "re_agency_test_key";
 
+// Public DNS, faked: these domains show Resend's signing record (25a, F-531).
+vi.mock("../lib/email/has-resend-signing-record.js", () => ({
+  hasResendSigningRecord: async (domain: string) => ["summitpainting.com"].includes(domain),
+}));
+
 // Imported after the env is loaded: they read it the moment they load.
 const { app } = await import("../app.js");
 const { db } = await import("../database.js");
@@ -50,6 +55,7 @@ async function makeBusiness(name: string, settings: Record<string, unknown> = {}
     slug: `test-textreply-${name}-${tag}-dev`,
     senderEmail: "bookings@summitpainting.com",
     notifyEmail: "office@summitpainting.com",
+    website: "https://summitpainting.com",
   });
   const stage = randomUUID();
   await db
