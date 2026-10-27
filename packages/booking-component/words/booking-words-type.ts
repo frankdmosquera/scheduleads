@@ -13,6 +13,7 @@ export type BookingWordsType = {
   loading: string;
   chooseService: string;
   minutes(count: number): string;
+  priceFrom(price: string): string; // "From $150": the service can cost more (feature 25d)
   tryAgain: string;
   call(phone: string): string;
   problems: Record<BookingProblemType, string>;

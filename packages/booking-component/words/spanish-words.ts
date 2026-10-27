@@ -31,6 +31,7 @@ export const spanishWords: BookingWordsType = {
   loading: "Cargando…",
   chooseService: "Elija qué desea reservar.",
   minutes: (count) => `${count} min`,
+  priceFrom: (price) => `Desde ${price}`,
   tryAgain: "Intentar de nuevo",
   call: (phone) => `Llamar al ${phone}`,
   problems: {

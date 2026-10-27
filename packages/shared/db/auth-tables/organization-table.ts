@@ -25,6 +25,8 @@ export const organization = pgTable(
     phone: text("phone"), // for the call button
     website: text("website"), // https://
     brandColor: text("brandColor"), // #rrggbb: email clients ignore CSS variables
+    // The one currency its prices are in (feature 25d), an ISO 4217 code; none: no price shows.
+    currency: text("currency"),
 
     // Which way to reach the customer the booking form requires (feature 12f). Better Auth makes
     // the row, so a new business starts at either one, the least it can ask; the setup file says it.
@@ -45,5 +47,6 @@ export const organization = pgTable(
       sql`${table.contactRule} in ('email', 'phone', 'either')`
     ),
     check("organization_language_check", sql`${table.language} in ('en', 'es')`),
+    check("organization_currency_check", sql`${table.currency} ~ '^[A-Z]{3}$'`),
   ]
 );

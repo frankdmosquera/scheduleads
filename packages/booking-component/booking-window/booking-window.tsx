@@ -49,6 +49,7 @@ export function BookingWindow({
   onClosed,
 }: BookingWindowPropsType) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const pressedOutside = useRef(false); // the last press began on the dark area, not the window
   const titleId = useId();
   const [screen, setScreen] = useState<BookingScreenType>({ screen: "loading" });
   // Every load takes a number; an answer to an older one (a retry, another pick, a close) is dropped.
@@ -192,6 +193,18 @@ export function BookingWindow({
         onClose={() => {
           latestLoad.current++;
           onClosed();
+        }}
+        // A tap on the dark area around the window closes it, as the X does (feature 25d, as on
+        // Cal.com). Only a press that starts there too: text selected inside and released outside
+        // never closes it.
+        onPointerDown={(event) => {
+          pressedOutside.current = event.target === event.currentTarget;
+        }}
+        onClick={(event) => {
+          if (pressedOutside.current && event.target === event.currentTarget) {
+            event.currentTarget.close();
+          }
+          pressedOutside.current = false;
         }}
       >
         <div

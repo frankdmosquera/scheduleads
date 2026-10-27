@@ -10,6 +10,7 @@ export const englishWords: BookingWordsType = {
   loading: "Loading…",
   chooseService: "Choose what you would like to book.",
   minutes: (count) => `${count} min`,
+  priceFrom: (price) => `From ${price}`,
   tryAgain: "Try again",
   call: (phone) => `Call ${phone}`,
   problems: {

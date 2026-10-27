@@ -64,6 +64,17 @@ export type ServicesWordsType = {
   ticksNotSaved(service: string, reason: string): string; // the reason is the API's message
   saveService: string;
   addService: string;
+  // Prices (feature 25d)
+  pricesIn: string;
+  pickACurrency: string;
+  noCurrencyYet: string;
+  currencySaved(currency: string): string;
+  currencyOff: string;
+  priceOptional: string;
+  priceHint: string;
+  priceNeedsCurrency: string;
+  startsFrom: string;
+  priceFrom(price: string): string;
 };
 
 export const englishServicesWords: ServicesWordsType = {
@@ -129,6 +140,16 @@ export const englishServicesWords: ServicesWordsType = {
   ticksNotSaved: (service, reason) => `${service} is saved, but who does it is not: ${reason}`,
   saveService: "Save service",
   addService: "Add service",
+  pricesIn: "Prices in",
+  pickACurrency: "Pick a currency",
+  noCurrencyYet: "No currency yet, so customers see no prices. Pick one to add them.",
+  currencySaved: (currency) => `Prices are in ${currency}.`,
+  currencyOff: "No currency: customers see no prices. The prices are kept.",
+  priceOptional: "Price (optional)",
+  priceHint: "Customers see it when they book. Empty: no price shown.",
+  priceNeedsCurrency: "Pick the currency at the top of the page to add a price.",
+  startsFrom: "Starts from: it can cost more",
+  priceFrom: (price) => `From ${price}`,
 };
 
 export const spanishServicesWords: ServicesWordsType = {
@@ -197,4 +218,14 @@ export const spanishServicesWords: ServicesWordsType = {
   ticksNotSaved: (service, reason) => `${service} está guardado, pero no quién lo hace: ${reason}`,
   saveService: "Guardar servicio",
   addService: "Agregar servicio",
+  pricesIn: "Precios en",
+  pickACurrency: "Elija una moneda",
+  noCurrencyYet: "Aún sin moneda, así que los clientes no ven precios. Elija una para agregarlos.",
+  currencySaved: (currency) => `Los precios están en ${currency}.`,
+  currencyOff: "Sin moneda: los clientes no ven precios. Los precios se guardan.",
+  priceOptional: "Precio (opcional)",
+  priceHint: "Los clientes lo ven al reservar. Vacío: no se muestra precio.",
+  priceNeedsCurrency: "Elija la moneda arriba en la página para agregar un precio.",
+  startsFrom: "Desde: puede costar más",
+  priceFrom: (price) => `Desde ${price}`,
 };

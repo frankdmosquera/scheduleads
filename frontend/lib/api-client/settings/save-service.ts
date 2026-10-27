@@ -2,7 +2,7 @@
 
 import type { InferResponseType } from "hono/client";
 
-import type { ServiceInputType } from "@scheduleads-app/shared/zod-validation";
+import type { ServiceType } from "@scheduleads-app/shared/zod-validation";
 
 import { apiNotRespondingMessage } from "@/lib/api-client/api-not-responding-message";
 import { servicesSettingsRoute } from "@/lib/api-client/settings/fetch-services-settings";
@@ -17,7 +17,7 @@ export type SavedServiceType = InferResponseType<
 // serviceId null adds a new one; the answer has the same shape either way (no list when added).
 export async function saveService(
   serviceId: string | null,
-  service: ServiceInputType
+  service: ServiceType
 ): Promise<SaveResultType<SavedServiceType>> {
   const response = await (
     serviceId

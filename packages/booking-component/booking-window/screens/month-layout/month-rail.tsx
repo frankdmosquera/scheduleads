@@ -1,5 +1,5 @@
-// Booking component: the month layout's left rail, the same on both screens: whose booking, what,
-// how long. Each screen adds its own part below (the person choice, or the picked time).
+// Booking component: the month layout's left rail, the same on every screen: whose booking, what,
+// how long, and its price when it has one (feature 25d). Each screen adds its own part below (the person choice, or the picked time).
 
 import type { ReactNode } from "react";
 
@@ -8,6 +8,7 @@ import type {
   BookingServiceDetailsType,
 } from "../../../api-client/booking-api-types.js";
 import { useBookingWords } from "../../../words/booking-words-context.js";
+import { priceText } from "../price-text.js";
 
 export type MonthRailPropsType = {
   business: BookingBusinessType;
@@ -18,6 +19,7 @@ export type MonthRailPropsType = {
 
 export function MonthRail({ business, service, back, children }: MonthRailPropsType) {
   const words = useBookingWords();
+  const price = priceText(service.price, words);
   return (
     <aside className="sa-rail">
       <div className="sa-rail-logo">
@@ -46,6 +48,14 @@ export function MonthRail({ business, service, back, children }: MonthRailPropsT
             </span>
             <span>{words.minutes(service.durationMinutes)}</span>
           </div>
+          {price && (
+            <div className="sa-fact sa-fact--price">
+              <span className="sa-fact-i" aria-hidden="true">
+                &#127991;
+              </span>
+              <span>{price}</span>
+            </div>
+          )}
         </div>
         {service.description && <p className="sa-rail-where">{service.description}</p>}
         {children}

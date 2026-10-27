@@ -470,6 +470,11 @@
 
 /* The chosen slot, only on screen two. Identity coloured: a confirmation
    of state, not a thing to click. */
+/* The service's price (feature 25d), read at a glance beside its length. */
+.sa-fact--price {
+  font-weight: 600;
+}
+
 .sa-fact--picked {
   color: var(--sa-identity, #18181b);
   font-weight: 700;

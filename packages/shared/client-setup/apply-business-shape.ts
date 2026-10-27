@@ -1,6 +1,7 @@
 // Shared: brings a business to the shape its setup file describes (its questions, hours, people
 // and services), the one way both the dev seed and `npm run client:setup` do it. It only adds
-// what is missing and never changes or removes a row, so anything changed by hand survives.
+// what is missing and never changes or removes a row, so anything changed by hand survives. An
+// empty field counts as missing for prices: the currency and a service's price (feature 25d).
 
 import { randomUUID } from "node:crypto";
 
@@ -219,11 +220,26 @@ export async function applyBusinessShape(
       })
       .where(eq(organization.id, organizationId));
 
+  // Its currency, while it has none (feature 25d).
+  const [{ currency }] = await tx
+    .select({ currency: organization.currency })
+    .from(organization)
+    .where(eq(organization.id, organizationId));
+  const currencyMade = currency === null && shape.currency !== undefined;
+  if (currencyMade)
+    await tx
+      .update(organization)
+      .set({ currency: shape.currency })
+      .where(eq(organization.id, organizationId));
+
   let servicesMade = 0;
   let ticksMade = 0;
-  for (const { ticked = [], ...service } of shape.services) {
+  let pricesMade = 0;
+  for (const { ticked = [], price, priceFrom = false, ...service } of shape.services) {
+    // The file's 150 is stored as 15000: hundredths, so no rounding is ever stored.
+    const priceCents = price === undefined ? null : Math.round(price * 100);
     const [existingLink] = await tx
-      .select({ id: bookingLink.id })
+      .select({ id: bookingLink.id, priceCents: bookingLink.priceCents })
       .from(bookingLink)
       .where(serviceNamed(organizationId, service.name))
       .orderBy(...oldestServiceFirst)
@@ -253,8 +269,17 @@ export async function applyBusinessShape(
         layout: "month", // the only layout built (feature 9)
         personChoice: shape.personChoice,
         ...service,
+        priceCents,
+        priceFrom,
       });
       servicesMade++;
+      if (priceCents !== null) pricesMade++;
+    } else if (existingLink.priceCents === null && priceCents !== null) {
+      await tx
+        .update(bookingLink)
+        .set({ priceCents, priceFrom })
+        .where(eq(bookingLink.id, existingLink.id));
+      pricesMade++;
     }
 
     // Every tick must name someone listed, even on a service whose ticks are left alone below.
@@ -283,6 +308,7 @@ export async function applyBusinessShape(
   return [
     questionsMade && `${shape.questions.length} booking questions`,
     !anyService && "the contact rule",
+    currencyMade && `the currency, ${shape.currency}`,
     textsMade && "text settings",
     !existingBusinessHours && "business hours",
     peopleMade && `${peopleMade} people and places`,
@@ -290,6 +316,7 @@ export async function applyBusinessShape(
     standbyMade && `${standbyMade} standby dates`,
     workerTextsMade && `${workerTextsMade} worker text settings`,
     servicesMade && `${servicesMade} services`,
+    pricesMade && `${pricesMade} prices`,
     ticksMade && `${ticksMade} who-does-what ticks`,
   ].filter((phrase): phrase is string => typeof phrase === "string");
 }

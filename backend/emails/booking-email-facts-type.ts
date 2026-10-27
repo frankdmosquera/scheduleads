@@ -13,6 +13,8 @@ export type BookingEmailFactsType = {
   };
   language: "en" | "es"; // the booking's, kept from its window: the customer's emails are in it
   service: string;
+  // Its price when the email goes (feature 25d); null when it has none or the business no currency.
+  price: { cents: number; from: boolean; currency: string } | null;
   startsAt: Date;
   personName: string; // who was booked
   location: string | null; // the customer's address, as they typed it; null when none was asked

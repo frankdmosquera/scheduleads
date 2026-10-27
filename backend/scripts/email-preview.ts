@@ -23,6 +23,7 @@ const sampleFacts: BookingEmailFactsType = {
   },
   language: "en",
   service: "Exterior painting estimate",
+  price: { cents: 15000, from: true, currency: "CAD" },
   startsAt: new Date("2026-10-08T15:00:00Z"), // 9:00 a.m. in Edmonton
   personName: "Marco",
   location: "12 Main Street, Calgary",

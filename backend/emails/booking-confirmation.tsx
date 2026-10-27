@@ -6,6 +6,7 @@
 import { Heading, Link, render, Text } from "@react-email/components";
 
 import { formatBookingTime } from "@scheduleads-app/shared/booking-time";
+import { formatPrice } from "@scheduleads-app/shared/format-price";
 import { telHref } from "@scheduleads-app/shared/tel-href";
 
 import type { BookingEmailFactsType } from "./booking-email-facts-type.js";
@@ -36,6 +37,13 @@ export async function renderBookingConfirmation(
     html: await render(email),
     text: await render(email, { plainText: true }),
   };
+}
+
+// "$150", or "From $150" when it can cost more, in the booking's language (feature 25d).
+function priceLine(facts: BookingEmailFactsType, words: EmailWordsType): string {
+  if (!facts.price) return "";
+  const amount = formatPrice(facts.price.cents, facts.price.currency, facts.language);
+  return facts.price.from ? words.priceFrom(amount) : amount;
 }
 
 function BookingConfirmationEmail({
@@ -85,6 +93,7 @@ function BookingConfirmationEmail({
       </Text>
 
       <EmailField label={words.what}>{facts.service}</EmailField>
+      {facts.price ? <EmailField label={words.price}>{priceLine(facts, words)}</EmailField> : null}
       <EmailField label={words.when}>{when}</EmailField>
       <EmailField label={words.with}>{facts.personName}</EmailField>
       {facts.location ? <EmailField label={words.where}>{facts.location}</EmailField> : null}

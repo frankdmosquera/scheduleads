@@ -21,6 +21,17 @@ export const serviceStartEveryValidationSchema = z
   .min(1, "At least every minute.")
   .max(MINUTES_IN_A_DAY, "1440 minutes at most.");
 
+// A price in hundredths of the business's currency (feature 25d): 15000 is 150.00.
+export const servicePriceCentsValidationSchema = z
+  .int({ error: "Write the price as a number, like 150 or 12.50." })
+  .min(0, "A price can't be below 0.")
+  .max(100_000_000, "That price is too high.");
+
+const PRICE_FROM_NEEDS_A_PRICE = {
+  message: "Give a price before ticking Starts from.",
+  path: ["priceFrom"],
+};
+
 export const serviceValidationSchema = z
   .object({
     name: z.string().trim().min(1, "Give the service a name.").max(200, "That name is too long."),
@@ -43,9 +54,13 @@ export const serviceValidationSchema = z
     addressMode: z.enum(["required", "optional", "not_asked"], {
       error: "Pick whether it asks the customer's address.",
     }),
+    // Its price (feature 25d); a form that sends none leaves the service without one.
+    priceCents: servicePriceCentsValidationSchema.nullable().default(null),
+    priceFrom: z.boolean().default(false), // "From $150": it can cost more
     active: z.boolean(), // false: hidden, no longer offered; its bookings stay
   })
-  .strict();
+  .strict()
+  .refine((service) => !service.priceFrom || service.priceCents !== null, PRICE_FROM_NEEDS_A_PRICE);
 
 export type ServiceInputType = z.input<typeof serviceValidationSchema>;
 export type ServiceType = z.output<typeof serviceValidationSchema>;

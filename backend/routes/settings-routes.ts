@@ -17,6 +17,7 @@ import {
   holidayPicksValidationSchema,
   openClosedDayValidationSchema,
   personHoursValidationSchema,
+  saveCurrencyValidationSchema,
   savePersonSkillsValidationSchema,
   savePlaceServicesValidationSchema,
   saveResourceValidationSchema,
@@ -55,6 +56,7 @@ import { savePersonSkills } from "../lib/settings/save-person-skills.js";
 import { savePlaceServices } from "../lib/settings/save-place-services.js";
 import { saveResource } from "../lib/settings/save-resource.js";
 import { saveService } from "../lib/settings/save-service.js";
+import { saveServicesCurrency } from "../lib/settings/save-services-currency.js";
 import { saveServiceHours } from "../lib/settings/save-service-hours.js";
 import { saveServiceResources } from "../lib/settings/save-service-resources.js";
 import { requireOrganizationMiddleware } from "../middleware/auth-middleware/require-organization-middleware.js";
@@ -210,6 +212,26 @@ export const settingsRoutes = new Hono()
     async (c) => {
       const service = await addService(c.get("organization").organizationId, c.req.valid("json"));
       return c.json({ service }, 201);
+    }
+  )
+
+  // The currency every price is in (feature 25d); null hides the prices and keeps them.
+  .put(
+    "/services/currency",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = saveCurrencyValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) => {
+      const saved = await saveServicesCurrency(
+        c.get("organization").organizationId,
+        c.req.valid("json")
+      );
+      return c.json(saved, 200);
     }
   )
 

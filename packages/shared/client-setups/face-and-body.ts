@@ -1,7 +1,7 @@
 // Face and Body Wellness Centre, Frank's sister's clinic in Calgary (feature 17). Made once on
 // 2026-10-26 from her site: the treatments from face-and-body/data/servicesData.ts (the 37 with a
-// price; the 3 priced at consultation stay Enquire there), the week and time zone from
-// data/siteConfig.ts. Names are hers exactly; the two Relaxation Massage lengths make a different
+// price, and since feature 25d the price too; the 3 priced at consultation stay Enquire there),
+// the week and time zone from data/siteConfig.ts. Names are hers exactly; the two Relaxation Massage lengths make a different
 // slug than her site's, so her site carries their bookingId (step 17.2). Every value is hers to
 // change in Settings. Her practitioners and rooms are added here once she names them.
 // Apply: npm run client:setup --workspace=@scheduleads-app/shared -- client-setups/face-and-body.ts --apply
@@ -13,6 +13,7 @@ export default {
   personChoice: "business_assigns", // no practitioners yet: the business is its one person
   contactRule: "email", // her Cal.com booking asked a name and an email
   language: "en",
+  currency: "CAD", // her prices are Canadian dollars (feature 25d)
   questions: [], // her Cal.com event types added no booking questions
   hours: {
     weeklyHours: {
@@ -34,6 +35,7 @@ export default {
     {
       name: "Microdermabrasion Facial",
       durationMinutes: 60,
+      price: 145,
       description:
         "Diamond-tip exfoliation for uneven tone, enlarged pores and sun-damaged skin. Best as a course.",
       addressMode: "not_asked",
@@ -41,6 +43,7 @@ export default {
     {
       name: "Deep Cleansing Facial",
       durationMinutes: 75,
+      price: 159,
       description:
         "Eight steps. Extractions, ultrasonic peeling, high-frequency for breakouts, then LED and oxygen.",
       addressMode: "not_asked",
@@ -48,6 +51,7 @@ export default {
     {
       name: "Dermaplaning Facial",
       durationMinutes: 60,
+      price: 145,
       description:
         "Removes dead skin and fine facial hair with a precise blade. Makeup goes on smoother for weeks.",
       addressMode: "not_asked",
@@ -55,6 +59,7 @@ export default {
     {
       name: "Hydra Spa Facial",
       durationMinutes: 70,
+      price: 159,
       description:
         "Vortex tip lifts impurities while infusing hydrating serums. No downtime, results the same day.",
       addressMode: "not_asked",
@@ -62,6 +67,7 @@ export default {
     {
       name: "Gold Facial",
       durationMinutes: 75,
+      price: 159,
       description:
         "24K gold leaf over microdermabrasion and hand-blended masks. Visible tightening and a warm glow.",
       addressMode: "not_asked",
@@ -69,6 +75,7 @@ export default {
     {
       name: "HIFU Facial",
       durationMinutes: 60,
+      price: 155,
       description:
         "Cleanse and polish, then focused ultrasound along the jaw, eyes and neck to tighten from below.",
       addressMode: "not_asked",
@@ -76,6 +83,7 @@ export default {
     {
       name: "Detoxifying Facial",
       durationMinutes: 60,
+      price: 145,
       description:
         "Blueberry, raspberry and pineapple enzyme peel. Deep pore cleanse with lactic acid, all organic.",
       addressMode: "not_asked",
@@ -83,12 +91,14 @@ export default {
     {
       name: "Mini Facial",
       durationMinutes: 30,
+      price: 60,
       description: "Cleanse, exfoliate, tone and mask in thirty minutes. For the lunch break.",
       addressMode: "not_asked",
     },
     {
       name: "Revitalizing Facial",
       durationMinutes: 60,
+      price: 155,
       description:
         "Self-neutralising enzyme lactic peel. Immediate results, safe on sensitive skin, no downtime.",
       addressMode: "not_asked",
@@ -96,24 +106,28 @@ export default {
     {
       name: "Lifting Facial",
       durationMinutes: 60,
+      price: 159,
       description: "Firming massage and masks for skin that's starting to lose its bounce.",
       addressMode: "not_asked",
     },
     {
       name: "Oxygen Rejuvenating Facial",
       durationMinutes: 60,
+      price: 155,
       description: "Pressurised oxygen infuses serums deep into the skin. Plump, calm, rested.",
       addressMode: "not_asked",
     },
     {
       name: "Oxygen Brightening Facial",
       durationMinutes: 60,
+      price: 155,
       description: "Oxygen infusion with brightening actives for dull skin and uneven tone.",
       addressMode: "not_asked",
     },
     {
       name: "Hydrodermabrasion",
       durationMinutes: 75,
+      price: 155,
       description:
         "Water-jet resurfacing with antioxidants and hyaluronic acid. Microdermabrasion's gentler sibling.",
       addressMode: "not_asked",
@@ -121,6 +135,7 @@ export default {
     {
       name: "Fire and Ice Facial",
       durationMinutes: 60,
+      price: 169,
       description:
         "Warming enzyme resurfacing followed by a cooling treatment. Intense, then calm.",
       addressMode: "not_asked",
@@ -128,36 +143,43 @@ export default {
     {
       name: "Eminence Facial",
       durationMinutes: 80,
+      price: 159,
       description: "The classic organic facial, customised to your skin on the day.",
       addressMode: "not_asked",
     },
     {
       name: "Radio Frequency Facial",
       durationMinutes: 60,
+      price: 160,
       description: "Heats the dermis to stimulate collagen. Non-surgical tightening, no needles.",
       addressMode: "not_asked",
     },
     {
       name: "Back Facial",
       durationMinutes: 75,
+      price: 189,
       description: "Deep cleanse, extractions and massage for the skin you can't reach.",
       addressMode: "not_asked",
     },
     {
       name: "LED Light Therapy",
       durationMinutes: 30,
+      price: 60,
       description: "Blue for acne, red for collagen. A quiet 30 minutes, good as an add-on.",
       addressMode: "not_asked",
     },
     {
       name: "Chemical Peel",
       durationMinutes: 30,
+      price: 80,
+      priceFrom: true,
       description: "Strength chosen for your skin at consultation. Light peels have no downtime.",
       addressMode: "not_asked",
     },
     {
       name: "Carbon Peel",
       durationMinutes: 45,
+      price: 150,
       description:
         "Carbon lotion, then laser. Deep-cleans pores and tightens texture in one visit.",
       addressMode: "not_asked",
@@ -165,12 +187,14 @@ export default {
     {
       name: "Hollywood Peel Facial",
       durationMinutes: 105,
+      price: 260,
       description: "The extended carbon laser facial. Red-carpet glow for events.",
       addressMode: "not_asked",
     },
     {
       name: "Acne Advanced Treatment",
       durationMinutes: 30,
+      price: 80,
       description:
         "A short chemical-peel facial for breakout-prone skin: cleanse, peel, mask, moisturise and SPF.",
       addressMode: "not_asked",
@@ -178,6 +202,7 @@ export default {
     {
       name: "Microneedling, Face",
       durationMinutes: 90,
+      price: 290,
       description:
         "The most clinically supported treatment we offer for acne scarring, fine lines and uneven texture. Your skin does the work; we give it the reason to.",
       addressMode: "not_asked",
@@ -185,6 +210,7 @@ export default {
     {
       name: "Microneedling, Abdomen",
       durationMinutes: 90,
+      price: 350,
       description:
         "The same collagen-induction treatment as the face, over the abdomen for stretch marks and loose texture.",
       addressMode: "not_asked",
@@ -192,6 +218,8 @@ export default {
     {
       name: "Thermo-Coagulation",
       durationMinutes: 10,
+      price: 40,
+      priceFrom: true,
       description:
         "Precise heat for spider veins, broken capillaries and skin tags, one spot at a time.",
       addressMode: "not_asked",
@@ -199,6 +227,8 @@ export default {
     {
       name: "Wood Therapy",
       durationMinutes: 30,
+      price: 110,
+      priceFrom: true,
       description:
         "Sculpting massage with wooden rollers and tools, worked over the areas you choose.",
       addressMode: "not_asked",
@@ -206,6 +236,8 @@ export default {
     {
       name: "Laser Lipolysis",
       durationMinutes: 45,
+      price: 150,
+      priceFrom: true,
       description:
         "Diode laser applied to one area at a time, such as abdomen, thighs or arms, to help contour it.",
       addressMode: "not_asked",
@@ -213,6 +245,8 @@ export default {
     {
       name: "Cavitation",
       durationMinutes: 45,
+      price: 130,
+      priceFrom: true,
       description:
         "Thirty minutes of ultrasonic cavitation followed by fifteen minutes in a warm wrap.",
       addressMode: "not_asked",
@@ -220,6 +254,8 @@ export default {
     {
       name: "Body Wrap",
       durationMinutes: 60,
+      price: 130,
+      priceFrom: true,
       description:
         "Exfoliation, then a clay or seaweed wrap and an hour to lie still while it works.",
       addressMode: "not_asked",
@@ -227,24 +263,28 @@ export default {
     {
       name: "Relaxation Massage",
       durationMinutes: 60,
+      price: 100,
       description: "Gentle, flowing strokes at the pressure you ask for. An hour to switch off.",
       addressMode: "not_asked",
     },
     {
       name: "Relaxation Massage, 75 min",
       durationMinutes: 75,
+      price: 120,
       description: "The relaxation massage with fifteen more minutes for the back and shoulders.",
       addressMode: "not_asked",
     },
     {
       name: "Relaxation Massage, 90 min",
       durationMinutes: 90,
+      price: 149,
       description: "The full ninety minutes, head to feet, for when an hour is not enough.",
       addressMode: "not_asked",
     },
     {
       name: "Deep Tissue Massage",
       durationMinutes: 75,
+      price: 126,
       description:
         "Firm pressure and slow strokes into the deeper muscle for knots that will not let go.",
       addressMode: "not_asked",
@@ -252,12 +292,15 @@ export default {
     {
       name: "Therapeutic Massage",
       durationMinutes: 60,
+      price: 100,
+      priceFrom: true,
       description: "Massage planned around one problem area, with the pressure and time it needs.",
       addressMode: "not_asked",
     },
     {
       name: "Lymphatic Drainage Massage",
       durationMinutes: 60,
+      price: 125,
       description:
         "Light, rhythmic strokes that follow the lymph pathways. Very gentle, often used after procedures.",
       addressMode: "not_asked",
@@ -265,12 +308,14 @@ export default {
     {
       name: "Head Massage",
       durationMinutes: 30,
+      price: 79,
       description: "Scalp, neck and face in thirty minutes. Good on its own or after a facial.",
       addressMode: "not_asked",
     },
     {
       name: "Gentle Relaxation Massage",
       durationMinutes: 60,
+      price: 80,
       description: "A very light-pressure relaxation massage given by an esthetician.",
       addressMode: "not_asked",
     },

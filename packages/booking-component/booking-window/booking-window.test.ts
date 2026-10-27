@@ -90,6 +90,7 @@ function fakeApi(bookAnswers: (Response | Promise<Response>)[]) {
             bufferAfterMinutes: 0,
 
             addressMode: "required",
+            price: { cents: 15000, from: true, currency: "CAD" },
             layout: "month",
             personChoice: "business_assigns",
           },
@@ -254,5 +255,39 @@ describe("the booking window", () => {
     await waitFor(() => expect(second.posted).toHaveLength(1));
     expect(first.posted[0]?.requestKey).toBeDefined();
     expect(second.posted[0]?.requestKey).not.toBe(first.posted[0]?.requestKey);
+  });
+
+  it("shows the service's price beside its length", async () => {
+    const { apiClient } = fakeApi([]);
+    await openToScreenTwo(apiClient);
+
+    expect(screen.getByText("From $150")).toBeDefined();
+  });
+
+  it("closes on a tap on the dark area around it, never on a tap inside it", async () => {
+    const onClosed = vi.fn();
+    const { apiClient } = fakeApi([]);
+    render(
+      createElement(BookingWindow, {
+        apiClient,
+        slug: "clinic-dev",
+        bookingId: "facial",
+        ...englishWindow,
+        onClosed,
+      })
+    );
+    const inside = await screen.findByRole("button", { name: "10:00 a.m." });
+    const dialog = inside.closest("dialog")!;
+
+    fireEvent.pointerDown(inside);
+    fireEvent.click(inside);
+    // A press inside released on the dark area, as when text is selected, is not a tap outside.
+    fireEvent.pointerDown(inside);
+    fireEvent.click(dialog);
+    expect(onClosed).not.toHaveBeenCalled();
+
+    fireEvent.pointerDown(dialog);
+    fireEvent.click(dialog);
+    expect(onClosed).toHaveBeenCalledTimes(1);
   });
 });

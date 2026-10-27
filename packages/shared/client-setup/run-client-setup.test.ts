@@ -222,6 +222,51 @@ describe("runClientSetup", () => {
     });
   });
 
+  it("fills a missing currency and price, keeps one already set, and lists it", async () => {
+    const business = await makeBusiness();
+    await runClientSetup(db, setupFor(business.slug), { apply: true }); // no prices yet
+    const priced = (price: number, priceFrom?: true) =>
+      clientSetupValidationSchema.parse({
+        ...fileFor(business.slug),
+        currency: "CAD",
+        services: fileFor(business.slug).services.map((service) =>
+          service.name === "Video call" ? { ...service, price, priceFrom } : service
+        ),
+      });
+    const videoCall = and(
+      eq(bookingLink.organizationId, business.id),
+      eq(bookingLink.slug, "video-call")
+    );
+    const priceNow = async () =>
+      (
+        await db
+          .select({ priceCents: bookingLink.priceCents, priceFrom: bookingLink.priceFrom })
+          .from(bookingLink)
+          .where(videoCall)
+      )[0];
+
+    const filled = await runClientSetup(db, priced(12.5, true), { apply: true });
+    expect(filled.ok && filled.made).toEqual(["the currency, CAD", "1 prices"]);
+    expect(await priceNow()).toEqual({ priceCents: 1250, priceFrom: true });
+
+    const changed = await runClientSetup(db, { ...priced(99), currency: "USD" }, { apply: true });
+    expect(changed.ok && changed.made).toEqual([]);
+    expect(changed.ok && changed.differences.join("\n")).toMatch(/currency[\s\S]*price/);
+    expect(await priceNow()).toEqual({ priceCents: 1250, priceFrom: true });
+  });
+
+  it("refuses a price with no currency, or Starts from with no price", () => {
+    const noCurrency = fileFor("x");
+    noCurrency.services[0] = { ...noCurrency.services[0]!, price: 150 };
+    expect(clientSetupValidationSchema.safeParse(noCurrency).success).toBe(false);
+    const fromAlone = { ...fileFor("x"), currency: "CAD" };
+    fromAlone.services[0] = { ...fromAlone.services[0]!, priceFrom: true };
+    expect(clientSetupValidationSchema.safeParse(fromAlone).success).toBe(false);
+    expect(
+      clientSetupValidationSchema.safeParse({ ...fileFor("x"), currency: "XYZ" }).success
+    ).toBe(false);
+  });
+
   it("keeps a row changed by hand and reports the difference", async () => {
     const business = await makeBusiness();
     await runClientSetup(db, setupFor(business.slug), { apply: true });

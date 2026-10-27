@@ -67,7 +67,7 @@ Body's site touch real data and her production site, so each waits for Frank's y
 
 ## Build steps
 
-- [ ] **25d.1 A service shows its price** - the migration (`organization.currency`,
+- [x] **25d.1 A service shows its price** - the migration (`organization.currency`,
   `booking_link.priceCents` and `priceFrom` with their checks), the shared schemas, Settings >
   Services (currency picker, the price on each card and row), the public list's `price`, the
   window (card, service and details screens, done screen, the outside tap) at 0.2.3, the

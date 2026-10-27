@@ -19,6 +19,7 @@ export type BusinessEmailDetailsType = {
   brandColor: string | null;
   timezone: string | null; // from the business's bookable hours; null before it has any
   language: "en" | "es"; // its owner's emails are written in it
+  currency: string | null; // its prices' (feature 25d); null: no price is written
 };
 
 export async function findBusinessEmailDetails(
@@ -35,6 +36,7 @@ export async function findBusinessEmailDetails(
         website: organization.website,
         brandColor: organization.brandColor,
         language: organization.language,
+        currency: organization.currency,
         timezone: availabilityRule.timezone,
       })
       .from(organization)

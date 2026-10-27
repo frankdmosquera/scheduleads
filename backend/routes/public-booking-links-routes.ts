@@ -18,6 +18,7 @@ import { findBookableOrganizationId } from "../lib/booking/find-bookable-organiz
 import { findBookingQuestions } from "../lib/booking/find-booking-questions.js";
 import { findLaterTextsYesWords } from "../lib/booking/find-later-texts-yes-words.js";
 import { findPersonChoice } from "../lib/booking/find-person-choice.js";
+import { publicPriceOf } from "../lib/booking/public-price-of.js";
 import { CalendarUnavailableError } from "../lib/calendar/calendar-unavailable-error.js";
 import { notBookableHere } from "../lib/errors/not-bookable-here.js";
 import { personNotTaken } from "../lib/errors/person-not-taken.js";
@@ -35,7 +36,18 @@ const publicBookingLinkColumns = {
   bufferBeforeMinutes: bookingLink.bufferBeforeMinutes,
   bufferAfterMinutes: bookingLink.bufferAfterMinutes,
   addressMode: bookingLink.addressMode, // the window's address field: required, optional or none
+  priceCents: bookingLink.priceCents, // answered as one price with the currency (feature 25d)
+  priceFrom: bookingLink.priceFrom,
 };
+
+// Each service's price joined to the business's currency, as the window gets it.
+const withPrice =
+  (currency: string | null) =>
+  <LinkType extends { priceCents: number | null; priceFrom: boolean }>({
+    priceCents,
+    priceFrom,
+    ...link
+  }: LinkType) => ({ ...link, price: publicPriceOf(priceCents, priceFrom, currency) });
 
 // What a stranger may see of the business itself: what its own site shows anyway (feature 9).
 const publicBusinessColumns = {
@@ -43,6 +55,7 @@ const publicBusinessColumns = {
   logo: organization.logo,
   phone: organization.phone,
   contactRule: organization.contactRule, // which of email and phone the form marks required
+  currency: organization.currency, // read for the prices, answered inside each one
 };
 
 export const publicBookingLinksRoutes = new Hono()
@@ -71,7 +84,14 @@ export const publicBookingLinksRoutes = new Hono()
     ]);
     if (!business) return c.json(notBookableHere, 404); // the business went between the two reads
 
-    return c.json({ business: { ...business, questions, laterTextsYesWords }, bookingLinks }, 200);
+    const { currency, ...face } = business;
+    return c.json(
+      {
+        business: { ...face, questions, laterTextsYesWords },
+        bookingLinks: bookingLinks.map(withPrice(currency)),
+      },
+      200
+    );
   })
   // One service, how its modal looks and who picks the person, and the business's bookable hours.
   // The people come with the times.
@@ -91,8 +111,10 @@ export const publicBookingLinksRoutes = new Hono()
         ...publicBookingLinkColumns,
         layout: bookingLink.layout,
         personChoice: bookingLink.personChoice,
+        currency: organization.currency,
       })
       .from(bookingLink)
+      .innerJoin(organization, eq(organization.id, bookingLink.organizationId))
       .where(
         and(
           eq(bookingLink.organizationId, organizationId),
@@ -108,7 +130,8 @@ export const publicBookingLinksRoutes = new Hono()
 
     // `source` stays out: it says whose week answered, which is about people.
     const { source: _source, ...availability } = hours;
-    return c.json({ bookingLink: publicBookingLink, availability }, 200);
+    const { currency, ...link } = publicBookingLink;
+    return c.json({ bookingLink: withPrice(currency)(link), availability }, 200);
   })
   // The start times a customer can book for a service, with one person or "any available". The
   // people to pick from only when the customer picks (decision 3). Each time also comes with its
