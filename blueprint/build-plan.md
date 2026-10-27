@@ -558,6 +558,16 @@ booking with no one at the agency involved.
   domain is an optional later step (Resend can add it through its API). Today
   a business without its own sending setup sends no booking email (feature 6,
   decision 4). Decided by Frank, 2026-10-23
+  - [ ] 25a. **Booking email works by default** (Frank, Oct 27, built
+    first, as 22a was) - every business sends its booking emails through
+    the agency's one Resend key, with nothing to type in. The sender sets
+    itself: `bookings@<its domain>` when that domain is verified in the
+    agency's Resend, otherwise `bookings@booking-crm.com` in the business's
+    name. Replies go to the owner's email, and the "New booking" notices go
+    there by default. The email card stays only to change those addresses.
+    Signup and Stripe stay in 25. Why: handing Face and Body over meant
+    typing a sender, a notification address and a Resend key; a handover
+    should be "what's your email?" and done
 - [ ] 26. **Two-way Gmail sync** - after 22. The owner's mailbox threads land
   on the contact timeline
 

@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash 8b0c310dcfdc5919dbbab323f1fd3faa3a3fa66877d2ca85a24518ef82d4ab15 -->
+<!-- blueprint:source-hash b15df03831d6a422fd49f7355fea09d900598a8ce39fae032494e7394513a550 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -107,7 +107,7 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 20. **Reports**. 21. **Connect to the Agent app** (WhatsApp lives there). 21b. **RCS**. 22. **Google OAuth verification** (22a calendar, before 13, done; 22b Gmail; 22c Google verifies the calendar scopes)
     23. **Packages ladder and admin area**.
     24. **Hosted booking page** `/book/<slug>`. 25. **Self-serve and
-    billing** (booking emails from `booking-crm.com` by default, own domain optional). 26. **Two-way Gmail sync**.
+    billing**; 25a, built first: booking email works by default through the agency Resend key, sender `bookings@<domain>` when verified else `bookings@booking-crm.com` in the business name, replies and notices to the owner. 26. **Two-way Gmail sync**.
 
 ## Data model
 
