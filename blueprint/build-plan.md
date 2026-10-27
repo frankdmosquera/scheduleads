@@ -568,6 +568,13 @@ booking with no one at the agency involved.
     Signup and Stripe stay in 25. Why: handing Face and Body over meant
     typing a sender, a notification address and a Resend key; a handover
     should be "what's your email?" and done
+  - [x] 25b. **A client's site can book once its business has a Website**
+    (Frank, Oct 27, built now, as 25a was) - the API lets a browser call a
+    business's public booking routes from that business's own website (with
+    and without `www`), read from its Website field; Railway's
+    `WIDGET_ORIGINS` stays only for the laptop's dev sites. A site calling
+    another business's routes is still refused. Why: every new client meant
+    editing Railway and waiting for a redeploy
 - [ ] 26. **Two-way Gmail sync** - after 22. The owner's mailbox threads land
   on the contact timeline
 

@@ -520,6 +520,79 @@ describe("the login cookie is never allowed", () => {
   });
 });
 
+describe("a business's own Website may call its booking routes (feature 25b)", () => {
+  // Two throwaway businesses with their own websites; nothing else on the fixed list.
+  const glow = {
+    id: randomUUID(),
+    slug: `test-cors-glow-${tag}-dev`,
+    site: "https://glowspa.test",
+  };
+  const other = {
+    id: randomUUID(),
+    slug: `test-cors-other-${tag}-dev`,
+    site: "https://other.test",
+  };
+  const preflight = (path: string, origin: string) =>
+    app.request(path, {
+      method: "OPTIONS",
+      headers: { Origin: origin, "Access-Control-Request-Method": "POST" },
+    });
+  const allowed = (response: Response) => response.headers.get("Access-Control-Allow-Origin");
+
+  beforeAll(async () => {
+    await db.insert(organization).values([
+      { id: glow.id, name: "Glow Spa", slug: glow.slug, website: `${glow.site}/book` },
+      { id: other.id, name: "Other", slug: other.slug, website: other.site },
+    ]);
+  });
+
+  afterAll(async () => {
+    await db.delete(organization).where(inArray(organization.id, [glow.id, other.id]));
+  });
+
+  test("its own Website, with and without www, reads and may post a booking", async () => {
+    const list = `/public/${glow.slug}/booking-links`;
+
+    expect(allowed(await get(list, "https://glowspa.test"))).toBe("https://glowspa.test");
+    expect(allowed(await get(list, "https://www.glowspa.test"))).toBe("https://www.glowspa.test");
+    const bookingPreflight = await preflight(
+      `/public/${glow.slug}/bookings`,
+      "https://glowspa.test"
+    );
+    expect(allowed(bookingPreflight)).toBe("https://glowspa.test");
+    expect(bookingPreflight.headers.get("Access-Control-Allow-Credentials")).toBeNull();
+  });
+
+  test("another business's Website is refused on this business's routes", async () => {
+    const response = await get(`/public/${glow.slug}/booking-links`, other.site);
+
+    expect(allowed(response)).toBeNull();
+    expect(allowed(await get(`/public/${other.slug}/booking-links`, other.site))).toBe(other.site);
+  });
+
+  test("http, a look-alike and an unknown business are refused", async () => {
+    const list = `/public/${glow.slug}/booking-links`;
+
+    expect(allowed(await get(list, "http://glowspa.test"))).toBeNull();
+    expect(allowed(await get(list, "https://glowspa.test.evil.example"))).toBeNull();
+    expect(allowed(await get(list, "https://shop.glowspa.test"))).toBeNull();
+    const unknown = await get(`/public/test-cors-nobody-${tag}-dev/booking-links`, glow.site);
+    expect(allowed(unknown)).toBeNull();
+  });
+
+  test("the customer's own booking page is never opened by a business's Website", async () => {
+    const response = await preflight(`/public/bookings/${randomUUID()}/cancel`, glow.site);
+
+    expect(allowed(response)).toBeNull();
+  });
+
+  test("the fixed list still works on any business's routes", async () => {
+    expect(allowed(await get(`/public/${glow.slug}/booking-links`, dashboardOrigin))).toBe(
+      dashboardOrigin
+    );
+  });
+});
+
 describe("who picks the person (feature 9, decision 3)", () => {
   // A week starting a week from today on the businesses' clock: inside both horizons.
   const today = localDate(new Date(), "America/Edmonton");

@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash 6a8739f5b44fc76d45812f2f43a2bce1ad457702d15ffe0538e35347a90f6950 -->
+<!-- blueprint:source-hash f92ff802ada36de43f732ee1c15ca6523ab1e02154920849869c8f81197e60cb -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -107,7 +107,7 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 20. **Reports**. 21. **Connect to the Agent app** (WhatsApp lives there). 21b. **RCS**. 22. **Google OAuth verification** (22a calendar, before 13, done; 22b Gmail; 22c Google verifies the calendar scopes)
     23. **Packages ladder and admin area**.
     24. **Hosted booking page** `/book/<slug>`. 25. **Self-serve and
-    billing**; 25a, built first: booking email works by default through the agency Resend key, sender `bookings@<domain>` when verified else `bookings@booking-crm.com` in the business name, replies and notices to the owner. 26. **Two-way Gmail sync**.
+    billing**; 25a, built first: booking email works by default through the agency Resend key, sender `bookings@<domain>` when verified else `bookings@booking-crm.com` in the business name, replies and notices to the owner. 25b, built first: a business's own Website lets its site call its public booking routes; `WIDGET_ORIGINS` only for the laptop's dev sites. 26. **Two-way Gmail sync**.
 
 ## Data model
 
@@ -234,8 +234,8 @@ API (`backend/app.ts`, one chain so `AppType` carries every route):
   makes every stored calendar connection undecryptable.
 - The widget calls the API from the visitor's browser (decision 31); public
   routes are rate limited per visitor and per contact (item 9).
-- CORS: public routes allow `WIDGET_ORIGINS` and the dashboard, never with
-  credentials; dashboard routes only `APP_ORIGIN`, with the cookie.
+- CORS: a business's public routes allow its own Website (25b), `WIDGET_ORIGINS`
+  (the laptop's dev sites) and the dashboard, never with credentials; dashboard routes only `APP_ORIGIN`, with the cookie.
 - Google OAuth stays in Testing (seven-day tokens) until item 22's calendar
   half, finished before item 13.
 - **Client data is never lost by one mistake**: daily backups, a nightly copy
