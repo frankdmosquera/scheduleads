@@ -518,6 +518,14 @@ The live app (10b): the dashboard at `https://app.booking-crm.com` (Vercel), the
 `https://api.booking-crm.com` (Railway), the domain and its DNS in Vercel. The live values are
 listed at the top of `.env.example`.
 
+**Booking emails (25a)** go through the agency's one Resend key (`RESEND_API_KEY`) for every
+business; no business has a key of its own. The sender picks itself: the business's saved sender
+if any, else `bookings@<its website's domain>` once that domain is in the agency's Resend
+(public DNS shows `resend._domainkey.<domain>`), else `bookings@booking-crm.com`, always in the
+business's name. A domain Resend still refuses (403) gets the email once more from
+`booking-crm.com`. To give a client their own sender: add the domain in Resend (manual setup, no
+tracking) and its records in Vercel. On the laptop no booking email is sent.
+
 **Railway starts the API with `node backend/dist/server.js`, never through npm** (F-176,
 2026-10-21): npm does not pass Railway's stop signal on, so a deploy would cut the API off
 mid-job instead of letting it finish. The start command, the draining time (30 seconds, overlap

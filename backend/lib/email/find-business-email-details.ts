@@ -1,56 +1,60 @@
 // Backend: what one business's emails need, read inside that business only: its name, logo,
-// colour, phone, website and time zone, the two addresses, and its own Resend key unlocked.
-// Backend only: the key goes from here to sendEmail and nowhere else (decision 6).
+// colour, phone, website and time zone, the two saved addresses, and its owner's login email,
+// where its notices go when it saved none (feature 25a). Its emails go through the agency's key.
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 
-import { availabilityRule, emailSendingKey, organization } from "@scheduleads-app/shared/db";
-import { decryptCredentials, readTokenKey } from "@scheduleads-app/shared/crypto";
+import { availabilityRule, member, organization, user } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
 
 export type BusinessEmailDetailsType = {
   name: string;
   logo: string | null;
-  senderEmail: string | null;
+  senderEmail: string | null; // its own saved sender, or null for the one picked for it
   notifyEmail: string | null;
+  ownerEmail: string | null; // the first owner's login email, or null when it has no owner
   phone: string | null;
   website: string | null;
   brandColor: string | null;
   timezone: string | null; // from the business's bookable hours; null before it has any
   language: "en" | "es"; // its owner's emails are written in it
-  apiKey: string | null; // its own Resend key, or null when none is saved
 };
 
 export async function findBusinessEmailDetails(
   organizationId: string
 ): Promise<BusinessEmailDetailsType | null> {
-  const [row] = await db
-    .select({
-      name: organization.name,
-      logo: organization.logo,
-      senderEmail: organization.senderEmail,
-      notifyEmail: organization.notifyEmail,
-      phone: organization.phone,
-      website: organization.website,
-      brandColor: organization.brandColor,
-      language: organization.language,
-      timezone: availabilityRule.timezone,
-      credentials: emailSendingKey.credentials,
-    })
-    .from(organization)
-    .leftJoin(
-      availabilityRule,
-      and(eq(availabilityRule.organizationId, organization.id), isNull(availabilityRule.resourceId))
-    )
-    .leftJoin(emailSendingKey, eq(emailSendingKey.organizationId, organization.id))
-    .where(eq(organization.id, organizationId))
-    .limit(1);
+  const [[row], [owner]] = await Promise.all([
+    db
+      .select({
+        name: organization.name,
+        logo: organization.logo,
+        senderEmail: organization.senderEmail,
+        notifyEmail: organization.notifyEmail,
+        phone: organization.phone,
+        website: organization.website,
+        brandColor: organization.brandColor,
+        language: organization.language,
+        timezone: availabilityRule.timezone,
+      })
+      .from(organization)
+      .leftJoin(
+        availabilityRule,
+        and(
+          eq(availabilityRule.organizationId, organization.id),
+          isNull(availabilityRule.resourceId)
+        )
+      )
+      .where(eq(organization.id, organizationId))
+      .limit(1),
+    db
+      .select({ email: user.email })
+      .from(member)
+      .innerJoin(user, eq(user.id, member.userId))
+      .where(and(eq(member.organizationId, organizationId), eq(member.role, "owner")))
+      .orderBy(asc(member.createdAt))
+      .limit(1),
+  ]);
   if (!row) return null;
-
-  const { credentials, ...details } = row;
-  const apiKey = credentials
-    ? decryptCredentials(credentials, readTokenKey(), organizationId)
-    : null;
-  return { ...details, apiKey };
+  return { ...row, ownerEmail: owner?.email ?? null };
 }

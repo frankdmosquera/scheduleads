@@ -1,7 +1,6 @@
-// Frontend: the dashboard home's "Email sending" card. The owner sets where the business's
-// emails come from, where its booking notifications go, and pastes the key of its own Resend
-// account (feature 6, decisions 6 and 9). The key is never shown again: the card only says when
-// one was saved, and saving with a key sends a test email first.
+// Frontend: the dashboard home's "Email sending" card (feature 25a). The owner may set where the
+// business's emails come from and where its booking notices go; either left empty is picked for
+// it. The card says which sender and notice address are in use right now.
 
 "use client";
 
@@ -29,21 +28,16 @@ import type { SetupCardsWordsType } from "@/lib/dashboard-words/setup-cards-word
 const emailSendingFields = [
   { name: "senderEmail", label: "senderLabel", placeholder: "senderPlaceholder", type: "email" },
   { name: "notifyEmail", label: "notifyLabel", placeholder: "notifyPlaceholder", type: "email" },
-  { name: "key", label: "keyLabel", placeholder: "keyPlaceholder", type: "password" },
 ] as const;
 
-// "Key saved Oct 2", in the dashboard's language for the date.
-const formatSavedOn = (iso: string, intlLocale: string) =>
-  new Intl.DateTimeFormat(intlLocale, { month: "short", day: "numeric" }).format(new Date(iso));
-
-function emailSendingStatusWords(
-  state: EmailSendingStateType,
-  words: SetupCardsWordsType,
-  intlLocale: string
-): string {
-  if (!state.senderEmail) return words.notSetUp;
-  if (!state.keySavedAt) return words.sendingOnceKeySaved(state.senderEmail);
-  return words.sendingFrom(state.senderEmail, formatSavedOn(state.keySavedAt, intlLocale));
+// What is in use right now, the same rule the emails use.
+function emailSendingStatusWords(state: EmailSendingStateType, words: SetupCardsWordsType) {
+  return [
+    state.fromOwnDomain
+      ? words.sendingFromOwnDomain(state.sendingFrom)
+      : words.sendingFromAgencyDomain(state.sendingFrom),
+    state.noticesTo ? words.noticesGoTo(state.noticesTo) : words.noticesGoNowhere,
+  ];
 }
 
 export function EmailSendingCard() {
@@ -92,7 +86,6 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
     defaultValues: {
       senderEmail: initial.senderEmail ?? "",
       notifyEmail: initial.notifyEmail ?? "",
-      key: "",
     },
   });
 
@@ -101,13 +94,8 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
     const saved = await saveEmailSending(input);
     if (saved.state === "ok") {
       setState(saved.answer);
-      form.reset({ ...input, key: "" }); // the key never stays on screen
-      setNotice({
-        tone: "info",
-        text: saved.answer.keySavedAt
-          ? cardWords.savedTestSent(saved.answer.notifyEmail ?? "")
-          : cardWords.savedPasteAKey,
-      });
+      form.reset(input);
+      setNotice({ tone: "info", text: cardWords.saved });
       return;
     }
     if (saved.state === "field") {
@@ -123,9 +111,11 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
       noValidate
       className="flex flex-col gap-4"
     >
-      <p className="text-sm text-foreground">
-        {emailSendingStatusWords(state, cardWords, words.intlLocale)}
-      </p>
+      {emailSendingStatusWords(state, cardWords).map((line) => (
+        <p key={line} className="text-sm text-foreground">
+          {line}
+        </p>
+      ))}
       {emailSendingFields.map((field) => (
         <Controller
           key={field.name}
@@ -139,7 +129,7 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
               label={cardWords[field.label]}
               type={field.type}
               placeholder={cardWords[field.placeholder]}
-              autoComplete={field.type === "password" ? "new-password" : "email"}
+              autoComplete="email"
               error={fieldState.error?.message}
             />
           )}
@@ -148,7 +138,7 @@ function EmailSendingForm({ initial }: { initial: EmailSendingStateType }) {
       {notice ? <CentredCardNotice tone={notice.tone}>{notice.text}</CentredCardNotice> : null}
       <div>
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? cardWords.savingAndTesting : cardWords.save}
+          {form.formState.isSubmitting ? cardWords.saving : cardWords.save}
         </Button>
       </div>
     </form>

@@ -9,7 +9,8 @@ import { textReply } from "@scheduleads-app/shared/db";
 import { db } from "../../database.js";
 import { renderTextReplyNotification } from "../../emails/text-reply-notification.js";
 import { findBusinessEmailDetails } from "../email/find-business-email-details.js";
-import { formatSender } from "../email/format-sender.js";
+import { readAgencyBookingKey } from "../email/read-agency-booking-key.js";
+import { resolveBusinessSender } from "../email/resolve-business-sender.js";
 import { sendEmail } from "../email/send-email.js";
 import { findReplySenderName } from "./find-reply-sender-name.js";
 import { findSentText } from "./find-sent-text.js";
@@ -85,10 +86,15 @@ export async function passOnReply(organizationId: string, messageSid: string): P
 
   if (settings.replyEmail) {
     const business = await findBusinessEmailDetails(organizationId);
-    if (!business?.senderEmail || !business.apiKey) {
-      notPassedOn(messageSid, "the business has no email sending, so not by email");
+    if (!business) {
+      notPassedOn(messageSid, "the business cannot be read, so not by email");
     } else {
       goesSomewhere = true;
+      const sender = await resolveBusinessSender({
+        name: business.name,
+        savedSender: business.senderEmail,
+        website: business.website,
+      });
       if (!record.emailSentAt) {
         try {
           const email = await renderTextReplyNotification({
@@ -100,9 +106,10 @@ export async function passOnReply(organizationId: string, messageSid: string): P
           });
           await sendEmail({
             ...email,
-            apiKey: business.apiKey,
+            apiKey: readAgencyBookingKey(),
             kind: "text_reply",
-            from: formatSender(business.name, business.senderEmail),
+            from: sender.from,
+            fallbackFrom: sender.fallbackFrom,
             to: [settings.replyEmail],
             idempotencyKey: `text-reply/${messageSid}`, // a retry is the same email
           });

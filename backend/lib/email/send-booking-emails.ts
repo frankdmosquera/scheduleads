@@ -1,8 +1,8 @@
-// Backend: sends one saved booking's emails, from the business through its own Resend key: the
+// Backend: sends one saved booking's emails, in the business's name through the agency's key: the
 // customer's confirmation with the invite attached and the link to the booking's own page, the
 // business's notification, and the booked person's own when they have a work email. Each email
 // that went gets an email_sent entry on the contact's timeline, with no address and no content.
-// A business without its two addresses, its key or its time zone sends nothing (decision 4).
+// A business without a time zone, or with nowhere for its notices to go, sends nothing (25a).
 
 import { renderBookingConfirmation } from "../../emails/booking-confirmation.js";
 import { renderBookingNotification } from "../../emails/booking-notification.js";
@@ -32,7 +32,7 @@ export async function sendBookingEmails(
     logNothingSent(bookingId, setup.missing);
     return [];
   }
-  const { facts, apiKey, from } = setup;
+  const { facts, apiKey, from, fallbackFrom } = setup;
 
   const recipients = findBookingEmailRecipients({
     source: context.source,
@@ -50,6 +50,7 @@ export async function sendBookingEmails(
         apiKey,
         kind: "booking_confirmation",
         from,
+        fallbackFrom,
         to: [to],
         replyTo: recipients.customerReplyTo ?? undefined, // Reply writes to the booked person
         attachments: [
@@ -87,6 +88,7 @@ export async function sendBookingEmails(
         apiKey,
         kind: "booking_notification",
         from,
+        fallbackFrom,
         to: [to],
         replyTo: context.customerEmail ?? undefined, // pressing Reply writes to the customer
         idempotencyKey: `booking-notification/${bookingId}`,
@@ -102,6 +104,7 @@ export async function sendBookingEmails(
         apiKey,
         kind: "booking_person_notification",
         from,
+        fallbackFrom,
         to: [to],
         replyTo: context.customerEmail ?? undefined,
         idempotencyKey: `booking-person-notification/${bookingId}`,

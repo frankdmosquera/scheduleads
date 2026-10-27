@@ -1,5 +1,5 @@
-// The owner's "Email sending" card, called through the real app against the local database, with
-// Resend faked: no real email is ever sent. Every business and login here is a throwaway made
+// The owner's "Email sending" card (feature 25a), called through the real app against the local
+// database, with Resend faked: no real email is ever sent. Every business and login here is a throwaway made
 // below and removed after.
 
 import { randomUUID } from "node:crypto";
@@ -23,11 +23,15 @@ delete process.env.LOGIN_EMAIL_FROM;
 assertLocalDevDatabase(process.env.DATABASE_URL, "run the email sending route tests");
 
 // Imported after the env is loaded: they read it the moment they load.
+// Public DNS, faked: these domains show Resend's signing record (25a, F-531).
+vi.mock("../lib/email/has-resend-signing-record.js", () => ({
+  hasResendSigningRecord: async (domain: string) => ["primopainters.com"].includes(domain),
+}));
+
 const { app } = await import("../app.js");
 const { db } = await import("../database.js");
 const { appOrigin } = await import("../lib/auth/auth-server.js");
-const { emailSendingKey, member, organization, user } = await import("@scheduleads-app/shared/db");
-const { decryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
+const { member, organization, user } = await import("@scheduleads-app/shared/db");
 
 const tag = randomUUID().slice(0, 8);
 const makeTenant = (letter: string) => ({
@@ -42,7 +46,6 @@ const noBooking = makeTenant("n"); // a plan without booking: no real tier lacks
 const helper = { userId: randomUUID(), email: `sending-m-${tag}@example.com` }; // a member of Primo
 
 const cookies = new Map<string, string>();
-const KEY = "re_primo_sending_key_123";
 
 // Signs in the real way: asks for a login code and reads it where the API prints it.
 async function signIn(email: string): Promise<string> {
@@ -87,13 +90,6 @@ const addresses = {
   senderEmail: "bookings@primopainters.com",
   notifyEmail: "office@primopainters.com",
 };
-const keyRowOf = async (organizationId: string) =>
-  (
-    await db
-      .select()
-      .from(emailSendingKey)
-      .where(eq(emailSendingKey.organizationId, organizationId))
-  )[0];
 
 // Resend's side, faked: the answer each test sets, and every email asked for.
 let resendAnswer: () => Response;
@@ -115,6 +111,7 @@ beforeAll(async () => {
       id: t.organizationId,
       name: `Primo ${t.slug}`,
       slug: t.slug,
+      website: t === primo ? "https://primopainters.com" : null,
     })),
     {
       id: noBooking.organizationId,
@@ -175,67 +172,72 @@ afterAll(async () => {
 });
 
 describe("the Email sending card", () => {
-  test("not set up: no addresses and no key", async () => {
+  test("nothing saved: emails come from booking-crm.com and notices go to the owner", async () => {
     const response = await getCard(other.email);
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       senderEmail: null,
       notifyEmail: null,
-      keySavedAt: null,
+      sendingFrom: "bookings@booking-crm.com",
+      fromOwnDomain: false,
+      noticesTo: other.email,
     });
   });
 
-  test("an owner saves the two addresses and a key, tested first, and never gets the key back", async () => {
-    const response = await saveCard({ ...addresses, key: KEY }, primo.email);
-    const text = await response.text();
+  test("an owner saves the two addresses, and no email is sent to test anything", async () => {
+    const response = await saveCard(addresses, primo.email);
 
     expect(response.status).toBe(200);
-    expect(JSON.parse(text)).toEqual({ ...addresses, keySavedAt: expect.any(String) });
-    expect(text).not.toContain(KEY);
-    expect(resendCalls).toHaveLength(1);
-    expect(resendCalls[0].headers.get("Authorization")).toBe(`Bearer ${KEY}`);
-    expect(resendCalls[0].body).toMatchObject({ to: ["office@primopainters.com"] });
-    const row = await keyRowOf(primo.organizationId);
-    expect(decryptCredentials(row.credentials, readTokenKey(), primo.organizationId)).toBe(KEY);
-
-    const card = await (await getCard(primo.email)).text();
-    expect(card).not.toContain(KEY);
-    expect(card).not.toContain("v1."); // not even locked
+    expect(await response.json()).toEqual({
+      ...addresses,
+      sendingFrom: "bookings@primopainters.com",
+      fromOwnDomain: true,
+      noticesTo: "office@primopainters.com",
+    });
+    expect(resendCalls).toHaveLength(0);
   });
 
-  test("a refused key answers 422 with the reason and changes nothing", async () => {
-    resendAnswer = () => json({ name: "invalid_api_key", statusCode: 403, message: "no" }, 403);
-    const before = await (await getCard(primo.email)).json();
-
+  test("a sender away from the website's own domain is refused under its field, and nothing changes (F-531)", async () => {
+    await saveCard(addresses, primo.email);
     const response = await saveCard(
-      {
-        senderEmail: "new@primopainters.com",
-        notifyEmail: "new@primopainters.com",
-        key: "re_wrong_key_456",
-      },
+      { ...addresses, senderEmail: "bookings@someone-else.com" },
       primo.email
     );
 
     expect(response.status).toBe(422);
     expect(await response.json()).toEqual({
-      error: { code: "key_refused", message: "Resend refused this key." },
+      error: {
+        code: "sender_not_own_domain",
+        message: "Use an address at primopainters.com, your website's own domain.",
+      },
     });
-    expect(await (await getCard(primo.email)).json()).toEqual(before);
+    expect((await (await getCard(primo.email)).json()).senderEmail).toBe(addresses.senderEmail);
   });
 
-  test("a refusal about the sender address comes back as sender_refused, for its own field", async () => {
-    resendAnswer = () => json({ name: "validation_error", statusCode: 403, message: "no" }, 403);
-
-    const response = await saveCard({ ...addresses, key: "re_another_key_789" }, primo.email);
+  test("a business with no website can save no sender of its own", async () => {
+    const response = await saveCard(addresses, other.email);
 
     expect(response.status).toBe(422);
-    expect((await response.json()).error.code).toBe("sender_refused");
+    expect((await response.json()).error.code).toBe("sender_not_own_domain");
+  });
+
+  test("emptying both goes back to the picked sender and the owner's email", async () => {
+    await saveCard(addresses, primo.email);
+    const response = await saveCard({ senderEmail: "", notifyEmail: "" }, primo.email);
+
+    expect(await response.json()).toEqual({
+      senderEmail: null,
+      notifyEmail: null,
+      sendingFrom: "bookings@primopainters.com", // its website's domain is in Resend
+      fromOwnDomain: true,
+      noticesTo: primo.email,
+    });
   });
 
   test("a business whose plan has no booking cannot read or save the card, and nothing is sent", async () => {
     const read = await getCard(noBooking.email);
-    const save = await saveCard({ ...addresses, key: KEY }, noBooking.email);
+    const save = await saveCard(addresses, noBooking.email);
 
     expect(read.status).toBe(403);
     expect(save.status).toBe(403);
@@ -243,16 +245,15 @@ describe("the Email sending card", () => {
   });
 
   test("a member whose role may not change the business is refused, and nothing is sent", async () => {
-    const response = await saveCard({ ...addresses, key: KEY }, helper.email);
+    const response = await saveCard(addresses, helper.email);
 
     expect(response.status).toBe(403);
     expect(resendCalls).toHaveLength(0);
   });
 
   test("another business is never touched", async () => {
-    await saveCard({ ...addresses, key: KEY }, primo.email);
+    await saveCard(addresses, primo.email);
 
-    expect(await keyRowOf(other.organizationId)).toBeUndefined();
     const [row] = await db
       .select({ senderEmail: organization.senderEmail })
       .from(organization)
@@ -265,11 +266,6 @@ describe("the Email sending card", () => {
       "a sender that is not an email",
       { ...addresses, senderEmail: "bookings" },
       "Enter a valid email address.",
-    ],
-    [
-      "a key that is not a Resend key",
-      { ...addresses, key: "sk_123456789" },
-      "That is not a Resend key. It starts with re_.",
     ],
   ])("%s is a 400", async (_name, body, message) => {
     const response = await saveCard(body, primo.email);

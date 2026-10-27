@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 
 import { businessEmailDetailsValidationSchema } from "./business-email-details-validation-schema.js";
-import { emailSendingKeyValidationSchema } from "./email-sending-key-validation-schema.js";
 
 const message = (details: Record<string, unknown>) =>
   businessEmailDetailsValidationSchema.safeParse(details).error?.issues[0]?.message;
@@ -50,19 +49,4 @@ describe("the business's email details", () => {
   ])("%s is refused", (_name, details, expected) => {
     expect(message(details)).toBe(expected);
   });
-});
-
-describe("a Resend key's shape", () => {
-  test("re_ then letters, digits and underscores", () => {
-    expect(emailSendingKeyValidationSchema.parse(" re_123abc_DEF456 ")).toBe("re_123abc_DEF456");
-  });
-
-  test.each([["sk_live_123456789"], ["re_short"], ["re_has space 1234"]])(
-    "%s is refused",
-    (key) => {
-      expect(emailSendingKeyValidationSchema.safeParse(key).error?.issues[0]?.message).toBe(
-        "That is not a Resend key. It starts with re_."
-      );
-    }
-  );
 });

@@ -17,6 +17,14 @@ try {
 
 assertLocalDevDatabase(process.env.DATABASE_URL, "run the booking email tests");
 
+// The agency's key, faked: the real one in the root .env never reaches a test's output (25a).
+process.env.RESEND_API_KEY = "re_agency_test_key";
+
+// Public DNS, faked: these domains show Resend's signing record (25a, F-531).
+vi.mock("./has-resend-signing-record.js", () => ({
+  hasResendSigningRecord: async (domain: string) => ["primopainters.com"].includes(domain),
+}));
+
 // Imported after the env is loaded: they read it the moment they load.
 const { db } = await import("../../database.js");
 const {
@@ -25,12 +33,10 @@ const {
   booking,
   bookingLink,
   bookingLinkResource,
-  emailSendingKey,
   organization,
   pipelineStage,
   resource,
 } = await import("@scheduleads-app/shared/db");
-const { encryptCredentials, readTokenKey } = await import("@scheduleads-app/shared/crypto");
 const { bookTime } = await import("../booking/book-time.js");
 const { workDueJobs } = await import("../jobs/work-due-jobs.js");
 const { moveBooking } = await import("../booking/move-booking.js");
@@ -59,10 +65,13 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 // A painting business of its own: Marco does interior estimates (60 minutes), Mondays 9 to 12. Set
-// up to send unless a test leaves the key out. With ana, Ana does them too.
+// up to send unless a test leaves its notification address out. With ana, Ana does them too.
 async function makeBusiness(
   name: string,
-  { key = true, ana = false }: { key?: boolean; ana?: boolean } = {}
+  {
+    ana = false,
+    notifyEmail = "office@primopainters.com",
+  }: { ana?: boolean; notifyEmail?: string | null } = {}
 ) {
   const id = () => randomUUID();
   const business = id();
@@ -71,16 +80,10 @@ async function makeBusiness(
     name: "Primo Painters",
     slug: `test-movemail-${name}-${tag}-dev`,
     senderEmail: "bookings@primopainters.com",
-    notifyEmail: "office@primopainters.com",
+    notifyEmail,
     phone: "(403) 555-0100",
     website: "https://primopainters.com",
   });
-  if (key) {
-    await db.insert(emailSendingKey).values({
-      organizationId: business,
-      credentials: encryptCredentials("re_primo_send_key", readTokenKey(), business),
-    });
-  }
   await db.insert(availabilityRule).values({
     id: id(),
     organizationId: business,
@@ -219,7 +222,7 @@ describe("a moved booking's emails", () => {
 
     expect(calls).toHaveLength(2);
     const [toJane, toPrimo] = calls;
-    expect(toJane.headers.get("Authorization")).toBe("Bearer re_primo_send_key");
+    expect(toJane.headers.get("Authorization")).toBe("Bearer re_agency_test_key");
     expect(toJane.headers.get("Idempotency-Key")).toBe(`booking-moved/${bookingId}/1`);
     expect(toJane.body).toMatchObject({
       from: '"Primo Painters" <bookings@primopainters.com>',
@@ -353,9 +356,9 @@ describe("a moved booking's emails", () => {
     expect(moved).toEqual({ startsAt: TEN, sequence: 1 });
   });
 
-  test("a business without its key moves and sends nothing, and logs it", async () => {
+  test("a business with nowhere for its notices moves and sends nothing, and logs it", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    const business = await makeBusiness("no-key", { key: false });
+    const business = await makeBusiness("no-notify", { notifyEmail: null });
     const bookingId = await book(business);
     log.mockClear();
 
@@ -363,7 +366,7 @@ describe("a moved booking's emails", () => {
 
     expect(calls).toEqual([]);
     expect(log.mock.calls.map((call) => String(call[0]))).toContain(
-      `[email] booking ${bookingId}: nothing sent, the business has no Resend key`
+      `[email] booking ${bookingId}: nothing sent, the business has no notification address`
     );
   });
 

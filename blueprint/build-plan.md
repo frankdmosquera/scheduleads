@@ -558,6 +558,16 @@ booking with no one at the agency involved.
   domain is an optional later step (Resend can add it through its API). Today
   a business without its own sending setup sends no booking email (feature 6,
   decision 4). Decided by Frank, 2026-10-23
+  - [x] 25a. **Booking email works by default** (Frank, Oct 27, built
+    first, as 22a was) - every business sends its booking emails through
+    the agency's one Resend key, with nothing to type in. The sender sets
+    itself: `bookings@<its domain>` when that domain is verified in the
+    agency's Resend, otherwise `bookings@booking-crm.com` in the business's
+    name. Replies go to the owner's email, and the "New booking" notices go
+    there by default. The email card stays only to change those addresses.
+    Signup and Stripe stay in 25. Why: handing Face and Body over meant
+    typing a sender, a notification address and a Resend key; a handover
+    should be "what's your email?" and done
 - [ ] 26. **Two-way Gmail sync** - after 22. The owner's mailbox threads land
   on the contact timeline
 
@@ -575,7 +585,12 @@ Nothing above depends on these. Each gets a phase when something does.
   default, as Calendly and Cal.com do) and **pay extra** per text at cost
   plus a margin. Colombia and the rest of Latin America: WhatsApp and email
   included, no texts included; a business that wants texts pays from the
-  first one. Not offered: a business plugging in its own Twilio account.
+  first one. Texts go through the agency's Twilio by default; a business
+  may plug in its own Twilio later, only when one asks, on the same plan
+  (it skips only the text margin, paying Twilio itself; the plan pays for
+  the system), and nothing is built for it until then (Frank, Oct 27,
+  replacing Oct 19's "not offered"). WhatsApp is always the business's own
+  number, through the Agent app, counted and capped like texts.
   Needs the missing **reminder by email** (today only confirmations, moves
   and cancellations are emailed), which is also the free fallback. Added
   Oct 25 (Frank): workers' texts about their day (12g) go by WhatsApp too,

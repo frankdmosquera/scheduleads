@@ -1,83 +1,52 @@
-// Backend: saves the owner's "Email sending" card (decision 9): the two addresses and, when one
-// is pasted, a new key for the business's own Resend. With a key there, the new one or the one
-// already saved, one test email goes from the new sender to the new notification address first;
-// refused, nothing changes. The new key is only ever locked away, never read back out.
+// Backend: saves the owner's "Email sending" card (feature 25a): the address the emails come
+// from and where the notices go, each optional; empty is saved as nothing, which means "pick it
+// for me" and "my login email". No key and no test email: the agency's key sends. A sender must
+// be at the business's own website domain (F-531), the only domain its emails may come from.
 
 import { eq } from "drizzle-orm";
 
-import { emailSendingKey, organization } from "@scheduleads-app/shared/db";
-import { decryptCredentials, readTokenKey } from "@scheduleads-app/shared/crypto";
+import { organization } from "@scheduleads-app/shared/db";
 
 import { db } from "../../database.js";
-import { checkEmailSendingKey, type EmailRefusalAboutType } from "./check-email-sending-key.js";
 import { findEmailSendingState, type EmailSendingStateType } from "./find-email-sending-state.js";
-import { storeEmailSendingKey } from "./store-email-sending-key.js";
+import { websiteDomain } from "./website-domain.js";
 
 export type SaveEmailSendingInputType = {
-  senderEmail: string;
-  notifyEmail: string;
-  key: string | null; // a new key, or null to keep the one already saved
+  senderEmail: string; // "" for none
+  notifyEmail: string; // "" for none
 };
 
 export type SaveEmailSendingResultType =
-  | { ok: true; state: EmailSendingStateType }
-  | { ok: false; reason: string; about: EmailRefusalAboutType };
-
-// The key the test email goes with: the new one, else the saved one. A saved key that can no
-// longer be opened (a changed token key) is asked for again rather than silently skipped.
-async function keyToTest(
-  organizationId: string,
-  newKey: string | null
-): Promise<string | null | "unreadable"> {
-  if (newKey) return newKey;
-  const [saved] = await db
-    .select({ credentials: emailSendingKey.credentials })
-    .from(emailSendingKey)
-    .where(eq(emailSendingKey.organizationId, organizationId))
-    .limit(1);
-  if (!saved) return null;
-  try {
-    return decryptCredentials(saved.credentials, readTokenKey(), organizationId);
-  } catch {
-    return "unreadable";
-  }
-}
+  { ok: true; state: EmailSendingStateType } | { ok: false; reason: string };
 
 export async function saveEmailSending(
   organizationId: string,
   input: SaveEmailSendingInputType
 ): Promise<SaveEmailSendingResultType> {
   const [business] = await db
-    .select({ name: organization.name })
+    .select({ website: organization.website })
     .from(organization)
     .where(eq(organization.id, organizationId))
     .limit(1);
   if (!business) throw new Error("Saving email sending failed: the business does not exist.");
 
-  const apiKey = await keyToTest(organizationId, input.key);
-  if (apiKey === "unreadable") {
-    return {
-      ok: false,
-      reason: "The saved key can no longer be read. Paste it again.",
-      about: "key",
-    };
-  }
-  if (apiKey) {
-    const checked = await checkEmailSendingKey({
-      apiKey,
-      businessName: business.name,
-      senderEmail: input.senderEmail,
-      notifyEmail: input.notifyEmail,
-    });
-    if (!checked.ok) return checked;
+  const sender = input.senderEmail.toLowerCase();
+  if (sender) {
+    const domain = websiteDomain(business.website);
+    if (!domain) {
+      return {
+        ok: false,
+        reason: "Leave this empty for now: your website is not set up for your own address yet.",
+      };
+    }
+    if (!sender.endsWith(`@${domain}`)) {
+      return { ok: false, reason: `Use an address at ${domain}, your website's own domain.` };
+    }
   }
 
-  await db.transaction(async (tx) => {
-    await tx
-      .update(organization)
-      .set({ senderEmail: input.senderEmail, notifyEmail: input.notifyEmail })
-      .where(eq(organization.id, organizationId));
-    if (input.key) await storeEmailSendingKey(organizationId, input.key, tx);
-  });
+  await db
+    .update(organization)
+    .set({ senderEmail: sender || null, notifyEmail: input.notifyEmail || null })
+    .where(eq(organization.id, organizationId));
   return { ok: true, state: await findEmailSendingState(organizationId) };
 }

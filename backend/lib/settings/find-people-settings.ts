@@ -18,7 +18,7 @@ import {
 import type { PersonHoursType, WeeklyHoursType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
-import { emailDomainOf } from "./email-domain-of.js";
+import { resolveBusinessSender } from "../email/resolve-business-sender.js";
 import type { WorkerTextSettingsRowType } from "../text/find-worker-text-settings.js";
 import { findPeopleHours } from "./find-people-hours.js";
 import { findWorkerTexts } from "./find-worker-texts.js";
@@ -57,7 +57,11 @@ export async function findPeopleSettings(organizationId: string): Promise<{
         )
         .limit(1),
       db
-        .select({ senderEmail: organization.senderEmail })
+        .select({
+          name: organization.name,
+          senderEmail: organization.senderEmail,
+          website: organization.website,
+        })
         .from(organization)
         .where(eq(organization.id, organizationId))
         .limit(1),
@@ -91,7 +95,16 @@ export async function findPeopleSettings(organizationId: string): Promise<{
     people: rows.map(resourceSettingsOf),
     timezone: hours?.timezone ?? null,
     businessWeek: hours?.weeklyHours ?? null,
-    senderDomain: business?.senderEmail ? emailDomainOf(business.senderEmail) : null,
+    // Its own sending domain (25a): from its saved sender, else its website once set up.
+    senderDomain: business
+      ? (
+          await resolveBusinessSender({
+            name: business.name,
+            savedSender: business.senderEmail,
+            website: business.website,
+          })
+        ).ownDomain
+      : null,
     workerTexts,
     textsSetUp: texts !== undefined,
     services,

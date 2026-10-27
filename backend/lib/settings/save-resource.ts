@@ -9,6 +9,7 @@ import { organization, resource } from "@scheduleads-app/shared/db";
 import type { SaveResourceType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
+import { resolveBusinessSender } from "../email/resolve-business-sender.js";
 import { emailDomainOf } from "./email-domain-of.js";
 import { findUpcomingBookings } from "./find-upcoming-bookings.js";
 import { listedBookingOf, type ListedBookingType } from "./listed-booking.js";
@@ -54,12 +55,25 @@ export async function saveResource(
     // so a rename or turning off is never refused over it.
     if (saved.workEmail && saved.workEmail !== current.workEmail) {
       const [business] = await tx
-        .select({ senderEmail: organization.senderEmail })
+        .select({
+          name: organization.name,
+          senderEmail: organization.senderEmail,
+          website: organization.website,
+        })
         .from(organization)
         .where(eq(organization.id, organizationId))
         .limit(1);
-      if (!business?.senderEmail) return { ok: false, reason: "no_sending_address" } as const;
-      const domain = emailDomainOf(business.senderEmail);
+      // Its own sending domain (25a): from its saved sender, else its website once set up.
+      const domain = business
+        ? (
+            await resolveBusinessSender({
+              name: business.name,
+              savedSender: business.senderEmail,
+              website: business.website,
+            })
+          ).ownDomain
+        : null;
+      if (!domain) return { ok: false, reason: "no_sending_address" } as const;
       if (emailDomainOf(saved.workEmail) !== domain) {
         return {
           ok: false,

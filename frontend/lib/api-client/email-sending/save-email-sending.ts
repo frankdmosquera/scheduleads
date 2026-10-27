@@ -12,10 +12,10 @@ import {
 
 export type SaveEmailSendingResultType =
   | { state: "ok"; answer: EmailSendingStateType }
-  | { state: "field"; field: "key" | "senderEmail"; message: string }
+  | { state: "field"; field: "senderEmail"; message: string }
   | { state: "refused"; message: string };
 
-// Saving the card. A key Resend refused comes back as a message under the key's field.
+// Saving the card: the two addresses (feature 25a).
 export async function saveEmailSending(
   input: EmailSendingInputType
 ): Promise<SaveEmailSendingResultType> {
@@ -27,8 +27,9 @@ export async function saveEmailSending(
   const message =
     body.error?.message ??
     inDashboardLanguage(`The API answered with an unexpected status (${response.status}).`);
-  if (body.error?.code === "key_refused") return { state: "field", field: "key", message };
-  if (body.error?.code === "sender_refused")
-    return { state: "field", field: "senderEmail", message };
+  // A sender away from the business's own website domain (F-531), shown under its field.
+  if (body.error?.code === "sender_not_own_domain") {
+    return { state: "field", field: "senderEmail", message: inDashboardLanguage(message) };
+  }
   return { state: "refused", message };
 }
