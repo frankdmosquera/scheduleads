@@ -2,7 +2,7 @@
 
 **Type:** Fix
 **Size:** light - one rule for one email header, in three emails.
-**Status:** built
+**Status:** verified
 **Branch:** fix/a-customer-s-reply-reaches-the-business
 
 ## The problem
