@@ -72,5 +72,6 @@ export const spanishWords: BookingWordsType = {
   timesUnreadable: "No se pueden leer los horarios en este momento. Intente de nuevo en un rato.",
   youreBooked: "Su reserva está confirmada",
   confirmationOnItsWay: (email) => `Le enviamos la confirmación a ${email}.`,
+  checkSpamFolder: "¿No le llega en unos minutos? Revise la carpeta de spam.",
   formError: (englishMessage) => formErrors[englishMessage] ?? generalFormError,
 };
