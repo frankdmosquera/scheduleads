@@ -49,6 +49,7 @@ export type BookingWordsType = {
   timesUnreadable: string;
   youreBooked: string;
   confirmationOnItsWay(email: string): string;
+  checkSpamFolder: string;
   // A form error as the window shows it, from the shared rules' English message.
   formError(englishMessage: string): string;
 };

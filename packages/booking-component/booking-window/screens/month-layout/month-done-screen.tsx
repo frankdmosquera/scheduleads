@@ -53,7 +53,12 @@ export function MonthDoneScreen({
             <span>{words.withPerson(booking.person.name)}</span>
           </div>
         </div>
-        {email && <p className="sa-fine">{words.confirmationOnItsWay(email)}</p>}
+        {email && (
+          <>
+            <p className="sa-fine">{words.confirmationOnItsWay(email)}</p>
+            <p className="sa-fine">{words.checkSpamFolder}</p>
+          </>
+        )}
       </div>
     </div>
   );

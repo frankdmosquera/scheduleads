@@ -51,5 +51,6 @@ export const englishWords: BookingWordsType = {
   timesUnreadable: "Times cannot be read right now. Try again shortly.",
   youreBooked: "You're booked",
   confirmationOnItsWay: (email) => `A confirmation is on its way to ${email}.`,
+  checkSpamFolder: "Not there in a few minutes? Check your spam folder.",
   formError: (englishMessage) => englishMessage,
 };

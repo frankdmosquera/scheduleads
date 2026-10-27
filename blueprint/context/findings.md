@@ -446,3 +446,11 @@ Still open 2026-10-25 by /audit independent (final review of 12k at 58c8bf5): 58
 **Why it matters:** Step 2 (line 115) and her repo's own `current-feature.md` record that the uncommitted `DesignPicker.tsx` change was stashed because nobody was working on it, and `git stash list` in face-and-body holds it ("DesignPicker work in progress, stashed for feature 11 on 2026-10-26"). The Open questions section still asks "is someone still working on it?" and says 17.2 "cannot branch off her main cleanly until" it is settled, so the archived spec shows a question as open that the feature closed, and does not say where the work now sits.
 **Suggested fix:** Mark the question answered in the spec: stashed on 2026-10-26 on `design/copy-my-picks` (nobody was working on it), found with `git stash list` in face-and-body.
 **Resolution:**
+
+### F-530 [P3] open - The package goes to 0.2.1 but the lockfile still records the workspace at 0.2.0
+
+**File:** package-lock.json:15990; packages/booking-component/package.json:3
+**Found:** 2026-10-27 by /audit independent current (scope: 62e87d7..20d0bec; lenses: quality, security, performance, tests)
+**Why it matters:** 8904a15 bumps `@frankdmosquera/booking-component` to 0.2.1 without the root lockfile, whose `packages/booking-component` entry still says 0.2.0. Nothing breaks now: publishing reads `package.json`, and a scratch workspace with the same mismatch passed `npm ci` (npm 11.19.0) without touching the lock. But the next `npm install` on any machine rewrites that line, so an unrelated later commit carries this release's version change. The 0.2.0 bump (296314a) lagged the same way until the npm audit fix (787ef0d) picked it up.
+**Suggested fix:** Update the lockfile with the bump (`npm install --package-lock-only` from the root, which needs no new package) in this fix's commit, and do it with every version bump.
+**Resolution:**

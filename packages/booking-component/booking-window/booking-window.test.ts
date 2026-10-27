@@ -185,6 +185,7 @@ describe("the booking window", () => {
 
     await waitFor(() => expect(screen.getByText(madeWhen)).toBeDefined());
     expect(screen.getByText("A confirmation is on its way to jane@example.com.")).toBeDefined();
+    expect(screen.getByText("Not there in a few minutes? Check your spam folder.")).toBeDefined();
     expect(posted.map((sent) => sent.startsAt)).toEqual([
       tenOClock.startsAt,
       elevenOClock.startsAt,
