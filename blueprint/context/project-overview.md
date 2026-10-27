@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash d7f4562253cdd000e96b6ebcb1db8d04fffb1987f26d3dd02e2eb7abaa5bf355 -->
+<!-- blueprint:source-hash a0530ce4ed1b876f9123216b41e06db0ce476bb4d8b585e3b6945986d4f5578c -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -107,7 +107,7 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 20. **Reports**. 21. **Connect to the Agent app** (WhatsApp lives there). 21b. **RCS**. 22. **Google OAuth verification** (22a calendar, before 13, done; 22b Gmail; 22c Google verifies the calendar scopes)
     23. **Packages ladder and admin area**.
     24. **Hosted booking page** `/book/<slug>`. 25. **Self-serve and
-    billing**; 25a, built first: booking email works by default through the agency Resend key, sender `bookings@<domain>` when verified else `bookings@booking-crm.com` in the business name, replies and notices to the owner. 25b, built first: a business's own Website lets its site call its public booking routes; `WIDGET_ORIGINS` only for the laptop's dev sites. 25c, built now: the built booking window packed into one file committed in each site's repo and installed from there, so no `NODE_AUTH_TOKEN` in Vercel and nothing public; one Booking CRM command packs a version and copies it into a site; Face and Body and IA a la Orden move over. 26. **Two-way Gmail sync**.
+    billing**; 25a, built first: booking email works by default through the agency Resend key, sender `bookings@<domain>` when verified else `bookings@booking-crm.com` in the business name, replies and notices to the owner. 25b, built first: a business's own Website lets its site call its public booking routes; `WIDGET_ORIGINS` only for the laptop's dev sites. 25c, built now: the built booking window packed into one file committed in each site's repo and installed from there, so no `NODE_AUTH_TOKEN` in Vercel and nothing public; one Booking CRM command packs a version and copies it into a site; Face and Body and IA a la Orden move over. 25d, built now: a service may carry a price (amount, "starts from") in the business's one currency, set in Settings > Services and the setup file, shown on the window's card, details and done screens and the confirmation email; a tap outside closes the window, as on Cal.com. 25e: the business's look (logo, colour theme, optional picture per service) set in Settings and worn by the window, the dashboard and the emails; pictures uploaded and kept by Booking CRM. 26. **Two-way Gmail sync**.
 
 ## Data model
 
