@@ -584,3 +584,43 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** The spec is `verified` and its step says IA a la Orden moved "where the open question says", but Open questions still offers (A) and (B) with no answer. In agency-site-app the move went onto its open branch (option A), split across a1b73d0, the other session's `feat: 12c a call can say what it is about` (the `.npmrc` removal, package.json, lockfile and vendor file), and 15c714d (the AGENTS.md line), where the spec planned one commit. The build log's step 25c.1 records the split, but the archived spec will show a question as open that the feature closed, and a later rollback of 12c in that repo would also undo the window move with nothing in this repo pointing at it.
 **Suggested fix:** Mark the question answered in the spec: option A, on `feature/12c-our-own-cards-on-real-times`, content in a1b73d0 plus 15c714d, both unpushed, so the move goes online when that branch merges.
 **Resolution:**
+
+### F-552 [P2] fixed - A Services page opened before the deploy wiped a service's price on its next save
+
+**File:** packages/shared/zod-validation/booking-links-validation-schemas/service-validation-schema.ts:57-59; backend/lib/settings/save-service.ts (`.set(service)`)
+**Found:** 2026-10-27 by independent review (fresh subagent; scope: 725c801..041d67c)
+**Why it matters:** `priceCents` defaulted to null when a body left it out, and the save writes the whole parsed body, so a tab from before prices, saving any change, set the price back to none without a word.
+**Suggested fix:** Make both price fields optional in the API schema and leave them out of the save when not sent.
+**Resolution:** fixed 2026-10-27: both are `.optional()`; a body without them keeps the saved price (settings-routes.test.ts "saves the business's currency and a service's price").
+
+### F-553 [P3] open - A new dashboard against the old API refuses every service save until the API is live
+
+**File:** deploy order (Vercel and Railway build the same push)
+**Found:** 2026-10-27 by independent review (fresh subagent; scope: 725c801..041d67c)
+**Why it matters:** The new form sends `priceCents` and `priceFrom`; the old API's strict schema refuses them, and `PUT /settings/services/currency` is a 404 there, for the minutes Vercel is live before Railway.
+**Suggested fix:** Deploy the backend first, or accept the few minutes.
+**Resolution:**
+
+### F-554 [P3] fixed - The currency picker was locked while a service card was open
+
+**File:** frontend/components/settings/services-screen.tsx (the picker's canEdit)
+**Found:** 2026-10-27 by independent review (fresh subagent; scope: 725c801..041d67c)
+**Why it matters:** The price box says to pick the currency at the top, but the picker was disabled while any card was open, so the owner had to cancel the card and lose what she typed.
+**Suggested fix:** Drop the `open === null` condition.
+**Resolution:** fixed 2026-10-27: the picker waits only for a save running.
+
+### F-555 [P3] fixed - The Starts from error was not tied to the field for screen readers
+
+**File:** frontend/components/settings/service-price-field.tsx:49
+**Found:** 2026-10-27 by independent review (fresh subagent; scope: 725c801..041d67c)
+**Why it matters:** With only the Starts from error, `aria-describedby` pointed at the hint, which was not rendered.
+**Suggested fix:** Point it at the error whenever either error shows.
+**Resolution:** fixed 2026-10-27.
+
+### F-556 [P3] fixed - A press on the dark area dragged onto the window closed it
+
+**File:** packages/booking-component/booking-window/booking-window.tsx (onPointerDown, onClick)
+**Found:** 2026-10-27 by independent review (fresh subagent; scope: 725c801..041d67c)
+**Why it matters:** The click of a press that starts outside and ends on the window lands on the dialog itself, so it read as a tap outside.
+**Suggested fix:** Also require the release on the dark area.
+**Resolution:** fixed 2026-10-27: onPointerUp clears the press when released on the window; booking-window.test.ts covers both drags.

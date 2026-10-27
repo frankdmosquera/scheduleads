@@ -46,7 +46,7 @@ export function ServicePriceField({
   const [typed, setTyped] = useState(() => typedOf(cents));
   const id = `${idBase}-price`;
   const closed = disabled || currency === null;
-  const describedBy = priceError ? `${id}-error` : `${id}-hint`;
+  const describedBy = priceError || fromError ? `${id}-error` : `${id}-hint`;
 
   return (
     <div className="flex flex-col gap-1.5">

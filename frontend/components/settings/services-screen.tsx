@@ -134,7 +134,7 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
 
   // "$150" or "From $150" in the dashboard's language; null: none shown.
   const priceLine = (service: ServiceSettingsType) => {
-    if (service.priceCents === null || currency === null) return null;
+    if (service.priceCents == null || currency === null) return null;
     const amount = formatPrice(service.priceCents, currency, language);
     return service.priceFrom ? servicesWords.priceFrom(amount) : amount;
   };
@@ -143,7 +143,7 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
     <div className="flex flex-col gap-3">
       <ServicesCurrencyPicker
         currency={currency}
-        canEdit={settings.canEdit && !saving && open === null}
+        canEdit={settings.canEdit && !saving}
         onSaved={setCurrency}
       />
       {!settings.canEdit ? (

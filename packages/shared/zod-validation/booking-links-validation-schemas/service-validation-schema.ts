@@ -54,13 +54,13 @@ export const serviceValidationSchema = z
     addressMode: z.enum(["required", "optional", "not_asked"], {
       error: "Pick whether it asks the customer's address.",
     }),
-    // Its price (feature 25d); a form that sends none leaves the service without one.
-    priceCents: servicePriceCentsValidationSchema.nullable().default(null),
-    priceFrom: z.boolean().default(false), // "From $150": it can cost more
+    // Its price (feature 25d). Left out (a form from before prices), the saved one stays.
+    priceCents: servicePriceCentsValidationSchema.nullable().optional(),
+    priceFrom: z.boolean().optional(), // "From $150": it can cost more
     active: z.boolean(), // false: hidden, no longer offered; its bookings stay
   })
   .strict()
-  .refine((service) => !service.priceFrom || service.priceCents !== null, PRICE_FROM_NEEDS_A_PRICE);
+  .refine((service) => !service.priceFrom || service.priceCents != null, PRICE_FROM_NEEDS_A_PRICE);
 
 export type ServiceInputType = z.input<typeof serviceValidationSchema>;
 export type ServiceType = z.output<typeof serviceValidationSchema>;

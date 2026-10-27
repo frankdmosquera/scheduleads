@@ -276,13 +276,18 @@ describe("the booking window", () => {
         onClosed,
       })
     );
-    const inside = await screen.findByRole("button", { name: "10:00 a.m." });
-    const dialog = inside.closest("dialog")!;
+    const time = await screen.findByRole("button", { name: "10:00 a.m." });
+    const dialog = time.closest("dialog")!;
+    const inside = dialog.querySelector(".sa-modal")!; // the window itself, never replaced
 
     fireEvent.pointerDown(inside);
     fireEvent.click(inside);
     // A press inside released on the dark area, as when text is selected, is not a tap outside.
     fireEvent.pointerDown(inside);
+    fireEvent.click(dialog);
+    // And a press on the dark area released on the window.
+    fireEvent.pointerDown(dialog);
+    fireEvent.pointerUp(inside);
     fireEvent.click(dialog);
     expect(onClosed).not.toHaveBeenCalled();
 

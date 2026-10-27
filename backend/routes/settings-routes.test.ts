@@ -552,7 +552,14 @@ describe("the Services settings", () => {
       priceFrom: true,
     });
     expect(fromAlone.status).toBe(400);
-    const cleared = await put(`/settings/services/${priced.service.id}`, summit.email, cabinet);
+    // A form from before prices sends none: the saved price stays.
+    const older = await put(`/settings/services/${priced.service.id}`, summit.email, cabinet);
+    expect(await older.json()).toMatchObject({ service: { priceCents: 15000, priceFrom: true } });
+    const cleared = await put(`/settings/services/${priced.service.id}`, summit.email, {
+      ...cabinet,
+      priceCents: null,
+      priceFrom: false,
+    });
     expect(await cleared.json()).toMatchObject({ service: { priceCents: null, priceFrom: false } });
   });
 
