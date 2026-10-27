@@ -558,7 +558,7 @@ booking with no one at the agency involved.
   domain is an optional later step (Resend can add it through its API). Today
   a business without its own sending setup sends no booking email (feature 6,
   decision 4). Decided by Frank, 2026-10-23
-  - [ ] 25a. **Booking email works by default** (Frank, Oct 27, built
+  - [x] 25a. **Booking email works by default** (Frank, Oct 27, built
     first, as 22a was) - every business sends its booking emails through
     the agency's one Resend key, with nothing to type in. The sender sets
     itself: `bookings@<its domain>` when that domain is verified in the
