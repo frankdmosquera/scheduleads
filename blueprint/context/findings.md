@@ -673,10 +673,19 @@ Closed 2026-10-28 by independent re-review (fresh subagent, f958a28..72d2649): a
 **Resolution:** fixed 2026-10-28: "No photo yet" / "Aún sin foto".
 Closed 2026-10-28 by independent re-review (fresh subagent, f958a28..72d2649): lookWords.noPhoto in English and Spanish.
 
-### F-566 [P2] fixed - On Safari a see-through logo would have been stored with a black box behind it
+### F-566 [P2] closed - On Safari a see-through logo would have been stored with a black box behind it
 
 **File:** frontend/lib/shrink-picture.ts
 **Found:** 2026-10-28 by independent re-review of step 25e.1 (fresh subagent; scope: f958a28..72d2649), raised by the F-558 fix
 **Why it matters:** JPEG has no see-through, and the canvas was never filled, so a transparent PNG logo re-encoded as JPEG on Safari came out on black, in the window and in every email.
 **Suggested fix:** Keep Safari's PNG while it fits under 1 MB; use JPEG only for larger pictures.
-**Resolution:** fixed 2026-10-28: Safari's PNG is kept up to 900 KB (a 600 px logo always is); a larger picture becomes JPEG with white behind it, never black.
+**Resolution:** fixed 2026-10-28: Safari's PNG is kept up to 900 KB (a 600 px logo nearly always is; a noisier one takes the JPEG path); a larger picture becomes JPEG with white behind it, never black.
+Closed 2026-10-28 by independent re-review (fresh subagent, 72d2649..4245aec): every path checked; a PNG is sent only up to 900,000 bytes, a JPEG gets white where the picture was see-through, null still shows the "not a picture" line; build and lint pass.
+
+### F-567 [P3] open - A shrunk photo written as JPEG is never checked against 1 MB before it is sent
+
+**File:** frontend/lib/shrink-picture.ts
+**Found:** 2026-10-28 by independent re-review of step 25e.1 (fresh subagent; scope: 72d2649..4245aec)
+**Why it matters:** A 1200 px JPEG at quality 0.85 is nearly always far under 1 MB, but nothing checks it; an unusually detailed one would be refused by the API with its clear "over 1 MB" message, not lost.
+**Suggested fix:** Encode once more at a lower quality when the JPEG is over 900 KB.
+**Resolution:**
