@@ -2311,3 +2311,43 @@ describe("the business's pictures (feature 25e)", () => {
     }
   });
 });
+
+describe("the business's colours (feature 25e)", () => {
+  test("an owner saves three colours; too-faint text and a member who may not change them are refused", async () => {
+    const saved = await put("/settings/look/colours", summit.email, {
+      main: "#B5838D",
+      background: "#fbf6f2",
+      text: "#3a2e39",
+    });
+    expect(await saved.json()).toEqual({ main: "#b5838d", background: "#fbf6f2", text: "#3a2e39" });
+    const read = (await (await get("/settings/look", summit.email)).json()) as {
+      colours: { main: string };
+    };
+    expect(read.colours.main).toBe("#b5838d");
+    const me = (await (await get("/me", summit.email)).json()) as {
+      organization: { mainColour: string };
+    };
+    expect(me.organization.mainColour).toBe("#b5838d"); // the dashboard's highlight
+
+    const faint = await put("/settings/look/colours", summit.email, {
+      main: null,
+      background: "#ffffff",
+      text: "#cccccc",
+    });
+    expect(faint.status).toBe(400);
+    expect(((await faint.json()) as { field: string }).field).toBe("text");
+    const notAllowed = await put("/settings/look/colours", helper.email, {
+      main: "#000000",
+      background: null,
+      text: null,
+    });
+    expect(notAllowed.status).toBe(403);
+
+    const cleared = await put("/settings/look/colours", summit.email, {
+      main: null,
+      background: null,
+      text: null,
+    });
+    expect(await cleared.json()).toEqual({ main: null, background: null, text: null });
+  });
+});

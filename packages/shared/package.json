@@ -36,6 +36,10 @@
       "types": "./dist/helpers/image-kit-sized.d.ts",
       "default": "./dist/helpers/image-kit-sized.js"
     },
+    "./contrast-ratio": {
+      "types": "./dist/helpers/contrast-ratio.d.ts",
+      "default": "./dist/helpers/contrast-ratio.js"
+    },
     "./local-date": {
       "types": "./dist/helpers/local-date.d.ts",
       "default": "./dist/helpers/local-date.js"

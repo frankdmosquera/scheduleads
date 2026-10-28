@@ -18,6 +18,7 @@ import {
   holidayPicksValidationSchema,
   openClosedDayValidationSchema,
   personHoursValidationSchema,
+  businessColoursValidationSchema,
   saveCurrencyValidationSchema,
   savePersonSkillsValidationSchema,
   savePlaceServicesValidationSchema,
@@ -62,6 +63,7 @@ import { readUploadedPicture } from "../lib/images/read-uploaded-picture.js";
 import { uploadToImageKit, type StoredPictureType } from "../lib/images/upload-to-imagekit.js";
 import { findLookSettings } from "../lib/settings/find-look-settings.js";
 import { replaceBusinessLogo } from "../lib/settings/replace-business-logo.js";
+import { saveBusinessColours } from "../lib/settings/save-business-colours.js";
 import { replaceServiceImage } from "../lib/settings/replace-service-image.js";
 import { serviceExistsHere } from "../lib/settings/service-exists-here.js";
 import { saveService } from "../lib/settings/save-service.js";
@@ -360,6 +362,23 @@ export const settingsRoutes = new Hono()
         200
       );
     }
+  )
+  // The business's three colours (feature 25e): saved together; text too faint to read is refused.
+  .put(
+    "/look/colours",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = businessColoursValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) =>
+      c.json(
+        await saveBusinessColours(c.get("organization").organizationId, c.req.valid("json")),
+        200
+      )
   )
   .delete(
     "/look/logo",

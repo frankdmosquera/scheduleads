@@ -5,7 +5,7 @@
 
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { CentredCard } from "@/components/centred-card/centred-card";
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
@@ -25,6 +25,13 @@ export function useMe(): MeType {
   return me;
 }
 
+// Shows a newly saved main colour on the whole dashboard at once (feature 25e), without asking /me again.
+const SetMainColourContext = createContext<(main: string | null) => void>(() => {});
+
+export function useSetMainColour(): (main: string | null) => void {
+  return useContext(SetMainColourContext);
+}
+
 export function DashboardGate({ children }: { children: ReactNode }) {
   const { words, showLoginLanguage, forgetLoginLanguage } = useDashboardWords();
   const [result, setResult] = useState<MeResultType | null>(null);
@@ -32,6 +39,18 @@ export function DashboardGate({ children }: { children: ReactNode }) {
   // Bump to ask /me again: after picking a business, or on "Try again".
   const [reloads, setReloads] = useState(0);
   const reloadDashboard = () => setReloads((n) => n + 1);
+  const setMainColour = useCallback(
+    (main: string | null) =>
+      setResult((now) =>
+        now?.state === "ok"
+          ? {
+              ...now,
+              me: { ...now.me, organization: { ...now.me.organization, mainColour: main } },
+            }
+          : now
+      ),
+    []
+  );
 
   useEffect(() => {
     // `live` stops a late answer from updating a page the user already left.
@@ -87,6 +106,12 @@ export function DashboardGate({ children }: { children: ReactNode }) {
       );
 
     case "ok":
-      return <MeContext.Provider value={result.me}>{children}</MeContext.Provider>;
+      return (
+        <MeContext.Provider value={result.me}>
+          <SetMainColourContext.Provider value={setMainColour}>
+            {children}
+          </SetMainColourContext.Provider>
+        </MeContext.Provider>
+      );
   }
 }

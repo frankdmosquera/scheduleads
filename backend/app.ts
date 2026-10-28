@@ -76,6 +76,7 @@ export const app = new Hono()
         name: details.name,
         slug: details.slug,
         plan: subscription.tier,
+        mainColour: details.mainColour, // the dashboard's highlight, once saved on Look (feature 25e)
       },
       role: activeOrganization.role,
       limits: subscription.limits,

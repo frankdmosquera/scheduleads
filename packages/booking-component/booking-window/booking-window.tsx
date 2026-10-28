@@ -18,6 +18,7 @@ import { fetchOneService } from "../api-client/fetch-one-service.js";
 import { fetchServiceList } from "../api-client/fetch-service-list.js";
 import { newBookingForm } from "./booking-form/new-booking-form.js";
 import { BookingProblemScreen } from "./screens/booking-problem-screen.js";
+import { themeStyle } from "./theme-style.js";
 import { bookingProblemScreen } from "./booking-problem-screen-state.js";
 import type { BookingScreenType } from "./booking-screen-type.js";
 import { LoadingScreen } from "./screens/loading-screen.js";
@@ -188,6 +189,7 @@ export function BookingWindow({
       <dialog
         ref={dialogRef}
         className="sa-dialog"
+        style={themeStyle("business" in screen ? screen.business?.theme : null)}
         lang={words.language}
         aria-labelledby={titleId}
         onClose={() => {

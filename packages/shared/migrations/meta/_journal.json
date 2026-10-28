@@ -260,6 +260,20 @@
       "when": 1793200983588,
       "tag": "0036_business_pictures",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793205850791,
+      "tag": "0037_business_colours",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793206361212,
+      "tag": "0038_business_colours_on",
+      "breakpoints": true
     }
   ]
 }

@@ -74,7 +74,7 @@ it earlier: the ImageKit key on Railway, real data on the live app, `main`, a me
   (rendered in the test) the logo; replacing one deletes the old file in ImageKit; a PDF, an SVG,
   a file over 1 MB and a member who may not change the business are each refused with a message;
   another business's service cannot get a photo; every suite, both builds, lint and format pass.
-- [ ] **25e.2 Colours** - the theme (three colours and the ready palettes) on Settings > Look,
+- [x] **25e.2 Colours** - the theme (three colours and the ready palettes) on Settings > Look,
   the public answer carrying it, the window's colours from it, the dashboard's accent from it, and
   the emails' main colour from it.
   **Done when:** on the laptop, picking a palette and saving changes the window, the owner's

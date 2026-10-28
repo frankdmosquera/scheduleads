@@ -536,7 +536,10 @@ through ImageKit's upload API (no package), with `IMAGEKIT_PRIVATE_KEY` on Railw
 laptop's `.env`, into `/booking-crm/<business id>/` live and `/booking-crm-dev/<business id>/` on
 the laptop. The dashboard makes each picture light before sending it; the API takes PNG, JPEG or
 WebP by their bytes (never SVG), at most 1 MB. Documents a business keeps about its customers
-never go to ImageKit: they will go to Cloudflare R2 (Frank, 2026-10-28).
+never go to ImageKit: they will go to Cloudflare R2 (Frank, 2026-10-28). Its colours (main,
+background, text) are saved on the same Look page; the booking window and the dashboard wear them
+only once saved there (`organization.coloursOn`), so a `brandColor` set earlier for the emails
+recolours nothing, and in the window they win over a site's own `--sa-*` colours.
 
 **Railway starts the API with `node backend/dist/server.js`, never through npm** (F-176,
 2026-10-21): npm does not pass Railway's stop signal on, so a deploy would cut the API off

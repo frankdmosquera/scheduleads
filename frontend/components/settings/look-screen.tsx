@@ -1,11 +1,13 @@
-// Frontend component: the Look page of Settings (feature 25e): the business's logo, shown in its
-// booking window and its customers' emails. A login that may not change the business only sees it.
+// Frontend component: the Look page of Settings (feature 25e): the business's logo and its colours,
+// worn by its booking window, its dashboard and its customers' emails. A login that may not change
+// the business only sees them.
 
 "use client";
 
 import { useState } from "react";
 
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
+import { ColoursCard } from "@/components/settings/colours-card";
 import { PictureField } from "@/components/settings/picture-field";
 import { SettingsSection } from "@/components/settings/settings-section";
 import {
@@ -42,6 +44,7 @@ function LookCard({ settings }: { settings: LookSettingsType }) {
         canEdit={settings.canEdit}
         onSaved={setLogo}
       />
+      <ColoursCard colours={settings.colours} canEdit={settings.canEdit} />
     </div>
   );
 }
