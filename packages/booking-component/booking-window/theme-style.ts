@@ -14,13 +14,27 @@ import type { BookingBusinessType } from "../api-client/booking-api-types.js";
 
 const WINDOW_BACKGROUND = "#ffffff";
 const WINDOW_TEXT = "#18181b";
+const WINDOW_SURFACE_2 = "#f4f4f5"; // the free days' disc, the hover wash
+
+// The second surface as the CSS mixes it: 6% of the text into the background.
+const mixed = (text: string, background: string) => {
+  const at = (hex: string, i: number) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16);
+  const channel = (i: number) =>
+    Math.round(at(text, i) * 0.06 + at(background, i) * 0.94)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${channel(0)}${channel(1)}${channel(2)}`;
+};
 
 export function themeStyle(theme: BookingBusinessType["theme"] | undefined): CSSProperties {
   if (!theme) return {};
   const background = theme.background ?? WINDOW_BACKGROUND;
   const text = theme.text ?? WINDOW_TEXT;
   const action = theme.main ?? text; // no main colour: the buttons take the text colour
-  const identity = readableOn(action, background);
+  // Text in the window's colour sits on the background and on the second surface (the free days'
+  // disc): it must read on both, so it is shaded against the disc, then checked on the background.
+  const surface2 = theme.background || theme.text ? mixed(text, background) : WINDOW_SURFACE_2;
+  const identity = readableOn(readableOn(action, surface2), background);
   const style: Record<string, string> = {
     "--sa-action": action,
     "--sa-action-ink": textColorOn(action),

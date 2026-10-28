@@ -19,13 +19,16 @@ describe("themeStyle", () => {
     expect(style["--sa-action"]).toBe("#b5838d");
     expect(style["--sa-action-ink"]).toBe("#0f172a");
     expect(contrastRatio(style["--sa-identity"]!, "#fbf6f2")).toBeGreaterThanOrEqual(4.5);
+    // and on the free days' disc: 6% of the text mixed into the background
+    expect(contrastRatio(style["--sa-identity"]!, "#efeae7")).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("keeps a light main colour readable on the window's own white", () => {
+  it("keeps a light main colour readable on the window's own white and its grey disc", () => {
     const style = tokens(
       themeStyle({ main: "#f59e0b", mainInk: "#0f172a", background: null, text: null })
     );
     expect(contrastRatio(style["--sa-identity"]!, "#ffffff")).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(style["--sa-identity"]!, "#f4f4f5")).toBeGreaterThanOrEqual(4.5);
     expect(style).not.toHaveProperty("--sa-bg"); // the window's own white stays
   });
 

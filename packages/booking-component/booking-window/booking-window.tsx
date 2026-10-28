@@ -51,11 +51,15 @@ export function BookingWindow({
 }: BookingWindowPropsType) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const pressedOutside = useRef(false); // the last press began and ended on the dark area
-  // The business's colours, kept while a screen without the business (loading) shows, so the
-  // window never flashes back to white between screens (feature 25e).
-  const lastTheme = useRef<BookingBusinessType["theme"] | null>(null);
   const titleId = useId();
   const [screen, setScreen] = useState<BookingScreenType>({ screen: "loading" });
+  // The business's colours, kept while a screen without the business (loading) shows, so the
+  // window never flashes back to white between screens (feature 25e).
+  const [keptTheme, setKeptTheme] = useState<BookingBusinessType["theme"] | null>(null);
+  const shownTheme = "business" in screen && screen.business ? screen.business.theme : undefined;
+  useEffect(() => {
+    if (shownTheme !== undefined) setKeptTheme(shownTheme);
+  }, [shownTheme]);
   // Every load takes a number; an answer to an older one (a retry, another pick, a close) is dropped.
   const latestLoad = useRef(0);
   // What she typed on screen two, kept while the window is open (a taken time keeps her words) and
@@ -187,15 +191,12 @@ export function BookingWindow({
     }
   };
 
-  if ("business" in screen && screen.business) lastTheme.current = screen.business.theme;
-  const theme = lastTheme.current;
-
   return (
     <BookingWordsContext value={words}>
       <dialog
         ref={dialogRef}
         className="sa-dialog"
-        style={themeStyle(theme)}
+        style={themeStyle(shownTheme === undefined ? keptTheme : shownTheme)}
         lang={words.language}
         aria-labelledby={titleId}
         onClose={() => {

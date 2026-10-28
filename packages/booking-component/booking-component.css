@@ -800,7 +800,7 @@
 
 .sa-req::after {
   content: " *";
-  color: var(--sa-action, #18181b);
+  color: var(--sa-identity, #18181b); /* text, so the readable shade (feature 25e) */
 }
 
 .sa-fine {
