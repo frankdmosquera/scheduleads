@@ -66,8 +66,9 @@ it earlier: the ImageKit key on Railway, real data on the live app, `main`, a me
 - [ ] **25e.1 Pictures** - `organization.logoFileId` and `booking_link.imageUrl` / `imageFileId`
   (migration), the upload route with its checks, ImageKit upload and delete, Settings > Look with
   the logo, the photo on each service's card, and the window showing both (package 0.2.4). The
-  key `IMAGEKIT_PRIVATE_KEY` and `IMAGEKIT_URL_ENDPOINT` in the laptop's `.env`, uploads from the
-  laptop going to a `booking-crm-dev` folder.
+  key `IMAGEKIT_PRIVATE_KEY` in the laptop's `.env` (ImageKit's answer carries each picture's
+  full address, so no endpoint is needed), uploads from the laptop going to a `booking-crm-dev`
+  folder.
   **Done when:** on the laptop, Riverbend Clinic's owner uploads a logo and a service photo; the
   window's rail shows the logo, the service card and rail the photo, the confirmation email
   (rendered in the test) the logo; replacing one deletes the old file in ImageKit; a PDF, an SVG,
