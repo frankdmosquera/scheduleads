@@ -531,6 +531,13 @@ business's Website field (https, with and without `www`), read by slug and kept 
 another business's routes stay refused. `WIDGET_ORIGINS` is only for the laptop's dev sites, so
 a new client needs no Railway change or redeploy.
 
+**A business's pictures (25e)**, its logo and its service photos, go to the agency's ImageKit
+through ImageKit's upload API (no package), with `IMAGEKIT_PRIVATE_KEY` on Railway and in the
+laptop's `.env`, into `/booking-crm/<business id>/` live and `/booking-crm-dev/<business id>/` on
+the laptop. The dashboard makes each picture light before sending it; the API takes PNG, JPEG or
+WebP by their bytes (never SVG), at most 1 MB. Documents a business keeps about its customers
+never go to ImageKit: they will go to Cloudflare R2 (Frank, 2026-10-28).
+
 **Railway starts the API with `node backend/dist/server.js`, never through npm** (F-176,
 2026-10-21): npm does not pass Railway's stop signal on, so a deploy would cut the API off
 mid-job instead of letting it finish. The start command, the draining time (30 seconds, overlap

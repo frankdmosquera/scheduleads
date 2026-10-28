@@ -38,6 +38,7 @@ const publicBookingLinkColumns = {
   addressMode: bookingLink.addressMode, // the window's address field: required, optional or none
   priceCents: bookingLink.priceCents, // answered as one price with the currency (feature 25d)
   priceFrom: bookingLink.priceFrom,
+  imageUrl: bookingLink.imageUrl, // its photo (feature 25e), a public ImageKit address
 };
 
 // Each service's price joined to the business's currency, as the window gets it.

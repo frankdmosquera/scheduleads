@@ -253,6 +253,13 @@
       "when": 1793143097542,
       "tag": "0035_service_price",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793200983588,
+      "tag": "0036_business_pictures",
+      "breakpoints": true
     }
   ]
 }

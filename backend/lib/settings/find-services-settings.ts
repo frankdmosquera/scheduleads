@@ -22,7 +22,12 @@ import { db } from "../../database.js";
 import { findServiceTicks, type ServiceTicksType } from "./find-service-ticks.js";
 import { resourceSettingsOf, type ResourceSettingsType } from "./resource-settings-of.js";
 
-export type ServiceSettingsType = { id: string; slug: string } & ServiceType & ServiceTicksType;
+export type ServiceSettingsType = {
+  id: string;
+  slug: string;
+  imageUrl: string | null;
+} & ServiceType &
+  ServiceTicksType;
 
 // Who can be ticked: no work email, which only the People page shows.
 const tickableColumns = {
@@ -46,6 +51,7 @@ export const serviceSettingsColumns = {
   addressMode: bookingLink.addressMode,
   priceCents: bookingLink.priceCents,
   priceFrom: bookingLink.priceFrom,
+  imageUrl: bookingLink.imageUrl, // its photo (feature 25e); the ImageKit id stays on the server
   active: bookingLink.active,
 };
 

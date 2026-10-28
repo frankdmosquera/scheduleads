@@ -14,6 +14,7 @@ export type SettingsFrameWordsType = {
   bookingForm: string;
   texts: string;
   calendar: string;
+  look: string;
   // Shared by the Settings screens
   loading: string;
   saving: string;
@@ -38,6 +39,7 @@ export const englishSettingsFrameWords: SettingsFrameWordsType = {
   bookingForm: "Booking form",
   texts: "Texts",
   calendar: "Calendar",
+  look: "Look",
   loading: "Loading…",
   saving: "Saving…",
   save: "Save",
@@ -61,6 +63,7 @@ export const spanishSettingsFrameWords: SettingsFrameWordsType = {
   bookingForm: "Formulario de reserva",
   texts: "Mensajes de texto",
   calendar: "Calendario",
+  look: "Apariencia",
   loading: "Cargando…",
   saving: "Guardando…",
   save: "Guardar",

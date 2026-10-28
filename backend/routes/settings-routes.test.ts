@@ -24,6 +24,23 @@ delete process.env.LOGIN_EMAIL_FROM;
 
 assertLocalDevDatabase(process.env.DATABASE_URL, "run the settings route tests");
 
+// ImageKit, faked (feature 25e): no test uploads for real. Each upload gets a new address and id,
+// and every delete is recorded.
+const imageKit = vi.hoisted(() => ({ uploads: 0, deleted: [] as string[], refuse: false }));
+vi.mock("../lib/images/upload-to-imagekit.js", () => ({
+  uploadToImageKit: async (organizationId: string, _bytes: Uint8Array, fileName: string) => {
+    if (imageKit.refuse) throw new Error("ImageKit is down");
+    imageKit.uploads += 1;
+    return {
+      url: `https://ik.imagekit.io/test/${organizationId}/${imageKit.uploads}-${fileName}`,
+      fileId: `file-${imageKit.uploads}`,
+    };
+  },
+}));
+vi.mock("../lib/images/delete-from-imagekit.js", () => ({
+  deleteFromImageKit: async (fileId: string) => void imageKit.deleted.push(fileId),
+}));
+
 // Imported after the env is loaded: they read it the moment they load.
 // Public DNS, faked: these domains show Resend's signing record (25a, F-531).
 vi.mock("../lib/email/has-resend-signing-record.js", () => ({
@@ -2206,5 +2223,86 @@ describe("the Booking form settings", () => {
         .from(bookingQuestion)
         .where(eq(bookingQuestion.organizationId, summit.organizationId))
     ).toEqual(before);
+  });
+});
+
+describe("the business's pictures (feature 25e)", () => {
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
+  const send = (path: string, email: string, bytes: Uint8Array, name = "picture.png") => {
+    const form = new FormData();
+    form.append("picture", new File([Uint8Array.from(bytes)], name));
+    return app.request(path, {
+      method: "PUT",
+      headers: { Origin: appOrigin, Cookie: cookies.get(email)! },
+      body: form,
+    });
+  };
+  const remove = (path: string, email: string) =>
+    app.request(path, {
+      method: "DELETE",
+      headers: { Origin: appOrigin, Cookie: cookies.get(email)! },
+    });
+
+  test("an owner uploads a logo, replaces it and removes it, and each old file is deleted", async () => {
+    const first = await send("/settings/look/logo", summit.email, png);
+    expect(first.status).toBe(200);
+    const { logo } = (await first.json()) as { logo: string };
+    expect(logo).toMatch(/^https:\/\/ik\.imagekit\.io\/test\/.+logo\.png$/);
+    const read = (await (await get("/settings/look", summit.email)).json()) as { logo: string };
+    expect(read.logo).toBe(logo);
+
+    const before = imageKit.deleted.length;
+    await send("/settings/look/logo", summit.email, png);
+    expect(imageKit.deleted.length).toBe(before + 1); // the first one
+    const removed = await remove("/settings/look/logo", summit.email);
+    expect(await removed.json()).toEqual({ logo: null });
+    expect(imageKit.deleted.length).toBe(before + 2);
+  });
+
+  test("refuses an SVG, a PDF, a file over 1 MB and a login that may not change the business", async () => {
+    const svg = new TextEncoder().encode("<svg xmlns='http://www.w3.org/2000/svg'><script/></svg>");
+    const pdf = new TextEncoder().encode("%PDF-1.7");
+    const uploads = imageKit.uploads;
+    expect((await send("/settings/look/logo", summit.email, svg, "logo.svg")).status).toBe(400);
+    expect((await send("/settings/look/logo", summit.email, pdf, "logo.png")).status).toBe(400);
+    const big = new Uint8Array(1_050_000);
+    big.set(png);
+    expect([400, 413]).toContain((await send("/settings/look/logo", summit.email, big)).status);
+    expect((await send("/settings/look/logo", helper.email, png)).status).toBe(403);
+    expect(imageKit.uploads).toBe(uploads); // nothing refused was uploaded
+  });
+
+  test("a service gets a photo; another business's service is a 404 before any upload", async () => {
+    const service = (await (
+      await post("/settings/services", summit.email, { ...cabinet, name: "Photo cabinets" })
+    ).json()) as SavedServiceType;
+    const saved = await send(`/settings/services/${service.service.id}/image`, summit.email, png);
+    const { imageUrl } = (await saved.json()) as { imageUrl: string };
+    expect(imageUrl).toMatch(/service\.png$/);
+    const listed = (await (await get("/settings/services", summit.email)).json()) as {
+      services: { id: string; imageUrl: string | null }[];
+    };
+    expect(listed.services.find((s) => s.id === service.service.id)?.imageUrl).toBe(imageUrl);
+
+    const uploads = imageKit.uploads;
+    const foreign = await send(`/settings/services/${service.service.id}/image`, other.email, png);
+    expect(foreign.status).toBe(404);
+    expect(imageKit.uploads).toBe(uploads);
+
+    const removed = await remove(`/settings/services/${service.service.id}/image`, summit.email);
+    expect(await removed.json()).toEqual({ imageUrl: null });
+  });
+
+  test("ImageKit down saves nothing and says so", async () => {
+    imageKit.refuse = true;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const failed = await send("/settings/look/logo", summit.email, png);
+      expect(failed.status).toBe(503);
+      expect(((await failed.json()) as { error: { code: string } }).error.code).toBe("unavailable");
+    } finally {
+      imageKit.refuse = false;
+      vi.mocked(console.error).mockRestore();
+    }
   });
 });

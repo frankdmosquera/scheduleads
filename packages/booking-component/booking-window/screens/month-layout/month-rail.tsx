@@ -1,5 +1,6 @@
 // Booking component: the month layout's left rail, the same on every screen: whose booking, what,
-// how long, and its price when it has one (feature 25d). Each screen adds its own part below (the person choice, or the picked time).
+// how long, its price when it has one (feature 25d), and its photo above (feature 25e). Each
+// screen adds its own part below (the person choice, or the picked time).
 
 import type { ReactNode } from "react";
 
@@ -9,6 +10,7 @@ import type {
 } from "../../../api-client/booking-api-types.js";
 import { useBookingWords } from "../../../words/booking-words-context.js";
 import { priceText } from "../price-text.js";
+import { sizedPicture } from "../sized-picture.js";
 
 export type MonthRailPropsType = {
   business: BookingBusinessType;
@@ -29,6 +31,9 @@ export function MonthRail({ business, service, back, children }: MonthRailPropsT
           <span className="sa-rail-wordmark">{business.name}</span>
         )}
       </div>
+      {service.imageUrl && (
+        <img className="sa-rail-photo" src={sizedPicture(service.imageUrl, "w-640,h-360")} alt="" />
+      )}
       <div className="sa-rail-body">
         {back && (
           <button

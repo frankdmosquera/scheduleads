@@ -63,7 +63,7 @@ it earlier: the ImageKit key on Railway, real data on the live app, `main`, a me
 
 ## Build steps
 
-- [ ] **25e.1 Pictures** - `organization.logoFileId` and `booking_link.imageUrl` / `imageFileId`
+- [x] **25e.1 Pictures** - `organization.logoFileId` and `booking_link.imageUrl` / `imageFileId`
   (migration), the upload route with its checks, ImageKit upload and delete, Settings > Look with
   the logo, the photo on each service's card, and the window showing both (package 0.2.4). The
   key `IMAGEKIT_PRIVATE_KEY` in the laptop's `.env` (ImageKit's answer carries each picture's

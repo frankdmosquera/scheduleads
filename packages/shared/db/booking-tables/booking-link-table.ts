@@ -41,6 +41,10 @@ export const bookingLink = pgTable(
     // Its price (feature 25d) in hundredths of the business currency: 15000 is 150. None: no price.
     priceCents: integer("priceCents"),
     priceFrom: boolean("priceFrom").notNull().default(false), // "From $150": it can cost more
+    // Its photo in ImageKit (feature 25e), optional: the address the window shows, and the id to
+    // delete it by when it is replaced or removed.
+    imageUrl: text("imageUrl"),
+    imageFileId: text("imageFileId"),
     active: boolean("active").notNull().default(true), // inactive reads as absent publicly
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })

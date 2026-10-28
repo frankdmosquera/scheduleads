@@ -391,6 +391,33 @@
   text-align: center;
 }
 
+/* A service's photo (feature 25e): small beside its card, wide above the rail. Its alt is empty: the
+   service's name is right beside it. */
+.sa-service--photo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  gap: 12px;
+  align-items: center;
+}
+.sa-service-text {
+  display: block;
+  min-width: 0;
+}
+.sa-service-photo {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--sa-radius, 8px);
+  display: block;
+}
+.sa-rail-photo {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+  border-bottom: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+}
+
 .sa-rail-body {
   padding: 22px 24px 20px;
   display: flex;

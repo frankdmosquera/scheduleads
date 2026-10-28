@@ -156,6 +156,7 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
           hours={null}
           businessWeek={settings.businessWeek}
           onHoursSaved={() => {}}
+          onImageSaved={() => {}}
           onSaved={(service, outcome) => saved("new", service, outcome)}
           onCancel={() => close(ADD_BUTTON_ID)}
           onSavingChange={setSaving}
@@ -191,6 +192,11 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
                   hours={hasHours ? (hoursOf.get(service.id) ?? NO_OWN_HOURS) : null}
                   businessWeek={settings.businessWeek}
                   onHoursSaved={(hours) => setHoursOf((map) => new Map(map).set(service.id, hours))}
+                  onImageSaved={(imageUrl) =>
+                    setServices((list) =>
+                      list.map((each) => (each.id === service.id ? { ...each, imageUrl } : each))
+                    )
+                  }
                   onSaved={(savedService, outcome) => saved(service.id, savedService, outcome)}
                   onCancel={() => close(changeButtonId(service.id))}
                   canEdit={settings.canEdit}

@@ -10,6 +10,9 @@ export const organization = pgTable(
     name: text("name").notNull(),
     slug: text("slug").notNull().unique(),
     logo: text("logo"),
+    // ImageKit's id for the logo uploaded on Settings > Look (feature 25e), to delete it when it is
+    // replaced or removed; null for a logo set by address, or none.
+    logoFileId: text("logoFileId"),
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     metadata: text("metadata"),
 
