@@ -148,6 +148,8 @@ async function findDifferences(
   if (business?.currency && setup.currency) differs("currency", business.currency, setup.currency);
   // Filled while missing (feature 25e); after that the logo and colours are the owner's, on Look.
   if (business?.logo && setup.look?.logo) differs("logo", business.logo, setup.look.logo);
+  if (!business?.coloursOn && business?.main && setup.look?.colours)
+    differs("colours, main (its email colour)", business.main, setup.look.colours.main);
   if (business?.coloursOn && setup.look?.colours) {
     const { main, background, text } = business;
     differs("colours", { main, background, text }, setup.look.colours);

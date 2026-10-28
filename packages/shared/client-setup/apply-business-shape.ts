@@ -227,16 +227,20 @@ export async function applyBusinessShape(
       currency: organization.currency,
       logo: organization.logo,
       coloursOn: organization.coloursOn,
+      brandColor: organization.brandColor,
     })
     .from(organization)
     .where(eq(organization.id, organizationId));
   const currencyMade = business?.currency === null && shape.currency !== undefined;
   const logoMade = business?.logo === null && shape.look?.logo !== undefined;
   const colours = shape.look?.colours;
+  // An email colour set earlier (at client setup) is the business's own: a file that says another
+  // is listed by the dry run, never applied over it.
   const coloursMade =
     business?.coloursOn === false &&
     !!colours &&
-    !!(colours.main || colours.background || colours.text);
+    !!(colours.main || colours.background || colours.text) &&
+    (business.brandColor === null || business.brandColor === colours.main);
   if (currencyMade || logoMade || coloursMade)
     await tx
       .update(organization)

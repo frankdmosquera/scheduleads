@@ -300,6 +300,29 @@ describe("runClientSetup", () => {
     expect(changed.ok && changed.differences.join("\n")).toMatch(/logo[\s\S]*colours/);
   });
 
+  it("keeps an email colour set earlier and lists the file's other one", async () => {
+    const business = await makeBusiness();
+    await runClientSetup(db, setupFor(business.slug), { apply: true });
+    await db
+      .update(organization)
+      .set({ brandColor: "#1d4ed8" })
+      .where(eq(organization.id, business.id));
+    const file = clientSetupValidationSchema.parse({
+      ...fileFor(business.slug),
+      look: { colours: { main: "#c0704f", background: "#f7f2ea", text: "#1c1a17" } },
+    });
+
+    const dry = await runClientSetup(db, file, { apply: false });
+    expect(dry.ok && dry.made).not.toContain("the colours");
+    expect(dry.ok && dry.differences.join(" ")).toMatch(/email colour/);
+    await runClientSetup(db, file, { apply: true });
+    const [row] = await db
+      .select({ main: organization.brandColor, coloursOn: organization.coloursOn })
+      .from(organization)
+      .where(eq(organization.id, business.id));
+    expect(row).toEqual({ main: "#1d4ed8", coloursOn: false });
+  });
+
   it("refuses a look with unreadable text, or a picture that is not https", () => {
     const faint = {
       ...fileFor("x"),
