@@ -689,3 +689,59 @@ Closed 2026-10-28 by independent re-review (fresh subagent, 72d2649..4245aec): e
 **Why it matters:** A 1200 px JPEG at quality 0.85 is nearly always far under 1 MB, but nothing checks it; an unusually detailed one would be refused by the API with its clear "over 1 MB" message, not lost.
 **Suggested fix:** Encode once more at a lower quality when the JPEG is over 900 KB.
 **Resolution:**
+
+### F-568 [P1] fixed - The main colour was written as text on the background with no readability check
+
+**File:** packages/booking-component/booking-window/theme-style.ts; frontend/lib/business-accent-style.ts
+**Found:** 2026-10-28 by independent review of step 25e.2 (fresh subagent; scope: 368b727..31dbc20)
+**Why it matters:** `--sa-identity` is the window's text colour for day numbers, times and the business's name; the shipped Rose clay put #b5838d on #fbf6f2 (2.97:1), an amber on white 2.15:1, and a dark background with no main colour left the times near-black on near-black. The dashboard used the main colour as text on its active menu item and tags too.
+**Suggested fix:** Keep the main colour on the buttons; where it is text, use it only when it reads at 4.5, else a readable shade.
+**Resolution:** fixed 2026-10-28: the shared `readableOn` mixes the colour toward black (or white on a dark background) until it reads at 4.5 and keeps its hue; the window's identity tokens and the dashboard's highlight use it; with no main colour the buttons take the text colour. Tests cover Rose clay, amber on white and a dark background.
+
+### F-569 [P2] fixed - The window flashed white while a service loaded
+
+**File:** packages/booking-component/booking-window/booking-window.tsx
+**Found:** 2026-10-28 by independent review of step 25e.2 (fresh subagent; scope: 368b727..31dbc20)
+**Why it matters:** The loading screen carries no business, so the theme reset to the default white between screens; with a dark palette every pick and every retry flashed.
+**Suggested fix:** Keep the last theme.
+**Resolution:** fixed 2026-10-28: the last business's theme is kept while a screen without one shows.
+
+### F-570 [P3] fixed - The Look page showed an old email colour as if the window already wore it
+
+**File:** backend/lib/settings/find-look-settings.ts; frontend/components/settings/colours-card.tsx
+**Found:** 2026-10-28 by independent review of step 25e.2 (fresh subagent; scope: 368b727..31dbc20)
+**Why it matters:** The main colour is pre-filled from the brandColor set earlier for the emails, with a hint saying the window wears it.
+**Suggested fix:** Say it is not shown yet.
+**Resolution:** fixed 2026-10-28: until colours are saved the card says they are not shown yet, and that a main colour already there is the emails' one.
+
+### F-571 [P3] fixed - The Reset button's spoken name did not contain "Reset"
+
+**File:** frontend/components/settings/colours-card.tsx
+**Found:** 2026-10-28 by independent review of step 25e.2 (fresh subagent; scope: 368b727..31dbc20)
+**Why it matters:** Voice-control users saying "click Reset" missed it (WCAG 2.5.3).
+**Suggested fix:** "Reset main colour" as its name.
+**Resolution:** fixed 2026-10-28; the longer wording stays as its title.
+
+### F-572 [P3] fixed - The palette buttons did not say which one is picked
+
+**File:** frontend/components/settings/colours-card.tsx
+**Found:** 2026-10-28 by independent review of step 25e.2 (fresh subagent; scope: 368b727..31dbc20)
+**Why it matters:** Nothing told a screen reader, or the eye, which palette the pickers hold.
+**Suggested fix:** `aria-pressed`.
+**Resolution:** fixed 2026-10-28: pressed when the three colours match it, and drawn highlighted.
+
+### F-573 [P3] fixed - "muy tenue ... para leerse" read badly in Spanish
+
+**File:** packages/shared/helpers/spanish-messages.ts
+**Found:** 2026-10-28 by independent review of step 25e.2 (fresh subagent; scope: 368b727..31dbc20)
+**Why it matters:** "demasiado tenue" is the natural phrase.
+**Suggested fix:** Use it.
+**Resolution:** fixed 2026-10-28.
+
+### F-574 [P3] fixed - The contrast measure was written twice
+
+**File:** packages/shared/helpers/text-color-on.ts; contrast-ratio.ts
+**Found:** 2026-10-28 by independent review of step 25e.2 (fresh subagent; scope: 368b727..31dbc20)
+**Why it matters:** Two copies of the luminance code can drift.
+**Suggested fix:** One.
+**Resolution:** fixed 2026-10-28: `textColorOn` uses `contrastRatio`.

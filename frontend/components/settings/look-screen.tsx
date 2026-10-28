@@ -44,7 +44,11 @@ function LookCard({ settings }: { settings: LookSettingsType }) {
         canEdit={settings.canEdit}
         onSaved={setLogo}
       />
-      <ColoursCard colours={settings.colours} canEdit={settings.canEdit} />
+      <ColoursCard
+        colours={settings.colours}
+        coloursOn={settings.coloursOn}
+        canEdit={settings.canEdit}
+      />
     </div>
   );
 }

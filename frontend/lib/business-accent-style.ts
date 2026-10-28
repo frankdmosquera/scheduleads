@@ -5,10 +5,16 @@
 
 import type { CSSProperties } from "react";
 
+import { readableOn } from "@scheduleads-app/shared/readable-on";
 import { textColorOn } from "@scheduleads-app/shared/text-color-on";
 
-export function businessAccentStyle(main: string | null): CSSProperties {
-  if (!main) return {};
+const DASHBOARD_BACKGROUND = "#ffffff"; // the light theme's page and cards
+
+export function businessAccentStyle(chosen: string | null): CSSProperties {
+  if (!chosen) return {};
+  // The highlight is also text (the active menu item, tags), so a light colour gets a shade of
+  // itself that reads at 4.5 on the page.
+  const main = readableOn(chosen, DASHBOARD_BACKGROUND);
   const ink = textColorOn(main);
   const soft = `color-mix(in srgb, ${main} 14%, var(--background))`;
   return {

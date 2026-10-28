@@ -40,6 +40,10 @@
       "types": "./dist/helpers/contrast-ratio.d.ts",
       "default": "./dist/helpers/contrast-ratio.js"
     },
+    "./readable-on": {
+      "types": "./dist/helpers/readable-on.d.ts",
+      "default": "./dist/helpers/readable-on.js"
+    },
     "./local-date": {
       "types": "./dist/helpers/local-date.d.ts",
       "default": "./dist/helpers/local-date.js"

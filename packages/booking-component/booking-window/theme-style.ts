@@ -1,23 +1,32 @@
 // Booking component: the business's colours on the window (feature 25e), as the --sa-* tokens set on
 // the dialog itself, so they win over any colour a site sets in its own CSS; the site's font and
-// corners still apply. The softer tokens (muted text, borders, a second surface) are mixed from the
-// text and the background, so a dark background never gets light-theme greys. No theme: nothing set.
+// corners still apply. The main colour fills the buttons; where it is text (days, times, the
+// business's name) a shade of it that reads at 4.5 on the background is used. The softer tokens are
+// mixed from the text and the background, so a dark background never gets light-theme greys.
+// No theme: nothing set.
 
 import type { CSSProperties } from "react";
 
+import { readableOn } from "@scheduleads-app/shared/readable-on";
+import { textColorOn } from "@scheduleads-app/shared/text-color-on";
+
 import type { BookingBusinessType } from "../api-client/booking-api-types.js";
+
+const WINDOW_BACKGROUND = "#ffffff";
+const WINDOW_TEXT = "#18181b";
 
 export function themeStyle(theme: BookingBusinessType["theme"] | undefined): CSSProperties {
   if (!theme) return {};
-  const style: Record<string, string> = {};
-  if (theme.main && theme.mainInk) {
-    style["--sa-action"] = theme.main;
-    style["--sa-action-ink"] = theme.mainInk;
-    style["--sa-identity"] = theme.main;
-    style["--sa-identity-ink"] = theme.mainInk;
-  }
-  const background = theme.background ?? "#ffffff";
-  const text = theme.text ?? "#18181b";
+  const background = theme.background ?? WINDOW_BACKGROUND;
+  const text = theme.text ?? WINDOW_TEXT;
+  const action = theme.main ?? text; // no main colour: the buttons take the text colour
+  const identity = readableOn(action, background);
+  const style: Record<string, string> = {
+    "--sa-action": action,
+    "--sa-action-ink": textColorOn(action),
+    "--sa-identity": identity,
+    "--sa-identity-ink": textColorOn(identity),
+  };
   if (theme.background || theme.text) {
     style["--sa-bg"] = background;
     style["--sa-surface"] = background;

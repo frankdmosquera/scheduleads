@@ -32,6 +32,8 @@ export type LookWordsType = {
   windowsOwn: string;
   useWindowsOwn(colour: string): string;
   reset: string;
+  resetColour(colour: string): string;
+  notWornYet: string;
   palettes: string;
   paletteNames: Record<ColourPaletteType["id"], string>;
   sample: string;
@@ -67,6 +69,9 @@ export const englishLookWords: LookWordsType = {
   windowsOwn: "The window's own",
   useWindowsOwn: (colour) => `Use the window's own ${colour.toLowerCase()}`,
   reset: "Reset",
+  resetColour: (colour) => `Reset ${colour.toLowerCase()}`,
+  notWornYet:
+    "Not shown yet: your window and dashboard keep their own colours until you save these. A main colour already here is the one your emails use.",
   palettes: "Start from a palette",
   paletteNames: {
     rose: "Rose clay",
@@ -109,6 +114,9 @@ export const spanishLookWords: LookWordsType = {
   windowsOwn: "El de la ventana",
   useWindowsOwn: (colour) => `Usar el ${colour.toLowerCase()} de la ventana`,
   reset: "Restablecer",
+  resetColour: (colour) => `Restablecer ${colour.toLowerCase()}`,
+  notWornYet:
+    "Aún no se muestran: su ventana y su panel conservan sus colores hasta que guarde estos. Un color principal que ya esté aquí es el que usan sus correos.",
   palettes: "Empezar con una paleta",
   paletteNames: {
     rose: "Rosa arcilla",

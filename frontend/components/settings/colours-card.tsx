@@ -26,15 +26,18 @@ const WINDOWS_OWN: Record<ColourKeyType, string> = {
 
 export function ColoursCard({
   colours,
+  coloursOn,
   canEdit,
 }: {
   colours: BusinessColoursType;
+  coloursOn: boolean; // false: saved nowhere yet, so not worn
   canEdit: boolean;
 }) {
   const { lookWords, settingsFrameWords } = useDashboardWords().words;
   const setMainColour = useSetMainColour();
   const id = useId();
   const [picked, setPicked] = useState(colours);
+  const [worn, setWorn] = useState(coloursOn);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   const [textError, setTextError] = useState<string | null>(null);
@@ -60,6 +63,7 @@ export function ColoursCard({
       return;
     }
     setPicked(saved.answer);
+    setWorn(!!(saved.answer.main || saved.answer.background || saved.answer.text));
     setMainColour(saved.answer.main);
     setNotice({ tone: "info", text: lookWords.coloursSaved });
   };
@@ -91,7 +95,7 @@ export function ColoursCard({
               type="button"
               variant="ghost"
               size="sm"
-              aria-label={lookWords.useWindowsOwn(label)}
+              aria-label={lookWords.resetColour(label)}
               title={lookWords.useWindowsOwn(label)}
               onClick={() => pick(key, null)}
             >
@@ -115,6 +119,7 @@ export function ColoursCard({
       <div>
         <h3 className="text-sm font-semibold">{lookWords.colours}</h3>
         <p className="text-xs text-muted-foreground">{lookWords.coloursHint}</p>
+        {worn ? null : <p className="mt-1 text-xs text-muted-foreground">{lookWords.notWornYet}</p>}
       </div>
 
       {canEdit ? (
@@ -125,12 +130,17 @@ export function ColoursCard({
               <button
                 key={paletteId}
                 type="button"
+                aria-pressed={
+                  picked.main === palette.main &&
+                  picked.background === palette.background &&
+                  picked.text === palette.text
+                }
                 onClick={() => {
                   setNotice(null);
                   setTextError(null);
                   setPicked(palette);
                 }}
-                className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-xs hover:bg-muted"
+                className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-xs hover:bg-muted aria-pressed:border-primary aria-pressed:bg-[var(--accent-soft)]"
               >
                 <span className="flex" aria-hidden="true">
                   {[palette.main, palette.background, palette.text].map((colour) => (
