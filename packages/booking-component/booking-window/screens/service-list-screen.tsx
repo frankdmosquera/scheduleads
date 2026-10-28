@@ -7,6 +7,7 @@ import type {
 } from "../../api-client/booking-api-types.js";
 import { useBookingWords } from "../../words/booking-words-context.js";
 import { priceText } from "./price-text.js";
+import { imageKitSized } from "@scheduleads-app/shared/image-kit-sized";
 
 export type ServiceListScreenPropsType = {
   business: BookingBusinessType;
@@ -36,15 +37,28 @@ export function ServiceListScreen({
         <ul className="sa-services">
           {services.map((service) => (
             <li key={service.id}>
-              <button type="button" className="sa-service" onClick={() => onPick(service.id)}>
-                <span className="sa-service-name">{service.name}</span>
-                <span className="sa-service-meta">
-                  {[words.minutes(service.durationMinutes), priceText(service.price, words)]
-                    .filter(Boolean)
-                    .join(" · ")}
+              <button
+                type="button"
+                className={service.imageUrl ? "sa-service sa-service--photo" : "sa-service"}
+                onClick={() => onPick(service.id)}
+              >
+                <span className="sa-service-text">
+                  <span className="sa-service-name">{service.name}</span>
+                  <span className="sa-service-meta">
+                    {[words.minutes(service.durationMinutes), priceText(service.price, words)]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                  {service.description && (
+                    <span className="sa-service-desc">{service.description}</span>
+                  )}
                 </span>
-                {service.description && (
-                  <span className="sa-service-desc">{service.description}</span>
+                {service.imageUrl && (
+                  <img
+                    className="sa-service-photo"
+                    src={imageKitSized(service.imageUrl, "w-128,h-128")}
+                    alt=""
+                  />
                 )}
               </button>
             </li>

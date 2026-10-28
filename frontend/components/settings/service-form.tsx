@@ -20,6 +20,7 @@ import {
 import { ChoiceField } from "@/components/settings/choice-field";
 import type { ListedBookingsType } from "@/components/settings/listed-bookings";
 import { OwnHoursPart, type OwnHoursPartHandleType } from "@/components/settings/own-hours-part";
+import { PictureField } from "@/components/settings/picture-field";
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
 import { ServicePriceField } from "@/components/settings/service-price-field";
 import { TicksField } from "@/components/settings/ticks-field";
@@ -128,6 +129,7 @@ export function ServiceForm({
   hours,
   businessWeek,
   onHoursSaved,
+  onImageSaved,
   onSaved,
   onCancel,
   canEdit = true,
@@ -140,6 +142,7 @@ export function ServiceForm({
   hours: PersonHoursType | null;
   businessWeek: WeeklyHoursType | null; // copied in when it starts its own week
   onHoursSaved: (hours: PersonHoursType) => void;
+  onImageSaved: (imageUrl: string | null) => void; // its photo, saved on its own (feature 25e)
   onSaved: (saved: ServiceSettingsType, outcome: ServiceSaveOutcomeType) => void;
   onCancel: () => void;
   // false: a login that may not change the business sees the card read-only, with Close.
@@ -148,6 +151,8 @@ export function ServiceForm({
 }) {
   const { words } = useDashboardWords();
   const servicesWords = words.servicesWords;
+  const lookWords = words.lookWords;
+  const [imageUrl, setImageUrl] = useState(service?.imageUrl ?? null);
   const formRef = useRef<HTMLFormElement>(null);
   const nameRef = useRef<HTMLInputElement | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -427,6 +432,25 @@ export function ServiceForm({
             </fieldset>
           )}
         />
+
+        {service ? (
+          <PictureField
+            target={{ kind: "service", serviceId: service.id }}
+            label={lookWords.servicePhoto}
+            hint={lookWords.servicePhotoHint}
+            emptyLine={lookWords.noPhoto}
+            alt={lookWords.pictureOf(service.name)}
+            picture={imageUrl}
+            longestSide={1200}
+            canEdit={canEdit}
+            onSaved={(saved) => {
+              setImageUrl(saved);
+              onImageSaved(saved);
+            }}
+          />
+        ) : (
+          <p className="text-xs text-muted-foreground">{lookWords.saveServiceFirst}</p>
+        )}
 
         <ServicePriceField
           idBase={idBase}

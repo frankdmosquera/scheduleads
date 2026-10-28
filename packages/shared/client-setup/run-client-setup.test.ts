@@ -255,6 +255,84 @@ describe("runClientSetup", () => {
     expect(await priceNow()).toEqual({ priceCents: 1250, priceFrom: true });
   });
 
+  it("fills a missing logo, colours and photo, keeps ones already set, and lists them", async () => {
+    const business = await makeBusiness();
+    await runClientSetup(db, setupFor(business.slug), { apply: true }); // no look yet
+    const photo = "https://ik.imagekit.io/test/video-call.webp";
+    const withLook = (colours: { main: string; background: string; text: string }, logo: string) =>
+      clientSetupValidationSchema.parse({
+        ...fileFor(business.slug),
+        look: { logo, colours },
+        services: fileFor(business.slug).services.map((service) =>
+          service.name === "Video call" ? { ...service, photo } : service
+        ),
+      });
+    const copper = { main: "#c0704f", background: "#f7f2ea", text: "#1c1a17" };
+
+    const filled = await runClientSetup(
+      db,
+      withLook(copper, "https://ik.imagekit.io/test/logo.jpg"),
+      {
+        apply: true,
+      }
+    );
+    expect(filled.ok && filled.made).toEqual(["the logo", "the colours", "1 photos"]);
+    const [row] = await db
+      .select({
+        logo: organization.logo,
+        coloursOn: organization.coloursOn,
+        main: organization.brandColor,
+      })
+      .from(organization)
+      .where(eq(organization.id, business.id));
+    expect(row).toEqual({
+      logo: "https://ik.imagekit.io/test/logo.jpg",
+      coloursOn: true,
+      main: "#c0704f",
+    });
+
+    const changed = await runClientSetup(
+      db,
+      withLook({ ...copper, main: "#1d4ed8" }, "https://ik.imagekit.io/test/other.jpg"),
+      { apply: true }
+    );
+    expect(changed.ok && changed.made).toEqual([]);
+    expect(changed.ok && changed.differences.join("\n")).toMatch(/logo[\s\S]*colours/);
+  });
+
+  it("keeps an email colour set earlier and lists the file's other one", async () => {
+    const business = await makeBusiness();
+    await runClientSetup(db, setupFor(business.slug), { apply: true });
+    await db
+      .update(organization)
+      .set({ brandColor: "#1d4ed8" })
+      .where(eq(organization.id, business.id));
+    const file = clientSetupValidationSchema.parse({
+      ...fileFor(business.slug),
+      look: { colours: { main: "#c0704f", background: "#f7f2ea", text: "#1c1a17" } },
+    });
+
+    const dry = await runClientSetup(db, file, { apply: false });
+    expect(dry.ok && dry.made).not.toContain("the colours");
+    expect(dry.ok && dry.differences.join(" ")).toMatch(/email colour/);
+    await runClientSetup(db, file, { apply: true });
+    const [row] = await db
+      .select({ main: organization.brandColor, coloursOn: organization.coloursOn })
+      .from(organization)
+      .where(eq(organization.id, business.id));
+    expect(row).toEqual({ main: "#1d4ed8", coloursOn: false });
+  });
+
+  it("refuses a look with unreadable text, or a picture that is not https", () => {
+    const faint = {
+      ...fileFor("x"),
+      look: { colours: { main: null, background: "#ffffff", text: "#eeeeee" } },
+    };
+    expect(clientSetupValidationSchema.safeParse(faint).success).toBe(false);
+    const plain = { ...fileFor("x"), look: { logo: "http://example.com/logo.png" } };
+    expect(clientSetupValidationSchema.safeParse(plain).success).toBe(false);
+  });
+
   it("refuses a price with no currency, or Starts from with no price", () => {
     const noCurrency = fileFor("x");
     noCurrency.services[0] = { ...noCurrency.services[0]!, price: 150 };

@@ -19,6 +19,7 @@ import { findBookingQuestions } from "../lib/booking/find-booking-questions.js";
 import { findLaterTextsYesWords } from "../lib/booking/find-later-texts-yes-words.js";
 import { findPersonChoice } from "../lib/booking/find-person-choice.js";
 import { publicPriceOf } from "../lib/booking/public-price-of.js";
+import { publicThemeOf } from "../lib/booking/public-theme-of.js";
 import { CalendarUnavailableError } from "../lib/calendar/calendar-unavailable-error.js";
 import { notBookableHere } from "../lib/errors/not-bookable-here.js";
 import { personNotTaken } from "../lib/errors/person-not-taken.js";
@@ -38,6 +39,7 @@ const publicBookingLinkColumns = {
   addressMode: bookingLink.addressMode, // the window's address field: required, optional or none
   priceCents: bookingLink.priceCents, // answered as one price with the currency (feature 25d)
   priceFrom: bookingLink.priceFrom,
+  imageUrl: bookingLink.imageUrl, // its photo (feature 25e), a public ImageKit address
 };
 
 // Each service's price joined to the business's currency, as the window gets it.
@@ -56,6 +58,11 @@ const publicBusinessColumns = {
   phone: organization.phone,
   contactRule: organization.contactRule, // which of email and phone the form marks required
   currency: organization.currency, // read for the prices, answered inside each one
+  // Its colours, answered as one theme (feature 25e).
+  brandColor: organization.brandColor,
+  backgroundColor: organization.backgroundColor,
+  textColor: organization.textColor,
+  coloursOn: organization.coloursOn,
 };
 
 export const publicBookingLinksRoutes = new Hono()
@@ -84,10 +91,15 @@ export const publicBookingLinksRoutes = new Hono()
     ]);
     if (!business) return c.json(notBookableHere, 404); // the business went between the two reads
 
-    const { currency, ...face } = business;
+    const { currency, brandColor, backgroundColor, textColor, coloursOn, ...face } = business;
     return c.json(
       {
-        business: { ...face, questions, laterTextsYesWords },
+        business: {
+          ...face,
+          questions,
+          laterTextsYesWords,
+          theme: publicThemeOf(coloursOn, brandColor, backgroundColor, textColor),
+        },
         bookingLinks: bookingLinks.map(withPrice(currency)),
       },
       200

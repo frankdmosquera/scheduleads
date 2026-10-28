@@ -111,7 +111,8 @@ describe("the customer's confirmation", () => {
     expect(html).toContain("Thursday, October 8 at 9:00 a.m. MDT");
     expect(html).toContain("Marco");
     expect(html).toContain("12 Main Street, Calgary");
-    expect(html).toContain('src="https://ik.imagekit.io/primo/logo.png"');
+    // Asked of ImageKit as a PNG at email size: Outlook shows no WebP (25e).
+    expect(html).toContain('src="https://ik.imagekit.io/primo/logo.png?tr=f-png,w-280"');
     expect(html).toContain('alt="Primo Painters"');
     expect(html).toContain('href="tel:4035550100"');
     expect(html).toContain('href="https://primopainters.com"');

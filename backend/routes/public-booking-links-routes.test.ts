@@ -184,6 +184,7 @@ describe("the documented shape", () => {
       // It asks for a yes to later texts (decision 13): the box's sentence, written here.
       laterTextsYesWords:
         "Yes, Summit Painting (dev) may text me offers and reminders to book again.",
+      theme: null, // no colours picked: the window looks as before (feature 25e)
     });
     expect(body.bookingLinks.map((link: { name: string }) => link.name)).toEqual([
       "Colour consultation",
@@ -199,6 +200,7 @@ describe("the documented shape", () => {
           "description",
           "durationMinutes",
           "id",
+          "imageUrl",
           "name",
           "price",
           "slug",
@@ -223,6 +225,7 @@ describe("the documented shape", () => {
         "description",
         "durationMinutes",
         "id",
+        "imageUrl",
         "layout",
         "name",
         "personChoice",

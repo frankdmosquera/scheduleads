@@ -18,6 +18,7 @@ import { fetchOneService } from "../api-client/fetch-one-service.js";
 import { fetchServiceList } from "../api-client/fetch-service-list.js";
 import { newBookingForm } from "./booking-form/new-booking-form.js";
 import { BookingProblemScreen } from "./screens/booking-problem-screen.js";
+import { themeStyle } from "./theme-style.js";
 import { bookingProblemScreen } from "./booking-problem-screen-state.js";
 import type { BookingScreenType } from "./booking-screen-type.js";
 import { LoadingScreen } from "./screens/loading-screen.js";
@@ -52,6 +53,13 @@ export function BookingWindow({
   const pressedOutside = useRef(false); // the last press began and ended on the dark area
   const titleId = useId();
   const [screen, setScreen] = useState<BookingScreenType>({ screen: "loading" });
+  // The business's colours, kept while a screen without the business (loading) shows, so the
+  // window never flashes back to white between screens (feature 25e).
+  const [keptTheme, setKeptTheme] = useState<BookingBusinessType["theme"] | null>(null);
+  const shownTheme = "business" in screen && screen.business ? screen.business.theme : undefined;
+  useEffect(() => {
+    if (shownTheme !== undefined) setKeptTheme(shownTheme);
+  }, [shownTheme]);
   // Every load takes a number; an answer to an older one (a retry, another pick, a close) is dropped.
   const latestLoad = useRef(0);
   // What she typed on screen two, kept while the window is open (a taken time keeps her words) and
@@ -188,6 +196,7 @@ export function BookingWindow({
       <dialog
         ref={dialogRef}
         className="sa-dialog"
+        style={themeStyle(shownTheme === undefined ? keptTheme : shownTheme)}
         lang={words.language}
         aria-labelledby={titleId}
         onClose={() => {

@@ -28,6 +28,7 @@ const business = {
   contactRule: "either",
   questions: [{ id: "q-colour", label: "Which colour?", required: true }],
   laterTextsYesWords: null,
+  theme: null,
 } as BookingBusinessType;
 const yesWords = "Yes, Riverbend Clinic may text me offers and reminders to book again.";
 

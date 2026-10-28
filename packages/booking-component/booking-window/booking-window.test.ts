@@ -91,6 +91,7 @@ function fakeApi(bookAnswers: (Response | Promise<Response>)[]) {
 
             addressMode: "required",
             price: { cents: 15000, from: true, currency: "CAD" },
+            imageUrl: "https://ik.imagekit.io/test/facial.webp",
             layout: "month",
             personChoice: "business_assigns",
           },
@@ -262,6 +263,16 @@ describe("the booking window", () => {
     await openToScreenTwo(apiClient);
 
     expect(screen.getByText("From $150")).toBeDefined();
+  });
+
+  it("shows the service's photo above the rail, asked of ImageKit at its size", async () => {
+    const { apiClient } = fakeApi([]);
+    await openToScreenTwo(apiClient);
+
+    const photo = document.querySelector<HTMLImageElement>(".sa-rail-photo");
+    expect(photo?.getAttribute("src")).toBe(
+      "https://ik.imagekit.io/test/facial.webp?tr=w-640,h-360"
+    );
   });
 
   it("closes on a tap on the dark area around it, never on a tap inside it", async () => {

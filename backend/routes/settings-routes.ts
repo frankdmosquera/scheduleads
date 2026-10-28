@@ -3,6 +3,7 @@
 // from the request; any member may read, only a role that may change the business may save.
 
 import { Hono, type Context } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { validator } from "hono/validator";
 import type { ZodError } from "zod";
 
@@ -17,6 +18,7 @@ import {
   holidayPicksValidationSchema,
   openClosedDayValidationSchema,
   personHoursValidationSchema,
+  businessColoursValidationSchema,
   saveCurrencyValidationSchema,
   savePersonSkillsValidationSchema,
   savePlaceServicesValidationSchema,
@@ -55,6 +57,15 @@ import { savePersonHours } from "../lib/settings/save-person-hours.js";
 import { savePersonSkills } from "../lib/settings/save-person-skills.js";
 import { savePlaceServices } from "../lib/settings/save-place-services.js";
 import { saveResource } from "../lib/settings/save-resource.js";
+import { deleteFromImageKit } from "../lib/images/delete-from-imagekit.js";
+import { ImageKitKeyMissingError } from "../lib/images/imagekit-key-missing-error.js";
+import { readUploadedPicture } from "../lib/images/read-uploaded-picture.js";
+import { uploadToImageKit, type StoredPictureType } from "../lib/images/upload-to-imagekit.js";
+import { findLookSettings } from "../lib/settings/find-look-settings.js";
+import { replaceBusinessLogo } from "../lib/settings/replace-business-logo.js";
+import { saveBusinessColours } from "../lib/settings/save-business-colours.js";
+import { replaceServiceImage } from "../lib/settings/replace-service-image.js";
+import { serviceExistsHere } from "../lib/settings/service-exists-here.js";
 import { saveService } from "../lib/settings/save-service.js";
 import { saveServicesCurrency } from "../lib/settings/save-services-currency.js";
 import { saveServiceHours } from "../lib/settings/save-service-hours.js";
@@ -117,6 +128,46 @@ const refuseFirstIssue = (c: Context, error: ZodError) => {
     400
   );
 };
+
+// A picture's form (feature 25e): one file of at most 1 MB, with a little room for the form around it.
+const pictureBodyLimit = bodyLimit({
+  maxSize: 1_100_000,
+  onError: (c) =>
+    c.json(refuse("bad_request", "That picture is over 1 MB. Choose a smaller one."), 413),
+});
+
+// Checks the sent picture and keeps it in ImageKit: what was stored, or the refusal to answer with.
+async function storePicture(
+  c: Context,
+  organizationId: string,
+  sent: unknown,
+  name: "logo" | "service"
+): Promise<StoredPictureType | Response> {
+  const picture = await readUploadedPicture(sent);
+  if (!picture.ok) return c.json(refuse("bad_request", picture.message), 400);
+  try {
+    return await uploadToImageKit(
+      organizationId,
+      picture.bytes,
+      `${name}.${picture.kind.extension}`
+    );
+  } catch (error) {
+    if (!(error instanceof ImageKitKeyMissingError))
+      console.error("Storing a picture failed:", error);
+    return c.json(refuse("unavailable", "The picture could not be saved. Try again shortly."), 503);
+  }
+}
+
+// Saves where a stored picture is; when that save fails, the picture is deleted again, so a fault
+// never leaves a file in ImageKit that nothing points at.
+async function keepOrUndo<Answer>(stored: StoredPictureType, save: () => Promise<Answer>) {
+  try {
+    return await save();
+  } catch (error) {
+    await deleteFromImageKit(stored.fileId);
+    throw error;
+  }
+}
 
 export const settingsRoutes = new Hono()
   // The Hours section: the business's hours, null before the first save.
@@ -233,6 +284,109 @@ export const settingsRoutes = new Hono()
       );
       return c.json(saved, 200);
     }
+  )
+
+  // A service's photo (feature 25e): one PNG, JPEG or WebP, checked, then kept in ImageKit; the
+  // old one is deleted. Another business's service or an unknown id: the same 404, before any upload.
+  .put(
+    "/services/:serviceId/image",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    pictureBodyLimit,
+    validator("form", (value) => ({ picture: value.picture })),
+    async (c) => {
+      const { organizationId } = c.get("organization");
+      const serviceId = c.req.param("serviceId");
+      if (!(await serviceExistsHere(organizationId, serviceId)))
+        return c.json(refuse("not_found", "No service here."), 404);
+      const stored = await storePicture(c, organizationId, c.req.valid("form").picture, "service");
+      if (stored instanceof Response) return stored;
+      const saved = await keepOrUndo(stored, () =>
+        replaceServiceImage(organizationId, serviceId, stored)
+      );
+      if (!saved) {
+        await deleteFromImageKit(stored.fileId); // the service went meanwhile
+        return c.json(refuse("not_found", "No service here."), 404);
+      }
+      return c.json(saved, 200);
+    }
+  )
+  .delete(
+    "/services/:serviceId/image",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    async (c) => {
+      const saved = await replaceServiceImage(
+        c.get("organization").organizationId,
+        c.req.param("serviceId"),
+        null
+      );
+      if (!saved) return c.json(refuse("not_found", "No service here."), 404);
+      return c.json(saved, 200);
+    }
+  )
+
+  // The Look page (feature 25e): the business's logo, uploaded here and kept in ImageKit.
+  .get(
+    "/look",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    async (c) => {
+      const { organizationId } = c.get("organization");
+      const [look, canEdit] = await Promise.all([
+        findLookSettings(organizationId),
+        hasBusinessPermission(c.req.raw.headers, organizationId, CHANGE_BUSINESS),
+      ]);
+      return c.json({ canEdit, ...look }, 200);
+    }
+  )
+  .put(
+    "/look/logo",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    pictureBodyLimit,
+    validator("form", (value) => ({ picture: value.picture })),
+    async (c) => {
+      const { organizationId } = c.get("organization");
+      const stored = await storePicture(c, organizationId, c.req.valid("form").picture, "logo");
+      if (stored instanceof Response) return stored;
+      return c.json(
+        await keepOrUndo(stored, () => replaceBusinessLogo(organizationId, stored)),
+        200
+      );
+    }
+  )
+  // The business's three colours (feature 25e): saved together; text too faint to read is refused.
+  .put(
+    "/look/colours",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    validator("json", (value, c) => {
+      const parsed = businessColoursValidationSchema.safeParse(value);
+      return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
+    }),
+    async (c) =>
+      c.json(
+        await saveBusinessColours(c.get("organization").organizationId, c.req.valid("json")),
+        200
+      )
+  )
+  .delete(
+    "/look/logo",
+    requireOrganizationMiddleware,
+    requireKnownSubscriptionMiddleware,
+    requireModuleMiddleware("booking"),
+    requirePermissionMiddleware(CHANGE_BUSINESS),
+    async (c) => c.json(await replaceBusinessLogo(c.get("organization").organizationId, null), 200)
   )
 
   // Another business's service or an unknown id: the same 404.

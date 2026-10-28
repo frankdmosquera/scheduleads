@@ -19,6 +19,7 @@ const SECTIONS: { href: string; label: keyof SettingsFrameWordsType }[] = [
   { href: "/settings/booking-form", label: "bookingForm" },
   { href: "/settings/texts", label: "texts" },
   { href: "/settings/calendar", label: "calendar" },
+  { href: "/settings/look", label: "look" },
 ];
 
 export function SettingsFrame({ children }: { children: ReactNode }) {

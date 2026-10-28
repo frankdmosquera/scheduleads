@@ -1,0 +1,1 @@
+ALTER TABLE "organization" ADD COLUMN "coloursOn" boolean DEFAULT false NOT NULL;

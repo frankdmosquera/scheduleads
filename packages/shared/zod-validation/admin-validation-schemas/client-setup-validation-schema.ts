@@ -13,6 +13,7 @@ import {
   serviceStartEveryValidationSchema,
 } from "../booking-links-validation-schemas/service-validation-schema.js";
 import { bookingLanguageValidationSchema } from "../booking-links-validation-schemas/booking-language-validation-schema.js";
+import { businessColoursValidationSchema } from "../booking-links-validation-schemas/business-colours-validation-schema.js";
 import { currencyValidationSchema } from "../booking-links-validation-schemas/currency-validation-schema.js";
 import { contactRuleValidationSchema } from "../crm-validation-schemas/contact-rule-validation-schema.js";
 import { setupQuestionsValidationSchema } from "../crm-validation-schemas/booking-questions-validation-schema.js";
@@ -20,6 +21,11 @@ import { textSettingsValidationSchema } from "../text-validation-schemas/text-se
 import { workerTextSettingsValidationSchema } from "../text-validation-schemas/worker-text-settings-validation-schema.js";
 
 const nameValidationSchema = z.string().trim().min(1).max(200);
+
+// A picture already kept online (feature 25e): an https address, such as one in the agency's ImageKit.
+const pictureAddressValidationSchema = z
+  .url()
+  .refine((address) => address.startsWith("https://"), "Use an https address.");
 
 // The business's own hours row, without the resourceId only the database needs. A preprocess
 // types its input as unknown, so the input type is restated: a setup file's hours are then
@@ -69,6 +75,7 @@ export const setupServiceValidationSchema = z
       )
       .optional(),
     priceFrom: z.literal(true).optional(), // "From $150": it can cost more
+    photo: pictureAddressValidationSchema.optional(), // its photo (feature 25e)
   })
   .strict()
   .refine((service) => !service.priceFrom || service.price !== undefined, {
@@ -83,6 +90,14 @@ export const clientSetupValidationSchema = z
     contactRule: contactRuleValidationSchema, // what a customer must leave: email, phone or either
     language: bookingLanguageValidationSchema.optional(), // its owner's emails (feature 12i); left out: English
     currency: currencyValidationSchema.optional(), // its prices' (feature 25d); left out: no prices
+    // Its look (feature 25e): a logo already online and its colours, as Settings > Look saves them.
+    look: z
+      .object({
+        logo: pictureAddressValidationSchema.optional(),
+        colours: businessColoursValidationSchema.optional(),
+      })
+      .strict()
+      .optional(),
     questions: setupQuestionsValidationSchema, // the Settings page's own rules
     texts: textSettingsValidationSchema.optional(), // the agency's texting number and first choices
     hours: setupHoursValidationSchema,

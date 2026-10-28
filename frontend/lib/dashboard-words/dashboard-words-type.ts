@@ -5,6 +5,7 @@
 import type { DashboardLanguageType } from "@scheduleads-app/shared/pick-dashboard-language";
 
 import type { LeadsWordsType } from "@/lib/dashboard-words/leads-words";
+import type { LookWordsType } from "@/lib/dashboard-words/look-words";
 import type { ScheduleWordsType } from "@/lib/dashboard-words/schedule-words";
 import type { HoursWordsType } from "@/lib/dashboard-words/hours-words";
 import type { DaysOffWordsType } from "@/lib/dashboard-words/days-off-words";
@@ -89,5 +90,6 @@ export type DashboardWordsType = {
   textsWords: TextsWordsType;
   calendarSettingsWords: CalendarSettingsWordsType;
   settingsFrameWords: SettingsFrameWordsType;
+  lookWords: LookWordsType;
   setupCardsWords: SetupCardsWordsType;
 };

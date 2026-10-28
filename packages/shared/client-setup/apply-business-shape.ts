@@ -220,26 +220,57 @@ export async function applyBusinessShape(
       })
       .where(eq(organization.id, organizationId));
 
-  // Its currency, while it has none (feature 25d).
-  const [{ currency }] = await tx
-    .select({ currency: organization.currency })
+  // Its currency, while it has none (feature 25d); its logo, while it has none, and its colours,
+  // while none were saved on Settings > Look (feature 25e).
+  const [business] = await tx
+    .select({
+      currency: organization.currency,
+      logo: organization.logo,
+      coloursOn: organization.coloursOn,
+      brandColor: organization.brandColor,
+    })
     .from(organization)
     .where(eq(organization.id, organizationId));
-  const currencyMade = currency === null && shape.currency !== undefined;
-  if (currencyMade)
+  const currencyMade = business?.currency === null && shape.currency !== undefined;
+  const logoMade = business?.logo === null && shape.look?.logo !== undefined;
+  const colours = shape.look?.colours;
+  // An email colour set earlier (at client setup) is the business's own: a file that says another
+  // is listed by the dry run, never applied over it.
+  const coloursMade =
+    business?.coloursOn === false &&
+    !!colours &&
+    !!(colours.main || colours.background || colours.text) &&
+    (business.brandColor === null || business.brandColor === colours.main);
+  if (currencyMade || logoMade || coloursMade)
     await tx
       .update(organization)
-      .set({ currency: shape.currency })
+      .set({
+        ...(currencyMade ? { currency: shape.currency } : {}),
+        ...(logoMade ? { logo: shape.look?.logo } : {}), // no ImageKit id: never deleted by a replace
+        ...(coloursMade && colours
+          ? {
+              brandColor: colours.main,
+              backgroundColor: colours.background,
+              textColor: colours.text,
+              coloursOn: true,
+            }
+          : {}),
+      })
       .where(eq(organization.id, organizationId));
 
   let servicesMade = 0;
   let ticksMade = 0;
   let pricesMade = 0;
-  for (const { ticked = [], price, priceFrom = false, ...service } of shape.services) {
+  let photosMade = 0;
+  for (const { ticked = [], price, priceFrom = false, photo, ...service } of shape.services) {
     // The file's 150 is stored as 15000: hundredths, so no rounding is ever stored.
     const priceCents = price === undefined ? null : Math.round(price * 100);
     const [existingLink] = await tx
-      .select({ id: bookingLink.id, priceCents: bookingLink.priceCents })
+      .select({
+        id: bookingLink.id,
+        priceCents: bookingLink.priceCents,
+        imageUrl: bookingLink.imageUrl,
+      })
       .from(bookingLink)
       .where(serviceNamed(organizationId, service.name))
       .orderBy(...oldestServiceFirst)
@@ -271,15 +302,25 @@ export async function applyBusinessShape(
         ...service,
         priceCents,
         priceFrom,
+        imageUrl: photo ?? null,
       });
       servicesMade++;
       if (priceCents !== null) pricesMade++;
+      if (photo) photosMade++;
     } else if (existingLink.priceCents === null && priceCents !== null) {
       await tx
         .update(bookingLink)
         .set({ priceCents, priceFrom })
         .where(eq(bookingLink.id, existingLink.id));
       pricesMade++;
+    }
+    // A photo on an existing service that has none (feature 25e).
+    if (existingLink && existingLink.imageUrl === null && photo) {
+      await tx
+        .update(bookingLink)
+        .set({ imageUrl: photo })
+        .where(eq(bookingLink.id, existingLink.id));
+      photosMade++;
     }
 
     // Every tick must name someone listed, even on a service whose ticks are left alone below.
@@ -309,6 +350,8 @@ export async function applyBusinessShape(
     questionsMade && `${shape.questions.length} booking questions`,
     !anyService && "the contact rule",
     currencyMade && `the currency, ${shape.currency}`,
+    logoMade && "the logo",
+    coloursMade && "the colours",
     textsMade && "text settings",
     !existingBusinessHours && "business hours",
     peopleMade && `${peopleMade} people and places`,
@@ -317,6 +360,7 @@ export async function applyBusinessShape(
     workerTextsMade && `${workerTextsMade} worker text settings`,
     servicesMade && `${servicesMade} services`,
     pricesMade && `${pricesMade} prices`,
+    photosMade && `${photosMade} photos`,
     ticksMade && `${ticksMade} who-does-what ticks`,
   ].filter((phrase): phrase is string => typeof phrase === "string");
 }

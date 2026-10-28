@@ -600,3 +600,51 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** With both price fields optional, a body with `priceCents: null` and no `priceFrom`, on a service saved as "From $150", passes the refine, and the update breaks `booking_link_price_from_check`: a 500 instead of a 400. The dashboard's form always sends both and an older form neither, so only a hand-made call reaches it.
 **Suggested fix:** A refine that takes both price fields or neither.
 **Resolution:**
+
+### F-567 [P3] open - A shrunk photo written as JPEG is never checked against 1 MB before it is sent
+
+**File:** frontend/lib/shrink-picture.ts
+**Found:** 2026-10-28 by independent re-review of step 25e.1 (fresh subagent; scope: 72d2649..4245aec)
+**Why it matters:** A 1200 px JPEG at quality 0.85 is nearly always far under 1 MB, but nothing checks it; an unusually detailed one would be refused by the API with its clear "over 1 MB" message, not lost.
+**Suggested fix:** Encode once more at a lower quality when the JPEG is over 900 KB.
+**Resolution:**
+
+### F-578 [P2] open - In dark mode the dashboard's highlight is shaded for a white page
+
+**File:** frontend/lib/business-accent-style.ts
+**Found:** 2026-10-28 by independent re-review of step 25e.2 (fresh subagent; scope: 31dbc20..4906585)
+**Why it matters:** Under `data-theme="dark"` the page is about #18191f, and a colour darkened for white reads worse there (amber 3.69, Rose clay 3.73). Nothing in the app sets `data-theme="dark"` today: the CSS exists, the switch does not, so no one can reach it yet.
+**Suggested fix:** When a dark switch is built, set a second, dark-shaded set of the accent tokens under `[data-theme="dark"]` (or compute the shade from the theme in use).
+**Resolution:**
+
+### F-579 [P3] open - On a mid-grey background the window's colour can fall just short on the free days' disc
+
+**File:** packages/booking-component/booking-window/theme-style.ts:37
+**Found:** 2026-10-28 by independent re-review of step 25e.2 (fresh subagent; scope: 4906585..d9ab953)
+**Why it matters:** The outer readableOn picks its direction from the background alone; with a mid-grey background (luminance about 0.15 to 0.25) and text barely readable on it, the shade can read on the background and miss on the disc (#767676, black text, red main: 4.62 and about 4.2). 16 of about 112,000 random pairs; in some no colour reads on both.
+**Suggested fix:** Pick the direction that reads on both surfaces, and refuse such a background and text pair in the schema.
+**Resolution:**
+
+### F-580 [P3] fixed - Applying a setup file's colours overwrote an email colour set earlier, unlisted
+
+**File:** packages/shared/client-setup/apply-business-shape.ts; run-client-setup.ts
+**Found:** 2026-10-28 by independent review of step 25e.3 (fresh subagent; scope: 9cb8106..a2a528b)
+**Why it matters:** A business set up with a brandColor for its emails, and colours not yet saved on Look, had that colour replaced (or cleared) by the file's main colour, with no difference listed: against the file's own rule that a row already there is listed, never overwritten.
+**Suggested fix:** Keep the email colour and list the file's other one.
+**Resolution:** fixed 2026-10-28: the colours are filled only when the business has no email colour or the same one; a different one is listed as "colours, main (its email colour)". Test: "keeps an email colour set earlier and lists the file's other one". Face and Body's live account has none, so nothing of hers is affected.
+
+### F-581 [P3] open - Re-applying a setup file puts back a logo, photo or colours the owner removed
+
+**File:** packages/shared/client-setup/apply-business-shape.ts
+**Found:** 2026-10-28 by independent review of step 25e.3 (fresh subagent; scope: 9cb8106..a2a528b)
+**Why it matters:** The file fills what is missing and cannot tell "never set" from "removed by the owner on Look", as with the currency and prices already. Only matters if a file is applied again after the owner edits her look.
+**Suggested fix:** A line in the new-business handover: apply a client's file once; after that her look is hers, on Settings.
+**Resolution:**
+
+### F-582 [P3] open - No saved test for a different photo being listed, or a dry run with a look
+
+**File:** packages/shared/client-setup/run-client-setup.test.ts
+**Found:** 2026-10-28 by independent review of step 25e.3 (fresh subagent; scope: 9cb8106..a2a528b)
+**Why it matters:** The regex checks only the logo and colours; the email-colour case now has its test (F-580), the photo difference does not.
+**Suggested fix:** Extend the "different look" test with a service photo already saved.
+**Resolution:**

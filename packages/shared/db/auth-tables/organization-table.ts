@@ -1,7 +1,7 @@
 // Shared: Better Auth's organization table, one row per business.
 
 import { sql } from "drizzle-orm";
-import { check, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, check, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 export const organization = pgTable(
   "organization",
@@ -10,6 +10,9 @@ export const organization = pgTable(
     name: text("name").notNull(),
     slug: text("slug").notNull().unique(),
     logo: text("logo"),
+    // ImageKit's id for the logo uploaded on Settings > Look (feature 25e), to delete it when it is
+    // replaced or removed; null for a logo set by address, or none.
+    logoFileId: text("logoFileId"),
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     metadata: text("metadata"),
 
@@ -25,6 +28,12 @@ export const organization = pgTable(
     phone: text("phone"), // for the call button
     website: text("website"), // https://
     brandColor: text("brandColor"), // #rrggbb: email clients ignore CSS variables
+    // Its booking window's other two colours (feature 25e), #rrggbb; the main one is brandColor.
+    backgroundColor: text("backgroundColor"),
+    textColor: text("textColor"),
+    // Whether the owner saved her colours on Settings > Look. Until then the window and the
+    // dashboard keep their own look, even with a brandColor set long before for the emails.
+    coloursOn: boolean("coloursOn").notNull().default(false),
     // The one currency its prices are in (feature 25d), an ISO 4217 code; none: no price shows.
     currency: text("currency"),
 
@@ -42,6 +51,8 @@ export const organization = pgTable(
   },
   (table) => [
     check("organization_brand_color_check", sql`${table.brandColor} ~ '^#[0-9a-f]{6}$'`),
+    check("organization_background_color_check", sql`${table.backgroundColor} ~ '^#[0-9a-f]{6}$'`),
+    check("organization_text_color_check", sql`${table.textColor} ~ '^#[0-9a-f]{6}$'`),
     check(
       "organization_contact_rule_check",
       sql`${table.contactRule} in ('email', 'phone', 'either')`

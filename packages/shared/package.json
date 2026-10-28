@@ -32,6 +32,18 @@
       "types": "./dist/helpers/format-price.d.ts",
       "default": "./dist/helpers/format-price.js"
     },
+    "./image-kit-sized": {
+      "types": "./dist/helpers/image-kit-sized.d.ts",
+      "default": "./dist/helpers/image-kit-sized.js"
+    },
+    "./contrast-ratio": {
+      "types": "./dist/helpers/contrast-ratio.d.ts",
+      "default": "./dist/helpers/contrast-ratio.js"
+    },
+    "./readable-on": {
+      "types": "./dist/helpers/readable-on.d.ts",
+      "default": "./dist/helpers/readable-on.js"
+    },
     "./local-date": {
       "types": "./dist/helpers/local-date.d.ts",
       "default": "./dist/helpers/local-date.js"

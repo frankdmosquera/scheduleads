@@ -105,6 +105,7 @@ const renderScreenOne = (
         contactRule: "either",
         questions: [],
         laterTextsYesWords: null,
+        theme: null,
       } as BookingBusinessType,
       service: {
         id: "facial",

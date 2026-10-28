@@ -233,6 +233,17 @@ export const spanishMessages: Record<string, string> = {
   // Settings: services
   "A business needs a service.": "Un negocio necesita un servicio.",
   "No service here.": "No hay ningún servicio aquí.",
+  "Choose a picture to upload.": "Elija una imagen para subir.",
+  "That picture is over 1 MB. Choose a smaller one.":
+    "Esa imagen pasa de 1 MB. Elija una más liviana.",
+  "Use a PNG, JPEG or WebP picture.": "Use una imagen PNG, JPEG o WebP.",
+  "The picture could not be saved. Try again shortly.":
+    "La imagen no se pudo guardar. Intente de nuevo en un momento.",
+  "This business cannot change its look here.": "Este negocio no puede cambiar su apariencia aquí.",
+  "Use a colour like #b5838d.": "Use un color como #b5838d.",
+  "Use an https address.": "Use una dirección https.",
+  "That text is too faint on that background to read. Pick a darker or lighter one.":
+    "Ese texto es demasiado tenue sobre ese fondo para leerse. Elija uno más oscuro o más claro.",
   "Tick only this business's people.": "Marque solo personas de este negocio.",
   "Tick only this business's places.": "Marque solo lugares de este negocio.",
   "Tick only this business's services.": "Marque solo servicios de este negocio.",

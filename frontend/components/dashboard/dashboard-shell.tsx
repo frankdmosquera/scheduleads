@@ -11,6 +11,7 @@ import { SignOutLink } from "@/components/auth/sign-out-link";
 import { BusinessInitialMark } from "@/components/dashboard/business-initial-mark";
 import { useMe } from "@/components/dashboard/dashboard-gate";
 import { LanguageSwitch } from "@/components/language-switch/language-switch";
+import { businessAccentStyle } from "@/lib/business-accent-style";
 import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 
 const SCREENS = [
@@ -27,7 +28,10 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const { words } = useDashboardWords();
 
   return (
-    <div className="flex min-h-screen flex-1 flex-col md:flex-row">
+    <div
+      className="flex min-h-screen flex-1 flex-col md:flex-row"
+      style={businessAccentStyle(me.organization.mainColour)} // its main colour (feature 25e)
+    >
       {/* On a desktop the column holds still at the window's height; only its links scroll. */}
       <aside className="flex flex-none flex-col gap-6 border-b border-border bg-card p-4 md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0 md:pb-8">
         <div className="flex items-center gap-3">

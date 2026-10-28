@@ -8,6 +8,7 @@ import { spanishDaysOffWords } from "@/lib/dashboard-words/days-off-words";
 import { spanishPeopleWords } from "@/lib/dashboard-words/people-words";
 import { spanishPlacesWords } from "@/lib/dashboard-words/places-words";
 import { spanishServicesWords } from "@/lib/dashboard-words/services-words";
+import { spanishLookWords } from "@/lib/dashboard-words/look-words";
 import { spanishBookingFormWords } from "@/lib/dashboard-words/booking-form-words";
 import { spanishTextsWords } from "@/lib/dashboard-words/texts-words";
 import { spanishCalendarSettingsWords } from "@/lib/dashboard-words/calendar-settings-words";
@@ -88,5 +89,6 @@ export const spanishDashboardWords: DashboardWordsType = {
   textsWords: spanishTextsWords,
   calendarSettingsWords: spanishCalendarSettingsWords,
   settingsFrameWords: spanishSettingsFrameWords,
+  lookWords: spanishLookWords,
   setupCardsWords: spanishSetupCardsWords,
 };

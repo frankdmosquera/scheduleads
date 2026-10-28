@@ -8,6 +8,7 @@ import { englishDaysOffWords } from "@/lib/dashboard-words/days-off-words";
 import { englishPeopleWords } from "@/lib/dashboard-words/people-words";
 import { englishPlacesWords } from "@/lib/dashboard-words/places-words";
 import { englishServicesWords } from "@/lib/dashboard-words/services-words";
+import { englishLookWords } from "@/lib/dashboard-words/look-words";
 import { englishBookingFormWords } from "@/lib/dashboard-words/booking-form-words";
 import { englishTextsWords } from "@/lib/dashboard-words/texts-words";
 import { englishCalendarSettingsWords } from "@/lib/dashboard-words/calendar-settings-words";
@@ -81,5 +82,6 @@ export const englishDashboardWords: DashboardWordsType = {
   textsWords: englishTextsWords,
   calendarSettingsWords: englishCalendarSettingsWords,
   settingsFrameWords: englishSettingsFrameWords,
+  lookWords: englishLookWords,
   setupCardsWords: englishSetupCardsWords,
 };
