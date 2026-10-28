@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { savePicture, type PictureTargetType } from "@/lib/api-client/settings/save-picture";
 import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
 import { shrinkPicture } from "@/lib/shrink-picture";
+import { imageKitSized } from "@scheduleads-app/shared/image-kit-sized";
 
 export function PictureField({
   target,
@@ -68,7 +69,7 @@ export function PictureField({
           {picture ? (
             // eslint-disable-next-line @next/next/no-img-element -- an ImageKit address, sized by ImageKit
             <img
-              src={`${picture}?tr=w-192`}
+              src={imageKitSized(picture, "w-192")}
               alt={alt}
               className="max-h-full max-w-full object-contain"
             />
@@ -84,6 +85,7 @@ export function PictureField({
               type="file"
               accept="image/png,image/jpeg,image/webp"
               className="sr-only"
+              tabIndex={-1} // the button opens it; a hidden stop would take focus out of sight
               aria-labelledby={`${id}-label`}
               aria-describedby={`${id}-hint`}
               onChange={(event) => {

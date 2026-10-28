@@ -7,7 +7,7 @@ import type {
 } from "../../api-client/booking-api-types.js";
 import { useBookingWords } from "../../words/booking-words-context.js";
 import { priceText } from "./price-text.js";
-import { sizedPicture } from "./sized-picture.js";
+import { imageKitSized } from "@scheduleads-app/shared/image-kit-sized";
 
 export type ServiceListScreenPropsType = {
   business: BookingBusinessType;
@@ -56,7 +56,7 @@ export function ServiceListScreen({
                 {service.imageUrl && (
                   <img
                     className="sa-service-photo"
-                    src={sizedPicture(service.imageUrl, "w-128,h-128")}
+                    src={imageKitSized(service.imageUrl, "w-128,h-128")}
                     alt=""
                   />
                 )}

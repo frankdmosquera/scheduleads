@@ -600,3 +600,67 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** With both price fields optional, a body with `priceCents: null` and no `priceFrom`, on a service saved as "From $150", passes the refine, and the update breaks `booking_link_price_from_check`: a 500 instead of a 400. The dashboard's form always sends both and an older form neither, so only a hand-made call reaches it.
 **Suggested fix:** A refine that takes both price fields or neither.
 **Resolution:**
+
+### F-558 [P1] fixed - A picture shrunk in Safari could come out as a large PNG and be refused
+
+**File:** frontend/lib/shrink-picture.ts
+**Found:** 2026-10-28 by independent review of step 25e.1 (fresh subagent; scope: 4709e04..f958a28)
+**Why it matters:** `canvas.toBlob(..., "image/webp")` falls back to PNG where a browser cannot write WebP (Safari), and nothing checked the blob's type: a 1200 px photo became a PNG of 2-3 MB, refused as over 1 MB, and was sent named `picture.webp`.
+**Suggested fix:** When the blob is not WebP, encode again as JPEG; name the file from its real type.
+**Resolution:** fixed 2026-10-28: WebP, else JPEG at 0.85, named by the type it really has.
+
+### F-559 [P2] fixed - Emails showed the uploaded WebP logo, which Outlook does not display
+
+**File:** backend/emails/email-layout.tsx
+**Found:** 2026-10-28 by independent review of step 25e.1 (fresh subagent; scope: 4709e04..f958a28)
+**Why it matters:** Every uploaded logo is WebP; classic Outlook for Windows shows a broken image.
+**Suggested fix:** Ask ImageKit for a PNG at email size.
+**Resolution:** fixed 2026-10-28: the email asks `tr=f-png,w-280` through the shared `imageKitSized`, which leaves any non-ImageKit address as it is.
+
+### F-560 [P2] fixed - The picture preview broke on an address that already had a question
+
+**File:** frontend/components/settings/picture-field.tsx
+**Found:** 2026-10-28 by independent review of step 25e.1 (fresh subagent; scope: 4709e04..f958a28)
+**Why it matters:** `${picture}?tr=w-192` breaks an address with its own query, such as a logo set by address before 25e.
+**Suggested fix:** Use the `?`/`&` rule the window uses.
+**Resolution:** fixed 2026-10-28: one shared `imageKitSized` for the preview, the window and the email; only ImageKit addresses get a transform.
+
+### F-561 [P3] fixed - The hidden file input took a keyboard stop with no visible focus
+
+**File:** frontend/components/settings/picture-field.tsx
+**Found:** 2026-10-28 by independent review of step 25e.1 (fresh subagent; scope: 4709e04..f958a28)
+**Why it matters:** Tab landed on an invisible control before the Upload button.
+**Suggested fix:** `tabIndex={-1}` on the input; the button opens it.
+**Resolution:** fixed 2026-10-28.
+
+### F-562 [P3] fixed - The 413 path for a form over the size limit was never tested
+
+**File:** backend/routes/settings-routes.test.ts
+**Found:** 2026-10-28 by independent review of step 25e.1 (fresh subagent; scope: 4709e04..f958a28)
+**Why it matters:** The "over 1 MB" case sent 1,050,000 bytes, under the 1.1 MB body limit, and accepted either 400 or 413.
+**Suggested fix:** A 1.2 MB case that expects 413.
+**Resolution:** fixed 2026-10-28: 1,050,000 bytes expects 400, 1,200,000 expects 413 with the refusal shape.
+
+### F-563 [P3] fixed - The spec said 502 where the code answers 503 when ImageKit fails
+
+**File:** blueprint/context/current-feature.md (Data / contracts); backend/routes/settings-routes.ts
+**Found:** 2026-10-28 by independent review of step 25e.1 (fresh subagent; scope: 4709e04..f958a28)
+**Why it matters:** The contract and the code disagreed.
+**Suggested fix:** Make them agree.
+**Resolution:** fixed 2026-10-28: the spec now says 503 `unavailable` (and 413 over the form limit), as the code does and as every other "cannot be read right now" answer in the API is.
+
+### F-564 [P3] fixed - A save that failed after the upload left the new picture in ImageKit
+
+**File:** backend/routes/settings-routes.ts (the logo and service photo routes)
+**Found:** 2026-10-28 by independent review of step 25e.1 (fresh subagent; scope: 4709e04..f958a28)
+**Why it matters:** A database fault after a successful upload left a file nothing points at.
+**Suggested fix:** Delete the stored file when the save throws.
+**Resolution:** fixed 2026-10-28: `keepOrUndo` deletes it, then the fault answers as before.
+
+### F-565 [P3] fixed - The empty photo box repeated its own label
+
+**File:** frontend/components/settings/service-form.tsx
+**Found:** 2026-10-28 by independent review of step 25e.1 (fresh subagent; scope: 4709e04..f958a28)
+**Why it matters:** "Photo (optional)" showed as the label and again inside the empty box.
+**Suggested fix:** Its own words.
+**Resolution:** fixed 2026-10-28: "No photo yet" / "Aún sin foto".

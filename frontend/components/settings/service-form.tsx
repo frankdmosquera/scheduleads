@@ -438,7 +438,7 @@ export function ServiceForm({
             target={{ kind: "service", serviceId: service.id }}
             label={lookWords.servicePhoto}
             hint={lookWords.servicePhotoHint}
-            emptyLine={lookWords.servicePhoto}
+            emptyLine={lookWords.noPhoto}
             alt={lookWords.pictureOf(service.name)}
             picture={imageUrl}
             longestSide={1200}

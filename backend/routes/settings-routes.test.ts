@@ -2267,7 +2267,12 @@ describe("the business's pictures (feature 25e)", () => {
     expect((await send("/settings/look/logo", summit.email, pdf, "logo.png")).status).toBe(400);
     const big = new Uint8Array(1_050_000);
     big.set(png);
-    expect([400, 413]).toContain((await send("/settings/look/logo", summit.email, big)).status);
+    expect((await send("/settings/look/logo", summit.email, big)).status).toBe(400); // over 1 MB
+    const huge = new Uint8Array(1_200_000);
+    huge.set(png);
+    const tooLarge = await send("/settings/look/logo", summit.email, huge); // over the form limit
+    expect(tooLarge.status).toBe(413);
+    expect(((await tooLarge.json()) as { error: { code: string } }).error.code).toBe("bad_request");
     expect((await send("/settings/look/logo", helper.email, png)).status).toBe(403);
     expect(imageKit.uploads).toBe(uploads); // nothing refused was uploaded
   });

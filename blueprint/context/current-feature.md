@@ -101,8 +101,8 @@ it earlier: the ImageKit key on Railway, real data on the live app, `main`, a me
 - `PUT /settings/look/logo` (multipart, one file), `DELETE /settings/look/logo`,
   `PUT /settings/services/:id/image`, `DELETE /settings/services/:id/image`: change-business
   permission, the business from the session, a service found only inside it; answers the new
-  address. Refusals: 400 with the field's message (type, size), 403, 404, 502 when ImageKit fails
-  (nothing saved).
+  address. Refusals: 400 with the field's message (type, size), 413 over the form's size limit,
+  403, 404, 503 `unavailable` when ImageKit fails or its key is missing (nothing saved).
 - Public: `business.logo` (exists), each service's `imageUrl`; 25e.2 adds `business.theme:
   { main, mainInk, background, text } | null`.
 

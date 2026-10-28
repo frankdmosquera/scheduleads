@@ -3,6 +3,8 @@
 // a small line under it. The backend's own JSX is Hono's, so this file says it is React's.
 
 import type { ReactNode } from "react";
+
+import { imageKitSized } from "@scheduleads-app/shared/image-kit-sized";
 import { Body, Container, Head, Html, Img, Preview, Section, Text } from "@react-email/components";
 
 import { emailColors } from "./email-colors.js";
@@ -48,7 +50,7 @@ export function EmailLayout({
             {logo ? (
               // Most clients block images until the reader allows them, so the name is the alt text.
               <Img
-                src={logo}
+                src={imageKitSized(logo, "f-png,w-280") /* Outlook shows no WebP */}
                 alt={businessName}
                 width="140"
                 style={{ display: "block", marginBottom: "16px", height: "auto" }}

@@ -16,6 +16,7 @@ export type LookWordsType = {
   pictureTypes: string;
   notAPicture: string;
   servicePhoto: string;
+  noPhoto: string;
   servicePhotoHint: string;
   saveServiceFirst: string;
   pictureOf(name: string): string;
@@ -35,6 +36,7 @@ export const englishLookWords: LookWordsType = {
   pictureTypes: "PNG, JPEG or WebP. It is made lighter before it is sent.",
   notAPicture: "That file could not be read as a picture. Use a PNG, JPEG or WebP.",
   servicePhoto: "Photo (optional)",
+  noPhoto: "No photo yet",
   servicePhotoHint: "Shown on this service in your booking window.",
   saveServiceFirst: "Add the service first, then its photo.",
   pictureOf: (name) => `Picture of ${name}`,
@@ -54,6 +56,7 @@ export const spanishLookWords: LookWordsType = {
   pictureTypes: "PNG, JPEG o WebP. Se aligera antes de enviarse.",
   notAPicture: "Ese archivo no se pudo leer como imagen. Use un PNG, JPEG o WebP.",
   servicePhoto: "Foto (opcional)",
+  noPhoto: "Aún sin foto",
   servicePhotoHint: "Se muestra en este servicio en su ventana de reservas.",
   saveServiceFirst: "Agregue primero el servicio, luego su foto.",
   pictureOf: (name) => `Imagen de ${name}`,

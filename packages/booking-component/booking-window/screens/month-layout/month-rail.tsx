@@ -10,7 +10,7 @@ import type {
 } from "../../../api-client/booking-api-types.js";
 import { useBookingWords } from "../../../words/booking-words-context.js";
 import { priceText } from "../price-text.js";
-import { sizedPicture } from "../sized-picture.js";
+import { imageKitSized } from "@scheduleads-app/shared/image-kit-sized";
 
 export type MonthRailPropsType = {
   business: BookingBusinessType;
@@ -26,13 +26,17 @@ export function MonthRail({ business, service, back, children }: MonthRailPropsT
     <aside className="sa-rail">
       <div className="sa-rail-logo">
         {business.logo ? (
-          <img src={business.logo} alt={business.name} />
+          <img src={imageKitSized(business.logo, "w-344")} alt={business.name} />
         ) : (
           <span className="sa-rail-wordmark">{business.name}</span>
         )}
       </div>
       {service.imageUrl && (
-        <img className="sa-rail-photo" src={sizedPicture(service.imageUrl, "w-640,h-360")} alt="" />
+        <img
+          className="sa-rail-photo"
+          src={imageKitSized(service.imageUrl, "w-640,h-360")}
+          alt=""
+        />
       )}
       <div className="sa-rail-body">
         {back && (

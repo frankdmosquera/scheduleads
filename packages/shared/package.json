@@ -32,6 +32,10 @@
       "types": "./dist/helpers/format-price.d.ts",
       "default": "./dist/helpers/format-price.js"
     },
+    "./image-kit-sized": {
+      "types": "./dist/helpers/image-kit-sized.d.ts",
+      "default": "./dist/helpers/image-kit-sized.js"
+    },
     "./local-date": {
       "types": "./dist/helpers/local-date.d.ts",
       "default": "./dist/helpers/local-date.js"

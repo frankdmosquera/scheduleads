@@ -156,6 +156,17 @@ async function storePicture(
   }
 }
 
+// Saves where a stored picture is; when that save fails, the picture is deleted again, so a fault
+// never leaves a file in ImageKit that nothing points at.
+async function keepOrUndo<Answer>(stored: StoredPictureType, save: () => Promise<Answer>) {
+  try {
+    return await save();
+  } catch (error) {
+    await deleteFromImageKit(stored.fileId);
+    throw error;
+  }
+}
+
 export const settingsRoutes = new Hono()
   // The Hours section: the business's hours, null before the first save.
   .get(
@@ -290,7 +301,9 @@ export const settingsRoutes = new Hono()
         return c.json(refuse("not_found", "No service here."), 404);
       const stored = await storePicture(c, organizationId, c.req.valid("form").picture, "service");
       if (stored instanceof Response) return stored;
-      const saved = await replaceServiceImage(organizationId, serviceId, stored);
+      const saved = await keepOrUndo(stored, () =>
+        replaceServiceImage(organizationId, serviceId, stored)
+      );
       if (!saved) {
         await deleteFromImageKit(stored.fileId); // the service went meanwhile
         return c.json(refuse("not_found", "No service here."), 404);
@@ -342,7 +355,10 @@ export const settingsRoutes = new Hono()
       const { organizationId } = c.get("organization");
       const stored = await storePicture(c, organizationId, c.req.valid("form").picture, "logo");
       if (stored instanceof Response) return stored;
-      return c.json(await replaceBusinessLogo(organizationId, stored), 200);
+      return c.json(
+        await keepOrUndo(stored, () => replaceBusinessLogo(organizationId, stored)),
+        200
+      );
     }
   )
   .delete(
