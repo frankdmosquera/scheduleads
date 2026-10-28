@@ -129,6 +129,11 @@ async function findDifferences(
       contactRule: organization.contactRule,
       language: organization.language,
       currency: organization.currency,
+      logo: organization.logo,
+      coloursOn: organization.coloursOn,
+      main: organization.brandColor,
+      background: organization.backgroundColor,
+      text: organization.textColor,
     })
     .from(organization)
     .where(eq(organization.id, organizationId));
@@ -141,6 +146,12 @@ async function findDifferences(
   if (anyService && setup.language) differs("language", business?.language, setup.language);
   // Filled while the business has none (feature 25d); after that it is the owner's.
   if (business?.currency && setup.currency) differs("currency", business.currency, setup.currency);
+  // Filled while missing (feature 25e); after that the logo and colours are the owner's, on Look.
+  if (business?.logo && setup.look?.logo) differs("logo", business.logo, setup.look.logo);
+  if (business?.coloursOn && setup.look?.colours) {
+    const { main, background, text } = business;
+    differs("colours", { main, background, text }, setup.look.colours);
+  }
 
   // Texts already there are the owner's: a file that says otherwise is listed, never applied.
   const [texts] = await tx
@@ -189,6 +200,8 @@ async function findDifferences(
       differs(`"${service.name}", price`, saved.priceCents, Math.round(service.price * 100));
       differs(`"${service.name}", priceFrom`, saved.priceFrom, service.priceFrom ?? false);
     }
+    if (saved.imageUrl !== null && service.photo !== undefined)
+      differs(`"${service.name}", photo`, saved.imageUrl, service.photo);
   }
 
   for (const person of setup.people) {

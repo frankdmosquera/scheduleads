@@ -241,6 +241,7 @@ export const spanishMessages: Record<string, string> = {
     "La imagen no se pudo guardar. Intente de nuevo en un momento.",
   "This business cannot change its look here.": "Este negocio no puede cambiar su apariencia aquí.",
   "Use a colour like #b5838d.": "Use un color como #b5838d.",
+  "Use an https address.": "Use una dirección https.",
   "That text is too faint on that background to read. Pick a darker or lighter one.":
     "Ese texto es demasiado tenue sobre ese fondo para leerse. Elija uno más oscuro o más claro.",
   "Tick only this business's people.": "Marque solo personas de este negocio.",
