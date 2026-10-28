@@ -690,7 +690,7 @@ Closed 2026-10-28 by independent re-review (fresh subagent, 72d2649..4245aec): e
 **Suggested fix:** Encode once more at a lower quality when the JPEG is over 900 KB.
 **Resolution:**
 
-### F-568 [P1] fixed - The main colour was written as text on the background with no readability check
+### F-568 [P1] closed - The main colour was written as text on the background with no readability check
 
 **File:** packages/booking-component/booking-window/theme-style.ts; frontend/lib/business-accent-style.ts
 **Found:** 2026-10-28 by independent review of step 25e.2 (fresh subagent; scope: 368b727..31dbc20)
@@ -698,6 +698,7 @@ Closed 2026-10-28 by independent re-review (fresh subagent, 72d2649..4245aec): e
 **Suggested fix:** Keep the main colour on the buttons; where it is text, use it only when it reads at 4.5, else a readable shade.
 **Resolution:** fixed 2026-10-28: the shared `readableOn` mixes the colour toward black (or white on a dark background) until it reads at 4.5 and keeps its hue; the window's identity tokens and the dashboard's highlight use it; with no main colour the buttons take the text colour. Tests cover Rose clay, amber on white and a dark background.
 Reopened 2026-10-28 by independent re-review (31dbc20..4906585): the shade read on the background but not on the free days' grey disc (F-575). Fixed again: the shade is taken against the disc, then checked on the background.
+Closed 2026-10-28 by independent re-review (fresh subagent, 4906585..d9ab953): run against the real theme-style: every palette, amber and yellow on white and eight random pairs read at 4.5 or more on the background and the disc (lowest 4.63).
 
 ### F-569 [P2] closed - The window flashed white while a service loaded
 
@@ -753,29 +754,32 @@ Closed 2026-10-28 by independent re-review (fresh subagent, 31dbc20..4906585): "
 **Resolution:** fixed 2026-10-28: `textColorOn` uses `contrastRatio`.
 Closed 2026-10-28 by independent re-review (fresh subagent, 31dbc20..4906585): the old and new textColorOn agree on about 125,000 colours.
 
-### F-575 [P2] fixed - The window's colour fell just short of readable on the free days' grey disc
+### F-575 [P2] closed - The window's colour fell just short of readable on the free days' grey disc
 
 **File:** packages/booking-component/booking-window/theme-style.ts; booking-component.css (.sa-d[data-free], hover states)
 **Found:** 2026-10-28 by independent re-review of step 25e.2 (fresh subagent; scope: 31dbc20..4906585)
 **Why it matters:** A free day's number (14 px bold, not large text) sits on the second surface, a little darker than the background: Rose clay read 4.40, amber on white 4.33, the worst random case 3.91.
 **Suggested fix:** Shade against the disc, the darker of the two.
 **Resolution:** fixed 2026-10-28: the shade is taken against the disc (6% of the text in the background, as the CSS mixes it), then checked on the background; tests check both for Rose clay and amber.
+Closed 2026-10-28 by independent re-review (fresh subagent, 4906585..d9ab953): the disc mix matches the CSS's 6%; Rose clay gives #7f5c63, 4.87 on the disc.
 
-### F-576 [P3] fixed - The required-field star used the raw main colour
+### F-576 [P3] closed - The required-field star used the raw main colour
 
 **File:** packages/booking-component/booking-component.css (.sa-req::after)
 **Found:** 2026-10-28 by independent re-review of step 25e.2 (fresh subagent; scope: 31dbc20..4906585)
 **Why it matters:** Text in --sa-action, amber on white at 2.15.
 **Suggested fix:** --sa-identity.
 **Resolution:** fixed 2026-10-28.
+Closed 2026-10-28 by independent re-review (fresh subagent, 4906585..d9ab953): .sa-req::after uses --sa-identity.
 
-### F-577 [P3] fixed - The kept theme was written to a ref during render
+### F-577 [P3] closed - The kept theme was written to a ref during render
 
 **File:** packages/booking-component/booking-window/booking-window.tsx
 **Found:** 2026-10-28 by independent re-review of step 25e.2 (fresh subagent; scope: 31dbc20..4906585)
 **Why it matters:** Breaks React's pure-render rule; a thrown-away render could keep a theme never shown.
 **Suggested fix:** State.
 **Resolution:** fixed 2026-10-28: kept in state, set in an effect; the screen's own theme shows at once.
+Closed 2026-10-28 by independent re-review (fresh subagent, 4906585..d9ab953): the screen's own theme shows in the same render; the kept one only without a business; no flash, never stale.
 
 ### F-578 [P2] open - In dark mode the dashboard's highlight is shaded for a white page
 
@@ -783,4 +787,12 @@ Closed 2026-10-28 by independent re-review (fresh subagent, 31dbc20..4906585): t
 **Found:** 2026-10-28 by independent re-review of step 25e.2 (fresh subagent; scope: 31dbc20..4906585)
 **Why it matters:** Under `data-theme="dark"` the page is about #18191f, and a colour darkened for white reads worse there (amber 3.69, Rose clay 3.73). Nothing in the app sets `data-theme="dark"` today: the CSS exists, the switch does not, so no one can reach it yet.
 **Suggested fix:** When a dark switch is built, set a second, dark-shaded set of the accent tokens under `[data-theme="dark"]` (or compute the shade from the theme in use).
+**Resolution:**
+
+### F-579 [P3] open - On a mid-grey background the window's colour can fall just short on the free days' disc
+
+**File:** packages/booking-component/booking-window/theme-style.ts:37
+**Found:** 2026-10-28 by independent re-review of step 25e.2 (fresh subagent; scope: 4906585..d9ab953)
+**Why it matters:** The outer readableOn picks its direction from the background alone; with a mid-grey background (luminance about 0.15 to 0.25) and text barely readable on it, the shade can read on the background and miss on the disc (#767676, black text, red main: 4.62 and about 4.2). 16 of about 112,000 random pairs; in some no colour reads on both.
+**Suggested fix:** Pick the direction that reads on both surfaces, and refuse such a background and text pair in the schema.
 **Resolution:**
