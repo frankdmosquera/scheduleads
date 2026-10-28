@@ -584,3 +584,19 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** The spec is `verified` and its step says IA a la Orden moved "where the open question says", but Open questions still offers (A) and (B) with no answer. In agency-site-app the move went onto its open branch (option A), split across a1b73d0, the other session's `feat: 12c a call can say what it is about` (the `.npmrc` removal, package.json, lockfile and vendor file), and 15c714d (the AGENTS.md line), where the spec planned one commit. The build log's step 25c.1 records the split, but the archived spec will show a question as open that the feature closed, and a later rollback of 12c in that repo would also undo the window move with nothing in this repo pointing at it.
 **Suggested fix:** Mark the question answered in the spec: option A, on `feature/12c-our-own-cards-on-real-times`, content in a1b73d0 plus 15c714d, both unpushed, so the move goes online when that branch merges.
 **Resolution:**
+
+### F-553 [P3] open - A new dashboard against the old API refuses every service save until the API is live
+
+**File:** deploy order (Vercel and Railway build the same push)
+**Found:** 2026-10-27 by independent review (fresh subagent; scope: 725c801..041d67c)
+**Why it matters:** The new form sends `priceCents` and `priceFrom`; the old API's strict schema refuses them, and `PUT /settings/services/currency` is a 404 there, for the minutes Vercel is live before Railway.
+**Suggested fix:** Deploy the backend first, or accept the few minutes.
+**Resolution:**
+
+### F-557 [P3] open - A hand-made Settings call that clears a "From" price without sending priceFrom gets a 500
+
+**File:** packages/shared/zod-validation/booking-links-validation-schemas/service-validation-schema.ts:58-63; backend/lib/settings/save-service.ts:38; packages/shared/db/booking-tables/booking-link-table.ts:66
+**Found:** 2026-10-27 by independent re-review (fresh subagent; scope: 041d67c..905a626)
+**Why it matters:** With both price fields optional, a body with `priceCents: null` and no `priceFrom`, on a service saved as "From $150", passes the refine, and the update breaks `booking_link_price_from_check`: a 500 instead of a 400. The dashboard's form always sends both and an older form neither, so only a hand-made call reaches it.
+**Suggested fix:** A refine that takes both price fields or neither.
+**Resolution:**

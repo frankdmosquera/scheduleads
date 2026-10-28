@@ -200,9 +200,11 @@ describe("the documented shape", () => {
           "durationMinutes",
           "id",
           "name",
+          "price",
           "slug",
         ].sort()
       );
+      expect(link.price).toBeNull(); // the seed business has no currency
     }
   });
 
@@ -224,6 +226,7 @@ describe("the documented shape", () => {
         "layout",
         "name",
         "personChoice",
+        "price",
         "slug",
       ].sort()
     );
@@ -240,6 +243,43 @@ describe("the documented shape", () => {
       ].sort()
     );
     expect(body.availability.timezone).toBe("America/Edmonton");
+  });
+
+  test("a service's price comes with the business's currency, and none without one", async () => {
+    const [painting] = await db
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.slug, "painting-dev"));
+    const link = and(
+      eq(bookingLink.organizationId, painting!.id),
+      eq(bookingLink.id, paintingLinkId)
+    );
+    await db.update(bookingLink).set({ priceCents: 15000, priceFrom: true }).where(link);
+    try {
+      const noCurrency = await (
+        await get(`/public/painting-dev/booking-links/${paintingLinkId}`)
+      ).json();
+      expect(noCurrency.bookingLink.price).toBeNull();
+
+      await db
+        .update(organization)
+        .set({ currency: "CAD" })
+        .where(eq(organization.id, painting!.id));
+      const one = await (await get(`/public/painting-dev/booking-links/${paintingLinkId}`)).json();
+      const list = await (await get("/public/painting-dev/booking-links")).json();
+      const price = { cents: 15000, from: true, currency: "CAD" };
+      expect(one.bookingLink.price).toEqual(price);
+      expect(list.bookingLinks.find((l: { id: string }) => l.id === paintingLinkId).price).toEqual(
+        price
+      );
+      expect(Object.keys(list.business)).not.toContain("currency"); // answered inside each price
+    } finally {
+      await db.update(bookingLink).set({ priceCents: null, priceFrom: false }).where(link);
+      await db
+        .update(organization)
+        .set({ currency: null })
+        .where(eq(organization.id, painting!.id));
+    }
   });
 
   test("no answer carries organizationId, or whose week answered", async () => {

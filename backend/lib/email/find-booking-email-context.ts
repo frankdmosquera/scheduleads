@@ -9,6 +9,7 @@ import { booking, bookingLink, contact, lead, resource } from "@scheduleads-app/
 
 import { db } from "../../database.js";
 import type { BookingEmailFactsType } from "../../emails/booking-email-facts-type.js";
+import { publicPriceOf } from "../booking/public-price-of.js";
 import { findBusinessEmailDetails } from "./find-business-email-details.js";
 import { readAgencyBookingKey } from "./read-agency-booking-key.js";
 import { resolveBusinessSender } from "./resolve-business-sender.js";
@@ -53,6 +54,8 @@ export async function findBookingEmailContext(
       location: booking.location,
       language: booking.language,
       service: bookingLink.name,
+      priceCents: bookingLink.priceCents,
+      priceFrom: bookingLink.priceFrom,
       personName: resource.name,
       personWorkEmail: resource.workEmail,
       contactId: contact.id,
@@ -138,6 +141,7 @@ export async function findBookingEmailContext(
         },
         language: row.language,
         service: row.service,
+        price: publicPriceOf(row.priceCents, row.priceFrom, business.currency),
         startsAt: row.startsAt,
         personName: row.personName,
         location: row.location,

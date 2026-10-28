@@ -1,11 +1,17 @@
 // Backend: what the owner's Services page shows: every service of the business, live or hidden,
 // with who is ticked on each, every person and place to tick from, the business's time zone for
 // the bookings a new length lists, and when each service runs, with the business's week to start a
-// service's own from (feature 12k).
+// service's own from (feature 12k), and the currency its prices are in (feature 25d).
 
 import { and, asc, eq, isNull } from "drizzle-orm";
 
-import { availabilityRule, bookingLink, resource, serviceHours } from "@scheduleads-app/shared/db";
+import {
+  availabilityRule,
+  bookingLink,
+  organization,
+  resource,
+  serviceHours,
+} from "@scheduleads-app/shared/db";
 import type {
   PersonHoursType,
   ServiceType,
@@ -38,6 +44,8 @@ export const serviceSettingsColumns = {
   slotIntervalMinutes: bookingLink.slotIntervalMinutes,
   personChoice: bookingLink.personChoice,
   addressMode: bookingLink.addressMode,
+  priceCents: bookingLink.priceCents,
+  priceFrom: bookingLink.priceFrom,
   active: bookingLink.active,
 };
 
@@ -47,8 +55,9 @@ export async function findServicesSettings(organizationId: string): Promise<{
   timezone: string | null; // null until the business's hours are first saved
   businessWeek: WeeklyHoursType | null; // null until the business's hours are first saved
   serviceHours: ({ serviceId: string } & PersonHoursType)[]; // a service not listed runs whenever open
+  currency: string | null; // the one its prices are in (feature 25d); null: no price shows
 }> {
-  const [rows, people, [hours], hoursRows] = await Promise.all([
+  const [rows, people, [hours], hoursRows, [business]] = await Promise.all([
     db
       .select(serviceSettingsColumns)
       .from(bookingLink)
@@ -77,6 +86,10 @@ export async function findServicesSettings(organizationId: string): Promise<{
       })
       .from(serviceHours)
       .where(eq(serviceHours.organizationId, organizationId)),
+    db
+      .select({ currency: organization.currency })
+      .from(organization)
+      .where(eq(organization.id, organizationId)),
   ]);
   const ticks = await findServiceTicks(
     db,
@@ -89,5 +102,6 @@ export async function findServicesSettings(organizationId: string): Promise<{
     timezone: hours?.timezone ?? null,
     businessWeek: hours?.weeklyHours ?? null,
     serviceHours: hoursRows,
+    currency: business?.currency ?? null,
   };
 }

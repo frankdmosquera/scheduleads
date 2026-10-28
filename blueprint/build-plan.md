@@ -584,6 +584,21 @@ booking with no one at the agency involved.
     in Booking CRM packs a new version and copies it into a site. Face and
     Body and IA a la Orden move over, and their Vercel token goes. Why: every
     new client site needed Frank's GitHub token in Vercel
+  - [x] 25d. **A service shows its price** (Frank, Oct 27, built now, as 25a
+    to 25c were) - each service may carry a price (an amount, "starts
+    from"), in the business's one currency, set in Settings > Services and
+    the setup file, and shown on the booking window's card, its details and
+    done screens and the confirmation email; a service with none shows none.
+    A tap outside the window closes it, as on Cal.com. Face and
+    Body's 37 prices go into her setup file. Why: her live window showed
+    "Carbon Peel, 45 minutes" with no price, and no owner could set one
+  - [ ] 25e. **The business's look** (Frank, Oct 27) - the owner sets the
+    business's logo, a colour theme and, if she wants, a picture per
+    service, in Settings; the booking window, her dashboard and the emails
+    all wear them, so a site's colours no longer live only in its own CSS.
+    Pictures are uploaded and kept by Booking CRM. Face and Body gets her
+    logo, colours and light free photos for her services. Why: no owner can
+    set a logo or colours, and the window looks the same for every business
 - [ ] 26. **Two-way Gmail sync** - after 22. The owner's mailbox threads land
   on the contact timeline
 

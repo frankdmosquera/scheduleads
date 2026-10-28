@@ -38,6 +38,9 @@ export const bookingLink = pgTable(
     // Whether the window asks the customer's address, and must have it; the business's choice per
     // service, so no default (decision 30).
     addressMode: text("addressMode", { enum: ["required", "optional", "not_asked"] }).notNull(),
+    // Its price (feature 25d) in hundredths of the business currency: 15000 is 150. None: no price.
+    priceCents: integer("priceCents"),
+    priceFrom: boolean("priceFrom").notNull().default(false), // "From $150": it can cost more
     active: boolean("active").notNull().default(true), // inactive reads as absent publicly
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true })
@@ -57,6 +60,11 @@ export const bookingLink = pgTable(
     check(
       "booking_link_slot_interval_check",
       sql`${table.slotIntervalMinutes} is null or ${table.slotIntervalMinutes} > 0`
+    ),
+    check("booking_link_price_check", sql`${table.priceCents} is null or ${table.priceCents} >= 0`),
+    check(
+      "booking_link_price_from_check",
+      sql`${table.priceFrom} = false or ${table.priceCents} is not null`
     ),
     // The week strip (prototypes/modal-primo.html) comes back as one more value here.
     check("booking_link_layout_check", sql`${table.layout} in ('month')`),

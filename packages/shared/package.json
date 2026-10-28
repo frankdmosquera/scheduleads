@@ -28,6 +28,10 @@
       "types": "./dist/helpers/format-booking-time.d.ts",
       "default": "./dist/helpers/format-booking-time.js"
     },
+    "./format-price": {
+      "types": "./dist/helpers/format-price.d.ts",
+      "default": "./dist/helpers/format-price.js"
+    },
     "./local-date": {
       "types": "./dist/helpers/local-date.d.ts",
       "default": "./dist/helpers/local-date.js"

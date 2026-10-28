@@ -9,6 +9,8 @@ export type EmailWordsType = {
   when: string;
   with: string;
   where: string;
+  price: string;
+  priceFrom(price: string): string; // "From $150": the service can cost more (feature 25d)
   whenItWas: string;
   newTime: string;
   movedFrom: string;
@@ -59,6 +61,8 @@ const english: EmailWordsType = {
   when: "When",
   with: "With",
   where: "Where",
+  price: "Price",
+  priceFrom: (price) => `From ${price}`,
   whenItWas: "When it was",
   newTime: "New time",
   movedFrom: "Moved from",
@@ -117,6 +121,8 @@ const spanish: EmailWordsType = {
   when: "Cuándo",
   with: "Con",
   where: "Dónde",
+  price: "Precio",
+  priceFrom: (price) => `Desde ${price}`,
   whenItWas: "Cuándo era",
   newTime: "Nueva hora",
   movedFrom: "Antes era",

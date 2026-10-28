@@ -244,6 +244,15 @@ export const spanishMessages: Record<string, string> = {
   "Tick at most 500 {}.": "Marque como máximo 500 {}.",
   "Tick each of the {} once.": "Cada uno se marca una sola vez.",
   "Use whole minutes.": "Use minutos enteros.",
+  "Write the price as a number, like 150 or 12.50.":
+    "Escriba el precio como un número, por ejemplo 150 o 12.50.",
+  "A price can't be below 0.": "Un precio no puede ser menor que 0.",
+  "That price is too high.": "Ese precio es demasiado alto.",
+  "Give a price before ticking Starts from.": "Ponga un precio antes de marcar Desde.",
+  "Pick a currency from the list.": "Elija una moneda de la lista.",
+  "At most 2 decimals.": "Como máximo 2 decimales.",
+  "Give a price before priceFrom.": "Ponga un precio antes de priceFrom.",
+  "A price needs the file's currency.": "Un precio necesita la moneda del archivo.",
   "A service takes at least a minute.": "Un servicio dura al menos un minuto.",
   "A service fits in one day: 1440 minutes at most.":
     "Un servicio cabe en un día: como máximo 1440 minutos.",

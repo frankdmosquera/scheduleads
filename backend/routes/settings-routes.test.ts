@@ -522,6 +522,47 @@ describe("the Services settings", () => {
     expect(services.map((service) => service.name)).not.toContain(cabinet.name);
   });
 
+  test("saves the business's currency and a service's price, and refuses Starts from alone", async () => {
+    const currency = await put("/settings/services/currency", summit.email, { currency: "CAD" });
+    expect(await currency.json()).toEqual({ currency: "CAD" });
+    const unknownCurrency = await put("/settings/services/currency", summit.email, {
+      currency: "XYZ",
+    });
+    expect(unknownCurrency.status).toBe(400);
+    const notAllowed = await put("/settings/services/currency", helper.email, { currency: "USD" });
+    expect(notAllowed.status).toBe(403);
+
+    const priced = (await (
+      await post("/settings/services", summit.email, {
+        ...cabinet,
+        name: "Priced cabinets",
+        priceCents: 15000,
+        priceFrom: true,
+      })
+    ).json()) as SavedServiceType & { service: { priceCents: number; priceFrom: boolean } };
+    expect(priced.service).toMatchObject({ priceCents: 15000, priceFrom: true });
+    const read = (await (await get("/settings/services", summit.email)).json()) as {
+      currency: string;
+    };
+    expect(read.currency).toBe("CAD");
+
+    const fromAlone = await put(`/settings/services/${priced.service.id}`, summit.email, {
+      ...cabinet,
+      priceCents: null,
+      priceFrom: true,
+    });
+    expect(fromAlone.status).toBe(400);
+    // A form from before prices sends none: the saved price stays.
+    const older = await put(`/settings/services/${priced.service.id}`, summit.email, cabinet);
+    expect(await older.json()).toMatchObject({ service: { priceCents: 15000, priceFrom: true } });
+    const cleared = await put(`/settings/services/${priced.service.id}`, summit.email, {
+      ...cabinet,
+      priceCents: null,
+      priceFrom: false,
+    });
+    expect(await cleared.json()).toMatchObject({ service: { priceCents: null, priceFrom: false } });
+  });
+
   test("another business's service gets the 404", async () => {
     const theirs = (await (
       await post("/settings/services", other.email, cabinet)

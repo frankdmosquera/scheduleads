@@ -8,6 +8,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { formatPrice } from "@scheduleads-app/shared/format-price";
 import type { PersonHoursType } from "@scheduleads-app/shared/zod-validation";
 
 import { CentredCardNotice } from "@/components/centred-card/centred-card-notice";
@@ -15,6 +16,7 @@ import { ListedBookings, type ListedBookingsType } from "@/components/settings/l
 import { ownHoursLine } from "@/components/settings/own-hours-fields";
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
 import { ServiceForm, type ServiceSaveOutcomeType } from "@/components/settings/service-form";
+import { ServicesCurrencyPicker } from "@/components/settings/services-currency-picker";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,9 +41,10 @@ const byName = (a: ServiceSettingsType, b: ServiceSettingsType) => a.name.locale
 const NO_OWN_HOURS: PersonHoursType = { weeklyHours: null, dateHours: [] };
 
 function ServicesList({ settings }: { settings: ServicesSettingsType }) {
-  const { words } = useDashboardWords();
+  const { words, language } = useDashboardWords();
   const { servicesWords, hoursWords } = words;
   const [services, setServices] = useState(settings.services);
+  const [currency, setCurrency] = useState(settings.currency); // every price's (feature 25d)
   // When each service runs (feature 12k); one not listed runs whenever the business is open.
   const [hoursOf, setHoursOf] = useState(
     () =>
@@ -129,14 +132,27 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
     setOpen(which);
   };
 
+  // "$150" or "From $150" in the dashboard's language; null: none shown.
+  const priceLine = (service: ServiceSettingsType) => {
+    if (service.priceCents == null || currency === null) return null;
+    const amount = formatPrice(service.priceCents, currency, language);
+    return service.priceFrom ? servicesWords.priceFrom(amount) : amount;
+  };
+
   return (
     <div className="flex flex-col gap-3">
+      <ServicesCurrencyPicker
+        currency={currency}
+        canEdit={settings.canEdit && !saving}
+        onSaved={setCurrency}
+      />
       {!settings.canEdit ? (
         <CentredCardNotice tone="info">{servicesWords.cannotChange}</CentredCardNotice>
       ) : open === "new" ? (
         <ServiceForm
           service={null}
           people={settings.people}
+          currency={currency}
           hours={null}
           businessWeek={settings.businessWeek}
           onHoursSaved={() => {}}
@@ -171,6 +187,7 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
                 <ServiceForm
                   service={service}
                   people={settings.people}
+                  currency={currency}
                   hours={hasHours ? (hoursOf.get(service.id) ?? NO_OWN_HOURS) : null}
                   businessWeek={settings.businessWeek}
                   onHoursSaved={(hours) => setHoursOf((map) => new Map(map).set(service.id, hours))}
@@ -185,7 +202,9 @@ function ServicesList({ settings }: { settings: ServicesSettingsType }) {
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-card px-4 py-3 md:px-6">
                   <span className="font-medium text-foreground">{service.name}</span>
                   <span className="text-sm text-muted-foreground">
-                    {servicesWords.minutes(service.durationMinutes)}
+                    {[servicesWords.minutes(service.durationMinutes), priceLine(service)]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </span>
                   <span
                     className={

@@ -13,6 +13,7 @@ import {
   serviceStartEveryValidationSchema,
 } from "../booking-links-validation-schemas/service-validation-schema.js";
 import { bookingLanguageValidationSchema } from "../booking-links-validation-schemas/booking-language-validation-schema.js";
+import { currencyValidationSchema } from "../booking-links-validation-schemas/currency-validation-schema.js";
 import { contactRuleValidationSchema } from "../crm-validation-schemas/contact-rule-validation-schema.js";
 import { setupQuestionsValidationSchema } from "../crm-validation-schemas/booking-questions-validation-schema.js";
 import { textSettingsValidationSchema } from "../text-validation-schemas/text-settings-validation-schema.js";
@@ -57,8 +58,23 @@ export const setupServiceValidationSchema = z
     bufferAfterMinutes: serviceBufferValidationSchema.optional(),
     slotIntervalMinutes: serviceStartEveryValidationSchema.optional(), // minutes between start times; missing = every service length
     ticked: z.array(nameValidationSchema).optional(), // who does what, by name; no person = every person listed (feature 12k)
+    // Its price in the file's currency, as written on the price list (150, 12.5); feature 25d.
+    price: z
+      .number()
+      .min(0)
+      .max(1_000_000)
+      .refine(
+        (price) => Number.isInteger(Math.round(price * 100 * 1e6) / 1e6),
+        "At most 2 decimals."
+      )
+      .optional(),
+    priceFrom: z.literal(true).optional(), // "From $150": it can cost more
   })
-  .strict();
+  .strict()
+  .refine((service) => !service.priceFrom || service.price !== undefined, {
+    message: "Give a price before priceFrom.",
+    path: ["priceFrom"],
+  });
 
 export const clientSetupValidationSchema = z
   .object({
@@ -66,6 +82,7 @@ export const clientSetupValidationSchema = z
     personChoice: z.enum(["customer_picks", "business_assigns"]),
     contactRule: contactRuleValidationSchema, // what a customer must leave: email, phone or either
     language: bookingLanguageValidationSchema.optional(), // its owner's emails (feature 12i); left out: English
+    currency: currencyValidationSchema.optional(), // its prices' (feature 25d); left out: no prices
     questions: setupQuestionsValidationSchema, // the Settings page's own rules
     texts: textSettingsValidationSchema.optional(), // the agency's texting number and first choices
     hours: setupHoursValidationSchema,
@@ -76,6 +93,10 @@ export const clientSetupValidationSchema = z
   .refine(
     (setup) => new Set(setup.people.map((person) => person.name)).size === setup.people.length,
     { message: "The same person or place is listed twice.", path: ["people"] }
+  )
+  .refine(
+    (setup) => setup.currency !== undefined || setup.services.every((s) => s.price === undefined),
+    { message: "A price needs the file's currency.", path: ["currency"] }
   );
 
 export type ClientSetupInputType = z.input<typeof clientSetupValidationSchema>;

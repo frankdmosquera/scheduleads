@@ -22,6 +22,7 @@ const facts: BookingEmailFactsType = {
   },
   language: "en",
   service: "Exterior painting estimate",
+  price: null,
   startsAt: new Date("2026-10-08T15:00:00Z"),
   personName: "Marco",
   location: "12 Main Street, Calgary",
@@ -75,6 +76,23 @@ describe("the customer's confirmation", () => {
     expect(email.subject).toContain("Thursday, October 8 at 11:00 a.m. EDT");
     expect(email.html).toContain("Thursday, October 8 at 11:00 a.m. EDT");
     expect(email.text).toContain("Thursday, October 8 at 11:00 a.m. EDT");
+  });
+
+  test("says the price when the service has one, and no Price line when it has none", async () => {
+    const priced = await renderBookingConfirmation(
+      { ...facts, price: { cents: 15000, from: false, currency: "CAD" } },
+      bookingPage
+    );
+    const from = await renderBookingConfirmation(
+      { ...facts, language: "es", price: { cents: 4500000, from: true, currency: "COP" } },
+      bookingPage
+    );
+    const none = await renderBookingConfirmation(facts, bookingPage);
+
+    expect(priced.text).toMatch(/Price\s+\$150/);
+    expect(priced.html).toContain("$150");
+    expect(from.text.replace(/\s/g, " ")).toContain("Desde $ 45.000");
+    expect(none.text).not.toContain("Price");
   });
 
   test("the plain-text twin names the business even with a logo and no phone", async () => {

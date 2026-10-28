@@ -125,7 +125,11 @@ async function findDifferences(
 
   // Set by the apply only while the business has no service; after that a different one is listed.
   const [business] = await tx
-    .select({ contactRule: organization.contactRule, language: organization.language })
+    .select({
+      contactRule: organization.contactRule,
+      language: organization.language,
+      currency: organization.currency,
+    })
     .from(organization)
     .where(eq(organization.id, organizationId));
   const [anyService] = await tx
@@ -135,6 +139,8 @@ async function findDifferences(
     .limit(1);
   if (anyService) differs("contactRule", business?.contactRule, setup.contactRule);
   if (anyService && setup.language) differs("language", business?.language, setup.language);
+  // Filled while the business has none (feature 25d); after that it is the owner's.
+  if (business?.currency && setup.currency) differs("currency", business.currency, setup.currency);
 
   // Texts already there are the owner's: a file that says otherwise is listed, never applied.
   const [texts] = await tx
@@ -178,6 +184,11 @@ async function findDifferences(
     );
     differs(`"${service.name}", addressMode`, saved.addressMode, service.addressMode);
     differs(`"${service.name}", personChoice`, saved.personChoice, setup.personChoice);
+    // A price is filled while the service has none; a different one already there is the owner's.
+    if (saved.priceCents !== null && service.price !== undefined) {
+      differs(`"${service.name}", price`, saved.priceCents, Math.round(service.price * 100));
+      differs(`"${service.name}", priceFrom`, saved.priceFrom, service.priceFrom ?? false);
+    }
   }
 
   for (const person of setup.people) {

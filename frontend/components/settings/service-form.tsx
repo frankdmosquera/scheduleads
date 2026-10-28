@@ -7,7 +7,7 @@
 
 import { dashboardFormResolver } from "@/lib/dashboard-form-resolver";
 import { useEffect, useRef, useState } from "react";
-import { Controller, useForm, type DefaultValues } from "react-hook-form";
+import { Controller, useForm, useWatch, type DefaultValues } from "react-hook-form";
 
 import {
   serviceValidationSchema,
@@ -21,6 +21,7 @@ import { ChoiceField } from "@/components/settings/choice-field";
 import type { ListedBookingsType } from "@/components/settings/listed-bookings";
 import { OwnHoursPart, type OwnHoursPartHandleType } from "@/components/settings/own-hours-part";
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
+import { ServicePriceField } from "@/components/settings/service-price-field";
 import { TicksField } from "@/components/settings/ticks-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,8 @@ const NEW_SERVICE: DefaultValues<ServiceInputType> = {
   bufferBeforeMinutes: 0,
   bufferAfterMinutes: 0,
   slotIntervalMinutes: null,
+  priceCents: null, // no price until the owner types one
+  priceFrom: false,
   active: true,
 };
 
@@ -112,6 +115,8 @@ function formValuesOf(service: ServiceSettingsType): ServiceInputType {
     slotIntervalMinutes: service.slotIntervalMinutes,
     personChoice: service.personChoice,
     addressMode: service.addressMode,
+    priceCents: service.priceCents,
+    priceFrom: service.priceFrom,
     active: service.active,
   };
 }
@@ -119,6 +124,7 @@ function formValuesOf(service: ServiceSettingsType): ServiceInputType {
 export function ServiceForm({
   service,
   people,
+  currency,
   hours,
   businessWeek,
   onHoursSaved,
@@ -128,6 +134,7 @@ export function ServiceForm({
   onSavingChange,
 }: {
   service: ServiceSettingsType | null; // null: a new one
+  currency: string | null; // the business's, which its price is in; null: no price can be typed
   people: ServicesSettingsType["people"]; // every person and place, to tick
   // When it runs; null shows no hours part: a new service runs whenever the business is open.
   hours: PersonHoursType | null;
@@ -257,6 +264,10 @@ export function ServiceForm({
       : onCancel();
 
   const errors = form.formState.errors;
+  const [priceCents, priceFrom] = useWatch({
+    control: form.control,
+    name: ["priceCents", "priceFrom"],
+  });
   const { ref: nameFieldRef, ...nameField } = form.register("name", {
     onChange: () => setNotice(null),
   });
@@ -415,6 +426,26 @@ export function ServiceForm({
               ) : null}
             </fieldset>
           )}
+        />
+
+        <ServicePriceField
+          idBase={idBase}
+          currency={currency}
+          cents={priceCents ?? null}
+          from={priceFrom ?? false}
+          onCents={(cents) => {
+            setNotice(null);
+            form.setValue("priceCents", cents, { shouldDirty: true });
+            form.clearErrors("priceCents");
+          }}
+          onFrom={(from) => {
+            setNotice(null);
+            form.setValue("priceFrom", from, { shouldDirty: true });
+            form.clearErrors("priceFrom");
+          }}
+          priceError={errors.priceCents?.message}
+          fromError={errors.priceFrom?.message}
+          disabled={!canEdit}
         />
 
         <Controller
