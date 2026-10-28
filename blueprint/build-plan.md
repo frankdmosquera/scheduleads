@@ -592,7 +592,7 @@ booking with no one at the agency involved.
     A tap outside the window closes it, as on Cal.com. Face and
     Body's 37 prices go into her setup file. Why: her live window showed
     "Carbon Peel, 45 minutes" with no price, and no owner could set one
-  - [ ] 25e. **The business's look** (Frank, Oct 27) - the owner sets the
+  - [x] 25e. **The business's look** (Frank, Oct 27) - the owner sets the
     business's logo, a colour theme and, if she wants, a picture per
     service, in Settings; the booking window, her dashboard and the emails
     all wear them, so a site's colours no longer live only in its own CSS.
