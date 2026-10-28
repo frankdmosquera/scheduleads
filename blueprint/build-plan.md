@@ -596,7 +596,9 @@ booking with no one at the agency involved.
     business's logo, a colour theme and, if she wants, a picture per
     service, in Settings; the booking window, her dashboard and the emails
     all wear them, so a site's colours no longer live only in its own CSS.
-    Pictures are uploaded and kept by Booking CRM. Face and Body gets her
+    Pictures go to the agency's ImageKit, one folder per business (Frank,
+    Oct 28: a business's own look goes to ImageKit; documents it keeps about
+    its customers will go to R2, later). Face and Body gets her
     logo, colours and light free photos for her services. Why: no owner can
     set a logo or colours, and the window looks the same for every business
 - [ ] 26. **Two-way Gmail sync** - after 22. The owner's mailbox threads land
