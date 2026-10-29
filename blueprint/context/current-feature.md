@@ -4,6 +4,8 @@
 
 **Size:** light - one small piece of logic (three colours become a site's shades) plus wiring in one site; no stored data, no new route, no money or security rule.
 
+**Status:** verified
+
 **Branch:** feature/25f-a-client-s-whole-site-follows-its-look-colours (cut from `chore/face-and-body-photos`, so Face and Body's 37 new photos ride on it)
 
 ## Goal
