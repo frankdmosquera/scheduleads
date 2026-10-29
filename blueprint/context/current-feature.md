@@ -8,6 +8,8 @@ logic, and going live with a paying client's real bookings is a different risk.
 
 **Branch:** feature/13-primo-painters
 
+**Status:** verified
+
 ## Goal
 
 Primo Painters' website (www.primopainters.ca) stops using Calendly. Every Book button and the
@@ -113,7 +115,9 @@ finding. `workflow.checkpointCommits` is enabled: one commit per step, pushed st
   project", starred; a booking without it is refused by the window and by the API; Settings shows
   and saves the words and the choice; a business that set nothing still shows "What would you like
   done?", optional; tests for the rule pass.
-- [ ] **13.4 Primo live.** Open questions 2, 4, 5 and 7 answered first. His business on the live app
+- [ ] **13.4 Primo live.** Carried out inside `/complete`, each live action on Frank's yes: migrations 0040 and
+  0041 on live through his tunnel before the merge, the merge deploying the API, then the steps below;
+  Primo's calendar unticked from IA a la Orden. Every open question was answered first. His business on the live app
   (admin page) with Website `https://www.primopainters.ca`; his file `--live --apply` through
   Frank's tunnel; his branch merged to his `main` on Frank's yes and deployed by Vercel; one real
   booking made on www.primopainters.ca with Frank watching; his Calendly event turned off.
