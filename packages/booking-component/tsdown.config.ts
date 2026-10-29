@@ -5,16 +5,19 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["index.ts"],
+  entry: ["index.ts", "site-colours.ts"],
   format: "esm",
   platform: "browser",
   target: "es2022",
   dts: true,
   outDir: "dist",
   clean: true,
-  // Every export is a client component: a Next host's server components can render them. The
-  // bundle drops each file's own "use client", so it is put back once, at the top.
-  outputOptions: { banner: '"use client";' },
+  // Every export of index is a client component: a Next host's server components can render them.
+  // The bundle drops each file's own "use client", so it is put back once, at its top. The
+  // site-colours entry is for a site's server code, so it never gets it (feature 25f).
+  outputOptions: {
+    banner: (chunk) => (chunk.isEntry && chunk.name === "index" ? '"use client";' : ""),
+  },
   inputOptions: {
     // The shared package's files only define things, so a schema reached through its one
     // zod-validation index but never used (sign-in, client setup) is left out of every site.

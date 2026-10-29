@@ -601,6 +601,14 @@ booking with no one at the agency involved.
     its customers will go to R2, later). Face and Body gets her
     logo, colours and light free photos for her services. Why: no owner can
     set a logo or colours, and the window looks the same for every business
+  - [ ] 25f. **A client's whole site follows its Look colours** (Frank, Oct
+    29) - the booking package gives a site its business's saved colours,
+    the site re-reads them every minute (pages stay static) and works out
+    its own shades from the three; a business that saved none keeps the
+    site's own colours. Every site built from now on carries it. Face and
+    Body is the first, and her Copper / Gold / Espresso preview switch
+    goes. Why: an owner could recolour the booking window but not her own
+    website
 - [ ] 26. **Two-way Gmail sync** - after 22. The owner's mailbox threads land
   on the contact timeline
 
