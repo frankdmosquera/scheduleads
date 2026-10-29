@@ -601,6 +601,14 @@ booking with no one at the agency involved.
     its customers will go to R2, later). Face and Body gets her
     logo, colours and light free photos for her services. Why: no owner can
     set a logo or colours, and the window looks the same for every business
+  - [x] 25f. **A client's whole site follows its Look colours** (Frank, Oct
+    29) - the booking package gives a site its business's saved colours,
+    the site re-reads them every minute (pages stay static) and works out
+    its own shades from the three; a business that saved none keeps the
+    site's own colours. Every site built from now on carries it. Face and
+    Body is the first, and her Copper / Gold / Espresso preview switch
+    goes. Why: an owner could recolour the booking window but not her own
+    website
 - [ ] 26. **Two-way Gmail sync** - after 22. The owner's mailbox threads land
   on the contact timeline
 
@@ -608,6 +616,13 @@ booking with no one at the agency involved.
 
 Nothing above depends on these. Each gets a phase when something does.
 
+- A business picks its website's built-in design choices from its dashboard (Frank, Oct 29,
+  after 25f). As with its colours: a choice its site already has (which hero, how the products
+  or treatments are laid out, card styles, backdrops) is switched on Settings with no rebuild,
+  the page redrawn within a minute; only new or different choices are code and one rebuild, and
+  each client's site can offer its own set. The page draws only the chosen one, read when it is
+  redrawn, so hidden copies never weigh on it or repeat its text for Google (Face and Body's
+  DesignPicker keeps every option in the page today). Face and Body's options are the first set.
 - How messages are offered and paid (Frank, Oct 19). Each business toggles
   its own channels, each toggle showing what it costs and what is included:
   WhatsApp offered at booking or not (the booking asks the customer and

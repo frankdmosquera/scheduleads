@@ -63,6 +63,7 @@ const publicBusinessColumns = {
   backgroundColor: organization.backgroundColor,
   textColor: organization.textColor,
   coloursOn: organization.coloursOn,
+  mainInkColor: organization.mainInkColor, // its look's own text on the main colour (feature 25f)
 };
 
 export const publicBookingLinksRoutes = new Hono()
@@ -91,14 +92,15 @@ export const publicBookingLinksRoutes = new Hono()
     ]);
     if (!business) return c.json(notBookableHere, 404); // the business went between the two reads
 
-    const { currency, brandColor, backgroundColor, textColor, coloursOn, ...face } = business;
+    const { currency, brandColor, backgroundColor, textColor, coloursOn, mainInkColor, ...face } =
+      business;
     return c.json(
       {
         business: {
           ...face,
           questions,
           laterTextsYesWords,
-          theme: publicThemeOf(coloursOn, brandColor, backgroundColor, textColor),
+          theme: publicThemeOf(coloursOn, brandColor, backgroundColor, textColor, mainInkColor),
         },
         bookingLinks: bookingLinks.map(withPrice(currency)),
       },

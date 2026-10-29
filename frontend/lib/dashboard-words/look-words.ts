@@ -34,6 +34,7 @@ export type LookWordsType = {
   reset: string;
   resetColour(colour: string): string;
   notWornYet: string;
+  yourLooks: string;
   palettes: string;
   paletteNames: Record<ColourPaletteType["id"], string>;
   sample: string;
@@ -72,6 +73,7 @@ export const englishLookWords: LookWordsType = {
   resetColour: (colour) => `Reset ${colour.toLowerCase()}`,
   notWornYet:
     "Not shown yet: your window and dashboard keep their own colours until you save these. A main colour already here is the one your emails use.",
+  yourLooks: "Your website's looks",
   palettes: "Start from a palette",
   paletteNames: {
     rose: "Rose clay",
@@ -117,6 +119,7 @@ export const spanishLookWords: LookWordsType = {
   resetColour: (colour) => `Restablecer ${colour.toLowerCase()}`,
   notWornYet:
     "Aún no se muestran: su ventana y su panel conservan sus colores hasta que guarde estos. Un color principal que ya esté aquí es el que usan sus correos.",
+  yourLooks: "Los estilos de su sitio web",
   palettes: "Empezar con una paleta",
   paletteNames: {
     rose: "Rosa arcilla",

@@ -274,6 +274,13 @@
       "when": 1793206361212,
       "tag": "0038_business_colours_on",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1793237788529,
+      "tag": "0039_business_looks",
+      "breakpoints": true
     }
   ]
 }

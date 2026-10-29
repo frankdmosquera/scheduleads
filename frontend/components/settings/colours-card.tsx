@@ -1,5 +1,6 @@
 // Frontend component: the Look page's colours (feature 25e): the main colour, the background and the
-// text, each picked or left as the window's own, with ready palettes that fill all three. A sample
+// text, each picked or left as the window's own, with the business's own website looks first
+// (feature 25f) and ready palettes, each filling all three. A sample
 // button shows them together; Save sends all three, and text too faint on its background comes
 // back refused, under the field. A login that may not change the business only sees them.
 
@@ -7,7 +8,7 @@
 
 import { useId, useState } from "react";
 
-import type { BusinessColoursType } from "@scheduleads-app/shared/zod-validation";
+import type { BusinessColoursType, BusinessLookType } from "@scheduleads-app/shared/zod-validation";
 import { textColorOn } from "@scheduleads-app/shared/text-color-on";
 
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
@@ -24,19 +25,31 @@ const WINDOWS_OWN: Record<ColourKeyType, string> = {
   text: "#18181b",
 };
 
+// The look whose three colours these are, if any.
+const lookOf = (looks: BusinessLookType[], colours: BusinessColoursType) =>
+  looks.find(
+    (look) =>
+      look.main === colours.main &&
+      look.background === colours.background &&
+      look.text === colours.text
+  );
+
 export function ColoursCard({
   colours,
   coloursOn,
+  looks,
   canEdit,
 }: {
   colours: BusinessColoursType;
   coloursOn: boolean; // false: saved nowhere yet, so not worn
+  looks: BusinessLookType[]; // its website's own (feature 25f), offered first
   canEdit: boolean;
 }) {
   const { lookWords, settingsFrameWords } = useDashboardWords().words;
   const setMainColour = useSetMainColour();
   const id = useId();
   const [picked, setPicked] = useState(colours);
+  const pickedLook = lookOf(looks, picked); // a field changed by hand leaves the look
   const [worn, setWorn] = useState(coloursOn);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
@@ -52,7 +65,7 @@ export function ColoursCard({
     setSaving(true);
     setNotice(null);
     setTextError(null);
-    const saved = await saveBusinessColours(picked);
+    const saved = await saveBusinessColours({ ...picked, look: pickedLook?.name ?? null });
     setSaving(false);
     if (saved.state === "field") {
       setTextError(saved.message);
@@ -122,6 +135,34 @@ export function ColoursCard({
         {worn ? null : <p className="mt-1 text-xs text-muted-foreground">{lookWords.notWornYet}</p>}
       </div>
 
+      {canEdit && looks.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium text-muted-foreground">{lookWords.yourLooks}</span>
+          <div className="flex flex-wrap gap-2">
+            {looks.map((look) => (
+              <button
+                key={look.name}
+                type="button"
+                aria-pressed={pickedLook?.name === look.name}
+                onClick={() => {
+                  setNotice(null);
+                  setTextError(null);
+                  setPicked({ main: look.main, background: look.background, text: look.text });
+                }}
+                className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-sm hover:bg-muted aria-pressed:border-primary aria-pressed:bg-[var(--accent-soft)]"
+              >
+                <span
+                  className="size-5 rounded-full border border-border"
+                  style={{ background: look.main }}
+                  aria-hidden="true"
+                />
+                {look.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {canEdit ? (
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-muted-foreground">{lookWords.palettes}</span>
@@ -175,7 +216,7 @@ export function ColoursCard({
         <span className="text-sm">Aa</span>
         <span
           className="rounded-md px-3 py-1.5 text-sm font-medium"
-          style={{ background: main, color: textColorOn(main) }}
+          style={{ background: main, color: pickedLook?.ink ?? textColorOn(main) }}
         >
           {lookWords.sample}
         </span>

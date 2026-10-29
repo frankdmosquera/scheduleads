@@ -17,20 +17,31 @@ const colourValidationSchema = z
   .regex(/^#[0-9a-f]{6}$/, "Use a colour like #b5838d.")
   .nullable();
 
+const coloursShape = {
+  main: colourValidationSchema,
+  background: colourValidationSchema,
+  text: colourValidationSchema,
+};
+
+const readable = ({ background, text }: { background: string | null; text: string | null }) =>
+  contrastRatio(background ?? WINDOW_BACKGROUND, text ?? WINDOW_TEXT) >= READABLE;
+const tooFaint = {
+  message: "That text is too faint on that background to read. Pick a darker or lighter one.",
+  path: ["text"],
+};
+
 export const businessColoursValidationSchema = z
-  .object({
-    main: colourValidationSchema,
-    background: colourValidationSchema,
-    text: colourValidationSchema,
-  })
+  .object(coloursShape)
   .strict()
-  .refine(
-    ({ background, text }) =>
-      contrastRatio(background ?? WINDOW_BACKGROUND, text ?? WINDOW_TEXT) >= READABLE,
-    {
-      message: "That text is too faint on that background to read. Pick a darker or lighter one.",
-      path: ["text"],
-    }
-  );
+  .refine(readable, tooFaint);
 
 export type BusinessColoursType = z.output<typeof businessColoursValidationSchema>;
+
+// What Settings > Look sends (feature 25f): the colours, and the name of the business's own look
+// they were picked from, if any; the API keeps that look's ink only when the colours are its own.
+export const saveBusinessColoursValidationSchema = z
+  .object({ ...coloursShape, look: z.string().trim().min(1).max(30).nullable().optional() })
+  .strict()
+  .refine(readable, tooFaint);
+
+export type SaveBusinessColoursType = z.output<typeof saveBusinessColoursValidationSchema>;

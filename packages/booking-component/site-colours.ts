@@ -1,0 +1,26 @@
+// Booking component, for a site's server code: its business's Look colours on its whole website
+// (feature 25f). Its own entry, never "use client", so a server layout can call it.
+//
+// In a Next site's root layout (a server component), read them once a minute, pages stay static:
+//
+//   import { fetchSiteColours, siteColourTokens } from "@frankdmosquera/booking-component/site-colours";
+//
+//   const theme = await fetchSiteColours(apiUrl, slug, { next: { revalidate: 60 } });
+//   const tokens = siteColourTokens(theme, { light: "<the site's lightest>", dark: "<its darkest>" });
+//   <html style={tokens as CSSProperties} data-site-colours="main bg text">  (only those saved)
+//
+// A site with hand-made looks keeps them: when the saved main colour is one of theirs, it shows
+// that look exactly and sets no token (Face and Body's app/layout.tsx). Otherwise its stylesheet
+// works its own colours out of the tokens, one rule per saved colour:
+// :root[data-site-colours~="main"] from --site-main (buttons, accents), --site-main-ink (text on
+// it) and --site-main-text (the main colour as readable text); ~="bg" from --site-bg; ~="text"
+// from --site-text. Face and Body's app/globals.css is the worked example. With none saved, or
+// the API unreachable, nothing is set and the site keeps its own colours.
+
+export { fetchSiteColours } from "./api-client/fetch-site-colours.js";
+export {
+  siteColourTokens,
+  type SiteColourTokensType,
+  type SiteInksType,
+  type SiteThemeType,
+} from "./site-colours/site-colour-tokens.js";

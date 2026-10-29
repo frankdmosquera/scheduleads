@@ -108,7 +108,11 @@ function BookingConfirmationEmail({
       >
         {words.needToChange}
       </Text>
-      <EmailButton href={bookingPageUrl} color={brand}>
+      <EmailButton
+        href={bookingPageUrl}
+        color={brand}
+        ink={business.brandColor ? business.brandInk : null}
+      >
         {words.manageBooking}
       </EmailButton>
 

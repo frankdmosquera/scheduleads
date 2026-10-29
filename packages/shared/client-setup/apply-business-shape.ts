@@ -228,6 +228,10 @@ export async function applyBusinessShape(
       logo: organization.logo,
       coloursOn: organization.coloursOn,
       brandColor: organization.brandColor,
+      backgroundColor: organization.backgroundColor,
+      textColor: organization.textColor,
+      looks: organization.looks,
+      mainInkColor: organization.mainInkColor,
     })
     .from(organization)
     .where(eq(organization.id, organizationId));
@@ -241,7 +245,28 @@ export async function applyBusinessShape(
     !!colours &&
     !!(colours.main || colours.background || colours.text) &&
     (business.brandColor === null || business.brandColor === colours.main);
-  if (currencyMade || logoMade || coloursMade)
+  // Its website's own looks, while it has none (feature 25f); and when its colours are one of them,
+  // that look's own text on the main colour, while none is kept.
+  const looks = shape.look?.looks ?? [];
+  const looksMade = business?.looks.length === 0 && looks.length > 0;
+  const worn =
+    coloursMade && colours
+      ? colours
+      : business?.coloursOn
+        ? {
+            main: business.brandColor,
+            background: business.backgroundColor,
+            text: business.textColor,
+          }
+        : null;
+  const wornLook = worn
+    ? looks.find(
+        (look) =>
+          look.main === worn.main && look.background === worn.background && look.text === worn.text
+      )
+    : undefined;
+  const inkMade = business?.mainInkColor === null && wornLook !== undefined;
+  if (currencyMade || logoMade || coloursMade || looksMade || inkMade)
     await tx
       .update(organization)
       .set({
@@ -255,6 +280,8 @@ export async function applyBusinessShape(
               coloursOn: true,
             }
           : {}),
+        ...(looksMade ? { looks } : {}),
+        ...(inkMade && wornLook ? { mainInkColor: wornLook.ink } : {}),
       })
       .where(eq(organization.id, organizationId));
 
@@ -352,6 +379,8 @@ export async function applyBusinessShape(
     currencyMade && `the currency, ${shape.currency}`,
     logoMade && "the logo",
     coloursMade && "the colours",
+    looksMade && `${looks.length} looks`,
+    inkMade && wornLook && `the ${wornLook.name} look's button text`,
     textsMade && "text settings",
     !existingBusinessHours && "business hours",
     peopleMade && `${peopleMade} people and places`,

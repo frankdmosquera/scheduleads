@@ -2350,4 +2350,60 @@ describe("the business's colours (feature 25e)", () => {
     });
     expect(await cleared.json()).toEqual({ main: null, background: null, text: null });
   });
+
+  test("a look picked keeps its own button text; any other colours keep none (feature 25f)", async () => {
+    const copper = {
+      name: "Copper",
+      main: "#c0704f",
+      background: "#f7f2ea",
+      text: "#1c1a17",
+      ink: "#fffdf9",
+    };
+    const inkNow = async () =>
+      (
+        await db
+          .select({ ink: organization.mainInkColor })
+          .from(organization)
+          .where(eq(organization.id, summit.organizationId))
+      )[0]?.ink;
+    await db
+      .update(organization)
+      .set({ looks: [copper] })
+      .where(eq(organization.id, summit.organizationId));
+    try {
+      const read = (await (await get("/settings/look", summit.email)).json()) as {
+        looks: unknown[];
+      };
+      expect(read.looks).toEqual([copper]);
+      const colours = { main: copper.main, background: copper.background, text: copper.text };
+
+      await put("/settings/look/colours", summit.email, { ...colours, look: "Copper" });
+      expect(await inkNow()).toBe("#fffdf9");
+      // the same colours picked by hand: worked out again
+      await put("/settings/look/colours", summit.email, { ...colours, look: null });
+      expect(await inkNow()).toBeNull();
+      // a look's name sent with colours that are not its own keeps nothing
+      await put("/settings/look/colours", summit.email, {
+        ...colours,
+        main: "#a05030",
+        look: "Copper",
+      });
+      expect(await inkNow()).toBeNull();
+      // a name the business has no look by keeps nothing
+      await put("/settings/look/colours", summit.email, { ...colours, look: "Gold" });
+      expect(await inkNow()).toBeNull();
+    } finally {
+      await db
+        .update(organization)
+        .set({
+          looks: [],
+          mainInkColor: null,
+          brandColor: null,
+          backgroundColor: null,
+          textColor: null,
+          coloursOn: false,
+        })
+        .where(eq(organization.id, summit.organizationId));
+    }
+  });
 });

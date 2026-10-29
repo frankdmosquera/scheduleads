@@ -152,7 +152,11 @@ function BookingNotificationEmail({
       ))}
 
       {customer.phone ? (
-        <EmailButton href={telHref(customer.phone)} color={brand}>
+        <EmailButton
+          href={telHref(customer.phone)}
+          color={brand}
+          ink={business.brandColor ? business.brandInk : null}
+        >
           {words.call(customer.name)}
         </EmailButton>
       ) : null}

@@ -98,7 +98,12 @@ export async function passOnReply(organizationId: string, messageSid: string): P
       if (!record.emailSentAt) {
         try {
           const email = await renderTextReplyNotification({
-            business: { name: business.name, logo: business.logo, brandColor: business.brandColor },
+            business: {
+              name: business.name,
+              logo: business.logo,
+              brandColor: business.brandColor,
+              brandInk: business.brandInk,
+            },
             senderName,
             number: readablePhoneNumber(message.from),
             words: message.body,

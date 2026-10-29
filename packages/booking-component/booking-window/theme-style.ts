@@ -37,7 +37,8 @@ export function themeStyle(theme: BookingBusinessType["theme"] | undefined): CSS
   const identity = readableOn(readableOn(action, surface2), background);
   const style: Record<string, string> = {
     "--sa-action": action,
-    "--sa-action-ink": textColorOn(action),
+    // Its look's own text on the main colour when it has one (feature 25f), else worked out.
+    "--sa-action-ink": (theme.main && theme.mainInk) || textColorOn(action),
     "--sa-identity": identity,
     "--sa-identity-ink": textColorOn(identity),
   };

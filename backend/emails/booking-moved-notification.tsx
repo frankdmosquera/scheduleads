@@ -100,7 +100,11 @@ function BookingMovedNotificationEmail({
       {facts.location ? <EmailField label={words.address}>{facts.location}</EmailField> : null}
 
       {customer.phone ? (
-        <EmailButton href={telHref(customer.phone)} color={brand}>
+        <EmailButton
+          href={telHref(customer.phone)}
+          color={brand}
+          ink={business.brandColor ? business.brandInk : null}
+        >
           {words.call(customer.name)}
         </EmailButton>
       ) : null}

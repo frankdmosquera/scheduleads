@@ -2,8 +2,8 @@
 // import only what the site installs itself (react, react-dom) or with the package (hono, zod).
 // This repo's shared code, the backend's types or a database type dragged in by them would break
 // an install outside this repo, so the build fails instead of shipping it.
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 const distFolder = join(import.meta.dirname, "dist");
 const allowed = ["react", "react-dom", "hono", "zod"];
@@ -26,12 +26,21 @@ if (files.length === 0) problems.push("dist/ holds no built files");
 for (const file of files) {
   const code = readFileSync(join(distFolder, file), "utf8");
   for (const specifier of importsIn(code)) {
-    if (!allowed.includes(specifier.split("/")[0])) problems.push(`${file} imports ${specifier}`);
+    // A chunk shared by the two entries ships inside dist/, so it installs wherever they do.
+    const shipped =
+      specifier.startsWith("./") && existsSync(join(distFolder, dirname(file), specifier));
+    if (!shipped && !allowed.includes(specifier.split("/")[0])) {
+      problems.push(`${file} imports ${specifier}`);
+    }
   }
 }
 // Every export is a client component: without this a Next site's server components cannot render it.
 if (!readFileSync(join(distFolder, "index.js"), "utf8").startsWith('"use client";')) {
   problems.push('index.js does not start with "use client"');
+}
+// The site-colours entry is for a site's server code: marked client, a server layout could not call it.
+if (readFileSync(join(distFolder, "site-colours.js"), "utf8").includes('"use client"')) {
+  problems.push('site-colours.js is marked "use client"');
 }
 
 if (problems.length) {

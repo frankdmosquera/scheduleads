@@ -648,3 +648,19 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** The regex checks only the logo and colours; the email-colour case now has its test (F-580), the photo difference does not.
 **Suggested fix:** Extend the "different look" test with a service photo already saved.
 **Resolution:**
+
+### F-583 [P3] open - A setup file's looks and look ink are applied with no test, and the ink comes from the file's looks rather than the business's saved ones
+
+**File:** packages/shared/client-setup/apply-business-shape.ts:262
+**Found:** 2026-10-29 by /audit independent (scope: current 846d93e..246c5da; lens: quality, tests)
+**Why it matters:** Step 25f.2 added two rules to `applyBusinessShape`: looks are written only while the business has none, and `mainInkColor` is set from the look whose three colours are worn while none is kept. `run-client-setup.test.ts` covers neither (no test mentions `looks` or `mainInkColor`), against the test gate that a step adding logic adds its tests. And `wornLook` is searched in `shape.look.looks` (the file), not in `organization.looks`: when the business already has looks (so `looksMade` is false) and the file's looks differ, the ink kept can belong to a look the business does not have, which the Look page's save would never keep.
+**Suggested fix:** Search `looksMade ? looks : business.looks` for the worn look, and add one `run-client-setup` test: looks added once and left alone on a second apply with other looks, and the worn look's ink set only while none is kept.
+**Resolution:**
+
+### F-584 [P3] open - The spec still says no stored data, no migration and no change to the Look page, window, emails or API
+
+**File:** blueprint/context/current-feature.md:5
+**Found:** 2026-10-29 by /audit independent (scope: current 846d93e..246c5da; lens: quality)
+**Why it matters:** Step 25f.2 added `organization.looks` and `organization.mainInkColor` (migration 0039), changed the Look page, the settings save route, the public theme, the window and every email button. The Size line ("no stored data, no new route"), Out of scope (line 61, "Any change to the Look page, the window, the emails or the API") and Data / contracts (line 112, "No new route, field or migration") still describe 25f.1 only. `/complete` archives this spec as the feature's record, so the archive would contradict the merged code.
+**Suggested fix:** Amend those three places to name 25f.2's migration, route change and window/email ink, as the 25f.1 amendment did.
+**Resolution:**

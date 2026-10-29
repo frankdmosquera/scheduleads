@@ -15,7 +15,12 @@ import { EmailLayout } from "./email-layout.js";
 import type { RenderedEmailType } from "./rendered-email-type.js";
 
 export type TextReplyFactsType = {
-  business: { name: string; logo: string | null; brandColor: string | null };
+  business: {
+    name: string;
+    logo: string | null;
+    brandColor: string | null;
+    brandInk?: string | null; // its look's own text on brandColor (feature 25f)
+  };
   senderName: string | null; // when the number is on one of the business's leads
   number: string; // "403-555-0148"
   words: string;
@@ -73,7 +78,11 @@ function TextReplyNotificationEmail({ facts, who }: { facts: TextReplyFactsType;
           {facts.number}
         </Link>
       </EmailField>
-      <EmailButton href={telHref(facts.number)} color={brand}>
+      <EmailButton
+        href={telHref(facts.number)}
+        color={brand}
+        ink={facts.business.brandColor ? facts.business.brandInk : null}
+      >
         {`Call ${who}`}
       </EmailButton>
     </EmailLayout>
