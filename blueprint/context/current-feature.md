@@ -51,7 +51,7 @@ Free Estimate stay as Calendly has them today. His site gets lighter: Calendly l
     `app/globals.css`, its preconnect in `app/layout.tsx`, and the `react-calendly` dependency.
 - **The laptop**: Primo made on the laptop's admin page, his file applied, his site on port 3403
   (`.claude/launch.json` "primo-painters-site", `WIDGET_ORIGINS` gains `http://localhost:3403`).
-- **Live** (step 13.3, each live action on Frank's yes): his business on app.booking-crm.com with
+- **Live** (step 13.4, each live action on Frank's yes): his business on app.booking-crm.com with
   his Website, his file applied `--live`, his site's branch merged and deployed, one real
   booking watched, then his Calendly event turned off. A speed test after, the same four as the
   baseline.
@@ -99,7 +99,21 @@ finding. `workflow.checkpointCommits` is enabled: one commit per step, pushed st
   refused by the window and, sent straight to the API, by the API; with both it books; Settings
   shows and saves "Email and phone"; tests for the rule pass (shared, backend and the window's);
   the migration applies to the laptop database.
-- [ ] **13.3 Primo live.** Open questions 2, 4, 5 and 7 answered first. His business on the live app
+- [ ] **13.3 A business names its project box, and may require it.** Added at Frank's ask (Oct 29):
+  the window's own box ("What would you like done?", always optional) and Primo's question
+  "Tell us about your project" ask the same thing. Each business gets two settings on Settings >
+  Booking form: the box's words (empty: the window's own, in its language) and whether it is
+  required (no by default). Pieces: two organization columns (`detailsLabel`, `detailsRequired`,
+  a migration, laptop now, live at 13.4); the public business answer carries them; the window
+  shows the words and asks for the box before sending; the API refuses a booking without it,
+  except the owner's own; the setup file may say both (`detailsBox`), set while the business has
+  no service, like the contact rule; window 0.2.11 into Primo's site. Primo: "Tell us about your
+  project", required, and his separate question removed.
+  **Done when:** on http://localhost:3403 his form shows one project box, "Tell us about your
+  project", starred; a booking without it is refused by the window and by the API; Settings shows
+  and saves the words and the choice; a business that set nothing still shows "What would you like
+  done?", optional; tests for the rule pass.
+- [ ] **13.4 Primo live.** Open questions 2, 4, 5 and 7 answered first. His business on the live app
   (admin page) with Website `https://www.primopainters.ca`; his file `--live --apply` through
   Frank's tunnel; his branch merged to his `main` on Frank's yes and deployed by Vercel; one real
   booking made on www.primopainters.ca with Frank watching; his Calendly event turned off.
@@ -149,7 +163,7 @@ finding. `workflow.checkpointCommits` is enabled: one commit per step, pushed st
 
 ## Open questions
 
-Each before step 13.3; none blocks 13.1 or 13.2.
+Each before step 13.4; none blocks 13.1 to 13.3.
 
 1. **What a customer must leave. Answered (Frank, Oct 29): email AND phone**, as his Calendly:
    name, email, phone, address and "Tell us about your project", all required. Booking CRM has
@@ -171,6 +185,6 @@ Each before step 13.3; none blocks 13.1 or 13.2.
    So from Nov 2 his live Calendly offers 10:00 to 15:30 Calgary time, not 9:00 to 14:30. The
    setup file keeps his own clock (9:00 to 15:00 Calgary); every one of the 650 open times
    matches Calendly's once that hour is taken out.
-7. **Two project boxes (found at 13.1).** The window always shows its own optional "What would
+7. **Two project boxes (found at 13.1). Answered (Frank, Oct 29): one box**, the window's own, worded and required per business: step 13.3. The window always shows its own optional "What would
    you like done?"; his required "Tell us about your project" sits under it. Kept, so his
    required answer stays required; one box would be a small window change of its own.
