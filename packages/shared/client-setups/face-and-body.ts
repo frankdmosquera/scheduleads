@@ -40,7 +40,7 @@ export default {
     {
       name: "Microdermabrasion Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-resurfacing.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/microdermabrasion-facial.jpg",
       price: 145,
       description:
         "Diamond-tip exfoliation for uneven tone, enlarged pores and sun-damaged skin. Best as a course.",
@@ -49,7 +49,7 @@ export default {
     {
       name: "Deep Cleansing Facial",
       durationMinutes: 75,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-cleansing.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/deep-cleansing-facial.jpg",
       price: 159,
       description:
         "Eight steps. Extractions, ultrasonic peeling, high-frequency for breakouts, then LED and oxygen.",
@@ -58,7 +58,7 @@ export default {
     {
       name: "Dermaplaning Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-resurfacing.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/dermaplaning-facial.jpg",
       price: 145,
       description:
         "Removes dead skin and fine facial hair with a precise blade. Makeup goes on smoother for weeks.",
@@ -67,7 +67,7 @@ export default {
     {
       name: "Hydra Spa Facial",
       durationMinutes: 70,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-cleansing.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/hydra-spa-facial.jpg",
       price: 159,
       description:
         "Vortex tip lifts impurities while infusing hydrating serums. No downtime, results the same day.",
@@ -76,7 +76,7 @@ export default {
     {
       name: "Gold Facial",
       durationMinutes: 75,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-hydrating.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/gold-facial.jpg",
       price: 159,
       description:
         "24K gold leaf over microdermabrasion and hand-blended masks. Visible tightening and a warm glow.",
@@ -85,7 +85,7 @@ export default {
     {
       name: "HIFU Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-lifting.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/hifu-facial.jpg",
       price: 155,
       description:
         "Cleanse and polish, then focused ultrasound along the jaw, eyes and neck to tighten from below.",
@@ -94,7 +94,7 @@ export default {
     {
       name: "Detoxifying Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-cleansing.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/detoxifying-facial.jpg",
       price: 145,
       description:
         "Blueberry, raspberry and pineapple enzyme peel. Deep pore cleanse with lactic acid, all organic.",
@@ -103,7 +103,7 @@ export default {
     {
       name: "Mini Facial",
       durationMinutes: 30,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-hydrating.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/mini-facial.jpg",
       price: 60,
       description: "Cleanse, exfoliate, tone and mask in thirty minutes. For the lunch break.",
       addressMode: "not_asked",
@@ -111,7 +111,7 @@ export default {
     {
       name: "Revitalizing Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-hydrating.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/revitalizing-facial.jpg",
       price: 155,
       description:
         "Self-neutralising enzyme lactic peel. Immediate results, safe on sensitive skin, no downtime.",
@@ -120,7 +120,7 @@ export default {
     {
       name: "Lifting Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-lifting.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/lifting-facial.jpg",
       price: 159,
       description: "Firming massage and masks for skin that's starting to lose its bounce.",
       addressMode: "not_asked",
@@ -128,7 +128,7 @@ export default {
     {
       name: "Oxygen Rejuvenating Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-hydrating.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/oxygen-rejuvenating-facial.jpg",
       price: 155,
       description: "Pressurised oxygen infuses serums deep into the skin. Plump, calm, rested.",
       addressMode: "not_asked",
@@ -136,7 +136,7 @@ export default {
     {
       name: "Oxygen Brightening Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-hydrating.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/oxygen-brightening-facial.jpg",
       price: 155,
       description: "Oxygen infusion with brightening actives for dull skin and uneven tone.",
       addressMode: "not_asked",
@@ -144,7 +144,7 @@ export default {
     {
       name: "Hydrodermabrasion",
       durationMinutes: 75,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-resurfacing.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/hydrodermabrasion.jpg",
       price: 155,
       description:
         "Water-jet resurfacing with antioxidants and hyaluronic acid. Microdermabrasion's gentler sibling.",
@@ -153,7 +153,7 @@ export default {
     {
       name: "Fire and Ice Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-resurfacing.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/fire-and-ice-facial.jpg",
       price: 169,
       description:
         "Warming enzyme resurfacing followed by a cooling treatment. Intense, then calm.",
@@ -162,7 +162,7 @@ export default {
     {
       name: "Eminence Facial",
       durationMinutes: 80,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-hydrating.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/eminence-facial.jpg",
       price: 159,
       description: "The classic organic facial, customised to your skin on the day.",
       addressMode: "not_asked",
@@ -170,7 +170,7 @@ export default {
     {
       name: "Radio Frequency Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-lifting.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/radio-frequency-facial.jpg",
       price: 160,
       description: "Heats the dermis to stimulate collagen. Non-surgical tightening, no needles.",
       addressMode: "not_asked",
@@ -178,7 +178,7 @@ export default {
     {
       name: "Back Facial",
       durationMinutes: 75,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-cleansing.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/back-facial.jpg",
       price: 189,
       description: "Deep cleanse, extractions and massage for the skin you can't reach.",
       addressMode: "not_asked",
@@ -186,7 +186,7 @@ export default {
     {
       name: "LED Light Therapy",
       durationMinutes: 30,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-cleansing.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/led-light-therapy.jpg",
       price: 60,
       description: "Blue for acne, red for collagen. A quiet 30 minutes, good as an add-on.",
       addressMode: "not_asked",
@@ -194,7 +194,7 @@ export default {
     {
       name: "Chemical Peel",
       durationMinutes: 30,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-resurfacing.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/chemical-peel.jpg",
       price: 80,
       priceFrom: true,
       description: "Strength chosen for your skin at consultation. Light peels have no downtime.",
@@ -203,7 +203,7 @@ export default {
     {
       name: "Carbon Peel",
       durationMinutes: 45,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-resurfacing.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/carbon-peel.jpg",
       price: 150,
       description:
         "Carbon lotion, then laser. Deep-cleans pores and tightens texture in one visit.",
@@ -212,7 +212,7 @@ export default {
     {
       name: "Hollywood Peel Facial",
       durationMinutes: 105,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-resurfacing.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/hollywood-peel-facial.jpg",
       price: 260,
       description: "The extended carbon laser facial. Red-carpet glow for events.",
       addressMode: "not_asked",
@@ -220,7 +220,7 @@ export default {
     {
       name: "Acne Advanced Treatment",
       durationMinutes: 30,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/facial-cleansing.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/acne-advanced-treatment.jpg",
       price: 80,
       description:
         "A short chemical-peel facial for breakout-prone skin: cleanse, peel, mask, moisturise and SPF.",
@@ -229,7 +229,7 @@ export default {
     {
       name: "Microneedling, Face",
       durationMinutes: 90,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/skin.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/microneedling-face.jpg",
       price: 290,
       description:
         "The most clinically supported treatment we offer for acne scarring, fine lines and uneven texture. Your skin does the work; we give it the reason to.",
@@ -238,7 +238,7 @@ export default {
     {
       name: "Microneedling, Abdomen",
       durationMinutes: 90,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/skin.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/microneedling-abdomen.jpg",
       price: 350,
       description:
         "The same collagen-induction treatment as the face, over the abdomen for stretch marks and loose texture.",
@@ -247,7 +247,7 @@ export default {
     {
       name: "Thermo-Coagulation",
       durationMinutes: 10,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/skin.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/thermo-coagulation.jpg",
       price: 40,
       priceFrom: true,
       description:
@@ -257,7 +257,7 @@ export default {
     {
       name: "Wood Therapy",
       durationMinutes: 30,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/body.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/wood-therapy.jpg",
       price: 110,
       priceFrom: true,
       description:
@@ -267,7 +267,7 @@ export default {
     {
       name: "Laser Lipolysis",
       durationMinutes: 45,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/body.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/laser-lipolysis.jpg",
       price: 150,
       priceFrom: true,
       description:
@@ -277,7 +277,7 @@ export default {
     {
       name: "Cavitation",
       durationMinutes: 45,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/body.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/cavitation.jpg",
       price: 130,
       priceFrom: true,
       description:
@@ -287,7 +287,7 @@ export default {
     {
       name: "Body Wrap",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/body.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/body-wrap.jpg",
       price: 130,
       priceFrom: true,
       description:
@@ -297,7 +297,7 @@ export default {
     {
       name: "Relaxation Massage",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/massage.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/relaxation-massage.jpg",
       price: 100,
       description: "Gentle, flowing strokes at the pressure you ask for. An hour to switch off.",
       addressMode: "not_asked",
@@ -305,7 +305,7 @@ export default {
     {
       name: "Relaxation Massage, 75 min",
       durationMinutes: 75,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/massage.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/relaxation-massage-75-min.jpg",
       price: 120,
       description: "The relaxation massage with fifteen more minutes for the back and shoulders.",
       addressMode: "not_asked",
@@ -313,7 +313,7 @@ export default {
     {
       name: "Relaxation Massage, 90 min",
       durationMinutes: 90,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/massage.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/relaxation-massage-90-min.jpg",
       price: 149,
       description: "The full ninety minutes, head to feet, for when an hour is not enough.",
       addressMode: "not_asked",
@@ -321,7 +321,7 @@ export default {
     {
       name: "Deep Tissue Massage",
       durationMinutes: 75,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/massage.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/deep-tissue-massage.jpg",
       price: 126,
       description:
         "Firm pressure and slow strokes into the deeper muscle for knots that will not let go.",
@@ -330,7 +330,7 @@ export default {
     {
       name: "Therapeutic Massage",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/massage.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/therapeutic-massage.jpg",
       price: 100,
       priceFrom: true,
       description: "Massage planned around one problem area, with the pressure and time it needs.",
@@ -339,7 +339,7 @@ export default {
     {
       name: "Lymphatic Drainage Massage",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/massage.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/lymphatic-drainage-massage.jpg",
       price: 125,
       description:
         "Light, rhythmic strokes that follow the lymph pathways. Very gentle, often used after procedures.",
@@ -348,7 +348,7 @@ export default {
     {
       name: "Head Massage",
       durationMinutes: 30,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/massage.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/head-massage.jpg",
       price: 79,
       description: "Scalp, neck and face in thirty minutes. Good on its own or after a facial.",
       addressMode: "not_asked",
@@ -356,7 +356,7 @@ export default {
     {
       name: "Gentle Relaxation Massage",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/massage.webp",
+      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/gentle-relaxation-massage.jpg",
       price: 80,
       description: "A very light-pressure relaxation massage given by an esthetician.",
       addressMode: "not_asked",
