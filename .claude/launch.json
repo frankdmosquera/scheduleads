@@ -18,6 +18,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--prefix", "../face-and-body", "--", "-p", "3402"],
       "port": 3402
+    },
+    {
+      "name": "primo-painters-site",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "../primo-painters/.claude/worktrees/booking-crm", "--", "-p", "3403"],
+      "port": 3403
     }
   ]
 }
