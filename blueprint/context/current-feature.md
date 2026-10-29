@@ -155,7 +155,7 @@ Each before step 13.3; none blocks 13.1 or 13.2.
    name, email, phone, address and "Tell us about your project", all required. Booking CRM has
    no "both" rule yet (email, phone or either), so it needs one; how it is added is the open
    point.
-2. **His login and where "New booking" goes.** Frank handles his bookings: Frank's own address,
+2. **His login and where "New booking" goes. Answered (Frank, Oct 29): info@primopainters.ca** for both. Frank handles his bookings: Frank's own address,
    Primo's, or Primo's login with notices to Frank.
 3. **His reminders. Answered (Frank, Oct 29): email only for now.** No texting number yet, so no
    texts and no text box on the form. Once there is a number, the form offers "text me" and only
