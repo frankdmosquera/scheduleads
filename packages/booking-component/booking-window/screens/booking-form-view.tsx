@@ -277,14 +277,19 @@ export function BookingFormView({
               onChange={(event) => edit(["location"], { ...form, location: event.target.value })}
             />
           ))}
-        {field("details", words.detailsLabel, false, (props) => (
-          <textarea
-            {...props}
-            rows={3}
-            value={form.details}
-            onChange={(event) => edit(["details"], { ...form, details: event.target.value })}
-          />
-        ))}
+        {field(
+          "details",
+          business.detailsLabel ?? words.detailsLabel,
+          business.detailsRequired,
+          (props) => (
+            <textarea
+              {...props}
+              rows={3}
+              value={form.details}
+              onChange={(event) => edit(["details"], { ...form, details: event.target.value })}
+            />
+          )
+        )}
         {business.questions.map((question) =>
           field(`answer:${question.id}`, question.label, question.required, (props) => (
             <input

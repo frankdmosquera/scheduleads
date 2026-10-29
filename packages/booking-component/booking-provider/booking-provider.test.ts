@@ -44,6 +44,8 @@ describe("BookingProvider", () => {
                 logo: null,
                 phone: null,
                 contactRule: "email",
+                detailsLabel: null,
+                detailsRequired: false,
                 questions: [],
                 laterTextsYesWords: null,
                 theme: null,

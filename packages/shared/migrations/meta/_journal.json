@@ -288,6 +288,13 @@
       "when": 1793290988741,
       "tag": "0040_contact_rule_both",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793293264334,
+      "tag": "0041_details_box",
+      "breakpoints": true
     }
   ]
 }

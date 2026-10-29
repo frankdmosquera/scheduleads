@@ -99,7 +99,7 @@ finding. `workflow.checkpointCommits` is enabled: one commit per step, pushed st
   refused by the window and, sent straight to the API, by the API; with both it books; Settings
   shows and saves "Email and phone"; tests for the rule pass (shared, backend and the window's);
   the migration applies to the laptop database.
-- [ ] **13.3 A business names its project box, and may require it.** Added at Frank's ask (Oct 29):
+- [x] **13.3 A business names its project box, and may require it.** Added at Frank's ask (Oct 29):
   the window's own box ("What would you like done?", always optional) and Primo's question
   "Tell us about your project" ask the same thing. Each business gets two settings on Settings >
   Booking form: the box's words (empty: the window's own, in its language) and whether it is

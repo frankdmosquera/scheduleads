@@ -34,7 +34,7 @@ const filled = (text: string) => (text.trim() === "" ? undefined : text.trim());
 
 export function readBookingForm(
   values: BookingFormValuesType,
-  business: Pick<BookingBusinessType, "questions" | "contactRule">,
+  business: Pick<BookingBusinessType, "questions" | "contactRule" | "detailsRequired">,
   choice: BookingFormChoiceType,
   words: Pick<BookingWordsType, "formError">
 ): ReadBookingFormResultType {
@@ -75,6 +75,10 @@ export function readBookingForm(
   // The business's contact rule, checked the same way the route checks it.
   const missing = missingContact(business.contactRule, request.customer);
   if (missing && !found.has(missing.field)) found.set(missing.field, missing.message);
+  // The project box, when the business requires it (feature 13), as the route checks it.
+  if (business.detailsRequired && !filled(values.details) && !found.has("details")) {
+    found.set("details", "Answer this question.");
+  }
   // The route asks for a required question's answer too; here it is said before sending.
   for (const question of questions) {
     const field: BookingFormFieldType = `answer:${question.id}`;

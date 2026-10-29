@@ -176,6 +176,8 @@ describe("the documented shape", () => {
       logo: null,
       phone: "403 555 0100",
       contactRule: "either", // which of email and phone the form marks required (feature 12f)
+      detailsLabel: null, // the project box in the window's own words, optional (feature 13)
+      detailsRequired: false,
       // Its own questions, in its order (feature 9).
       questions: [
         { id: expect.any(String), label: "Interior or exterior?", required: true },

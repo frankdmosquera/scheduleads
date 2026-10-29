@@ -17,6 +17,7 @@ import { businessColoursValidationSchema } from "../booking-links-validation-sch
 import { businessLooksValidationSchema } from "../booking-links-validation-schemas/business-looks-validation-schema.js";
 import { currencyValidationSchema } from "../booking-links-validation-schemas/currency-validation-schema.js";
 import { contactRuleValidationSchema } from "../crm-validation-schemas/contact-rule-validation-schema.js";
+import { detailsLabelValidationSchema } from "../crm-validation-schemas/booking-form-rules-validation-schema.js";
 import { setupQuestionsValidationSchema } from "../crm-validation-schemas/booking-questions-validation-schema.js";
 import { textSettingsValidationSchema } from "../text-validation-schemas/text-settings-validation-schema.js";
 import { workerTextSettingsValidationSchema } from "../text-validation-schemas/worker-text-settings-validation-schema.js";
@@ -88,7 +89,12 @@ export const clientSetupValidationSchema = z
   .object({
     slug: z.string().min(1), // the business, already made by the client setup screen
     personChoice: z.enum(["customer_picks", "business_assigns"]),
-    contactRule: contactRuleValidationSchema, // what a customer must leave: email, phone or either
+    contactRule: contactRuleValidationSchema, // what a customer must leave: email, phone, either, both
+    // The project box (feature 13): its words (null: the window's own) and whether it is required.
+    detailsBox: z
+      .object({ label: detailsLabelValidationSchema, required: z.boolean() })
+      .strict()
+      .optional(),
     language: bookingLanguageValidationSchema.optional(), // its owner's emails (feature 12i); left out: English
     currency: currencyValidationSchema.optional(), // its prices' (feature 25d); left out: no prices
     // Its look (feature 25e): a logo already online and its colours, as Settings > Look saves them.

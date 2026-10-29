@@ -12,6 +12,10 @@ export type BookingFormWordsType = {
   anEmail: string;
   aPhone: string;
   emailAndPhone: string;
+  detailsBoxWords: string;
+  detailsBoxHint: string;
+  detailsBoxRequired: string;
+  yesRequired: string;
   askLaterTextsYes: string;
   yesShowTheBox: string;
   no: string;
@@ -49,6 +53,10 @@ export const englishBookingFormWords: BookingFormWordsType = {
   anEmail: "An email",
   aPhone: "A phone",
   emailAndPhone: "An email and a phone, both",
+  detailsBoxWords: "The project box's words",
+  detailsBoxHint: 'Left empty, the box says "What would you like done?"',
+  detailsBoxRequired: "Must a customer fill it in?",
+  yesRequired: "Yes, required",
   askLaterTextsYes: "Ask the customer's yes to later texts (offers, reminders to book again)",
   yesShowTheBox: "Yes, show the box",
   no: "No",
@@ -88,6 +96,10 @@ export const spanishBookingFormWords: BookingFormWordsType = {
   anEmail: "Un correo",
   aPhone: "Un teléfono",
   emailAndPhone: "Un correo y un teléfono, los dos",
+  detailsBoxWords: "Lo que dice la casilla del proyecto",
+  detailsBoxHint: 'Vacía, la casilla dice "¿Qué necesita?"',
+  detailsBoxRequired: "¿El cliente debe llenarla?",
+  yesRequired: "Sí, obligatoria",
   askLaterTextsYes:
     "Pedir el sí del cliente a mensajes de texto más adelante (ofertas, recordatorios para volver a reservar)",
   yesShowTheBox: "Sí, mostrar la casilla",

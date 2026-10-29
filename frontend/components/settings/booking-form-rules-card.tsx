@@ -1,7 +1,8 @@
 // Frontend component: what the business's booking form requires, on the Booking form page (feature
 // 12f): which way to reach the customer it must have, and whether it asks the customer's yes to
 // later texts, which only a business with text settings can ask; and the business's language
-// (feature 12i): its owner's emails, while customers get theirs in the language they booked in.
+// (feature 12i): its owner's emails, while customers get theirs in the language they booked in; and
+// its project box's words and whether a customer must fill it (feature 13).
 
 "use client";
 
@@ -13,6 +14,8 @@ import { CentredCardNotice } from "@/components/centred-card/centred-card-notice
 import { ChoiceField } from "@/components/settings/choice-field";
 import { SaveNotice, type SaveNoticeType } from "@/components/settings/save-notice";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { BookingFormSettingsType } from "@/lib/api-client/settings/fetch-booking-form";
 import { saveBookingFormRules } from "@/lib/api-client/settings/save-booking-form-rules";
 import { useDashboardWords } from "@/lib/dashboard-words/dashboard-words-provider";
@@ -30,6 +33,8 @@ export function BookingFormRulesCard({
   const [contactRule, setContactRule] = useState<ContactRuleType>(settings.contactRule);
   const [askLaterTextsYes, setAskLaterTextsYes] = useState(settings.askLaterTextsYes); // null: no text settings
   const [language, setLanguage] = useState(settings.language);
+  const [detailsLabel, setDetailsLabel] = useState(settings.detailsLabel ?? ""); // empty: the window's own
+  const [detailsRequired, setDetailsRequired] = useState(settings.detailsRequired);
   const [notice, setNotice] = useState<SaveNoticeType>(null);
   const [saving, setSaving] = useState(false);
 
@@ -37,16 +42,19 @@ export function BookingFormRulesCard({
     event.preventDefault();
     setSaving(true);
     // The yes to later texts only when the page showed it, so a save never changes what was not seen.
+    const box = { detailsLabel, detailsRequired };
     const saved = await saveBookingFormRules(
       askLaterTextsYes === null
-        ? { contactRule, language }
-        : { contactRule, askLaterTextsYes, language }
+        ? { contactRule, language, ...box }
+        : { contactRule, askLaterTextsYes, language, ...box }
     );
     setSaving(false);
     if (saved.state === "ok") {
       setContactRule(saved.answer.contactRule);
       setAskLaterTextsYes(saved.answer.askLaterTextsYes);
       setLanguage(saved.answer.language);
+      setDetailsLabel(saved.answer.detailsLabel ?? "");
+      setDetailsRequired(saved.answer.detailsRequired);
       onLanguageSaved(saved.answer.language);
       setNotice({ tone: "info", text: formWords.rulesSaved });
       return;
@@ -85,6 +93,36 @@ export function BookingFormRulesCard({
           onChange={(value) => {
             setNotice(null);
             setContactRule(value);
+          }}
+        />
+        <div className="flex flex-col gap-1.5 sm:max-w-sm">
+          <Label htmlFor="details-box-words">{formWords.detailsBoxWords}</Label>
+          <Input
+            id="details-box-words"
+            value={detailsLabel}
+            maxLength={80}
+            aria-describedby="details-box-hint"
+            onChange={(event) => {
+              setNotice(null);
+              setDetailsLabel(event.target.value);
+            }}
+            className="h-10 bg-muted px-3"
+          />
+          <p id="details-box-hint" className="text-xs text-muted-foreground">
+            {formWords.detailsBoxHint}
+          </p>
+        </div>
+        <ChoiceField
+          name="details-box-required"
+          legend={formWords.detailsBoxRequired}
+          choices={[
+            { value: true, label: formWords.yesRequired },
+            { value: false, label: formWords.no },
+          ]}
+          value={detailsRequired}
+          onChange={(value) => {
+            setNotice(null);
+            setDetailsRequired(value);
           }}
         />
         {askLaterTextsYes !== null ? (

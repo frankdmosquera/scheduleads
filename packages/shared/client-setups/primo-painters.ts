@@ -19,8 +19,9 @@ export default {
     logo: "https://www.primopainters.ca/primo-painters-logo-400.png",
     colours: { main: "#0d378d", background: null, text: null }, // his site's blue
   },
-  // His Calendly's own required question, in its words. The phone is the window's own field.
-  questions: [{ label: "Tell us about your project", required: true }],
+  // His Calendly's required question, in its words, as the window's own project box (feature 13).
+  detailsBox: { label: "Tell us about your project", required: true },
+  questions: [],
   hours: {
     weeklyHours: {
       mon: weekdayHours,

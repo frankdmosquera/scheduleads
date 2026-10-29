@@ -24,7 +24,7 @@ const choice = {
   addressMode: "required" as const,
   language: "en" as const,
 };
-const business = { questions, contactRule: "either" as const };
+const business = { questions, contactRule: "either" as const, detailsRequired: false };
 const filledForm = {
   ...newBookingForm(),
   name: " Jane Doe ",

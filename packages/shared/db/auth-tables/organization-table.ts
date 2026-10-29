@@ -50,6 +50,10 @@ export const organization = pgTable(
     contactRule: text("contactRule", { enum: ["email", "phone", "either", "both"] })
       .notNull()
       .default("either"),
+    // The booking form's project box (feature 13): its words, null for the window's own ("What
+    // would you like done?", in the window's language), and whether a customer must fill it.
+    detailsLabel: text("detailsLabel"),
+    detailsRequired: boolean("detailsRequired").notNull().default(false),
 
     // The language of the owner's booking emails, and of a booking that came with none (the
     // owner's own, an older window). A setting (feature 12i); every business before it is English.
@@ -65,6 +69,10 @@ export const organization = pgTable(
     check(
       "organization_contact_rule_check",
       sql`${table.contactRule} in ('email', 'phone', 'either', 'both')`
+    ),
+    check(
+      "organization_details_label_check",
+      sql`char_length(${table.detailsLabel}) between 1 and 80`
     ),
     check("organization_language_check", sql`${table.language} in ('en', 'es')`),
     check("organization_currency_check", sql`${table.currency} ~ '^[A-Z]{3}$'`),

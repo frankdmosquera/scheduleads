@@ -57,6 +57,8 @@ const publicBusinessColumns = {
   logo: organization.logo,
   phone: organization.phone,
   contactRule: organization.contactRule, // which of email and phone the form marks required
+  detailsLabel: organization.detailsLabel, // the project box's words, null: the window's own
+  detailsRequired: organization.detailsRequired,
   currency: organization.currency, // read for the prices, answered inside each one
   // Its colours, answered as one theme (feature 25e).
   brandColor: organization.brandColor,

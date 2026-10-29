@@ -204,8 +204,8 @@ export async function applyBusinessShape(
     await tx.insert(textSettings).values({ organizationId, ...shape.texts });
   }
 
-  // Its contact rule and language, only while it has no service yet: after that they are the
-  // owner's, on Settings.
+  // Its contact rule, language and project box, only while it has no service yet: after that they
+  // are the owner's, on Settings.
   const [anyService] = await tx
     .select({ id: bookingLink.id })
     .from(bookingLink)
@@ -217,6 +217,9 @@ export async function applyBusinessShape(
       .set({
         contactRule: shape.contactRule,
         ...(shape.language ? { language: shape.language } : {}),
+        ...(shape.detailsBox
+          ? { detailsLabel: shape.detailsBox.label, detailsRequired: shape.detailsBox.required }
+          : {}),
       })
       .where(eq(organization.id, organizationId));
 
@@ -376,6 +379,7 @@ export async function applyBusinessShape(
   return [
     questionsMade && `${shape.questions.length} booking questions`,
     !anyService && "the contact rule",
+    !anyService && shape.detailsBox && "the project box",
     currencyMade && `the currency, ${shape.currency}`,
     logoMade && "the logo",
     coloursMade && "the colours",
