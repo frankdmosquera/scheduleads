@@ -42,6 +42,16 @@ Body is the first.
 - **Face and Body's live photos**: the 37 photos already on ImageKit and in her setup file are
   written to her live business through the tunnel Frank opens.
 
+- **Amended Oct 29, after Frank saw the laptop site (step 25f.1 reopened):** rebuilding every
+  shade from three colours changed her hand-picked ones (sand, borders, soft copper) and put a
+  navy button text that was never hers. So: her three hand-made looks (copper, gold, espresso)
+  stay in her stylesheet shade for shade; when her saved main colour is one of theirs, her site
+  shows that look exactly and sets no `--site-*` token; any other colour is worked out as before.
+  The text on the main colour is chosen from the site's own light and dark
+  (`siteColourTokens(theme, { light, dark })`), never a colour of the package's. Window 0.2.7.
+  Her looks are not yet palettes on her Look page: she picks one by typing its main colour
+  (copper `#c0704f`, gold `#8f6f3a`, espresso `#2b2522`), named in the report.
+
 ## Out of scope
 
 - Fonts, corners, logo or photos on the site from the CRM.
@@ -58,7 +68,7 @@ review comes at `/complete`. Merging either repo is Frank's call.
 
 ## Build steps
 
-- [x] **25f.1 Her whole site follows her Look colours.** Read Next 16's caching guide in
+- [x] **25f.1 Her whole site follows her Look colours.** (reopened and rebuilt Oct 29, see the amendment) Read Next 16's caching guide in
   `../face-and-body/node_modules/next/dist/docs/` first and use what it says for a fetch revalidated
   every minute (the site has `cacheComponents` off unless its config says otherwise). Add the two
   package exports with tests, bump the version, pack into her site, wire her layout and CSS, remove

@@ -20,6 +20,18 @@ describe("siteColourTokens", () => {
     expect(contrastRatio(tokens["--site-main-ink"]!, "#c0704f")).toBeGreaterThanOrEqual(4.5);
   });
 
+  it("puts the site's own light or dark on the main colour, whichever reads better, never another", () => {
+    const inks = { light: "#fffdf9", dark: "#1c1a17" };
+    expect(siteColourTokens({ ...COPPER, main: "#2b2522" }, inks)["--site-main-ink"]).toBe(
+      "#fffdf9"
+    );
+    expect(siteColourTokens({ ...COPPER, main: "#e8b04a" }, inks)["--site-main-ink"]).toBe(
+      "#1c1a17"
+    );
+    // a site that names no inks gets plain white or black
+    expect(siteColourTokens({ ...COPPER, main: "#2b2522" })["--site-main-ink"]).toBe("#ffffff");
+  });
+
   it("writes the main colour as text that reads at 4.5 on the business's background", () => {
     const tokens = siteColourTokens({ ...COPPER, main: "#e8b04a" }); // a light gold
     expect(contrastRatio(tokens["--site-main-text"]!, "#f7f2ea")).toBeGreaterThanOrEqual(4.5);

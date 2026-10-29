@@ -5,12 +5,13 @@
 //
 //   import { fetchSiteColours, siteColourTokens } from "@frankdmosquera/booking-component/site-colours";
 //
-//   const tokens = siteColourTokens(
-//     await fetchSiteColours(apiUrl, slug, { next: { revalidate: 60 } })
-//   );
+//   const theme = await fetchSiteColours(apiUrl, slug, { next: { revalidate: 60 } });
+//   const tokens = siteColourTokens(theme, { light: "<the site's lightest>", dark: "<its darkest>" });
 //   <html style={tokens as CSSProperties} data-site-colours="main bg text">  (only those saved)
 //
-// Then the site's stylesheet works its own colours out of them, one rule per saved colour:
+// A site with hand-made looks keeps them: when the saved main colour is one of theirs, it shows
+// that look exactly and sets no token (Face and Body's app/layout.tsx). Otherwise its stylesheet
+// works its own colours out of the tokens, one rule per saved colour:
 // :root[data-site-colours~="main"] from --site-main (buttons, accents), --site-main-ink (text on
 // it) and --site-main-text (the main colour as readable text); ~="bg" from --site-bg; ~="text"
 // from --site-text. Face and Body's app/globals.css is the worked example. With none saved, or
@@ -20,5 +21,6 @@ export { fetchSiteColours } from "./api-client/fetch-site-colours.js";
 export {
   siteColourTokens,
   type SiteColourTokensType,
+  type SiteInksType,
   type SiteThemeType,
 } from "./site-colours/site-colour-tokens.js";
