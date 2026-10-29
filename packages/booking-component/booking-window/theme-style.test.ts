@@ -23,6 +23,14 @@ describe("themeStyle", () => {
     expect(contrastRatio(style["--sa-identity"]!, "#efeae7")).toBeGreaterThanOrEqual(4.5);
   });
 
+  it("puts its look's own text on the main colour, the cream its site has on copper", () => {
+    const style = tokens(
+      themeStyle({ main: "#c0704f", mainInk: "#fffdf9", background: "#f7f2ea", text: "#1c1a17" })
+    );
+    expect(style["--sa-action"]).toBe("#c0704f");
+    expect(style["--sa-action-ink"]).toBe("#fffdf9");
+  });
+
   it("keeps a light main colour readable on the window's own white and its grey disc", () => {
     const style = tokens(
       themeStyle({ main: "#f59e0b", mainInk: "#0f172a", background: null, text: null })

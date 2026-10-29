@@ -79,6 +79,20 @@ review comes at `/complete`. Merging either repo is Frank's call.
   `npm run build` in her site passes and lists her pages as static, not dynamic; the package's
   tests and build pass; her live booking window shows 37 different photos.
 
+- [x] **25f.2 Her looks as one-click choices, and the window wearing them exactly** (added Oct 29,
+  Frank's yes). A business's own looks (name, main, background, text and the ink its site puts on
+  the main colour; at most six, names unique) live in `organization.looks` (jsonb, migration 0039),
+  set from its setup file while it has none. Settings > Look shows them first ("Your website's
+  looks"); Save sends the look's name, and the API keeps that look's ink in
+  `organization.mainInkColor` only when all three colours are the look's own, clearing it on any
+  other save. The public theme's `mainInk` is that ink, else worked out; the window (0.2.8) and
+  every email button use it. Face and Body: copper, gold, espresso, sage, each with her cream.
+  Out of this step, named: the dashboard's highlight and the customer's booking page still work
+  their button text out. Live needs migration 0039 and her setup file applied, at merge.
+  **Done when:** her laptop window's buttons carry her cream on copper; the Look page shows her
+  looks and a pick fills the three colours; a look's ink is kept only for its own colours (route
+  test); backend, shared and package suites and the dashboard build pass.
+
 ## Files / areas
 
 - `packages/booking-component/api-client/fetch-site-colours.ts` (new), its test

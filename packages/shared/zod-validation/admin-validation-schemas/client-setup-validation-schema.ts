@@ -14,6 +14,7 @@ import {
 } from "../booking-links-validation-schemas/service-validation-schema.js";
 import { bookingLanguageValidationSchema } from "../booking-links-validation-schemas/booking-language-validation-schema.js";
 import { businessColoursValidationSchema } from "../booking-links-validation-schemas/business-colours-validation-schema.js";
+import { businessLooksValidationSchema } from "../booking-links-validation-schemas/business-looks-validation-schema.js";
 import { currencyValidationSchema } from "../booking-links-validation-schemas/currency-validation-schema.js";
 import { contactRuleValidationSchema } from "../crm-validation-schemas/contact-rule-validation-schema.js";
 import { setupQuestionsValidationSchema } from "../crm-validation-schemas/booking-questions-validation-schema.js";
@@ -95,6 +96,8 @@ export const clientSetupValidationSchema = z
       .object({
         logo: pictureAddressValidationSchema.optional(),
         colours: businessColoursValidationSchema.optional(),
+        // Its website's own looks (feature 25f), offered first on Settings > Look.
+        looks: businessLooksValidationSchema.optional(),
       })
       .strict()
       .optional(),

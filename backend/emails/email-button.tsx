@@ -10,10 +10,12 @@ import { textColorOn } from "@scheduleads-app/shared/text-color-on";
 export function EmailButton({
   href,
   color,
+  ink,
   children,
 }: {
   href: string;
   color: string;
+  ink?: string | null; // the business's look's own text on its colour (feature 25f)
   children: ReactNode;
 }) {
   return (
@@ -24,7 +26,7 @@ export function EmailButton({
         marginTop: "20px",
         backgroundColor: color,
         borderRadius: "8px",
-        color: textColorOn(color), // readable on a light brand colour too
+        color: ink ?? textColorOn(color), // its look's own, else readable on a light brand colour too
         fontSize: "16px",
         fontWeight: 600,
         padding: "14px 20px",

@@ -21,6 +21,7 @@ export * from "./booking-links-validation-schemas/booking-link-id-validation-sch
 export * from "./booking-links-validation-schemas/booking-language-validation-schema.js";
 export * from "./booking-links-validation-schemas/currency-validation-schema.js";
 export * from "./booking-links-validation-schemas/business-colours-validation-schema.js";
+export * from "./booking-links-validation-schemas/business-looks-validation-schema.js";
 export * from "./booking-links-validation-schemas/free-times-query-validation-schema.js";
 export * from "./booking-links-validation-schemas/create-booking-validation-schema.js";
 export * from "./booking-links-validation-schemas/move-booking-validation-schema.js";

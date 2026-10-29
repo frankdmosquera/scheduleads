@@ -8,6 +8,7 @@ export type BookingEmailFactsType = {
     phone: string | null;
     website: string | null;
     brandColor: string | null; // #rrggbb
+    brandInk?: string | null; // its look's own text on brandColor (feature 25f); none: worked out
     timezone: string; // the business's own, from its bookable hours
     language: "en" | "es"; // the owner's emails are written in it (feature 12i)
   };

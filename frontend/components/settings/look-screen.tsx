@@ -47,6 +47,7 @@ function LookCard({ settings }: { settings: LookSettingsType }) {
       <ColoursCard
         colours={settings.colours}
         coloursOn={settings.coloursOn}
+        looks={settings.looks}
         canEdit={settings.canEdit}
       />
     </div>

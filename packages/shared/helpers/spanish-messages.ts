@@ -244,6 +244,7 @@ export const spanishMessages: Record<string, string> = {
   "Use an https address.": "Use una dirección https.",
   "That text is too faint on that background to read. Pick a darker or lighter one.":
     "Ese texto es demasiado tenue sobre ese fondo para leerse. Elija uno más oscuro o más claro.",
+  "Each look needs its own name.": "Cada estilo necesita su propio nombre.",
   "Tick only this business's people.": "Marque solo personas de este negocio.",
   "Tick only this business's places.": "Marque solo lugares de este negocio.",
   "Tick only this business's services.": "Marque solo servicios de este negocio.",

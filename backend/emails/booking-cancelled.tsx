@@ -96,7 +96,11 @@ function BookingCancelledEmail({
           >
             {words.anotherTime(business.phone)}
           </Text>
-          <EmailButton href={telHref(business.phone)} color={brand}>
+          <EmailButton
+            href={telHref(business.phone)}
+            color={brand}
+            ink={business.brandColor ? business.brandInk : null}
+          >
             {words.call(business.name)}
           </EmailButton>
         </>

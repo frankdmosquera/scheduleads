@@ -136,6 +136,7 @@ export async function findBookingEmailContext(
           phone: business.phone,
           website: business.website,
           brandColor: business.brandColor,
+          brandInk: business.brandInk,
           timezone,
           language: business.language,
         },

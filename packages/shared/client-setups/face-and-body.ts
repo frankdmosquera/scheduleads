@@ -18,6 +18,14 @@ export default {
   look: {
     logo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/logo.jpg",
     colours: { main: "#c0704f", background: "#f7f2ea", text: "#1c1a17" },
+    // Her site's looks (feature 25f): copper, gold and espresso as app/globals.css draws them, and
+    // sage, which Frank liked on the laptop (Oct 29). Her buttons carry her cream on each.
+    looks: [
+      { name: "Copper", main: "#c0704f", background: "#f7f2ea", text: "#1c1a17", ink: "#fffdf9" },
+      { name: "Gold", main: "#8f6f3a", background: "#f5f2ed", text: "#1c1a17", ink: "#fffdf9" },
+      { name: "Espresso", main: "#2b2522", background: "#f5f2ed", text: "#1c1a17", ink: "#fffdf9" },
+      { name: "Sage", main: "#5f7f68", background: "#f4f6f1", text: "#1d2420", ink: "#fffdf9" },
+    ],
   },
   questions: [], // her Cal.com event types added no booking questions
   hours: {
@@ -40,7 +48,8 @@ export default {
     {
       name: "Microdermabrasion Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/microdermabrasion-facial.jpg",
+      photo:
+        "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/microdermabrasion-facial.jpg",
       price: 145,
       description:
         "Diamond-tip exfoliation for uneven tone, enlarged pores and sun-damaged skin. Best as a course.",
@@ -128,7 +137,8 @@ export default {
     {
       name: "Oxygen Rejuvenating Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/oxygen-rejuvenating-facial.jpg",
+      photo:
+        "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/oxygen-rejuvenating-facial.jpg",
       price: 155,
       description: "Pressurised oxygen infuses serums deep into the skin. Plump, calm, rested.",
       addressMode: "not_asked",
@@ -136,7 +146,8 @@ export default {
     {
       name: "Oxygen Brightening Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/oxygen-brightening-facial.jpg",
+      photo:
+        "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/oxygen-brightening-facial.jpg",
       price: 155,
       description: "Oxygen infusion with brightening actives for dull skin and uneven tone.",
       addressMode: "not_asked",
@@ -170,7 +181,8 @@ export default {
     {
       name: "Radio Frequency Facial",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/radio-frequency-facial.jpg",
+      photo:
+        "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/radio-frequency-facial.jpg",
       price: 160,
       description: "Heats the dermis to stimulate collagen. Non-surgical tightening, no needles.",
       addressMode: "not_asked",
@@ -220,7 +232,8 @@ export default {
     {
       name: "Acne Advanced Treatment",
       durationMinutes: 30,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/acne-advanced-treatment.jpg",
+      photo:
+        "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/acne-advanced-treatment.jpg",
       price: 80,
       description:
         "A short chemical-peel facial for breakout-prone skin: cleanse, peel, mask, moisturise and SPF.",
@@ -305,7 +318,8 @@ export default {
     {
       name: "Relaxation Massage, 75 min",
       durationMinutes: 75,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/relaxation-massage-75-min.jpg",
+      photo:
+        "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/relaxation-massage-75-min.jpg",
       price: 120,
       description: "The relaxation massage with fifteen more minutes for the back and shoulders.",
       addressMode: "not_asked",
@@ -313,7 +327,8 @@ export default {
     {
       name: "Relaxation Massage, 90 min",
       durationMinutes: 90,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/relaxation-massage-90-min.jpg",
+      photo:
+        "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/relaxation-massage-90-min.jpg",
       price: 149,
       description: "The full ninety minutes, head to feet, for when an hour is not enough.",
       addressMode: "not_asked",
@@ -339,7 +354,8 @@ export default {
     {
       name: "Lymphatic Drainage Massage",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/lymphatic-drainage-massage.jpg",
+      photo:
+        "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/lymphatic-drainage-massage.jpg",
       price: 125,
       description:
         "Light, rhythmic strokes that follow the lymph pathways. Very gentle, often used after procedures.",
@@ -356,7 +372,8 @@ export default {
     {
       name: "Gentle Relaxation Massage",
       durationMinutes: 60,
-      photo: "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/gentle-relaxation-massage.jpg",
+      photo:
+        "https://ik.imagekit.io/b5xayf4mq/booking-crm/face-and-body/gentle-relaxation-massage.jpg",
       price: 80,
       description: "A very light-pressure relaxation massage given by an esthetician.",
       addressMode: "not_asked",

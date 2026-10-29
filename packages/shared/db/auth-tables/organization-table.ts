@@ -1,7 +1,9 @@
 // Shared: Better Auth's organization table, one row per business.
 
 import { sql } from "drizzle-orm";
-import { boolean, check, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, check, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+
+import type { BusinessLookType } from "../../zod-validation/booking-links-validation-schemas/business-looks-validation-schema.js";
 
 export const organization = pgTable(
   "organization",
@@ -34,6 +36,11 @@ export const organization = pgTable(
     // Whether the owner saved her colours on Settings > Look. Until then the window and the
     // dashboard keep their own look, even with a brandColor set long before for the emails.
     coloursOn: boolean("coloursOn").notNull().default(false),
+    // Its website's own looks (feature 25f), offered first on Settings > Look; from its setup file.
+    looks: jsonb("looks").$type<BusinessLookType[]>().notNull().default([]),
+    // The text on the main colour when the saved colours are one of its looks, as its site has it;
+    // null: worked out for contrast. Cleared by any other save.
+    mainInkColor: text("mainInkColor"),
     // The one currency its prices are in (feature 25d), an ISO 4217 code; none: no price shows.
     currency: text("currency"),
 
@@ -53,6 +60,7 @@ export const organization = pgTable(
     check("organization_brand_color_check", sql`${table.brandColor} ~ '^#[0-9a-f]{6}$'`),
     check("organization_background_color_check", sql`${table.backgroundColor} ~ '^#[0-9a-f]{6}$'`),
     check("organization_text_color_check", sql`${table.textColor} ~ '^#[0-9a-f]{6}$'`),
+    check("organization_main_ink_color_check", sql`${table.mainInkColor} ~ '^#[0-9a-f]{6}$'`),
     check(
       "organization_contact_rule_check",
       sql`${table.contactRule} in ('email', 'phone', 'either')`

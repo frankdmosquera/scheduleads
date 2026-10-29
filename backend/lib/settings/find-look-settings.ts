@@ -1,10 +1,10 @@
 // Backend: what the owner's Look page shows (feature 25e): the business's name, its logo and its
-// three colours.
+// three colours, and its website's own looks to pick from (feature 25f).
 
 import { eq } from "drizzle-orm";
 
 import { organization } from "@scheduleads-app/shared/db";
-import type { BusinessColoursType } from "@scheduleads-app/shared/zod-validation";
+import type { BusinessColoursType, BusinessLookType } from "@scheduleads-app/shared/zod-validation";
 
 import { db } from "../../database.js";
 
@@ -13,6 +13,7 @@ export async function findLookSettings(organizationId: string): Promise<{
   logo: string | null;
   colours: BusinessColoursType;
   coloursOn: boolean; // false: not worn yet, even with a colour saved earlier for the emails
+  looks: BusinessLookType[];
 }> {
   const [row] = await db
     .select({
@@ -22,6 +23,7 @@ export async function findLookSettings(organizationId: string): Promise<{
       background: organization.backgroundColor,
       text: organization.textColor,
       coloursOn: organization.coloursOn,
+      looks: organization.looks,
     })
     .from(organization)
     .where(eq(organization.id, organizationId));
@@ -34,5 +36,6 @@ export async function findLookSettings(organizationId: string): Promise<{
       background: row?.background ?? null,
       text: row?.text ?? null,
     },
+    looks: row?.looks ?? [],
   };
 }

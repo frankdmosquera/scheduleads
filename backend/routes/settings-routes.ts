@@ -18,7 +18,7 @@ import {
   holidayPicksValidationSchema,
   openClosedDayValidationSchema,
   personHoursValidationSchema,
-  businessColoursValidationSchema,
+  saveBusinessColoursValidationSchema,
   saveCurrencyValidationSchema,
   savePersonSkillsValidationSchema,
   savePlaceServicesValidationSchema,
@@ -371,7 +371,7 @@ export const settingsRoutes = new Hono()
     requireModuleMiddleware("booking"),
     requirePermissionMiddleware(CHANGE_BUSINESS),
     validator("json", (value, c) => {
-      const parsed = businessColoursValidationSchema.safeParse(value);
+      const parsed = saveBusinessColoursValidationSchema.safeParse(value);
       return parsed.success ? parsed.data : refuseFirstIssue(c, parsed.error);
     }),
     async (c) =>
