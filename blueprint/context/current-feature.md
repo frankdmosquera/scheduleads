@@ -160,7 +160,7 @@ Each before step 13.3; none blocks 13.1 or 13.2.
 3. **His reminders. Answered (Frank, Oct 29): email only for now.** No texting number yet, so no
    texts and no text box on the form. Once there is a number, the form offers "text me" and only
    those who tick it get texts.
-4. **His Google calendar.** Calendly checks his calendar for busy times; Booking CRM does too
+4. **His Google calendar. Answered (Frank, Oct 29): yes, info@primopainters.ca's own Google calendar**, connected at 13.3 from his dashboard. Calendly checks his calendar for busy times; Booking CRM does too
    once he connects it (he signs in once, Google asks him).
 5. **His Calendly's holiday list and minimum notice**, read in his account (Frank, or a
    screenshot), so the picks match it beyond the 60 days the public calendar shows; the notice
