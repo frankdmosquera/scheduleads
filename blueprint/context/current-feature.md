@@ -188,3 +188,5 @@ Each before step 13.4; none blocks 13.1 to 13.3.
 7. **Two project boxes (found at 13.1). Answered (Frank, Oct 29): one box**, the window's own, worded and required per business: step 13.3. The window always shows its own optional "What would
    you like done?"; his required "Tell us about your project" sits under it. Kept, so his
    required answer stays required; one box would be a small window change of its own.
+8. **Primo's calendar on IA a la Orden. Answered (Frank, Oct 29): untick it at 13.4.** Frank does
+   not go to Primo's estimates; his own call times follow only his own calendar.
