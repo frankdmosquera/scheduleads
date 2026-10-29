@@ -2,9 +2,9 @@
 
 **From build-plan:** feature 13
 
-**Size:** light - no new logic in Booking CRM: a setup file, the booking window wired into his
-site, and the live switch. Two steps only because going live with a paying client's real
-bookings is a second, different risk from building it on the laptop.
+**Size:** light - little new logic in Booking CRM: a setup file, the booking window wired into his
+site, the "both" contact rule, and the live switch. Three steps: the rule is one real piece of
+logic, and going live with a paying client's real bookings is a different risk.
 
 **Branch:** feature/13-primo-painters
 
@@ -51,7 +51,7 @@ Free Estimate stay as Calendly has them today. His site gets lighter: Calendly l
     `app/globals.css`, its preconnect in `app/layout.tsx`, and the `react-calendly` dependency.
 - **The laptop**: Primo made on the laptop's admin page, his file applied, his site on port 3403
   (`.claude/launch.json` "primo-painters-site", `WIDGET_ORIGINS` gains `http://localhost:3403`).
-- **Live** (step 13.2, each live action on Frank's yes): his business on app.booking-crm.com with
+- **Live** (step 13.3, each live action on Frank's yes): his business on app.booking-crm.com with
   his Website, his file applied `--live`, his site's branch merged and deployed, one real
   booking watched, then his Calendly event turned off. A speed test after, the same four as the
   baseline.
@@ -86,7 +86,20 @@ finding. `workflow.checkpointCommits` is enabled: one commit per step, pushed st
   calendly.com (network check on home, /booking, /contact and the 404); his site's
   `npm run build` passes; the setup dry run lists only what it adds; the shared package's tests
   pass.
-- [ ] **13.2 Primo live.** Open questions 1 to 4 answered first. His business on the live app
+- [ ] **13.2 A business can require both an email and a phone.** Added at Frank's answer to
+  open question 1 (Oct 29): a booking always needs a name and the way back the business picks:
+  email, phone, either, or now both; every other box is the business's own question. Pieces: the
+  rule gains `both` (shared schema, `helpers/missing-contact.ts`: email checked first, then
+  phone; the API's booking check and the window run the same helper); the organization's
+  `contactRule` column and its check constraint allow `both` (a migration, laptop now, live at
+  13.3); Settings > Booking form offers "Email and phone"; the window marks both boxes required
+  (0.2.10, packed into Primo's site; Face and Body keeps 0.2.9, its rule never sends `both`);
+  Primo's file sets `both`.
+  **Done when:** on http://localhost:3403 a booking without a phone, or without an email, is
+  refused by the window and, sent straight to the API, by the API; with both it books; Settings
+  shows and saves "Email and phone"; tests for the rule pass (shared, backend and the window's);
+  the migration applies to the laptop database.
+- [ ] **13.3 Primo live.** Open questions 2, 4, 5 and 7 answered first. His business on the live app
   (admin page) with Website `https://www.primopainters.ca`; his file `--live --apply` through
   Frank's tunnel; his branch merged to his `main` on Frank's yes and deployed by Vercel; one real
   booking made on www.primopainters.ca with Frank watching; his Calendly event turned off.
@@ -136,22 +149,24 @@ finding. `workflow.checkpointCommits` is enabled: one commit per step, pushed st
 
 ## Open questions
 
-Each before step 13.2; none blocks 13.1 (13.1 uses the provisional value).
+Each before step 13.3; none blocks 13.1 or 13.2.
 
-1. **What a customer must leave.** His Calendly requires both an email and a phone; Booking CRM
-   offers email, phone or either. Provisionally email (every customer gets the confirmation
-   email and its change/cancel link). A fourth rule, "both", would be a small fix of its own.
+1. **What a customer must leave. Answered (Frank, Oct 29): email AND phone**, as his Calendly:
+   name, email, phone, address and "Tell us about your project", all required. Booking CRM has
+   no "both" rule yet (email, phone or either), so it needs one; how it is added is the open
+   point.
 2. **His login and where "New booking" goes.** Frank handles his bookings: Frank's own address,
    Primo's, or Primo's login with notices to Frank.
-3. **His reminders.** Calendly texts a confirmation and a reminder; Booking CRM's texts need
-   Twilio on Railway and a Calgary number. Whether those are live decides whether his texts carry
-   over on day one.
+3. **His reminders. Answered (Frank, Oct 29): email only for now.** No texting number yet, so no
+   texts and no text box on the form. Once there is a number, the form offers "text me" and only
+   those who tick it get texts.
 4. **His Google calendar.** Calendly checks his calendar for busy times; Booking CRM does too
    once he connects it (he signs in once, Google asks him).
 5. **His Calendly's holiday list and minimum notice**, read in his account (Frank, or a
    screenshot), so the picks match it beyond the 60 days the public calendar shows; the notice
    is provisionally 12 hours (the public times only pin it between 4.5 and 23).
-6. **His clock (found at 13.1).** His Calendly counts his hours in Denver's zone, which falls
+6. **His clock (found at 13.1). Answered (Frank, Oct 29): his hours are Calgary time**, kept as
+   built. His Calendly counts his hours in Denver's zone, which falls
    back an hour on Nov 1; Alberta no longer does (time zone data 2026c keeps Calgary on UTC-6).
    So from Nov 2 his live Calendly offers 10:00 to 15:30 Calgary time, not 9:00 to 14:30. The
    setup file keeps his own clock (9:00 to 15:00 Calgary); every one of the 650 open times
