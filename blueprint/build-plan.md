@@ -616,6 +616,13 @@ booking with no one at the agency involved.
 
 Nothing above depends on these. Each gets a phase when something does.
 
+- A business picks its website's built-in design choices from its dashboard (Frank, Oct 29,
+  after 25f). As with its colours: a choice its site already has (which hero, how the products
+  or treatments are laid out, card styles, backdrops) is switched on Settings with no rebuild,
+  the page redrawn within a minute; only new or different choices are code and one rebuild, and
+  each client's site can offer its own set. The page draws only the chosen one, read when it is
+  redrawn, so hidden copies never weigh on it or repeat its text for Google (Face and Body's
+  DesignPicker keeps every option in the page today). Face and Body's options are the first set.
 - How messages are offered and paid (Frank, Oct 19). Each business toggles
   its own channels, each toggle showing what it costs and what is included:
   WhatsApp offered at booking or not (the booking asks the customer and
