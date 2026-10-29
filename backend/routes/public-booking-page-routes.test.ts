@@ -60,6 +60,7 @@ async function makeBusiness(name: string, businessName: string, timezone = "Amer
     slug: `test-page-${name}-${tag}-dev`,
     logo: "https://ik.imagekit.io/primo/logo.png",
     brandColor: "#1d4ed8",
+    mainInkColor: "#fffdf9", // its look's own text on the colour (feature 25f)
     phone: "(403) 555-0100",
     website: "https://primopainters.com",
   });
@@ -199,6 +200,7 @@ describe("the customer's booking page", () => {
           name: "Primo Painters",
           logo: "https://ik.imagekit.io/primo/logo.png",
           brandColor: "#1d4ed8",
+          brandInk: "#fffdf9",
           phone: "(403) 555-0100",
           website: "https://primopainters.com",
         },

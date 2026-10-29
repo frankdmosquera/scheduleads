@@ -77,7 +77,7 @@ export function ColoursCard({
     }
     setPicked(saved.answer);
     setWorn(!!(saved.answer.main || saved.answer.background || saved.answer.text));
-    setMainColour(saved.answer.main);
+    setMainColour(saved.answer.main, pickedLook?.ink ?? null); // the API kept the look's ink
     setNotice({ tone: "info", text: lookWords.coloursSaved });
   };
 

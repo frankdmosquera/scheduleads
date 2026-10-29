@@ -21,7 +21,8 @@ export type BookingProviderPropsType = {
   children: ReactNode;
 };
 
-type OpenWindowType = { bookingId: string | undefined; opener: HTMLElement | null };
+// asked counts the opens: one that finds the window open asks it to make sure it is showing.
+type OpenWindowType = { bookingId: string | undefined; opener: HTMLElement | null; asked: number };
 
 export function BookingProvider({
   apiUrl,
@@ -35,7 +36,9 @@ export function BookingProvider({
   const [openWindow, setOpenWindow] = useState<OpenWindowType | null>(null);
 
   const openFrom = useCallback<BookingContextType["openFrom"]>((bookingId, opener) => {
-    setOpenWindow((current) => current ?? { bookingId, opener });
+    setOpenWindow((current) =>
+      current ? { ...current, asked: current.asked + 1 } : { bookingId, opener, asked: 0 }
+    );
   }, []);
   const booking = useMemo(() => ({ openFrom }), [openFrom]);
 
@@ -54,6 +57,7 @@ export function BookingProvider({
           apiClient={apiClient}
           slug={slug}
           bookingId={openWindow.bookingId}
+          asked={openWindow.asked}
           words={wordsOf[language]}
           afterBooking={afterBooking}
           onBooked={onBooked}

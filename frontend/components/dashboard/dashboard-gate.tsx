@@ -26,9 +26,11 @@ export function useMe(): MeType {
 }
 
 // Shows a newly saved main colour on the whole dashboard at once (feature 25e), without asking /me again.
-const SetMainColourContext = createContext<(main: string | null) => void>(() => {});
+const SetMainColourContext = createContext<(main: string | null, ink?: string | null) => void>(
+  () => {}
+);
 
-export function useSetMainColour(): (main: string | null) => void {
+export function useSetMainColour(): (main: string | null, ink?: string | null) => void {
   return useContext(SetMainColourContext);
 }
 
@@ -40,12 +42,15 @@ export function DashboardGate({ children }: { children: ReactNode }) {
   const [reloads, setReloads] = useState(0);
   const reloadDashboard = () => setReloads((n) => n + 1);
   const setMainColour = useCallback(
-    (main: string | null) =>
+    (main: string | null, ink: string | null = null) =>
       setResult((now) =>
         now?.state === "ok"
           ? {
               ...now,
-              me: { ...now.me, organization: { ...now.me.organization, mainColour: main } },
+              me: {
+                ...now.me,
+                organization: { ...now.me.organization, mainColour: main, mainInk: ink },
+              },
             }
           : now
       ),

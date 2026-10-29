@@ -30,7 +30,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   return (
     <div
       className="flex min-h-screen flex-1 flex-col md:flex-row"
-      style={businessAccentStyle(me.organization.mainColour)} // its main colour (feature 25e)
+      style={businessAccentStyle(me.organization.mainColour, me.organization.mainInk)} // its main colour (feature 25e)
     >
       {/* On a desktop the column holds still at the window's height; only its links scroll. */}
       <aside className="flex flex-none flex-col gap-6 border-b border-border bg-card p-4 md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0 md:pb-8">

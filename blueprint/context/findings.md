@@ -664,3 +664,27 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** Step 25f.2 added `organization.looks` and `organization.mainInkColor` (migration 0039), changed the Look page, the settings save route, the public theme, the window and every email button. The Size line ("no stored data, no new route"), Out of scope (line 61, "Any change to the Look page, the window, the emails or the API") and Data / contracts (line 112, "No new route, field or migration") still describe 25f.1 only. `/complete` archives this spec as the feature's record, so the archive would contradict the merged code.
 **Suggested fix:** Amend those three places to name 25f.2's migration, route change and window/email ink, as the 25f.1 amendment did.
 **Resolution:**
+
+### F-585 [P2] open - The spec's `businessAccentStyle` tests were never written, yet Fix.1 is ticked
+
+**File:** frontend/lib/business-accent-style.ts:23
+**Found:** 2026-10-29 by /audit independent (scope: current 66fb631..b6c515b; lens: tests, quality)
+**Why it matters:** Fix.1 (current-feature.md:48) promises tests for `businessAccentStyle` with and without an ink, and for a light main colour shaded darker keeping its worked-out ink. The diff adds none: the frontend has no test script or runner, so the new rule (`chosenInk` used only while `readableOn` returned the colour unshaded) is proved only by reading it. The logic is correct today (`readableOn` returns its input unchanged when it already reads, and the database keeps both colours lowercase, so `main === chosen` holds), but the ticked box tells the archive a test exists. Neither the gap nor its reason is stated in the spec.
+**Suggested fix:** Either move the pure rule into `packages/shared` beside `readableOn` and test it there (no new package), or amend the spec's Fix.1 to say the frontend has no runner yet and the rule is proved by the Done-when check alone.
+**Resolution:**
+
+### F-586 [P3] open - Reviving a hidden window keeps the first open's service and opener, not the ones just clicked
+
+**File:** packages/booking-component/booking-provider/booking-provider.tsx:40
+**Found:** 2026-10-29 by /audit independent (scope: current 66fb631..b6c515b; lens: quality)
+**Why it matters:** An open that finds the window held but not showing only bumps `asked`; `bookingId` and `opener` stay those of the first open. On Face and Body's `/book` the swallowed open is the page's own on-load one (opener: whatever had focus at load, usually `body`), so after a click revives it the provider's own focus return on close goes to `body`, not the clicked button (the browser's own dialog focus restore may cover it). A click on a different named service (a `data-booking` anchor) while a hidden window is held shows the earlier service instead. Only the recovery path is affected; a window that is truly showing is modal, so no click can reach the page.
+**Suggested fix:** When an ask finds the window not showing, take the new ask's `bookingId` and `opener` (for example by keying the window on a new open so it remounts), and keep bump-only for a window that is showing.
+**Resolution:**
+
+### F-587 [P2] unverified - The recovery skips a dialog that is open but not modal, which matches the symptom the spec describes
+
+**File:** packages/booking-component/booking-window/booking-window.tsx:154
+**Found:** 2026-10-29 by /audit independent (scope: current 66fb631..b6c515b; lens: quality, tests)
+**Why it matters:** The spec says the window's contents were "in the page but off-screen". A closed `<dialog>` is `display: none` and lays out nowhere; an open dialog that is not modal (not in the top layer) lays out in flow, and with `.sa-dialog`'s full width and height it would sit below the page's content, off-screen. That is the state `!dialog.open` cannot see: `open` is true, so no ask calls `showModal()` and every click is still swallowed. The root cause of the first `showModal()` not reaching the screen was not identified, and the jsdom test stubs only the "never opened" case, so it cannot tell the two apart. If the real state is open-not-modal, the fix does not recover it.
+**Suggested fix:** Reproduce on `/book` and inspect `dialog.open` and `dialog.matches(":modal")` while stuck. If it is open but not modal, recover with `if (!dialog.matches(":modal")) { if (dialog.open) dialog.close(); dialog.showModal(); }` (guarding the close so it does not unmount the window through `onClose`), and add that case to the test.
+**Resolution:**
