@@ -34,6 +34,7 @@ export type BookingPageType = {
     name: string;
     logo: string | null; // an absolute https:// image URL
     brandColor: string | null; // #rrggbb
+    brandInk: string | null; // its look's own text on brandColor (feature 25f); null: worked out
     phone: string | null;
     website: string | null;
   };
@@ -58,6 +59,7 @@ export async function findBookingPage(
       businessName: organization.name,
       logo: organization.logo,
       brandColor: organization.brandColor,
+      brandInk: organization.mainInkColor,
       phone: organization.phone,
       website: organization.website,
     })
@@ -108,6 +110,7 @@ export async function findBookingPage(
       name: row.businessName,
       logo: row.logo,
       brandColor: row.brandColor,
+      brandInk: row.brandInk,
       phone: row.phone,
       website: row.website,
     },

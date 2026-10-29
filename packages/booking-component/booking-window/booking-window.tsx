@@ -32,6 +32,7 @@ export type BookingWindowPropsType = {
   apiClient: BookingApiClientType;
   slug: string;
   bookingId: string | undefined;
+  asked?: number; // grows with each open while this window is mounted: show it if it is not
   words: BookingWordsType;
   afterBooking: AfterBookingType;
   onBooked: ((booked: BookedType) => void) | undefined;
@@ -43,6 +44,7 @@ export function BookingWindow({
   apiClient,
   slug,
   bookingId,
+  asked = 0,
   words,
   afterBooking,
   onBooked,
@@ -145,9 +147,14 @@ export function BookingWindow({
     [apiClient, slug]
   );
 
+  // Shown on mount, and again by any later open that finds it not showing: a window the page holds
+  // as open but never on screen would otherwise swallow every click (fix, Oct 29).
   useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog && !dialog.open) dialog.showModal();
+  }, [asked]);
+
+  useEffect(() => {
     if (bookingId === undefined) void loadServices();
     else void loadNamedService(bookingId);
     return () => {

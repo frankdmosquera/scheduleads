@@ -20,7 +20,12 @@ import { refuse } from "../../lib/errors/refuse.js";
 declare module "hono" {
   interface ContextVariableMap {
     subscription: { tier: TierType; limits: SubscriptionLimitsType };
-    organizationDetails: { name: string; slug: string; mainColour: string | null };
+    organizationDetails: {
+      name: string;
+      slug: string;
+      mainColour: string | null;
+      mainInk: string | null; // its look's own text on mainColour (feature 25f)
+    };
   }
 }
 
@@ -43,6 +48,7 @@ export const requireKnownSubscriptionMiddleware = createMiddleware(async (c, nex
       slug: organization.slug,
       brandColor: organization.brandColor,
       coloursOn: organization.coloursOn,
+      mainInkColor: organization.mainInkColor,
     })
     .from(organization)
     .where(eq(organization.id, activeOrganization.organizationId))
@@ -69,6 +75,7 @@ export const requireKnownSubscriptionMiddleware = createMiddleware(async (c, nex
   c.set("subscription", { tier: row.plan, limits: getSubscriptionLimits(row.plan) });
   // The dashboard's highlight only once the owner saved her colours (feature 25e).
   const mainColour = row.coloursOn ? row.brandColor : null;
-  c.set("organizationDetails", { name: row.name, slug: row.slug, mainColour });
+  const mainInk = mainColour ? row.mainInkColor : null; // a look's own, kept only with its colours
+  c.set("organizationDetails", { name: row.name, slug: row.slug, mainColour, mainInk });
   await next();
 });

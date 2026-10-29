@@ -130,9 +130,9 @@ function CustomerBookingDetails({
   const resultHeading = useRef<HTMLHeadingElement>(null);
   const { business } = booking;
   // The business's own colour is data, not a class, so its buttons are styled inline; the text on
-  // it is white or dark ink, whichever stays readable.
+  // it is the business's look's own (feature 25f), else white or dark ink, whichever stays readable.
   const brand = business.brandColor ?? "#0f172a";
-  const onBrand = textColorOn(brand);
+  const onBrand = (business.brandColor && business.brandInk) || textColorOn(brand);
   const keepRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const changeRef = useRef<HTMLButtonElement>(null);

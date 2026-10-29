@@ -2379,9 +2379,14 @@ describe("the business's colours (feature 25e)", () => {
 
       await put("/settings/look/colours", summit.email, { ...colours, look: "Copper" });
       expect(await inkNow()).toBe("#fffdf9");
+      const meInk = async () =>
+        ((await (await get("/me", summit.email)).json()) as { organization: { mainInk: unknown } })
+          .organization.mainInk;
+      expect(await meInk()).toBe("#fffdf9"); // the dashboard's buttons wear it too (fix, Oct 29)
       // the same colours picked by hand: worked out again
       await put("/settings/look/colours", summit.email, { ...colours, look: null });
       expect(await inkNow()).toBeNull();
+      expect(await meInk()).toBeNull();
       // a look's name sent with colours that are not its own keeps nothing
       await put("/settings/look/colours", summit.email, {
         ...colours,
