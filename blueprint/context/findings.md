@@ -688,3 +688,27 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** The spec says the window's contents were "in the page but off-screen". A closed `<dialog>` is `display: none` and lays out nowhere; an open dialog that is not modal (not in the top layer) lays out in flow, and with `.sa-dialog`'s full width and height it would sit below the page's content, off-screen. That is the state `!dialog.open` cannot see: `open` is true, so no ask calls `showModal()` and every click is still swallowed. The root cause of the first `showModal()` not reaching the screen was not identified, and the jsdom test stubs only the "never opened" case, so it cannot tell the two apart. If the real state is open-not-modal, the fix does not recover it.
 **Suggested fix:** Reproduce on `/book` and inspect `dialog.open` and `dialog.matches(":modal")` while stuck. If it is open but not modal, recover with `if (!dialog.matches(":modal")) { if (dialog.open) dialog.close(); dialog.showModal(); }` (guarding the close so it does not unmount the window through `onClose`), and add that case to the test.
 **Resolution:**
+
+### F-588 [P3] open - The spec still says no migration, no new logic and no "both" rule, and gives Primo "email" and a separate question
+
+**File:** blueprint/context/current-feature.md:143
+**Found:** 2026-10-29 by /audit independent (scope: current ed46fe3..eb2f0c6; lens: quality)
+**Why it matters:** Steps 13.2 and 13.3 added migrations 0040 and 0041, two organization columns, a booking check and their tests, but Data / contracts (line 143) still says "No new route, table or migration", Testing (line 151) "No new logic, so no new unit test", Out of scope (line 68) lists the "both email and phone" rule, and In scope gives Primo `contactRule: "email"` provisionally (line 40) and "one required booking question" (line 28), where his file has `both`, `detailsBox` and no question. Line 146 says his site reads the API address and slug as server layout props; `primo-painters/data/siteConfig.ts:44` reads them from a client constant with a `NEXT_PUBLIC_BOOKING_API_URL` override. `/complete` archives this spec as the feature's record.
+**Suggested fix:** Amend those lines to what was built (13.2 and 13.3's migrations and tests, the `both` rule in scope, Primo's `both` and project box, the site's constant), as the step amendments already did for the build steps.
+**Resolution:**
+
+### F-589 [P2] open - Open question 5 is still open and Primo's minimum notice is provisional, while 13.4 requires every question answered first
+
+**File:** packages/shared/client-setups/primo-painters.ts:38
+**Found:** 2026-10-29 by /audit independent (scope: current ed46fe3..eb2f0c6; lens: quality)
+**Why it matters:** Step 13.4 (current-feature.md:120) says "Every open question was answered first" before his file is applied `--live`. Open question 5 (line 183, his holiday list and minimum notice) carries no answer, and the file sets `minimumNoticeMinutes: 12 * 60` as "Provisional (open question 5)", with the closed holidays "to match on open question 5". Applied live as is, a paying client's customers can be offered times Calendly refused (or refused times it offered) the day Calendly is turned off. The two sources also disagree on the range the public read pinned: the file says 4.5 to 23 hours, the spec's In scope 5 to 23.5.
+**Suggested fix:** Answer question 5 from his Calendly account before 13.4 (or record Frank's yes to go live on 12 hours), set the value in the file, and make the comment and spec agree.
+**Resolution:**
+
+### F-590 [P3] open - The setup file's project box and the owner's exemption from a required box have no test
+
+**File:** packages/shared/client-setup/apply-business-shape.ts:220
+**Found:** 2026-10-29 by /audit independent (scope: current ed46fe3..eb2f0c6; lens: tests)
+**Why it matters:** Step 13.3 added two rules with no test: `applyBusinessShape` writes `detailsBox` only while the business has no service, and `findDifferences` (run-client-setup.ts:148) lists a saved box that differs from the file's. `run-client-setup.test.ts` covers the same two rules for `contactRule` but never mentions `detailsBox`. Separately, `bookTime` exempts the owner's own booking from a required box (book-time.ts:222, inside `source !== "manual"`), which the spec names ("except the owner's own"), but no test books manually against a business with `detailsRequired` true. The code reads correctly today; nothing would catch a regression.
+**Suggested fix:** Extend the existing `contactRule` cases in `run-client-setup.test.ts` with a `detailsBox` (set on a business with no service, listed as a difference on one with a service), and add one manual booking to the dashboard bookings route tests with `detailsRequired` true and no details.
+**Resolution:**

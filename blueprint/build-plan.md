@@ -415,7 +415,7 @@ without Frank touching the database.
 Exit: Primo takes a real booking through this product, the lead is in his
 list, Calendly is gone from his site, and the ranking is untouched.
 
-- [ ] 13. **Primo Painters** - the shared modal behind one config value plus
+- [x] 13. **Primo Painters** - the shared modal behind one config value plus
   the provider component; his people become resources, one each, and his
   crews become saved lists of them in item 19. Ask first what he needs on
   day one beyond booking and the leads list. Before switching him to
