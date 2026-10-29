@@ -705,6 +705,17 @@
   max-height: 296px;
   overflow-y: auto;
   padding-right: 4px;
+  /* The business's own colour on the scroll bar, not the browser's grey (feature 13). */
+  scrollbar-width: thin;
+  scrollbar-color: var(--sa-identity, #18181b) transparent;
+}
+/* Safari reads no scrollbar-color: the same bar drawn its way. */
+.sa-times-list::-webkit-scrollbar {
+  width: 6px;
+}
+.sa-times-list::-webkit-scrollbar-thumb {
+  background: var(--sa-identity, #18181b);
+  border-radius: 3px;
 }
 
 .sa-t {
@@ -887,10 +898,37 @@
 @media (max-width: 760px) {
   .sa-book {
     grid-template-columns: minmax(0, 1fr);
+    position: relative; /* the back link's place, below */
   }
+  /* The booking first (feature 13): on a phone the rail's parts join the page, its logo on top,
+     then the calendar or the form, then the service's name and facts, its photo last. */
   .sa-rail {
-    border-right: none;
-    border-bottom: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+    display: contents;
+  }
+  .sa-rail-logo,
+  .sa-rail-body,
+  .sa-rail-photo {
+    background: var(--sa-surface, #ffffff);
+  }
+  .sa-rail-logo {
+    order: 0;
+  }
+  .sa-book > :not(.sa-rail) {
+    order: 1;
+  }
+  .sa-rail-body {
+    order: 2;
+    border-top: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+  }
+  .sa-rail-photo {
+    order: 3;
+    border-bottom: none;
+  }
+  /* Back to all services stays in reach, beside the logo, not under the calendar. */
+  .sa-rail-back {
+    position: absolute;
+    top: 20px;
+    left: 16px;
   }
   .sa-pick {
     grid-template-columns: minmax(0, 1fr);

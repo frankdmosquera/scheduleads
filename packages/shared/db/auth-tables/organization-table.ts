@@ -44,9 +44,10 @@ export const organization = pgTable(
     // The one currency its prices are in (feature 25d), an ISO 4217 code; none: no price shows.
     currency: text("currency"),
 
-    // Which way to reach the customer the booking form requires (feature 12f). Better Auth makes
-    // the row, so a new business starts at either one, the least it can ask; the setup file says it.
-    contactRule: text("contactRule", { enum: ["email", "phone", "either"] })
+    // Which way to reach the customer the booking form requires (feature 12f; "both" since feature
+    // 13). Better Auth makes the row, so a new business starts at either one, the least it can ask;
+    // the setup file says it.
+    contactRule: text("contactRule", { enum: ["email", "phone", "either", "both"] })
       .notNull()
       .default("either"),
 
@@ -63,7 +64,7 @@ export const organization = pgTable(
     check("organization_main_ink_color_check", sql`${table.mainInkColor} ~ '^#[0-9a-f]{6}$'`),
     check(
       "organization_contact_rule_check",
-      sql`${table.contactRule} in ('email', 'phone', 'either')`
+      sql`${table.contactRule} in ('email', 'phone', 'either', 'both')`
     ),
     check("organization_language_check", sql`${table.language} in ('en', 'es')`),
     check("organization_currency_check", sql`${table.currency} ~ '^[A-Z]{3}$'`),

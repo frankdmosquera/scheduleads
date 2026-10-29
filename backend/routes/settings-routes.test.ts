@@ -2156,6 +2156,10 @@ describe("the Booking form settings", () => {
       language: "fr",
     });
     expect(french.status).toBe(400);
+    // Both an email and a phone (feature 13): saved and read back like the other three.
+    const both = await put("/settings/booking-form/rules", closer.email, { contactRule: "both" });
+    expect((await both.json()).contactRule).toBe("both");
+    expect((await rulesOf()).contactRule).toBe("both");
     await put("/settings/booking-form/rules", closer.email, {
       contactRule: "phone",
       language: "en",

@@ -86,7 +86,7 @@ finding. `workflow.checkpointCommits` is enabled: one commit per step, pushed st
   calendly.com (network check on home, /booking, /contact and the 404); his site's
   `npm run build` passes; the setup dry run lists only what it adds; the shared package's tests
   pass.
-- [ ] **13.2 A business can require both an email and a phone.** Added at Frank's answer to
+- [x] **13.2 A business can require both an email and a phone.** Added at Frank's answer to
   open question 1 (Oct 29): a booking always needs a name and the way back the business picks:
   email, phone, either, or now both; every other box is the business's own question. Pieces: the
   rule gains `both` (shared schema, `helpers/missing-contact.ts`: email checked first, then

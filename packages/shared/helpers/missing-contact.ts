@@ -12,6 +12,10 @@ export function missingContact(
     return customer.email ? null : { field: "email", message: "Enter an email." };
   if (rule === "phone")
     return customer.phone ? null : { field: "phone", message: "Enter a phone number." };
+  if (rule === "both") {
+    if (!customer.email) return { field: "email", message: "Enter an email." };
+    return customer.phone ? null : { field: "phone", message: "Enter a phone number." };
+  }
   return customer.email || customer.phone
     ? null
     : { field: "email", message: "Enter an email or a phone number. At least one is required." };

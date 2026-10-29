@@ -79,6 +79,7 @@ export function BookingFormRulesCard({
             { value: "either", label: formWords.emailOrPhone },
             { value: "email", label: formWords.anEmail },
             { value: "phone", label: formWords.aPhone },
+            { value: "both", label: formWords.emailAndPhone },
           ]}
           value={contactRule}
           onChange={(value) => {

@@ -501,7 +501,7 @@ describe("the address, asked per service (the address fix)", () => {
 });
 
 describe("the business's contact rule (feature 12f)", () => {
-  const setRule = (contactRule: "email" | "phone" | "either") =>
+  const setRule = (contactRule: "email" | "phone" | "either" | "both") =>
     db.update(organization).set({ contactRule }).where(eq(organization.id, clinic.id));
   const sendWith = async (customer: Record<string, string>) => {
     const [startsAt] = await freeTimes(clinic.mei);
@@ -547,6 +547,13 @@ describe("the business's contact rule (feature 12f)", () => {
     );
     expect((await sendWith({ phone })).status).toBe(201);
     expect((await sendWith({ email })).status).toBe(201);
+  });
+
+  test("both (feature 13): an email alone or a phone alone is refused, the two are taken", async () => {
+    await setRule("both");
+    expect(await refusedWith(await sendWith({ email }))).toBe("Enter a phone number.");
+    expect(await refusedWith(await sendWith({ phone }))).toBe("Enter an email.");
+    expect((await sendWith({ email, phone })).status).toBe(201);
   });
 });
 

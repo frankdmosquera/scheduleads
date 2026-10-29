@@ -13,9 +13,8 @@ const weekdayHours = [{ startMinute: 9 * 60, endMinute: 15 * 60 }];
 export default {
   slug: "primo-painters",
   personChoice: "business_assigns", // Frank handles his bookings; his crews come with item 19
-  // Provisional (feature 13, open question 1): his Calendly requires an email and a phone, and
-  // Booking CRM asks for one rule. Email: every customer gets the confirmation and its links.
-  contactRule: "email",
+  // An email and a phone, both required, as his Calendly (Frank, Oct 29; the rule is feature 13).
+  contactRule: "both",
   look: {
     logo: "https://www.primopainters.ca/primo-painters-logo-400.png",
     colours: { main: "#0d378d", background: null, text: null }, // his site's blue
@@ -59,7 +58,10 @@ export default {
   people: [],
   services: [
     {
-      name: "Free Estimate", // his Calendly event's name; it has no description
+      name: "Free Estimate", // his Calendly event's name
+      // His Calendly event has none: the first line of his own /booking page. No photo: it made the
+      // window taller with nothing to book (Frank, Oct 29).
+      description: "Your estimate is completely free with no obligation.",
       durationMinutes: 30,
       slotIntervalMinutes: 30,
       addressMode: "required", // Calendly asks the invitee where; a painter travels to the job

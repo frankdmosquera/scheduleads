@@ -228,7 +228,7 @@ export function BookingFormView({
         {field(
           "email",
           words.emailLabel,
-          business.contactRule === "email",
+          business.contactRule === "email" || business.contactRule === "both",
           (props) => (
             <input
               {...props}
@@ -243,7 +243,7 @@ export function BookingFormView({
         {field(
           "phone",
           words.phoneLabel,
-          business.contactRule === "phone",
+          business.contactRule === "phone" || business.contactRule === "both",
           (props) => (
             <input
               {...props}

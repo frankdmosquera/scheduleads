@@ -11,6 +11,7 @@ export type BookingFormWordsType = {
   emailOrPhone: string;
   anEmail: string;
   aPhone: string;
+  emailAndPhone: string;
   askLaterTextsYes: string;
   yesShowTheBox: string;
   no: string;
@@ -47,6 +48,7 @@ export const englishBookingFormWords: BookingFormWordsType = {
   emailOrPhone: "An email or a phone, either one",
   anEmail: "An email",
   aPhone: "A phone",
+  emailAndPhone: "An email and a phone, both",
   askLaterTextsYes: "Ask the customer's yes to later texts (offers, reminders to book again)",
   yesShowTheBox: "Yes, show the box",
   no: "No",
@@ -85,6 +87,7 @@ export const spanishBookingFormWords: BookingFormWordsType = {
   emailOrPhone: "Un correo o un teléfono, cualquiera de los dos",
   anEmail: "Un correo",
   aPhone: "Un teléfono",
+  emailAndPhone: "Un correo y un teléfono, los dos",
   askLaterTextsYes:
     "Pedir el sí del cliente a mensajes de texto más adelante (ofertas, recordatorios para volver a reservar)",
   yesShowTheBox: "Sí, mostrar la casilla",
