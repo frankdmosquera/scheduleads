@@ -2,7 +2,7 @@
 
 **Type:** Fix
 
-**Status:** not started
+**Status:** verified
 
 **Size:** light - two small pieces of wiring (one stored value carried to two more screens) and one small piece of logic in the window, each with its test; no new data or route.
 
