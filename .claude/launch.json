@@ -22,7 +22,7 @@
     {
       "name": "primo-painters-site",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "../primo-painters/.claude/worktrees/booking-crm", "--", "-p", "3403"],
+      "runtimeArgs": ["run", "dev", "--prefix", "../primo-painters", "--", "-p", "3403"],
       "port": 3403
     }
   ]

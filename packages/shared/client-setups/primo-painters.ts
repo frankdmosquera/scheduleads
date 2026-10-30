@@ -35,8 +35,8 @@ export default {
     // His Calgary clock. His Calendly counts in America/Denver, which falls back an hour on
     // Nov 1 while Alberta stays on UTC-6, so from Nov 2 it offers 10:00 to 15:30 (open question 6).
     timezone: "America/Edmonton",
-    // Provisional (open question 5): Calendly's open times only pin it between 4.5 and 23 hours.
-    minimumNoticeMinutes: 12 * 60,
+    // Frank, Oct 30: 18 hours, so an evening booking lands no earlier than the next afternoon.
+    minimumNoticeMinutes: 18 * 60,
     horizonDays: 60, // Calendly's 86,400 minutes, a moving window
     // Canada's days his Calendly closes that Alberta's list does not hold: Boxing Day, and the
     // Day for Truth and Reconciliation (the plan, Sep 18). A closed date does not repeat.
