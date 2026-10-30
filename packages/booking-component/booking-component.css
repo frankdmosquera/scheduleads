@@ -901,13 +901,12 @@
     position: relative; /* the back link's place, below */
   }
   /* The booking first (feature 13): on a phone the rail's parts join the page, its logo on top,
-     then the calendar or the form, then the service's name and facts, its photo last. */
+     then the calendar or the form, then the service's name and facts. No photo on a phone. */
   .sa-rail {
     display: contents;
   }
   .sa-rail-logo,
-  .sa-rail-body,
-  .sa-rail-photo {
+  .sa-rail-body {
     background: var(--sa-surface, #ffffff);
   }
   .sa-rail-logo {
@@ -921,8 +920,7 @@
     border-top: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
   }
   .sa-rail-photo {
-    order: 3;
-    border-bottom: none;
+    display: none;
   }
   /* Back to all services stays in reach, beside the logo, not under the calendar. */
   .sa-rail-back {
