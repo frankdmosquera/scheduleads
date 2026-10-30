@@ -2,7 +2,7 @@
 // form that follows each business: which questions ask for a time and which day and part they name; the free times
 // a chat offers, from a stand-in Booking CRM; a tapped time or service; booking by talking with the word lists; the
 // booking AI's fields checked by our code. Then the cases only a business's own form has. No network.
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { crmFetch, type CrmStandInType } from "../crm-stand-in.js";
 import { englishChatWords } from "../words/english-chat-words.js";
@@ -20,7 +20,12 @@ import {
 } from "./booking-flow.js";
 import { createBookingSource } from "./booking-source.js";
 import type { BookingUnderstoodType } from "./booking-understood-type.js";
+import { showBubble, type BubbleType } from "../chat/bubble-list.js";
+import { BOOKING_ASK_LIMITS, askChars } from "./booking-ask-limits.js";
 import {
+  asksForNewTime,
+  bookingAi,
+  bookingAskBody,
   bookingReply,
   startBooking,
   tapService,
@@ -787,12 +792,13 @@ describe("a form's optional boxes", async () => {
     line(await reply(confirm.booking!, "yes", noAi));
     expect(fresh.bookings[0]).not.toHaveProperty("location");
   });
-  it("the project box skipped: the visitor's own question reaches the lead as its details", async () => {
+  it("the project box skipped: no details are sent, since the read-back named none", async () => {
     const fresh = await started(optional, "can I book Saturday? I need my fence painted");
     const skipped = line(await reply({ ...fresh.booking, flow: atAddress.flow }, "skip", noAi));
     const confirm = line(await reply(skipped.booking!, "skip", noAi));
     line(await reply(confirm.booking!, "yes", noAi));
-    expect(fresh.bookings[0]?.details).toBe("can I book Saturday? I need my fence painted");
+    expect(fresh.bookings).toHaveLength(1);
+    expect(fresh.bookings[0]).not.toHaveProperty("details");
   });
   it("the AI's skip moves on only for a box the form does not require", async () => {
     const fresh = await started(optional, "can I book Saturday?");
@@ -820,5 +826,319 @@ describe("a form's optional boxes", async () => {
       NOW
     );
     expect(down).toEqual({ text: W.down, booking: null, toWindow: true });
+  });
+});
+
+describe("an open booking keeps its own replies, buttons and values", async () => {
+  const primo = { business: PRIMO, services: [PRIMO_ESTIMATE] };
+  const { booking } = await started(primo, "anything Saturday afternoon?");
+  const turn = (f: BookingFlowType, text: string) => said(bookingTurn(f, text, W));
+  const atDetails = [
+    booking.flow.times[0].label,
+    "Ana Perez",
+    "ana@example.com",
+    "403 555 0101",
+    "12 Main St SW",
+  ].reduce((f, text) => turn(f, text).flow, booking.flow);
+  const atConfirm = turn(atDetails, "Living room walls").flow;
+
+  it("a day in a reply to an open booking never starts another one", () => {
+    const open = { ...booking, flow: atConfirm };
+    expect(asksForNewTime("Yes, book it for Saturday", "en", open, TODAY)).toBeNull();
+    expect(
+      asksForNewTime(
+        "Paint the living room, I'm available Friday",
+        "en",
+        { ...booking, flow: atDetails },
+        TODAY
+      )
+    ).toBeNull();
+    expect(asksForNewTime("Yes, book it for Saturday", "en", null, TODAY)?.day?.getTime()).toBe(
+      day(5).getTime()
+    );
+  });
+  it('so "yes, book it for Saturday" at the read-back books the open booking', async () => {
+    const fresh = await started(primo, "anything Saturday afternoon?");
+    const booked = line(
+      await reply(
+        { ...fresh.booking, flow: atConfirm },
+        "Yes, book it for Saturday",
+        aiSays({ book: true, day: "2026-11-07" })
+      )
+    );
+    expect(booked.booking).toBeNull();
+    expect(fresh.bookings).toHaveLength(1);
+  });
+  it("and a project answer naming a day is kept as the project", async () => {
+    const kept = line(
+      await reply(
+        { ...booking, flow: atDetails },
+        "Paint the living room, I'm available Friday",
+        aiSays({ details: "Paint the living room" })
+      )
+    );
+    expect(kept.booking?.flow.step).toBe("confirm");
+    expect(kept.booking?.flow.values.details).toBe("Paint the living room");
+  });
+  it("only the open booking's buttons can be tapped; an older bubble's are stale", () => {
+    const older = { ...booking };
+    const list: BubbleType[] = [
+      { id: 1, from: "them", text: "times", booking: older },
+      { id: 2, from: "them", text: "" },
+    ];
+    const newer = { ...booking, requestKey: "k2" };
+    const shown = showBubble(list, 2, { from: "them", text: "new times", booking: newer }, newer);
+    expect(shown[0].stale).toBe(true);
+    expect(shown[1].stale).toBeUndefined();
+    // The booking ended: no times anywhere can be tapped.
+    expect(showBubble(shown, 2, shown[1], null).every((b) => b.stale)).toBe(true);
+  });
+  it("a correction at the read-back that fails our check reads back again and books nothing", async () => {
+    const fresh = await started(primo, "anything Saturday afternoon?");
+    const again = line(
+      await reply(
+        { ...fresh.booking, flow: atConfirm },
+        "yes, but use bo at nowhere",
+        aiSays({ book: true, email: "bo at nowhere" })
+      )
+    );
+    expect(again.booking?.flow.step).toBe("confirm");
+    expect(again.booking?.flow.values.email).toBe("ana@example.com");
+    expect(again.text).toContain("Here's your booking");
+    expect(fresh.sent).toHaveLength(0);
+  });
+  it("a time the AI named that is not listed is a change too: nothing is booked", async () => {
+    const fresh = await started(primo, "anything Saturday afternoon?");
+    const again = line(
+      await reply(
+        { ...fresh.booking, flow: atConfirm },
+        "yes, the 5th one",
+        aiSays({ book: true, time: 5 })
+      )
+    );
+    expect(again.booking?.flow.step).toBe("confirm");
+    expect(fresh.sent).toHaveLength(0);
+  });
+  it("request_key_used: the earlier booking stands, and none is made", async () => {
+    const fresh = await started(primo, "anything Saturday afternoon?");
+    fresh.bookings.push({
+      ...fresh.booking.flow,
+      requestKey: "k1",
+      bookingLinkId: "estimate",
+      startsAt: at(5, 9),
+    } as never);
+    const answer = line(await reply({ ...fresh.booking, flow: atConfirm }, "yes"));
+    expect(answer.text).toBe(W.already);
+    expect(answer.booking).toBeNull();
+    expect(fresh.bookings).toHaveLength(1);
+  });
+  it("a refused booking hands over to the booking window", async () => {
+    const fresh = await started(primo, "anything Saturday afternoon?");
+    fresh.crm.services = [{ ...PRIMO_ESTIMATE, id: "another" }];
+    const answer = line(await reply({ ...fresh.booking, flow: atConfirm }, "yes"));
+    expect(answer).toEqual({ text: W.failed, booking: null, toWindow: true });
+  });
+});
+
+describe("the booking AI's call stays small and never waits long", async () => {
+  const { booking } = await started({ business: PRIMO, services: [PRIMO_ESTIMATE] });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("a long conversation and long values are cut to the limits", () => {
+    const turns = Array.from({ length: 20 }, (_, i) => ({
+      role: i % 2 ? ("assistant" as const) : ("user" as const),
+      text: "x".repeat(3000),
+    }));
+    const long = {
+      ...booking,
+      flow: { ...booking.flow, values: { name: "N".repeat(500), details: "d".repeat(5000) } },
+    };
+    const body = bookingAskBody(long, [...turns, { role: "user", text: "y".repeat(900) }], NOW);
+    expect(askChars(body)).toBeLessThanOrEqual(BOOKING_ASK_LIMITS.totalChars);
+    expect(body.messages.at(-1)).toEqual({
+      role: "user",
+      text: "y".repeat(BOOKING_ASK_LIMITS.userChars),
+    });
+    expect(body.messages.length).toBeLessThanOrEqual(BOOKING_ASK_LIMITS.turns);
+    expect(body.fields.find((f) => f.key === "name")?.value).toHaveLength(120);
+    expect(body.fields.find((f) => f.key === "details")?.value).toHaveLength(2000);
+  });
+  it("an AI that does not answer in time: the word lists read the reply", async () => {
+    vi.stubGlobal(
+      "fetch",
+      (_url: string, init: RequestInit) =>
+        new Promise((_resolve, reject) =>
+          init.signal?.addEventListener("abort", () => reject(new Error("timeout")))
+        )
+    );
+    expect(
+      await bookingAi("/api/chat/booking", 20)(booking, [{ role: "user", text: "hi" }])
+    ).toBeNull();
+  });
+  it("a refused call: the word lists read the reply", async () => {
+    vi.stubGlobal(
+      "fetch",
+      async () => new Response(JSON.stringify({ error: "invalid" }), { status: 400 })
+    );
+    expect(
+      await bookingAi("/api/chat/booking")(booking, [{ role: "user", text: "hi" }])
+    ).toBeNull();
+  });
+});
+
+describe("Frank's laptop conversation on 0.2.1, reply by reply", async () => {
+  // Saturday at 1, 2 and 3 in the afternoon, as the chat routes each reply: a new time asked for only with no
+  // booking open, every reply to an open booking to the booking AI (stood in, as the real one answered).
+  const afternoon = [at(5, 13), at(5, 14), at(5, 15)];
+  const fresh = await started(
+    { business: PRIMO, services: [PRIMO_ESTIMATE], starts: afternoon },
+    ""
+  );
+  let open: ChatBookingType | null = null;
+  const say = async (text: string, heard: Partial<BookingUnderstoodType> = {}) => {
+    const asked = asksForNewTime(text, "en", open, TODAY);
+    const answer = asked
+      ? await startBooking(fresh.source, W, "en", text, NOW)
+      : line(await bookingReply(open!, text, { ask: aiSays(heard), now: NOW }));
+    open = answer.booking && { ...answer.booking, requestKey: "k1" };
+    return answer;
+  };
+  const r1 = await say("anything open saturday afternoon for an estimate?");
+  const r2 = await say("2:00 works. Frank Test2, frankdmosquera+chat2@gmail.com, 403 555 0188", {
+    time: 2,
+    day: "2026-11-07",
+    part: "afternoon",
+    name: "Frank Test2",
+    email: "frankdmosquera+chat2@gmail.com",
+    phone: "403 555 0188",
+    reply: "Thanks, Frank.",
+  });
+  const r3 = await say("50 Test Ave SW Calgary", {
+    address: "50 Test Ave SW Calgary",
+    time: 2,
+    part: "afternoon",
+  });
+  const r4 = await say("Just the living room, I'm free Friday too if that helps", {
+    details: "Just the living room",
+    day: "2026-11-06",
+  });
+  const r5 = await say("Yes, book it for Saturday", { book: true, day: "2026-11-07" });
+
+  it("1: Saturday afternoon's times as buttons", () => {
+    expect(r1.booking?.flow.step).toBe("time");
+    expect(r1.booking?.flow.times.map((t) => t.startsAt)).toEqual(afternoon);
+  });
+  it("2: takes 2:00 and keeps the name, email and phone, though the AI echoed the day and the afternoon", () => {
+    expect(r2.booking?.flow.time?.startsAt).toBe(at(5, 14));
+    expect(r2.booking?.flow.values).toMatchObject({
+      name: "Frank Test2",
+      email: "frankdmosquera+chat2@gmail.com",
+      phone: "4035550188",
+    });
+    expect(r2.booking?.flow.step).toBe("address");
+  });
+  it("3: the address, then the project box", () => {
+    expect(r3.booking?.flow.values.address).toBe("50 Test Ave SW Calgary");
+    expect(r3.booking?.flow.step).toBe("details");
+  });
+  it("4: the project is kept, and a Friday said in passing never moves the time", () => {
+    expect(r4.booking?.flow.values.details).toBe("Just the living room");
+    expect(r4.booking?.flow.time?.startsAt).toBe(at(5, 14));
+    expect(r4.booking?.flow.step).toBe("confirm");
+  });
+  it("5: the yes books it, everything given in it", () => {
+    expect(r5.booking).toBeNull();
+    expect(fresh.bookings).toEqual([
+      expect.objectContaining({
+        startsAt: at(5, 14),
+        customer: {
+          name: "Frank Test2",
+          email: "frankdmosquera+chat2@gmail.com",
+          phone: "4035550188",
+        },
+        location: "50 Test Ave SW Calgary",
+        details: "Just the living room",
+      }),
+    ]);
+  });
+});
+
+describe("Frank's laptop conversation on 0.2.2: the picked time never drifts", async () => {
+  // Saturday 12:00 to 2:30 every half hour; 2:00 is the 5th listed, 2:30 the 6th.
+  const half = (hour: number, minute: number) =>
+    new Date(Date.UTC(2026, 10, 7, hour + 5, minute)).toISOString();
+  const saturday = [
+    half(12, 0),
+    half(12, 30),
+    half(13, 0),
+    half(13, 30),
+    half(14, 0),
+    half(14, 30),
+  ];
+  const talk = async (turn3: Partial<BookingUnderstoodType>, echo: number | null = null) => {
+    const fresh = await started(
+      { business: PRIMO, services: [PRIMO_ESTIMATE], starts: saturday },
+      ""
+    );
+    let open: ChatBookingType | null = null;
+    const say = async (text: string, heard: Partial<BookingUnderstoodType> = {}) => {
+      const asked = asksForNewTime(text, "en", open, TODAY);
+      const answer = asked
+        ? await startBooking(fresh.source, W, "en", text, NOW)
+        : line(await bookingReply(open!, text, { ask: aiSays(heard), now: NOW }));
+      open = answer.booking && { ...answer.booking, requestKey: "k1" };
+      return answer;
+    };
+    const r1 = await say("anything open saturday afternoon for an estimate?");
+    const r2 = await say("2:00 works. Frank Tester, frankdmosquera+chat2@gmail.com, 403 555 0188", {
+      time: 5,
+      name: "Frank Tester",
+      email: "frankdmosquera+chat2@gmail.com",
+      phone: "403 555 0188",
+    });
+    const r3 = await say("50 Test Ave SW Calgary", { address: "50 Test Ave SW Calgary", ...turn3 });
+    // The real model keeps echoing a listed number it gave on turn 3.
+    const r4 = await say("Just the living room, I'm free Friday too if that helps", {
+      details: "Just the living room",
+      time: echo,
+    });
+    const r5 = await say("Yes, book it for Saturday", {
+      book: true,
+      day: "2026-11-07",
+      time: echo,
+    });
+    return { fresh, r1, r2, r3, r4, r5 };
+  };
+
+  it("1-2: six times, and 2:00 is taken with the name, email and phone", async () => {
+    const { r1, r2 } = await talk({});
+    expect(r1.booking?.flow.times.map((t) => t.startsAt)).toEqual(saturday);
+    expect(r2.booking?.flow.time?.startsAt).toBe(half(14, 0));
+    expect(r2.booking?.flow.step).toBe("address");
+  });
+  it.each([
+    ["echoes the time one off (6, the 2:30)", { time: 6 }, 6],
+    ['reads "50" as a number', { time: 50 }, null],
+  ])("3-5: an AI that %s never moves 2:00, and 2:00 is booked", async (_what, turn3, echo) => {
+    const { fresh, r3, r4, r5 } = await talk(turn3, echo);
+    expect(r3.booking?.flow.time?.startsAt).toBe(half(14, 0));
+    expect(r3.text).not.toContain("2:30");
+    expect(r3.booking?.flow.step).toBe("details");
+    expect(r4.booking?.flow.step).toBe("confirm");
+    expect(r4.text).toContain("2:00");
+    expect(r5.booking).toBeNull();
+    expect(fresh.bookings.map((b) => b.startsAt)).toEqual([half(14, 0)]);
+  });
+  it("the visitor's own words still change the time", async () => {
+    const { r4 } = await talk({});
+    const moved = line(
+      await bookingReply(r4.booking!, "actually make it 2:30", {
+        ask: aiSays({ time: 6 }),
+        now: NOW,
+      })
+    );
+    expect(moved.booking?.flow.time?.startsAt).toBe(half(14, 30));
+    expect(moved.booking?.flow.step).toBe("confirm");
+    expect(moved.text).toContain("2:30");
   });
 });

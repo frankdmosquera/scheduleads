@@ -356,7 +356,11 @@ function withoutIntro(words: string[], intros: readonly string[]): string[] {
 }
 
 /** A name said or typed, without "my name is" / "me llamo", in capitals: "my name is ana maria" is "Ana Maria". */
-export function spokenName(text: string, lang: ChatLanguageType): string | null {
+export function spokenName(
+  text: string,
+  lang: ChatLanguageType,
+  { heard = false }: { heard?: boolean } = {}
+): string | null {
   // The visitor's own letters are kept ("José", "Núñez"); only the lead-in is matched without accents.
   const words = withoutIntro(
     text
@@ -365,7 +369,11 @@ export function spokenName(text: string, lang: ChatLanguageType): string | null 
       .filter(Boolean),
     WORDS[lang].nameIntro
   );
-  if (!words.length || words.length > 5 || words.some((w) => /[\d@]/.test(w))) return null;
+  // The word lists take no digit ("123" is not a name); a name the AI picked out of a sentence keeps one
+  // ("Frank Test2"), or the chat would ask for it again and again.
+  const notAName = heard ? /@/ : /[\d@]/;
+  if (!words.length || words.length > 5 || words.some((w) => notAName.test(w))) return null;
+  if (!/\p{L}/u.test(words.join(""))) return null;
   const name = words
     .map((w) => w[0].toLocaleUpperCase(lang) + w.slice(1).toLocaleLowerCase(lang))
     .join(" ");

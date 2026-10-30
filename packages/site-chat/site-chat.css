@@ -177,6 +177,13 @@
   background: color-mix(in srgb, var(--sc-accent, #18181b) 10%, transparent);
 }
 
+/* An older booking's times: shown, but only the open booking's can be tapped. */
+.sc-choices button:disabled {
+  opacity: 0.45;
+  cursor: default;
+  background: none;
+}
+
 /* The button under an answer that opens the way to a person the visitor asked for. */
 .sc-go {
   display: flex;

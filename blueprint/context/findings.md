@@ -736,3 +736,27 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** (1) `chatAnswers.ts:17` "We paint home interiors in Calgary:" is our wording, shown as a stored answer, and lists Garage Painting as interior. (2) `hourly-limit.test.ts:23-30` passes with the sweep deleted. (3) `create-chat-route.test.ts` never covers the retry after an error or the 6 s wait, a failure after words are out, or spoken `speak` events. (4) `chatSite.ts` puts hours in the brief from JSON-LD only while leaving the street address out by "no page shows it": one rule for both. (5) `hourly-limit.ts:27` keys on the first `x-forwarded-for`, safe on Vercel only. (6) `create-chat-route.ts:73-77` routes Jev through the Vercel AI Gateway, billed to the client's Vercel account, when `TYPESAFE_API_KEY` is missing.
 **Suggested fix:** As each names; (5) say Vercel only or take a `clientAddress`; (6) require `TYPESAFE_API_KEY` and skip Jev without it.
 **Resolution:**
+
+### F-594 [P2] fixed - 13d.2 review: three booking-in-the-chat gaps
+
+**File:** packages/site-chat/booking/chat-booking.ts, chat/chat-conversation.tsx, server/create-chat-booking-route.ts
+**Found:** 2026-10-30 by independent review of 13d.2 (25fca6b, Primo 8ab0c97)
+**Why it matters:** (1) a skipped project box sent the visitor's opening question as details, never read back; (2) a reply that sounds like a time ("Yes, book it for Saturday") restarted an open booking and lost it; (3) the booking AI route took unbounded client text, an open LLM proxy for scripts.
+**Suggested fix:** send the opening question only with no project box; skip the time-ask path while a booking is open; cap turns, fields and arrays.
+**Resolution:** Fixed 2026-10-30 in 0.2.1, with 0.2.2 and 0.2.3 fixing two booking-turn bugs the browser check found (a re-read of the times dropped the picked one; an AI echo moved the picked time). Needs a later /audit to close.
+
+### F-595 [P3] fixed - 13d.2 review: old time buttons, failed corrections, no AI timeout
+
+**File:** packages/site-chat/chat/chat-conversation.tsx:392, booking/chat-booking.ts:350, :230
+**Found:** 2026-10-30 by independent review of 13d.2
+**Why it matters:** (4) a time button in an older bubble keeps its own key and could book a second time; (6) a correction that fails our check at the read-back still booked the old value; (8) the booking AI call had no time limit.
+**Suggested fix:** only the current booking's buttons tap; any field the AI returned counts as a change; a timeout with the word-list fallback.
+**Resolution:** Fixed 2026-10-30 in 0.2.1. Needs a later /audit to close.
+
+### F-596 [P3] open - 13d.2 review points carried
+
+**File:** packages/site-chat/booking/chat-booking.ts:416, :468
+**Found:** 2026-10-30 by independent review of 13d.2
+**Why it matters:** (5) after a lost answer and a changed time, "already booked" can name the new time while the first one is what booked; (7) the project-box refusal is not matched in Spanish (hands over to the window); (10) no tests for a 400 worded by the real schema, a not_asked service dropping an earlier address.
+**Suggested fix:** keep the sent time after a lost answer; match the backend's default words per language; add the tests.
+**Resolution:**

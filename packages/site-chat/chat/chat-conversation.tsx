@@ -3,13 +3,13 @@ import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } fro
 import { askChat, type ChatReplyType } from "../agent/ask-chat.js";
 import { CHAT_SETTINGS } from "../agent/chat-settings.js";
 import type { ChatTurnType } from "../agent/chat-event-type.js";
-import type { ChatAnswersType, ChatTileType } from "../answers/chat-answers-type.js";
+import type { ChatAnswersType } from "../answers/chat-answers-type.js";
 import { relatedQuestions } from "../answers/related-questions.js";
-import { asksForTime } from "../booking/asked-day.js";
 import type { BookingAccountType, BookingServiceType } from "../booking/booking-api.js";
 import { createBookingSource, type BookingSourceType } from "../booking/booking-source.js";
 import { todayIn } from "../booking/business-clock.js";
 import {
+  asksForNewTime,
   bookingAi,
   bookingReply,
   startBooking,
@@ -32,26 +32,8 @@ import { createSpeaker, type SpeakerType } from "../voice/speak-aloud.js";
 import type { ChatLanguageType, ChatWordsType, PersonPathType } from "../words/chat-words-type.js";
 import { AnswerText } from "./answer-text.js";
 import { AnswerTiles } from "./answer-tiles.js";
+import { showBubble, type BubbleType } from "./bubble-list.js";
 import { PersonWays, type PersonWayLinksType } from "./person-ways.js";
-
-interface BubbleType {
-  id: number;
-  from: "me" | "them";
-  text: string;
-  typing?: boolean;
-  /** The visitor asked for a way to a person: its button, carrying the question. `toWindow`: the site's own booking. */
-  go?: { path: PersonPathType; message: string; toWindow?: boolean };
-  /** A booking at its time or service step: the free times, or the services, as buttons. */
-  booking?: ChatBookingType;
-  /** "Did you mean...?": stored questions the visitor can tap for their answer. */
-  choices?: string[];
-  /** Other questions from the same group as the stored question just answered, as buttons. */
-  related?: string[];
-  /** Nobody could answer: every way to a person, each carrying this question. */
-  ways?: string;
-  /** An answer that is a list, drawn as tiles under its words. */
-  tiles?: readonly ChatTileType[];
-}
 
 export interface ChatConversationPropsType {
   lang: ChatLanguageType;
@@ -162,7 +144,7 @@ export function ChatConversation({
   }
 
   function show(id: number, bubble: Omit<BubbleType, "id">) {
-    setBubbles((list) => list.map((b) => (b.id === id ? { ...bubble, id } : b)));
+    setBubbles((list) => showBubble(list, id, bubble, bookingNow.current));
   }
 
   /** The business's booking routes for this chat, made on first use; null when the site gave no booking. */
@@ -253,7 +235,11 @@ export function ChatConversation({
     };
     const books = source();
     // A request for a time is answered from the calendar at once, never sent to the server.
-    const timeAsk = !chip && books ? asksForTime(q, lang, todayFor(businessZone.current)) : null;
+    // Not while a booking is open: "yes, Saturday works" at the read-back belongs to it, and its AI reads a new day.
+    const timeAsk =
+      !chip && books
+        ? asksForNewTime(q, lang, bookingNow.current, todayFor(businessZone.current))
+        : null;
     // A booking being talked through takes the reply first, never Jev or the AI; anything else ends it. A new
     // request for a time ("Monday instead") starts over with that day's times.
     const going =
@@ -390,11 +376,14 @@ export function ChatConversation({
 
   /** A tapped time: the chat asks the first thing the business's form still needs. */
   function onTime(at: ChatBookingType, time: ChatTimeType) {
+    // Only the open booking's buttons book: an older one carries an older key.
+    if (at !== bookingNow.current) return;
     void bookingStep(time.label, () => tapTime(at, time));
   }
 
   /** A tapped service: its free times. */
   function onService(at: ChatBookingType, service: BookingServiceType) {
+    if (at !== bookingNow.current) return;
     void bookingStep(service.name, () => tapService(at, service));
   }
 
@@ -488,6 +477,7 @@ export function ChatConversation({
                       <button
                         key={service.id}
                         type="button"
+                        disabled={b.stale}
                         onClick={() => onService(b.booking!, service)}
                       >
                         {service.name}
@@ -497,6 +487,7 @@ export function ChatConversation({
                       <button
                         key={time.startsAt}
                         type="button"
+                        disabled={b.stale}
                         onClick={() => onTime(b.booking!, time)}
                       >
                         {time.label}

@@ -1,9 +1,10 @@
-import { answersSoFar, countAnswer, recentTurns } from "../agent/ask-chat.js";
+import { answersSoFar, countAnswer } from "../agent/ask-chat.js";
 import { CHAT_SETTINGS } from "../agent/chat-settings.js";
 import type { ChatTraceType, ChatTurnType } from "../agent/chat-event-type.js";
 import type { ChatBookWordsType } from "../words/chat-book-words-type.js";
 import type { ChatLanguageType } from "../words/chat-words-type.js";
-import { askedTime, type AskedTimeType } from "./asked-day.js";
+import { askedTime, asksForTime, PART_HOURS, type AskedTimeType } from "./asked-day.js";
+import { BOOKING_ASK_LIMITS, fieldValueLimit, withinAskLimits } from "./booking-ask-limits.js";
 import type { BookingBusinessType, BookingRequestType, BookingServiceType } from "./booking-api.js";
 import {
   askAgain,
@@ -19,6 +20,7 @@ import {
   moveOn,
   nextStep,
   plainSkip,
+  pickedTime,
   plainYes,
   spokenEmail,
   spokenName,
@@ -57,7 +59,7 @@ export interface ChatBookingType {
   timeZone: string | null;
   /** One key for the whole booking, so a retry after a lost answer never books twice. */
   requestKey: string;
-  /** The visitor's words that asked to book: the lead's details when the project box was skipped. */
+  /** The visitor's words that asked to book: the day they named is the one first offered. */
   asked: string;
 }
 
@@ -87,6 +89,19 @@ const localToday = (now: Date) => new Date(now.getFullYear(), now.getMonth(), no
 /** Today on the business's clock once it is known. */
 const todayOf = (booking: Pick<ChatBookingType, "timeZone">, now: Date) =>
   booking.timeZone ? todayIn(booking.timeZone, now) : localToday(now);
+
+/**
+ * A question that starts a booking from the calendar ("anything Saturday afternoon?"), read in the browser. Never
+ * while one is open: "yes, Saturday works" at the read-back belongs to it, and its AI reads a new day.
+ */
+export function asksForNewTime(
+  text: string,
+  lang: ChatLanguageType,
+  open: ChatBookingType | null,
+  today: Date
+): AskedTimeType | null {
+  return open ? null : asksForTime(text, lang, today);
+}
 
 /**
  * A booking starts: the business's form and services are read; one service goes straight to its times on the day
@@ -190,16 +205,19 @@ export function bookingAskBody(
   const { flow, words, business } = booking;
   const today = todayOf(booking, now);
   const valueOf = (field: BookingFieldType): string | null => {
-    if (field.key === "contact") return flow.values.email ?? flow.values.phone ?? null;
-    const given = flow.values[field.key];
-    if (given) return given;
+    const given =
+      field.key === "contact" ? (flow.values.email ?? flow.values.phone) : flow.values[field.key];
+    if (given) return given.slice(0, fieldValueLimit(field.key));
     return flow.skipped.includes(field.key) ? "skipped" : null;
   };
-  return {
+  return withinAskLimits({
     lang: flow.lang,
     business: business.name,
     service: flow.service?.name ?? null,
-    services: flow.step === "service" ? flow.services.map((s) => s.name) : [],
+    services:
+      flow.step === "service"
+        ? flow.services.slice(0, BOOKING_ASK_LIMITS.services).map((s) => s.name)
+        : [],
     today: today.toLocaleDateString(words.dateLocale, {
       weekday: "long",
       year: "numeric",
@@ -208,30 +226,32 @@ export function bookingAskBody(
     }),
     todayIso: isoDay(today),
     day: flow.times[0]?.day ?? "",
-    times: flow.times.map((t) => t.label),
+    times: flow.times.slice(0, BOOKING_ASK_LIMITS.times).map((t) => t.label),
     picked: flow.time?.label ?? null,
-    fields: flow.fields.map((f) => ({
+    fields: flow.fields.slice(0, BOOKING_ASK_LIMITS.fields).map((f) => ({
       key: f.key,
-      label: f.label,
+      label: f.label.slice(0, BOOKING_ASK_LIMITS.labelChars),
       required: f.required,
       value: valueOf(f),
     })),
     asking: flow.step,
     // The visit's AI answers are shared with the rest of the chat.
     ...(answersSoFar() >= CHAT_SETTINGS.answersPerVisit && { aiSpent: true }),
-    messages: recentTurns(turns),
-  };
+    messages: [...turns],
+  });
 }
 
-/** The booking AI at the site's booking route. */
-export function bookingAi(url: string): BookingAskType {
+/** The booking AI at the site's booking route; a reply it does not give in time is read by the word lists. */
+export function bookingAi(url: string, waitMs: number = CHAT_SETTINGS.firstWordMs): BookingAskType {
   return async (booking, turns) => {
     try {
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(bookingAskBody(booking, turns)),
+        signal: AbortSignal.timeout(waitMs),
       });
+      if (!res.ok) return null;
       const data = (await res.json()) as BookingAskAnswerType;
       if (!data.understood) return null;
       countAnswer();
@@ -254,7 +274,7 @@ function namedDay(iso: string | null, today: Date): Date | null {
 function checkedValues(booking: ChatBookingType, u: BookingUnderstoodType): BookingValuesType {
   const { flow, business } = booking;
   const out: BookingValuesType = {};
-  const name = u.name ? spokenName(u.name, flow.lang) : null;
+  const name = u.name ? spokenName(u.name, flow.lang, { heard: true }) : null;
   if (name) out.name = name;
   const email = u.email ? spokenEmail(u.email, flow.lang) : null;
   if (email) out.email = email;
@@ -331,16 +351,32 @@ export async function bookingReply(
   if (flow.step === "service" && service)
     return { ...(await tapService(kept, service, now)), byAi };
 
-  // Another day or part of the day: those times, keeping everything given.
+  // Another day or part of the day: those times, keeping everything given. Not when the reply picks a listed time
+  // or answers the form with a time already picked ("2:00 works", "the living room, I'm free Friday too"): an AI
+  // echoing the day or part of the day on screen never sends the visitor back to the times.
+  const pickedNow = u.time !== null && Boolean(flow.times[u.time - 1]);
+  const answering = Boolean(flow.time) && Object.keys(given).length > 0;
   const day = namedDay(u.day, todayOf(booking, now));
   const offered = flow.times[0]?.date ?? null;
-  const otherDay = day && isoDay(day) !== offered;
-  if (known.service && (otherDay || u.part)) {
+  const otherDay = Boolean(day) && isoDay(day!) !== offered;
+  const [first, last] = u.part ? PART_HOURS[u.part] : [0, 24];
+  const otherPart =
+    Boolean(u.part) && flow.times.some((t) => t.minutes < first * 60 || t.minutes >= last * 60);
+  if (known.service && !pickedNow && !answering && (otherDay || otherPart)) {
     const wanted = { day: day ?? dayOfIso(offered), part: u.part };
     return { ...(await timesFor(kept, known.service, () => wanted, now)), byAi };
   }
 
-  const time = u.time ? (flow.times[u.time - 1] ?? null) : null;
+  // The AI's number, 1-based as the instructions list the times.
+  const aiTime = u.time !== null ? (flow.times[u.time - 1] ?? null) : null;
+  // Once a time is picked, it moves only when the visitor's own words, read by us, name the same new time
+  // ("make it 2:30"), and never in a reply that gives the address: an AI echoing a time off by one, or reading
+  // "50 Test Ave" as one, leaves it where it was.
+  const moveTo =
+    flow.time && aiTime && aiTime !== flow.time && !given.address
+      ? pickedTime(text, flow.lang, flow.times)
+      : null;
+  const time = !flow.time ? aiTime : moveTo === aiTime ? moveTo : null;
   const skip = u.skip && field && !field.required && !fieldDone(known, field) ? field.key : null;
   const next: BookingFlowType = {
     ...known,
@@ -352,12 +388,25 @@ export async function bookingReply(
     (Object.keys(given) as (keyof BookingValuesType)[]).some(
       (key) => flow.values[key] !== given[key]
     );
+  // Something the AI heard that failed our check ("use bo at nowhere instead"): a change all the same, so a yes
+  // with it reads back again rather than booking the old value.
+  const refused =
+    // A number off the list; an echo of a listed time we did not take changes nothing and books as said.
+    (u.time !== null && !aiTime) ||
+    (["name", "email", "phone", "address", "details"] as const).some(
+      (key) => u[key] !== null && !given[key]
+    ) ||
+    (Array.isArray(u.answers) ? u.answers : []).some(({ id }) => !given[`answer:${id}`]);
   // A yes books only at the read-back, only when it changed nothing, and only with every field the form needs.
-  if (u.book && flow.step === "confirm" && !changed && nextStep(next) === "confirm")
+  if (u.book && flow.step === "confirm" && !changed && !refused && nextStep(next) === "confirm")
     return { ...(await bookNow(booking, next, now)), byAi };
   const moved = moveOn(next, {});
   // A step that moved says so in our own words, the read-back included; otherwise the AI's line.
-  if (changed || skip || (moved.step === "confirm" && flow.step !== "confirm"))
+  if (
+    changed ||
+    skip ||
+    (moved.step === "confirm" && (flow.step !== "confirm" || (refused && u.book)))
+  )
     return { text: movedLine(flow, moved, words), booking: { ...booking, flow: moved }, byAi };
   return {
     text: u.reply.trim() || askAgain(moved, words),
@@ -374,10 +423,8 @@ export function bookingRequest(
   const { business, requestKey } = booking;
   const service = flow.service!;
   const v = flow.values;
-  // What the visitor asked, when the project box was skipped, so the lead still says what they want.
-  const details =
-    v.details ??
-    (flow.skipped.includes("details") ? fitsText(booking.asked, fieldLimits.details) : null);
+  // Only what the visitor gave in the project box, which the read-back named: a skipped box sends none.
+  const details = v.details;
   return {
     bookingLinkId: service.id,
     startsAt: flow.time!.startsAt,

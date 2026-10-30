@@ -139,6 +139,44 @@ describe("the booking AI's route", () => {
       ).status
     ).toBe(400);
   });
+  it("caps every turn, the conversation and the whole call", async () => {
+    const route = createChatBookingRoute({ model: model().model });
+    const turn = (role: "user" | "assistant", n: number) => ({ role, text: "x".repeat(n) });
+    expect((await route(ask(body({ messages: [turn("user", 501)] })))).status).toBe(400);
+    expect(
+      (
+        await route(
+          ask(body({ messages: [turn("user", 10), turn("assistant", 601), turn("user", 10)] }))
+        )
+      ).status
+    ).toBe(400);
+    const nine = Array.from({ length: 9 }, (_, i) => turn(i % 2 ? "assistant" : "user", 5));
+    expect((await route(ask(body({ messages: nine })))).status).toBe(400);
+    const full = Array.from({ length: 7 }, (_, i) =>
+      i % 2 ? turn("assistant", 600) : turn("user", 500)
+    );
+    // Each part within its own limit, the whole past 6,000 characters.
+    const fields = body().fields.map((f) =>
+      f.key === "details"
+        ? { ...f, value: "d".repeat(2000) }
+        : f.key === "address"
+          ? { ...f, value: "a".repeat(300) }
+          : f
+    );
+    expect((await route(ask(body({ messages: full, fields })))).status).toBe(400);
+  });
+  it("cuts each field's value to its own limit before the AI sees it", async () => {
+    const { mock, model: stand } = model();
+    const fields = body().fields.map((f) =>
+      f.key === "name" ? { ...f, value: "N".repeat(2000) } : f
+    );
+    expect((await createChatBookingRoute({ model: stand })(ask(body({ fields })))).status).toBe(
+      200
+    );
+    const prompt = JSON.stringify(mock.doGenerateCalls[0]?.prompt);
+    expect(prompt).toContain("N".repeat(120));
+    expect(prompt).not.toContain("N".repeat(121));
+  });
   it("stops one address past its hourly limit, and a visit past its AI answers", async () => {
     const route = createChatBookingRoute({ model: model().model });
     for (let i = 0; i < 60; i++) await route(ask(body()));

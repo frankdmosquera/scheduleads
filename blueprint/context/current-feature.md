@@ -53,7 +53,7 @@ Heavy: each step is planned with Frank (both parts) and gets his yes; then it ru
 
 ## Data / contracts
 
-- Booking goes to the existing `POST /public/:slug/bookings` with `{bookingLinkId, startsAt, customer{name, email?, phone?, address?}, answers?, details?, language, requestKey}`; its refusals (`answer_needed`, `time_taken`, `request_key_used`, 429) are read, and an `answer_needed` asks the named question in the chat instead of failing.
+- Booking goes to the existing `POST /public/:slug/bookings` with `{bookingLinkId, startsAt, customer{name, email?, phone?}, location? (the address, top level, as the window sends it), answers?, details?, language, requestKey}`; its refusals (`answer_needed`, `time_taken`, `request_key_used`, 429) are read, and an `answer_needed` asks the named question in the chat instead of failing.
 - The booking route returns fields only: `{understood: {time (index into the offered list), day, part, name, email, phone, address, details, book, cancel, other, reply}}`; the AI never books and never says "booked".
 - A site's server needs `OPENAI_API_KEY`, `TYPESAFE_API_KEY`, `TYPESAFE_BASE_URL` and `GOOGLE_TTS_API_KEY`, the same keys IA a la Orden uses (laptop `.env.local`, then Vercel). Nothing new in Booking CRM's `.env`.
 - The visitor's text is never logged; only token counts.

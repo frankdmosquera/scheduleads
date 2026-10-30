@@ -3,6 +3,11 @@ import { generateText, Output, type LanguageModel } from "ai";
 import { z } from "zod";
 
 import { CHAT_SETTINGS } from "../agent/chat-settings.js";
+import {
+  askChars,
+  BOOKING_ASK_LIMITS as limits,
+  fieldValueLimit,
+} from "../booking/booking-ask-limits.js";
 import type { BookingAskAnswerType } from "../booking/booking-understood-type.js";
 import { withoutMarks } from "./answer-marker.js";
 import { bookingInstructionsFor } from "./booking-instructions.js";
@@ -20,42 +25,50 @@ export interface ChatBookingRouteOptionsType {
 
 const text = (most: number) => z.string().max(most);
 
-const requestSchema = z.object({
-  lang: z.enum(["en", "es"]),
-  business: text(120),
-  service: text(120).nullable(),
-  services: z.array(text(120)).max(20),
-  today: text(60),
-  todayIso: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  day: text(60),
-  times: z.array(text(24)).max(12),
-  picked: text(24).nullable(),
-  fields: z
-    .array(
-      z.object({
-        key: z
-          .string()
-          .regex(/^(name|email|phone|contact|address|details|answer:[A-Za-z0-9_-]{1,64})$/),
-        label: text(200),
-        required: z.boolean(),
-        value: text(2000).nullable(),
-      })
-    )
-    .max(30),
-  asking: text(80),
-  aiSpent: z.boolean().optional(),
-  messages: z
-    .array(z.object({ role: z.enum(["user", "assistant"]), text: text(settings.maxAnswerChars) }))
-    .min(1)
-    .max(settings.maxTurns)
-    .refine(
-      (list) =>
-        list.at(-1)?.role === "user" &&
-        list.at(-1)!.text.trim().length > 0 &&
-        list.at(-1)!.text.trim().length <= settings.maxQuestionChars,
-      "The last message must be the visitor's"
-    ),
-});
+// One call stays small (BOOKING_ASK_LIMITS): every turn, field and list is capped, and so is the whole.
+const requestSchema = z
+  .object({
+    lang: z.enum(["en", "es"]),
+    business: text(120),
+    service: text(120).nullable(),
+    services: z.array(text(120)).max(limits.services),
+    today: text(60),
+    todayIso: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    day: text(60),
+    times: z.array(text(24)).max(limits.times),
+    picked: text(24).nullable(),
+    fields: z
+      .array(
+        z
+          .object({
+            key: z
+              .string()
+              .regex(/^(name|email|phone|contact|address|details|answer:[A-Za-z0-9_-]{1,64})$/),
+            label: text(limits.labelChars),
+            required: z.boolean(),
+            value: text(fieldValueLimit("details")).nullable(),
+          })
+          // Each value within its own field's limit: only the project box may be long.
+          .transform((f) => ({ ...f, value: f.value?.slice(0, fieldValueLimit(f.key)) ?? null }))
+      )
+      .max(limits.fields),
+    asking: text(80),
+    aiSpent: z.boolean().optional(),
+    messages: z
+      .array(
+        z.discriminatedUnion("role", [
+          z.object({ role: z.literal("user"), text: text(limits.userChars) }),
+          z.object({ role: z.literal("assistant"), text: text(limits.assistantChars) }),
+        ])
+      )
+      .min(1)
+      .max(limits.turns)
+      .refine(
+        (list) => list.at(-1)?.role === "user" && list.at(-1)!.text.trim().length > 0,
+        "The last message must be the visitor's"
+      ),
+  })
+  .refine((body) => askChars(body) <= limits.totalChars, "The booking is too long");
 
 /** What the AI understood. Every field is always there (null, false or empty when not said), as strict output wants. */
 const understoodSchema = z.object({
