@@ -271,14 +271,23 @@ export function exactService(
   return services.find((s) => plain(s.name) === said) ?? null;
 }
 
-/** The service named by its full name in the words that started the booking; the longest when names overlap. */
-export function namedService(
+/**
+ * The services the visitor's words could mean: each one named in full (a name inside another named one counts as
+ * the longer), plus every service whose name holds a named one ("relaxation massage" also means its 75 and 90
+ * minute lengths). One means that service; two or more are a choice for the visitor, never ours.
+ */
+export function namedServices(
   text: string,
   services: readonly BookingServiceType[]
-): BookingServiceType | null {
+): BookingServiceType[] {
   const said = plain(text);
+  const holds = (outer: BookingServiceType, inner: BookingServiceType) =>
+    outer !== inner && plain(outer.name).includes(plain(inner.name));
   const named = services.filter((s) => said.includes(plain(s.name)));
-  return named.sort((a, b) => plain(b.name).length - plain(a.name).length)[0] ?? null;
+  const longest = named.filter((s) => !named.some((other) => holds(other, s)));
+  return services.filter(
+    (s) => longest.includes(s) || (!named.includes(s) && longest.some((n) => holds(s, n)))
+  );
 }
 
 /** A plain yes and nothing else ("sí", "yes, correct"): taken at once at the read-back, with no AI. */
@@ -298,8 +307,9 @@ export function pickedService(
   services: readonly BookingServiceType[]
 ): BookingServiceType | null {
   const said = plain(text);
-  const byName = services.find((s) => said.includes(plain(s.name)));
-  if (byName) return byName;
+  const byName = namedServices(text, services);
+  // Two or more it could mean: the AI, or the visitor, picks; never the first in the list.
+  if (byName.length) return byName.length === 1 ? byName[0] : null;
   const ordinal = WORDS[lang].ordinals.findIndex((names) => has(said, names));
   if (ordinal >= 0) return services[ordinal] ?? null;
   return has(said, WORDS[lang].last) ? (services.at(-1) ?? null) : null;

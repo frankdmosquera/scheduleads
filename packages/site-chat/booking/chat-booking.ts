@@ -18,7 +18,7 @@ import {
   formFields,
   movedLine,
   moveOn,
-  namedService,
+  namedServices,
   nextStep,
   plainSkip,
   pickedTime,
@@ -125,11 +125,14 @@ export async function startBooking(
     return { text: words.down, booking: null, toWindow: true };
   }
   if (!form.services.length) return { text: words.down, booking: null, toWindow: true };
+  // A service named in the question goes straight to its times; several it could mean are the only buttons.
+  const named = form.services.length > 1 ? namedServices(asked, form.services) : [];
+  const offered = named.length ? named : form.services;
   const booking: ChatBookingType = {
     flow: {
       step: "service",
       lang,
-      services: form.services,
+      services: offered,
       times: [],
       fields: [],
       values: {},
@@ -142,16 +145,14 @@ export async function startBooking(
     requestKey: newKey(),
     asked,
   };
-  if (form.services.length === 1) return tapService(booking, form.services[0], now);
-  const named = namedService(asked, form.services);
-  if (named) return tapService(booking, named, now);
+  if (offered.length === 1) return tapService(booking, offered[0], now);
   return {
     text: words.service,
     // A long list is left on the buttons: read aloud, ten names would bury the question.
     spoken:
-      form.services.length > SERVICES_READ_OUT
+      offered.length > SERVICES_READ_OUT
         ? words.service
-        : `${words.service} ${endSentence(form.services.map((s) => s.name).join(", "))}`,
+        : `${words.service} ${endSentence(offered.map((s) => s.name).join(", "))}`,
     booking,
   };
 }

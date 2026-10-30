@@ -1,6 +1,6 @@
 {
   "name": "@frankdmosquera/site-chat",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "private": true,
   "description": "The chat in the corner of a client site: Jev and the AI answer from the site's own words, out loud too.",
   "repository": {

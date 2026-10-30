@@ -760,3 +760,19 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** (5) after a lost answer and a changed time, "already booked" can name the new time while the first one is what booked; (7) the project-box refusal is not matched in Spanish (hands over to the window); (10) no tests for a 400 worded by the real schema, a not_asked service dropping an earlier address.
 **Suggested fix:** keep the sent time after a lost answer; match the backend's default words per language; add the tests.
 **Resolution:**
+
+### F-597 [P1] fixed - 13d.3 review: a treatment named in the question could book the wrong one
+
+**File:** packages/site-chat/booking/booking-flow.ts (namedServices, pickedService), booking/chat-booking.ts (startBooking)
+**Found:** 2026-10-30 by independent review of 13d.3 (439ba95, her site ea553b2)
+**Why it matters:** (1) "a 90 minute relaxation massage" matched only "Relaxation Massage" and went straight to the 60 minute one's times, the 75 and 90 minute lengths never shown; (2) two separate names ("chemical peel or the hollywood peel facial", "not deep tissue, a relaxation massage") picked the longest; (3) at the service step without the AI, `pickedService` took the first name in the list; (4) no tests for these.
+**Suggested fix:** straight to times only when exactly one service is meant; otherwise offer just the services it could mean.
+**Resolution:** Fixed 2026-10-30 in 0.2.5: `namedServices` returns every service the words could mean (a name held in another named one counts as the longer; a name other services hold brings them in); one goes straight to its times, several are the only buttons, and the no-AI step asks again instead of taking the first. Five tests with her real names; checked on http://localhost:3402 ("a 90 minute relaxation massage" offered her four relaxation massages). Needs a later /audit to close.
+
+### F-598 [P3] open - 13d.3 review points carried
+
+**File:** face-and-body data/chatSite.ts, data/chatFacts.ts
+**Found:** 2026-10-30 by independent review of 13d.3
+**Why it matters:** (5) noon reads "12 pm"; (6) the texting fact repeats her FAQ answer, harmless. (7), a length stated for treatments priced at consultation, was fixed in her site the same day.
+**Suggested fix:** "noon" in the hours helper if Frank wants it.
+**Resolution:**

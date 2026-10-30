@@ -326,18 +326,62 @@ describe("a tapped time or service", () => {
       "Touch-up Visit",
     ]);
   });
-  it("a service named in the question goes straight to its times, the longest name winning", async () => {
-    const touchUp = { ...ESTIMATE, id: "touch-up", name: "Touch-up Visit" };
-    const longTouchUp = { ...ESTIMATE, id: "long", name: "Long Touch-up Visit" };
-    const services = [ESTIMATE, touchUp, longTouchUp];
-    const { line: short } = await started({ services }, "can I book a touch-up visit Monday?");
-    expect(short.booking?.flow.step).toBe("time");
-    expect(short.booking?.flow.service?.id).toBe("touch-up");
-    expect(short.booking?.flow.times.map((t) => t.startsAt)).toEqual([at(7, 10)]);
-    const { line: long } = await started({ services }, "a long touch-up visit please");
-    expect(long.booking?.flow.service?.id).toBe("long");
-    const { line: none } = await started({ services }, "a touch up on Monday");
-    expect(none.booking?.flow.step).toBe("service");
+  describe("a service named in the question", () => {
+    // Face and Body's overlapping names (review of 13d.3).
+    const service = (id: string, name: string) => ({ ...ESTIMATE, id, name });
+    const services = [
+      service("relax", "Relaxation Massage"),
+      service("relax-75", "Relaxation Massage, 75 min"),
+      service("relax-90", "Relaxation Massage, 90 min"),
+      service("gentle", "Gentle Relaxation Massage"),
+      service("deep", "Deep Tissue Massage"),
+      service("head", "Head Massage"),
+      service("chemical", "Chemical Peel"),
+      service("hollywood", "Hollywood Peel Facial"),
+    ];
+    const offered = async (asked: string) => {
+      const { line } = await started({ services }, asked);
+      const flow = line.booking!.flow;
+      return flow.step === "service" ? flow.services.map((s) => s.id) : flow.service!.id;
+    };
+    it("one name, and no other holds it: straight to its times, on the day asked", async () => {
+      const { line } = await started({ services }, "can I book a deep tissue massage Monday?");
+      expect(line.booking?.flow.step).toBe("time");
+      expect(line.booking?.flow.service?.id).toBe("deep");
+      expect(line.booking?.flow.times.map((t) => t.startsAt)).toEqual([at(7, 10)]);
+      expect(await offered("a relaxation massage, 90 min please")).toBe("relax-90");
+    });
+    it("a name other services hold: those are the only buttons, never the shortest picked", async () => {
+      const lengths = ["relax", "relax-75", "relax-90", "gentle"];
+      expect(await offered("a 90 minute relaxation massage on friday")).toEqual(lengths);
+      expect(await offered("relaxation massage for 75 minutes")).toEqual(lengths);
+    });
+    it("two separate names, or one turned down: both offered, neither picked", async () => {
+      expect(await offered("is a chemical peel or the hollywood peel facial better")).toEqual([
+        "chemical",
+        "hollywood",
+      ]);
+      expect(await offered("not deep tissue massage, a relaxation massage please")).toEqual([
+        "relax",
+        "relax-75",
+        "relax-90",
+        "gentle",
+        "deep",
+      ]);
+    });
+    it("no full name: every service", async () => {
+      expect(await offered("a massage on Monday")).toHaveLength(services.length);
+    });
+    it("at the service step with no AI, a name others hold is asked again, not the first taken", async () => {
+      const { booking } = await started({ services });
+      expect(bookingTurn(booking.flow, "relaxation massage for 90 minutes please", W).kind).toBe(
+        "ask"
+      );
+      expect(
+        line(await reply(booking, "relaxation massage 90 min please", aiDown)).booking?.flow.service
+          ?.id
+      ).toBe("relax-90");
+    });
   });
   it("a long list of services is not read aloud", async () => {
     const many = Array.from({ length: 7 }, (_, i) => ({
