@@ -114,6 +114,7 @@ export const spanishMessages: Record<string, string> = {
   "That booking is too large.": "Esa reserva es demasiado grande.",
   "Each question takes one answer.": "Cada pregunta lleva una sola respuesta.",
   "Answer: {}": "Responda: {}",
+  "What would you like done?": "¿Qué necesita?",
   "Sorry, that time was taken while you were booking. Please pick another one.":
     "Lo sentimos, esa hora se ocupó mientras reservaba. Por favor elija otra.",
   "This booking form was already used. Please reload the page and book again.":
@@ -126,6 +127,7 @@ export const spanishMessages: Record<string, string> = {
   "Enter the address.": "Escriba la dirección.",
   "That address is too long.": "Esa dirección es demasiado larga.",
   "Keep it to 2000 characters.": "Use como máximo 2000 caracteres.",
+  "Keep it to 80 characters.": "Use como máximo 80 caracteres.",
   "That is not a question id.": "Ese no es un identificador de pregunta.",
   "That is not a question.": "Eso no es una pregunta.",
   "Answer in words.": "Responda con palabras.",
@@ -306,6 +308,7 @@ export const spanishMessages: Record<string, string> = {
     "Estas preguntas cambiaron desde que abrió la página. Recárguela para verlas.",
   "Set up texts for this business first: the yes is to texts it sends.":
     "Primero configure los mensajes de texto de este negocio: el sí es para los mensajes que envía.",
+  "Pick whether the box must be filled.": "Elija si la casilla es obligatoria.",
   "Pick whether the form asks for the yes to later texts.":
     "Elija si el formulario pide el sí a mensajes de texto más adelante.",
   "Write the question.": "Escriba la pregunta.",

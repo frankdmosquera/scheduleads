@@ -1,0 +1,2 @@
+ALTER TABLE "organization" DROP CONSTRAINT "organization_contact_rule_check";--> statement-breakpoint
+ALTER TABLE "organization" ADD CONSTRAINT "organization_contact_rule_check" CHECK ("organization"."contactRule" in ('email', 'phone', 'either', 'both'));

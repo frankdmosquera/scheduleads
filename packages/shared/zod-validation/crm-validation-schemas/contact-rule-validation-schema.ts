@@ -1,9 +1,9 @@
 // Shared Zod schema: which way to reach the customer a business's booking form requires (feature
-// 12f). The check itself is helpers/missing-contact.ts.
+// 12f; "both" since feature 13). The check itself is helpers/missing-contact.ts.
 
 import { z } from "zod";
 
-export const contactRuleValidationSchema = z.enum(["email", "phone", "either"], {
+export const contactRuleValidationSchema = z.enum(["email", "phone", "either", "both"], {
   error: "Pick what a customer must leave.",
 });
 

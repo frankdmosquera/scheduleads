@@ -190,6 +190,8 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
       personChoice: bookingLink.personChoice,
       addressMode: bookingLink.addressMode,
       contactRule: organization.contactRule,
+      detailsLabel: organization.detailsLabel,
+      detailsRequired: organization.detailsRequired,
       businessLanguage: organization.language,
     })
     .from(bookingLink)
@@ -216,6 +218,13 @@ export async function bookTime(input: BookTimeInputType): Promise<BookTimeResult
       contactValidationSchema.parse(input.customer)
     );
     if (missing) return { booked: false, reason: "contact_needed", ...missing };
+    // The project box, when the business requires it (feature 13), named by its own words.
+    if (service.detailsRequired && !input.details?.trim())
+      return {
+        booked: false,
+        reason: "answer_needed",
+        question: service.detailsLabel ?? "What would you like done?",
+      };
   }
   // The business's own questions (feature 9, decision 5): a customer answers the required ones; the
   // owner, booking from a phone call, need not.

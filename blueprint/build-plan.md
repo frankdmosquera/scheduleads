@@ -415,7 +415,7 @@ without Frank touching the database.
 Exit: Primo takes a real booking through this product, the lead is in his
 list, Calendly is gone from his site, and the ranking is untouched.
 
-- [ ] 13. **Primo Painters** - the shared modal behind one config value plus
+- [x] 13. **Primo Painters** - the shared modal behind one config value plus
   the provider component; his people become resources, one each, and his
   crews become saved lists of them in item 19. Ask first what he needs on
   day one beyond booking and the leads list. Before switching him to
@@ -431,6 +431,14 @@ list, Calendly is gone from his site, and the ranking is untouched.
   copies as they expire, within a year at most). Split from 12c by Frank on
   2026-10-23: backups keep data, this deletes it on purpose. Before the first
   client leaves
+- [ ] 13c. **A calendar on the site's own page** - the booking window's month
+  sits in a site's page instead of behind a button, about the size of Primo's
+  "Pick a day" card today (a little bigger), larger on a big screen. It is
+  built into the page once a day with its open days marked, so it is fast and
+  Google reads it; a day's times load live only when it is tapped. On a
+  computer the service's details open on the left and the times on the right,
+  like a book; on a phone the times open under the month. Any site can use it,
+  Primo first. Added by Frank on 2026-10-29, after Primo goes live (13)
 
 ## Phase 6. The CRM, second release
 

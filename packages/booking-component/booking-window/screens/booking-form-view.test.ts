@@ -26,6 +26,8 @@ const business = {
   logo: null,
   phone: "403 555 0100",
   contactRule: "either",
+  detailsLabel: null,
+  detailsRequired: false,
   questions: [{ id: "q-colour", label: "Which colour?", required: true }],
   laterTextsYesWords: null,
   theme: null,
@@ -141,6 +143,50 @@ describe("screen two's form", () => {
     fireEvent.click(screen.getByRole("button", { name: "Book" }));
     expect(screen.getByText("Enter a phone number.")).toBeDefined();
     expect(sends).toHaveLength(0);
+  });
+
+  // Feature 13: a business that requires both marks both, and asks the missing one before sending.
+  it("marks the email and the phone required for a business that requires both", async () => {
+    const { apiClient, sends } = clientWithHeldSends();
+    renderForm(apiClient, { ...business, contactRule: "both" });
+    const labelOf = (text: string) => screen.getByText(text, { selector: "label" });
+    expect(labelOf("Phone").className).toContain("sa-req");
+    expect(labelOf("Email").className).toContain("sa-req");
+    expect(screen.queryByText("An email or a phone. At least one is required.")).toBeNull();
+
+    fillIn(); // an email, no phone
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+    expect(screen.getByText("Enter a phone number.")).toBeDefined();
+    expect(sends).toHaveLength(0);
+
+    type("Phone", "403 555 0100");
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+    await waitFor(() => expect(sends).toHaveLength(1));
+  });
+
+  // Feature 13: the project box in the business's own words, required when it says so.
+  it("names the project box in the business's words and asks for it when it is required", async () => {
+    const { apiClient, sends } = clientWithHeldSends();
+    const words = "Tell us about your project";
+    renderForm(apiClient, { ...business, detailsLabel: words, detailsRequired: true });
+    expect(screen.getByText(words, { selector: "label" }).className).toContain("sa-req");
+    expect(screen.queryByText("What would you like done?", { selector: "label" })).toBeNull();
+
+    fillIn(); // everything but the project box
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+    expect(screen.getByText("Answer this question.")).toBeDefined();
+    expect(sends).toHaveLength(0);
+
+    type(words, "Two bedrooms, walls only.");
+    fireEvent.click(screen.getByRole("button", { name: "Book" }));
+    await waitFor(() => expect(sends).toHaveLength(1));
+    expect(sends[0]?.body).toMatchObject({ details: "Two bedrooms, walls only." });
+  });
+
+  it("keeps its own words, unmarked, for a business that set none", () => {
+    renderForm(clientWithHeldSends().apiClient, business);
+    const label = screen.getByText("What would you like done?", { selector: "label" });
+    expect(label.className).not.toContain("sa-req");
   });
 
   it("shows the address unmarked for a service where it is optional, and sends none left empty", async () => {

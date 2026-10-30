@@ -2142,6 +2142,8 @@ describe("the Booking form settings", () => {
       contactRule: "phone",
       askLaterTextsYes: null,
       language: "en", // left as it is: the page did not send it
+      detailsLabel: null, // the project box, untouched (feature 13)
+      detailsRequired: false,
     });
 
     // The business's language (feature 12i): saved, read back, and anything but en or es refused.
@@ -2156,6 +2158,38 @@ describe("the Booking form settings", () => {
       language: "fr",
     });
     expect(french.status).toBe(400);
+    // Both an email and a phone (feature 13): saved and read back like the other three.
+    const both = await put("/settings/booking-form/rules", closer.email, { contactRule: "both" });
+    expect((await both.json()).contactRule).toBe("both");
+    expect((await rulesOf()).contactRule).toBe("both");
+    // The project box (feature 13): its words and the choice saved; empty words are the window's own.
+    const boxOf = async () => {
+      const { detailsLabel, detailsRequired } = await (
+        await get("/settings/booking-form", closer.email)
+      ).json();
+      return { detailsLabel, detailsRequired };
+    };
+    expect(await boxOf()).toEqual({ detailsLabel: null, detailsRequired: false });
+    const box = await put("/settings/booking-form/rules", closer.email, {
+      contactRule: "both",
+      detailsLabel: "  Tell us about your project ",
+      detailsRequired: true,
+    });
+    expect(await box.json()).toMatchObject({
+      detailsLabel: "Tell us about your project",
+      detailsRequired: true,
+    });
+    await put("/settings/booking-form/rules", closer.email, { contactRule: "both" }); // left as it is
+    expect(await boxOf()).toEqual({
+      detailsLabel: "Tell us about your project",
+      detailsRequired: true,
+    });
+    await put("/settings/booking-form/rules", closer.email, {
+      contactRule: "both",
+      detailsLabel: "",
+      detailsRequired: false,
+    });
+    expect(await boxOf()).toEqual({ detailsLabel: null, detailsRequired: false });
     await put("/settings/booking-form/rules", closer.email, {
       contactRule: "phone",
       language: "en",

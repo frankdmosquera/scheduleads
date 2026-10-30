@@ -104,6 +104,8 @@ function fakeApi(bookAnswers: (Response | Promise<Response>)[]) {
           logo: null,
           phone: null,
           contactRule: "either",
+          detailsLabel: null,
+          detailsRequired: false,
           questions: [],
         },
         bookingLinks: [],

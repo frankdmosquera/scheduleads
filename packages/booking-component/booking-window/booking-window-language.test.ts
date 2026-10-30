@@ -109,6 +109,8 @@ function fakeApi(setup: FakeApiSetupType = {}) {
           logo: null,
           phone: null,
           contactRule: "either",
+          detailsLabel: null,
+          detailsRequired: false,
           questions: [],
         },
         bookingLinks: setup.listed

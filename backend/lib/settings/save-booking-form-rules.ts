@@ -1,6 +1,6 @@
 // Backend: saves what the business's booking form requires, from the owner's Booking form page
-// (feature 12f): its contact rule, whether the form asks the customer's yes to later texts, and its
-// language (feature 12i).
+// (feature 12f): its contact rule, whether the form asks the customer's yes to later texts, its
+// language (feature 12i), and its project box's words and whether it is required (feature 13).
 
 import { eq } from "drizzle-orm";
 
@@ -13,13 +13,16 @@ import { findBookingForm, type BookingFormSettingsType } from "./find-booking-fo
 export type SaveBookingFormRulesResultType =
   | {
       ok: true;
-      rules: Pick<BookingFormSettingsType, "contactRule" | "askLaterTextsYes" | "language">;
+      rules: Pick<
+        BookingFormSettingsType,
+        "contactRule" | "askLaterTextsYes" | "language" | "detailsLabel" | "detailsRequired"
+      >;
     }
   | { ok: false; reason: "no_text_settings" };
 
 export async function saveBookingFormRules(
   organizationId: string,
-  { contactRule, askLaterTextsYes, language }: BookingFormRulesType
+  { contactRule, askLaterTextsYes, language, detailsLabel, detailsRequired }: BookingFormRulesType
 ): Promise<SaveBookingFormRulesResultType> {
   return db.transaction(async (tx) => {
     // Left as it is when the page did not show the choice. A business with no text settings sends
@@ -36,13 +39,20 @@ export async function saveBookingFormRules(
 
     await tx
       .update(organization)
-      .set({ contactRule, ...(language ? { language } : {}) })
+      .set({
+        contactRule,
+        ...(language ? { language } : {}),
+        ...(detailsLabel !== undefined ? { detailsLabel } : {}),
+        ...(detailsRequired !== undefined ? { detailsRequired } : {}),
+      })
       .where(eq(organization.id, organizationId));
     const saved = await findBookingForm(tx, organizationId);
     const rules = {
       contactRule: saved.contactRule,
       askLaterTextsYes: saved.askLaterTextsYes,
       language: saved.language,
+      detailsLabel: saved.detailsLabel,
+      detailsRequired: saved.detailsRequired,
     };
     return { ok: true, rules } as const;
   });

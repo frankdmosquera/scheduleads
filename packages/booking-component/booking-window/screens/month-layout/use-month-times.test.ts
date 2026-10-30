@@ -103,6 +103,8 @@ const renderScreenOne = (
         logo: null,
         phone: null,
         contactRule: "either",
+        detailsLabel: null,
+        detailsRequired: false,
         questions: [],
         laterTextsYesWords: null,
         theme: null,

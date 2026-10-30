@@ -15,6 +15,8 @@ export type BookingFormSettingsType = {
   contactRule: ContactRuleType;
   askLaterTextsYes: boolean | null; // null: no text settings yet, so the form cannot ask
   language: "en" | "es"; // its owner's emails, and a booking that came with none (feature 12i)
+  detailsLabel: string | null; // the project box's words, null: the window's own (feature 13)
+  detailsRequired: boolean;
 };
 
 export async function findBookingForm(
@@ -36,6 +38,8 @@ export async function findBookingForm(
         contactRule: organization.contactRule,
         askLaterTextsYes: textSettings.askLaterTextsYes,
         language: organization.language,
+        detailsLabel: organization.detailsLabel,
+        detailsRequired: organization.detailsRequired,
       })
       .from(organization)
       .leftJoin(textSettings, eq(textSettings.organizationId, organization.id))

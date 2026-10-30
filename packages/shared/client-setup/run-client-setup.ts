@@ -127,6 +127,8 @@ async function findDifferences(
   const [business] = await tx
     .select({
       contactRule: organization.contactRule,
+      detailsLabel: organization.detailsLabel,
+      detailsRequired: organization.detailsRequired,
       language: organization.language,
       currency: organization.currency,
       logo: organization.logo,
@@ -143,6 +145,10 @@ async function findDifferences(
     .where(eq(bookingLink.organizationId, organizationId))
     .limit(1);
   if (anyService) differs("contactRule", business?.contactRule, setup.contactRule);
+  if (anyService && setup.detailsBox && business) {
+    const { detailsLabel: label, detailsRequired: required } = business;
+    differs("project box", { label, required }, setup.detailsBox);
+  }
   if (anyService && setup.language) differs("language", business?.language, setup.language);
   // Filled while the business has none (feature 25d); after that it is the owner's.
   if (business?.currency && setup.currency) differs("currency", business.currency, setup.currency);

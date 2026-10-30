@@ -501,7 +501,7 @@ describe("the address, asked per service (the address fix)", () => {
 });
 
 describe("the business's contact rule (feature 12f)", () => {
-  const setRule = (contactRule: "email" | "phone" | "either") =>
+  const setRule = (contactRule: "email" | "phone" | "either" | "both") =>
     db.update(organization).set({ contactRule }).where(eq(organization.id, clinic.id));
   const sendWith = async (customer: Record<string, string>) => {
     const [startsAt] = await freeTimes(clinic.mei);
@@ -547,6 +547,49 @@ describe("the business's contact rule (feature 12f)", () => {
     );
     expect((await sendWith({ phone })).status).toBe(201);
     expect((await sendWith({ email })).status).toBe(201);
+  });
+
+  test("both (feature 13): an email alone or a phone alone is refused, the two are taken", async () => {
+    await setRule("both");
+    expect(await refusedWith(await sendWith({ email }))).toBe("Enter a phone number.");
+    expect(await refusedWith(await sendWith({ phone }))).toBe("Enter an email.");
+    expect((await sendWith({ email, phone })).status).toBe(201);
+  });
+
+  test("the project box (feature 13): a required one is asked by its own words, then taken", async () => {
+    await setRule("either");
+    const setBox = (detailsLabel: string | null, detailsRequired: boolean) =>
+      db
+        .update(organization)
+        .set({ detailsLabel, detailsRequired })
+        .where(eq(organization.id, clinic.id));
+    // The form's own details left out (undefined is not sent), or given as here.
+    const sendDetails = async (details: string | undefined) => {
+      const [startsAt] = await freeTimes(clinic.mei);
+      return post(
+        bookingsPath,
+        form(startsAt, { personId: clinic.mei, customer: { name: "Jane Doe", email }, details })
+      );
+    };
+    try {
+      await setBox("Tell us about your project", true);
+      expect(await refusedWith(await sendDetails(undefined))).toBe(
+        "Answer: Tell us about your project"
+      );
+      expect(await refusedWith(await sendDetails("   "))).toBe(
+        "Answer: Tell us about your project"
+      );
+      await setBox(null, true);
+      expect(await refusedWith(await sendDetails(undefined))).toBe(
+        "Answer: What would you like done?"
+      );
+      await setBox(null, false);
+      expect((await sendWith({ email })).status).toBe(201);
+      await setBox("Tell us about your project", true);
+      expect((await sendWith({ email })).status).toBe(201); // the form's "The front room"
+    } finally {
+      await setBox(null, false);
+    }
   });
 });
 

@@ -30,4 +30,17 @@ describe("the business's contact rule", () => {
       message: "Enter an email or a phone number. At least one is required.",
     });
   });
+
+  test("both: an email and a phone, the missing one said under its own box, email first", () => {
+    expect(missingContact("both", { email, phone })).toBeNull();
+    expect(missingContact("both", { email })).toEqual({
+      field: "phone",
+      message: "Enter a phone number.",
+    });
+    expect(missingContact("both", { phone })).toEqual({
+      field: "email",
+      message: "Enter an email.",
+    });
+    expect(missingContact("both", {})).toEqual({ field: "email", message: "Enter an email." });
+  });
 });
