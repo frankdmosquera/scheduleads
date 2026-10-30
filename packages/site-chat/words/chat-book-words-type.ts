@@ -5,6 +5,8 @@
 export interface ChatBookWordsType {
   /** More than one service: the line over their buttons. */
   service: string;
+  /** The button beside a service in an opened tile. */
+  bookThis: string;
   /** Over the times on the day asked for. */
   on: string;
   /** The day asked for has none: `{next}` is the day the times are on. */

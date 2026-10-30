@@ -220,6 +220,7 @@
   color: var(--sc-text, #18181b);
   text-decoration: none;
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 a.sc-tile:hover {
   border-color: var(--sc-accent, #18181b);
@@ -229,6 +230,60 @@ a.sc-tile:hover {
 }
 .sc-tile-note {
   color: var(--sc-muted, #71717a);
+}
+button.sc-tile {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.sc-tile:hover,
+button.sc-tile[data-open] {
+  border-color: var(--sc-accent, #18181b);
+}
+button.sc-tile:focus-visible,
+.sc-tile-item button:focus-visible {
+  outline: 2px solid var(--sc-accent, #18181b);
+  outline-offset: 2px;
+}
+
+/* An opened tile: its services, each with its line and a Book button. */
+.sc-tile-items {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+  border: 1px solid var(--sc-accent, #18181b);
+  border-radius: 12px;
+  background: var(--sc-surface, #ffffff);
+  white-space: normal;
+}
+.sc-tile-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--sc-text, #18181b);
+}
+.sc-tile-item + .sc-tile-item {
+  border-top: 1px solid var(--sc-border, #e4e4e7);
+}
+.sc-tile-item-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sc-tile-item button {
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sc-accent, #18181b);
+  color: var(--sc-accent-ink, #ffffff);
+  padding: 6px 14px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* ---------- the question field ---------- */

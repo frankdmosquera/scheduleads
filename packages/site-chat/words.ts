@@ -10,6 +10,7 @@ export {
 } from "./words/chat-words-type.js";
 export type {
   ChatAnswersType,
+  ChatTileItemType,
   ChatTileListType,
   ChatTileType,
   StoredAnswerType,

@@ -35,6 +35,8 @@ export interface BookingBusinessType {
 /** One active service, and whether it asks for an address. */
 export interface BookingServiceType {
   id: string;
+  /** Its booking link slug, which a site's tiles name it by. */
+  slug?: string;
   name: string;
   addressMode: AddressModeType;
 }
@@ -136,7 +138,12 @@ export async function readBookingForm(
       !addressModes.includes(link.addressMode as string)
     )
       throw new Error("booking-links: unexpected service");
-    return { id: link.id, name: link.name, addressMode: link.addressMode as AddressModeType };
+    return {
+      id: link.id,
+      ...(isText(link.slug) && { slug: link.slug }),
+      name: link.name,
+      addressMode: link.addressMode as AddressModeType,
+    };
   });
   return {
     business: {

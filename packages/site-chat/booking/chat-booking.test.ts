@@ -28,6 +28,7 @@ import {
   bookingAskBody,
   bookingReply,
   startBooking,
+  startBookingFor,
   tapService,
   tapTime,
   type BookingAskType,
@@ -325,6 +326,23 @@ describe("a tapped time or service", () => {
       "Free Estimate",
       "Touch-up Visit",
     ]);
+  });
+  describe("a service booked from an opened tile", () => {
+    const massage = { ...ESTIMATE, id: "head", slug: "head-massage", name: "Head Massage" };
+    const facial = { ...ESTIMATE, id: "gold", slug: "gold-facial", name: "Gold Facial" };
+    it("its slug goes straight to its times, the form read with it", async () => {
+      const standIn = crmWith({ services: [ESTIMATE, massage, facial] });
+      const line = await startBookingFor(standIn.source, W, "en", "head-massage", NOW);
+      expect(line.booking?.flow.step).toBe("time");
+      expect(line.booking?.flow.service?.id).toBe("head");
+      expect(line.booking?.flow.fields.length).toBeGreaterThan(0);
+    });
+    it("a slug the business no longer lists starts at its services", async () => {
+      const standIn = crmWith({ services: [ESTIMATE, massage, facial] });
+      const line = await startBookingFor(standIn.source, W, "en", "gone", NOW);
+      expect(line.booking?.flow.step).toBe("service");
+      expect(line.booking?.flow.services).toHaveLength(3);
+    });
   });
   describe("a service named in the question", () => {
     // Face and Body's overlapping names (review of 13d.3).

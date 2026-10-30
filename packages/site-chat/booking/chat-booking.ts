@@ -84,8 +84,8 @@ export type BookingAskType = (
 
 const newKey = () => crypto.randomUUID();
 
-/** At most this many services are read out over their buttons. */
-const SERVICES_READ_OUT = 6;
+/** At most this many services are read out over their buttons; more are many, shown as the site's tiles when it has them. */
+export const MANY_SERVICES = 6;
 
 /** Midnight of today on this machine's clock, before the business's zone is known. */
 const localToday = (now: Date) => new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -150,11 +150,28 @@ export async function startBooking(
     text: words.service,
     // A long list is left on the buttons: read aloud, ten names would bury the question.
     spoken:
-      offered.length > SERVICES_READ_OUT
+      offered.length > MANY_SERVICES
         ? words.service
         : `${words.service} ${endSentence(offered.map((s) => s.name).join(", "))}`,
     booking,
   };
+}
+
+/**
+ * A booking started from a service tapped in a tile, named by its booking link slug: straight to its free times. A
+ * slug the business no longer lists starts the booking as any other, at its services.
+ */
+export async function startBookingFor(
+  source: BookingSourceType,
+  words: ChatBookWordsType,
+  lang: ChatLanguageType,
+  slug: string,
+  now = new Date()
+): Promise<ChatBookingLineType> {
+  const started = await startBooking(source, words, lang, "", now);
+  if (started.booking?.flow.step !== "service") return started;
+  const service = started.booking.flow.services.find((s) => s.slug === slug);
+  return service ? tapService(started.booking, service, now) : started;
 }
 
 /** The free times for `service`, keeping everything already given; none ends the booking. */

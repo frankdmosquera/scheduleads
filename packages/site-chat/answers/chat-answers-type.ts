@@ -6,12 +6,22 @@ export interface StoredAnswerType {
   offersPerson?: boolean;
 }
 
+/** One thing an opened tile lists: a service, its line (its price and length), and its booking link when it books. */
+export interface ChatTileItemType {
+  label: string;
+  note?: string;
+  /** The service's booking link slug in Booking CRM: with it, the item has a Book button that books in the chat. */
+  book?: string;
+}
+
 /** One tile of an answer that is a list (a service, with its line under it when it has a short one). */
 export interface ChatTileType {
   label: string;
   note?: string;
   /** Its page, when it has one. */
   href?: string;
+  /** What it holds: the tile opens in the chat to list them, each bookable on the spot. */
+  items?: readonly ChatTileItemType[];
 }
 
 /** A list answer's tiles, under the stored question they belong to. */
@@ -30,4 +40,6 @@ export interface ChatAnswersType {
   alsoAsked?: Readonly<Record<string, readonly string[]>>;
   /** The answers that are lists, drawn as tiles under their words. */
   tiles?: readonly ChatTileListType[];
+  /** The tiles a booking starts with when the visitor named no service: groups of services, each opening to its own. */
+  bookingTiles?: readonly ChatTileType[];
 }

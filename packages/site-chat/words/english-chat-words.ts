@@ -45,6 +45,7 @@ export const englishChatWords: ChatWordsType = {
   suggest: "Did you mean one of these?",
   book: {
     service: "Which would you like to book?",
+    bookThis: "Book",
     on: "Here are the free times for {service} on {day}. Tap one, or tell me which:",
     full: "{day} is full. The next free times for {service} are on {next}:",
     next: "The next free times for {service} are on {day}. Tap one, or tell me which:",

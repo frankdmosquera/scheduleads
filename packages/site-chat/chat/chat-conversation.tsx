@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } fro
 import { askChat, type ChatReplyType } from "../agent/ask-chat.js";
 import { CHAT_SETTINGS } from "../agent/chat-settings.js";
 import type { ChatTurnType } from "../agent/chat-event-type.js";
-import type { ChatAnswersType } from "../answers/chat-answers-type.js";
+import type { ChatAnswersType, ChatTileItemType } from "../answers/chat-answers-type.js";
 import { relatedQuestions } from "../answers/related-questions.js";
 import type { BookingAccountType, BookingServiceType } from "../booking/booking-api.js";
 import { createBookingSource, type BookingSourceType } from "../booking/booking-source.js";
@@ -13,6 +13,8 @@ import {
   bookingAi,
   bookingReply,
   startBooking,
+  startBookingFor,
+  MANY_SERVICES,
   tapService,
   tapTime,
   type BookingAskType,
@@ -387,6 +389,22 @@ export function ChatConversation({
     void bookingStep(service.name, () => tapService(at, service));
   }
 
+  /** Many services to choose from, as the site's booking tiles when it gave them; null shows them as buttons. */
+  function serviceTiles(at: ChatBookingType) {
+    return at.flow.step === "service" && at.flow.services.length > MANY_SERVICES
+      ? (answers.bookingTiles ?? null)
+      : null;
+  }
+
+  /** A Book tapped beside a service in an opened tile: the open booking takes it, else a booking starts on it. */
+  function bookItem(item: ChatTileItemType, at?: ChatBookingType) {
+    const books = source();
+    if (!books || !item.book) return;
+    const service = at?.flow.services.find((s) => s.slug === item.book);
+    if (at && service) return onService(at, service);
+    void bookingStep(item.label, () => startBookingFor(books, words.book, lang, item.book!));
+  }
+
   function listen() {
     const r = startListening({
       lang: words.voice.speechLang,
@@ -470,7 +488,14 @@ export function ChatConversation({
                   </button>
                 )
               ))}
-            {b.booking && (
+            {b.booking && serviceTiles(b.booking) && (
+              <AnswerTiles
+                tiles={serviceTiles(b.booking)!}
+                bookLabel={words.book.bookThis}
+                onBook={b.stale ? undefined : (item) => bookItem(item, b.booking)}
+              />
+            )}
+            {b.booking && !serviceTiles(b.booking) && (
               <span className="sc-choices">
                 {b.booking.flow.step === "service"
                   ? b.booking.flow.services.map((service) => (
@@ -495,7 +520,13 @@ export function ChatConversation({
                     ))}
               </span>
             )}
-            {b.tiles && <AnswerTiles tiles={b.tiles} />}
+            {b.tiles && (
+              <AnswerTiles
+                tiles={b.tiles}
+                bookLabel={words.book.bookThis}
+                onBook={booking ? (item) => bookItem(item) : undefined}
+              />
+            )}
             {b.ways !== undefined && (
               <PersonWays
                 words={words.ways}
