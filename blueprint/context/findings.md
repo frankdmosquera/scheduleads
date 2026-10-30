@@ -721,13 +721,13 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Suggested fix:** Bump, clean `dist/`, repack.
 **Resolution:** Fixed 2026-10-30: 0.1.1 packed from a clean `dist/`, 14 files, none of the strays.
 
-### F-592 [P2] open - The chat's stored answer implies Primo does not paint exteriors, while his site says exteriors
+### F-592 [P2] closed - The chat's stored answer implies Primo does not paint exteriors, while his site says exteriors
 
 **File:** primo-painters data/chatAnswers.ts:39
 **Found:** 2026-10-30 by independent review of 13d.1
 **Why it matters:** "Do you paint exteriors?" is a wording of "What services do you offer?", whose answer lists interior work only; his gallery copy and projects page mention exteriors. Jev's sure pick skips the brief's "someone can confirm" rule, so the chat implies a no his site contradicts.
 **Suggested fix:** Frank decides whether Primo paints exteriors; then the fact goes into `chatFacts` and the stored answer, or the wording is removed so the AI says someone can confirm.
-**Resolution:**
+**Resolution:** Closed 2026-10-30: Frank, interiors only, as the site sells; `chatFacts` says so (Primo 0d5e182). The site is the chat's source; what it never says gets "someone can confirm".
 
 ### F-593 [P3] open - Smaller 13d.1 review points, carried
 
