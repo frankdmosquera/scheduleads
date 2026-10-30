@@ -25,7 +25,7 @@ export interface ChatReplyType {
 const ANSWERS_KEY = "site-chat-answers";
 
 /** AI answers this tab has had; a soft limit, so it fails open when storage is blocked. */
-function answersSoFar(): number {
+export function answersSoFar(): number {
   try {
     return Number(sessionStorage.getItem(ANSWERS_KEY) ?? 0);
   } catch {
@@ -33,7 +33,7 @@ function answersSoFar(): number {
   }
 }
 
-function countAnswer() {
+export function countAnswer() {
   try {
     sessionStorage.setItem(ANSWERS_KEY, String(answersSoFar() + 1));
   } catch {

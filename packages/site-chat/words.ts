@@ -15,3 +15,4 @@ export type {
   StoredAnswerType,
 } from "./answers/chat-answers-type.js";
 export { chatAnswersProblems } from "./answers/chat-answers-problems.js";
+export type { ChatBookWordsType } from "./words/chat-book-words-type.js";

@@ -438,7 +438,11 @@ list, Calendly is gone from his site, and the ranking is untouched.
   Google reads it; a day's times load live only when it is tapped. On a
   computer the service's details open on the left and the times on the right,
   like a book; on a phone the times open under the month. Any site can use it,
-  Primo first. Added by Frank on 2026-10-29, after Primo goes live (13)
+  Primo first. Added by Frank on 2026-10-29, after Primo goes live (13).
+  Frank, Oct 30: on Primo's hero card a day is tapped right in the little
+  calendar, its times open in the card, and the booking's details show beside
+  it; the card offers "Book now" or "Ask us" (the chat), and the floating
+  "Ask us" button stays
 - [ ] 13d. **The chat that books** - a chat on a client's site that answers
   and books in the conversation, the way ialaorden.com's does: the AI reads
   the visitor's words, our code checks every field and books only on a yes,

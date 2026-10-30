@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ComponentType } from "react";
 
 import type { ChatAnswersType } from "../answers/chat-answers-type.js";
+import type { BookingAccountType } from "../booking/booking-api.js";
 import type { ChatDevFactsType } from "../dev/dev-row.js";
 import type { ChatLanguageType, ChatWordsType, PersonPathType } from "../words/chat-words-type.js";
 import type { ChatConversationPropsType } from "./chat-conversation.js";
@@ -21,9 +22,12 @@ export interface SiteChatPropsType {
   links?: PersonWayLinksType;
   /** Opens a way the site gave no link for (its own booking window), with the visitor's question. */
   onWay?: (path: PersonPathType, question: string) => void;
+  /** The business in Booking CRM, as the site's booking window gets it: with it, the chat books in the conversation. */
+  booking?: BookingAccountType;
   /** The addresses the site mounted the chat's routes at. */
   chatUrl?: string;
   voiceUrl?: string;
+  bookingUrl?: string;
   /** Laptop only: shows the inspector beside the open chat. */
   debug?: boolean;
 }
@@ -48,8 +52,10 @@ export function SiteChat({
   loadAnswers,
   links = {},
   onWay,
+  booking,
   chatUrl = "/api/chat",
   voiceUrl = "/api/chat/voice",
+  bookingUrl = "/api/chat/booking",
   debug = false,
 }: SiteChatPropsType) {
   const [open, setOpen] = useState(false);
@@ -142,8 +148,10 @@ export function SiteChat({
             answers={loaded.answers}
             links={links}
             onWay={onWay}
+            booking={booking}
             chatUrl={chatUrl}
             voiceUrl={voiceUrl}
+            bookingUrl={bookingUrl}
             onAnswered={
               debug
                 ? (row) => setDevRows((rows) => [{ ...row, id: (rows[0]?.id ?? 0) + 1 }, ...rows])

@@ -10,12 +10,14 @@ export interface ChatDevFactsType {
   chip: boolean;
   /** The server's reply, when the question went there. */
   reply: ChatReplyType | null;
+  /** A booking answered: from the calendar, a tapped button, the booking AI, or the word lists without it. */
+  booking?: "calendar" | "button" | "ai" | "words";
 }
 
 /** One inspector row: which step of the ladder answered a question, and how long the visitor waited. */
 export interface ChatDevRowType {
   question: string;
-  who: "button" | "jev" | "ai" | "handOver";
+  who: "button" | "jev" | "ai" | "handOver" | "booking";
   detail: string;
   ms: number;
 }
@@ -53,13 +55,22 @@ function serverDetail(trace: ChatTraceType | undefined): string {
 }
 
 /** One row: which step of the ladder answered, from what the chat decided and the server replied. */
-export function devRow({ question, ms, chip, reply }: ChatDevFactsType): ChatDevRowType {
+/** What answered a booking turn, in a few words. */
+const BOOKING_DETAIL: Record<NonNullable<ChatDevFactsType["booking"]>, string> = {
+  calendar: "the business's free times from Booking CRM, no AI",
+  button: "tapped: the booking moved on in our own words, no AI",
+  ai: "the booking AI read the reply into fields; our code checked each one and wrote the line",
+  words: "no booking AI (limit or offline): the word lists read the reply",
+};
+
+export function devRow({ question, ms, chip, reply, booking }: ChatDevFactsType): ChatDevRowType {
   const row = (who: ChatDevRowType["who"], detail: string) => ({
     question,
     ms: Math.round(ms),
     who,
     detail,
   });
+  if (booking) return row("booking", BOOKING_DETAIL[booking]);
   if (chip)
     return row("button", "tapped, not typed: a stored answer from the site's own words, no server");
   if (!reply) return row("handOver", "the chat's code did not load: a person takes it");

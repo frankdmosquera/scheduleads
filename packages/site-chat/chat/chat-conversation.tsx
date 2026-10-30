@@ -5,6 +5,21 @@ import { CHAT_SETTINGS } from "../agent/chat-settings.js";
 import type { ChatTurnType } from "../agent/chat-event-type.js";
 import type { ChatAnswersType, ChatTileType } from "../answers/chat-answers-type.js";
 import { relatedQuestions } from "../answers/related-questions.js";
+import { asksForTime } from "../booking/asked-day.js";
+import type { BookingAccountType, BookingServiceType } from "../booking/booking-api.js";
+import { createBookingSource, type BookingSourceType } from "../booking/booking-source.js";
+import { todayIn } from "../booking/business-clock.js";
+import {
+  bookingAi,
+  bookingReply,
+  startBooking,
+  tapService,
+  tapTime,
+  type BookingAskType,
+  type ChatBookingLineType,
+  type ChatBookingType,
+} from "../booking/chat-booking.js";
+import type { ChatTimeType } from "../booking/chat-times.js";
 import type { ChatDevFactsType } from "../dev/dev-row.js";
 import { chosenVoice } from "../voice/chosen-voice.js";
 import {
@@ -24,8 +39,10 @@ interface BubbleType {
   from: "me" | "them";
   text: string;
   typing?: boolean;
-  /** The visitor asked for a way to a person: its button, carrying the question. */
-  go?: { path: PersonPathType; message: string };
+  /** The visitor asked for a way to a person: its button, carrying the question. `toWindow`: the site's own booking. */
+  go?: { path: PersonPathType; message: string; toWindow?: boolean };
+  /** A booking at its time or service step: the free times, or the services, as buttons. */
+  booking?: ChatBookingType;
   /** "Did you mean...?": stored questions the visitor can tap for their answer. */
   choices?: string[];
   /** Other questions from the same group as the stored question just answered, as buttons. */
@@ -42,8 +59,11 @@ export interface ChatConversationPropsType {
   answers: ChatAnswersType;
   links: PersonWayLinksType;
   onWay?: (path: PersonPathType, question: string) => void;
+  /** The business in Booking CRM: with it, the chat books in the conversation. */
+  booking?: BookingAccountType;
   chatUrl: string;
   voiceUrl: string;
+  bookingUrl: string;
   /** Laptop only: who answered each question, for the inspector. */
   onAnswered?: (facts: ChatDevFactsType) => void;
 }
@@ -56,6 +76,21 @@ const clock = () => performance.now();
 /** "Did you mean...?" with its questions, one per line: as the conversation keeps it and the voice says it. */
 const suggestLine = (ask: string, questions: readonly string[]) => [ask, ...questions].join("\n");
 
+/** A bubble with booking buttons, as the conversation keeps it: its line, then what the buttons say. */
+function bookingTurnText(text: string, booking: ChatBookingType): string {
+  const { flow } = booking;
+  const named =
+    flow.step === "service" ? flow.services.map((s) => s.name) : flow.times.map((t) => t.label);
+  return `${text} ${named.join(", ")}`;
+}
+
+/** Midnight of today: on the business's clock once a booking read it, else on this machine's. */
+function todayFor(timeZone: string | null): Date {
+  if (timeZone) return todayIn(timeZone);
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
 /**
  * The conversation: it opens on the greeting, then answers for real. A tapped question answers at once from the
  * site's own answers; a typed or spoken one goes to the site's server, Jev first, then the AI, then a person.
@@ -66,8 +101,10 @@ export function ChatConversation({
   answers,
   links,
   onWay,
+  booking,
   chatUrl,
   voiceUrl,
+  bookingUrl,
   onAnswered,
 }: ChatConversationPropsType) {
   const [bubbles, setBubbles] = useState<BubbleType[]>(() => [
@@ -95,6 +132,12 @@ export function ChatConversation({
   const speakRound = useRef(0);
   // The stored questions already answered in this chat, never offered again.
   const answeredQuestions = useRef(new Set<string>());
+  // A booking being talked through: while it is open, every reply goes to it first, never to Jev or the AI.
+  const bookingNow = useRef<ChatBookingType | null>(null);
+  // The business's zone once a booking read it, so "tomorrow" is the business's tomorrow.
+  const businessZone = useRef<string | null>(null);
+  const bookingSource = useRef<BookingSourceType | null>(null);
+  const bookingAsk = useRef<BookingAskType | null>(null);
 
   useEffect(
     () => () => {
@@ -120,6 +163,27 @@ export function ChatConversation({
 
   function show(id: number, bubble: Omit<BubbleType, "id">) {
     setBubbles((list) => list.map((b) => (b.id === id ? { ...bubble, id } : b)));
+  }
+
+  /** The business's booking routes for this chat, made on first use; null when the site gave no booking. */
+  function source(): BookingSourceType | null {
+    if (!booking) return null;
+    bookingSource.current ??= createBookingSource(booking);
+    return bookingSource.current;
+  }
+
+  /** A booking line as the chat's answer: its buttons at the time or service, the window when it cannot go on. */
+  function fromBooking(line: ChatBookingLineType, q: string): Omit<BubbleType, "id"> {
+    bookingNow.current = line.booking;
+    if (line.booking?.timeZone) businessZone.current = line.booking.timeZone;
+    const step = line.booking?.flow.step;
+    const toWindow = line.toWindow && Boolean(links.book || onWay);
+    return {
+      from: "them",
+      text: line.text,
+      booking: step === "time" || step === "service" ? line.booking! : undefined,
+      go: toWindow ? { path: "book", message: q, toWindow: true } : undefined,
+    };
   }
 
   /** The answer the server's reply becomes in the chat; `fixed` is false only for the AI's own words. */
@@ -178,6 +242,28 @@ export function ChatConversation({
     ]);
     let answer: Omit<BubbleType, "id"> = { from: "them", text: words.handOver, ways: q };
     let answered = false;
+    // What is said out loud when it differs from what is shown (the times, read one by one).
+    let spokenLine: string | undefined;
+    // How a booking answered, for the inspector.
+    let bookingBy: ChatDevFactsType["booking"];
+    const bookingLine = (line: ChatBookingLineType) => {
+      spokenLine = line.spoken;
+      replyLang.current = line.booking?.flow.lang ?? replyLang.current;
+      return fromBooking(line, q);
+    };
+    const books = source();
+    // A request for a time is answered from the calendar at once, never sent to the server.
+    const timeAsk = !chip && books ? asksForTime(q, lang, todayFor(businessZone.current)) : null;
+    // A booking being talked through takes the reply first, never Jev or the AI; anything else ends it. A new
+    // request for a time ("Monday instead") starts over with that day's times.
+    const going =
+      books && bookingNow.current && !timeAsk && !chip
+        ? await bookingReply(bookingNow.current, q, {
+            turns: [...turns.current, { role: "user", text: q }],
+            ask: (bookingAsk.current ??= bookingAi(bookingUrl)),
+          })
+        : null;
+    if (going === "leave") bookingNow.current = null;
     // The stored question this answer is, when it is one: its tiles and related questions follow it.
     let storedQuestion: string | undefined;
     const stored = chip ? answers.stored.find((s) => s.question === chip) : undefined;
@@ -186,6 +272,15 @@ export function ChatConversation({
         ? { from: "them", text: stored.answer, ways: q }
         : { from: "them", text: stored.answer };
       storedQuestion = stored.question;
+      answered = true;
+    } else if (going && going !== "leave") {
+      answer = bookingLine(going);
+      bookingBy = going.byAi ? "ai" : "words";
+      if (going.byAi) replied = { text: going.text, trace: going.byAi.trace };
+      answered = true;
+    } else if (books && timeAsk) {
+      answer = bookingLine(await startBooking(books, words.book, lang, q));
+      bookingBy = "calendar";
       answered = true;
     } else if (!chip) {
       const reply = await askChat(
@@ -215,6 +310,11 @@ export function ChatConversation({
       fixedLine = read.fixed;
       storedQuestion = read.stored;
       answered = !reply.error;
+      // The visitor asked to book: the free times right here, on the day asked for when one was named.
+      if (reply.person === "book" && books) {
+        answer = bookingLine(await startBooking(books, words.book, lang, q));
+        bookingBy = "calendar";
+      }
     }
     const list = storedQuestion
       ? answers.tiles?.find((l) => l.question === storedQuestion)
@@ -226,26 +326,76 @@ export function ChatConversation({
       if (next.length) answer = { ...answer, related: next };
     }
     show(id, answer);
-    onAnswered?.({ question: q, ms: clock() - started, chip: Boolean(chip), reply: replied });
+    onAnswered?.({
+      question: q,
+      ms: clock() - started,
+      chip: Boolean(chip),
+      reply: replied,
+      booking: bookingBy,
+    });
     // Only answered turns join the conversation, so one refused question never spoils the next ones. A "Did you
-    // mean" is kept with its choices, so "the first one" can be understood.
-    const whole = answer.choices ? suggestLine(answer.text, answer.choices) : answer.text;
+    // mean" is kept with its choices, so "the first one" can be understood; times and services with their buttons.
+    const whole = answer.choices
+      ? suggestLine(answer.text, answer.choices)
+      : answer.booking
+        ? bookingTurnText(answer.text, answer.booking)
+        : answer.text;
     if (answered) turns.current.push({ role: "user", text: q }, { role: "assistant", text: whole });
     busy.current = false;
     if (!spoken || !stillSpoken()) return;
     // An AI answer that failed halfway: its spoken sentences stop, and the hand-over is said instead.
     if (fixedLine && sentencesHeard) speaker.current?.stop();
-    if (fixedLine) voice().line(whole);
+    // A booking being talked through listens again once its question is said.
+    if (fixedLine) voice().line(spokenLine ?? whole, bookingNow.current ? listen : undefined);
     // An AI answer that came with no spoken sentences is read whole in the browser's voice.
     else if (sentencesHeard === 0) voice().sentence(answer.text);
   }
 
+  /** A booking line from a tap or a picked way, added to the conversation as the chat's own answer. */
+  async function bookingStep(
+    label: string,
+    make: () => Promise<ChatBookingLineType> | ChatBookingLineType
+  ) {
+    if (busy.current) return;
+    busy.current = true;
+    const started = clock();
+    nextId.current += 1;
+    const id = nextId.current;
+    setAsked(true);
+    setBubbles((list) => [...list, { id, from: "them", text: "", typing: true }]);
+    const answer = fromBooking(await make(), label);
+    show(id, answer);
+    onAnswered?.({
+      question: label,
+      ms: clock() - started,
+      chip: true,
+      reply: null,
+      booking: "button",
+    });
+    const whole = answer.booking ? bookingTurnText(answer.text, answer.booking) : answer.text;
+    turns.current.push({ role: "user", text: label }, { role: "assistant", text: whole });
+    busy.current = false;
+  }
+
   /**
-   * A way to a person picked under an answer, when the site gave it no link: the site's own handler, with the
-   * question. Booking in the chat, once it exists, takes the book way here before the site's handler sees it.
+   * A way to a person picked under an answer, when the site gave it no link: the book way books right here in the
+   * chat when the site gave its booking; the rest, and the book way without it, go to the site's own handler.
    */
   function pickWay(path: PersonPathType, message: string) {
-    onWay?.(path, message);
+    const books = source();
+    if (path === "book" && books)
+      void bookingStep(words.ctas.book, () => startBooking(books, words.book, lang, message));
+    else onWay?.(path, message);
+  }
+
+  /** A tapped time: the chat asks the first thing the business's form still needs. */
+  function onTime(at: ChatBookingType, time: ChatTimeType) {
+    void bookingStep(time.label, () => tapTime(at, time));
+  }
+
+  /** A tapped service: its free times. */
+  function onService(at: ChatBookingType, service: BookingServiceType) {
+    void bookingStep(service.name, () => tapService(at, service));
   }
 
   function listen() {
@@ -317,22 +467,49 @@ export function ChatConversation({
               (links[b.go.path] ? (
                 <a className="sc-go" href={links[b.go.path]}>{`${words.ctas[b.go.path]} →`}</a>
               ) : (
-                onWay && (
+                (onWay || (b.go.path === "book" && booking)) && (
                   <button
                     type="button"
                     className="sc-go"
-                    onClick={() => pickWay(b.go!.path, b.go!.message)}
+                    onClick={() =>
+                      b.go!.toWindow
+                        ? onWay?.(b.go!.path, b.go!.message)
+                        : pickWay(b.go!.path, b.go!.message)
+                    }
                   >
                     {`${words.ctas[b.go.path]} →`}
                   </button>
                 )
               ))}
+            {b.booking && (
+              <span className="sc-choices">
+                {b.booking.flow.step === "service"
+                  ? b.booking.flow.services.map((service) => (
+                      <button
+                        key={service.id}
+                        type="button"
+                        onClick={() => onService(b.booking!, service)}
+                      >
+                        {service.name}
+                      </button>
+                    ))
+                  : b.booking.flow.times.map((time) => (
+                      <button
+                        key={time.startsAt}
+                        type="button"
+                        onClick={() => onTime(b.booking!, time)}
+                      >
+                        {time.label}
+                      </button>
+                    ))}
+              </span>
+            )}
             {b.tiles && <AnswerTiles tiles={b.tiles} />}
             {b.ways !== undefined && (
               <PersonWays
                 words={words.ways}
                 links={links}
-                onPick={onWay && ((path) => pickWay(path, b.ways!))}
+                onPick={onWay || booking ? (path) => pickWay(path, b.ways!) : undefined}
               />
             )}
             {(b.related ?? b.choices) && (

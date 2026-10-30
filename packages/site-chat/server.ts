@@ -8,6 +8,9 @@
 //
 //   // app/api/chat/voice/[id]/route.ts
 //   export const GET = createVoiceRoute({ sites: [...], cacheSound: (make) => unstable_cache(make, ["chat-voice"]) });
+//
+//   // app/api/chat/booking/route.ts: the booking AI, which reads a reply into fields and never books
+//   export const POST = createChatBookingRoute({ debug: process.env.NODE_ENV === "development" });
 
 export { createChatRoute, type ChatRouteOptionsType } from "./server/create-chat-route.js";
 export {
@@ -22,3 +25,7 @@ export {
   type ChatBriefType,
 } from "./server/chat-brief.js";
 export { englishBriefWords, type ChatBriefWordsType } from "./server/english-brief-words.js";
+export {
+  createChatBookingRoute,
+  type ChatBookingRouteOptionsType,
+} from "./server/create-chat-booking-route.js";

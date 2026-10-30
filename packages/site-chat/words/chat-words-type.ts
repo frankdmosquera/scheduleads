@@ -1,3 +1,5 @@
+import type { ChatBookWordsType } from "./chat-book-words-type.js";
+
 /** The languages the chat's words and brief can be written in. */
 export type ChatLanguageType = "en" | "es";
 
@@ -49,4 +51,6 @@ export interface ChatWordsType {
   greeting: string;
   /** Jev is fairly sure: the line above its likeliest stored questions, shown as buttons. */
   suggest: string;
+  /** Booking in the chat, following the business's own booking form. */
+  book: ChatBookWordsType;
 }

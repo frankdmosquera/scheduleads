@@ -10,6 +10,7 @@ const WHO: Record<ChatDevRowType["who"], string> = {
   jev: "Jev",
   ai: "LLM",
   handOver: "Hand-over",
+  booking: "Booking",
 };
 
 const { jev: jevSettings } = CHAT_SETTINGS;
@@ -36,6 +37,8 @@ function nextStep(
   if (suggested)
     return `Jev was between ${pct(jevSettings.suggestConfidence)} and ${pct(jevSettings.storedConfidence)} sure. A stored question worded more like this one makes it sure.`;
   if (who === "handOver") return "Nobody could answer: a person takes it.";
+  if (who === "booking")
+    return "A booking step: our code checks every field and books only on a yes to its own read-back.";
   return "Instant, in the site's own words. Nothing to do.";
 }
 
