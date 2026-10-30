@@ -1,0 +1,574 @@
+/* ===========================================================================
+   THE SITE CHAT
+
+   The corner chat of ialaorden.com, as plain CSS so a site with or without
+   Tailwind can install it.
+
+   RULE: every colour, font and radius reads a --sc-* token that the host site
+   defines, each with a neutral fallback for a host that defines none. Every
+   class is sc- prefixed so it cannot collide with a host's own.
+
+   --sc-accent-ink is the text on --sc-accent: set both together.
+   =========================================================================== */
+
+.sc-panel,
+.sc-launcher,
+.sc-hello,
+.sc-inspector {
+  font-family: var(--sc-font, inherit);
+  color: var(--sc-text, #18181b);
+  box-sizing: border-box;
+}
+.sc-panel *,
+.sc-panel *::before,
+.sc-panel *::after {
+  box-sizing: border-box;
+}
+
+/* ---------- the panel ---------- */
+
+.sc-panel {
+  display: none;
+  position: fixed;
+  right: 16px;
+  bottom: 80px;
+  z-index: 50;
+  height: min(600px, 72vh);
+  width: 380px;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--sc-border, #e4e4e7);
+  border-radius: var(--sc-radius, 16px);
+  background: var(--sc-surface, #ffffff);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.18);
+}
+.sc-panel[data-open] {
+  display: flex;
+}
+.sc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--sc-border, #e4e4e7);
+  padding: 12px 16px;
+  font-size: 14px;
+}
+.sc-close {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--sc-muted, #71717a);
+  font: inherit;
+  font-size: 22px;
+  cursor: pointer;
+}
+.sc-close:hover {
+  background: var(--sc-bg, #f4f4f5);
+}
+
+/* ---------- the conversation ---------- */
+
+.sc-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sc-border, #e4e4e7) transparent;
+}
+.sc-bubble {
+  border-radius: 14px;
+  padding: 9px 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-line;
+  max-width: 88%;
+  background: var(--sc-bg, #f4f4f5);
+}
+.sc-bubble-me {
+  align-self: flex-end;
+  background: var(--sc-text, #18181b);
+  color: var(--sc-surface, #ffffff);
+}
+
+/* One sentence per paragraph, with a small gap between them; a paragraph's own lines stay tight. */
+.sc-paragraph,
+.sc-line {
+  display: block;
+}
+.sc-paragraph + .sc-paragraph {
+  margin-top: 0.5em;
+}
+/* Each line of an arriving answer rises into place after the one before (its delay is set inline). Until its
+   turn it is invisible but keeps its space, so the bubble never jumps. */
+.sc-arrive {
+  animation: sc-line-in 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes sc-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.sc-typing {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.sc-typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.35;
+  animation: sc-typing-dot 1s infinite;
+}
+.sc-typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.sc-typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes sc-typing-dot {
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+/* "Did you mean...?" and the related questions: pills under the answer, answered at once when tapped. */
+.sc-choices,
+.sc-ways {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  white-space: normal;
+}
+.sc-choices button,
+.sc-ways > a,
+.sc-ways > button {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: left;
+  background: none;
+  cursor: pointer;
+  border: 1px solid var(--sc-accent, #18181b);
+  color: var(--sc-accent, #18181b);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.sc-choices button:hover,
+.sc-ways > a:hover,
+.sc-ways > button:hover,
+.sc-choices button:focus-visible,
+.sc-ways > a:focus-visible,
+.sc-ways > button:focus-visible {
+  background: color-mix(in srgb, var(--sc-accent, #18181b) 10%, transparent);
+}
+
+/* The button under an answer that opens the way to a person the visitor asked for. */
+.sc-go {
+  display: flex;
+  width: fit-content;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 99px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--sc-accent, #18181b);
+  color: var(--sc-accent-ink, #ffffff);
+}
+
+/* An answer that is a list: tiles under its words. */
+.sc-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+  white-space: normal;
+}
+.sc-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--sc-border, #e4e4e7);
+  border-radius: 12px;
+  background: var(--sc-surface, #ffffff);
+  padding: 8px 12px;
+  color: var(--sc-text, #18181b);
+  text-decoration: none;
+  font-size: 13px;
+}
+a.sc-tile:hover {
+  border-color: var(--sc-accent, #18181b);
+}
+.sc-tile-label {
+  font-weight: 600;
+}
+.sc-tile-note {
+  color: var(--sc-muted, #71717a);
+}
+
+/* ---------- the question field ---------- */
+
+.sc-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: auto 18px 18px;
+  border: 1px solid var(--sc-border, #e4e4e7);
+  border-radius: 999px;
+  padding: 4px 4px 4px 16px;
+  font-size: 15px;
+}
+.sc-input:focus-within {
+  border-color: var(--sc-accent, #18181b);
+}
+.sc-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  padding: 6px 0;
+  font: inherit;
+  color: var(--sc-text, #18181b);
+}
+.sc-input input::placeholder {
+  color: var(--sc-muted, #71717a);
+}
+.sc-send,
+.sc-mic {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sc-send {
+  background: var(--sc-accent, #18181b);
+  color: var(--sc-accent-ink, #ffffff);
+}
+/* The mic, where the browser can listen; it fills while listening. */
+.sc-mic {
+  display: grid;
+  place-items: center;
+  margin-left: -10px;
+  background: transparent;
+  color: var(--sc-accent, #18181b);
+  border: 1px solid var(--sc-border, #e4e4e7);
+}
+.sc-mic svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sc-mic:hover,
+.sc-mic:focus-visible {
+  border-color: var(--sc-accent, #18181b);
+}
+.sc-input[data-listening] .sc-mic {
+  background: var(--sc-accent, #18181b);
+  color: var(--sc-accent-ink, #ffffff);
+  border-color: var(--sc-accent, #18181b);
+  animation: sc-mic-listening 1.2s ease-in-out infinite;
+}
+@keyframes sc-mic-listening {
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--sc-accent, #18181b) 22%, transparent);
+  }
+}
+
+/* ---------- the corner button and its hello ---------- */
+
+.sc-launcher {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sc-accent, #18181b);
+  color: var(--sc-accent-ink, #ffffff);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.2);
+  transition: transform 0.15s ease;
+}
+.sc-launcher:hover {
+  transform: translateY(-2px);
+}
+.sc-launcher svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sc-hello {
+  position: fixed;
+  right: 16px;
+  bottom: 80px;
+  z-index: 40;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 280px;
+  border: 1px solid var(--sc-border, #e4e4e7);
+  border-radius: 16px;
+  background: var(--sc-surface, #ffffff);
+  padding: 10px 8px 10px 14px;
+  font-size: 14px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.15);
+  animation: sc-hello-in 300ms ease-out;
+}
+.sc-hello-text {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sc-hello-dismiss {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--sc-muted, #71717a);
+  font: inherit;
+  cursor: pointer;
+}
+.sc-hello-dismiss:hover {
+  background: var(--sc-bg, #f4f4f5);
+}
+@keyframes sc-hello-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* A phone: the open chat takes the whole screen, and the button is a round icon. */
+@media (max-width: 640px) {
+  .sc-panel {
+    inset: 0;
+    width: auto;
+    height: auto;
+    border-radius: 0;
+  }
+  .sc-launcher {
+    width: 48px;
+    padding: 0;
+    justify-content: center;
+  }
+  .sc-launcher span {
+    display: none;
+  }
+  .sc-launcher[data-open] {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-arrive,
+  .sc-hello,
+  .sc-input[data-listening] .sc-mic {
+    animation: none;
+  }
+  .sc-launcher {
+    transition: none;
+  }
+}
+
+/* ---------- the inspector, laptop only ---------- */
+
+.sc-inspector {
+  position: fixed;
+  left: 16px;
+  bottom: 64px;
+  z-index: 50;
+  width: min(480px, calc(100vw - 32px));
+  max-height: min(70vh, 640px);
+  display: flex;
+  flex-direction: column;
+  background: var(--sc-surface, #ffffff);
+  border: 1px solid var(--sc-border, #e4e4e7);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.2);
+  font-size: 12px;
+  overflow: hidden;
+}
+.sc-inspector-title {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--sc-border, #e4e4e7);
+  background: var(--sc-bg, #f4f4f5);
+  color: var(--sc-muted, #71717a);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sc-inspector-title b {
+  color: var(--sc-text, #18181b);
+}
+.sc-inspector-title span {
+  margin-left: auto;
+}
+.sc-inspector-list {
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sc-inspector-question {
+  --sc-who: #71717a;
+  border: 1px solid var(--sc-border, #e4e4e7);
+  border-left: 3px solid var(--sc-who);
+  border-radius: 10px;
+}
+.sc-inspector-question[data-who="button"] {
+  --sc-who: #16a34a;
+}
+.sc-inspector-question[data-who="jev"] {
+  --sc-who: #2563eb;
+}
+.sc-inspector-question[data-who="ai"] {
+  --sc-who: #d97706;
+}
+.sc-inspector-question[data-who="handOver"] {
+  --sc-who: #dc2626;
+}
+.sc-inspector-head {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 8px 10px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sc-inspector-who {
+  flex: none;
+  width: 84px;
+  font-weight: 700;
+  color: var(--sc-who);
+}
+.sc-inspector-asked {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-inspector-total {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.sc-inspector-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+.sc-inspector-step {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--sc-bg, #f4f4f5);
+}
+.sc-inspector-step-head {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.sc-inspector-step-head span {
+  color: var(--sc-muted, #71717a);
+}
+.sc-inspector-ms {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.sc-inspector-note,
+.sc-inspector-legend {
+  color: var(--sc-muted, #71717a);
+  margin-bottom: 6px;
+}
+.sc-inspector-legend {
+  margin: 6px 0 0;
+}
+.sc-inspector-bars,
+.sc-inspector-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sc-inspector-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px 34px;
+  gap: 8px;
+  align-items: center;
+}
+.sc-inspector-bar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-inspector-bar[data-none] .sc-inspector-bar-label {
+  font-style: italic;
+  color: var(--sc-muted, #71717a);
+}
+.sc-inspector-bar-fill {
+  display: block;
+  width: 100%;
+  height: 8px;
+}
+.sc-inspector-bar-pct {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

@@ -664,6 +664,11 @@ step that adds logic adds its tests, and every step reruns them.
 - Backend tests: `npm run test --workspace=backend`
 - Backend tests, rerunning on save: `npm run test:watch --workspace=backend`
 - Booking component tests: `npm run test --workspace=@frankdmosquera/booking-component`
+- The site chat (13d; IA a la Orden's chat as a package, its AI on each site's own server with the site's
+  `OPENAI_API_KEY`, `TYPESAFE_API_KEY` and `GOOGLE_TTS_API_KEY`): build
+  `npm run build --workspace=@frankdmosquera/site-chat`, tests
+  `npm run test --workspace=@frankdmosquera/site-chat`, into a site
+  `npm run pack:site --workspace=@frankdmosquera/site-chat -- <site folder>` (as the booking window's).
 
 Both backend commands rebuild `packages/shared` first (their `pre` scripts),
 because the route tests load its code, not only its types. Since step 2.4 the

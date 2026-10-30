@@ -1,0 +1,19 @@
+{
+  // The whole package, its code and its tests, type-checked by the build and the editor. Emits nothing;
+  // tsdown.config.ts writes dist/. No Node types: the server entry uses only what a Next route has
+  // (fetch, streams, Web Crypto), plus process.env, declared in env.d.ts.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "jsx": "react-jsx",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": [],
+    "noEmit": true
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist"]
+}
