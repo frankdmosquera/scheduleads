@@ -439,6 +439,14 @@ list, Calendly is gone from his site, and the ranking is untouched.
   computer the service's details open on the left and the times on the right,
   like a book; on a phone the times open under the month. Any site can use it,
   Primo first. Added by Frank on 2026-10-29, after Primo goes live (13)
+- [ ] 13d. **The chat that books** - a chat on a client's site that answers
+  and books in the conversation, the way ialaorden.com's does: the AI reads
+  the visitor's words, our code checks every field and books only on a yes,
+  and the lead lands in the CRM with what the visitor asked. Sold on its own,
+  no Agent app needed. Built once for every site, Primo first, then Face and
+  Body. From IA a la Orden's hand-off
+  (`agency-site-app/blueprint/reference/chat-booking-handoff.md`). Added by
+  Frank on 2026-10-30
 
 ## Phase 6. The CRM, second release
 

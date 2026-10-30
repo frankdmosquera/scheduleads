@@ -1,6 +1,6 @@
 # Scheduleads - Project Overview
 
-<!-- blueprint:source-hash d2bbb21783c0341be45b7eb4aeabcbe6d18c5ecd2d54beca062eca44a0a83ff6 -->
+<!-- blueprint:source-hash ee1285b9e73fc97734a88b4f1d5fd6ebb3edf8c49ea9824419e4581db7ea2710 -->
 
 > A CRM for the small service businesses the agency builds sites for. Booking
 > is its first module: a themed component in the client's own site, one API
@@ -98,6 +98,7 @@ booking becomes the business's lead. **Done: 0a, 0b, 1, 2, 3, 3b, 4. Next: 5a.**
 13. **Primo Painters** - Calendly out. Needs 12c, item 22's calendar half, and IA a la Orden proven on real bookings first.
 13b. **When a client leaves, and removal requests** - before the first client leaves.
 13c. **A calendar on the site's own page** - the window's month in a site's page, built daily with open days marked; a tapped day's times load live; after Primo goes live.
+13d. **The chat that books** - a chat on a client's site that answers and books in the conversation, like ialaorden.com's: the AI reads, our code checks every field and books only on a yes; the lead lands in the CRM with what was asked. Booking CRM's own, sold without the Agent app (project plan decision 9); Primo first, then Face and Body.
 14. **Pipeline board** - drag and drop between stages the business names.
 15. **Email from the CRM** - sends logged on the timeline; BCC capture.
 16. **Quotes** - line items, a total, a tokenized accept link.

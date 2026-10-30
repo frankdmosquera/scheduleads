@@ -513,8 +513,10 @@ Two things the first repo recorded that must not be relearned:
    app's decision record 0001; it was "named next to SMS"). The Agent app is
    its own product with its own database, sold also to businesses with no
    CRM; Scheduleads connects to it by signed API calls (item 21). Its one
-   Agent answers customers on the WhatsApp chat and, later, the website chat
-   (Frank, Oct 18), and what it books or sells lands in this CRM.
+   Agent answers customers on the WhatsApp chat (Frank, Oct 18), and what it
+   books or sells lands in this CRM. The website chat that books is Booking
+   CRM's own, sold without the Agent (Frank, Oct 30, item 13d); the Agent
+   stays the brain that works inside the CRM.
 10. **Frontend libraries.** TanStack Query, dnd-kit and shadcn charts, each
     installed at the feature that needs it. No state manager until one is
     needed. Section 5.
