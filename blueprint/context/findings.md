@@ -712,3 +712,27 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** Step 13.3 added two rules with no test: `applyBusinessShape` writes `detailsBox` only while the business has no service, and `findDifferences` (run-client-setup.ts:148) lists a saved box that differs from the file's. `run-client-setup.test.ts` covers the same two rules for `contactRule` but never mentions `detailsBox`. Separately, `bookTime` exempts the owner's own booking from a required box (book-time.ts:222, inside `source !== "manual"`), which the spec names ("except the owner's own"), but no test books manually against a business with `detailsRequired` true. The code reads correctly today; nothing would catch a regression.
 **Suggested fix:** Extend the existing `contactRule` cases in `run-client-setup.test.ts` with a `detailsBox` (set on a business with no service, listed as a difference on one with a service), and add one manual booking to the dashboard bookings route tests with `detailsRequired` true and no details.
 **Resolution:**
+
+### F-591 [P2] closed - The packed chat held stray build files from the booking window
+
+**File:** primo-painters vendor/frankdmosquera-site-chat-0.1.0.tgz
+**Found:** 2026-10-30 by independent review of 13d.1 (ba8e703, Primo 612672e)
+**Why it matters:** The tarball carried `dist/site-colours.*` and `readable-on-*.js` (which imports `hono/client`), not built from this commit, so what shipped was not what check-dist-imports approved, and 0.1.0 could never be repacked.
+**Suggested fix:** Bump, clean `dist/`, repack.
+**Resolution:** Fixed 2026-10-30: 0.1.1 packed from a clean `dist/`, 14 files, none of the strays.
+
+### F-592 [P2] open - The chat's stored answer implies Primo does not paint exteriors, while his site says exteriors
+
+**File:** primo-painters data/chatAnswers.ts:39
+**Found:** 2026-10-30 by independent review of 13d.1
+**Why it matters:** "Do you paint exteriors?" is a wording of "What services do you offer?", whose answer lists interior work only; his gallery copy and projects page mention exteriors. Jev's sure pick skips the brief's "someone can confirm" rule, so the chat implies a no his site contradicts.
+**Suggested fix:** Frank decides whether Primo paints exteriors; then the fact goes into `chatFacts` and the stored answer, or the wording is removed so the AI says someone can confirm.
+**Resolution:**
+
+### F-593 [P3] open - Smaller 13d.1 review points, carried
+
+**File:** packages/site-chat (several)
+**Found:** 2026-10-30 by independent review of 13d.1
+**Why it matters:** (1) `chatAnswers.ts:17` "We paint home interiors in Calgary:" is our wording, shown as a stored answer, and lists Garage Painting as interior. (2) `hourly-limit.test.ts:23-30` passes with the sweep deleted. (3) `create-chat-route.test.ts` never covers the retry after an error or the 6 s wait, a failure after words are out, or spoken `speak` events. (4) `chatSite.ts` puts hours in the brief from JSON-LD only while leaving the street address out by "no page shows it": one rule for both. (5) `hourly-limit.ts:27` keys on the first `x-forwarded-for`, safe on Vercel only. (6) `create-chat-route.ts:73-77` routes Jev through the Vercel AI Gateway, billed to the client's Vercel account, when `TYPESAFE_API_KEY` is missing.
+**Suggested fix:** As each names; (5) say Vercel only or take a `clientAddress`; (6) require `TYPESAFE_API_KEY` and skip Jev without it.
+**Resolution:**
