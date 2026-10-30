@@ -18,6 +18,7 @@ import {
   formFields,
   movedLine,
   moveOn,
+  namedService,
   nextStep,
   plainSkip,
   pickedTime,
@@ -83,6 +84,9 @@ export type BookingAskType = (
 
 const newKey = () => crypto.randomUUID();
 
+/** At most this many services are read out over their buttons. */
+const SERVICES_READ_OUT = 6;
+
 /** Midnight of today on this machine's clock, before the business's zone is known. */
 const localToday = (now: Date) => new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -139,9 +143,15 @@ export async function startBooking(
     asked,
   };
   if (form.services.length === 1) return tapService(booking, form.services[0], now);
+  const named = namedService(asked, form.services);
+  if (named) return tapService(booking, named, now);
   return {
     text: words.service,
-    spoken: `${words.service} ${endSentence(form.services.map((s) => s.name).join(", "))}`,
+    // A long list is left on the buttons: read aloud, ten names would bury the question.
+    spoken:
+      form.services.length > SERVICES_READ_OUT
+        ? words.service
+        : `${words.service} ${endSentence(form.services.map((s) => s.name).join(", "))}`,
     booking,
   };
 }

@@ -326,6 +326,30 @@ describe("a tapped time or service", () => {
       "Touch-up Visit",
     ]);
   });
+  it("a service named in the question goes straight to its times, the longest name winning", async () => {
+    const touchUp = { ...ESTIMATE, id: "touch-up", name: "Touch-up Visit" };
+    const longTouchUp = { ...ESTIMATE, id: "long", name: "Long Touch-up Visit" };
+    const services = [ESTIMATE, touchUp, longTouchUp];
+    const { line: short } = await started({ services }, "can I book a touch-up visit Monday?");
+    expect(short.booking?.flow.step).toBe("time");
+    expect(short.booking?.flow.service?.id).toBe("touch-up");
+    expect(short.booking?.flow.times.map((t) => t.startsAt)).toEqual([at(7, 10)]);
+    const { line: long } = await started({ services }, "a long touch-up visit please");
+    expect(long.booking?.flow.service?.id).toBe("long");
+    const { line: none } = await started({ services }, "a touch up on Monday");
+    expect(none.booking?.flow.step).toBe("service");
+  });
+  it("a long list of services is not read aloud", async () => {
+    const many = Array.from({ length: 7 }, (_, i) => ({
+      ...ESTIMATE,
+      id: `s${i}`,
+      name: `Service ${i}`,
+    }));
+    const { line } = await started({ services: many });
+    expect(line.spoken).toBe(W.service);
+    const { line: few } = await started({ services: many.slice(0, 2) });
+    expect(few.spoken).toContain("Service 1");
+  });
   it("a tapped service shows its times on the day first asked for", async () => {
     const touchUp = { ...ESTIMATE, id: "touch-up", name: "Touch-up Visit" };
     const { booking } = await started({ services: [ESTIMATE, touchUp] }, "anything Monday?");

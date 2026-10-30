@@ -271,6 +271,16 @@ export function exactService(
   return services.find((s) => plain(s.name) === said) ?? null;
 }
 
+/** The service named by its full name in the words that started the booking; the longest when names overlap. */
+export function namedService(
+  text: string,
+  services: readonly BookingServiceType[]
+): BookingServiceType | null {
+  const said = plain(text);
+  const named = services.filter((s) => said.includes(plain(s.name)));
+  return named.sort((a, b) => plain(b.name).length - plain(a.name).length)[0] ?? null;
+}
+
 /** A plain yes and nothing else ("sí", "yes, correct"): taken at once at the read-back, with no AI. */
 export function plainYes(text: string, lang: ChatLanguageType): boolean {
   return onlySaid(plain(text), WORDS[lang].yes);
