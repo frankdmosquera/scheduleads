@@ -27,6 +27,8 @@ export type BookingWordsType = {
   timesIn(zoneName: string): string;
   findingTimes: string;
   noTimesLeftIn(monthName: string): string;
+  noTimesLeftOn(dayName: string): string; // a page calendar's day that filled after the page was built
+  nextOpenDay: string;
   next: string;
   nextAt(dayName: string, time: string): string;
   whoWouldYouLike: string;

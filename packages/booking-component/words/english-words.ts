@@ -28,6 +28,8 @@ export const englishWords: BookingWordsType = {
   timesIn: (zoneName) => `Times in ${zoneName}`,
   findingTimes: "Finding times…",
   noTimesLeftIn: (monthName) => `No times left in ${monthName}.`,
+  noTimesLeftOn: (dayName) => `No times left on ${dayName}.`,
+  nextOpenDay: "Next open day",
   next: "Next",
   nextAt: (dayName, time) => `Next: ${dayName} at ${time}`,
   whoWouldYouLike: "Who would you like?",

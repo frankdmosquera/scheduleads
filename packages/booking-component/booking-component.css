@@ -1042,3 +1042,52 @@
 .sa-tz {
   margin: 16px 0 0;
 }
+
+/* ---------- a calendar on the site's own page (feature 13c) ----------
+   The window's own month, day and times rules, in a box on the page. The
+   site sizes and places the box; its head and Book button read the same
+   tokens as the window. */
+.sa-pagecal,
+.sa-pagecal * {
+  box-sizing: border-box;
+}
+.sa-pagecal {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--sa-radius, 8px);
+  background: var(--sa-bg, #ffffff);
+  color: var(--sa-text, #18181b);
+  font-family: var(--sa-font, ui-sans-serif, system-ui, sans-serif);
+}
+.sa-pagecal-head {
+  padding: 10px 16px;
+  background: var(--sa-action, #18181b);
+  color: var(--sa-action-ink, #ffffff);
+  font-weight: 600;
+}
+.sa-pagecal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px 4px;
+}
+.sa-pagecal .sa-times-list {
+  max-height: 168px;
+}
+.sa-pagecal-book {
+  all: unset;
+  box-sizing: border-box;
+  margin: 8px 12px 12px;
+  padding: 10px 12px;
+  border-radius: var(--sa-radius, 8px);
+  background: var(--sa-action, #18181b);
+  color: var(--sa-action-ink, #ffffff);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+.sa-pagecal-book:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}

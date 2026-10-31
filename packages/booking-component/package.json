@@ -1,6 +1,6 @@
 {
   "name": "@frankdmosquera/booking-component",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "private": true,
   "description": "The booking window every client site installs and builds into its own files.",
   "repository": {
@@ -17,6 +17,10 @@
     "./site-colours": {
       "types": "./dist/site-colours.d.ts",
       "default": "./dist/site-colours.js"
+    },
+    "./page-calendar": {
+      "types": "./dist/page-calendar.d.ts",
+      "default": "./dist/page-calendar.js"
     },
     "./booking-component.css": "./booking-component.css"
   },

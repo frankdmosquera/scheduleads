@@ -12,6 +12,7 @@ import type {
   BookingServiceType,
 } from "../api-client/booking-api-types.js";
 import type { AfterBookingType, BookedType } from "../booking-provider/after-booking-type.js";
+import type { PickedTimeType } from "../booking-provider/booking-context.js";
 import { BookingWordsContext } from "../words/booking-words-context.js";
 import type { BookingWordsType } from "../words/booking-words-type.js";
 import { fetchOneService } from "../api-client/fetch-one-service.js";
@@ -32,6 +33,8 @@ export type BookingWindowPropsType = {
   apiClient: BookingApiClientType;
   slug: string;
   bookingId: string | undefined;
+  // A time picked on the site's own page (13c): the named service opens on its form with it.
+  chosenAtOpen?: PickedTimeType;
   asked?: number; // grows with each open while this window is mounted: show it if it is not
   words: BookingWordsType;
   afterBooking: AfterBookingType;
@@ -44,6 +47,7 @@ export function BookingWindow({
   apiClient,
   slug,
   bookingId,
+  chosenAtOpen,
   asked = 0,
   words,
   afterBooking,
@@ -104,17 +108,27 @@ export function BookingWindow({
         setScreen(bookingProblemScreen(problem ?? "cannot-load", business, retry));
         return;
       }
-      setScreen({
-        screen: "service",
+      const oneService = {
         business,
         service: one.service,
         availability: one.availability,
         pickedFrom: null,
-        place: null,
-        notice: null,
-      });
+      };
+      // Picked on the page: straight to the form, Back leading to that day's month. A time taken
+      // since goes through the form's own taken path.
+      const picked = bookingLinkId === bookingId ? chosenAtOpen : undefined;
+      if (picked) {
+        const place = { month: picked.date.slice(0, 7), personId: null, date: picked.date };
+        setScreen({
+          ...oneService,
+          screen: "details",
+          chosen: { ...picked, personId: null, personName: null, place },
+        });
+        return;
+      }
+      setScreen({ ...oneService, screen: "service", place: null, notice: null });
     },
-    [apiClient, slug]
+    [apiClient, slug, bookingId, chosenAtOpen]
   );
 
   // A service picked from the list: the business is already known.

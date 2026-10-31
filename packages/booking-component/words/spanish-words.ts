@@ -49,6 +49,8 @@ export const spanishWords: BookingWordsType = {
   timesIn: (zoneName) => `Horarios en ${zoneName}`,
   findingTimes: "Buscando horarios…",
   noTimesLeftIn: (monthName) => `No quedan horarios en ${monthName}.`,
+  noTimesLeftOn: (dayName) => `No quedan horarios el ${dayName}.`,
+  nextOpenDay: "Siguiente día libre",
   next: "Siguiente",
   nextAt: (dayName, time) => `Siguiente: ${dayName} a las ${time}`,
   whoWouldYouLike: "¿Con quién desea su cita?",
