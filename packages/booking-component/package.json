@@ -1,6 +1,6 @@
 {
   "name": "@frankdmosquera/booking-component",
-  "version": "0.2.31",
+  "version": "0.2.33",
   "private": true,
   "description": "The booking window every client site installs and builds into its own files.",
   "repository": {

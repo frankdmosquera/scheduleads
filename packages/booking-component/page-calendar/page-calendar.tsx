@@ -6,6 +6,7 @@
 
 "use client";
 
+import { addDays } from "@scheduleads-app/shared/add-days";
 import { localDate } from "@scheduleads-app/shared/local-date";
 import { useContext, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -98,7 +99,44 @@ export function PageCalendar({
     personId: null,
     language,
   });
+  // Built once a day, the page cannot know which of the next days have run out of times since: the
+  // day's hours ending, or the notice the business needs before a booking. The open days in the
+  // next three days are read once in the browser, and one with no time left goes grey like a closed
+  // day (Frank, Oct 31). If that empties the month it opened on, it moves on to the next open day's
+  // month, unless the visitor has moved already.
+  const [soonGone, setSoonGone] = useState<ReadonlySet<string>>(() => new Set());
+  const visitorMoved = useRef(false);
+  useEffect(() => {
+    const last = addDays(today, 2);
+    const soon = calendar.openDays.filter((day) => day >= today && day <= last);
+    if (soon.length === 0) return;
+    let left = false;
+    void fetchFreeTimes(apiClient, slug, service.id, {
+      from: today,
+      to: last,
+      personId: null,
+      language,
+    }).then((answer) => {
+      if (left || answer.state !== "ok") return;
+      const withTimes = new Set(answer.freeTimes.localStartTimes.map((time) => time.date));
+      const gone = new Set(soon.filter((day) => !withTimes.has(day)));
+      if (gone.size === 0) return;
+      setSoonGone(gone);
+      if (visitorMoved.current) return;
+      const firstOpen = calendar.openDays.find((day) => day >= today && !gone.has(day));
+      setMonth((current) =>
+        calendar.openDays.some((day) => day >= today && !gone.has(day) && day.startsWith(current))
+          ? current
+          : (firstOpen?.slice(0, 7) ?? shiftMonth(current, 1))
+      );
+    });
+    return () => {
+      left = true;
+    };
+  }, [today, calendar.openDays, apiClient, slug, service.id, language]);
+
   const freeDays = openDaysShown(shownMonth, today, calendar, liveMonth);
+  for (const day of soonGone) freeDays.delete(day);
   const monthRead = builtIn || liveMonth.state === "ok";
 
   const [pickedDate, setPickedDate] = useState<string | null>(null);
@@ -116,6 +154,7 @@ export function PageCalendar({
   const spotRef = useRef<HTMLHeadingElement>(null);
 
   const pickDate = async (date: string, moveFocus = false) => {
+    visitorMoved.current = true;
     const tap = ++latestAsk.current;
     setMonth(date.slice(0, 7));
     setPickedDate(date);
@@ -140,6 +179,7 @@ export function PageCalendar({
   };
 
   const changeMonth = (by: -1 | 1) => {
+    visitorMoved.current = true;
     latestAsk.current++; // a day's times or the business still on its way are for a page left
     setMonth(shiftMonth(shownMonth, by));
     setPickedDate(null);
@@ -208,6 +248,18 @@ export function PageCalendar({
           : "";
   const price = priceText(service.price, words);
 
+  // The way on, right under the line that says why: the next open day after a day with no times
+  // left, or the next month after one with no open day.
+  const nextDay =
+    pickedDate && !onTheSpot && dayTimes?.state === "ok" && dayTimes.times.length === 0
+      ? nextOpenDay(pickedDate)
+      : null;
+  const goOn = nextDay
+    ? { label: words.nextOpenDay, go: () => void pickDate(nextDay, true) }
+    : !pickedDate && monthRead && freeDays.size === 0 && shownMonth < bounds.lastMonth
+      ? { label: words.nextMonth, go: () => changeMonthNow(1) }
+      : null;
+
   return (
     <BookingWordsContext value={words}>
       <div
@@ -244,11 +296,6 @@ export function PageCalendar({
             />
             {zoneLine && (
               <p className="sa-tz">{words.timesIn(formatZoneName(timeZone, language))}</p>
-            )}
-            {!pickedDate && monthRead && freeDays.size === 0 && shownMonth < bounds.lastMonth && (
-              <button type="button" className="sa-go" onClick={() => changeMonthNow(1)}>
-                {words.nextMonth}
-              </button>
             )}
           </div>
 
@@ -334,18 +381,6 @@ export function PageCalendar({
                   {taken}
                 </p>
               )}
-              {!onTheSpot &&
-                dayTimes?.state === "ok" &&
-                dayTimes.times.length === 0 &&
-                nextOpenDay(pickedDate) && (
-                  <button
-                    type="button"
-                    className="sa-go"
-                    onClick={() => void pickDate(nextOpenDay(pickedDate)!, true)}
-                  >
-                    {words.nextOpenDay}
-                  </button>
-                )}
               {!onTheSpot && dayTimes?.state === "ok" && dayTimes.times.length > 0 && (
                 <DayTimesView
                   date={pickedDate}
@@ -369,6 +404,12 @@ export function PageCalendar({
         <p className="sa-pagecal-status" role="status">
           {status}
         </p>
+        {goOn && (
+          <button type="button" className="sa-go" onClick={goOn.go}>
+            {goOn.label}
+            <span aria-hidden="true"> &#8250;</span>
+          </button>
+        )}
         {(bookLabel || ask) && (
           <div className="sa-pagecal-actions">
             {bookLabel && (

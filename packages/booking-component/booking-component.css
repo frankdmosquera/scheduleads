@@ -1105,6 +1105,23 @@
 .sa-pagecal .sa-times-list {
   max-height: 200px;
 }
+/* Next open day and Next month, in the card a small link under the line that says why, never a
+   big button: closed days already look closed (Frank, Oct 31). */
+.sa-pagecal .sa-go {
+  align-self: flex-start;
+  margin: 4px 14px 0;
+  padding: 0;
+  background: none;
+  color: var(--sa-identity, #18181b);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.sa-pagecal .sa-go:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
 /* Slimmer times in the card, so more of them show at once (Frank, Oct 31). */
 .sa-pagecal .sa-t,
 .sa-pagecal .sa-t-chosen,

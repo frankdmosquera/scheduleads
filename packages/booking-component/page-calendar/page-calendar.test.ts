@@ -64,9 +64,12 @@ function fakeApi(answers: (Response | Promise<Response>)[] = [], { listFails = f
         return answers.shift() ?? json({ error: { code: "unexpected" } }, 500);
       }
       if (url.pathname.endsWith("/times")) {
-        const from = url.searchParams.get("from");
+        const from = url.searchParams.get("from") ?? "";
+        const to = url.searchParams.get("to") ?? from;
         const times =
-          from === "2026-11-03" ? [at("2026-11-03", "10:00 a.m.", "2026-11-03T16:00:00.000Z")] : [];
+          from <= "2026-11-03" && "2026-11-03" <= to
+            ? [at("2026-11-03", "10:00 a.m.", "2026-11-03T16:00:00.000Z")]
+            : [];
         return json({
           timezone: "America/Edmonton",
           people: [],
@@ -199,7 +202,7 @@ describe("a calendar on the site's own page", () => {
     );
   });
 
-  it("draws the built-in month with its open days, before anything is read", () => {
+  it("draws the built-in month with its open days, then reads only the next three days", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));
     const asked = fakeApi();
@@ -211,7 +214,9 @@ describe("a calendar on the site's own page", () => {
     expect(
       (screen.getByRole("button", { name: "Wednesday, November 4" }) as HTMLButtonElement).disabled
     ).toBe(true);
-    expect(asked).toEqual([]);
+    await waitFor(() => expect(asked).toHaveLength(1));
+    expect(asked[0]).toContain("from=2026-11-01");
+    expect(asked[0]).toContain("to=2026-11-03");
   });
 
   it("says a day filled since the page was built, and offers the next open day", async () => {
@@ -331,6 +336,24 @@ describe("a calendar on the site's own page", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Next: / }));
     await waitFor(() => expect(document.querySelector("dialog.sa-dialog")).not.toBeNull());
     expect(document.querySelector(".sa-pagecal .sa-form")).toBeNull();
+  });
+
+  it("greys a day of the next three that ran out of times, and opens on the next month if it was all the month had", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-30T23:00:00.000Z")); // 4 p.m. in Calgary, his day done
+    fakeApi();
+    page({
+      ...calendar,
+      today: "2026-11-30",
+      months: ["2026-11", "2026-12"],
+      openDays: ["2026-11-30", "2026-12-02"],
+    });
+    await waitFor(() =>
+      expect(document.querySelector(".sa-mtitle")!.textContent).toBe("December 2026")
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Previous month" }));
+    const lastDay = screen.getByRole("button", { name: "Monday, November 30" });
+    expect(lastDay.getAttribute("data-free")).not.toBe("yes");
   });
 
   it("says plainly when the month on screen has no open day", async () => {
