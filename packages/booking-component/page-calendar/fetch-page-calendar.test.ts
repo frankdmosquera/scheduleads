@@ -81,6 +81,11 @@ describe("fetchPageCalendar", () => {
     expect(last.searchParams.get("to")).toBe("2026-11-10");
   });
 
+  it("answers null when neither month has an open day, so the site keeps its own card", async () => {
+    fakeApi({ openDates: [] });
+    expect(await fetchPageCalendar("https://api.example.com", "primo", { now: NOW })).toBeNull();
+  });
+
   it("passes the site's caching to every call", async () => {
     const { fetchMock } = fakeApi();
     const init = { cache: "force-cache" } as RequestInit;

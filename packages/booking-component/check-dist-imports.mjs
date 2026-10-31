@@ -32,7 +32,7 @@ for (const file of files) {
     const shipped =
       specifier.startsWith("./") &&
       (existsSync(sibling) ||
-        (/.d.[cm]?ts$/.test(file) && existsSync(sibling.replace(/.([cm]?)js$/, ".d.$1ts"))));
+        (/\.d\.[cm]?ts$/.test(file) && existsSync(sibling.replace(/\.([cm]?)js$/, ".d.$1ts"))));
     if (!shipped && !allowed.includes(specifier.split("/")[0])) {
       problems.push(`${file} imports ${specifier}`);
     }

@@ -15,6 +15,7 @@ import { useBooking } from "../booking-provider/use-booking.js";
 import { bookableMonths } from "../booking-window/month-calendar/bookable-months.js";
 import { datesToAsk } from "../booking-window/month-calendar/dates-to-ask.js";
 import { formatDayName } from "../booking-window/month-calendar/format-day-name.js";
+import { formatMonthName } from "../booking-window/month-calendar/format-month-name.js";
 import { formatZoneName } from "../booking-window/month-calendar/format-zone-name.js";
 import { shiftMonth } from "../booking-window/month-calendar/shift-month.js";
 import { DayTimesView } from "../booking-window/screens/month-layout/day-times-view.js";
@@ -23,7 +24,7 @@ import { useMonthTimes } from "../booking-window/screens/month-layout/use-month-
 import { themeStyle } from "../booking-window/theme-style.js";
 import { BookingWordsContext, wordsOf } from "../words/booking-words-context.js";
 import type { PageCalendarDataType } from "./fetch-page-calendar.js";
-import { openDaysShown } from "./open-days-shown.js";
+import { monthIsBuiltIn, openDaysShown } from "./open-days-shown.js";
 
 export type PageCalendarPropsType = {
   calendar: PageCalendarDataType;
@@ -52,9 +53,12 @@ export function PageCalendar({ calendar, title, bookLabel, className }: PageCale
     [today, calendar.horizonDays]
   );
 
-  const [month, setMonth] = useState(bounds.firstMonth);
+  // It opens on the first month with an open day: a month whose last day just filled is skipped.
+  const [month, setMonth] = useState(
+    () => calendar.openDays.find((day) => day >= calendar.today)?.slice(0, 7) ?? bounds.firstMonth
+  );
   const shownMonth = month < bounds.firstMonth ? bounds.firstMonth : month;
-  const builtIn = calendar.months.includes(shownMonth);
+  const builtIn = monthIsBuiltIn(shownMonth, today, calendar);
   const { times: liveMonth } = useMonthTimes({
     apiClient,
     slug,
@@ -64,6 +68,7 @@ export function PageCalendar({ calendar, title, bookLabel, className }: PageCale
     language,
   });
   const freeDays = openDaysShown(shownMonth, today, calendar, liveMonth);
+  const monthRead = builtIn || liveMonth.state === "ok";
 
   const [pickedDate, setPickedDate] = useState<string | null>(null);
   const [dayTimes, setDayTimes] = useState<DayTimesType | null>(null);
@@ -90,6 +95,13 @@ export function PageCalendar({ calendar, title, bookLabel, className }: PageCale
     );
   };
 
+  const changeMonth = (by: -1 | 1) => {
+    setMonth(shiftMonth(shownMonth, by));
+    setPickedDate(null);
+    setDayTimes(null);
+    setPicked(null);
+  };
+
   // The next open day after one that filled since the page was built.
   const nextOpenDay = (date: string) =>
     [...calendar.openDays, ...freeDays].filter((day) => day > date).sort()[0] ?? null;
@@ -109,13 +121,20 @@ export function PageCalendar({ calendar, title, bookLabel, className }: PageCale
             freeDays={freeDays}
             pickedDate={pickedDate}
             onPickDate={(date) => void pickDate(date)}
-            onMonth={(by) => {
-              setMonth(shiftMonth(shownMonth, by));
-              setPickedDate(null);
-              setDayTimes(null);
-              setPicked(null);
-            }}
+            onMonth={changeMonth}
           />
+          {!pickedDate && monthRead && freeDays.size === 0 && (
+            <div className="sa-times">
+              <p className="sa-times-none" role="status">
+                {words.noTimesLeftIn(formatMonthName(shownMonth, language))}
+              </p>
+              {shownMonth < bounds.lastMonth && (
+                <button type="button" className="sa-go" onClick={() => changeMonth(1)}>
+                  {words.nextMonth}
+                </button>
+              )}
+            </div>
+          )}
           {!builtIn && liveMonth.state === "loading" && (
             <p className="sa-loading" role="status">
               {words.findingTimes}

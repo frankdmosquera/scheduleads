@@ -760,3 +760,19 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** (1) the committed `face-and-body-site` launch entry now runs `../face-and-body/.claude/worktrees/booking-crm`, a worktree that goes away once her branch merges; (2) `pack-into-site.mjs` copies the booking window's script, so F-550 (every vendor/ entry read in full, a subfolder crashes it) now lives in two places; (3) the spec still says the visitor's question goes as `details` when the form has no project box, but the chat always shows a box and, since the F-594 repair, never sends the opening question.
 **Suggested fix:** (1) point it back at `../face-and-body` after her merge; (2) share the pack decision or fix both; (3) say in the spec that only the project answer is sent.
 **Resolution:**
+
+### F-603 [P2] fixed - 13c.1 review: a built-in month could hide bookable days, and an empty month showed nothing
+
+**File:** packages/booking-component/page-calendar/page-calendar.tsx, open-days-shown.ts, fetch-page-calendar.ts
+**Found:** 2026-10-31 by independent review of 13c.1 (56af531, Primo 4654569)
+**Why it matters:** (1) a month built into the page was never read live, so a page a day or more old hid the days that became bookable since (with a short horizon, a whole month could show closed); (2) a month with no open day showed only disabled days, and a business with none in both months got a dead card instead of the site's own; (3) no test proved the picked time reached the form, or that a page built on an earlier day hydrates without a mismatch.
+**Suggested fix:** read a built-in month live once the build's reach falls short of today's; say "No times left in" the month with Next month; answer null with no open day; the two tests.
+**Resolution:** Fixed 2026-10-31 in window 0.2.14: `monthIsBuiltIn`, the card opening on its first month with an open day, the empty-month line, null for no open day; tests for each, the form showing "10:00 a.m., Tuesday, November 3", and a page drawn on Nov 1 taken over on Nov 3 with no console error. Also from the review's P3s: Primo's card names his service (`free-estimate`), the import check's dots escaped. 142 tests. Needs a later /audit to close.
+
+### F-604 [P3] open - 13c.1 review points carried
+
+**File:** packages/booking-component/page-calendar/page-calendar.tsx
+**Found:** 2026-10-31 by independent review of 13c.1
+**Why it matters:** (4) Next open day looks only at the built-in days and the month on screen; (5) focus falls to the page after Next open day, the status lines mount already filled (some screen readers skip them), and the card's title is not tied to it as a group; (6) a time booked through the window stays picked on the page; (8) the zone's name is worked out on the server and again in the browser, which could differ (Spanish most); (10) Next's fetch cache can serve a day's data up to about two days old while it refreshes, within the "kept a day" decision.
+**Suggested fix:** each as named; (5) with 13c.2's layout work.
+**Resolution:**

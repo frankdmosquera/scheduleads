@@ -83,6 +83,8 @@ export async function fetchPageCalendar(
       for (const time of localStartTimes) openDays.add(time.date);
     }
 
+    // Nothing to book in both months: the site keeps its own card, never a dead calendar.
+    if (openDays.size === 0) return null;
     return {
       timeZone,
       today,

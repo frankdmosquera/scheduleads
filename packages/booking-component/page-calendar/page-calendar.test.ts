@@ -66,24 +66,41 @@ function fakeApi() {
           localStartTimes: times,
         });
       }
-      return json({ error: { code: "x", message: "x" } }, 500);
+      if (/\/booking-links\/[^/]+$/.test(url.pathname)) {
+        return json({
+          bookingLink: calendar.service,
+          availability: { timezone: "America/Edmonton", horizonDays: 60 },
+        });
+      }
+      return json({
+        business: {
+          name: "Primo Painters",
+          logo: null,
+          phone: null,
+          contactRule: "email",
+          detailsLabel: null,
+          detailsRequired: false,
+          questions: [],
+          theme: null,
+        },
+        bookingLinks: [calendar.service],
+      });
     })
   );
   return asked;
 }
 
-const page = () =>
-  render(
-    createElement(BookingProvider, {
-      apiUrl: "https://api.example.com",
-      slug: "primo",
-      children: createElement(PageCalendar, {
-        calendar,
-        title: "Pick a day",
-        bookLabel: "Book now",
-      }),
-    })
-  );
+const pageOf = (shown: PageCalendarDataType) =>
+  createElement(BookingProvider, {
+    apiUrl: "https://api.example.com",
+    slug: "primo",
+    children: createElement(PageCalendar, {
+      calendar: shown,
+      title: "Pick a day",
+      bookLabel: "Book now",
+    }),
+  });
+const page = (shown: PageCalendarDataType = calendar) => render(pageOf(shown));
 
 describe("a calendar on the site's own page", () => {
   it("draws the built-in month with its open days, before anything is read", () => {
@@ -120,7 +137,45 @@ describe("a calendar on the site's own page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tuesday, November 3" }));
     fireEvent.click(await screen.findByRole("button", { name: "10:00 a.m." }));
     fireEvent.click(screen.getByRole("button", { name: "Book now" }));
-    await waitFor(() => expect(document.querySelector("dialog.sa-dialog")).not.toBeNull());
+    // Straight on the form, with the time picked on the page: no times to pick again in the window.
+    expect(await screen.findByLabelText("Name")).toBeTruthy();
+    const dialog = document.querySelector("dialog.sa-dialog")!;
+    expect(dialog.textContent).toContain("10:00 a.m., Tuesday, November 3");
+  });
+
+  it("says plainly when the month on screen has no open day", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));
+    fakeApi();
+    page({ ...calendar, openDays: [] });
+    expect(await screen.findByText("No times left in November 2026.")).toBeTruthy();
+    // The arrow, and the button under the message.
+    expect(screen.getAllByRole("button", { name: "Next month" })).toHaveLength(2);
+  });
+
+  it("hydrates the page built yesterday without a mismatch, then moves today on", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    fakeApi();
+    // The page as the site's server drew it on Nov 1, the day it was built.
+    vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));
+    const built = page();
+    const html = built.container.innerHTML;
+    built.unmount();
+    // A visitor on Nov 3 gets that page, and the browser takes it over.
+    vi.setSystemTime(new Date("2026-11-03T08:00:00.000Z"));
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.append(container);
+    const problems = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(pageOf(calendar), { container, hydrate: true });
+    await waitFor(() =>
+      expect(
+        (container.querySelector('[aria-label="Monday, November 2"]') as HTMLButtonElement).disabled
+      ).toBe(true)
+    );
+    // React reports a page that does not match what it draws as a console error.
+    expect(problems).not.toHaveBeenCalled();
+    problems.mockRestore();
   });
 
   it("never offers a day that passed since the page was built", async () => {
