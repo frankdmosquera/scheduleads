@@ -791,4 +791,4 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Found:** 2026-10-31 by independent review of 13c.2
 **Why it matters:** (1) on a phone the window's "Back to the calendar" rule also matches inside the card, so the link shows and takes focus on every tap, and 761-767px gets neither layout; (2) Escape from a chat opened by Ask us returns focus to the corner button, not Ask us; (3) Ask us does nothing on a page with no SiteChat mounted; (4) no test that the chat opens on the event and stays open, that `zoneLine={false}` hides the line, or for the keyboard effect; (5) the phone panel follows the visible area's height but not its left edge when pinch-zoomed; `max-[450px]` excludes exactly 450px; the comment on not using `useId` gives a wrong reason.
 **Suggested fix:** each as named.
-**Resolution:**
+**Resolution:** (1) fixed 2026-10-31 in window 0.2.21: the card hides the window's phone way back, so focus stays on the tapped day (checked at 412px).

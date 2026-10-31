@@ -1067,6 +1067,11 @@
     transition: none;
   }
 }
+/* The month stays above a tapped day, so the window's phone way back is not needed
+   here; hidden, it takes no focus either (day-times-view.tsx). */
+.sa-pagecal .sa-times-back {
+  display: none;
+}
 .sa-pagecal-head {
   padding: 10px 16px;
   background: var(--sa-action, #18181b);
