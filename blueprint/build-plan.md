@@ -443,7 +443,7 @@ list, Calendly is gone from his site, and the ranking is untouched.
   calendar, its times open in the card, and the booking's details show beside
   it; the card offers "Book now" or "Ask us" (the chat), and the floating
   "Ask us" button stays
-- [ ] 13d. **The chat that books** - a chat on a client's site that answers
+- [x] 13d. **The chat that books** - a chat on a client's site that answers
   and books in the conversation, the way ialaorden.com's does: the AI reads
   the visitor's words, our code checks every field and books only on a yes,
   and the lead lands in the CRM with what the visitor asked. Sold on its own,

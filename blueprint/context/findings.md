@@ -713,22 +713,6 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Suggested fix:** Extend the existing `contactRule` cases in `run-client-setup.test.ts` with a `detailsBox` (set on a business with no service, listed as a difference on one with a service), and add one manual booking to the dashboard bookings route tests with `detailsRequired` true and no details.
 **Resolution:**
 
-### F-591 [P2] closed - The packed chat held stray build files from the booking window
-
-**File:** primo-painters vendor/frankdmosquera-site-chat-0.1.0.tgz
-**Found:** 2026-10-30 by independent review of 13d.1 (ba8e703, Primo 612672e)
-**Why it matters:** The tarball carried `dist/site-colours.*` and `readable-on-*.js` (which imports `hono/client`), not built from this commit, so what shipped was not what check-dist-imports approved, and 0.1.0 could never be repacked.
-**Suggested fix:** Bump, clean `dist/`, repack.
-**Resolution:** Fixed 2026-10-30: 0.1.1 packed from a clean `dist/`, 14 files, none of the strays.
-
-### F-592 [P2] closed - The chat's stored answer implies Primo does not paint exteriors, while his site says exteriors
-
-**File:** primo-painters data/chatAnswers.ts:39
-**Found:** 2026-10-30 by independent review of 13d.1
-**Why it matters:** "Do you paint exteriors?" is a wording of "What services do you offer?", whose answer lists interior work only; his gallery copy and projects page mention exteriors. Jev's sure pick skips the brief's "someone can confirm" rule, so the chat implies a no his site contradicts.
-**Suggested fix:** Frank decides whether Primo paints exteriors; then the fact goes into `chatFacts` and the stored answer, or the wording is removed so the AI says someone can confirm.
-**Resolution:** Closed 2026-10-30: Frank, interiors only, as the site sells; `chatFacts` says so (Primo 0d5e182). The site is the chat's source; what it never says gets "someone can confirm".
-
 ### F-593 [P3] open - Smaller 13d.1 review points, carried
 
 **File:** packages/site-chat (several)
@@ -736,22 +720,6 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** (1) `chatAnswers.ts:17` "We paint home interiors in Calgary:" is our wording, shown as a stored answer, and lists Garage Painting as interior. (2) `hourly-limit.test.ts:23-30` passes with the sweep deleted. (3) `create-chat-route.test.ts` never covers the retry after an error or the 6 s wait, a failure after words are out, or spoken `speak` events. (4) `chatSite.ts` puts hours in the brief from JSON-LD only while leaving the street address out by "no page shows it": one rule for both. (5) `hourly-limit.ts:27` keys on the first `x-forwarded-for`, safe on Vercel only. (6) `create-chat-route.ts:73-77` routes Jev through the Vercel AI Gateway, billed to the client's Vercel account, when `TYPESAFE_API_KEY` is missing.
 **Suggested fix:** As each names; (5) say Vercel only or take a `clientAddress`; (6) require `TYPESAFE_API_KEY` and skip Jev without it.
 **Resolution:**
-
-### F-594 [P2] fixed - 13d.2 review: three booking-in-the-chat gaps
-
-**File:** packages/site-chat/booking/chat-booking.ts, chat/chat-conversation.tsx, server/create-chat-booking-route.ts
-**Found:** 2026-10-30 by independent review of 13d.2 (25fca6b, Primo 8ab0c97)
-**Why it matters:** (1) a skipped project box sent the visitor's opening question as details, never read back; (2) a reply that sounds like a time ("Yes, book it for Saturday") restarted an open booking and lost it; (3) the booking AI route took unbounded client text, an open LLM proxy for scripts.
-**Suggested fix:** send the opening question only with no project box; skip the time-ask path while a booking is open; cap turns, fields and arrays.
-**Resolution:** Fixed 2026-10-30 in 0.2.1, with 0.2.2 and 0.2.3 fixing two booking-turn bugs the browser check found (a re-read of the times dropped the picked one; an AI echo moved the picked time). Needs a later /audit to close.
-
-### F-595 [P3] fixed - 13d.2 review: old time buttons, failed corrections, no AI timeout
-
-**File:** packages/site-chat/chat/chat-conversation.tsx:392, booking/chat-booking.ts:350, :230
-**Found:** 2026-10-30 by independent review of 13d.2
-**Why it matters:** (4) a time button in an older bubble keeps its own key and could book a second time; (6) a correction that fails our check at the read-back still booked the old value; (8) the booking AI call had no time limit.
-**Suggested fix:** only the current booking's buttons tap; any field the AI returned counts as a change; a timeout with the word-list fallback.
-**Resolution:** Fixed 2026-10-30 in 0.2.1. Needs a later /audit to close.
 
 ### F-596 [P3] open - 13d.2 review points carried
 
@@ -761,14 +729,6 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Suggested fix:** keep the sent time after a lost answer; match the backend's default words per language; add the tests.
 **Resolution:**
 
-### F-597 [P1] closed - 13d.3 review: a treatment named in the question could book the wrong one
-
-**File:** packages/site-chat/booking/booking-flow.ts (namedServices, pickedService), booking/chat-booking.ts (startBooking)
-**Found:** 2026-10-30 by independent review of 13d.3 (439ba95, her site ea553b2)
-**Why it matters:** (1) "a 90 minute relaxation massage" matched only "Relaxation Massage" and went straight to the 60 minute one's times, the 75 and 90 minute lengths never shown; (2) two separate names ("chemical peel or the hollywood peel facial", "not deep tissue, a relaxation massage") picked the longest; (3) at the service step without the AI, `pickedService` took the first name in the list; (4) no tests for these.
-**Suggested fix:** straight to times only when exactly one service is meant; otherwise offer just the services it could mean.
-**Resolution:** Fixed 2026-10-30 in 0.2.5: `namedServices` returns every service the words could mean (a name held in another named one counts as the longer; a name other services hold brings them in); one goes straight to its times, several are the only buttons, and the no-AI step asks again instead of taking the first. Five tests with her real names; checked on http://localhost:3402 ("a 90 minute relaxation massage" offered her four relaxation massages). Closed 2026-10-31 by the final independent review of 13d, which probed it with her 37 names.
-
 ### F-598 [P3] open - 13d.3 review points carried
 
 **File:** face-and-body data/chatSite.ts, data/chatFacts.ts
@@ -777,18 +737,26 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Suggested fix:** "noon" in the hours helper if Frank wants it.
 **Resolution:**
 
-### F-599 [P2] fixed - 13d final review: two gaps in the new chat paths
-
-**File:** packages/site-chat/server/create-chat-route.ts, booking/chat-booking.ts (startBookingFor)
-**Found:** 2026-10-31 by the final independent review of 13d (scheduleads 439ba95..940ad07, her site ea553b2..624536b, his 4da2c9e..4fb586a)
-**Why it matters:** (1) her detail words sent her own FAQ wordings ("Do you do facials?", "Is there parking for my massage appointment?") to the AI, losing her exact words, the cards and the ways to a person; (2) a Book whose slug Booking CRM does not list looped back to the same cards.
-**Suggested fix:** count a pick's other wordings as naming it and start the AI from Jev's picks; fall back to the service's exact name.
-**Resolution:** Fixed 2026-10-31 in 0.2.10, 216 tests; the 40 questions plus the reviewer's five rerun on both laptop sites, all right. Needs a later /audit to close.
-
 ### F-600 [P3] open - 13d final review points carried
 
 **File:** packages/site-chat/chat/chat-conversation.tsx, chat/answer-tiles.tsx, booking/chat-booking.ts, site-chat.css
 **Found:** 2026-10-31 by the final independent review of 13d
 **Why it matters:** (3) a Book under an older answer while a booking is open starts a new one and drops the open one without a word; (4) a narrowed service list cannot widen ("actually, deep tissue"); (5) "the first one" at a step that shows cards picks a service not on screen; (6) the opened list has no role or aria-controls, sits in the polite live region (all 22 facials can be read out), and focus stays on the card; (7) her cards no longer link to her group pages; (8) on iPhone the keyboard can still cover the typing box (dvh ignores it); (10) his banner offer "Offer Ends 11/17" has no year, so the chat states it as long as the banner does; (11) no UI tests for the card paths. Also seen in the rerun: laser hair removal sometimes gets "someone can confirm the price" instead of "priced at the free consultation"; "What body treatments do you have?" once listed Massage among them.
 **Suggested fix:** each as named; the accessibility points first.
+**Resolution:**
+
+### F-601 [P2] open - The answers route caps neither the whole call nor the visitor-written assistant turns
+
+**File:** packages/site-chat/server/create-chat-route.ts:162-184
+**Found:** 2026-10-31 by /audit independent (scope: current; lens: security, performance), target a4854f6
+**Why it matters:** `/api/chat` takes 20 messages where only the last must be the visitor's, each assistant turn up to 4,000 characters, so one call can carry about 76,500 characters of history the caller wrote, forged "assistant" lines included, into `gpt-5.4-mini` (and four of them into Jev). `fromOurSite` passes any request with no Origin, so a script reaches it directly; only the per-instance 60 an hour and the provider's monthly limit stand behind it. The booking route was capped at 6,000 characters for this same reason (F-594 (3)); the AI's cost on a public page is one of the spec's three named risks.
+**Suggested fix:** a total-character cap on the request and a shorter assistant-turn cap, with `recentTurns` dropping the oldest turns to fit, as `withinAskLimits` does for the booking route.
+**Resolution:**
+
+### F-602 [P3] open - 13d independent review: smaller points
+
+**File:** .claude/launch.json:19, packages/site-chat/pack-into-site.mjs:55-63, blueprint/context/current-feature.md:24
+**Found:** 2026-10-31 by /audit independent (scope: current; lens: quality), target a4854f6
+**Why it matters:** (1) the committed `face-and-body-site` launch entry now runs `../face-and-body/.claude/worktrees/booking-crm`, a worktree that goes away once her branch merges; (2) `pack-into-site.mjs` copies the booking window's script, so F-550 (every vendor/ entry read in full, a subfolder crashes it) now lives in two places; (3) the spec still says the visitor's question goes as `details` when the form has no project box, but the chat always shows a box and, since the F-594 repair, never sends the opening question.
+**Suggested fix:** (1) point it back at `../face-and-body` after her merge; (2) share the pack decision or fix both; (3) say in the spec that only the project answer is sent.
 **Resolution:**
