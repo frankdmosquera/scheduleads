@@ -5,7 +5,7 @@
 
 import { createContext } from "react";
 
-import type { BookingApiClientType } from "../api-client/booking-api-types.js";
+import type { BookingApiClientType, BookingMadeType } from "../api-client/booking-api-types.js";
 
 // A free time picked outside the window, as the times route gave it.
 export type PickedTimeType = { startsAt: string; date: string; time: string };
@@ -20,6 +20,9 @@ export type BookingContextType = {
   apiClient: BookingApiClientType;
   slug: string;
   language: "en" | "es";
+  // A page calendar that booked on the spot (13c.3): the site hears of it, and the visitor goes on,
+  // as after the window's booking.
+  booked(booking: BookingMadeType): void;
 };
 
 export const BookingContext = createContext<BookingContextType | null>(null);

@@ -11,6 +11,7 @@ import { BookingWindow } from "../booking-window/booking-window.js";
 import { wordsOf } from "../words/booking-words-context.js";
 import type { AfterBookingType, BookedType } from "./after-booking-type.js";
 import { BookingContext, type BookingContextType, type PickedTimeType } from "./booking-context.js";
+import { reportBooked } from "./report-booked.js";
 
 export type BookingProviderPropsType = {
   apiUrl: string; // the API's address, e.g. "https://api.example.com"
@@ -45,9 +46,20 @@ export function BookingProvider({
       current ? { ...current, asked: current.asked + 1 } : { bookingId, opener, chosen, asked: 0 }
     );
   }, []);
-  const booking = useMemo(
-    () => ({ openFrom, apiClient, slug, language }),
-    [openFrom, apiClient, slug, language]
+  const booking = useMemo<BookingContextType>(
+    () => ({
+      openFrom,
+      apiClient,
+      slug,
+      language,
+      booked: (made) =>
+        reportBooked(made, {
+          afterBooking,
+          onBooked,
+          goTo: (address) => window.location.assign(address),
+        }),
+    }),
+    [openFrom, apiClient, slug, language, afterBooking, onBooked]
   );
 
   const closed = useCallback(() => {

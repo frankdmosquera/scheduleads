@@ -1131,6 +1131,45 @@
   display: block;
   height: 0;
 }
+/* Booking on the spot (13c.3): the window's form, then its booked line, where the times were. */
+.sa-pagecal-spot-back {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--sa-identity, #18181b);
+}
+.sa-pagecal-spot-back:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+.sa-pagecal-spot-time {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.sa-pagecal-spot-h {
+  margin: 4px 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.sa-pagecal-spot-h:focus {
+  outline: none;
+}
+/* A phone has no room for the month beside the form: the form has the card to itself. Grown, the
+   days and their numbers are bigger (Frank, Oct 31). */
+@media (max-width: 767px) {
+  .sa-pagecal--booking .sa-pagecal-month {
+    display: none;
+  }
+  .sa-pagecal--grown .sa-d {
+    font-size: 16px;
+  }
+}
 /* The site's Book button, and beside it its second one (Ask us). */
 .sa-pagecal-actions {
   display: flex;
@@ -1157,12 +1196,12 @@
    day on the right. The card widens over the site's own width. */
 @media (min-width: 768px) {
   .sa-pagecal.sa-pagecal--open {
-    width: min(36rem, calc(100vw - 32px));
+    width: min(42rem, calc(100vw - 32px));
   }
   .sa-pagecal--open .sa-pagecal-body {
     display: grid;
     /* Shares, not a fixed day column: while the card eases wider, the month
-       shrinks with the day instead of starting at nothing (288px | 240px at 36rem). */
+       shrinks with the day instead of starting at nothing (340px | 284px at 42rem). */
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     gap: 20px;
   }

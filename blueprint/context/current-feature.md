@@ -27,7 +27,7 @@ A visitor on Primo's home page sees the real month in the hero card, with his op
 - A calendar on Face and Body's pages (any site can use it; she is not asked for here).
 - A service picker inside the page calendar: a site names the one service it shows (Primo has one).
 - Any change to Booking CRM's API or database: the calendar uses the existing public booking routes.
-- Booking on the page without the window: the form stays the window's.
+- ~~Booking on the page without the window: the form stays the window's.~~ Amended 2026-10-31 (Frank): the card books on the spot with the window's own form (13c.3); every other booking button on the site still opens the window.
 
 ## Build loop
 
@@ -37,6 +37,7 @@ Heavy: each step's plan gets Frank's yes, then runs straight through without sto
 
 - [x] **13c.1 The real month on Primo's card.** The package's server read of open days (this month and the next, kept a day), the page calendar drawing them, a tapped day's times read live, `open(bookingId, startsAt)` in the window, and Primo's hero card using them, on his laptop site. **Done when:** on http://localhost:3403 the hero card shows this month with his open days dated and marked; the page's HTML holds those dates (view source); tapping an open day shows its times; picking one and "Book now" opens the window on his form with that time chosen, and booking there lands a lead on the laptop; a day emptied after the page was built says so and offers the next open day; the API unreachable at build time leaves today's card, still opening the window; the package's tests pass.
 - [x] **13c.2 Beside, under, "Ask us", then live.** The wide layout (service details beside the times, like a book), the phone layout (times under the month), "Ask us" opening the corner chat, then both packages packed into his site and live on Frank's yes. **Done when:** on http://localhost:3403 at desktop width the details and times sit side by side, at phone width the times open under the month and nothing scrolls sideways; "Ask us" in the card opens the chat and the floating button still works; both packages' tests pass; on Frank's yes his site is merged and deployed and the card works on www.primopainters.ca.
+- [x] **13c.3 The card books on the spot** (added 2026-10-31, Frank: a Book Now button defeated booking right there). Next on a picked time shows the window's own form in the card, Back to the times, a time taken meanwhile back on the day with the form and its key kept, then "You're booked" in the card and the site's onBooked and afterBooking as after the window. Primo drops Book Now (Ask us stays) and zooms: 16rem at rest on a phone, the screen less 1rem each side once a day opened (at most 32rem below a computer), days 16px; on a computer the book layout is 42rem. **Done when:** on http://localhost:3403 at 412px the card is 256px at rest and 380px once a day is tapped; a time shows the form in the card and Book makes a lead on the laptop and says booked in the card; at 1280px the card is 42rem with the form beside the month; the header's Book Now still opens the window; tests prove one send per Book, a taken time back on the day with the key kept, onBooked once.
 
 ## Files / areas
 
@@ -50,7 +51,7 @@ Heavy: each step's plan gets Frank's yes, then runs straight through without sto
 - The open days come from `GET /public/:slug/booking-links` (the service by its slug, or the business's only one) and `GET /public/:slug/booking-links/:id/times?from&to&language` (31 dates at most per call), as the window reads them. The server read returns `{ timeZone, today (YYYY-MM-DD on the business's clock when built), horizonDays, service (the service as the route gives it), theme (its Look colours), months, openDays: string[] }` or `null` when anything fails; `null` keeps the site's own card.
 - Called from a server component with `{ next: { revalidate: 86400 } }`; no Origin header, as `fetchSiteColours` already reads the public routes.
 - `open(bookingId?: string, chosen?: { startsAt, date, time })`: the picked time as the times route gave it (the ISO instant, and its date and clock time on the business's clock, which the form shows). Without it the window opens as today. (Amended in 13c.1: the form needs the date and time words, not only the instant.)
-- The page calendar never books: booking stays in the window, so the form, its checks and the request key are the window's.
+- The page calendar books on the spot (13c.3, amended Oct 31) with the window's own form view, so the form, its checks and the request key are still the window's; a booking made there reaches the site through the provider's same onBooked and afterBooking (`reportBooked`, shared with the window). A site's Book button, if it gives one, still opens the window.
 - Times shown in the business's zone with the zone's name, as the window shows them.
 
 ## Testing

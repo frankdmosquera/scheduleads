@@ -13,6 +13,7 @@ import type {
 } from "../api-client/booking-api-types.js";
 import type { AfterBookingType, BookedType } from "../booking-provider/after-booking-type.js";
 import type { PickedTimeType } from "../booking-provider/booking-context.js";
+import { reportBooked } from "../booking-provider/report-booked.js";
 import { BookingWordsContext } from "../words/booking-words-context.js";
 import type { BookingWordsType } from "../words/booking-words-type.js";
 import { fetchOneService } from "../api-client/fetch-one-service.js";
@@ -187,30 +188,8 @@ export function BookingWindow({
     document.getElementById(titleId)?.focus();
   }, [screen, titleId]);
 
-  // After a 201: the site hears of it, then the visitor stays on the confirmation or goes to the
-  // site's page. The confirmation shows either way, so nothing waits on a blank form while the
-  // browser leaves. A throwing onBooked still sends the visitor on (a broken count must not cost
-  // the thank-you page); a throwing redirectTo leaves them on the confirmation. Never a second booking.
-  const booked = (booking: BookingMadeType) => {
-    const made: BookedType = {
-      bookingId: booking.id,
-      serviceName: booking.service.name,
-      startsAt: booking.startsAt,
-      timeZone: booking.timezone,
-    };
-    try {
-      onBooked?.(made);
-    } catch (error) {
-      console.error("The site's onBooked failed:", error);
-    }
-    if (afterBooking === "stay") return;
-    try {
-      const { redirectTo } = afterBooking;
-      goTo(typeof redirectTo === "function" ? redirectTo(made) : redirectTo);
-    } catch (error) {
-      console.error("The site's redirectTo failed:", error);
-    }
-  };
+  const booked = (booking: BookingMadeType) =>
+    reportBooked(booking, { afterBooking, onBooked, goTo });
 
   return (
     <BookingWordsContext value={words}>

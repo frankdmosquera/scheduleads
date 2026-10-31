@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -47,8 +47,10 @@ const calendar: PageCalendarDataType = {
   openDays: ["2026-11-02", "2026-11-03"],
 };
 
-// The times route by date: Nov 2 filled since the page was built, Nov 3 still has a time.
-function fakeApi() {
+// The times route by date: Nov 2 filled since the page was built, Nov 3 still has a time. A booking
+// sent takes the next of `answers`, and its body is kept in `posted`.
+const posted: { requestKey: string; startsAt: string }[] = [];
+function fakeApi(answers: Response[] = []) {
   const asked: string[] = [];
   vi.stubGlobal(
     "fetch",
@@ -56,6 +58,10 @@ function fakeApi() {
       const request = input instanceof Request ? input : new Request(String(input), init);
       const url = new URL(request.url);
       asked.push(url.pathname + url.search);
+      if (request.method === "POST" && url.pathname.endsWith("/bookings")) {
+        posted.push(await request.json());
+        return answers.shift() ?? json({ error: { code: "unexpected" } }, 500);
+      }
       if (url.pathname.endsWith("/times")) {
         const from = url.searchParams.get("from");
         const times =
@@ -92,10 +98,12 @@ function fakeApi() {
 }
 
 const asked = vi.fn();
+const heardBooked = vi.fn();
 const pageOf = (shown: PageCalendarDataType, zoneLine?: boolean) =>
   createElement(BookingProvider, {
     apiUrl: "https://api.example.com",
     slug: "primo",
+    onBooked: heardBooked,
     children: createElement(PageCalendar, {
       calendar: shown,
       title: "Pick a day",
@@ -105,6 +113,32 @@ const pageOf = (shown: PageCalendarDataType, zoneLine?: boolean) =>
     }),
   });
 const page = (shown: PageCalendarDataType = calendar) => render(pageOf(shown));
+
+const madeWhen = "Tuesday, November 3 at 10:00 a.m. MST (as the API wrote it)";
+const madeAnswer = () =>
+  json(
+    {
+      booking: {
+        id: "b1",
+        startsAt: "2026-11-03T16:00:00.000Z",
+        endsAt: "2026-11-03T16:30:00.000Z",
+        timezone: "America/Edmonton",
+        when: madeWhen,
+        service: { id: "est", name: "Free Estimate" },
+        person: { id: "frank", name: "Frank" },
+      },
+    },
+    201
+  );
+const type = (label: string, value: string) =>
+  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+// The form shows once the business is read, at the first Next.
+const fillForm = async () => {
+  await screen.findByLabelText("Name");
+  type("Name", "Jane Doe");
+  type("Email", "jane@example.com");
+  type("Address", "12 Elm Street");
+};
 
 describe("a calendar on the site's own page", () => {
   it("is one group named by its title, with Ask us beside Book now", () => {
@@ -201,6 +235,51 @@ describe("a calendar on the site's own page", () => {
     expect(await screen.findByLabelText("Name")).toBeTruthy();
     const dialog = document.querySelector("dialog.sa-dialog")!;
     expect(dialog.textContent).toContain("10:00 a.m., Tuesday, November 3");
+  });
+
+  it("books on the spot: Next shows the form in the card, one send, booked said there", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));
+    posted.length = 0;
+    heardBooked.mockClear();
+    fakeApi([madeAnswer()]);
+    const { container } = page();
+    fireEvent.click(screen.getByRole("button", { name: "Tuesday, November 3" }));
+    fireEvent.click(await screen.findByRole("button", { name: "10:00 a.m." }));
+    fireEvent.click(screen.getByRole("button", { name: /^Next: / }));
+    await fillForm();
+    expect(document.querySelector("dialog.sa-dialog")).toBeNull();
+    expect(container.querySelector(".sa-pagecal-spot")!.textContent).toContain(
+      "10:00 a.m., Tuesday, November 3"
+    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Book" })));
+    await waitFor(() => expect(container.textContent).toContain("You're booked"));
+    expect(container.textContent).toContain(madeWhen);
+    expect(posted.map((sent) => sent.startsAt)).toEqual(["2026-11-03T16:00:00.000Z"]);
+    expect(heardBooked).toHaveBeenCalledTimes(1);
+    expect(document.querySelector("dialog.sa-dialog")).toBeNull();
+  });
+
+  it("goes back to the day when the time was taken meanwhile, keeping the form and its key", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));
+    posted.length = 0;
+    const taken = "Sorry, that time was taken while you were booking. Please pick another one.";
+    fakeApi([json({ error: { code: "time_taken", message: taken } }, 409), madeAnswer()]);
+    const { container } = page();
+    fireEvent.click(screen.getByRole("button", { name: "Tuesday, November 3" }));
+    fireEvent.click(await screen.findByRole("button", { name: "10:00 a.m." }));
+    fireEvent.click(screen.getByRole("button", { name: /^Next: / }));
+    await fillForm();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Book" })));
+    expect((await screen.findByRole("alert")).textContent).toBe(taken);
+    fireEvent.click(await screen.findByRole("button", { name: "10:00 a.m." }));
+    fireEvent.click(screen.getByRole("button", { name: /^Next: / }));
+    expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Jane Doe");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Book" })));
+    await waitFor(() => expect(container.textContent).toContain("You're booked"));
+    expect(posted).toHaveLength(2);
+    expect(posted[1]?.requestKey).toBe(posted[0]?.requestKey);
   });
 
   it("says plainly when the month on screen has no open day", async () => {
