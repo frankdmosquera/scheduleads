@@ -140,6 +140,7 @@ export function PageCalendar({
   };
 
   const changeMonth = (by: -1 | 1) => {
+    latestAsk.current++; // a day's times or the business still on its way are for a page left
     setMonth(shiftMonth(shownMonth, by));
     setPickedDate(null);
     setDayTimes(null);
@@ -151,10 +152,13 @@ export function PageCalendar({
   // Next on a picked time: the form in the card. The business (its contact rule, its questions) is
   // read once; if it cannot be, the window opens on the same time and says what went wrong.
   const bookHere = async (time: PickedTimeType) => {
+    const tap = latestAsk.current; // another day or month meanwhile drops this answer
     setForm((kept) => kept ?? newBookingForm());
+    setTaken(null);
     if (!business.current) {
       setOnTheSpot({ step: "loading" });
       const answer = await fetchServiceList(apiClient, slug);
+      if (tap !== latestAsk.current) return;
       if (answer.state !== "ok") {
         setOnTheSpot(null);
         open(service.id, time);
@@ -163,6 +167,15 @@ export function PageCalendar({
       business.current = answer.business;
     }
     setOnTheSpot({ step: "form", business: business.current });
+  };
+
+  // While a booking is on its way or its answer unknown, nothing else in the card can be picked:
+  // leaving the form would drop its lock, and the same key could be sent for another time (F-607).
+  const pickDateNow = (date: string) => {
+    if (!frozen) void pickDate(date);
+  };
+  const changeMonthNow = (by: -1 | 1) => {
+    if (!frozen) changeMonth(by);
   };
 
   // The heading of what replaced the times takes the focus: the Next pressed is gone.
@@ -219,20 +232,21 @@ export function PageCalendar({
         )}
         <div className="sa-pagecal-body">
           {/* The left page on a computer: the month, and under it how it books. */}
-          <div className="sa-pagecal-month">
+          {/* Inert while a booking is on its way: see pickDateNow. */}
+          <div className="sa-pagecal-month" inert={frozen}>
             <MonthCalendarView
               month={shownMonth}
               bounds={bounds}
               freeDays={freeDays}
               pickedDate={pickedDate}
-              onPickDate={(date) => void pickDate(date)}
-              onMonth={changeMonth}
+              onPickDate={pickDateNow}
+              onMonth={changeMonthNow}
             />
             {zoneLine && (
               <p className="sa-tz">{words.timesIn(formatZoneName(timeZone, language))}</p>
             )}
             {!pickedDate && monthRead && freeDays.size === 0 && shownMonth < bounds.lastMonth && (
-              <button type="button" className="sa-go" onClick={() => changeMonth(1)}>
+              <button type="button" className="sa-go" onClick={() => changeMonthNow(1)}>
                 {words.nextMonth}
               </button>
             )}
@@ -256,13 +270,20 @@ export function PageCalendar({
                     <button
                       type="button"
                       className="sa-pagecal-spot-back"
-                      onClick={() => setOnTheSpot(null)}
+                      onClick={() => {
+                        setOnTheSpot(null);
+                        requestAnimationFrame(() => dayRef.current?.focus()); // Back itself is gone
+                      }}
                     >
                       &#8249; {words.backToTimes}
                     </button>
                   )}
                   <p className="sa-pagecal-spot-time">
                     {picked.time}, {formatDayName(picked.date, language)}
+                    <br />
+                    <span className="sa-pagecal-spot-zone">
+                      {formatZoneName(timeZone, language)}
+                    </span>
                   </p>
                   <h3 className="sa-pagecal-spot-h" ref={spotRef} tabIndex={-1}>
                     {words.yourDetails}
@@ -282,11 +303,12 @@ export function PageCalendar({
                     onFormChange={setForm}
                     onBooked={(made, email) => {
                       setOnTheSpot({ step: "done", booking: made, email });
+                      setForm(null); // a next booking from the card is a new one, with its own key
                       booked(made);
                     }}
                     onTimeTaken={(message) => {
                       // Back on the same day, read again without the taken time; the form is kept.
-                      void pickDate(pickedDate);
+                      void pickDate(pickedDate, true);
                       setTaken(message);
                     }}
                     onFrozenChange={setFrozen}
@@ -353,6 +375,7 @@ export function PageCalendar({
               <button
                 type="button"
                 className="sa-pagecal-book"
+                disabled={frozen}
                 onClick={() => open(service.id, picked ?? undefined)}
               >
                 {bookLabel}

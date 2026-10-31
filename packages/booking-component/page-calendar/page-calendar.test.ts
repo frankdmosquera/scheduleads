@@ -48,9 +48,10 @@ const calendar: PageCalendarDataType = {
 };
 
 // The times route by date: Nov 2 filled since the page was built, Nov 3 still has a time. A booking
-// sent takes the next of `answers`, and its body is kept in `posted`.
+// sent takes the next of `answers` (a promise never kept is an answer that never comes), and its
+// body is kept in `posted`. With `listFails`, the business cannot be read.
 const posted: { requestKey: string; startsAt: string }[] = [];
-function fakeApi(answers: Response[] = []) {
+function fakeApi(answers: (Response | Promise<Response>)[] = [], { listFails = false } = {}) {
   const asked: string[] = [];
   vi.stubGlobal(
     "fetch",
@@ -79,6 +80,7 @@ function fakeApi(answers: Response[] = []) {
           availability: { timezone: "America/Edmonton", horizonDays: 60 },
         });
       }
+      if (listFails && url.pathname.endsWith("/booking-links")) return json({ error: {} }, 500);
       return json({
         business: {
           name: "Primo Painters",
@@ -280,6 +282,55 @@ describe("a calendar on the site's own page", () => {
     await waitFor(() => expect(container.textContent).toContain("You're booked"));
     expect(posted).toHaveLength(2);
     expect(posted[1]?.requestKey).toBe(posted[0]?.requestKey);
+  });
+
+  it("locks the month while a booking is on its way, so the same key never goes for another time", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));
+    posted.length = 0;
+    fakeApi([new Promise<Response>(() => {})]);
+    const { container } = page();
+    fireEvent.click(screen.getByRole("button", { name: "Tuesday, November 3" }));
+    fireEvent.click(await screen.findByRole("button", { name: "10:00 a.m." }));
+    fireEvent.click(screen.getByRole("button", { name: /^Next: / }));
+    await fillForm();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Book" })));
+    expect(container.querySelector(".sa-pagecal-month")!.hasAttribute("inert")).toBe(true);
+    expect(screen.queryByRole("button", { name: /Back to the times/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Monday, November 2" }));
+    expect(container.querySelector(".sa-form")).not.toBeNull();
+    expect(posted).toHaveLength(1);
+  });
+
+  it("makes a new form, with a new key, for a second booking from the card", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));
+    posted.length = 0;
+    fakeApi([madeAnswer(), madeAnswer()]);
+    const { container } = page();
+    for (const _ of [1, 2]) {
+      fireEvent.click(screen.getByRole("button", { name: "Tuesday, November 3" }));
+      fireEvent.click(await screen.findByRole("button", { name: "10:00 a.m." }));
+      fireEvent.click(screen.getByRole("button", { name: /^Next: / }));
+      expect(((await screen.findByLabelText("Name")) as HTMLInputElement).value).toBe("");
+      await fillForm();
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: "Book" })));
+      await waitFor(() => expect(container.textContent).toContain("You're booked"));
+    }
+    expect(posted).toHaveLength(2);
+    expect(posted[1]?.requestKey).not.toBe(posted[0]?.requestKey);
+  });
+
+  it("opens the window on the picked time when the business cannot be read", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));
+    fakeApi([], { listFails: true });
+    page();
+    fireEvent.click(screen.getByRole("button", { name: "Tuesday, November 3" }));
+    fireEvent.click(await screen.findByRole("button", { name: "10:00 a.m." }));
+    fireEvent.click(screen.getByRole("button", { name: /^Next: / }));
+    await waitFor(() => expect(document.querySelector("dialog.sa-dialog")).not.toBeNull());
+    expect(document.querySelector(".sa-pagecal .sa-form")).toBeNull();
   });
 
   it("says plainly when the month on screen has no open day", async () => {

@@ -792,3 +792,27 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** (1) on a phone the window's "Back to the calendar" rule also matches inside the card, so the link shows and takes focus on every tap, and 761-767px gets neither layout; (2) Escape from a chat opened by Ask us returns focus to the corner button, not Ask us; (3) Ask us does nothing on a page with no SiteChat mounted; (4) no test that the chat opens on the event and stays open, that `zoneLine={false}` hides the line, or for the keyboard effect; (5) the phone panel follows the visible area's height but not its left edge when pinch-zoomed; `max-[450px]` excludes exactly 450px; the comment on not using `useId` gives a wrong reason.
 **Suggested fix:** each as named.
 **Resolution:** (1) fixed 2026-10-31 in window 0.2.21: the card hides the window's phone way back, so focus stays on the tapped day (checked at 412px). (2) fixed 2026-10-31 in site chat 0.2.13: Escape returns focus to what opened the chat (Ask us), the corner button otherwise (checked on Primo both ways). (3) noted 2026-10-31 in the booking package's index.ts header: Ask us needs SiteChat on the page. (4) tests added 2026-10-31: site chat gets jsdom and @testing-library/react (dev, Frank yes) and four tests (Ask us opens and never closes, Escape back to Ask us, Escape back to its own button, the visible area followed only while open); the window a test that zoneLine={false} hides the zone line. The Escape test fails with the old line. (5) 2026-10-31: the card names itself with useId (window 0.2.25; the hydration test now draws the built page with renderToString, as a site's server does), Primo's phone sizes include exactly 450px (max-[451px]); the pinch-zoom left edge carried, Frank's call.
+
+### F-607 [P1] fixed - 13c.3 review: the month stayed clickable while a booking was on its way
+
+**File:** packages/booking-component/page-calendar/page-calendar.tsx
+**Found:** 2026-10-31 by independent review of 13c.3 (bf8e9df, Primo 92af715)
+**Why it matters:** on a computer the month sits beside the form; a day or arrow pressed while Book was sending or its answer unknown unmounted the form, dropping its send lock while the form and its key stayed, so the same key could go out for another time (refused as used) after the first booking was already made unseen, and a late 409 pulled the visitor back to the old day.
+**Suggested fix:** nothing else in the card can be picked while the form is frozen.
+**Resolution:** Fixed 2026-10-31 in window 0.2.28: the month is `inert` and its day and month handlers do nothing while frozen; a site's Book button is disabled meanwhile. A test holds a send open and taps another day: the form stays, one send; it fails without the lock. Needs a later /audit to close.
+
+### F-608 [P2] fixed - 13c.3 review: second booking, a late business read, the zone name
+
+**File:** packages/booking-component/page-calendar/page-calendar.tsx, booking-component.css, Primo components/heros/HeroPageCalendar.tsx
+**Found:** 2026-10-31 by independent review of 13c.3
+**Why it matters:** (1) the form was never made new after a booking, so a second booking from the card sent the used key and was refused; (2) the business read at the first Next had no latest-ask check, so a day tapped meanwhile left an empty pane or opened the window on a time already left; (3) the card's form named no time zone, and Primo hides the zone line, so a visitor saw no zone before booking.
+**Suggested fix:** as named.
+**Resolution:** Fixed 2026-10-31 in window 0.2.28: a new form (new key) after each booking, with a test; the business answer dropped when a day or month changed meanwhile (month changes now count as asks); the zone's name under the picked time in the form (seen: "Mountain Time"). Also from the P3s: focus to the day after Back and after a taken time, the old "taken" notice cleared at Next. A test for the business read failing and opening the window. 152 tests.
+
+### F-609 [P3] open - 13c.3 review points carried
+
+**File:** packages/booking-component/page-calendar/page-calendar.tsx, booking-provider/booking-provider.tsx
+**Found:** 2026-10-31 by independent review of 13c.3
+**Why it matters:** the form's heading level is fixed at h3 inside a group titled by a div, which may skip h2 on a page; the provider's context value now changes whenever a site passes a new inline `onBooked` or `afterBooking`, re-rendering its buttons (speed only); no test yet for focus after Next, Back and booked.
+**Suggested fix:** a heading level a site can set; memo note in the setup notes; a focus test.
+**Resolution:**
