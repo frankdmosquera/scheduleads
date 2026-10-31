@@ -11,6 +11,7 @@ import type { ChatLanguageType, ChatWordsType } from "../words/chat-words-type.j
 import { createAnswerMarkerFilter, withoutMarks } from "./answer-marker.js";
 import { buildChatBrief, type ChatBriefType } from "./chat-brief.js";
 import type { ChatSiteType } from "./chat-site-type.js";
+import { namesOtherDetail } from "./detail-words.js";
 import { fromOurSite } from "./from-our-site.js";
 import { createHourlyLimit, requestAddress } from "./hourly-limit.js";
 import { askJev, type AlsoAskedType, type JevOutcomeType, type JevSeenType } from "./jev.js";
@@ -35,6 +36,7 @@ interface BuiltSiteType {
   words: ChatWordsType;
   bank: readonly StoredAnswerType[];
   alsoAsked: AlsoAskedType;
+  detailWords: readonly string[];
   name: string;
   brief: ChatBriefType;
 }
@@ -146,6 +148,7 @@ export function createChatRoute(options: ChatRouteOptionsType) {
       words: site.words,
       bank: site.answers.stored,
       alsoAsked: site.answers.alsoAsked ?? {},
+      detailWords: site.detailWords ?? [],
       name: site.brief.business.name,
       brief: buildChatBrief(site.brief, site.answers, site.briefWords),
     });
@@ -234,6 +237,11 @@ export function createChatRoute(options: ChatRouteOptionsType) {
       trace,
       reply,
     });
+    // A question naming one of the site's services or groups is the AI's unless Jev's pick names it too.
+    const latest = body.messages.at(-1)!.text;
+    const picked =
+      jev.kind === "stored" ? [jev.question] : jev.kind === "suggest" ? jev.questions : null;
+    if (picked && namesOtherDetail(latest, picked, site.detailWords)) return toAi([]);
     switch (jev.kind) {
       case "person":
         return answered({ type: "person", path: jev.path });

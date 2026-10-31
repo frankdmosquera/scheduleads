@@ -9,6 +9,11 @@ export interface ChatSiteType {
   answers: ChatAnswersType;
   words: ChatWordsType;
   brief: ChatBriefPartsType;
+  /**
+   * Words naming what the brief has its own details for (each service, each group): a question naming one goes to
+   * the AI, unless the answer Jev picked names it too. None given, Jev answers as on ialaorden.com.
+   */
+  detailWords?: readonly string[];
   /** The brief's own instructions and headings; English unless given. */
   briefWords?: ChatBriefWordsType;
 }

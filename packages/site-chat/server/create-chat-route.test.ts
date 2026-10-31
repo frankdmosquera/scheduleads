@@ -142,6 +142,20 @@ describe("createChatRoute answers", () => {
     expect(model).not.toHaveBeenCalled();
   });
 
+  it("from the AI when the question names a service Jev's pick does not", async () => {
+    const model = vi.fn(writes("Ceilings take a day."));
+    const handler = createChatRoute({
+      sites: [{ ...testSite, detailWords: ["Ceiling Painting"] }],
+      fetchFn: jevFetch({ pick: "q1" }).fetchFn,
+      model,
+    });
+    const events = await eventsOf(
+      await handler(ask(question("how long does ceiling painting take")))
+    );
+    expect(events.some((e) => e.type === "stored")).toBe(false);
+    expect(model).toHaveBeenCalled();
+  });
+
   it("with every way to a person under an answer that is itself the way", async () => {
     const events = await eventsOf(
       await route({ pick: "q2" })(ask(question("can I talk to a human")))
