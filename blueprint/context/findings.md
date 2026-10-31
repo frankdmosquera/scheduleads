@@ -760,3 +760,51 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** (1) the committed `face-and-body-site` launch entry now runs `../face-and-body/.claude/worktrees/booking-crm`, a worktree that goes away once her branch merges; (2) `pack-into-site.mjs` copies the booking window's script, so F-550 (every vendor/ entry read in full, a subfolder crashes it) now lives in two places; (3) the spec still says the visitor's question goes as `details` when the form has no project box, but the chat always shows a box and, since the F-594 repair, never sends the opening question.
 **Suggested fix:** (1) point it back at `../face-and-body` after her merge; (2) share the pack decision or fix both; (3) say in the spec that only the project answer is sent.
 **Resolution:**
+
+### F-604 [P3] open - 13c.1 review points carried
+
+**File:** packages/booking-component/page-calendar/page-calendar.tsx
+**Found:** 2026-10-31 by independent review of 13c.1
+**Why it matters:** (4) Next open day looks only at the built-in days and the month on screen; (5) focus falls to the page after Next open day, the status lines mount already filled (some screen readers skip them), and the card's title is not tied to it as a group; (6) a time booked through the window stays picked on the page; (8) the zone's name is worked out on the server and again in the browser, which could differ (Spanish most); (10) Next's fetch cache can serve a day's data up to about two days old while it refreshes, within the "kept a day" decision.
+**Suggested fix:** each as named; (5) with 13c.2's layout work.
+**Resolution:**
+
+### F-606 [P3] open - 13c.2 review points
+
+**File:** packages/booking-component/booking-component.css, packages/site-chat/chat/site-chat.tsx, packages/site-chat/open-site-chat.ts, Primo components/heros/HeroPageCalendar.tsx
+**Found:** 2026-10-31 by independent review of 13c.2
+**Why it matters:** (1) on a phone the window's "Back to the calendar" rule also matches inside the card, so the link shows and takes focus on every tap, and 761-767px gets neither layout; (2) Escape from a chat opened by Ask us returns focus to the corner button, not Ask us; (3) Ask us does nothing on a page with no SiteChat mounted; (4) no test that the chat opens on the event and stays open, that `zoneLine={false}` hides the line, or for the keyboard effect; (5) the phone panel follows the visible area's height but not its left edge when pinch-zoomed; `max-[450px]` excludes exactly 450px; the comment on not using `useId` gives a wrong reason.
+**Suggested fix:** each as named.
+**Resolution:** (1) fixed 2026-10-31 in window 0.2.21: the card hides the window's phone way back, so focus stays on the tapped day (checked at 412px). (2) fixed 2026-10-31 in site chat 0.2.13: Escape returns focus to what opened the chat (Ask us), the corner button otherwise (checked on Primo both ways). (3) noted 2026-10-31 in the booking package's index.ts header: Ask us needs SiteChat on the page. (4) tests added 2026-10-31: site chat gets jsdom and @testing-library/react (dev, Frank yes) and four tests (Ask us opens and never closes, Escape back to Ask us, Escape back to its own button, the visible area followed only while open); the window a test that zoneLine={false} hides the zone line. The Escape test fails with the old line. (5) 2026-10-31: the card names itself with useId (window 0.2.25; the hydration test now draws the built page with renderToString, as a site's server does), Primo's phone sizes include exactly 450px (max-[451px]); the pinch-zoom left edge carried, Frank's call.
+
+### F-609 [P3] open - 13c.3 review points carried
+
+**File:** packages/booking-component/page-calendar/page-calendar.tsx, booking-provider/booking-provider.tsx
+**Found:** 2026-10-31 by independent review of 13c.3
+**Why it matters:** the form's heading level is fixed at h3 inside a group titled by a div, which may skip h2 on a page; the provider's context value now changes whenever a site passes a new inline `onBooked` or `afterBooking`, re-rendering its buttons (speed only); no test yet for focus after Next, Back and booked.
+**Suggested fix:** a heading level a site can set; memo note in the setup notes; a focus test.
+**Resolution:**
+
+### F-610 [P3] open - Next open day can lead to a day the card itself greyed as out of times
+
+**File:** packages/booking-component/page-calendar/page-calendar.tsx:228-229
+**Found:** 2026-10-31 by /audit independent current (fresh subagent, d51de3f..2cdb9db; lenses: quality, security, performance, tests)
+**Why it matters:** `nextOpenDay` draws from `calendar.openDays` plus `freeDays`, but only `freeDays` has the `soonGone` days removed (139). After a tapped day says "No times left", Next open day can pick one of the next three days the card already greys, so the visitor gets a second "No times left" before reaching a real open day. Nothing books wrongly; it is one extra tap and a contradiction (a grey day opened).
+**Suggested fix:** leave out `soonGone` days in `nextOpenDay`, and a test with a greyed day right after the tapped one.
+**Resolution:** Re-examined 2026-10-31 by /audit independent current (fresh subagent, d51de3f..21dc56e): still applies, `nextOpenDay` (page-calendar.tsx:249-250) still draws from `calendar.openDays` with no `soonGone` filter.
+
+### F-611 [P3] open - 13c independent review: smaller points
+
+**File:** packages/booking-component/page-calendar/page-calendar.test.ts:341-357; packages/booking-component/index.ts:41-43; package-lock.json:16106; packages/booking-component/booking-component.css (`.sa-pagecal-book`)
+**Found:** 2026-10-31 by /audit independent current (fresh subagent, d51de3f..2cdb9db)
+**Why it matters:** (1) the "greys a day of the next three" test reaches December only through the fallback `shiftMonth(current, 1)`: its fake answers no time for Dec 2 either, so Dec 2 is greyed too and the path that opens on the first still-open day, with that day still marked, is untested; (2) the setup notes in index.ts still say a picked time opens the window on its form, while since 13c.3 Next books in the card and only a site's Book button opens the window; (3) package-lock.json records the booking package at 0.2.26 while its package.json is 0.2.35 (site chat's agree), so the next install rewrites the lockfile as an unrelated diff; (4) the site's Book button is `all: unset` with `cursor: pointer` and no disabled look, so while it is disabled during a send it looks pressable.
+**Suggested fix:** (1) give Dec 2 a time in that test and assert it stays marked; (2) one line in the notes; (3) refresh the lockfile with the next version bump; (4) a `:disabled` rule.
+**Resolution:** Re-examined 2026-10-31 by /audit independent current (fresh subagent, d51de3f..21dc56e): all four still apply (index.ts:41-43 unchanged; no `:disabled` rule on `.sa-pagecal-book`); the lockfile gap now covers site chat too, see F-612.
+
+### F-612 [P3] open - 13c independent review at 21dc56e: smaller points
+
+**File:** packages/site-chat/site-chat.css:452; packages/booking-component/booking-component.css:581,1149; package-lock.json:16214; packages/booking-component/page-calendar/page-calendar.test.ts:359-379
+**Found:** 2026-10-31 by /audit independent current (fresh subagent, d51de3f..21dc56e; lenses: quality, security, performance, tests)
+**Why it matters:** (1) the phone media block's comment still says the corner button is a round icon, while 21dc56e removed exactly those rules so it keeps its words on phones; (2) the month arrows are now SVG chevrons sized by percent, so `font-size: 17px` on `.sa-mnav` and `font-size: 26px` on `.sa-pagecal .sa-mnav` no longer size anything; (3) package-lock.json now records site chat at 0.2.13 while its package.json is 0.2.14 (the booking package's gap is F-611 (3)), so the next install rewrites the lockfile as an unrelated diff; (4) the scroll test proves a phone scrolls when the times are below the screen and a computer never does, but not that a phone whose times are already in view stays put (the `below <= 0` return).
+**Suggested fix:** (1) say the open chat takes the whole screen and the button keeps its words; (2) drop the two font sizes; (3) refresh the lockfile with the next version bump; (4) one more case with a tall `innerHeight` expecting no scroll.
+**Resolution:**

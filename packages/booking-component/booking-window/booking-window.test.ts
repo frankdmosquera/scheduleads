@@ -243,6 +243,34 @@ describe("the booking window", () => {
     expect(screen.getByLabelText("Email").matches(":disabled")).toBe(true);
   });
 
+  it("opens on the form with a time picked on the page, and books that time (13c)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-09T18:00:00.000Z"));
+    const { apiClient, posted } = fakeApi([new Response("{}", { status: 500 })]);
+    render(
+      createElement(BookingWindow, {
+        apiClient,
+        slug: "clinic-dev",
+        bookingId: "facial",
+        chosenAtOpen: {
+          startsAt: elevenOClock.startsAt,
+          date: elevenOClock.date,
+          time: elevenOClock.time,
+        },
+        ...englishWindow,
+        onClosed() {},
+      })
+    );
+    await screen.findByLabelText("Name");
+    expect(screen.queryByRole("button", { name: "10:00 a.m." })).toBeNull();
+    type("Name", "Jane Doe");
+    type("Email", "jane@example.com");
+    type("Address", "12 Elm Street");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Book" })));
+    await waitFor(() => expect(posted).toHaveLength(1));
+    expect(posted[0]?.startsAt).toBe(elevenOClock.startsAt);
+  });
+
   it("gives each opening of the window its own form key", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-10-09T18:00:00.000Z"));

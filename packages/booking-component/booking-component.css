@@ -581,6 +581,16 @@
   font-size: 17px;
   flex: none;
 }
+/* A drawn chevron, bold enough to read at a glance; the old text glyphs looked thin (Frank, Oct 31). */
+.sa-mnav-i {
+  width: 62%;
+  height: 62%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .sa-mnav:hover:not([disabled]) {
   background: var(--sa-surface-2, #f4f4f5);
 }
@@ -1041,4 +1051,231 @@
 /* The zone line under the month is plain words, no switcher (decision 12). */
 .sa-tz {
   margin: 16px 0 0;
+}
+
+/* ---------- a calendar on the site's own page (feature 13c) ----------
+   The window's own month, day and times rules, in a box on the page. The
+   site sizes and places the box; its head and Book button read the same
+   tokens as the window. */
+.sa-pagecal,
+.sa-pagecal * {
+  box-sizing: border-box;
+}
+.sa-pagecal {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--sa-radius, 8px);
+  background: var(--sa-bg, #ffffff);
+  color: var(--sa-text, #18181b);
+  font-family: var(--sa-font, ui-sans-serif, system-ui, sans-serif);
+  /* A site may widen the card once a day opened (sa-pagecal--grown): it eases there. */
+  transition: width 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sa-pagecal {
+    transition: none;
+  }
+}
+/* The month stays above a tapped day, so the window's phone way back is not needed
+   here; hidden, it takes no focus either (day-times-view.tsx). */
+.sa-pagecal .sa-times-back {
+  display: none;
+}
+.sa-pagecal-head {
+  padding: 10px 16px;
+  background: var(--sa-action, #18181b);
+  color: var(--sa-action-ink, #ffffff);
+  font-weight: 600;
+}
+.sa-pagecal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 14px 4px;
+}
+/* The month's title row sits 2px closer above and below than in the window (Frank, Oct 31). */
+.sa-pagecal .sa-mhead {
+  margin-bottom: 12px;
+}
+.sa-pagecal-month,
+.sa-pagecal-day {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.sa-pagecal-day:focus {
+  outline: none;
+}
+/* The card's days 1px further apart than the window's (Frank, Oct 31). Grown, its rows are a
+   little shorter than wide, the discs the same size, so the bigger card does not grow as tall. */
+.sa-pagecal .sa-month {
+  gap: 3px;
+}
+.sa-pagecal--grown .sa-dwrap {
+  aspect-ratio: 1.08;
+}
+.sa-pagecal .sa-times-list {
+  max-height: 200px;
+}
+/* Next open day and Next month, in the card a small link under the line that says why, never a
+   big button: closed days already look closed (Frank, Oct 31). */
+.sa-pagecal .sa-go {
+  align-self: flex-start;
+  margin: 4px 14px 0;
+  padding: 0;
+  background: none;
+  color: var(--sa-identity, #18181b);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.sa-pagecal .sa-go:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+/* Slimmer times in the card, so more of them show at once (Frank, Oct 31). */
+.sa-pagecal .sa-t,
+.sa-pagecal .sa-t-chosen,
+.sa-pagecal .sa-t-next {
+  padding: 8px 0;
+}
+/* The month's arrows, larger in a card on the page than in the window. */
+.sa-pagecal .sa-mnav {
+  width: 40px;
+  height: 40px;
+  font-size: 26px;
+}
+/* The day's service on one line: its name, length and price. */
+.sa-pagecal-service {
+  font-size: 13.5px;
+}
+.sa-pagecal-service-name {
+  font-weight: 600;
+}
+.sa-pagecal-service-facts {
+  color: var(--sa-muted, #52525b);
+}
+/* One status line, always in the page so a screen reader hears it change; no room when empty. */
+.sa-pagecal-status {
+  margin: 0 14px;
+  font-size: 13.5px;
+  color: var(--sa-muted, #52525b);
+}
+.sa-pagecal-status:empty {
+  display: block;
+  height: 0;
+}
+/* Booking on the spot (13c.3): the window's form, then its booked line, where the times were. */
+.sa-pagecal-spot-back {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--sa-identity, #18181b);
+}
+.sa-pagecal-spot-back:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+.sa-pagecal-spot-time {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.sa-pagecal-spot-zone {
+  font-weight: 400;
+  color: var(--sa-muted, #52525b);
+}
+.sa-pagecal-spot-h {
+  margin: 4px 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.sa-pagecal-spot-h:focus {
+  outline: none;
+}
+/* A phone has no room for the month beside the form: the form has the card to itself. Grown, the
+   days and their numbers are bigger (Frank, Oct 31). */
+@media (max-width: 767px) {
+  .sa-pagecal--booking .sa-pagecal-month {
+    display: none;
+  }
+  .sa-pagecal--grown .sa-d {
+    font-size: 16px;
+  }
+  /* The times straight under the month: the service line and the day's name wait for the form,
+     which shows both (Frank, Oct 31). Still read out, only out of sight. */
+  .sa-pagecal:not(.sa-pagecal--booking) .sa-pagecal-service,
+  .sa-pagecal .sa-times-h {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+/* The site's Book button, and beside it its second one (Ask us). */
+.sa-pagecal-actions {
+  display: flex;
+  gap: 8px;
+  margin: 14px 12px 12px;
+}
+.sa-pagecal-ask {
+  all: unset;
+  box-sizing: border-box;
+  flex: 1;
+  padding: 7px 12px;
+  border-radius: var(--sa-radius, 8px);
+  border: 1px solid var(--sa-identity, #18181b);
+  color: var(--sa-identity, #18181b);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+.sa-pagecal-ask:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+/* A computer, a day open: like a book, the month on the left page and the
+   day on the right. The card widens over the site's own width. */
+@media (min-width: 768px) {
+  .sa-pagecal.sa-pagecal--open {
+    width: min(42rem, calc(100vw - 32px));
+  }
+  .sa-pagecal--open .sa-pagecal-body {
+    display: grid;
+    /* Shares, not a fixed day column: while the card eases wider, the month
+       shrinks with the day instead of starting at nothing (340px | 284px at 42rem). */
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 20px;
+  }
+  .sa-pagecal--open .sa-pagecal-day {
+    border-left: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+    padding-left: 20px;
+  }
+}
+.sa-pagecal-book {
+  all: unset;
+  box-sizing: border-box;
+  flex: 2;
+  padding: 7px 12px;
+  border-radius: var(--sa-radius, 8px);
+  background: var(--sa-action, #18181b);
+  color: var(--sa-action-ink, #ffffff);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+.sa-pagecal-book:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
 }

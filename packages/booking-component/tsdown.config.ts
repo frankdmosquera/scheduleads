@@ -5,7 +5,7 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["index.ts", "site-colours.ts"],
+  entry: ["index.ts", "site-colours.ts", "page-calendar.ts"],
   format: "esm",
   platform: "browser",
   target: "es2022",
@@ -14,7 +14,7 @@ export default defineConfig({
   clean: true,
   // Every export of index is a client component: a Next host's server components can render them.
   // The bundle drops each file's own "use client", so it is put back once, at its top. The
-  // site-colours entry is for a site's server code, so it never gets it (feature 25f).
+  // site-colours and page-calendar entries are for a site's server code, so they never get it.
   outputOptions: {
     banner: (chunk) => (chunk.isEntry && chunk.name === "index" ? '"use client";' : ""),
   },

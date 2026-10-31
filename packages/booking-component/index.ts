@@ -38,6 +38,16 @@
 //   const { open } = useBooking();
 //   open(); // or open(bookingId)
 //
+// A calendar on the site's own page (feature 13c): a server component reads the open days from the
+// "./page-calendar" entry, once a day, and hands them to <PageCalendar> inside the provider. A
+// tapped day's times load live; a picked time opens the window on its form with that time chosen.
+//
+//   <PageCalendar calendar={calendar} title="Pick a day" bookLabel="Book now" />
+//
+// An "Ask us" button beside Book now: ask={{ label: "Ask us", onAsk: openSiteChat }}, from
+// "@frankdmosquera/site-chat". It only works with <SiteChat> on the same page (the site's root
+// layout); without it the button does nothing and says nothing.
+//
 // The look comes from the host: import "@frankdmosquera/booking-component/booking-component.css"
 // and define the --sa-* tokens (colours, fonts, radius) in the host's own stylesheet. Each has a
 // neutral fallback. --sa-action-ink must be set with --sa-action; it is never assumed white.
@@ -52,3 +62,6 @@ export {
   BookNowTrigger,
   type BookNowTriggerPropsType,
 } from "./book-now-trigger/book-now-trigger.js";
+export type { PickedTimeType } from "./booking-provider/booking-context.js";
+export { PageCalendar, type PageCalendarPropsType } from "./page-calendar/page-calendar.js";
+export type { PageCalendarDataType } from "./page-calendar/fetch-page-calendar.js";

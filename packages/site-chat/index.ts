@@ -24,8 +24,10 @@
 //
 // The routes, one file each (see server.ts): app/api/chat/route.ts, app/api/chat/voice/[id]/route.ts and
 // app/api/chat/booking/route.ts.
+// A page's own control opens the chat with openSiteChat(), from this entry, inside a client component.
 // The look comes from the host: import "@frankdmosquera/site-chat/site-chat.css" and define the --sc-* tokens.
 
 export { SiteChat, type SiteChatPropsType } from "./chat/site-chat.js";
+export { openSiteChat } from "./chat/open-site-chat.js";
 export type { PersonWayLinksType } from "./chat/person-ways.js";
 export type { BookingAccountType } from "./booking/booking-api.js";

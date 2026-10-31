@@ -27,8 +27,12 @@ for (const file of files) {
   const code = readFileSync(join(distFolder, file), "utf8");
   for (const specifier of importsIn(code)) {
     // A chunk shared by the two entries ships inside dist/, so it installs wherever they do.
+    // A declaration file names a shared chunk by its .js name; its types ship as that chunk's .d.ts.
+    const sibling = join(distFolder, dirname(file), specifier);
     const shipped =
-      specifier.startsWith("./") && existsSync(join(distFolder, dirname(file), specifier));
+      specifier.startsWith("./") &&
+      (existsSync(sibling) ||
+        (/\.d\.[cm]?ts$/.test(file) && existsSync(sibling.replace(/\.([cm]?)js$/, ".d.$1ts"))));
     if (!shipped && !allowed.includes(specifier.split("/")[0])) {
       problems.push(`${file} imports ${specifier}`);
     }
@@ -38,9 +42,12 @@ for (const file of files) {
 if (!readFileSync(join(distFolder, "index.js"), "utf8").startsWith('"use client";')) {
   problems.push('index.js does not start with "use client"');
 }
-// The site-colours entry is for a site's server code: marked client, a server layout could not call it.
-if (readFileSync(join(distFolder, "site-colours.js"), "utf8").includes('"use client"')) {
-  problems.push('site-colours.js is marked "use client"');
+// The site-colours and page-calendar entries are for a site's server code: marked client, a server
+// component could not call them.
+for (const serverEntry of ["site-colours.js", "page-calendar.js"]) {
+  if (readFileSync(join(distFolder, serverEntry), "utf8").includes('"use client"')) {
+    problems.push(`${serverEntry} is marked "use client"`);
+  }
 }
 
 if (problems.length) {

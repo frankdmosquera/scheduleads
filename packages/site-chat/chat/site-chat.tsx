@@ -5,6 +5,7 @@ import type { BookingAccountType } from "../booking/booking-api.js";
 import type { ChatDevFactsType } from "../dev/dev-row.js";
 import type { ChatLanguageType, ChatWordsType, PersonPathType } from "../words/chat-words-type.js";
 import type { ChatConversationPropsType } from "./chat-conversation.js";
+import { OPEN_SITE_CHAT_EVENT } from "./open-site-chat.js";
 import { PersonWays, type PersonWayLinksType } from "./person-ways.js";
 
 // The inspector, downloaded only on the laptop, so visitors never get it.
@@ -65,6 +66,8 @@ export function SiteChat({
   const [devRows, setDevRows] = useState<(ChatDevFactsType & { id: number })[]>([]);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // What a page's own "Ask us" had focused when it opened the chat: Escape goes back there.
+  const openerRef = useRef<HTMLElement | null>(null);
 
   // The hello, once per visit, only while the chat was never opened.
   useEffect(() => {
@@ -85,6 +88,28 @@ export function SiteChat({
     return () => clearTimeout(timer);
   }, [loaded]);
 
+  // A phone's keyboard covers the bottom of a full-height panel: an iPhone keeps the screen's whole height
+  // while it shows. While open, the panel follows the part of the page left visible (the visual viewport), so the
+  // question field stays just above the keyboard (Frank's phone, Oct 31).
+  useEffect(() => {
+    const panel = panelRef.current;
+    const visible = window.visualViewport;
+    if (!open || !panel || !visible) return;
+    const fit = () => {
+      panel.style.setProperty("--sc-visible-height", `${visible.height}px`);
+      panel.style.setProperty("--sc-visible-top", `${visible.offsetTop}px`);
+    };
+    fit();
+    visible.addEventListener("resize", fit);
+    visible.addEventListener("scroll", fit);
+    return () => {
+      visible.removeEventListener("resize", fit);
+      visible.removeEventListener("scroll", fit);
+      panel.style.removeProperty("--sc-visible-height");
+      panel.style.removeProperty("--sc-visible-top");
+    };
+  }, [open]);
+
   // Open: the question field takes the focus once the chat is there; Escape closes it.
   useEffect(() => {
     if (!open || !loaded) return;
@@ -92,18 +117,33 @@ export function SiteChat({
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       setOpen(false);
-      buttonRef.current?.focus();
+      const opener = openerRef.current;
+      (opener?.isConnected ? opener : buttonRef.current)?.focus();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, loaded]);
 
+  // A page's own "Ask us" (openSiteChat) opens it, never closes it.
+  const openRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    const onOpen = () => openRef.current();
+    window.addEventListener(OPEN_SITE_CHAT_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_SITE_CHAT_EVENT, onOpen);
+  }, []);
+
   async function toggle() {
-    setHello(false);
+    openerRef.current = null; // opened or closed from the chat's own buttons
     if (open) {
+      setHello(false);
       setOpen(false);
       return;
     }
+    await openChat();
+  }
+
+  async function openChat() {
+    setHello(false);
     setOpen(true);
     if (loaded) return;
     setFailed(false);
@@ -118,6 +158,12 @@ export function SiteChat({
       setFailed(true);
     }
   }
+  openRef.current = () => {
+    if (open) return;
+    const focused = document.activeElement;
+    openerRef.current = focused instanceof HTMLElement && focused !== document.body ? focused : null;
+    void openChat();
+  };
 
   return (
     <>

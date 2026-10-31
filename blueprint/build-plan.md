@@ -431,7 +431,7 @@ list, Calendly is gone from his site, and the ranking is untouched.
   copies as they expire, within a year at most). Split from 12c by Frank on
   2026-10-23: backups keep data, this deletes it on purpose. Before the first
   client leaves
-- [ ] 13c. **A calendar on the site's own page** - the booking window's month
+- [x] 13c. **A calendar on the site's own page** - the booking window's month
   sits in a site's page instead of behind a button, about the size of Primo's
   "Pick a day" card today (a little bigger), larger on a big screen. It is
   built into the page once a day with its open days marked, so it is fast and

@@ -10,7 +10,8 @@ import { createBookingApiClient } from "../api-client/create-booking-api-client.
 import { BookingWindow } from "../booking-window/booking-window.js";
 import { wordsOf } from "../words/booking-words-context.js";
 import type { AfterBookingType, BookedType } from "./after-booking-type.js";
-import { BookingContext, type BookingContextType } from "./booking-context.js";
+import { BookingContext, type BookingContextType, type PickedTimeType } from "./booking-context.js";
+import { reportBooked } from "./report-booked.js";
 
 export type BookingProviderPropsType = {
   apiUrl: string; // the API's address, e.g. "https://api.example.com"
@@ -22,7 +23,12 @@ export type BookingProviderPropsType = {
 };
 
 // asked counts the opens: one that finds the window open asks it to make sure it is showing.
-type OpenWindowType = { bookingId: string | undefined; opener: HTMLElement | null; asked: number };
+type OpenWindowType = {
+  bookingId: string | undefined;
+  opener: HTMLElement | null;
+  chosen: PickedTimeType | undefined;
+  asked: number;
+};
 
 export function BookingProvider({
   apiUrl,
@@ -35,12 +41,26 @@ export function BookingProvider({
   const apiClient = useMemo(() => createBookingApiClient(apiUrl), [apiUrl]);
   const [openWindow, setOpenWindow] = useState<OpenWindowType | null>(null);
 
-  const openFrom = useCallback<BookingContextType["openFrom"]>((bookingId, opener) => {
+  const openFrom = useCallback<BookingContextType["openFrom"]>((bookingId, opener, chosen) => {
     setOpenWindow((current) =>
-      current ? { ...current, asked: current.asked + 1 } : { bookingId, opener, asked: 0 }
+      current ? { ...current, asked: current.asked + 1 } : { bookingId, opener, chosen, asked: 0 }
     );
   }, []);
-  const booking = useMemo(() => ({ openFrom }), [openFrom]);
+  const booking = useMemo<BookingContextType>(
+    () => ({
+      openFrom,
+      apiClient,
+      slug,
+      language,
+      booked: (made) =>
+        reportBooked(made, {
+          afterBooking,
+          onBooked,
+          goTo: (address) => window.location.assign(address),
+        }),
+    }),
+    [openFrom, apiClient, slug, language, afterBooking, onBooked]
+  );
 
   const closed = useCallback(() => {
     // Back on the control that opened it, if the host has not removed it meanwhile.
@@ -57,6 +77,7 @@ export function BookingProvider({
           apiClient={apiClient}
           slug={slug}
           bookingId={openWindow.bookingId}
+          chosenAtOpen={openWindow.chosen}
           asked={openWindow.asked}
           words={wordsOf[language]}
           afterBooking={afterBooking}

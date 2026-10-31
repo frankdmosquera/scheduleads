@@ -12,6 +12,8 @@ import type {
   BookingServiceType,
 } from "../api-client/booking-api-types.js";
 import type { AfterBookingType, BookedType } from "../booking-provider/after-booking-type.js";
+import type { PickedTimeType } from "../booking-provider/booking-context.js";
+import { reportBooked } from "../booking-provider/report-booked.js";
 import { BookingWordsContext } from "../words/booking-words-context.js";
 import type { BookingWordsType } from "../words/booking-words-type.js";
 import { fetchOneService } from "../api-client/fetch-one-service.js";
@@ -32,6 +34,8 @@ export type BookingWindowPropsType = {
   apiClient: BookingApiClientType;
   slug: string;
   bookingId: string | undefined;
+  // A time picked on the site's own page (13c): the named service opens on its form with it.
+  chosenAtOpen?: PickedTimeType;
   asked?: number; // grows with each open while this window is mounted: show it if it is not
   words: BookingWordsType;
   afterBooking: AfterBookingType;
@@ -44,6 +48,7 @@ export function BookingWindow({
   apiClient,
   slug,
   bookingId,
+  chosenAtOpen,
   asked = 0,
   words,
   afterBooking,
@@ -104,17 +109,27 @@ export function BookingWindow({
         setScreen(bookingProblemScreen(problem ?? "cannot-load", business, retry));
         return;
       }
-      setScreen({
-        screen: "service",
+      const oneService = {
         business,
         service: one.service,
         availability: one.availability,
         pickedFrom: null,
-        place: null,
-        notice: null,
-      });
+      };
+      // Picked on the page: straight to the form, Back leading to that day's month. A time taken
+      // since goes through the form's own taken path.
+      const picked = bookingLinkId === bookingId ? chosenAtOpen : undefined;
+      if (picked) {
+        const place = { month: picked.date.slice(0, 7), personId: null, date: picked.date };
+        setScreen({
+          ...oneService,
+          screen: "details",
+          chosen: { ...picked, personId: null, personName: null, place },
+        });
+        return;
+      }
+      setScreen({ ...oneService, screen: "service", place: null, notice: null });
     },
-    [apiClient, slug]
+    [apiClient, slug, bookingId, chosenAtOpen]
   );
 
   // A service picked from the list: the business is already known.
@@ -173,30 +188,8 @@ export function BookingWindow({
     document.getElementById(titleId)?.focus();
   }, [screen, titleId]);
 
-  // After a 201: the site hears of it, then the visitor stays on the confirmation or goes to the
-  // site's page. The confirmation shows either way, so nothing waits on a blank form while the
-  // browser leaves. A throwing onBooked still sends the visitor on (a broken count must not cost
-  // the thank-you page); a throwing redirectTo leaves them on the confirmation. Never a second booking.
-  const booked = (booking: BookingMadeType) => {
-    const made: BookedType = {
-      bookingId: booking.id,
-      serviceName: booking.service.name,
-      startsAt: booking.startsAt,
-      timeZone: booking.timezone,
-    };
-    try {
-      onBooked?.(made);
-    } catch (error) {
-      console.error("The site's onBooked failed:", error);
-    }
-    if (afterBooking === "stay") return;
-    try {
-      const { redirectTo } = afterBooking;
-      goTo(typeof redirectTo === "function" ? redirectTo(made) : redirectTo);
-    } catch (error) {
-      console.error("The site's redirectTo failed:", error);
-    }
-  };
+  const booked = (booking: BookingMadeType) =>
+    reportBooked(booking, { afterBooking, onBooked, goTo });
 
   return (
     <BookingWordsContext value={words}>
