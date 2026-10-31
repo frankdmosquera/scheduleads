@@ -1059,6 +1059,13 @@
   background: var(--sa-bg, #ffffff);
   color: var(--sa-text, #18181b);
   font-family: var(--sa-font, ui-sans-serif, system-ui, sans-serif);
+  /* A site may widen the card once a day opens (sa-pagecal--open): it eases there. */
+  transition: width 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sa-pagecal {
+    transition: none;
+  }
 }
 .sa-pagecal-head {
   padding: 10px 16px;
