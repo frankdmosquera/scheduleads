@@ -1119,7 +1119,7 @@
   all: unset;
   box-sizing: border-box;
   flex: 1;
-  padding: 10px 12px;
+  padding: 9px 12px;
   border-radius: var(--sa-radius, 8px);
   border: 1px solid var(--sa-identity, #18181b);
   color: var(--sa-identity, #18181b);
@@ -1151,7 +1151,7 @@
   all: unset;
   box-sizing: border-box;
   flex: 2;
-  padding: 10px 12px;
+  padding: 9px 12px;
   border-radius: var(--sa-radius, 8px);
   background: var(--sa-action, #18181b);
   color: var(--sa-action-ink, #ffffff);

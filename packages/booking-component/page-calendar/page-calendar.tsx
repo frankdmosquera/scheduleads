@@ -33,6 +33,9 @@ export type PageCalendarPropsType = {
   bookLabel?: string; // the site's Book button under the calendar; left out, none
   // A second button beside it, such as "Ask us" opening the site's chat (13c.2); left out, none.
   ask?: { label: string; onAsk(): void };
+  // The "Times in Mountain Time" line under the month; a site short of room leaves it out (Primo,
+  // Frank, Oct 31). The window's form still names the zone.
+  zoneLine?: boolean;
   className?: string;
 };
 
@@ -44,6 +47,7 @@ export function PageCalendar({
   title,
   bookLabel,
   ask,
+  zoneLine = true,
   className,
 }: PageCalendarPropsType) {
   // From the service, not useId: the same on the server's page and in the browser, however each was drawn.
@@ -162,7 +166,9 @@ export function PageCalendar({
               onPickDate={(date) => void pickDate(date)}
               onMonth={changeMonth}
             />
-            <p className="sa-tz">{words.timesIn(formatZoneName(timeZone, language))}</p>
+            {zoneLine && (
+              <p className="sa-tz">{words.timesIn(formatZoneName(timeZone, language))}</p>
+            )}
             {!pickedDate && monthRead && freeDays.size === 0 && shownMonth < bounds.lastMonth && (
               <button type="button" className="sa-go" onClick={() => changeMonth(1)}>
                 {words.nextMonth}
