@@ -90,6 +90,7 @@ function fakeApi() {
   return asked;
 }
 
+const asked = vi.fn();
 const pageOf = (shown: PageCalendarDataType) =>
   createElement(BookingProvider, {
     apiUrl: "https://api.example.com",
@@ -98,11 +99,46 @@ const pageOf = (shown: PageCalendarDataType) =>
       calendar: shown,
       title: "Pick a day",
       bookLabel: "Book now",
+      ask: { label: "Ask us", onAsk: asked },
     }),
   });
 const page = (shown: PageCalendarDataType = calendar) => render(pageOf(shown));
 
 describe("a calendar on the site's own page", () => {
+  it("is one group named by its title, with Ask us beside Book now", () => {
+    fakeApi();
+    page();
+    expect(screen.getByRole("group", { name: "Pick a day" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Ask us" }));
+    expect(asked).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens a tapped day beside the month, with the service's name and length", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));
+    fakeApi();
+    const { container } = page();
+    expect(container.querySelector(".sa-pagecal--open")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Tuesday, November 3" }));
+    await screen.findByRole("button", { name: "10:00 a.m." });
+    expect(container.querySelector(".sa-pagecal--open")).not.toBeNull();
+    const day = container.querySelector(".sa-pagecal-day")!;
+    expect(day.textContent).toContain("Free Estimate");
+    expect(day.textContent).toContain("30 min");
+  });
+
+  it("moves focus to the next open day it offers, so it is never lost", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));
+    fakeApi();
+    const { container } = page();
+    fireEvent.click(screen.getByRole("button", { name: "Monday, November 2" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Next open day" }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(container.querySelector(".sa-pagecal-day"))
+    );
+  });
+
   it("draws the built-in month with its open days, before anything is read", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));

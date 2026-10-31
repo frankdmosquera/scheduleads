@@ -5,6 +5,7 @@ import type { BookingAccountType } from "../booking/booking-api.js";
 import type { ChatDevFactsType } from "../dev/dev-row.js";
 import type { ChatLanguageType, ChatWordsType, PersonPathType } from "../words/chat-words-type.js";
 import type { ChatConversationPropsType } from "./chat-conversation.js";
+import { OPEN_SITE_CHAT_EVENT } from "./open-site-chat.js";
 import { PersonWays, type PersonWayLinksType } from "./person-ways.js";
 
 // The inspector, downloaded only on the laptop, so visitors never get it.
@@ -98,12 +99,25 @@ export function SiteChat({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, loaded]);
 
+  // A page's own "Ask us" (openSiteChat) opens it, never closes it.
+  const openRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    const onOpen = () => openRef.current();
+    window.addEventListener(OPEN_SITE_CHAT_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_SITE_CHAT_EVENT, onOpen);
+  }, []);
+
   async function toggle() {
-    setHello(false);
     if (open) {
+      setHello(false);
       setOpen(false);
       return;
     }
+    await openChat();
+  }
+
+  async function openChat() {
+    setHello(false);
     setOpen(true);
     if (loaded) return;
     setFailed(false);
@@ -118,6 +132,9 @@ export function SiteChat({
       setFailed(true);
     }
   }
+  openRef.current = () => {
+    if (!open) void openChat();
+  };
 
   return (
     <>

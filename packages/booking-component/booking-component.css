@@ -1072,13 +1072,85 @@
   gap: 12px;
   padding: 12px 14px 4px;
 }
+.sa-pagecal-month,
+.sa-pagecal-day {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.sa-pagecal-day:focus {
+  outline: none;
+}
 .sa-pagecal .sa-times-list {
   max-height: 168px;
+}
+/* The day's service: its name, length and price, and its line. */
+.sa-pagecal-service {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13.5px;
+}
+.sa-pagecal-service-name {
+  font-weight: 600;
+}
+.sa-pagecal-service-facts,
+.sa-pagecal-service-line {
+  color: var(--sa-muted, #52525b);
+}
+/* One status line, always in the page so a screen reader hears it change; no room when empty. */
+.sa-pagecal-status {
+  margin: 0 14px;
+  font-size: 13.5px;
+  color: var(--sa-muted, #52525b);
+}
+.sa-pagecal-status:empty {
+  display: block;
+  height: 0;
+}
+/* The site's Book button, and beside it its second one (Ask us). */
+.sa-pagecal-actions {
+  display: flex;
+  gap: 8px;
+  margin: 8px 12px 12px;
+}
+.sa-pagecal-ask {
+  all: unset;
+  box-sizing: border-box;
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--sa-radius, 8px);
+  border: 1px solid var(--sa-identity, #18181b);
+  color: var(--sa-identity, #18181b);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+.sa-pagecal-ask:focus-visible {
+  outline: 2px solid var(--sa-identity, #18181b);
+  outline-offset: 2px;
+}
+/* A computer, a day open: like a book, the month on the left page and the
+   day on the right. The card widens over the site's own width. */
+@media (min-width: 768px) {
+  .sa-pagecal.sa-pagecal--open {
+    width: min(36rem, calc(100vw - 32px));
+  }
+  .sa-pagecal--open .sa-pagecal-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 15rem);
+    gap: 20px;
+  }
+  .sa-pagecal--open .sa-pagecal-day {
+    border-left: 1px solid var(--sa-border, rgb(24 24 27 / 14%));
+    padding-left: 20px;
+  }
 }
 .sa-pagecal-book {
   all: unset;
   box-sizing: border-box;
-  margin: 8px 12px 12px;
+  flex: 2;
   padding: 10px 12px;
   border-radius: var(--sa-radius, 8px);
   background: var(--sa-action, #18181b);

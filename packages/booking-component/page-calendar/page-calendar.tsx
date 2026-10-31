@@ -21,6 +21,7 @@ import { shiftMonth } from "../booking-window/month-calendar/shift-month.js";
 import { DayTimesView } from "../booking-window/screens/month-layout/day-times-view.js";
 import { MonthCalendarView } from "../booking-window/screens/month-layout/month-calendar-view.js";
 import { useMonthTimes } from "../booking-window/screens/month-layout/use-month-times.js";
+import { priceText } from "../booking-window/screens/price-text.js";
 import { themeStyle } from "../booking-window/theme-style.js";
 import { BookingWordsContext, wordsOf } from "../words/booking-words-context.js";
 import type { PageCalendarDataType } from "./fetch-page-calendar.js";
@@ -30,13 +31,24 @@ export type PageCalendarPropsType = {
   calendar: PageCalendarDataType;
   title?: ReactNode; // the card's heading, in the site's words
   bookLabel?: string; // the site's Book button under the calendar; left out, none
+  // A second button beside it, such as "Ask us" opening the site's chat (13c.2); left out, none.
+  ask?: { label: string; onAsk(): void };
   className?: string;
 };
 
 type DayTimesType =
   { state: "loading" } | { state: "ok"; times: BookingStartTimeType[] } | { state: "problem" };
 
-export function PageCalendar({ calendar, title, bookLabel, className }: PageCalendarPropsType) {
+export function PageCalendar({
+  calendar,
+  title,
+  bookLabel,
+  ask,
+  className,
+}: PageCalendarPropsType) {
+  // From the service, not useId: the same on the server's page and in the browser, however each was drawn.
+  const titleId = `sa-pagecal-${calendar.service.id}`;
+  const dayRef = useRef<HTMLDivElement>(null);
   const booking = useContext(BookingContext);
   if (!booking) throw new Error("<PageCalendar> must be used inside <BookingProvider>.");
   const { apiClient, slug, language } = booking;
@@ -75,8 +87,8 @@ export function PageCalendar({ calendar, title, bookLabel, className }: PageCale
   const [picked, setPicked] = useState<PickedTimeType | null>(null);
   const latestAsk = useRef(0); // a tap's answer that arrives after a later tap is dropped
 
-  const pickDate = async (date: string) => {
-    const ask = ++latestAsk.current;
+  const pickDate = async (date: string, moveFocus = false) => {
+    const tap = ++latestAsk.current;
     setMonth(date.slice(0, 7));
     setPickedDate(date);
     setPicked(null);
@@ -87,7 +99,8 @@ export function PageCalendar({ calendar, title, bookLabel, className }: PageCale
       personId: null,
       language,
     });
-    if (ask !== latestAsk.current) return;
+    if (tap !== latestAsk.current) return;
+    if (moveFocus) requestAnimationFrame(() => dayRef.current?.focus());
     setDayTimes(
       answer.state === "ok"
         ? { state: "ok", times: answer.freeTimes.localStartTimes }
@@ -106,94 +119,121 @@ export function PageCalendar({ calendar, title, bookLabel, className }: PageCale
   const nextOpenDay = (date: string) =>
     [...calendar.openDays, ...freeDays].filter((day) => day > date).sort()[0] ?? null;
 
+  // One status line, always there, so a screen reader hears each change (F-604).
+  const status = pickedDate
+    ? dayTimes?.state === "loading"
+      ? words.findingTimes
+      : dayTimes?.state === "problem"
+        ? words.timesUnreadable
+        : dayTimes?.state === "ok" && dayTimes.times.length === 0
+          ? words.noTimesLeftOn(formatDayName(pickedDate, language))
+          : ""
+    : !builtIn && liveMonth.state === "loading"
+      ? words.findingTimes
+      : monthRead && freeDays.size === 0
+        ? words.noTimesLeftIn(formatMonthName(shownMonth, language))
+        : "";
+  const price = priceText(service.price, words);
+
   return (
     <BookingWordsContext value={words}>
       <div
-        className={className ? `sa-pagecal ${className}` : "sa-pagecal"}
+        className={["sa-pagecal", pickedDate ? "sa-pagecal--open" : null, className ?? null]
+          .filter(Boolean)
+          .join(" ")}
         style={themeStyle(calendar.theme)}
         lang={language}
+        role="group"
+        aria-labelledby={title ? titleId : undefined}
       >
-        {title && <div className="sa-pagecal-head">{title}</div>}
+        {title && (
+          <div className="sa-pagecal-head" id={titleId}>
+            {title}
+          </div>
+        )}
         <div className="sa-pagecal-body">
-          <MonthCalendarView
-            month={shownMonth}
-            bounds={bounds}
-            freeDays={freeDays}
-            pickedDate={pickedDate}
-            onPickDate={(date) => void pickDate(date)}
-            onMonth={changeMonth}
-          />
-          {!pickedDate && monthRead && freeDays.size === 0 && (
-            <div className="sa-times">
-              <p className="sa-times-none" role="status">
-                {words.noTimesLeftIn(formatMonthName(shownMonth, language))}
-              </p>
-              {shownMonth < bounds.lastMonth && (
-                <button type="button" className="sa-go" onClick={() => changeMonth(1)}>
-                  {words.nextMonth}
-                </button>
-              )}
-            </div>
-          )}
-          {!builtIn && liveMonth.state === "loading" && (
-            <p className="sa-loading" role="status">
-              {words.findingTimes}
-            </p>
-          )}
-
-          {pickedDate && dayTimes?.state === "loading" && (
-            <p className="sa-loading" role="status">
-              {words.findingTimes}
-            </p>
-          )}
-          {pickedDate && dayTimes?.state === "problem" && (
-            <p className="sa-times-none" role="status">
-              {words.timesUnreadable}
-            </p>
-          )}
-          {pickedDate && dayTimes?.state === "ok" && dayTimes.times.length === 0 && (
-            <div className="sa-times">
-              <p className="sa-times-none" role="status">
-                {words.noTimesLeftOn(formatDayName(pickedDate, language))}
-              </p>
-              {nextOpenDay(pickedDate) && (
-                <button
-                  type="button"
-                  className="sa-go"
-                  onClick={() => void pickDate(nextOpenDay(pickedDate)!)}
-                >
-                  {words.nextOpenDay}
-                </button>
-              )}
-            </div>
-          )}
-          {pickedDate && dayTimes?.state === "ok" && dayTimes.times.length > 0 && (
-            <DayTimesView
-              date={pickedDate}
-              times={dayTimes.times}
-              pickedTime={picked?.startsAt ?? null}
-              onPickTime={(startsAt) => {
-                const time = dayTimes.times.find((t) => t.startsAt === startsAt);
-                if (time) setPicked({ startsAt, date: time.date, time: time.time });
-              }}
-              onNext={() => picked && open(service.id, picked)}
-              onBackToCalendar={() => {
-                setPickedDate(null);
-                setDayTimes(null);
-                setPicked(null);
-              }}
+          {/* The left page on a computer: the month, and under it how it books. */}
+          <div className="sa-pagecal-month">
+            <MonthCalendarView
+              month={shownMonth}
+              bounds={bounds}
+              freeDays={freeDays}
+              pickedDate={pickedDate}
+              onPickDate={(date) => void pickDate(date)}
+              onMonth={changeMonth}
             />
+            <p className="sa-tz">{words.timesIn(formatZoneName(timeZone, language))}</p>
+            {!pickedDate && monthRead && freeDays.size === 0 && shownMonth < bounds.lastMonth && (
+              <button type="button" className="sa-go" onClick={() => changeMonth(1)}>
+                {words.nextMonth}
+              </button>
+            )}
+          </div>
+
+          {/* The right page on a computer, under the month on a phone: the service and the day's times. */}
+          {pickedDate && (
+            <div className="sa-pagecal-day" ref={dayRef} tabIndex={-1}>
+              <div className="sa-pagecal-service">
+                <span className="sa-pagecal-service-name">{service.name}</span>
+                <span className="sa-pagecal-service-facts">
+                  {words.minutes(service.durationMinutes)}
+                  {price && ` · ${price}`}
+                </span>
+                {service.description && (
+                  <span className="sa-pagecal-service-line">{service.description}</span>
+                )}
+              </div>
+              {dayTimes?.state === "ok" &&
+                dayTimes.times.length === 0 &&
+                nextOpenDay(pickedDate) && (
+                  <button
+                    type="button"
+                    className="sa-go"
+                    onClick={() => void pickDate(nextOpenDay(pickedDate)!, true)}
+                  >
+                    {words.nextOpenDay}
+                  </button>
+                )}
+              {dayTimes?.state === "ok" && dayTimes.times.length > 0 && (
+                <DayTimesView
+                  date={pickedDate}
+                  times={dayTimes.times}
+                  pickedTime={picked?.startsAt ?? null}
+                  onPickTime={(startsAt) => {
+                    const time = dayTimes.times.find((t) => t.startsAt === startsAt);
+                    if (time) setPicked({ startsAt, date: time.date, time: time.time });
+                  }}
+                  onNext={() => picked && open(service.id, picked)}
+                  onBackToCalendar={() => {
+                    setPickedDate(null);
+                    setDayTimes(null);
+                    setPicked(null);
+                  }}
+                />
+              )}
+            </div>
           )}
-          <p className="sa-tz">{words.timesIn(formatZoneName(timeZone, language))}</p>
         </div>
-        {bookLabel && (
-          <button
-            type="button"
-            className="sa-pagecal-book"
-            onClick={() => open(service.id, picked ?? undefined)}
-          >
-            {bookLabel}
-          </button>
+        <p className="sa-pagecal-status" role="status">
+          {status}
+        </p>
+        {(bookLabel || ask) && (
+          <div className="sa-pagecal-actions">
+            {bookLabel && (
+              <button
+                type="button"
+                className="sa-pagecal-book"
+                onClick={() => open(service.id, picked ?? undefined)}
+              >
+                {bookLabel}
+              </button>
+            )}
+            {ask && (
+              <button type="button" className="sa-pagecal-ask" onClick={ask.onAsk}>
+                {ask.label}
+              </button>
+            )}
+          </div>
         )}
       </div>
     </BookingWordsContext>
