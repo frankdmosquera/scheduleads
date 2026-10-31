@@ -1082,7 +1082,11 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 12px 14px 4px;
+  padding: 10px 14px 4px;
+}
+/* The month's title row sits 2px closer above and below than in the window (Frank, Oct 31). */
+.sa-pagecal .sa-mhead {
+  margin-bottom: 12px;
 }
 .sa-pagecal-month,
 .sa-pagecal-day {
