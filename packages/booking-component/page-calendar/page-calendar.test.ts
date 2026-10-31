@@ -356,6 +356,28 @@ describe("a calendar on the site's own page", () => {
     expect(lastDay.getAttribute("data-free")).not.toBe("yes");
   });
 
+  it("scrolls a phone just enough to show a tapped day's times, never a computer", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));
+    fakeApi();
+    // jsdom lays nothing out: a screen 10px tall puts the times below it.
+    vi.stubGlobal("innerHeight", 10);
+    const scrolled = vi.fn();
+    vi.stubGlobal("scrollBy", scrolled);
+    for (const phone of [true, false]) {
+      scrolled.mockClear();
+      vi.stubGlobal("matchMedia", (query: string) => ({
+        matches: query.includes("max-width") && phone,
+      }));
+      const { unmount } = page();
+      fireEvent.click(screen.getByRole("button", { name: "Tuesday, November 3" }));
+      await screen.findByRole("button", { name: "10:00 a.m." });
+      await new Promise((done) => requestAnimationFrame(() => done(null)));
+      expect(scrolled).toHaveBeenCalledTimes(phone ? 1 : 0);
+      unmount();
+    }
+  });
+
   it("says plainly when the month on screen has no open day", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));

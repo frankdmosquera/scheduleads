@@ -761,13 +761,14 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Suggested fix:** (1) point it back at `../face-and-body` after her merge; (2) share the pack decision or fix both; (3) say in the spec that only the project answer is sent.
 **Resolution:**
 
-### F-603 [P2] fixed - 13c.1 review: a built-in month could hide bookable days, and an empty month showed nothing
+### F-603 [P2] closed - 13c.1 review: a built-in month could hide bookable days, and an empty month showed nothing
 
 **File:** packages/booking-component/page-calendar/page-calendar.tsx, open-days-shown.ts, fetch-page-calendar.ts
 **Found:** 2026-10-31 by independent review of 13c.1 (56af531, Primo 4654569)
 **Why it matters:** (1) a month built into the page was never read live, so a page a day or more old hid the days that became bookable since (with a short horizon, a whole month could show closed); (2) a month with no open day showed only disabled days, and a business with none in both months got a dead card instead of the site's own; (3) no test proved the picked time reached the form, or that a page built on an earlier day hydrates without a mismatch.
 **Suggested fix:** read a built-in month live once the build's reach falls short of today's; say "No times left in" the month with Next month; answer null with no open day; the two tests.
 **Resolution:** Fixed 2026-10-31 in window 0.2.14: `monthIsBuiltIn`, the card opening on its first month with an open day, the empty-month line, null for no open day; tests for each, the form showing "10:00 a.m., Tuesday, November 3", and a page drawn on Nov 1 taken over on Nov 3 with no console error. Also from the review's P3s: Primo's card names his service (`free-estimate`), the import check's dots escaped. 142 tests. Needs a later /audit to close.
+Closed 2026-10-31 by /audit independent current (fresh subagent, d51de3f..2cdb9db): `monthIsBuiltIn` (open-days-shown.ts:123-134) reads a month live once the build's reach falls short; the card opens on its first open day's month (page-calendar.tsx:89-91); the empty month says so with Next month (page-calendar.tsx:246-260); no open day answers null (fetch-page-calendar.ts:87); the hydration and picked-time tests exist and pass (153 tests). No new defect from the repair.
 
 ### F-604 [P3] open - 13c.1 review points carried
 
@@ -777,13 +778,14 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Suggested fix:** each as named; (5) with 13c.2's layout work.
 **Resolution:**
 
-### F-605 [P2] fixed - 13c.2 review: the month squashed while the card widens on a computer
+### F-605 [P2] closed - 13c.2 review: the month squashed while the card widens on a computer
 
 **File:** packages/booking-component/booking-component.css
 **Found:** 2026-10-31 by independent review of 13c.2 (8f6fdfd..0f2dd66, Primo to 5cf8c85)
 **Why it matters:** when a day opens at 768px and wider, the grid switched on at once while the card eased from the site's width to 36rem; the day column took its fixed 15rem first, so the month started at 0px and its title and arrows spilled over the times for that 0.2s (measured on Primo: 0, 112, 288px).
 **Suggested fix:** columns as shares, so both shrink together.
 **Resolution:** Fixed 2026-10-31 in window 0.2.20: `minmax(0, 1.2fr) minmax(0, 1fr)`, the same 288px | 240px once wide; the month now starts at 131px. 145 tests. Needs a later /audit to close.
+Closed 2026-10-31 by /audit independent current (fresh subagent, d51de3f..2cdb9db): booking-component.css keeps `minmax(0, 1.2fr) minmax(0, 1fr)` for the open card at 768px and wider, now at 42rem; no fixed day column remains. Checked in code only, not measured in a browser.
 
 ### F-606 [P3] open - 13c.2 review points
 
@@ -793,21 +795,23 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Suggested fix:** each as named.
 **Resolution:** (1) fixed 2026-10-31 in window 0.2.21: the card hides the window's phone way back, so focus stays on the tapped day (checked at 412px). (2) fixed 2026-10-31 in site chat 0.2.13: Escape returns focus to what opened the chat (Ask us), the corner button otherwise (checked on Primo both ways). (3) noted 2026-10-31 in the booking package's index.ts header: Ask us needs SiteChat on the page. (4) tests added 2026-10-31: site chat gets jsdom and @testing-library/react (dev, Frank yes) and four tests (Ask us opens and never closes, Escape back to Ask us, Escape back to its own button, the visible area followed only while open); the window a test that zoneLine={false} hides the zone line. The Escape test fails with the old line. (5) 2026-10-31: the card names itself with useId (window 0.2.25; the hydration test now draws the built page with renderToString, as a site's server does), Primo's phone sizes include exactly 450px (max-[451px]); the pinch-zoom left edge carried, Frank's call.
 
-### F-607 [P1] fixed - 13c.3 review: the month stayed clickable while a booking was on its way
+### F-607 [P1] closed - 13c.3 review: the month stayed clickable while a booking was on its way
 
 **File:** packages/booking-component/page-calendar/page-calendar.tsx
 **Found:** 2026-10-31 by independent review of 13c.3 (bf8e9df, Primo 92af715)
 **Why it matters:** on a computer the month sits beside the form; a day or arrow pressed while Book was sending or its answer unknown unmounted the form, dropping its send lock while the form and its key stayed, so the same key could go out for another time (refused as used) after the first booking was already made unseen, and a late 409 pulled the visitor back to the old day.
 **Suggested fix:** nothing else in the card can be picked while the form is frozen.
 **Resolution:** Fixed 2026-10-31 in window 0.2.28: the month is `inert` and its day and month handlers do nothing while frozen; a site's Book button is disabled meanwhile. A test holds a send open and taps another day: the form stays, one send; it fails without the lock. Needs a later /audit to close.
+Closed 2026-10-31 by /audit independent current (fresh subagent, d51de3f..2cdb9db): the month is `inert={frozen}` (page-calendar.tsx:288), `pickDateNow` and `changeMonthNow` do nothing while frozen (214-219), the site's Book is disabled (419), Back is hidden while frozen (316); the form view clears the freeze before `onBooked` and `onTimeTaken` (booking-form-view.tsx:128-137), so the lock never outlives a settled answer. The lock test passes. No new defect from the repair.
 
-### F-608 [P2] fixed - 13c.3 review: second booking, a late business read, the zone name
+### F-608 [P2] closed - 13c.3 review: second booking, a late business read, the zone name
 
 **File:** packages/booking-component/page-calendar/page-calendar.tsx, booking-component.css, Primo components/heros/HeroPageCalendar.tsx
 **Found:** 2026-10-31 by independent review of 13c.3
 **Why it matters:** (1) the form was never made new after a booking, so a second booking from the card sent the used key and was refused; (2) the business read at the first Next had no latest-ask check, so a day tapped meanwhile left an empty pane or opened the window on a time already left; (3) the card's form named no time zone, and Primo hides the zone line, so a visitor saw no zone before booking.
 **Suggested fix:** as named.
 **Resolution:** Fixed 2026-10-31 in window 0.2.28: a new form (new key) after each booking, with a test; the business answer dropped when a day or month changed meanwhile (month changes now count as asks); the zone's name under the picked time in the form (seen: "Mountain Time"). Also from the P3s: focus to the day after Back and after a taken time, the old "taken" notice cleared at Next. A test for the business read failing and opening the window. 152 tests.
+Closed 2026-10-31 by /audit independent current (fresh subagent, d51de3f..2cdb9db): (1) `setForm(null)` after a booking (page-calendar.tsx:353), new-key test passes; (2) `bookHere` drops a late business answer (195, 201) and month changes bump `latestAsk` (183); (3) the zone's name under the picked time (331-333). No new defect from the repair.
 
 ### F-609 [P3] open - 13c.3 review points carried
 
@@ -815,4 +819,20 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Found:** 2026-10-31 by independent review of 13c.3
 **Why it matters:** the form's heading level is fixed at h3 inside a group titled by a div, which may skip h2 on a page; the provider's context value now changes whenever a site passes a new inline `onBooked` or `afterBooking`, re-rendering its buttons (speed only); no test yet for focus after Next, Back and booked.
 **Suggested fix:** a heading level a site can set; memo note in the setup notes; a focus test.
+**Resolution:**
+
+### F-610 [P3] open - Next open day can lead to a day the card itself greyed as out of times
+
+**File:** packages/booking-component/page-calendar/page-calendar.tsx:228-229
+**Found:** 2026-10-31 by /audit independent current (fresh subagent, d51de3f..2cdb9db; lenses: quality, security, performance, tests)
+**Why it matters:** `nextOpenDay` draws from `calendar.openDays` plus `freeDays`, but only `freeDays` has the `soonGone` days removed (139). After a tapped day says "No times left", Next open day can pick one of the next three days the card already greys, so the visitor gets a second "No times left" before reaching a real open day. Nothing books wrongly; it is one extra tap and a contradiction (a grey day opened).
+**Suggested fix:** leave out `soonGone` days in `nextOpenDay`, and a test with a greyed day right after the tapped one.
+**Resolution:**
+
+### F-611 [P3] open - 13c independent review: smaller points
+
+**File:** packages/booking-component/page-calendar/page-calendar.test.ts:341-357; packages/booking-component/index.ts:41-43; package-lock.json:16106; packages/booking-component/booking-component.css (`.sa-pagecal-book`)
+**Found:** 2026-10-31 by /audit independent current (fresh subagent, d51de3f..2cdb9db)
+**Why it matters:** (1) the "greys a day of the next three" test reaches December only through the fallback `shiftMonth(current, 1)`: its fake answers no time for Dec 2 either, so Dec 2 is greyed too and the path that opens on the first still-open day, with that day still marked, is untested; (2) the setup notes in index.ts still say a picked time opens the window on its form, while since 13c.3 Next books in the card and only a site's Book button opens the window; (3) package-lock.json records the booking package at 0.2.26 while its package.json is 0.2.35 (site chat's agree), so the next install rewrites the lockfile as an unrelated diff; (4) the site's Book button is `all: unset` with `cursor: pointer` and no disabled look, so while it is disabled during a send it looks pressable.
+**Suggested fix:** (1) give Dec 2 a time in that test and assert it stays marked; (2) one line in the notes; (3) refresh the lockfile with the next version bump; (4) a `:disabled` rule.
 **Resolution:**

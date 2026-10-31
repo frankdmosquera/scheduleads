@@ -581,6 +581,16 @@
   font-size: 17px;
   flex: none;
 }
+/* A drawn chevron, bold enough to read at a glance; the old text glyphs looked thin (Frank, Oct 31). */
+.sa-mnav-i {
+  width: 62%;
+  height: 62%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .sa-mnav:hover:not([disabled]) {
   background: var(--sa-surface-2, #f4f4f5);
 }

@@ -212,11 +212,32 @@ export function PageCalendar({
   // While a booking is on its way or its answer unknown, nothing else in the card can be picked:
   // leaving the form would drop its lock, and the same key could be sent for another time (F-607).
   const pickDateNow = (date: string) => {
-    if (!frozen) void pickDate(date);
+    if (frozen) return;
+    scrollToTimes.current = true;
+    void pickDate(date);
   };
   const changeMonthNow = (by: -1 | 1) => {
     if (!frozen) changeMonth(by);
   };
+
+  // On a phone a tapped day's times open under the month, and the card grows: once they are read,
+  // the page scrolls just enough to show the first few if they are below the screen (Frank, Oct 31).
+  // Only after the visitor's own tap, never on a computer, where they sit beside the month; the
+  // focus stays where it is.
+  const scrollToTimes = useRef(false);
+  const timesState = dayTimes?.state;
+  useEffect(() => {
+    if (timesState !== "ok" || !scrollToTimes.current) return;
+    scrollToTimes.current = false;
+    if (!window.matchMedia?.("(max-width: 767px)").matches) return;
+    const list = dayRef.current?.querySelector<HTMLElement>(".sa-times-list");
+    if (!list) return;
+    const showUpTo = list.getBoundingClientRect().top + Math.min(list.offsetHeight, 140);
+    const below = showUpTo - (window.innerHeight - 16);
+    if (below <= 0) return;
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollBy({ top: below, behavior: still ? "auto" : "smooth" });
+  }, [timesState, pickedDate]);
 
   // The heading of what replaced the times takes the focus: the Next pressed is gone.
   const spotStep = onTheSpot?.step;
