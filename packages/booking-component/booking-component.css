@@ -1098,6 +1098,10 @@
 .sa-pagecal-day:focus {
   outline: none;
 }
+/* Grown, the card has room for its days 1px further apart (Frank, Oct 31). */
+.sa-pagecal--grown .sa-month {
+  gap: 3px;
+}
 .sa-pagecal .sa-times-list {
   max-height: 200px;
 }
