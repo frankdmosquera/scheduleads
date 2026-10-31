@@ -449,10 +449,13 @@ button.sc-tile:focus-visible,
 
 /* A phone: the open chat takes the whole screen, and the button is a round icon. */
 @media (max-width: 640px) {
+  /* The visible screen's height (dvh), never the layout's: with the browser's bar showing, a full-height
+     panel put the question field under it until the page scrolled. */
   .sc-panel {
-    inset: 0;
+    inset: 0 0 auto;
     width: auto;
-    height: auto;
+    height: 100vh;
+    height: 100dvh;
     border-radius: 0;
   }
   .sc-launcher {
