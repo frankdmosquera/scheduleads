@@ -89,12 +89,15 @@ export function PageCalendar({
   const [pickedDate, setPickedDate] = useState<string | null>(null);
   const [dayTimes, setDayTimes] = useState<DayTimesType | null>(null);
   const [picked, setPicked] = useState<PickedTimeType | null>(null);
+  // Once a day opened, for good: a site that widens the card then keeps it wide through the month arrows.
+  const [grown, setGrown] = useState(false);
   const latestAsk = useRef(0); // a tap's answer that arrives after a later tap is dropped
 
   const pickDate = async (date: string, moveFocus = false) => {
     const tap = ++latestAsk.current;
     setMonth(date.slice(0, 7));
     setPickedDate(date);
+    setGrown(true);
     setPicked(null);
     setDayTimes({ state: "loading" });
     const answer = await fetchFreeTimes(apiClient, slug, service.id, {
@@ -142,7 +145,7 @@ export function PageCalendar({
   return (
     <BookingWordsContext value={words}>
       <div
-        className={["sa-pagecal", pickedDate ? "sa-pagecal--open" : null, className ?? null]
+        className={["sa-pagecal", pickedDate ? "sa-pagecal--open" : null, grown ? "sa-pagecal--grown" : null, className ?? null]
           .filter(Boolean)
           .join(" ")}
         style={themeStyle(calendar.theme)}

@@ -128,6 +128,19 @@ describe("a calendar on the site's own page", () => {
     expect(day.textContent).toContain("30 min");
   });
 
+  it("stays grown once a day opened, through the month arrows", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));
+    fakeApi();
+    const { container } = page();
+    expect(container.querySelector(".sa-pagecal--grown")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Tuesday, November 3" }));
+    await screen.findByRole("button", { name: "10:00 a.m." });
+    fireEvent.click(screen.getByRole("button", { name: /next month/i }));
+    expect(container.querySelector(".sa-pagecal--open")).toBeNull();
+    expect(container.querySelector(".sa-pagecal--grown")).not.toBeNull();
+  });
+
   it("names the zone over the month unless the site leaves the line out", () => {
     fakeApi();
     const shown = page();

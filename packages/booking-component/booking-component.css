@@ -1059,7 +1059,7 @@
   background: var(--sa-bg, #ffffff);
   color: var(--sa-text, #18181b);
   font-family: var(--sa-font, ui-sans-serif, system-ui, sans-serif);
-  /* A site may widen the card once a day opens (sa-pagecal--open): it eases there. */
+  /* A site may widen the card once a day opened (sa-pagecal--grown): it eases there. */
   transition: width 0.2s ease;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1095,7 +1095,7 @@
   outline: none;
 }
 .sa-pagecal .sa-times-list {
-  max-height: 184px;
+  max-height: 200px;
 }
 /* The month's arrows, larger in a card on the page than in the window. */
 .sa-pagecal .sa-mnav {
