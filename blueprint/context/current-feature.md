@@ -6,7 +6,7 @@
 
 **Branch:** `feature/13c-a-calendar-on-the-site-s-own-page`
 
-**Status:** specced
+**Status:** verified
 
 ## Goal
 
