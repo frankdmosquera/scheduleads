@@ -176,18 +176,17 @@ export function PageCalendar({
             )}
           </div>
 
-          {/* The right page on a computer, under the month on a phone: the service and the day's times. */}
+          {/* The right page on a computer, under the month on a phone: one line naming the service, then
+              the day's times. Its description waits for the window's form (Frank, Oct 31). */}
           {pickedDate && (
             <div className="sa-pagecal-day" ref={dayRef} tabIndex={-1}>
               <div className="sa-pagecal-service">
                 <span className="sa-pagecal-service-name">{service.name}</span>
                 <span className="sa-pagecal-service-facts">
+                  {" · "}
                   {words.minutes(service.durationMinutes)}
                   {price && ` · ${price}`}
                 </span>
-                {service.description && (
-                  <span className="sa-pagecal-service-line">{service.description}</span>
-                )}
               </div>
               {dayTimes?.state === "ok" &&
                 dayTimes.times.length === 0 &&

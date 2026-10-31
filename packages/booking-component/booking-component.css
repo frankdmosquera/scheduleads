@@ -1083,20 +1083,22 @@
   outline: none;
 }
 .sa-pagecal .sa-times-list {
-  max-height: 168px;
+  max-height: 184px;
 }
-/* The day's service: its name, length and price, and its line. */
+/* The month's arrows, larger in a card on the page than in the window. */
+.sa-pagecal .sa-mnav {
+  width: 40px;
+  height: 40px;
+  font-size: 26px;
+}
+/* The day's service on one line: its name, length and price. */
 .sa-pagecal-service {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   font-size: 13.5px;
 }
 .sa-pagecal-service-name {
   font-weight: 600;
 }
-.sa-pagecal-service-facts,
-.sa-pagecal-service-line {
+.sa-pagecal-service-facts {
   color: var(--sa-muted, #52525b);
 }
 /* One status line, always in the page so a screen reader hears it change; no room when empty. */
