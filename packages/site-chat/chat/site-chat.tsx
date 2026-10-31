@@ -86,6 +86,28 @@ export function SiteChat({
     return () => clearTimeout(timer);
   }, [loaded]);
 
+  // A phone's keyboard covers the bottom of a full-height panel: an iPhone keeps the screen's whole height
+  // while it shows. While open, the panel follows the part of the page left visible (the visual viewport), so the
+  // question field stays just above the keyboard (Frank's phone, Oct 31).
+  useEffect(() => {
+    const panel = panelRef.current;
+    const visible = window.visualViewport;
+    if (!open || !panel || !visible) return;
+    const fit = () => {
+      panel.style.setProperty("--sc-visible-height", `${visible.height}px`);
+      panel.style.setProperty("--sc-visible-top", `${visible.offsetTop}px`);
+    };
+    fit();
+    visible.addEventListener("resize", fit);
+    visible.addEventListener("scroll", fit);
+    return () => {
+      visible.removeEventListener("resize", fit);
+      visible.removeEventListener("scroll", fit);
+      panel.style.removeProperty("--sc-visible-height");
+      panel.style.removeProperty("--sc-visible-top");
+    };
+  }, [open]);
+
   // Open: the question field takes the focus once the chat is there; Escape closes it.
   useEffect(() => {
     if (!open || !loaded) return;
