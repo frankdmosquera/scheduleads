@@ -1105,6 +1105,12 @@
 .sa-pagecal .sa-times-list {
   max-height: 200px;
 }
+/* Slimmer times in the card, so more of them show at once (Frank, Oct 31). */
+.sa-pagecal .sa-t,
+.sa-pagecal .sa-t-chosen,
+.sa-pagecal .sa-t-next {
+  padding: 8px 0;
+}
 /* The month's arrows, larger in a card on the page than in the window. */
 .sa-pagecal .sa-mnav {
   width: 40px;
