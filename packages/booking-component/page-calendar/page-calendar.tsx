@@ -6,7 +6,7 @@
 "use client";
 
 import { localDate } from "@scheduleads-app/shared/local-date";
-import { useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useContext, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { BookingStartTimeType } from "../api-client/booking-api-types.js";
 import { fetchFreeTimes } from "../api-client/fetch-free-times.js";
@@ -50,8 +50,8 @@ export function PageCalendar({
   zoneLine = true,
   className,
 }: PageCalendarPropsType) {
-  // From the service, not useId: the same on the server's page and in the browser, however each was drawn.
-  const titleId = `sa-pagecal-${calendar.service.id}`;
+  // useId matches on the server's page and in the browser, and two cards on one page never share it.
+  const titleId = useId();
   const dayRef = useRef<HTMLDivElement>(null);
   const booking = useContext(BookingContext);
   if (!booking) throw new Error("<PageCalendar> must be used inside <BookingProvider>.");

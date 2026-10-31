@@ -2,6 +2,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { BookingProvider } from "../booking-provider/booking-provider.js";
@@ -217,9 +218,7 @@ describe("a calendar on the site's own page", () => {
     fakeApi();
     // The page as the site's server drew it on Nov 1, the day it was built.
     vi.setSystemTime(new Date("2026-11-01T18:00:00.000Z"));
-    const built = page();
-    const html = built.container.innerHTML;
-    built.unmount();
+    const html = renderToString(pageOf(calendar));
     // A visitor on Nov 3 gets that page, and the browser takes it over.
     vi.setSystemTime(new Date("2026-11-03T08:00:00.000Z"));
     const container = document.createElement("div");
