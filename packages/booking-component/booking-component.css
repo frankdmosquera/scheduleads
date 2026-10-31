@@ -1098,9 +1098,13 @@
 .sa-pagecal-day:focus {
   outline: none;
 }
-/* Grown, the card has room for its days 1px further apart (Frank, Oct 31). */
-.sa-pagecal--grown .sa-month {
+/* The card's days 1px further apart than the window's (Frank, Oct 31). Grown, its rows are a
+   little shorter than wide, the discs the same size, so the bigger card does not grow as tall. */
+.sa-pagecal .sa-month {
   gap: 3px;
+}
+.sa-pagecal--grown .sa-dwrap {
+  aspect-ratio: 1.08;
 }
 .sa-pagecal .sa-times-list {
   max-height: 200px;
