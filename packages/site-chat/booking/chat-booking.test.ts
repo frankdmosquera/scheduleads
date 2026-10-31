@@ -332,14 +332,26 @@ describe("a tapped time or service", () => {
     const facial = { ...ESTIMATE, id: "gold", slug: "gold-facial", name: "Gold Facial" };
     it("its slug goes straight to its times, the form read with it", async () => {
       const standIn = crmWith({ services: [ESTIMATE, massage, facial] });
-      const line = await startBookingFor(standIn.source, W, "en", "head-massage", NOW);
+      const line = await startBookingFor(
+        standIn.source,
+        W,
+        "en",
+        "head-massage",
+        "Head Massage",
+        NOW
+      );
       expect(line.booking?.flow.step).toBe("time");
       expect(line.booking?.flow.service?.id).toBe("head");
       expect(line.booking?.flow.fields.length).toBeGreaterThan(0);
     });
+    it("a slug the business does not list, but its exact name, still goes to its times", async () => {
+      const standIn = crmWith({ services: [ESTIMATE, massage, facial] });
+      const line = await startBookingFor(standIn.source, W, "en", "old-slug", "Gold Facial", NOW);
+      expect(line.booking?.flow.service?.id).toBe("gold");
+    });
     it("a slug the business no longer lists starts at its services", async () => {
       const standIn = crmWith({ services: [ESTIMATE, massage, facial] });
-      const line = await startBookingFor(standIn.source, W, "en", "gone", NOW);
+      const line = await startBookingFor(standIn.source, W, "en", "gone", "Gone Treatment", NOW);
       expect(line.booking?.flow.step).toBe("service");
       expect(line.booking?.flow.services).toHaveLength(3);
     });

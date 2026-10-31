@@ -761,13 +761,13 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Suggested fix:** keep the sent time after a lost answer; match the backend's default words per language; add the tests.
 **Resolution:**
 
-### F-597 [P1] fixed - 13d.3 review: a treatment named in the question could book the wrong one
+### F-597 [P1] closed - 13d.3 review: a treatment named in the question could book the wrong one
 
 **File:** packages/site-chat/booking/booking-flow.ts (namedServices, pickedService), booking/chat-booking.ts (startBooking)
 **Found:** 2026-10-30 by independent review of 13d.3 (439ba95, her site ea553b2)
 **Why it matters:** (1) "a 90 minute relaxation massage" matched only "Relaxation Massage" and went straight to the 60 minute one's times, the 75 and 90 minute lengths never shown; (2) two separate names ("chemical peel or the hollywood peel facial", "not deep tissue, a relaxation massage") picked the longest; (3) at the service step without the AI, `pickedService` took the first name in the list; (4) no tests for these.
 **Suggested fix:** straight to times only when exactly one service is meant; otherwise offer just the services it could mean.
-**Resolution:** Fixed 2026-10-30 in 0.2.5: `namedServices` returns every service the words could mean (a name held in another named one counts as the longer; a name other services hold brings them in); one goes straight to its times, several are the only buttons, and the no-AI step asks again instead of taking the first. Five tests with her real names; checked on http://localhost:3402 ("a 90 minute relaxation massage" offered her four relaxation massages). Needs a later /audit to close.
+**Resolution:** Fixed 2026-10-30 in 0.2.5: `namedServices` returns every service the words could mean (a name held in another named one counts as the longer; a name other services hold brings them in); one goes straight to its times, several are the only buttons, and the no-AI step asks again instead of taking the first. Five tests with her real names; checked on http://localhost:3402 ("a 90 minute relaxation massage" offered her four relaxation massages). Closed 2026-10-31 by the final independent review of 13d, which probed it with her 37 names.
 
 ### F-598 [P3] open - 13d.3 review points carried
 
@@ -775,4 +775,20 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Found:** 2026-10-30 by independent review of 13d.3
 **Why it matters:** (5) noon reads "12 pm"; (6) the texting fact repeats her FAQ answer, harmless. (7), a length stated for treatments priced at consultation, was fixed in her site the same day.
 **Suggested fix:** "noon" in the hours helper if Frank wants it.
+**Resolution:**
+
+### F-599 [P2] fixed - 13d final review: two gaps in the new chat paths
+
+**File:** packages/site-chat/server/create-chat-route.ts, booking/chat-booking.ts (startBookingFor)
+**Found:** 2026-10-31 by the final independent review of 13d (scheduleads 439ba95..940ad07, her site ea553b2..624536b, his 4da2c9e..4fb586a)
+**Why it matters:** (1) her detail words sent her own FAQ wordings ("Do you do facials?", "Is there parking for my massage appointment?") to the AI, losing her exact words, the cards and the ways to a person; (2) a Book whose slug Booking CRM does not list looped back to the same cards.
+**Suggested fix:** count a pick's other wordings as naming it and start the AI from Jev's picks; fall back to the service's exact name.
+**Resolution:** Fixed 2026-10-31 in 0.2.10, 216 tests; the 40 questions plus the reviewer's five rerun on both laptop sites, all right. Needs a later /audit to close.
+
+### F-600 [P3] open - 13d final review points carried
+
+**File:** packages/site-chat/chat/chat-conversation.tsx, chat/answer-tiles.tsx, booking/chat-booking.ts, site-chat.css
+**Found:** 2026-10-31 by the final independent review of 13d
+**Why it matters:** (3) a Book under an older answer while a booking is open starts a new one and drops the open one without a word; (4) a narrowed service list cannot widen ("actually, deep tissue"); (5) "the first one" at a step that shows cards picks a service not on screen; (6) the opened list has no role or aria-controls, sits in the polite live region (all 22 facials can be read out), and focus stays on the card; (7) her cards no longer link to her group pages; (8) on iPhone the keyboard can still cover the typing box (dvh ignores it); (10) his banner offer "Offer Ends 11/17" has no year, so the chat states it as long as the banner does; (11) no UI tests for the card paths. Also seen in the rerun: laser hair removal sometimes gets "someone can confirm the price" instead of "priced at the free consultation"; "What body treatments do you have?" once listed Massage among them.
+**Suggested fix:** each as named; the accessibility points first.
 **Resolution:**

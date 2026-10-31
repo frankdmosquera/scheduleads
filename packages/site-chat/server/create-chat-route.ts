@@ -237,11 +237,19 @@ export function createChatRoute(options: ChatRouteOptionsType) {
       trace,
       reply,
     });
-    // A question naming one of the site's services or groups is the AI's unless Jev's pick names it too.
+    // A question naming one of the site's services or groups is the AI's unless Jev's pick names it too, in its own
+    // words or the other ways visitors word it; the AI starts from Jev's picks, so a stored answer that does fit
+    // still goes out in the site's words.
     const latest = body.messages.at(-1)!.text;
     const picked =
       jev.kind === "stored" ? [jev.question] : jev.kind === "suggest" ? jev.questions : null;
-    if (picked && namesOtherDetail(latest, picked, site.detailWords)) return toAi([]);
+    if (picked) {
+      const wordings = picked.flatMap((q) => [q, ...(site.alsoAsked[q] ?? [])]);
+      if (namesOtherDetail(latest, wordings, site.detailWords))
+        return toAi(
+          picked.map((q) => site.bank.findIndex((s) => s.question === q)).filter((i) => i >= 0)
+        );
+    }
     switch (jev.kind) {
       case "person":
         return answered({ type: "person", path: jev.path });

@@ -158,19 +158,22 @@ export async function startBooking(
 }
 
 /**
- * A booking started from a service tapped in a tile, named by its booking link slug: straight to its free times. A
- * slug the business no longer lists starts the booking as any other, at its services.
+ * A booking started from a service tapped in a tile, named by its booking link slug, else by its name exactly as the
+ * business lists it: straight to its free times. One the business does not list starts as any other booking, at its
+ * services.
  */
 export async function startBookingFor(
   source: BookingSourceType,
   words: ChatBookWordsType,
   lang: ChatLanguageType,
   slug: string,
+  name: string,
   now = new Date()
 ): Promise<ChatBookingLineType> {
   const started = await startBooking(source, words, lang, "", now);
   if (started.booking?.flow.step !== "service") return started;
-  const service = started.booking.flow.services.find((s) => s.slug === slug);
+  const { services } = started.booking.flow;
+  const service = services.find((s) => s.slug === slug) ?? exactService(name, services);
   return service ? tapService(started.booking, service, now) : started;
 }
 

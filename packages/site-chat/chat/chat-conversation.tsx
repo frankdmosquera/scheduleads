@@ -402,7 +402,9 @@ export function ChatConversation({
     if (!books || !item.book) return;
     const service = at?.flow.services.find((s) => s.slug === item.book);
     if (at && service) return onService(at, service);
-    void bookingStep(item.label, () => startBookingFor(books, words.book, lang, item.book!));
+    void bookingStep(item.label, () =>
+      startBookingFor(books, words.book, lang, item.book!, item.label)
+    );
   }
 
   function listen() {

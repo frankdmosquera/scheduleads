@@ -142,6 +142,29 @@ describe("createChatRoute answers", () => {
     expect(model).not.toHaveBeenCalled();
   });
 
+  it("in the site's words when the question names a service one of the pick's other wordings names", async () => {
+    const model = vi.fn(writes("never"));
+    const handler = createChatRoute({
+      sites: [
+        {
+          ...testSite,
+          detailWords: ["Ceiling Painting"],
+          answers: {
+            ...testSite.answers,
+            alsoAsked: { "How long does a project take?": ["how long does ceiling painting take"] },
+          },
+        },
+      ],
+      fetchFn: jevFetch({ pick: "q1" }).fetchFn,
+      model,
+    });
+    const events = await eventsOf(
+      await handler(ask(question("how long does ceiling painting take")))
+    );
+    expect(events[0]).toMatchObject({ type: "stored", question: "How long does a project take?" });
+    expect(model).not.toHaveBeenCalled();
+  });
+
   it("from the AI when the question names a service Jev's pick does not", async () => {
     const model = vi.fn(writes("Ceilings take a day."));
     const handler = createChatRoute({

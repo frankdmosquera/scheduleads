@@ -22,6 +22,14 @@ describe("a message naming a detail the picked answer does not", () => {
   });
   it("keeps a stored answer that names it too, and one with no detail named", () => {
     expect(namesOtherDetail("do you do facials?", ["Facials: what we offer"], words)).toBe(false);
+    // The route passes a pick's other wordings too: "Do you do facials?" is one of "What treatments do you offer?".
+    expect(
+      namesOtherDetail(
+        "do you do facials?",
+        ["What treatments do you offer?", "Do you do facials?"],
+        words
+      )
+    ).toBe(false);
     expect(
       namesOtherDetail(
         "Where are you, and is there parking?",
