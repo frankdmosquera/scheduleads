@@ -776,3 +776,19 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** (4) Next open day looks only at the built-in days and the month on screen; (5) focus falls to the page after Next open day, the status lines mount already filled (some screen readers skip them), and the card's title is not tied to it as a group; (6) a time booked through the window stays picked on the page; (8) the zone's name is worked out on the server and again in the browser, which could differ (Spanish most); (10) Next's fetch cache can serve a day's data up to about two days old while it refreshes, within the "kept a day" decision.
 **Suggested fix:** each as named; (5) with 13c.2's layout work.
 **Resolution:**
+
+### F-605 [P2] fixed - 13c.2 review: the month squashed while the card widens on a computer
+
+**File:** packages/booking-component/booking-component.css
+**Found:** 2026-10-31 by independent review of 13c.2 (8f6fdfd..0f2dd66, Primo to 5cf8c85)
+**Why it matters:** when a day opens at 768px and wider, the grid switched on at once while the card eased from the site's width to 36rem; the day column took its fixed 15rem first, so the month started at 0px and its title and arrows spilled over the times for that 0.2s (measured on Primo: 0, 112, 288px).
+**Suggested fix:** columns as shares, so both shrink together.
+**Resolution:** Fixed 2026-10-31 in window 0.2.20: `minmax(0, 1.2fr) minmax(0, 1fr)`, the same 288px | 240px once wide; the month now starts at 131px. 145 tests. Needs a later /audit to close.
+
+### F-606 [P3] open - 13c.2 review points
+
+**File:** packages/booking-component/booking-component.css, packages/site-chat/chat/site-chat.tsx, packages/site-chat/open-site-chat.ts, Primo components/heros/HeroPageCalendar.tsx
+**Found:** 2026-10-31 by independent review of 13c.2
+**Why it matters:** (1) on a phone the window's "Back to the calendar" rule also matches inside the card, so the link shows and takes focus on every tap, and 761-767px gets neither layout; (2) Escape from a chat opened by Ask us returns focus to the corner button, not Ask us; (3) Ask us does nothing on a page with no SiteChat mounted; (4) no test that the chat opens on the event and stays open, that `zoneLine={false}` hides the line, or for the keyboard effect; (5) the phone panel follows the visible area's height but not its left edge when pinch-zoomed; `max-[450px]` excludes exactly 450px; the comment on not using `useId` gives a wrong reason.
+**Suggested fix:** each as named.
+**Resolution:**

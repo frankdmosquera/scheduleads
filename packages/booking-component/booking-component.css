@@ -1148,7 +1148,9 @@
   }
   .sa-pagecal--open .sa-pagecal-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 15rem);
+    /* Shares, not a fixed day column: while the card eases wider, the month
+       shrinks with the day instead of starting at nothing (288px | 240px at 36rem). */
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     gap: 20px;
   }
   .sa-pagecal--open .sa-pagecal-day {
