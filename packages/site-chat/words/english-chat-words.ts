@@ -1,0 +1,97 @@
+import type { ChatWordsType } from "./chat-words-type.js";
+
+/** The chat's English lines, written for any business; a site overrides the ones that should name its work. */
+export const englishChatWords: ChatWordsType = {
+  float: {
+    button: "Ask us",
+    title: "Our AI",
+    greeting: "Hi! Ask me anything about what we do, how it works or how to get started.",
+    hello: "Can I help? I answer questions right away.",
+    open: "Open the chat with our AI",
+    close: "Close the chat",
+    dismiss: "Dismiss",
+  },
+  placeholder: "Type, or tap the mic and talk...",
+  send: "Send",
+  voice: {
+    mic: "Talk instead of typing",
+    listening: "Listening... speak now",
+    micBlocked: "The mic is blocked. Allow it in the browser, or type instead.",
+    notCaught: "I didn't understand that. Tap the mic and try again.",
+    tapAgain: "Tap the mic again.",
+    speechLang: "en-US",
+  },
+  paths: {
+    book: "Happy to. Pick a time that suits you on the next screen.",
+    call: "Happy to. Tap below to call us.",
+    message:
+      "A person reads every message and replies as soon as they can. Tap below to write to us.",
+  },
+  ctas: { book: "Book a time", call: "Call us", message: "Write to us" },
+  ways: {
+    label: "Ways to talk to a person",
+    names: {
+      book: { label: "Book", title: "Pick a time that suits you" },
+      call: { label: "Call", title: "Call us" },
+      message: { label: "Email", title: "Write us an email" },
+    },
+  },
+  handOver:
+    "That question goes beyond what I can answer here, and a person will answer it properly. Pick how you'd like to reach us.",
+  limit: "That's a lot of questions for one visit! A person can take it from here.",
+  offTopic:
+    "I can only help with questions about our work. Ask me what we do, or how to get started.",
+  greeting: "Happy to help! Ask me anything about what we do, how it works or how to get started.",
+  suggest: "Did you mean one of these?",
+  book: {
+    service: "Which would you like to book?",
+    bookThis: "Book",
+    on: "Here are the free times for {service} on {day}. Tap one, or tell me which:",
+    full: "{day} is full. The next free times for {service} are on {next}:",
+    next: "The next free times for {service} are on {day}. Tap one, or tell me which:",
+    none: "There are no free times in the next few weeks. A person can find you one.",
+    down: "I couldn't read the calendar just now. You can pick a time in our booking window.",
+    gone: "That time was just taken.",
+    which: "Which one suits you?",
+    when: "{service} on {day} at {time}",
+    booking: "Booking {when}.",
+    thanks: "Thanks, {name}.",
+    ask: {
+      name: "What's your name?",
+      email: "What email should the confirmation go to?",
+      phone: "What phone number can we reach you at?",
+      contact: "What email or phone number can we reach you at?",
+      address: "What's the address?",
+      details: "{label}",
+      question: "{label}",
+    },
+    detailsLabel: "What would you like done?",
+    optional: "You can say skip.",
+    bad: {
+      name: "Sorry, I didn't catch your name. What is it?",
+      email: "That doesn't look like an email. Could you say or type it again?",
+      phone: "That doesn't look like a phone number. Could you say or type it again?",
+      contact: "That doesn't look like an email or a phone number. Could you say or type it again?",
+      address: "Sorry, I didn't catch the address. What is it?",
+      details: "Sorry, I didn't catch that. {label}",
+      question: "Sorry, I didn't catch that. {label}",
+    },
+    readBack: {
+      name: "Name: {value}",
+      email: "Email: {value}",
+      phone: "Phone: {value}",
+      address: "Address: {value}",
+      answer: "{label}: {value}",
+    },
+    confirm: "Here's your booking: {summary} Is that right? Say yes and I'll book it.",
+    change: "No problem. What should I change?",
+    booked: "Booked: {when}. Your confirmation is on its way.",
+    already: "That booking was already made on an earlier try, and its confirmation is on its way.",
+    lost: "I couldn't tell whether that went through. Say yes to try again: it will never book twice.",
+    tooMany: "Too many bookings were tried just now. Wait a few minutes, then say yes again.",
+    failed:
+      "Something went wrong and it wasn't booked. You can book in our booking window instead.",
+    cancelled: "No problem, nothing was booked.",
+    dateLocale: "en-US",
+  },
+};

@@ -712,3 +712,51 @@ Reopened 2026-10-27 by /audit independent current (fresh subagent, aa8627d..f793
 **Why it matters:** Step 13.3 added two rules with no test: `applyBusinessShape` writes `detailsBox` only while the business has no service, and `findDifferences` (run-client-setup.ts:148) lists a saved box that differs from the file's. `run-client-setup.test.ts` covers the same two rules for `contactRule` but never mentions `detailsBox`. Separately, `bookTime` exempts the owner's own booking from a required box (book-time.ts:222, inside `source !== "manual"`), which the spec names ("except the owner's own"), but no test books manually against a business with `detailsRequired` true. The code reads correctly today; nothing would catch a regression.
 **Suggested fix:** Extend the existing `contactRule` cases in `run-client-setup.test.ts` with a `detailsBox` (set on a business with no service, listed as a difference on one with a service), and add one manual booking to the dashboard bookings route tests with `detailsRequired` true and no details.
 **Resolution:**
+
+### F-593 [P3] open - Smaller 13d.1 review points, carried
+
+**File:** packages/site-chat (several)
+**Found:** 2026-10-30 by independent review of 13d.1
+**Why it matters:** (1) `chatAnswers.ts:17` "We paint home interiors in Calgary:" is our wording, shown as a stored answer, and lists Garage Painting as interior. (2) `hourly-limit.test.ts:23-30` passes with the sweep deleted. (3) `create-chat-route.test.ts` never covers the retry after an error or the 6 s wait, a failure after words are out, or spoken `speak` events. (4) `chatSite.ts` puts hours in the brief from JSON-LD only while leaving the street address out by "no page shows it": one rule for both. (5) `hourly-limit.ts:27` keys on the first `x-forwarded-for`, safe on Vercel only. (6) `create-chat-route.ts:73-77` routes Jev through the Vercel AI Gateway, billed to the client's Vercel account, when `TYPESAFE_API_KEY` is missing.
+**Suggested fix:** As each names; (5) say Vercel only or take a `clientAddress`; (6) require `TYPESAFE_API_KEY` and skip Jev without it.
+**Resolution:**
+
+### F-596 [P3] open - 13d.2 review points carried
+
+**File:** packages/site-chat/booking/chat-booking.ts:416, :468
+**Found:** 2026-10-30 by independent review of 13d.2
+**Why it matters:** (5) after a lost answer and a changed time, "already booked" can name the new time while the first one is what booked; (7) the project-box refusal is not matched in Spanish (hands over to the window); (10) no tests for a 400 worded by the real schema, a not_asked service dropping an earlier address.
+**Suggested fix:** keep the sent time after a lost answer; match the backend's default words per language; add the tests.
+**Resolution:**
+
+### F-598 [P3] open - 13d.3 review points carried
+
+**File:** face-and-body data/chatSite.ts, data/chatFacts.ts
+**Found:** 2026-10-30 by independent review of 13d.3
+**Why it matters:** (5) noon reads "12 pm"; (6) the texting fact repeats her FAQ answer, harmless. (7), a length stated for treatments priced at consultation, was fixed in her site the same day.
+**Suggested fix:** "noon" in the hours helper if Frank wants it.
+**Resolution:**
+
+### F-600 [P3] open - 13d final review points carried
+
+**File:** packages/site-chat/chat/chat-conversation.tsx, chat/answer-tiles.tsx, booking/chat-booking.ts, site-chat.css
+**Found:** 2026-10-31 by the final independent review of 13d
+**Why it matters:** (3) a Book under an older answer while a booking is open starts a new one and drops the open one without a word; (4) a narrowed service list cannot widen ("actually, deep tissue"); (5) "the first one" at a step that shows cards picks a service not on screen; (6) the opened list has no role or aria-controls, sits in the polite live region (all 22 facials can be read out), and focus stays on the card; (7) her cards no longer link to her group pages; (8) on iPhone the keyboard can still cover the typing box (dvh ignores it); (10) his banner offer "Offer Ends 11/17" has no year, so the chat states it as long as the banner does; (11) no UI tests for the card paths. Also seen in the rerun: laser hair removal sometimes gets "someone can confirm the price" instead of "priced at the free consultation"; "What body treatments do you have?" once listed Massage among them.
+**Suggested fix:** each as named; the accessibility points first.
+**Resolution:**
+
+### F-601 [P2] open - The answers route caps neither the whole call nor the visitor-written assistant turns
+
+**File:** packages/site-chat/server/create-chat-route.ts:162-184
+**Found:** 2026-10-31 by /audit independent (scope: current; lens: security, performance), target a4854f6
+**Why it matters:** `/api/chat` takes 20 messages where only the last must be the visitor's, each assistant turn up to 4,000 characters, so one call can carry about 76,500 characters of history the caller wrote, forged "assistant" lines included, into `gpt-5.4-mini` (and four of them into Jev). `fromOurSite` passes any request with no Origin, so a script reaches it directly; only the per-instance 60 an hour and the provider's monthly limit stand behind it. The booking route was capped at 6,000 characters for this same reason (F-594 (3)); the AI's cost on a public page is one of the spec's three named risks.
+**Suggested fix:** a total-character cap on the request and a shorter assistant-turn cap, with `recentTurns` dropping the oldest turns to fit, as `withinAskLimits` does for the booking route.
+**Resolution:**
+
+### F-602 [P3] open - 13d independent review: smaller points
+
+**File:** .claude/launch.json:19, packages/site-chat/pack-into-site.mjs:55-63, blueprint/context/current-feature.md:24
+**Found:** 2026-10-31 by /audit independent (scope: current; lens: quality), target a4854f6
+**Why it matters:** (1) the committed `face-and-body-site` launch entry now runs `../face-and-body/.claude/worktrees/booking-crm`, a worktree that goes away once her branch merges; (2) `pack-into-site.mjs` copies the booking window's script, so F-550 (every vendor/ entry read in full, a subfolder crashes it) now lives in two places; (3) the spec still says the visitor's question goes as `details` when the form has no project box, but the chat always shows a box and, since the F-594 repair, never sends the opening question.
+**Suggested fix:** (1) point it back at `../face-and-body` after her merge; (2) share the pack decision or fix both; (3) say in the spec that only the project answer is sent.
+**Resolution:**

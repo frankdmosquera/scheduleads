@@ -1,0 +1,56 @@
+{
+  "name": "@frankdmosquera/site-chat",
+  "version": "0.2.10",
+  "private": true,
+  "description": "The chat in the corner of a client site: Jev and the AI answer from the site's own words, out loud too.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/frankdmosquera/scheduleads.git",
+    "directory": "packages/site-chat"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    },
+    "./words": {
+      "types": "./dist/words.d.ts",
+      "default": "./dist/words.js"
+    },
+    "./site-chat.css": "./site-chat.css"
+  },
+  "files": [
+    "dist",
+    "site-chat.css"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsdown && node check-dist-imports.mjs",
+    "prepack": "npm run build",
+    "pack:site": "node pack-into-site.mjs",
+    "pretest": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "@ai-sdk/openai": "^4.0.83",
+    "ai": "^7.0.127",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@ai-sdk/openai": "^4.0.83",
+    "@types/react": "^19.3.0",
+    "ai": "^7.0.127",
+    "tsdown": "^0.23.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
+  }
+}
