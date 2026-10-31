@@ -66,6 +66,8 @@ export function SiteChat({
   const [devRows, setDevRows] = useState<(ChatDevFactsType & { id: number })[]>([]);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // What a page's own "Ask us" had focused when it opened the chat: Escape goes back there.
+  const openerRef = useRef<HTMLElement | null>(null);
 
   // The hello, once per visit, only while the chat was never opened.
   useEffect(() => {
@@ -115,7 +117,8 @@ export function SiteChat({
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       setOpen(false);
-      buttonRef.current?.focus();
+      const opener = openerRef.current;
+      (opener?.isConnected ? opener : buttonRef.current)?.focus();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -130,6 +133,7 @@ export function SiteChat({
   }, []);
 
   async function toggle() {
+    openerRef.current = null; // opened or closed from the chat's own buttons
     if (open) {
       setHello(false);
       setOpen(false);
@@ -155,7 +159,10 @@ export function SiteChat({
     }
   }
   openRef.current = () => {
-    if (!open) void openChat();
+    if (open) return;
+    const focused = document.activeElement;
+    openerRef.current = focused instanceof HTMLElement && focused !== document.body ? focused : null;
+    void openChat();
   };
 
   return (
