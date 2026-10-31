@@ -44,6 +44,10 @@
 //
 //   <PageCalendar calendar={calendar} title="Pick a day" bookLabel="Book now" />
 //
+// An "Ask us" button beside Book now: ask={{ label: "Ask us", onAsk: openSiteChat }}, from
+// "@frankdmosquera/site-chat". It only works with <SiteChat> on the same page (the site's root
+// layout); without it the button does nothing and says nothing.
+//
 // The look comes from the host: import "@frankdmosquera/booking-component/booking-component.css"
 // and define the --sa-* tokens (colours, fonts, radius) in the host's own stylesheet. Each has a
 // neutral fallback. --sa-action-ink must be set with --sa-action; it is never assumed white.
