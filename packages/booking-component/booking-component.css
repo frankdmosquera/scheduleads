@@ -1173,6 +1173,18 @@
   .sa-pagecal--grown .sa-d {
     font-size: 16px;
   }
+  /* The times straight under the month: the service line and the day's name wait for the form,
+     which shows both (Frank, Oct 31). Still read out, only out of sight. */
+  .sa-pagecal:not(.sa-pagecal--booking) .sa-pagecal-service,
+  .sa-pagecal .sa-times-h {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 /* The site's Book button, and beside it its second one (Ask us). */
 .sa-pagecal-actions {
