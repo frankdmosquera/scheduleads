@@ -91,7 +91,7 @@ function fakeApi() {
 }
 
 const asked = vi.fn();
-const pageOf = (shown: PageCalendarDataType) =>
+const pageOf = (shown: PageCalendarDataType, zoneLine?: boolean) =>
   createElement(BookingProvider, {
     apiUrl: "https://api.example.com",
     slug: "primo",
@@ -100,6 +100,7 @@ const pageOf = (shown: PageCalendarDataType) =>
       title: "Pick a day",
       bookLabel: "Book now",
       ask: { label: "Ask us", onAsk: asked },
+      zoneLine,
     }),
   });
 const page = (shown: PageCalendarDataType = calendar) => render(pageOf(shown));
@@ -125,6 +126,15 @@ describe("a calendar on the site's own page", () => {
     const day = container.querySelector(".sa-pagecal-day")!;
     expect(day.textContent).toContain("Free Estimate");
     expect(day.textContent).toContain("30 min");
+  });
+
+  it("names the zone over the month unless the site leaves the line out", () => {
+    fakeApi();
+    const shown = page();
+    expect(shown.container.querySelector(".sa-tz")).not.toBeNull();
+    cleanup();
+    const left = render(pageOf(calendar, false));
+    expect(left.container.querySelector(".sa-tz")).toBeNull();
   });
 
   it("moves focus to the next open day it offers, so it is never lost", async () => {
