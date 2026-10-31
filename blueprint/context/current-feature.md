@@ -6,7 +6,7 @@
 
 **Branch:** `feature/13d-the-chat-that-books`
 
-**Status:** specced
+**Status:** verified
 
 ## Goal
 
@@ -41,7 +41,7 @@ Heavy: each step is planned with Frank (both parts) and gets his yes; then it ru
 
 - [x] **13d.1 Primo's chat answers from his site.** The package's client chat and its `/api/chat` handler with Jev first and the AI after, voice on; Primo's answer bank and brief from his data files and `chatFacts`; mounted in Primo's site (a branch off his `main`, a worktree like 13). Jev, the AI and voice are IA a la Orden's: TypeSafe `jev-latest`, Vercel AI SDK `streamText`, `gpt-5.4-mini`, reasoning none, Google TTS, same limits. **Done when:** on http://localhost:3403 the corner chat opens, Jev answers a stored question ("do you paint exteriors?") with its chips, the AI answers "how does the estimate work?" from his words, it says a person can confirm for something his site never says, an answer is spoken aloud, a call from another origin is refused, and the package's tests pass.
 - [x] **13d.2 Primo books in the chat.** The booking steps, the `/api/chat/booking` handler and the field checks, following his form (name, email, phone, address, project); times from his live `times` route; one request key per booking; `time_taken`, `request_key_used` and 429 handled. **Done when:** on http://localhost:3403 a conversation like Frank's Oct 30 test books a Free Estimate on the laptop's Primo, a second "yes" never books twice, a missing phone or address is asked for, and the lead shows the project answer in its details; the 83 cases of `check-chat-booking.mjs`, ported, pass with a stand-in CRM and a stand-in AI.
-- [ ] **13d.3 Face and Body gets the same chat.** (Laptop part built Oct 30, worktree `face-and-body/.claude/worktrees/booking-crm`, branch `feature/site-chat`; live waits for Frank's yes.) Her brief from her data files and `chatFacts`, mounted in her site; her form's rule. **Done when:** on http://localhost:3402 she answers from her words and books a treatment on the laptop. Then both sites live on Frank's yes: the OpenAI key added to each Vercel project, both sites merged and deployed, one real chat booking on each.
+- [x] **13d.3 Face and Body gets the same chat.** (Built Oct 30 in her worktree, branch `feature/site-chat`; live Oct 30 on Frank's yes, keys in both Vercel projects. Proven: a chat booking on her laptop site landed; on live, his chat booked Mon Nov 2 10:00 (Frank) and hers was started by Frank on his phone, its last "yes" not confirmed. Added on Frank's asks: her treatment cards that open and book, the phone typing box, answers checked against both sites. Chat 0.2.10 is committed in both sites; live runs 0.2.9 until Frank's yes.) Her brief from her data files and `chatFacts`, mounted in her site; her form's rule. **Done when:** on http://localhost:3402 she answers from her words and books a treatment on the laptop. Then both sites live on Frank's yes: the OpenAI key added to each Vercel project, both sites merged and deployed, one real chat booking on each.
 
 ## Files / areas
 
